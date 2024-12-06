@@ -18,8 +18,8 @@ class TestingRPG {
                 options: [
                     {
                         text: 'Review the test environment setup guide',
-                        outcome: 'Good choice! Understanding your testing environment is crucial.',
-                        experience: 10,
+                        outcome: 'Great initiative, but asking a senior tester for guidance would better be able to point you in the right direction.',
+                        experience: 5,
                         tool: 'Testing Environment Guide'
                     },
                     {
@@ -28,9 +28,9 @@ class TestingRPG {
                         experience: -5
                     },
                     {
-                        text: 'Ask a senior tester for guidance',
-                        outcome: 'Great initiative, but reviewing documentation first would give you a foundation for more specific questions.',
-                        experience: 5
+                        text: 'Ask a senior tester for guidance on where to begin',
+                        outcome: 'Great job, a senior tester can guide you to the best starting point.',
+                        experience: 10
                     },
                     {
                         text: 'Start writing test cases without context',
@@ -789,24 +789,45 @@ class TestingRPG {
         
         // Check if we should progress or end
         if (this.player.currentScenario >= currentScenarios.length) {
-            if (this.player.questionHistory.length === 5 && this.player.experience < 25) {
-                // Failed Basic I (need at least half of possible 50 XP)
+            const totalQuestionsAnswered = this.player.questionHistory.length + 1;
+            
+            // Basic I (Questions 1-5)
+            if (totalQuestionsAnswered === 5) {
+                if (this.player.experience < 25) {
+                    this.endGame();
+                    return;
+                }
+            }
+            // Basic II (Questions 6-10)
+            else if (totalQuestionsAnswered === 10) {
+                if (this.player.experience < 75) {
+                    this.endGame();
+                    return;
+                }
+            }
+            // Intermediate I (Questions 11-15)
+            else if (totalQuestionsAnswered === 15) {
+                if (this.player.experience < 175) {
+                    this.endGame();
+                    return;
+                }
+            }
+            // Intermediate II (Questions 16-20)
+            else if (totalQuestionsAnswered === 20) {
+                if (this.player.experience < 350) {
+                    this.endGame();
+                    return;
+                }
+            }
+            // Advanced (Questions 21-25)
+            else if (totalQuestionsAnswered === 25) {
                 this.endGame();
                 return;
-            } else if (this.player.questionHistory.length === 10 && this.player.experience < 75) {
-                // Failed Basic II (need at least 75 of possible 100 XP)
-                this.endGame();
-                return;
-            } else if (this.player.questionHistory.length === 15 && this.player.experience < 175) {
-                // Failed Intermediate I (need at least 175 of possible 225 XP)
-                this.endGame();
-                return;
-            } else if (this.player.questionHistory.length === 20 && this.player.experience < 350) {
-                // Failed Intermediate II (need at least 350 of possible 450 XP)
-                this.endGame();
-                return;
-            } else if (this.player.questionHistory.length >= 25) {
-                // Completed all scenarios
+            }
+
+            // Double-check we're getting the correct next scenarios
+            const nextScenarios = this.getCurrentScenarios();
+            if (!nextScenarios || nextScenarios.length === 0) {
                 this.endGame();
                 return;
             }
@@ -819,7 +840,7 @@ class TestingRPG {
 
         const scenario = currentScenarios[this.player.currentScenario];
         
-        // Show level transition message if needed
+        // Show level transition message if starting new section
         if (this.player.currentScenario === 0) {
             const levelMessage = document.createElement('div');
             levelMessage.className = 'level-transition';
@@ -827,6 +848,9 @@ class TestingRPG {
             this.gameScreen.insertBefore(levelMessage, this.gameScreen.firstChild);
             
             setTimeout(() => levelMessage.remove(), 3000);
+            
+            // Update level indicator immediately when transitioning
+            document.getElementById('level-indicator').textContent = `Level: ${scenario.level}`;
         }
 
         document.getElementById('scenario-title').textContent = scenario.title;
@@ -860,7 +884,7 @@ class TestingRPG {
     updateProgress() {
         const currentScenarios = this.getCurrentScenarios();
         const progress = this.player.currentScenario === currentScenarios.length - 1 ? 
-            100 : // Force 100% on last question
+            100 : 
             (this.player.currentScenario / currentScenarios.length) * 100;
         
         document.getElementById('progress-fill').style.width = `${progress}%`;
@@ -872,9 +896,9 @@ class TestingRPG {
         document.getElementById('question-progress').textContent = 
             `Question: ${this.player.currentScenario + 1}/${currentScenarios.length}`;
         
-        const level = this.player.experience >= 250 ? 'Advanced' : 
-                     this.player.experience >= 100 ? 'Intermediate' : 'Basic';
-        document.getElementById('level-indicator').textContent = `Level: ${level}`;
+        // Update level indicator based on current scenario level
+        const currentLevel = currentScenarios[this.player.currentScenario].level;
+        document.getElementById('level-indicator').textContent = `Level: ${currentLevel}`;
     }
 
     handleAnswer() {
@@ -891,7 +915,7 @@ class TestingRPG {
             scenario: scenario,
             selectedAnswer: selectedAnswer,
             maxPossibleXP: Math.max(...scenario.options.map(o => o.experience))
-        });
+        }); 
 
         // Display outcome
         this.gameScreen.classList.add('hidden');
@@ -982,17 +1006,18 @@ class TestingRPG {
     }
 
     getCurrentScenarios() {
-        if (this.player.experience >= 250) {
+        const totalAnswered = this.player.questionHistory.length;
+        
+        if (totalAnswered >= 20 && this.player.experience >= 350) {
             return this.advancedScenarios;
-        } else if (this.player.experience >= 100) {
-            return this.player.questionHistory.length >= 15 ? 
-                this.intermediateScenariosII : 
-                this.intermediateScenariosI;
-        } else {
-            return this.player.questionHistory.length >= 5 ? 
-                this.basicScenariosII : 
-                this.basicScenariosI;
+        } else if (totalAnswered >= 15 && this.player.experience >= 175) {
+            return this.intermediateScenariosII;
+        } else if (totalAnswered >= 10 && this.player.experience >= 75) {
+            return this.intermediateScenariosI;
+        } else if (totalAnswered >= 5 && this.player.experience >= 25) {
+            return this.basicScenariosII;
         }
+        return this.basicScenariosI;
     }
 }
 

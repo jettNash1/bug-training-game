@@ -30,6 +30,7 @@ body {
     display: flex;
     justify-content: space-between;
     margin-bottom: 10px;
+    align-items: center;
 }
 
 .progress-bar {
@@ -134,4 +135,9 @@ button:hover {
     15% { opacity: 1; }
     85% { opacity: 1; }
     100% { opacity: 0; }
+}
+
+#level-indicator {
+    transition: all 0.3s ease;
+    font-weight: 500;
 }
