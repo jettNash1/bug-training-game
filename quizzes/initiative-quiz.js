@@ -173,37 +173,37 @@ class CommunicationQuiz extends BaseQuiz {
                 ]
             },
         ];
-            // Intermediate Scenarios (IDs 6-10, 125 XP total)
-            this.intermediateScenarios = [
-                {
-                    id: 6,
-                    level: 'Intermediate',
-                    title: 'Project Handover',
-                    description: 'You\'re leaving a project tomorrow and new testers are joining. How do you show the best initiative?',
-                    options: [
-                        {
-                            text: 'Create comprehensive handover notes and context documentation',
-                            outcome: 'Perfect! Proactive knowledge transfer shows excellent initiative.',
-                            experience: 25,
-                            tool: 'Knowledge Transfer'
-                        },
-                        {
-                            text: 'Wait for the new testers to ask questions',
-                            outcome: 'Initiative means preparing resources before they\'re needed.',
-                            experience: -15
-                        },
-                        {
-                            text: 'Leave basic notes about current tasks',
-                            outcome: 'While helpful, this doesn\'t provide full context needed.',
-                            experience: 5
-                        },
-                        {
-                            text: 'Tell them to check existing documentation',
-                            outcome: 'This doesn\'t help bridge knowledge gaps effectively.',
-                            experience: -10
-                        }
-                    ]
-                },
+        // Intermediate Scenarios (IDs 6-10, 125 XP total)
+        this.intermediateScenarios = [
+            {
+                id: 6,
+                level: 'Intermediate',
+                title: 'Project Handover',
+                description: 'You\'re leaving a project tomorrow and new testers are joining. How do you show the best initiative?',
+                options: [
+                    {
+                        text: 'Create comprehensive handover notes and context documentation',
+                        outcome: 'Perfect! Proactive knowledge transfer shows excellent initiative.',
+                        experience: 25,
+                        tool: 'Knowledge Transfer'
+                    },
+                    {
+                        text: 'Wait for the new testers to ask questions',
+                        outcome: 'Initiative means preparing resources before they\'re needed.',
+                        experience: -15
+                    },
+                    {
+                        text: 'Leave basic notes about current tasks',
+                        outcome: 'While helpful, this doesn\'t provide full context needed.',
+                        experience: 5
+                    },
+                    {
+                        text: 'Tell them to check existing documentation',
+                        outcome: 'This doesn\'t help bridge knowledge gaps effectively.',
+                        experience: -10
+                    }
+                ]
+            },
             {
                 id: 7,
                 level: 'Intermediate',
@@ -322,8 +322,8 @@ class CommunicationQuiz extends BaseQuiz {
             }
         ];
 
-            // Advanced Scenarios (IDs 11-15, 100 XP total)
-            this.advancedScenarios = [
+        // Advanced Scenarios (IDs 11-15, 100 XP total)
+        this.advancedScenarios = [
             {
                 id: 11,
                 level: 'Advanced',

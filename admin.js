@@ -1,58 +1,49 @@
 // admin.js
 class AdminManager {
     constructor() {
-        // Admin credentials - in a real app, these would be stored securely
-        this.adminCredentials = {
-            username: 'admin',
-            password: 'admin123' // In production, use proper password hashing
-        };
-        console.log('AdminManager initialized'); // Debug log
+        this.adminToken = localStorage.getItem('adminToken');
     }
 
     login(username, password) {
-        if (username === this.adminCredentials.username && 
-            password === this.adminCredentials.password) {
-            localStorage.setItem('adminLoggedIn', 'true');
+        // For demo purposes, hardcoded admin credentials
+        if (username === 'admin' && password === 'admin123') {
+            this.adminToken = 'admin_token';
+            localStorage.setItem('adminToken', this.adminToken);
             return true;
         }
         return false;
     }
 
     logout() {
-        localStorage.removeItem('adminLoggedIn');
+        this.adminToken = null;
+        localStorage.removeItem('adminToken');
     }
 
     isLoggedIn() {
-        return localStorage.getItem('adminLoggedIn') === 'true';
+        return !!this.adminToken;
     }
 
     getAllUsers() {
+        // Fetch users from localStorage for now
         const users = [];
-        console.log('Total localStorage items:', localStorage.length); // Debug log
-        
-        // Log all localStorage keys for debugging
-        for (let i = 0; i < localStorage.length; i++) {
-            console.log('localStorage key:', localStorage.key(i));
-        }
-
         for (let i = 0; i < localStorage.length; i++) {
             const key = localStorage.key(i);
-            if (key.startsWith('quizUser_')) {
+            if (key.startsWith('user_')) {
                 try {
                     const userData = JSON.parse(localStorage.getItem(key));
+                    // Ensure quizResults is always an array
+                    userData.quizResults = Array.isArray(userData.quizResults) ? 
+                        userData.quizResults : 
+                        Object.entries(userData.quizResults || {}).map(([quizName, data]) => ({
+                            quizName,
+                            ...data
+                        }));
                     users.push(userData);
-                    console.log('Found user:', userData); // Debug log
                 } catch (error) {
-                    console.error('Error parsing user data for key:', key, error);
+                    console.error('Error parsing user data:', error);
                 }
             }
         }
-        console.log('Retrieved users:', users); // Debug log
         return users;
-    }
-
-    getUserProgress(username) {
-        const userData = localStorage.getItem(`quizUser_${username}`);
-        return userData ? JSON.parse(userData) : null;
     }
 }

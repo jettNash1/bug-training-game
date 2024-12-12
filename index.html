@@ -5,70 +5,125 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>QA Learning Hub</title>
     <link rel="stylesheet" href="styles.css">
-    <script src="user.js"></script>
+    <script src="QuizUser.js"></script>
+    <script src="api-service.js"></script>
     <script src="login.js"></script>
+    <script src="login-ui.js"></script>
+    <script src="quiz-helper.js"></script>
 </head>
 <body>
     <div id="loginSection" class="login-section">
         <h2>Welcome to Quiz Platform</h2>
-        <div id="loginForm" style="display: none;">
-            <input type="text" id="usernameInput" placeholder="Enter your username" 
-                   aria-label="Username input">
-            <button onclick="handleLogin()" aria-label="Login button">Login</button>
+        <div id="loginForm">
+            <div class="form-tabs">
+                <button onclick="showLoginForm()" class="tab-btn active" id="loginTab">Login</button>
+                <button onclick="showRegisterForm()" class="tab-btn" id="registerTab">Register</button>
+            </div>
+            
+            <div id="loginFormContent">
+                <input type="text" id="loginUsername" placeholder="Username" aria-label="Username">
+                <input type="password" id="loginPassword" placeholder="Password" aria-label="Password">
+                <button onclick="handleLogin()" aria-label="Login">Login</button>
+            </div>
+            
+            <div id="registerFormContent" style="display: none;">
+                <input type="text" id="registerUsername" placeholder="Choose Username" aria-label="Choose Username">
+                <input type="password" id="registerPassword" placeholder="Choose Password" aria-label="Choose Password">
+                <button onclick="handleRegister()" aria-label="Register">Register</button>
+            </div>
         </div>
+        
         <div id="userInfo" style="display: none;">
             <p>Welcome, <span id="userDisplay"></span>!</p>
             <div id="quizProgress"></div>
-            <button onclick="handleLogout()" aria-label="Logout button">Logout</button>
+            <button onclick="UserManager.logout()" aria-label="Logout">Logout</button>
         </div>
     </div>
 
     <script>
-        function handleLogin() {
-            const username = document.getElementById('usernameInput').value;
+        async function updateUIForLoggedInUser(user) {
             try {
-                const user = UserManager.login(username);
-                updateUIForLoggedInUser(user);
+                document.getElementById('loginForm').style.display = 'none';
+                document.getElementById('userInfo').style.display = 'block';
+                document.getElementById('userDisplay').textContent = user.username;
+                
+                // Make sure we have the latest data
+                const quizResults = await user.loadUserData();
+                const progressDiv = document.getElementById('quizProgress');
+                progressDiv.innerHTML = '';
+                
+                if (Array.isArray(quizResults) && quizResults.length > 0) {
+                    progressDiv.innerHTML = quizResults.map(result => {
+                        // Format quiz name to be more readable
+                        const quizName = result.quizName
+                            .split('-')
+                            .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+                            .join(' ');
+                        const score = result.score || 0;
+                        return `
+                            <div class="quiz-result">
+                                <span class="quiz-name">${quizName}</span>
+                                <span class="quiz-score">${score}%</span>
+                            </div>
+                        `;
+                    }).join('');
+                } else {
+                    progressDiv.innerHTML = '<p>No quiz results yet. Try taking a quiz!</p>';
+                }
             } catch (error) {
-                alert(error.message);
+                console.error('Error updating UI:', error);
+                alert('There was an error loading your quiz results. Please try again.');
             }
         }
 
-        function handleLogout() {
-            UserManager.logout();
-            updateUIForLoggedOutUser();
-        }
-
-        function updateUIForLoggedInUser(user) {
-            document.getElementById('loginForm').style.display = 'none';
-            document.getElementById('userInfo').style.display = 'block';
-            document.getElementById('userDisplay').textContent = user.username;
+        async function handleLogin() {
+            const username = document.getElementById('loginUsername').value;
+            const password = document.getElementById('loginPassword').value;
             
-            const progressDiv = document.getElementById('quizProgress');
-            const results = user.getAllQuizResults();
-            progressDiv.innerHTML = Object.entries(results)
-                .map(([quiz, result]) => `
-                    <div class="quiz-result">
-                        <p>${quiz}: ${result.score}%</p>
-                    </div>
-                `).join('');
-        }
-
-        function updateUIForLoggedOutUser() {
-            document.getElementById('loginForm').style.display = 'block';
-            document.getElementById('userInfo').style.display = 'none';
-            document.getElementById('usernameInput').value = '';
-        }
-
-        // Check login status on page load
-        window.addEventListener('load', () => {
-            const currentUser = UserManager.getCurrentUser();
-            if (currentUser) {
-                updateUIForLoggedInUser(currentUser);
-            } else {
-                updateUIForLoggedOutUser();
+            try {
+                const user = await UserManager.login(username, password);
+                document.getElementById('loginForm').style.display = 'none';
+                document.getElementById('userInfo').style.display = 'block';
+                document.getElementById('userDisplay').textContent = username;
+                await updateUIForLoggedInUser(user);
+            } catch (error) {
+                alert(error.message || 'Login failed. Please try again.');
             }
-        });
+        }
+
+        async function handleRegister() {
+            const username = document.getElementById('registerUsername').value;
+            const password = document.getElementById('registerPassword').value;
+            
+            try {
+                const user = await UserManager.register(username, password);
+                document.getElementById('loginForm').style.display = 'none';
+                document.getElementById('userInfo').style.display = 'block';
+                document.getElementById('userDisplay').textContent = username;
+                await updateUIForLoggedInUser(user);
+            } catch (error) {
+                alert(error.message || 'Registration failed. Please try again.');
+            }
+        }
+
+        // Check if user is already logged in
+        (async function() {
+            const currentUser = localStorage.getItem('currentUser');
+            const token = localStorage.getItem('token');
+            
+            if (currentUser && token) {
+                document.getElementById('loginForm').style.display = 'none';
+                document.getElementById('userInfo').style.display = 'block';
+                document.getElementById('userDisplay').textContent = currentUser;
+                
+                try {
+                    const user = new QuizUser(currentUser);
+                    await updateUIForLoggedInUser(user);
+                } catch (error) {
+                    console.error('Error loading user data:', error);
+                }
+            }
+        })();
     </script>
 
     <div class="main-container">

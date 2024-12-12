@@ -3,6 +3,19 @@ class BaseQuiz {
         this.maxXP = config.maxXP;
         this.levelThresholds = config.levelThresholds;
         this.performanceThresholds = config.performanceThresholds;
+        this.quizName = this.constructor.name.replace('Quiz', '').toLowerCase();
+        
+        this.gameScreen = document.getElementById('game-screen');
+        this.outcomeScreen = document.getElementById('outcome-screen');
+        this.endScreen = document.getElementById('end-screen');
+        
+        this.player = {
+            name: '',
+            experience: 0,
+            tools: [],
+            currentScenario: 0,
+            questionHistory: []
+        };
     }
 
     shuffleArray(array) {
@@ -108,5 +121,56 @@ class BaseQuiz {
             .join('<br>');
 
         recommendationsDiv.innerHTML = recommendations || 'Great job! No specific areas need improvement.';
+    }
+
+    async endGame() {
+        try {
+            this.gameScreen.classList.add('hidden');
+            this.outcomeScreen.classList.add('hidden');
+            this.endScreen.classList.remove('hidden');
+
+            const finalScore = Math.min(this.player.experience, this.maxXP);
+            const scorePercentage = Math.round((finalScore / this.maxXP) * 100);
+            
+            const currentUsername = localStorage.getItem('currentUser');
+            const token = localStorage.getItem('token');
+            
+            if (currentUsername && token) {
+                const user = new QuizUser(currentUsername);
+                await user.saveQuizResult(this.quizName, scorePercentage, this.player.questionHistory);
+            }
+
+            document.getElementById('final-score').textContent = `Final Score: ${finalScore}/${this.maxXP}`;
+
+            const performanceSummary = document.getElementById('performance-summary');
+            const threshold = this.performanceThresholds.find(t => finalScore >= t.threshold);
+            performanceSummary.textContent = threshold.message;
+
+            this.displayQuestionReview();
+            this.generateRecommendations();
+        } catch (error) {
+            console.error('Error in endGame:', error);
+        }
+    }
+
+    updateUI(finalScore) {
+        document.getElementById('final-score').textContent = `Final Score: ${finalScore}/${this.maxXP}`;
+        const performanceSummary = document.getElementById('performance-summary');
+        const threshold = this.performanceThresholds.find(t => finalScore >= t.threshold);
+        performanceSummary.textContent = threshold.message;
+        this.displayQuestionReview();
+        this.generateRecommendations();
+    }
+
+    async saveResults(score, answers) {
+        try {
+            const currentUser = localStorage.getItem('currentUser');
+            if (currentUser) {
+                const user = new QuizUser(currentUser);
+                await user.saveQuizResult(this.quizName, score, answers);
+            }
+        } catch (error) {
+            console.error('Error saving quiz results:', error);
+        }
     }
 } 

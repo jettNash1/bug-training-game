@@ -1,138 +1,176 @@
-# QA Testing Quiz Game 🎮
+# QA Testing Quiz Platform 🎮
 
-A comprehensive web-based quiz game teaching software testing concepts through interactive scenarios. Players progress through specialized testing domains while learning QA best practices.
+A comprehensive web-based quiz platform for software testing education with admin dashboard and user progress tracking.
 
 ## Overview 🎯
 
-Players take on the role of a QA tester, exploring various aspects of software testing through interactive quizzes covering different domains:
-- Risk Management
-- Non-functional Testing
-- Risk Analysis
-- Time Management
-- Issue Tracking Tools
-- Raising Tickets
-- Issue Verification
-- Tester Mindset
+An interactive learning platform where users progress through various QA testing domains while administrators can track performance and manage content.
 
-Each quiz presents unique testing scenarios with multiple-choice answers. Players earn experience points (XP) and tools based on their decisions.
+### Core Features ✨
 
-## Features ✨
-
-- **Multiple Specialized Domains**: Each focusing on critical QA skills
-- **Dynamic XP System**: Maximum 300 points per quiz
-- **Real-world Scenarios**: Covers various testing concepts:
-  - Risk Assessment & Management
-  - Performance & Load Testing
-  - Issue Tracking & Verification
+- **User Authentication**: Secure login system for both users and administrators
+- **Multiple Testing Domains**:
+  - Risk Management & Analysis
+  - Non-functional Testing
   - Time Management
-  - Test Strategy & Planning
-  - Documentation Best Practices
-- **Randomized Answers**: Options are shuffled to prevent memorization
-- **Performance Tracking**: Detailed question review and recommendations
-- **Tool Collection**: Earn virtual testing tools for correct answers
-- **Accessibility Features**: Keyboard navigation and ARIA support
-- **Progress Saving**: Results saved per user account
+  - Issue Tracking & Verification
+  - Reports & Documentation
+  - Test Support
+  - Tester Mindset
+- **Admin Dashboard**:
+  - User progress monitoring
+  - Performance analytics
+  - Sorting by username, scores, and completion dates
+  - Filtering by quiz types
+- **Progress Tracking**: 
+  - Individual quiz scores
+  - Overall performance metrics
+  - Completion timestamps
+- **Accessibility**: ARIA labels and keyboard navigation
 
-## Technical Details 🛠
+## Technical Implementation 🛠
 
-### File Structure - There is more content but this is the main structure
-├── index.html
-├── pages/
-│ ├── issue-tracking-tools.html
-│ ├── raising-tickets.html
-│ ├── issue-verification.html
-│ ├── non-functional-quiz.html
-│ └── reports-quiz.html
-├── quizzes/
-│ ├── issue-tracking-tools-quiz.js
-│ ├── raising-tickets-quiz.js
-│ ├── issue-verification-quiz.js
-│ └── reports-quiz.js
-└── readMe.md
+### Prerequisites
+- Node.js (v14+)
+- MongoDB
+- Modern web browser
 
+### MongoDB Implementation
 
-### Technologies Used
-- HTML5
-- CSS3
-- Vanilla JavaScript (ES6+)
+1. **Install Dependencies**:
+```bash
+npm install mongodb express mongoose dotenv
+```
 
-### Game Progression
-1. **Basic Level** (Questions 1-5)
-   - Entry level concepts
-   - Need 50+ XP to progress
-2. **Intermediate Level** (Questions 6-10)
-   - Need 150+ XP to reach Advanced
-3. **Advanced Level** (Questions 11-15)
-   - Expert-level challenges
-   - Maximum 300 XP achievable
+2. **Create MongoDB Schema**:
+```javascript
+// models/User.js
+const userSchema = new mongoose.Schema({
+    username: { type: String, unique: true },
+    password: String,
+    quizResults: [{
+        quizName: String,
+        score: Number,
+        completedAt: Date,
+        answers: [mongoose.Schema.Types.Mixed]
+    }]
+});
 
-### XP Distribution
-- Basic Level: 15 XP per correct answer
-- Intermediate Level: 25 XP per correct answer
-- Advanced Level: 20 XP per correct answer
-- Penalties range from -5 to -15 XP for incorrect answers
+// models/Admin.js
+const adminSchema = new mongoose.Schema({
+    username: { type: String, unique: true },
+    password: String,
+    role: { type: String, default: 'admin' }
+});
+```
 
-## How to Play 🎲
+3. **Environment Setup**:
+```env
+MONGODB_URI=mongodb://localhost:27017/qa_quiz
+JWT_SECRET=your_jwt_secret
+```
 
-1. Open `index.html` in a modern web browser
-2. Choose a testing domain quiz
-3. Read each scenario carefully
-4. Select your answer from the randomized options
-5. Review feedback, XP gained, and tools earned
-6. Progress through levels by making good testing decisions
-7. Review performance summary at completion
+4. **API Routes**:
+```javascript
+// routes/auth.js
+router.post('/login', authController.login);
+router.post('/admin/login', authController.adminLogin);
 
-## Learning Outcomes 📚
+// routes/quiz.js
+router.get('/results', quizController.getResults);
+router.post('/submit', quizController.submitQuiz);
 
-Players will learn:
-- Domain-specific testing best practices
-- Risk assessment and management
-- Non-functional testing approaches
-- Time management in testing
-- Issue tracking and verification
-- Strategic decision-making in QA
-- Testing tool awareness
-- Professional testing methodologies
+// routes/admin.js
+router.get('/users', adminController.getAllUsers);
+router.get('/analytics', adminController.getAnalytics);
+```
 
-## Development 💻
+### File Structure
+```
+├── backend/
+│   ├── models/
+│   ├── routes/
+│   ├── controllers/
+│   └── server.js
+├── frontend/
+│   ├── index.html
+│   ├── admin.html
+│   ├── styles.css
+│   ├── pages/
+│   └── quizzes/
+└── README.md
+```
 
-### Running Locally
-1. Clone the repository
-2. Open `index.html` in a web browser
-3. No build process or dependencies required
+### Security Implementation
+- JWT for authentication
+- Password hashing using bcrypt
+- Rate limiting for API endpoints
+- CORS configuration
+- XSS protection
 
-### Modifying Scenarios
-Scenarios are defined in each quiz class constructor. Each scenario follows this structure:
-javascript
-{
-   id: number,
-   category: string,
-   question: string,
-   description: string,
-   options: [
-   {
-   text: string,
-   correct: boolean,
-   explanation: string,
-   points: number
-   }
-]
-}
+## Development Setup 💻
 
+1. **Clone Repository**:
+```bash
+git clone [repository-url]
+cd qa-quiz-platform
+```
+
+2. **Install Dependencies**:
+```bash
+npm install
+```
+
+3. **Start MongoDB**:
+```bash
+mongod --dbpath /path/to/data/db
+```
+
+4. **Run Application**:
+```bash
+npm run dev
+```
+
+## Testing 🧪
+
+```bash
+npm test
+```
+
+## API Documentation 📚
+
+### Authentication
+- POST `/api/auth/login`
+- POST `/api/auth/admin/login`
+- POST `/api/auth/logout`
+
+### Quiz Operations
+- GET `/api/quiz/all`
+- POST `/api/quiz/submit`
+- GET `/api/quiz/results/:userId`
+
+### Admin Operations
+- GET `/api/admin/users`
+- GET `/api/admin/analytics`
+- PUT `/api/admin/quiz/:quizId`
 
 ## Future Enhancements 🚀
 
-- Additional testing domains
-- Difficulty modes
-- Multiplayer mode
-- Certification system
-- More interactive elements
-- Enhanced progress tracking
-- Detailed analytics
+- Real-time analytics dashboard
+- User performance graphs
+- Quiz content management system
+- API documentation using Swagger
+- Docker containerization
+- CI/CD pipeline setup
+- Enhanced security features
 
 ## Contributing 🤝
 
-Feel free to submit issues and enhancement requests!
+1. Fork the repository
+2. Create feature branch
+3. Commit changes
+4. Push to branch
+5. Open pull request
 
 ## License 📄
 
