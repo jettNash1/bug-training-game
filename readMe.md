@@ -1,40 +1,53 @@
-# QA Testing quiz 🎮
+# QA Testing Quiz Game 🎮
 
-A web-based quiz game that teaches software testing concepts through interactive scenarios. Players progress through different testing levels while learning best practices in QA.
+A comprehensive web-based quiz game teaching software testing concepts through interactive scenarios. Players progress through specialized testing domains while learning QA best practices.
 
 ## Overview 🎯
 
-Players take on the role of a QA tester, progressing through various levels of expertise:
-- Basic I & II
-- Intermediate I & II
-- Advanced
+Players take on the role of a QA tester, exploring various aspects of software testing through interactive quizzes covering different domains:
+- Risk Management
+- Non-functional Testing
+- Risk Analysis
+- Time Management
+- Issue Tracking Tools
+- Raising Tickets
+- Issue Verification
+- Tester Mindset
 
-Each level presents unique testing scenarios with multiple-choice answers. Players earn experience points (XP) and tools based on their decisions.
+Each quiz presents unique testing scenarios with multiple-choice answers. Players earn experience points (XP) and tools based on their decisions.
 
 ## Features ✨
 
-- **Progressive Difficulty**: 25 unique scenarios across 5 difficulty levels
-- **Dynamic XP System**: Maximum 500 points achievable
+- **Multiple Specialized Domains**: Each focusing on critical QA skills
+- **Dynamic XP System**: Maximum 300 points per quiz
 - **Real-world Scenarios**: Covers various testing concepts:
-  - Test Environment Setup
-  - Browser Compatibility
-  - Performance Testing
-  - Security Testing
-  - API Testing
-  - Mobile Testing
-  - Accessibility Testing
-  - Database Testing
-  - And more!
+  - Risk Assessment & Management
+  - Performance & Load Testing
+  - Issue Tracking & Verification
+  - Time Management
+  - Test Strategy & Planning
+  - Documentation Best Practices
 - **Randomized Answers**: Options are shuffled to prevent memorization
 - **Performance Tracking**: Detailed question review and recommendations
 - **Tool Collection**: Earn virtual testing tools for correct answers
+- **Accessibility Features**: Keyboard navigation and ARIA support
+- **Progress Saving**: Results saved per user account
 
 ## Technical Details 🛠
 
-### File Structure
+### File Structure - There is more content but this is the main structure
 ├── index.html
-├── styles.css
-├── game.js
+├── pages/
+│ ├── issue-tracking-tools.html
+│ ├── raising-tickets.html
+│ ├── issue-verification.html
+│ ├── non-functional-quiz.html
+│ └── reports-quiz.html
+├── quizzes/
+│ ├── issue-tracking-tools-quiz.js
+│ ├── raising-tickets-quiz.js
+│ ├── issue-verification-quiz.js
+│ └── reports-quiz.js
 └── readMe.md
 
 
@@ -44,41 +57,42 @@ Each level presents unique testing scenarios with multiple-choice answers. Playe
 - Vanilla JavaScript (ES6+)
 
 ### Game Progression
-1. **Basic I** (Questions 1-5)
+1. **Basic Level** (Questions 1-5)
    - Entry level concepts
-   - Need 25+ XP to progress
-2. **Basic II** (Questions 6-10)
-   - Need 75+ XP to reach Intermediate
-3. **Intermediate I** (Questions 11-15)
-   - More complex scenarios
-4. **Intermediate II** (Questions 16-20)
-   - Need 250+ XP to reach Advanced
-5. **Advanced** (Questions 21-25)
+   - Need 50+ XP to progress
+2. **Intermediate Level** (Questions 6-10)
+   - Need 150+ XP to reach Advanced
+3. **Advanced Level** (Questions 11-15)
    - Expert-level challenges
+   - Maximum 300 XP achievable
 
 ### XP Distribution
-- Basic Levels: 10 XP per correct answer
-- Intermediate Levels: 25 XP per correct answer
-- Advanced Level: 30 XP per correct answer
-- Maximum Total: 500 XP
+- Basic Level: 15 XP per correct answer
+- Intermediate Level: 25 XP per correct answer
+- Advanced Level: 20 XP per correct answer
+- Penalties range from -5 to -15 XP for incorrect answers
 
 ## How to Play 🎲
 
 1. Open `index.html` in a modern web browser
-2. Read each scenario carefully
-3. Select your answer from the randomized options
-4. Review feedback and earned XP
-5. Progress through levels by making good testing decisions
-6. Review performance summary at game completion
+2. Choose a testing domain quiz
+3. Read each scenario carefully
+4. Select your answer from the randomized options
+5. Review feedback, XP gained, and tools earned
+6. Progress through levels by making good testing decisions
+7. Review performance summary at completion
 
 ## Learning Outcomes 📚
 
 Players will learn:
-- Best practices in software testing
-- Common testing pitfalls to avoid
+- Domain-specific testing best practices
+- Risk assessment and management
+- Non-functional testing approaches
+- Time management in testing
+- Issue tracking and verification
 - Strategic decision-making in QA
 - Testing tool awareness
-- Professional testing approaches
+- Professional testing methodologies
 
 ## Development 💻
 
@@ -88,31 +102,33 @@ Players will learn:
 3. No build process or dependencies required
 
 ### Modifying Scenarios
-Scenarios are defined in `game.js` within the `TestingRPG` class constructor. Each scenario follows this structure:
+Scenarios are defined in each quiz class constructor. Each scenario follows this structure:
 javascript
 {
-  id: number,
-  level: string,
-  title: string,
-  description: string,
-  options: [
-    {
-      text: string,
-      outcome: string,
-      experience: number,
-      tool?: string
-    }
-  ]
+   id: number,
+   category: string,
+   question: string,
+   description: string,
+   options: [
+   {
+   text: string,
+   correct: boolean,
+   explanation: string,
+   points: number
+   }
+]
 }
+
 
 ## Future Enhancements 🚀
 
-- Additional scenario categories
+- Additional testing domains
 - Difficulty modes
-- Save/load progress
 - Multiplayer mode
 - Certification system
 - More interactive elements
+- Enhanced progress tracking
+- Detailed analytics
 
 ## Contributing 🤝
 
