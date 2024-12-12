@@ -28,6 +28,62 @@ An interactive learning platform where users progress through various QA testing
   - Completion timestamps
 - **Accessibility**: ARIA labels and keyboard navigation
 
+## Installation & Setup 💾
+
+### Required Dependencies
+
+1. **Core Dependencies**:
+```bash
+npm install express mongoose dotenv bcryptjs jsonwebtoken cors
+```
+
+2. **Development Dependencies**:
+```bash
+npm install --save-dev nodemon jest supertest
+```
+
+### Setup Steps
+
+1. **Initialize Project**:
+```bash
+mkdir qa-quiz-platform
+cd qa-quiz-platform
+npm init -y
+```
+
+2. **Create package.json Scripts**:
+```json
+{
+  "scripts": {
+    "start": "node server.js",
+    "dev": "nodemon server.js",
+    "test": "jest --watchAll --verbose"
+  }
+}
+```
+
+3. **Install All Dependencies at Once**:
+```bash
+npm install express mongoose dotenv bcryptjs jsonwebtoken cors && npm install --save-dev nodemon jest supertest
+```
+
+4. **Directory Structure Setup**:
+```bash
+mkdir backend frontend
+cd backend
+mkdir models routes controllers middleware config tests
+```
+
+5. **Environment Setup**:
+Create `.env` file in root directory:
+```env
+NODE_ENV=development
+PORT=8080
+MONGODB_URI=mongodb://localhost:27017/qa_quiz
+JWT_SECRET=your_secret_key
+JWT_EXPIRE=30d
+```
+
 ## Technical Implementation 🛠
 
 ### Prerequisites
@@ -37,12 +93,7 @@ An interactive learning platform where users progress through various QA testing
 
 ### MongoDB Implementation
 
-1. **Install Dependencies**:
-```bash
-npm install mongodb express mongoose dotenv
-```
-
-2. **Create MongoDB Schema**:
+1. **MongoDB Schema**:
 ```javascript
 // models/User.js
 const userSchema = new mongoose.Schema({
@@ -64,27 +115,6 @@ const adminSchema = new mongoose.Schema({
 });
 ```
 
-3. **Environment Setup**:
-```env
-MONGODB_URI=mongodb://localhost:27017/qa_quiz
-JWT_SECRET=your_jwt_secret
-```
-
-4. **API Routes**:
-```javascript
-// routes/auth.js
-router.post('/login', authController.login);
-router.post('/admin/login', authController.adminLogin);
-
-// routes/quiz.js
-router.get('/results', quizController.getResults);
-router.post('/submit', quizController.submitQuiz);
-
-// routes/admin.js
-router.get('/users', adminController.getAllUsers);
-router.get('/analytics', adminController.getAnalytics);
-```
-
 ### File Structure
 ```
 ├── backend/
@@ -101,40 +131,45 @@ router.get('/analytics', adminController.getAnalytics);
 └── README.md
 ```
 
-### Security Implementation
-- JWT for authentication
-- Password hashing using bcrypt
-- Rate limiting for API endpoints
-- CORS configuration
-- XSS protection
+### Running the Application
 
-## Development Setup 💻
-
-1. **Clone Repository**:
-```bash
-git clone [repository-url]
-cd qa-quiz-platform
-```
-
-2. **Install Dependencies**:
-```bash
-npm install
-```
-
-3. **Start MongoDB**:
-```bash
-mongod --dbpath /path/to/data/db
-```
-
-4. **Run Application**:
+1. **Development Mode**:
 ```bash
 npm run dev
 ```
 
-## Testing 🧪
+2. **Production Mode**:
+```bash
+npm start
+```
 
+3. **Run Tests**:
 ```bash
 npm test
+```
+
+### Troubleshooting Common Issues
+
+1. **MongoDB Connection**:
+If MongoDB fails to connect:
+```bash
+# Start MongoDB service
+sudo service mongod start  # Linux
+brew services start mongodb  # macOS
+```
+
+2. **Port Already in Use**:
+```bash
+# Find process using port 8080
+lsof -i :8080
+# Kill process
+kill -9 <PID>
+```
+
+3. **Node Version Compatibility**:
+```bash
+# Check Node version
+node -v  # Should be v14.0.0 or higher
 ```
 
 ## API Documentation 📚
@@ -153,6 +188,13 @@ npm test
 - GET `/api/admin/users`
 - GET `/api/admin/analytics`
 - PUT `/api/admin/quiz/:quizId`
+
+## Security Implementation
+- JWT for authentication
+- Password hashing using bcrypt
+- Rate limiting for API endpoints
+- CORS configuration
+- XSS protection
 
 ## Future Enhancements 🚀
 
