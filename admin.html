@@ -1,0 +1,211 @@
+<!-- admin.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quiz Admin Panel</title>
+    <link rel="stylesheet" href="styles.css">
+    <script src="user.js"></script>
+    <script src="admin.js"></script>
+</head>
+<body>
+    <div class="admin-container">
+        <!-- Login Form -->
+        <div id="adminLoginForm" class="admin-login-section">
+            <h2>Admin Login</h2>
+            <div class="form-group">
+                <input type="text" id="adminUsername" placeholder="Admin Username" aria-label="Admin Username">
+                <input type="password" id="adminPassword" placeholder="Admin Password" aria-label="Admin Password">
+                <button onclick="handleAdminLogin()" aria-label="Login as Admin">Login</button>
+            </div>
+        </div>
+
+        <!-- Admin Dashboard -->
+        <div id="adminDashboard" class="admin-dashboard hidden">
+            <div class="admin-header">
+                <h2>Admin Dashboard</h2>
+                <div>
+                    <button onclick="updateDashboard()" class="refresh-btn" aria-label="Refresh Dashboard">
+                        Refresh
+                    </button>
+                    <button onclick="handleAdminLogout()" class="logout-btn" aria-label="Logout">
+                        Logout
+                    </button>
+                </div>
+            </div>
+
+            <div class="user-stats-container">
+                <h3>User Statistics</h3>
+                <div id="userStats">
+                    <p>Total Users: <span id="totalUsers">0</span></p>
+                    <div class="filter-controls">
+                        <select id="quizFilter" onchange="filterUsers()" aria-label="Filter by quiz">
+                            <option value="all">All Quizzes</option>
+                            <option value="communication">Communication Quiz</option>
+                            <option value="tester-mindset">Tester Mindset Quiz</option>
+                            <option value="time-management">Time Management Quiz</option>
+                            <option value="riskAnalysis">Risk Analysis Quiz</option>
+                            <option value="test-support">Test Support Quiz</option>
+                            <option value="issue-tracking-tools">Issue Tracking Tools Quiz</option>
+                            <option value="raising-tickets">Raising Tickets Quiz</option>
+                            <option value="issue-verification">Issue Verification Quiz</option>
+                            <option value="reports">Reports Quiz</option>
+                        </select>
+                        <select id="sortOrder" onchange="filterUsers()" aria-label="Sort users">
+                            <option value="name-asc">Name (A-Z)</option>
+                            <option value="name-desc">Name (Z-A)</option>
+                            <option value="score-high">Highest Score</option>
+                            <option value="score-low">Lowest Score</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <div class="user-list-container">
+                <h3>User List</h3>
+                <div id="userList" class="user-list"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const adminManager = new AdminManager();
+
+        function handleAdminLogin() {
+            const username = document.getElementById('adminUsername').value;
+            const password = document.getElementById('adminPassword').value;
+
+            if (adminManager.login(username, password)) {
+                showAdminDashboard();
+            } else {
+                alert('Invalid admin credentials');
+            }
+        }
+
+        function handleAdminLogout() {
+            adminManager.logout();
+            hideAdminDashboard();
+        }
+
+        function showAdminDashboard() {
+            document.getElementById('adminLoginForm').classList.add('hidden');
+            document.getElementById('adminDashboard').classList.remove('hidden');
+            updateDashboard();
+        }
+
+        function hideAdminDashboard() {
+            document.getElementById('adminLoginForm').classList.remove('hidden');
+            document.getElementById('adminDashboard').classList.add('hidden');
+        }
+
+        function calculateTotalScore(quizResults) {
+            if (!quizResults || Object.keys(quizResults).length === 0) return 0;
+            const scores = Object.values(quizResults).map(result => result.score);
+            return Math.round(scores.reduce((a, b) => a + b, 0) / scores.length);
+        }
+
+        function filterUsers() {
+            const quizFilter = document.getElementById('quizFilter').value;
+            const sortOrder = document.getElementById('sortOrder').value;
+            updateDashboard(quizFilter, sortOrder);
+        }
+
+        function updateDashboard(quizFilter = 'all', sortOrder = 'name-asc') {
+            let users = adminManager.getAllUsers();
+            console.log('Updating dashboard with users:', users);
+
+            // Filter users based on quiz selection
+            if (quizFilter !== 'all') {
+                users = users.filter(user => 
+                    user.quizResults && user.quizResults[quizFilter]
+                );
+            }
+
+            // Sort users
+            users.sort((a, b) => {
+                switch (sortOrder) {
+                    case 'name-asc':
+                        return a.username.localeCompare(b.username);
+                    case 'name-desc':
+                        return b.username.localeCompare(a.username);
+                    case 'score-high':
+                        return calculateTotalScore(b.quizResults) - calculateTotalScore(a.quizResults);
+                    case 'score-low':
+                        return calculateTotalScore(a.quizResults) - calculateTotalScore(b.quizResults);
+                    default:
+                        return 0;
+                }
+            });
+
+            document.getElementById('totalUsers').textContent = users.length;
+            const userList = document.getElementById('userList');
+            userList.innerHTML = '';
+
+            if (users.length === 0) {
+                userList.innerHTML = '<p>No users found</p>';
+                return;
+            }
+
+            users.forEach(user => {
+                const userCard = createUserCard(user);
+                userList.appendChild(userCard);
+            });
+        }
+
+        function createUserCard(user) {
+            console.log('Creating card for user:', user);
+            
+            const card = document.createElement('div');
+            card.className = 'user-card';
+
+            const quizResults = user.quizResults || {};
+            const totalScore = calculateTotalScore(quizResults);
+
+            // Organize quizzes by type
+            const quizzesByType = {
+                'Communication Quiz': quizResults['communication'] || null,
+                'Tester Mindset Quiz': quizResults['tester-mindset'] || null,
+                'Time Management Quiz': quizResults['time-management'] || null,
+                'Risk Analysis Quiz': quizResults['riskAnalysis'] || null,
+                'Test Support Quiz': quizResults['test-support'] || null,
+                'Issue Tracking Tools Quiz': quizResults['issue-tracking-tools'] || null,
+                'Raising Tickets Quiz': quizResults['raising-tickets'] || null,
+                'Issue Verification Quiz': quizResults['issue-verification'] || null,
+                'Reports Quiz': quizResults['reports'] || null
+            };
+
+            const quizHtml = Object.entries(quizzesByType)
+                .map(([quizName, result]) => `
+                    <div class="quiz-result ${result ? 'completed' : 'not-completed'}">
+                        <strong>${quizName}:</strong> 
+                        ${result ? 
+                            `${result.score}% <br>
+                            <small>Completed: ${new Date(result.completedAt).toLocaleDateString()}</small>` 
+                            : 'Not taken'
+                        }
+                    </div>
+                `).join('');
+
+            card.innerHTML = `
+                <div class="user-header">
+                    <h4>${user.username}</h4>
+                    <div class="total-score">Average Score: ${totalScore}%</div>
+                </div>
+                <div class="quiz-results">
+                    ${quizHtml}
+                </div>
+            `;
+
+            return card;
+        }
+
+        // Check admin login status on page load
+        window.addEventListener('load', () => {
+            if (adminManager.isLoggedIn()) {
+                showAdminDashboard();
+            }
+        });
+    </script>
+</body>
+</html>

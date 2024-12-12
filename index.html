@@ -3,53 +3,138 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>QA Testing RPG</title>
+    <title>QA Learning Hub</title>
     <link rel="stylesheet" href="styles.css">
+    <script src="user.js"></script>
+    <script src="login.js"></script>
 </head>
 <body>
-    <div class="game-container">
-        <div id="progress-section">
-            <div class="progress-info">
-                <span id="level-indicator">Level: Basic</span>
-                <span id="experience-display">XP: 0/500</span>
-            </div>
-            <div class="progress-bar">
-                <div id="progress-fill"></div>
-            </div>
-            <div id="question-progress">Question: 1/15</div>
+    <div id="loginSection" class="login-section">
+        <h2>Welcome to Quiz Platform</h2>
+        <div id="loginForm" style="display: none;">
+            <input type="text" id="usernameInput" placeholder="Enter your username" 
+                   aria-label="Username input">
+            <button onclick="handleLogin()" aria-label="Login button">Login</button>
         </div>
-
-        <div id="game-screen">
-            <h2 id="scenario-title"></h2>
-            <p id="scenario-description"></p>
-            
-            <form id="options-form">
-                <div class="options-container"></div>
-                <button type="submit" id="submit-btn">Submit Answer</button>
-            </form>
-        </div>
-
-        <div id="outcome-screen" class="hidden">
-            <h3>Outcome</h3>
-            <p id="outcome-text"></p>
-            <div id="rewards">
-                <p id="xp-gained"></p>
-                <p id="tool-gained"></p>
-            </div>
-            <button id="continue-btn">Continue</button>
-        </div>
-
-        <div id="end-screen" class="hidden">
-            <h2>Game Complete!</h2>
-            <div id="final-score"></div>
-            <div id="performance-summary"></div>
-            <h3>Question Review</h3>
-            <div id="question-review"></div>
-            <h3>Recommendations</h3>
-            <div id="recommendations"></div>
-            <button id="restart-btn">Play Again</button>
+        <div id="userInfo" style="display: none;">
+            <p>Welcome, <span id="userDisplay"></span>!</p>
+            <div id="quizProgress"></div>
+            <button onclick="handleLogout()" aria-label="Logout button">Logout</button>
         </div>
     </div>
-    <script src="game.js"></script>
+
+    <script>
+        function handleLogin() {
+            const username = document.getElementById('usernameInput').value;
+            try {
+                const user = UserManager.login(username);
+                updateUIForLoggedInUser(user);
+            } catch (error) {
+                alert(error.message);
+            }
+        }
+
+        function handleLogout() {
+            UserManager.logout();
+            updateUIForLoggedOutUser();
+        }
+
+        function updateUIForLoggedInUser(user) {
+            document.getElementById('loginForm').style.display = 'none';
+            document.getElementById('userInfo').style.display = 'block';
+            document.getElementById('userDisplay').textContent = user.username;
+            
+            const progressDiv = document.getElementById('quizProgress');
+            const results = user.getAllQuizResults();
+            progressDiv.innerHTML = Object.entries(results)
+                .map(([quiz, result]) => `
+                    <div class="quiz-result">
+                        <p>${quiz}: ${result.score}%</p>
+                    </div>
+                `).join('');
+        }
+
+        function updateUIForLoggedOutUser() {
+            document.getElementById('loginForm').style.display = 'block';
+            document.getElementById('userInfo').style.display = 'none';
+            document.getElementById('usernameInput').value = '';
+        }
+
+        // Check login status on page load
+        window.addEventListener('load', () => {
+            const currentUser = UserManager.getCurrentUser();
+            if (currentUser) {
+                updateUIForLoggedInUser(currentUser);
+            } else {
+                updateUIForLoggedOutUser();
+            }
+        });
+    </script>
+
+    <div class="main-container">
+        <h1>QA Learning Hub</h1>
+        <p>Select a category and quiz to begin your learning journey</p>
+
+        <div class="categories-container">
+            <!-- Personal Organisation -->
+            <div class="category-dropdown">
+                <button class="category-btn">Personal Organisation</button>
+                <div class="dropdown-content">
+                    <a href="pages/communication-quiz.html">Communication Skills Quiz</a>
+                    <a href="pages/tester-mindset-quiz.html">Tester Mindset Quiz</a>
+                    <a href="pages/time-management-quiz.html">Time Management Quiz</a>
+                </div>
+            </div>
+
+            <!-- Risk -->
+            <div class="category-dropdown">
+                <button class="category-btn">Risk</button>
+                <div class="dropdown-content">
+                    <a href="pages/risk-analysis.html">Risk Analysis Quiz</a>
+                    <a href="pages/risk-management.html">Risk Management Quiz</a>
+                </div>
+            </div>
+
+            <!-- Test Execution -->
+            <div class="category-dropdown">
+                <button class="category-btn">Test Execution</button>
+                <div class="dropdown-content">
+                    <a href="pages/non-functional-quiz.html">Risk Analysis Quiz</a>
+                    <a href="pages/test-support.html">Test Support Quiz</a>
+                    <a href="pages/issue-verification.html">Issue Verification Quiz</a>
+                </div>
+            </div>
+
+            <!-- Tickets and Tracking -->
+            <div class="category-dropdown">
+                <button class="category-btn">Tickets and Tracking</button>
+                <div class="dropdown-content">
+                    <a href="pages/issue-tracking-tools.html">Issue Tracking Tools Quiz</a>
+                    <a href="pages/raising-tickets.html">Raising Tickets Quiz</a>
+                    <a href="pages/reports-quiz.html">Reports Quiz</a>
+                </div>
+            </div>
+
+            <!-- Misc -->
+            <div class="category-dropdown">
+                <button class="category-btn">Misc</button>
+                <div class="dropdown-content">
+                    <a href="pages/initiative-quiz.html">Initiative Quiz</a>
+                </div>
+            </div>
+
+            <!-- A11y -->
+            <div class="category-dropdown">
+                <button class="category-btn">Accessibility Training</button>
+                <div class="dropdown-content">
+                    <p class="coming-soon">Quizzes coming soon!</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="admin-link">
+        <a href="admin.html" class="admin-button">Admin Panel</a>
+    </div>
 </body>
 </html>
