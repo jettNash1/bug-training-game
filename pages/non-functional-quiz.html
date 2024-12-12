@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Non-functional Testing Quiz</title>
+    <link rel="stylesheet" href="../styles.css">
+    <script src="../user.js"></script>
+    <script src="../quiz-helper.js"></script>
+    <script src="../quizzes/non-functional-quiz.js"></script>
+</head>
+<body>
+    <div class="nav-container">
+        <a href="../index.html" class="back-btn" 
+           tabindex="0" 
+           role="link" 
+           aria-label="Return to Quiz Hub">← Back to Hub</a>
+    </div>
+    <div class="game-container">
+        <div id="progress-section" role="progressbar" aria-label="Quiz Progress">
+            <div class="progress-info">
+                <span id="level-indicator" aria-live="polite">Level: Basic</span>
+                <span id="experience-display" aria-live="polite">XP: 0/300</span>
+            </div>
+            <div class="progress-bar">
+                <div id="progress-fill"></div>
+            </div>
+            <div id="question-progress" aria-live="polite">Question: 1/15</div>
+        </div>
+
+        <div id="game-screen" role="main" aria-live="polite">
+            <h2 id="scenario-title" tabindex="0"></h2>
+            <p id="scenario-description" tabindex="0"></p>
+            
+            <form id="options-form" role="form">
+                <div id="options-container" role="radiogroup" aria-labelledby="scenario-title"></div>
+                <button type="submit" 
+                        id="submit-btn" 
+                        tabindex="0" 
+                        aria-label="Submit your answer"
+                        class="primary-button">Submit Answer</button>
+            </form>
+        </div>
+
+        <div id="outcome-screen" class="hidden" role="alert" aria-live="assertive">
+            <h3 tabindex="0">Outcome</h3>
+            <p id="outcome-text" tabindex="0"></p>
+            <div id="rewards" tabindex="0">
+                <p id="xp-gained"></p>
+                <p id="tool-gained"></p>
+            </div>
+            <button id="continue-btn" 
+                    tabindex="0" 
+                    aria-label="Continue to next question"
+                    class="primary-button">Continue</button>
+        </div>
+
+        <div id="end-screen" class="hidden" role="complementary">
+            <h2 tabindex="0">Quiz Complete!</h2>
+            <div id="final-score" tabindex="0"></div>
+            <div id="performance-summary" tabindex="0"></div>
+            <h3 tabindex="0">Question Review</h3>
+            <div id="question-review" role="list"></div>
+            <h3 tabindex="0">Recommendations</h3>
+            <div id="recommendations" role="list"></div>
+            <button id="restart-btn" 
+                    tabindex="0" 
+                    aria-label="Play the quiz again"
+                    class="primary-button">Try Again</button>
+        </div>
+    </div>
+</body>
+</html> 
