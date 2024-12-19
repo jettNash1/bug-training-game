@@ -1,5 +1,14 @@
 // Update any relative path references
 require('dotenv').config({ path: '../.env' });
+require('dotenv').config({ path: '.env' });
+
+// Add this after dotenv config to debug environment variables
+console.log('Environment check:', {
+    nodeEnv: process.env.NODE_ENV,
+    hasAdminUser: !!process.env.ADMIN_USERNAME,
+    hasAdminPass: !!process.env.ADMIN_PASSWORD,
+    hasJwtSecret: !!process.env.JWT_SECRET
+});
 
 // Rest of your server code remains the same
 const express = require('express');
@@ -59,6 +68,16 @@ app.use((err, req, res, next) => {
         });
     }
     next(err);
+});
+
+// Add this after your other error middleware
+app.use((err, req, res, next) => {
+    console.error('Server Error:', err);
+    res.status(err.status || 500).json({ 
+        success: false, 
+        message: 'Server error',
+        error: process.env.NODE_ENV === 'production' ? null : err.message
+    });
 });
 
 // Start server

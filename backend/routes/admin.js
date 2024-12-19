@@ -10,7 +10,22 @@ router.post('/login', async (req, res) => {
         console.log('Admin login attempt:', req.body);
         const { username, password } = req.body;
         
+        // Debug log to check environment variables
+        console.log('Checking credentials. Expected:', {
+            expectedUser: process.env.ADMIN_USERNAME,
+            hasPassword: !!process.env.ADMIN_PASSWORD,
+            hasSecret: !!process.env.JWT_SECRET
+        });
+        
         // Check against environment variables
+        if (!process.env.ADMIN_USERNAME || !process.env.ADMIN_PASSWORD || !process.env.JWT_SECRET) {
+            console.error('Missing required environment variables');
+            return res.status(500).json({
+                success: false,
+                message: 'Server configuration error'
+            });
+        }
+
         if (username === process.env.ADMIN_USERNAME && 
             password === process.env.ADMIN_PASSWORD) {
             
