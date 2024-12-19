@@ -1,7 +1,43 @@
 const express = require('express');
 const router = express.Router();
-const User = require('../../models/User');
+const User = require('../models/user.model');
+const jwt = require('jsonwebtoken');
 const auth = require('../middleware/auth');
+
+// Admin login
+router.post('/login', async (req, res) => {
+    try {
+        const { username, password } = req.body;
+        
+        // Check against environment variables
+        if (username === process.env.ADMIN_USERNAME && 
+            password === process.env.ADMIN_PASSWORD) {
+            
+            const token = jwt.sign(
+                { isAdmin: true }, 
+                process.env.JWT_SECRET,
+                { expiresIn: '24h' }
+            );
+
+            res.json({ 
+                success: true,
+                token,
+                message: 'Admin login successful'
+            });
+        } else {
+            res.status(401).json({ 
+                success: false, 
+                message: 'Invalid admin credentials' 
+            });
+        }
+    } catch (error) {
+        console.error('Admin login error:', error);
+        res.status(500).json({ 
+            success: false, 
+            message: 'Server error during admin login' 
+        });
+    }
+});
 
 router.get('/users', auth, async (req, res) => {
     try {
