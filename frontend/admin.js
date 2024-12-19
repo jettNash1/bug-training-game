@@ -174,7 +174,10 @@ class AdminDashboard {
         const content = document.getElementById('userDetailsContent');
         if (!panel || !content) return;
 
-        content.innerHTML = this.generateUserDetailsHTML(user);
+        content.innerHTML = `
+            <button class="close-button" onclick="dashboard.closeUserDetails()" aria-label="Close user details">×</button>
+            ${this.generateUserDetailsHTML(user)}
+        `;
         panel.classList.remove('hidden');
     }
 
@@ -301,6 +304,13 @@ class AdminDashboard {
     handleLogout() {
         localStorage.removeItem('adminToken');
         window.location.href = 'admin-login.html';
+    }
+
+    closeUserDetails() {
+        const panel = document.getElementById('userDetailsPanel');
+        if (panel) {
+            panel.classList.add('hidden');
+        }
     }
 }
 
