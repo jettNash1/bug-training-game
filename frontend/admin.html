@@ -1,0 +1,245 @@
+<!-- admin.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="QA Learning Hub Admin Panel - Manage users and track progress">
+    <title>Quiz Admin Panel</title>
+    <link rel="icon" type="image/x-icon" href="assets/favicon.ico">
+    <link rel="stylesheet" href="styles.css">
+    <script src="QuizUser.js"></script>
+    <script src="api-service.js"></script>
+    <script src="login.js"></script>
+    <script src="login-ui.js"></script>
+    <script src="quiz-helper.js"></script>
+    <script src="admin.js"></script>
+</head>
+<body>
+    <a href="#main-content" class="visually-hidden">Skip to main content</a>
+
+    <nav class="nav-container" aria-label="Main navigation">
+        <a href="index.html" 
+           class="back-btn" 
+           role="link" 
+           aria-label="Return to Quiz Hub"
+           onkeydown="if(event.key==='Enter') window.location.href='index.html'">
+            <span aria-hidden="true">←</span> Back to Hub
+        </a>
+    </nav>
+    
+    <main id="main-content" class="admin-container" role="main">
+        <!-- Login Form -->
+        <section id="adminLoginForm" class="admin-login-section" aria-labelledby="login-header">
+            <h1 id="login-header">Admin Login</h1>
+            <form class="form-group" onsubmit="event.preventDefault(); handleAdminLogin();">
+                <div class="form-field">
+                    <label for="adminUsername">Admin Username</label>
+                    <input type="text" 
+                           id="adminUsername" 
+                           name="username"
+                           aria-required="true"
+                           autocomplete="username">
+                </div>
+                <div class="form-field">
+                    <label for="adminPassword">Admin Password</label>
+                    <input type="password" 
+                           id="adminPassword" 
+                           name="password"
+                           aria-required="true"
+                           autocomplete="current-password">
+                </div>
+                <button type="submit" 
+                        aria-label="Login as Admin"
+                        onkeydown="if(event.key==='Enter') handleAdminLogin()">
+                    Login
+                </button>
+            </form>
+        </section>
+
+        <!-- Admin Dashboard -->
+        <section id="adminDashboard" class="admin-dashboard hidden" aria-labelledby="dashboard-header">
+            <div class="dashboard-header">
+                <h1 id="dashboard-header">Admin Dashboard</h1>
+                <div class="dashboard-controls" role="toolbar" aria-label="Dashboard controls">
+                    <div class="filter-sort-controls">
+                        <label for="quizFilter" class="visually-hidden">Filter quizzes</label>
+                        <select id="quizFilter" 
+                                aria-label="Filter quizzes by category"
+                                onchange="handleQuizFilter(this.value)">
+                            <option value="all">All Quizzes</option>
+                            <option value="issue-tracking">Issue Tracking Tools</option>
+                            <option value="issue-verification">Issue Verification</option>
+                            <option value="non-functional">Non-functional Testing</option>
+                            <option value="raising-tickets">Raising Tickets</option>
+                            <option value="reports">Reports</option>
+                            <option value="risk-analysis">Risk Analysis</option>
+                            <option value="risk-management">Risk Management</option>
+                            <option value="test-support">Test Support</option>
+                            <option value="tester-mindset">Tester Mindset</option>
+                            <option value="time-management">Time Management</option>
+                        </select>
+                        <select id="sortBy" aria-label="Sort by">
+                            <option value="username-asc">Username (A-Z)</option>
+                            <option value="username-desc">Username (Z-A)</option>
+                            <option value="score-high">Highest Score</option>
+                            <option value="score-low">Lowest Score</option>
+                            <option value="recent">Most Recent</option>
+                        </select>
+                    </div>
+                    <button onclick="handleAdminLogout()" class="logout-btn" aria-label="Logout">Logout</button>
+                </div>
+            </div>
+            <div id="usersList" class="users-list">
+                <!-- User cards will be populated here -->
+            </div>
+        </section>
+    </main>
+
+    <script>
+        const adminManager = new AdminManager();
+
+        // Check login status on page load
+        window.addEventListener('load', () => {
+            if (adminManager.isLoggedIn()) {
+                showAdminDashboard();
+            }
+        });
+
+        function handleAdminLogin() {
+            const username = document.getElementById('adminUsername').value;
+            const password = document.getElementById('adminPassword').value;
+
+            if (adminManager.login(username, password)) {
+                showAdminDashboard();
+            } else {
+                alert('Invalid admin credentials');
+            }
+        }
+
+        function handleAdminLogout() {
+            adminManager.logout();
+            document.getElementById('adminLoginForm').classList.remove('hidden');
+            document.getElementById('adminDashboard').classList.add('hidden');
+        }
+
+        function showAdminDashboard() {
+            document.getElementById('adminLoginForm').classList.add('hidden');
+            document.getElementById('adminDashboard').classList.remove('hidden');
+            updateDashboard();
+        }
+
+        function updateDashboard() {
+            const users = adminManager.getAllUsers();
+            const usersList = document.getElementById('usersList');
+            const quizFilter = document.getElementById('quizFilter').value;
+            const sortBy = document.getElementById('sortBy').value;
+            
+            let filteredUsers = users;
+            
+            if (quizFilter !== 'all') {
+                filteredUsers = users.filter(user => 
+                    user.quizResults.some(result => 
+                        result.quizName === quizFilter
+                    )
+                );
+            }
+
+            // Sort users
+            filteredUsers.sort((a, b) => {
+                switch (sortBy) {
+                    case 'username-asc':
+                        return a.username.localeCompare(b.username);
+                    case 'username-desc':
+                        return b.username.localeCompare(a.username);
+                    case 'score-high':
+                        return getAverageScore(b.quizResults) - getAverageScore(a.quizResults);
+                    case 'score-low':
+                        return getAverageScore(a.quizResults) - getAverageScore(b.quizResults);
+                    case 'recent':
+                        return getMostRecentQuizDate(b.quizResults) - getMostRecentQuizDate(a.quizResults);
+                    default:
+                        return 0;
+                }
+            });
+
+            usersList.innerHTML = '';
+
+            filteredUsers.forEach(user => {
+                const card = document.createElement('div');
+                card.className = 'user-card';
+
+                const quizResultsMap = {};
+                if (Array.isArray(user.quizResults)) {
+                    user.quizResults.forEach(result => {
+                        quizResultsMap[result.quizName] = result;
+                    });
+                }
+
+                const totalScore = getAverageScore(user.quizResults);
+
+                card.innerHTML = `
+                    <div class="user-header">
+                        <h4>${user.username}</h4>
+                        <div class="total-score">Overall Score: ${totalScore.toFixed(1)}%</div>
+                    </div>
+                    <div class="quiz-results">
+                        ${generateQuizResultsHtml(quizResultsMap)}
+                    </div>
+                `;
+
+                usersList.appendChild(card);
+            });
+        }
+
+        function generateQuizResultsHtml(quizResultsMap) {
+            const quizTypes = {
+                'Issue Tracking Tools': 'issue-tracking',
+                'Issue Verification': 'issue-verification',
+                'Non-functional Testing': 'non-functional',
+                'Raising Tickets': 'raising-tickets',
+                'Reports': 'reports',
+                'Risk Analysis': 'risk-analysis',
+                'Risk Management': 'risk-management',
+                'Test Support': 'test-support',
+                'Tester Mindset': 'tester-mindset',
+                'Time Management': 'time-management'
+            };
+
+            return Object.entries(quizTypes)
+                .map(([displayName, quizName]) => {
+                    const result = quizResultsMap[quizName];
+                    return `
+                        <div class="quiz-result ${result ? 'completed' : 'not-completed'}">
+                            <strong>${displayName}:</strong>
+                            <div class="quiz-info">
+                                ${result ? 
+                                    `<span class="quiz-score">${result.score}%</span>
+                                     <span class="completion-date">Completed: ${new Date(result.completedAt).toLocaleDateString()}</span>` 
+                                    : 'Not taken'
+                                }
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+        }
+
+        function getAverageScore(quizResults) {
+            if (!Array.isArray(quizResults) || quizResults.length === 0) return 0;
+            const sum = quizResults.reduce((acc, result) => acc + (result.score || 0), 0);
+            return sum / quizResults.length;
+        }
+
+        function getMostRecentQuizDate(quizResults) {
+            if (!Array.isArray(quizResults) || quizResults.length === 0) return 0;
+            return Math.max(...quizResults.map(result => 
+                result.completedAt ? new Date(result.completedAt).getTime() : 0
+            ));
+        }
+
+        // Add event listeners for filter and sort controls
+        document.getElementById('quizFilter').addEventListener('change', updateDashboard);
+        document.getElementById('sortBy').addEventListener('change', updateDashboard);
+    </script>
+</body>
+</html>

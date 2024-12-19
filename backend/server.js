@@ -34,7 +34,7 @@ mongoose.connect(process.env.MONGODB_URI)
     .catch(err => console.error('MongoDB connection error:', err));
 
 // Routes
-const userRoutes = require('./quiz-backend/routes/users');
+const userRoutes = require('./routes/users');
 app.use('/api/users', userRoutes);
 
 // Serve static files from the build directory
