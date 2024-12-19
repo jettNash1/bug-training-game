@@ -1,4 +1,4 @@
-class IssueTrackingQuiz extends BaseQuiz {
+class IssueTrackingToolsQuiz extends BaseQuiz {
     constructor() {
         const config = {
             maxXP: 300,
@@ -8,15 +8,29 @@ class IssueTrackingQuiz extends BaseQuiz {
                 advanced: { questions: 15, minXP: 300 }
             },
             performanceThresholds: [
-                { threshold: 350, message: '🏆 Outstanding! You have an excellent understanding of issue tracking tools!' },
-                { threshold: 250, message: '👏 Great job! You show strong knowledge of issue tracking tools!' },
-                { threshold: 150, message: '👍 Good work! Keep developing your understanding of issue tracking tools.' },
-                { threshold: 0, message: '📚 Review the issue tracking tools guide and try again!' }
+                { threshold: 250, message: '🏆 Outstanding! You\'re an issue tracking expert!' },
+                { threshold: 200, message: '👏 Great job! You\'ve shown strong tool management skills!' },
+                { threshold: 150, message: '👍 Good work! Keep practicing to improve further.' },
+                { threshold: 0, message: '📚 Consider reviewing issue tracking best practices and try again!' }
             ]
         };
         
         super(config);
         
+        // Initialize screen references
+        this.gameScreen = null;
+        this.outcomeScreen = null;
+        this.endScreen = null;
+        
+        // Set the quiz name
+        Object.defineProperty(this, 'quizName', {
+            value: 'issue-tracking-tools',
+            writable: false,
+            configurable: false,
+            enumerable: true
+        });
+        
+        // Initialize player state
         this.player = {
             name: '',
             experience: 0,
@@ -472,35 +486,8 @@ class IssueTrackingQuiz extends BaseQuiz {
             }
         ];
 
-        this.initializeUI();
-        
-        document.addEventListener('keydown', (e) => {
-            if (e.key === 'Enter' && e.target.type === 'radio') {
-                this.handleAnswer();
-            }
-        });
-
-        this.isLoading = false;
-    }
-
-    async startGame() {
-        try {
-            this.isLoading = true;
-            this.gameScreen.setAttribute('aria-busy', 'true');
-            
-            this.player.experience = 0;
-            this.player.tools = [];
-            this.player.currentScenario = 0;
-            this.player.questionHistory = [];
-            
-            await this.displayScenario();
-        } catch (error) {
-            console.error('Failed to start game:', error);
-            this.showError('Failed to start the quiz. Please try refreshing the page.');
-        } finally {
-            this.isLoading = false;
-            this.gameScreen.setAttribute('aria-busy', 'false');
-        }
+        // Initialize UI and add event listeners
+        this.initializeEventListeners();
     }
 
     showError(message) {
@@ -508,26 +495,60 @@ class IssueTrackingQuiz extends BaseQuiz {
         errorDiv.role = 'alert';
         errorDiv.className = 'error-message';
         errorDiv.textContent = message;
-        this.gameScreen.prepend(errorDiv);
-        
-        setTimeout(() => errorDiv.remove(), 5000);
+        this.gameScreen = document.getElementById('game-screen');
+        if (this.gameScreen) {
+            this.gameScreen.prepend(errorDiv);
+            setTimeout(() => errorDiv.remove(), 5000);
+        }
     }
 
-    nextScenario() {
-        this.outcomeScreen.classList.add('hidden');
-        this.gameScreen.classList.remove('hidden');
-        this.player.currentScenario++;
-        this.displayScenario();
+    async startGame() {
+        try {
+            // Initialize game screen reference
+            this.gameScreen = document.getElementById('game-screen');
+            this.outcomeScreen = document.getElementById('outcome-screen');
+            this.endScreen = document.getElementById('end-screen');
+            
+            this.player.experience = 0;
+            this.player.tools = [];
+            this.player.currentScenario = 0;
+            this.player.questionHistory = [];
+            
+            // Clear any existing transition messages
+            const transitionContainer = document.getElementById('level-transition-container');
+            if (transitionContainer) {
+                transitionContainer.innerHTML = '';
+                transitionContainer.classList.remove('active');
+            }
+            
+            await this.displayScenario();
+        } catch (error) {
+            console.error('Failed to start game:', error);
+            this.showError('Failed to start the quiz. Please try refreshing the page.');
+        }
+    }
+
+    initializeEventListeners() {
+        // Add event listeners for the continue and restart buttons
+        document.getElementById('continue-btn').addEventListener('click', () => this.nextScenario());
+        document.getElementById('restart-btn').addEventListener('click', () => this.restartGame());
+
+        // Add form submission handler
+        document.getElementById('options-form').addEventListener('submit', (e) => {
+            e.preventDefault();
+            this.handleAnswer();
+        });
+
+        // Add keyboard navigation
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' && e.target.type === 'radio') {
+                this.handleAnswer();
+            }
+        });
     }
 
     displayScenario() {
         const currentScenarios = this.getCurrentScenarios();
-        
-        // Check if we've completed all questions
-        if (this.player.questionHistory.length >= 15) {
-            this.endGame();
-            return;
-        }
         
         if (this.player.currentScenario >= currentScenarios.length) {
             const totalQuestionsAnswered = this.player.questionHistory.length;
@@ -542,17 +563,46 @@ class IssueTrackingQuiz extends BaseQuiz {
             return;
         }
 
-        const scenario = this.shuffleScenarioOptions(currentScenarios[this.player.currentScenario]);
-
-        if (this.player.currentScenario === 0) {
+        const scenario = currentScenarios[this.player.currentScenario];
+        
+        // Show level transition message at the start of each level
+        const previousLevel = this.player.questionHistory.length > 0 ? 
+            this.player.questionHistory[this.player.questionHistory.length - 1].scenario.level : null;
+            
+        if (this.player.currentScenario === 0 || previousLevel !== scenario.level) {
+            const transitionContainer = document.getElementById('level-transition-container');
+            transitionContainer.innerHTML = ''; // Clear any existing messages
+            
             const levelMessage = document.createElement('div');
             levelMessage.className = 'level-transition';
+            levelMessage.setAttribute('role', 'alert');
             levelMessage.textContent = `Starting ${scenario.level} Questions`;
-            this.gameScreen.insertBefore(levelMessage, this.gameScreen.firstChild);
             
-            setTimeout(() => levelMessage.remove(), 3000);
+            transitionContainer.appendChild(levelMessage);
+            transitionContainer.classList.add('active');
             
+            // Update the level indicator
             document.getElementById('level-indicator').textContent = `Level: ${scenario.level}`;
+            
+            // Remove the message and container height after animation
+            setTimeout(() => {
+                transitionContainer.classList.remove('active');
+                setTimeout(() => {
+                    transitionContainer.innerHTML = '';
+                }, 300); // Wait for height transition to complete
+            }, 3000);
+        }
+
+        // Create a copy of options with their original indices
+        const shuffledOptions = scenario.options.map((option, index) => ({
+            ...option,
+            originalIndex: index
+        }));
+        
+        // Shuffle the options
+        for (let i = shuffledOptions.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [shuffledOptions[i], shuffledOptions[j]] = [shuffledOptions[j], shuffledOptions[i]];
         }
 
         document.getElementById('scenario-title').textContent = scenario.title;
@@ -561,13 +611,13 @@ class IssueTrackingQuiz extends BaseQuiz {
         const optionsContainer = document.getElementById('options-container');
         optionsContainer.innerHTML = '';
         
-        scenario.options.forEach((option, index) => {
+        shuffledOptions.forEach((option, index) => {
             const optionElement = document.createElement('div');
             optionElement.className = 'option';
             optionElement.innerHTML = `
                 <input type="radio" 
                     name="option" 
-                    value="${index}" 
+                    value="${option.originalIndex}" 
                     id="option${index}"
                     tabindex="0"
                     aria-label="${option.text}"
@@ -577,24 +627,7 @@ class IssueTrackingQuiz extends BaseQuiz {
             optionsContainer.appendChild(optionElement);
         });
 
-        // Focus on first option for keyboard navigation
-        const firstOption = optionsContainer.querySelector('input[type="radio"]');
-        if (firstOption) {
-            firstOption.focus();
-        }
-
         this.updateProgress();
-    }
-
-    getCurrentScenarios() {
-        const totalAnswered = this.player.questionHistory.length;
-        
-        if (totalAnswered >= 10 && this.player.experience >= 150) {
-            return this.advancedScenarios;
-        } else if (totalAnswered >= 5 && this.player.experience >= 50) {
-            return this.intermediateScenarios;
-        }
-        return this.basicScenarios;
     }
 
     handleAnswer() {
@@ -602,90 +635,59 @@ class IssueTrackingQuiz extends BaseQuiz {
         if (!selectedOption) return;
 
         const currentScenarios = this.getCurrentScenarios();
-        const originalScenario = currentScenarios[this.player.currentScenario];
-        const choice = parseInt(selectedOption.value);
+        const scenario = currentScenarios[this.player.currentScenario];
+        const originalIndex = parseInt(selectedOption.value);
         
-        // Get the selected answer text from the shuffled options
-        const selectedText = document.querySelector(`label[for="option${choice}"]`).textContent;
-        
-        // Find the matching original option to get the correct outcome and experience
-        const selectedAnswer = originalScenario.options.find(option => option.text === selectedText);
+        // Get the original option directly using the stored original index
+        const selectedAnswer = scenario.options[originalIndex];
 
+        // Update player experience and history
+        this.player.experience = Math.max(0, Math.min(this.maxXP, this.player.experience + selectedAnswer.experience));
         this.player.questionHistory.push({
-            scenario: originalScenario,
+            scenario: scenario,
             selectedAnswer: selectedAnswer,
-            maxPossibleXP: Math.max(...originalScenario.options.map(o => o.experience))
-        }); 
+            maxPossibleXP: Math.max(...scenario.options.map(o => o.experience))
+        });
 
+        // Show outcome screen
         this.gameScreen.classList.add('hidden');
         this.outcomeScreen.classList.remove('hidden');
         
+        // Update outcome display
         document.getElementById('outcome-text').textContent = selectedAnswer.outcome;
-        document.getElementById('xp-gained').textContent = `Experience gained: ${selectedAnswer.experience}`;
+        const xpText = selectedAnswer.experience >= 0 ? 
+            `Experience gained: +${selectedAnswer.experience}` : 
+            `Experience: ${selectedAnswer.experience}`;
+        document.getElementById('xp-gained').textContent = xpText;
         
         if (selectedAnswer.tool) {
             document.getElementById('tool-gained').textContent = `Tool acquired: ${selectedAnswer.tool}`;
-            this.player.tools.push(selectedAnswer.tool);
+            if (!this.player.tools.includes(selectedAnswer.tool)) {
+                this.player.tools.push(selectedAnswer.tool);
+            }
         } else {
             document.getElementById('tool-gained').textContent = '';
         }
 
-        this.player.experience += selectedAnswer.experience;
         this.updateProgress();
     }
 
-    nextScenario() {
-        this.outcomeScreen.classList.add('hidden');
-        this.gameScreen.classList.remove('hidden');
-        this.player.currentScenario++;
-        this.displayScenario();
-    }
-
-    restartGame() {
-        this.endScreen.classList.add('hidden');
-        this.gameScreen.classList.remove('hidden');
-        this.startGame();
-    }
-
-    endGame() {
-        try {
-            this.gameScreen.classList.add('hidden');
-            this.outcomeScreen.classList.add('hidden');
-            this.endScreen.classList.remove('hidden');
-
-            const finalScore = Math.min(this.player.experience, this.maxXP);
-            const scorePercentage = Math.round((finalScore / this.maxXP) * 100);
-            
-            // Save the quiz result for the current user
-            const currentUsername = localStorage.getItem('currentUser');
-            if (currentUsername) {
-                try {
-                    const user = new QuizUser(currentUsername);
-                    user.updateQuizScore('tester-mindset', scorePercentage);
-                    console.log('Quiz score saved successfully:', scorePercentage);
-                } catch (error) {
-                    console.error('Error saving quiz score:', error);
-                }
-            } else {
-                console.log('No user logged in, score not saved');
-            }
-
-            document.getElementById('final-score').textContent = `Final Score: ${finalScore}/${this.maxXP}`;
-
-            const performanceSummary = document.getElementById('performance-summary');
-            const threshold = this.performanceThresholds.find(t => finalScore >= t.threshold);
-            performanceSummary.textContent = threshold.message;
-
-            this.displayQuestionReview();
-            this.generateRecommendations();
-        } catch (error) {
-            console.error('Error in endGame:', error);
+    getCurrentScenarios() {
+        const totalAnswered = this.player.questionHistory.length;
+        const currentXP = this.player.experience;
+        
+        // Check for level progression
+        if (totalAnswered >= 10 && currentXP >= this.levelThresholds.intermediate.minXP) {
+            return this.advancedScenarios;
+        } else if (totalAnswered >= 5 && currentXP >= this.levelThresholds.basic.minXP) {
+            return this.intermediateScenarios;
         }
+        return this.basicScenarios;
     }
 }
 
 // Start the quiz when the page loads
 document.addEventListener('DOMContentLoaded', () => {
-    const quiz = new IssueTrackingQuiz();
+    const quiz = new IssueTrackingToolsQuiz();
     quiz.startGame();
 }); 

@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Issue Verification Quiz</title>
+    <title>Communication Skills Quiz</title>
     <link rel="icon" type="image/x-icon" href="../assets/favicon.ico">
     <link rel="stylesheet" href="../styles.css">
     <script src="../QuizUser.js"></script>
@@ -11,7 +11,7 @@
     <script src="../login.js"></script>
     <script src="../auth.js"></script>
     <script src="../quiz-helper.js"></script>
-    <script src="../quizzes/issue-verification-quiz.js"></script>
+    <script src="../quizzes/CMS-Testing-quiz.js"></script>
 </head>
 <body>
     <header class="app-header">
@@ -45,31 +45,29 @@
         <!-- Game Screen -->
         <div id="game-screen" class="quiz-card" role="main" aria-live="polite">
             <div id="level-transition-container"></div>
+            
             <div class="question-section">
                 <h2 id="scenario-title" tabindex="0"></h2>
                 <p id="scenario-description" tabindex="0"></p>
             </div>
-            
-            <form id="options-form" class="options-section" role="form">
-                <div id="options-container" role="radiogroup" aria-labelledby="scenario-title">
+            <form id="options-form" class="options-section">
+                <div id="options-container">
                     <!-- Options will be dynamically inserted here -->
                 </div>
-                <button type="submit" id="submit-btn" class="submit-button" tabindex="0" 
-                        aria-label="Submit your answer">Submit Answer</button>
+                <button type="submit" id="submit-btn" class="submit-button">Submit Answer</button>
             </form>
         </div>
 
         <!-- Outcome Screen -->
-        <div id="outcome-screen" class="quiz-card hidden" role="alert" aria-live="assertive">
+        <div id="outcome-screen" class="quiz-card hidden">
             <div class="outcome-content">
-                <h3 tabindex="0">Outcome</h3>
-                <p id="outcome-text" tabindex="0"></p>
-                <div id="rewards" tabindex="0">
+                <h3>Outcome</h3>
+                <p id="outcome-text"></p>
+                <div id="rewards">
                     <p id="xp-gained"></p>
                     <p id="tool-gained"></p>
                 </div>
-                <button id="continue-btn" class="submit-button" tabindex="0" 
-                        aria-label="Continue to next question">Continue</button>
+                <button id="continue-btn" class="submit-button">Continue</button>
             </div>
         </div>
 
@@ -90,6 +88,7 @@
             </div>
             
             <button id="restart-btn" class="submit-button">Try Again</button>
+            <a href="../index.html" class="back-link">Return to Hub</a>
         </div>
     </div>
 </body>

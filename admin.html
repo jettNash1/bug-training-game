@@ -4,7 +4,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="QA Learning Hub Admin Panel - Manage users and track progress">
     <title>Quiz Admin Panel</title>
+    <link rel="icon" type="image/x-icon" href="assets/favicon.ico">
     <link rel="stylesheet" href="styles.css">
     <script src="QuizUser.js"></script>
     <script src="api-service.js"></script>
@@ -14,31 +16,57 @@
     <script src="admin.js"></script>
 </head>
 <body>
-    <div class="nav-container">
-        <a href="index.html" class="back-btn" 
-           tabindex="0" 
+    <a href="#main-content" class="visually-hidden">Skip to main content</a>
+
+    <nav class="nav-container" aria-label="Main navigation">
+        <a href="index.html" 
+           class="back-btn" 
            role="link" 
-           aria-label="Return to Quiz Hub">← Back to Hub</a>
-    </div>
+           aria-label="Return to Quiz Hub"
+           onkeydown="if(event.key==='Enter') window.location.href='index.html'">
+            <span aria-hidden="true">←</span> Back to Hub
+        </a>
+    </nav>
     
-    <div class="admin-container">
+    <main id="main-content" class="admin-container" role="main">
         <!-- Login Form -->
-        <div id="adminLoginForm" class="admin-login-section">
-            <h2>Admin Login</h2>
-            <div class="form-group">
-                <input type="text" id="adminUsername" placeholder="Admin Username" aria-label="Admin Username">
-                <input type="password" id="adminPassword" placeholder="Admin Password" aria-label="Admin Password">
-                <button onclick="handleAdminLogin()" aria-label="Login as Admin">Login</button>
-            </div>
-        </div>
+        <section id="adminLoginForm" class="admin-login-section" aria-labelledby="login-header">
+            <h1 id="login-header">Admin Login</h1>
+            <form class="form-group" onsubmit="event.preventDefault(); handleAdminLogin();">
+                <div class="form-field">
+                    <label for="adminUsername">Admin Username</label>
+                    <input type="text" 
+                           id="adminUsername" 
+                           name="username"
+                           aria-required="true"
+                           autocomplete="username">
+                </div>
+                <div class="form-field">
+                    <label for="adminPassword">Admin Password</label>
+                    <input type="password" 
+                           id="adminPassword" 
+                           name="password"
+                           aria-required="true"
+                           autocomplete="current-password">
+                </div>
+                <button type="submit" 
+                        aria-label="Login as Admin"
+                        onkeydown="if(event.key==='Enter') handleAdminLogin()">
+                    Login
+                </button>
+            </form>
+        </section>
 
         <!-- Admin Dashboard -->
-        <div id="adminDashboard" class="admin-dashboard hidden">
+        <section id="adminDashboard" class="admin-dashboard hidden" aria-labelledby="dashboard-header">
             <div class="dashboard-header">
-                <h2>Admin Dashboard</h2>
-                <div class="dashboard-controls">
+                <h1 id="dashboard-header">Admin Dashboard</h1>
+                <div class="dashboard-controls" role="toolbar" aria-label="Dashboard controls">
                     <div class="filter-sort-controls">
-                        <select id="quizFilter" aria-label="Filter by quiz">
+                        <label for="quizFilter" class="visually-hidden">Filter quizzes</label>
+                        <select id="quizFilter" 
+                                aria-label="Filter quizzes by category"
+                                onchange="handleQuizFilter(this.value)">
                             <option value="all">All Quizzes</option>
                             <option value="issue-tracking">Issue Tracking Tools</option>
                             <option value="issue-verification">Issue Verification</option>
@@ -65,8 +93,8 @@
             <div id="usersList" class="users-list">
                 <!-- User cards will be populated here -->
             </div>
-        </div>
-    </div>
+        </section>
+    </main>
 
     <script>
         const adminManager = new AdminManager();

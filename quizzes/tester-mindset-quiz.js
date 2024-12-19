@@ -8,14 +8,22 @@ class TesterMindsetQuiz extends BaseQuiz {
                 advanced: { questions: 15, minXP: 300 }
             },
             performanceThresholds: [
-                { threshold: 350, message: '🏆 Outstanding! You have an excellent tester mindset!' },
-                { threshold: 250, message: '👏 Great job! You show strong testing instincts!' },
-                { threshold: 150, message: '👍 Good work! Keep developing your tester mindset.' },
-                { threshold: 0, message: '📚 Review the tester mindset guide and try again!' }
+                { threshold: 250, message: '🏆 Outstanding! You\'re a testing mindset expert!' },
+                { threshold: 200, message: '👏 Great job! You\'ve shown strong testing instincts!' },
+                { threshold: 150, message: '👍 Good work! Keep practicing to improve further.' },
+                { threshold: 0, message: '📚 Consider reviewing testing mindset best practices and try again!' }
             ]
         };
         
         super(config);
+        
+        // Set the quiz name as a non-configurable, non-writable property
+        Object.defineProperty(this, 'quizName', {
+            value: 'tester-mindset',
+            writable: false,
+            configurable: false,
+            enumerable: true
+        });
         
         this.player = {
             name: '',
@@ -472,13 +480,14 @@ class TesterMindsetQuiz extends BaseQuiz {
             }
         ];
 
-        this.initializeUI();
-        
-        document.addEventListener('keydown', (e) => {
-            if (e.key === 'Enter' && e.target.type === 'radio') {
-                this.handleAnswer();
-            }
-        });
+        // Initialize UI elements
+        this.gameScreen = document.getElementById('game-screen');
+        this.outcomeScreen = document.getElementById('outcome-screen');
+        this.endScreen = document.getElementById('end-screen');
+        this.levelTransitionContainer = document.getElementById('level-transition-container');
+
+        // Initialize event listeners
+        this.initializeEventListeners();
 
         this.isLoading = false;
     }
@@ -513,21 +522,8 @@ class TesterMindsetQuiz extends BaseQuiz {
         setTimeout(() => errorDiv.remove(), 5000);
     }
 
-    nextScenario() {
-        this.outcomeScreen.classList.add('hidden');
-        this.gameScreen.classList.remove('hidden');
-        this.player.currentScenario++;
-        this.displayScenario();
-    }
-
     displayScenario() {
         const currentScenarios = this.getCurrentScenarios();
-        
-        // Check if we've completed all questions
-        if (this.player.questionHistory.length >= 15) {
-            this.endGame();
-            return;
-        }
         
         if (this.player.currentScenario >= currentScenarios.length) {
             const totalQuestionsAnswered = this.player.questionHistory.length;
@@ -542,32 +538,56 @@ class TesterMindsetQuiz extends BaseQuiz {
             return;
         }
 
-        const scenario = this.shuffleScenarioOptions(currentScenarios[this.player.currentScenario]);
+        const scenario = currentScenarios[this.player.currentScenario];
 
-        if (this.player.currentScenario === 0) {
+        const previousLevel = this.player.questionHistory.length > 0 ? 
+            this.player.questionHistory[this.player.questionHistory.length - 1].scenario.level : null;
+        
+        if (this.player.currentScenario === 0 || previousLevel !== scenario.level) {
+            this.levelTransitionContainer.innerHTML = '';
             const levelMessage = document.createElement('div');
             levelMessage.className = 'level-transition';
+            levelMessage.setAttribute('role', 'alert');
             levelMessage.textContent = `Starting ${scenario.level} Questions`;
-            this.gameScreen.insertBefore(levelMessage, this.gameScreen.firstChild);
+            this.levelTransitionContainer.appendChild(levelMessage);
+            this.levelTransitionContainer.classList.add('active');
             
-            setTimeout(() => levelMessage.remove(), 3000);
-            
+            // Update the level indicator
             document.getElementById('level-indicator').textContent = `Level: ${scenario.level}`;
+            
+            setTimeout(() => {
+                this.levelTransitionContainer.classList.remove('active');
+                setTimeout(() => {
+                    this.levelTransitionContainer.innerHTML = '';
+                }, 300);
+            }, 3000);
         }
 
+        // Update UI with scenario details
         document.getElementById('scenario-title').textContent = scenario.title;
         document.getElementById('scenario-description').textContent = scenario.description;
         
         const optionsContainer = document.getElementById('options-container');
         optionsContainer.innerHTML = '';
         
-        scenario.options.forEach((option, index) => {
+        const shuffledOptions = scenario.options.map((option, index) => ({
+            ...option,
+            originalIndex: index
+        }));
+        
+        // Shuffle the options
+        for (let i = shuffledOptions.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [shuffledOptions[i], shuffledOptions[j]] = [shuffledOptions[j], shuffledOptions[i]];
+        }
+        
+        shuffledOptions.forEach((option, index) => {
             const optionElement = document.createElement('div');
             optionElement.className = 'option';
             optionElement.innerHTML = `
                 <input type="radio" 
                     name="option" 
-                    value="${index}" 
+                    value="${option.originalIndex}" 
                     id="option${index}"
                     tabindex="0"
                     aria-label="${option.text}"
@@ -602,30 +622,30 @@ class TesterMindsetQuiz extends BaseQuiz {
         if (!selectedOption) return;
 
         const currentScenarios = this.getCurrentScenarios();
-        const originalScenario = currentScenarios[this.player.currentScenario];
-        const choice = parseInt(selectedOption.value);
-        
-        // Get the selected answer text from the shuffled options
-        const selectedText = document.querySelector(`label[for="option${choice}"]`).textContent;
-        
-        // Find the matching original option to get the correct outcome and experience
-        const selectedAnswer = originalScenario.options.find(option => option.text === selectedText);
+        const scenario = currentScenarios[this.player.currentScenario];
+        const originalIndex = parseInt(selectedOption.value);
+        const selectedAnswer = scenario.options[originalIndex];
 
         this.player.questionHistory.push({
-            scenario: originalScenario,
+            scenario: scenario,
             selectedAnswer: selectedAnswer,
-            maxPossibleXP: Math.max(...originalScenario.options.map(o => o.experience))
+            maxPossibleXP: Math.max(...scenario.options.map(o => o.experience))
         }); 
 
         this.gameScreen.classList.add('hidden');
         this.outcomeScreen.classList.remove('hidden');
         
         document.getElementById('outcome-text').textContent = selectedAnswer.outcome;
-        document.getElementById('xp-gained').textContent = `Experience gained: ${selectedAnswer.experience}`;
+        const xpText = selectedAnswer.experience >= 0 ? 
+            `Experience gained: +${selectedAnswer.experience}` : 
+            `Experience: ${selectedAnswer.experience}`;
+        document.getElementById('xp-gained').textContent = xpText;
         
         if (selectedAnswer.tool) {
             document.getElementById('tool-gained').textContent = `Tool acquired: ${selectedAnswer.tool}`;
-            this.player.tools.push(selectedAnswer.tool);
+            if (!this.player.tools.includes(selectedAnswer.tool)) {
+                this.player.tools.push(selectedAnswer.tool);
+            }
         } else {
             document.getElementById('tool-gained').textContent = '';
         }
@@ -681,6 +701,25 @@ class TesterMindsetQuiz extends BaseQuiz {
         } catch (error) {
             console.error('Error in endGame:', error);
         }
+    }
+
+    initializeEventListeners() {
+        // Add event listeners for the continue and restart buttons
+        document.getElementById('continue-btn').addEventListener('click', () => this.nextScenario());
+        document.getElementById('restart-btn').addEventListener('click', () => this.restartGame());
+
+        // Add form submission handler
+        document.getElementById('options-form').addEventListener('submit', (e) => {
+            e.preventDefault();
+            this.handleAnswer();
+        });
+
+        // Add keyboard navigation
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' && e.target.type === 'radio') {
+                this.handleAnswer();
+            }
+        });
     }
 }
 

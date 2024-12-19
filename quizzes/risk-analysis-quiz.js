@@ -9,14 +9,23 @@ class RiskAnalysisQuiz extends BaseQuiz {
             },
             performanceThresholds: [
                 { threshold: 250, message: '🏆 Outstanding! You\'re a risk analysis expert!' },
-                { threshold: 200, message: '👏 Great job! You\'ve shown strong  risk analysis skills!' },
+                { threshold: 200, message: '👏 Great job! You\'ve shown strong analytical skills!' },
                 { threshold: 150, message: '👍 Good work! Keep practicing to improve further.' },
-                { threshold: 0, message: '📚 Consider reviewing  risk analysis best practices and try again!' }
+                { threshold: 0, message: '📚 Consider reviewing risk analysis best practices and try again!' }
             ]
         };
         
         super(config);
         
+        // Set the quiz name
+        Object.defineProperty(this, 'quizName', {
+            value: 'risk-analysis',
+            writable: false,
+            configurable: false,
+            enumerable: true
+        });
+        
+        // Initialize player state
         this.player = {
             name: '',
             experience: 0,
@@ -472,7 +481,22 @@ class RiskAnalysisQuiz extends BaseQuiz {
             }
         ];
 
-        this.initializeUI();
+        this.displayScenario();
+
+        // Initialize UI and add event listeners
+        this.initializeEventListeners();
+    }
+
+    initializeEventListeners() {
+        // Add event listeners for the continue and restart buttons
+        document.getElementById('continue-btn').addEventListener('click', () => this.nextScenario());
+        document.getElementById('restart-btn').addEventListener('click', () => this.restartGame());
+
+        // Add form submission handler
+        document.getElementById('options-form').addEventListener('submit', (e) => {
+            e.preventDefault();
+            this.handleAnswer();
+        });
 
         // Add keyboard navigation
         document.addEventListener('keydown', (e) => {
@@ -480,8 +504,6 @@ class RiskAnalysisQuiz extends BaseQuiz {
                 this.handleAnswer();
             }
         });
-
-        this.isLoading = false;
     }
 
     async startGame() {
@@ -489,10 +511,10 @@ class RiskAnalysisQuiz extends BaseQuiz {
             this.isLoading = true;
             this.gameScreen.setAttribute('aria-busy', 'true');
             
-        this.player.experience = 0;
-        this.player.tools = [];
-        this.player.currentScenario = 0;
-        this.player.questionHistory = [];
+            this.player.experience = 0;
+            this.player.tools = [];
+            this.player.currentScenario = 0;
+            this.player.questionHistory = [];
             
             await this.displayScenario();
         } catch (error) {
@@ -530,33 +552,33 @@ class RiskAnalysisQuiz extends BaseQuiz {
             return;
         }
 
-        const scenario = this.shuffleScenarioOptions(currentScenarios[this.player.currentScenario]);
+        const scenario = currentScenarios[this.player.currentScenario];
         
-        if (this.player.currentScenario === 0) {
-            const levelMessage = document.createElement('div');
-            levelMessage.className = 'level-transition';
-            levelMessage.textContent = `Starting ${scenario.level} Questions`;
-            this.gameScreen.insertBefore(levelMessage, this.gameScreen.firstChild);
-            
-            setTimeout(() => levelMessage.remove(), 3000);
-            
-            document.getElementById('level-indicator').textContent = `Level: ${scenario.level}`;
+        // Create a copy of options with their original indices
+        const shuffledOptions = scenario.options.map((option, index) => ({
+            ...option,
+            originalIndex: index
+        }));
+        
+        // Shuffle the options
+        for (let i = shuffledOptions.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [shuffledOptions[i], shuffledOptions[j]] = [shuffledOptions[j], shuffledOptions[i]];
         }
 
-        // Update UI with scenario details
         document.getElementById('scenario-title').textContent = scenario.title;
         document.getElementById('scenario-description').textContent = scenario.description;
         
         const optionsContainer = document.getElementById('options-container');
         optionsContainer.innerHTML = '';
         
-        scenario.options.forEach((option, index) => {
+        shuffledOptions.forEach((option, index) => {
             const optionElement = document.createElement('div');
             optionElement.className = 'option';
             optionElement.innerHTML = `
                 <input type="radio" 
                     name="option" 
-                    value="${index}" 
+                    value="${option.originalIndex}" 
                     id="option${index}"
                     tabindex="0"
                     aria-label="${option.text}"
@@ -565,12 +587,6 @@ class RiskAnalysisQuiz extends BaseQuiz {
             `;
             optionsContainer.appendChild(optionElement);
         });
-
-        // Focus on first option for keyboard navigation
-        const firstOption = optionsContainer.querySelector('input[type="radio"]');
-        if (firstOption) {
-            firstOption.focus();
-        }
 
         this.updateProgress();
     }
@@ -591,35 +607,40 @@ class RiskAnalysisQuiz extends BaseQuiz {
         if (!selectedOption) return;
 
         const currentScenarios = this.getCurrentScenarios();
-        const originalScenario = currentScenarios[this.player.currentScenario];
-        const choice = parseInt(selectedOption.value);
+        const scenario = currentScenarios[this.player.currentScenario];
+        const originalIndex = parseInt(selectedOption.value);
         
-        // Get the selected answer text from the shuffled options
-        const selectedText = document.querySelector(`label[for="option${choice}"]`).textContent;
-        
-        // Find the matching original option to get the correct outcome and experience
-        const selectedAnswer = originalScenario.options.find(option => option.text === selectedText);
+        // Get the original option directly using the stored original index
+        const selectedAnswer = scenario.options[originalIndex];
 
+        // Update player experience and history
+        this.player.experience = Math.max(0, Math.min(this.maxXP, this.player.experience + selectedAnswer.experience));
         this.player.questionHistory.push({
-            scenario: originalScenario,
+            scenario: scenario,
             selectedAnswer: selectedAnswer,
-            maxPossibleXP: Math.max(...originalScenario.options.map(o => o.experience))
-        }); 
+            maxPossibleXP: Math.max(...scenario.options.map(o => o.experience))
+        });
 
+        // Show outcome screen
         this.gameScreen.classList.add('hidden');
         this.outcomeScreen.classList.remove('hidden');
         
+        // Update outcome display
         document.getElementById('outcome-text').textContent = selectedAnswer.outcome;
-        document.getElementById('xp-gained').textContent = `Experience gained: ${selectedAnswer.experience}`;
+        const xpText = selectedAnswer.experience >= 0 ? 
+            `Experience gained: +${selectedAnswer.experience}` : 
+            `Experience: ${selectedAnswer.experience}`;
+        document.getElementById('xp-gained').textContent = xpText;
         
         if (selectedAnswer.tool) {
             document.getElementById('tool-gained').textContent = `Tool acquired: ${selectedAnswer.tool}`;
-            this.player.tools.push(selectedAnswer.tool);
+            if (!this.player.tools.includes(selectedAnswer.tool)) {
+                this.player.tools.push(selectedAnswer.tool);
+            }
         } else {
             document.getElementById('tool-gained').textContent = '';
         }
 
-        this.player.experience += selectedAnswer.experience;
         this.updateProgress();
     }
 
@@ -634,42 +655,6 @@ class RiskAnalysisQuiz extends BaseQuiz {
         this.endScreen.classList.add('hidden');
         this.gameScreen.classList.remove('hidden');
         this.startGame();
-    }
-
-    endGame() {
-        try {
-            this.gameScreen.classList.add('hidden');
-            this.outcomeScreen.classList.add('hidden');
-            this.endScreen.classList.remove('hidden');
-
-            const finalScore = Math.min(this.player.experience, this.maxXP);
-            const scorePercentage = Math.round((finalScore / this.maxXP) * 100);
-            
-            // Save the quiz result for the current user
-            const currentUsername = localStorage.getItem('currentUser');
-            if (currentUsername) {
-                try {
-                    const user = new QuizUser(currentUsername);
-                    user.updateQuizScore('riskAnalysis', scorePercentage);
-                    console.log('Quiz score saved successfully:', scorePercentage);
-                } catch (error) {
-                    console.error('Error saving quiz score:', error);
-                }
-            } else {
-                console.log('No user logged in, score not saved');
-            }
-
-            document.getElementById('final-score').textContent = `Final Score: ${finalScore}/${this.maxXP}`;
-
-            const performanceSummary = document.getElementById('performance-summary');
-            const threshold = this.performanceThresholds.find(t => finalScore >= t.threshold);
-            performanceSummary.textContent = threshold.message;
-
-            this.displayQuestionReview();
-            this.generateRecommendations();
-        } catch (error) {
-            console.error('Error in endGame:', error);
-        }
     }
 }
 

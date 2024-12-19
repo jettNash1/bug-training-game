@@ -1,5 +1,9 @@
-# Node dependencies
-node_modules/
+# Node dependencies - more specific rules
+node_modules
+**/node_modules
+**/node_modules/**
+/node_modules/
+/node_modules/**/*
 
 # Environment variables
 .env

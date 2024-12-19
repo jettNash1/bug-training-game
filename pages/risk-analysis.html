@@ -4,59 +4,91 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Risk Analysis Quiz</title>
+    <link rel="icon" type="image/x-icon" href="../assets/favicon.ico">
     <link rel="stylesheet" href="../styles.css">
     <script src="../QuizUser.js"></script>
     <script src="../api-service.js"></script>
     <script src="../login.js"></script>
-    <script src="../login-ui.js"></script>
+    <script src="../auth.js"></script>
     <script src="../quiz-helper.js"></script>
     <script src="../quizzes/risk-analysis-quiz.js"></script>
 </head>
 <body>
-    <div class="nav-container">
-        <a href="../index.html" class="back-btn">← Back to Hub</a>
-    </div>
-    <div class="game-container">
-        <div id="progress-section">
-            <div class="progress-info">
-                <span id="level-indicator">Level: Basic</span>
-                <span id="experience-display">XP: 0/400</span>
+    <header class="app-header">
+        <div class="logo">
+            <h1>QA Learning Hub</h1>
+        </div>
+        <div class="user-menu">
+            <div class="user-info">
+                <div class="username" id="headerUsername"></div>
+                <div class="user-role">Learner</div>
             </div>
-            <div class="progress-bar">
-                <div id="progress-fill"></div>
+            <button class="logout-button" onclick="handleLogout()">Logout</button>
+        </div>
+    </header>
+
+    <div class="quiz-container">
+        <div class="quiz-header">
+            <a href="../index.html" class="back-link">← Back to Hub</a>
+            <div class="quiz-progress">
+                <div class="level-info">
+                    <span id="level-indicator">Level: Basic</span>
+                    <span id="experience-display">XP: 0/400</span>
+                </div>
+                <div class="progress-bar">
+                    <div id="progress-fill"></div>
+                </div>
+                <div id="question-progress" class="question-counter">Question: 1/15</div>
             </div>
-            <div id="question-progress">Question: 1/15</div>
         </div>
 
-        <div id="game-screen" role="main" aria-live="polite">
-            <h2 id="scenario-title" tabindex="0"></h2>
-            <p id="scenario-description" tabindex="0"></p>
+        <!-- Game Screen -->
+        <div id="game-screen" class="quiz-card" role="main" aria-live="polite">
+            <div class="question-section">
+                <h2 id="scenario-title" tabindex="0"></h2>
+                <p id="scenario-description" tabindex="0"></p>
+            </div>
             
-            <form id="options-form" role="form">
-                <div id="options-container" role="radiogroup" aria-labelledby="scenario-title"></div>
-                <button type="submit" id="submit-btn" tabindex="0" aria-label="Submit your answer">Submit Answer</button>
+            <form id="options-form" class="options-section" role="form">
+                <div id="options-container" role="radiogroup" aria-labelledby="scenario-title">
+                    <!-- Options will be dynamically inserted here -->
+                </div>
+                <button type="submit" id="submit-btn" class="submit-button" tabindex="0" 
+                        aria-label="Submit your answer">Submit Answer</button>
             </form>
         </div>
 
-        <div id="outcome-screen" class="hidden" role="alert" aria-live="assertive">
-            <h3 tabindex="0">Outcome</h3>
-            <p id="outcome-text" tabindex="0"></p>
-            <div id="rewards" tabindex="0">
-                <p id="xp-gained"></p>
-                <p id="tool-gained"></p>
+        <!-- Outcome Screen -->
+        <div id="outcome-screen" class="quiz-card hidden" role="alert" aria-live="assertive">
+            <div class="outcome-content">
+                <h3 tabindex="0">Outcome</h3>
+                <p id="outcome-text" tabindex="0"></p>
+                <div id="rewards" tabindex="0">
+                    <p id="xp-gained"></p>
+                    <p id="tool-gained"></p>
+                </div>
+                <button id="continue-btn" class="submit-button" tabindex="0" 
+                        aria-label="Continue to next question">Continue</button>
             </div>
-            <button id="continue-btn" tabindex="0" aria-label="Continue to next question">Continue</button>
         </div>
 
-        <div id="end-screen" class="hidden">
-            <h2 tabindex="0">Quiz Complete!</h2>
-            <div id="final-score" tabindex="0"></div>
-            <div id="performance-summary" tabindex="0"></div>
-            <h3 tabindex="0">Question Review</h3>
-            <div id="question-review"></div>
-            <h3 tabindex="0">Recommendations</h3>
-            <div id="recommendations"></div>
-            <button id="restart-btn" tabindex="0" aria-label="Play the quiz again">Try Again</button>
+        <!-- End Screen -->
+        <div id="end-screen" class="quiz-card hidden">
+            <h2>Quiz Complete!</h2>
+            <div id="final-score"></div>
+            <div id="performance-summary"></div>
+            
+            <div class="review-section">
+                <h3>Question Review</h3>
+                <div id="question-review" class="review-list"></div>
+            </div>
+            
+            <div class="recommendations-section">
+                <h3>Recommendations</h3>
+                <div id="recommendations"></div>
+            </div>
+            
+            <button id="restart-btn" class="submit-button">Try Again</button>
         </div>
     </div>
 </body>

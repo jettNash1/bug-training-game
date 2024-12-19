@@ -3,193 +3,293 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="QA Learning Hub - Interactive learning platform for Quality Assurance skills">
     <title>QA Learning Hub</title>
+    <link rel="icon" type="image/x-icon" href="assets/favicon.ico">
     <link rel="stylesheet" href="styles.css">
     <script src="QuizUser.js"></script>
     <script src="api-service.js"></script>
     <script src="login.js"></script>
-    <script src="login-ui.js"></script>
     <script src="quiz-helper.js"></script>
+    <script src="auth.js"></script>
 </head>
 <body>
-    <div id="loginSection" class="login-section">
-        <h2>Welcome to Quiz Platform</h2>
-        <div id="loginForm">
-            <div class="form-tabs">
-                <button onclick="showLoginForm()" class="tab-btn active" id="loginTab">Login</button>
-                <button onclick="showRegisterForm()" class="tab-btn" id="registerTab">Register</button>
-            </div>
-            
-            <div id="loginFormContent">
-                <input type="text" id="loginUsername" placeholder="Username" aria-label="Username">
-                <input type="password" id="loginPassword" placeholder="Password" aria-label="Password">
-                <button onclick="handleLogin()" aria-label="Login">Login</button>
-            </div>
-            
-            <div id="registerFormContent" style="display: none;">
-                <input type="text" id="registerUsername" placeholder="Choose Username" aria-label="Choose Username">
-                <input type="password" id="registerPassword" placeholder="Choose Password" aria-label="Choose Password">
-                <button onclick="handleRegister()" aria-label="Register">Register</button>
-            </div>
+    <header class="app-header" role="banner">
+        <div class="logo">
+            <img src="assets/zoonou-logo.svg" alt="Zoonou Logo" width="32" height="32">
+            <h1>QA Learning Hub</h1>
         </div>
-        
-        <div id="userInfo" style="display: none;">
-            <p>Welcome, <span id="userDisplay"></span>!</p>
-            <div id="quizProgress"></div>
-            <button onclick="UserManager.logout()" aria-label="Logout">Logout</button>
+        <div class="user-menu" role="navigation">
+            <div class="user-info" aria-live="polite">
+                <div class="username" id="headerUsername">John Doe</div>
+                <div class="user-role">Learner</div>
+            </div>
+            <button class="logout-button" onclick="handleLogout()" aria-label="Logout">Logout</button>
         </div>
-    </div>
+    </header>
 
-    <script>
-        async function updateUIForLoggedInUser(user) {
-            try {
-                document.getElementById('loginForm').style.display = 'none';
-                document.getElementById('userInfo').style.display = 'block';
-                document.getElementById('userDisplay').textContent = user.username;
-                
-                // Make sure we have the latest data
-                const quizResults = await user.loadUserData();
-                const progressDiv = document.getElementById('quizProgress');
-                progressDiv.innerHTML = '';
-                
-                if (Array.isArray(quizResults) && quizResults.length > 0) {
-                    progressDiv.innerHTML = quizResults.map(result => {
-                        // Format quiz name to be more readable
-                        const quizName = result.quizName
-                            .split('-')
-                            .map(word => word.charAt(0).toUpperCase() + word.slice(1))
-                            .join(' ');
-                        const score = result.score || 0;
-                        return `
-                            <div class="quiz-result">
-                                <span class="quiz-name">${quizName}</span>
-                                <span class="quiz-score">${score}%</span>
-                            </div>
-                        `;
-                    }).join('');
-                } else {
-                    progressDiv.innerHTML = '<p>No quiz results yet. Try taking a quiz!</p>';
-                }
-            } catch (error) {
-                console.error('Error updating UI:', error);
-                alert('There was an error loading your quiz results. Please try again.');
-            }
-        }
-
-        async function handleLogin() {
-            const username = document.getElementById('loginUsername').value;
-            const password = document.getElementById('loginPassword').value;
-            
-            try {
-                const user = await UserManager.login(username, password);
-                document.getElementById('loginForm').style.display = 'none';
-                document.getElementById('userInfo').style.display = 'block';
-                document.getElementById('userDisplay').textContent = username;
-                await updateUIForLoggedInUser(user);
-            } catch (error) {
-                alert(error.message || 'Login failed. Please try again.');
-            }
-        }
-
-        async function handleRegister() {
-            const username = document.getElementById('registerUsername').value;
-            const password = document.getElementById('registerPassword').value;
-            
-            try {
-                const user = await UserManager.register(username, password);
-                document.getElementById('loginForm').style.display = 'none';
-                document.getElementById('userInfo').style.display = 'block';
-                document.getElementById('userDisplay').textContent = username;
-                await updateUIForLoggedInUser(user);
-            } catch (error) {
-                alert(error.message || 'Registration failed. Please try again.');
-            }
-        }
-
-        // Check if user is already logged in
-        (async function() {
-            const currentUser = localStorage.getItem('currentUser');
-            const token = localStorage.getItem('token');
-            
-            if (currentUser && token) {
-                document.getElementById('loginForm').style.display = 'none';
-                document.getElementById('userInfo').style.display = 'block';
-                document.getElementById('userDisplay').textContent = currentUser;
-                
-                try {
-                    const user = new QuizUser(currentUser);
-                    await updateUIForLoggedInUser(user);
-                } catch (error) {
-                    console.error('Error loading user data:', error);
-                }
-            }
-        })();
-    </script>
-
-    <div class="main-container">
-        <h1>QA Learning Hub</h1>
+    <main class="main-container" role="main">
         <p>Select a category and quiz to begin your learning journey</p>
 
-        <div class="categories-container">
+        <div class="categories-grid" role="list">
             <!-- Personal Organisation -->
-            <div class="category-dropdown">
-                <button class="category-btn">Personal Organisation</button>
-                <div class="dropdown-content">
-                    <a href="pages/communication-quiz.html">Communication Skills Quiz</a>
-                    <a href="pages/tester-mindset-quiz.html">Tester Mindset Quiz</a>
-                    <a href="pages/time-management-quiz.html">Time Management Quiz</a>
+            <div class="category-card" role="listitem">
+                <div class="category-header">
+                    Personal Organisation
+                </div>
+                <div class="quiz-list" role="list">
+                    <a href="pages/communication-quiz.html" class="quiz-item" data-quiz="communication" role="listitem">
+                        <div class="quiz-icon" aria-hidden="true">📢</div>
+                        <div class="quiz-info">
+                            <div class="quiz-title">Communication Skills</div>
+                            <div class="quiz-description">Master effective communication in testing</div>
+                        </div>
+                    </a>
+                    <a href="pages/initiative-quiz.html" class="quiz-item" data-quiz="initiative" role="listitem">
+                        <div class="quiz-icon" aria-hidden="true">🚀</div>
+                        <div class="quiz-info">
+                            <div class="quiz-title">Initiative</div>
+                            <div class="quiz-description">Learn to take initiative in testing scenarios</div>
+                        </div>
+                    </a>
+                    <a href="pages/tester-mindset-quiz.html" class="quiz-item" data-quiz="tester-mindset" role="listitem">
+                        <div class="quiz-icon" aria-hidden="true">🧠</div>
+                        <div class="quiz-info">
+                            <div class="quiz-title">Tester Mindset</div>
+                            <div class="quiz-description">Develop critical thinking skills</div>
+                        </div>
+                    </a>
+                    <a href="pages/time-management-quiz.html" class="quiz-item" data-quiz="time-management" role="listitem">
+                        <div class="quiz-icon" aria-hidden="true">⏰</div>
+                        <div class="quiz-info">
+                            <div class="quiz-title">Time Management</div>
+                            <div class="quiz-description">Optimize your testing workflow</div>
+                        </div>
+                    </a>
+                </div>
+                <div class="category-progress" role="status">
+                    Progress: 0/4 Complete
+                    <div class="progress-bar">
+                        <div class="progress-fill progress-low" style="width: 0%" aria-hidden="true"></div>
+                    </div>
                 </div>
             </div>
 
             <!-- Risk -->
-            <div class="category-dropdown">
-                <button class="category-btn">Risk</button>
-                <div class="dropdown-content">
-                    <a href="pages/risk-analysis.html">Risk Analysis Quiz</a>
-                    <a href="pages/risk-management.html">Risk Management Quiz</a>
+            <div class="category-card" role="listitem">
+                <div class="category-header">
+                    Risk Management
+                </div>
+                <div class="quiz-list" role="list">
+                    <a href="pages/risk-analysis.html" class="quiz-item" data-quiz="risk-analysis" role="listitem">
+                        <div class="quiz-icon" aria-hidden="true">📊</div>
+                        <div class="quiz-info">
+                            <div class="quiz-title">Risk Analysis</div>
+                            <div class="quiz-description">Learn to identify and assess risks</div>
+                        </div>
+                    </a>
+                    <a href="pages/risk-management.html" class="quiz-item" data-quiz="risk-management">
+                        <div class="quiz-icon">🎯</div>
+                        <div class="quiz-info">
+                            <div class="quiz-title">Risk Management</div>
+                            <div class="quiz-description">Strategies for managing test risks</div>
+                        </div>
+                    </a>
+                </div>
+                <div class="category-progress">
+                    Progress: 1/2 Complete
+                    <div class="progress-bar">
+                        <div class="progress-fill progress-medium" style="width: 50%"></div>
+                    </div>
                 </div>
             </div>
 
             <!-- Test Execution -->
-            <div class="category-dropdown">
-                <button class="category-btn">Test Execution</button>
-                <div class="dropdown-content">
-                    <a href="pages/non-functional-quiz.html">Risk Analysis Quiz</a>
-                    <a href="pages/test-support.html">Test Support Quiz</a>
-                    <a href="pages/issue-verification.html">Issue Verification Quiz</a>
+            <div class="category-card">
+                <div class="category-header">
+                    Test Execution
+                </div>
+                <div class="quiz-list">
+                    <a href="pages/non-functional-quiz.html" class="quiz-item" data-quiz="non-functional">
+                        <div class="quiz-icon">🔍</div>
+                        <div class="quiz-info">
+                            <div class="quiz-title">Non-functional Testing</div>
+                            <div class="quiz-description">Performance, security, and usability testing</div>
+                        </div>
+                    </a>
+                    <a href="pages/test-support.html" class="quiz-item" data-quiz="test-support">
+                        <div class="quiz-icon">🛠️</div>
+                        <div class="quiz-info">
+                            <div class="quiz-title">Test Support</div>
+                            <div class="quiz-description">Tools and techniques for test execution</div>
+                        </div>
+                    </a>
+                    <a href="pages/issue-verification.html" class="quiz-item" data-quiz="issue-verification">
+                        <div class="quiz-icon">✅</div>
+                        <div class="quiz-info">
+                            <div class="quiz-title">Issue Verification</div>
+                            <div class="quiz-description">Validate and verify bug fixes</div>
+                        </div>
+                    </a>
+                    <a href="pages/build-verification-quiz.html" class="quiz-item" data-quiz="build-verification">
+                        <div class="quiz-icon">✅</div>
+                        <div class="quiz-info">
+                            <div class="quiz-title">Build Verification</div>
+                            <div class="quiz-description">Validate and verify build</div>
+                        </div>
+                    </a>
+                </div>
+                <div class="category-progress">
+                    Progress: 0/3 Complete
+                    <div class="progress-bar">
+                        <div class="progress-fill progress-low" style="width: 0%"></div>
+                    </div>
                 </div>
             </div>
 
             <!-- Tickets and Tracking -->
-            <div class="category-dropdown">
-                <button class="category-btn">Tickets and Tracking</button>
-                <div class="dropdown-content">
-                    <a href="pages/issue-tracking-tools.html">Issue Tracking Tools Quiz</a>
-                    <a href="pages/raising-tickets.html">Raising Tickets Quiz</a>
-                    <a href="pages/reports-quiz.html">Reports Quiz</a>
+            <div class="category-card">
+                <div class="category-header">
+                    Tickets and Tracking
+                </div>
+                <div class="quiz-list">
+                    <a href="pages/issue-tracking-tools-quiz.html" class="quiz-item" data-quiz="issue-tracking">
+                        <div class="quiz-icon">📝</div>
+                        <div class="quiz-info">
+                            <div class="quiz-title">Issue Tracking Tools</div>
+                            <div class="quiz-description">Master defect tracking systems</div>
+                        </div>
+                    </a>
+                    <a href="pages/raising-tickets.html" class="quiz-item" data-quiz="raising-tickets">
+                        <div class="quiz-icon">🎫</div>
+                        <div class="quiz-info">
+                            <div class="quiz-title">Raising Tickets</div>
+                            <div class="quiz-description">Write effective bug reports</div>
+                        </div>
+                    </a>
+                    <a href="pages/reports-quiz.html" class="quiz-item" data-quiz="reports">
+                        <div class="quiz-icon">📊</div>
+                        <div class="quiz-info">
+                            <div class="quiz-title">Reports</div>
+                            <div class="quiz-description">Create comprehensive test reports</div>
+                        </div>
+                    </a>
+                    <a href="pages/CMS-Testing-quiz.html" class="quiz-item" data-quiz="CMS-Testing">
+                        <div class="quiz-icon">📊</div>
+                        <div class="quiz-info">
+                            <div class="quiz-title">CMS Testing</div>
+                            <div class="quiz-description">Test CMS functionality</div>
+                        </div>
+                    </a>
+                </div>
+                <div class="category-progress">
+                    Progress: 1/4 Complete
+                    <div class="progress-bar">
+                        <div class="progress-fill progress-low" style="width: 33%"></div>
+                    </div>
                 </div>
             </div>
 
-            <!-- Misc -->
-            <div class="category-dropdown">
-                <button class="category-btn">Misc</button>
-                <div class="dropdown-content">
-                    <a href="pages/initiative-quiz.html">Initiative Quiz</a>
+            <!-- Accessibility Training -->
+            <div class="category-card">
+                <div class="category-header">
+                    Accessibility Training
+                </div>
+                <div class="quiz-list">
+                    <div class="quiz-item locked-quiz" aria-label="WCAG Guidelines quiz - Coming soon">
+                        <div class="quiz-icon" aria-hidden="true">♿</div>
+                        <div class="quiz-info">
+                            <div class="quiz-title">WCAG Guidelines</div>
+                            <div class="quiz-description">Coming soon!</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="category-progress" role="status">
+                    Progress: 0/0 Complete
+                    <div class="progress-bar">
+                        <div class="progress-fill" style="width: 0%" aria-hidden="true"></div>
+                    </div>
                 </div>
             </div>
 
-            <!-- A11y -->
-            <div class="category-dropdown">
-                <button class="category-btn">Accessibility Training</button>
-                <div class="dropdown-content">
-                    <p class="coming-soon">Quizzes coming soon!</p>
-                </div>
-            </div>
+            
         </div>
+    </main>
+
+    <div class="admin-link" role="complementary">
+        <a href="pages/admin-login.html" class="admin-button" aria-label="Access Admin Panel">Admin Panel</a>
     </div>
 
-    <div class="admin-link">
-        <a href="admin.html" class="admin-button">Admin Panel</a>
-    </div>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            updateQuizCompletionStatus();
+        });
+
+        function updateQuizCompletionStatus() {
+            const currentUser = localStorage.getItem('currentUser');
+            if (!currentUser) return;
+
+            const userData = localStorage.getItem(`user_${currentUser}`);
+            if (!userData) return;
+
+            const user = JSON.parse(userData);
+            const quizResults = user.quizResults || [];
+
+            console.log('Current quiz results:', quizResults); // Debug log
+
+            // Update individual quiz items
+            document.querySelectorAll('.quiz-item[data-quiz]').forEach(quizItem => {
+                // Remove any existing completion badges
+                const existingBadge = quizItem.querySelector('.quiz-completion');
+                if (existingBadge) {
+                    existingBadge.remove();
+                }
+                
+                // Reset classes
+                quizItem.classList.remove('completed', 'in-progress');
+                
+                const quizName = quizItem.dataset.quiz;
+                const result = quizResults.find(r => r.quizName === quizName);
+
+                console.log(`Checking quiz ${quizName}:`, result); // Debug log
+
+                if (result) {
+                    const score = result.score;
+                    if (score === 100) {
+                        quizItem.classList.add('completed');
+                        // Add completion badge for 100% too
+                        const completion = document.createElement('div');
+                        completion.className = 'quiz-completion completed';
+                        completion.textContent = '100%';
+                        quizItem.appendChild(completion);
+                    } else if (score > 0) {
+                        quizItem.classList.add('in-progress');
+                        const completion = document.createElement('div');
+                        completion.className = 'quiz-completion in-progress';
+                        completion.textContent = `${score}%`;
+                        quizItem.appendChild(completion);
+                    }
+                }
+            });
+
+            // Update category progress
+            document.querySelectorAll('.category-card').forEach(categoryCard => {
+                const totalQuizzes = categoryCard.querySelectorAll('.quiz-item:not(.locked-quiz)').length;
+                const completedQuizzes = categoryCard.querySelectorAll('.quiz-item.completed').length;
+                
+                if (totalQuizzes > 0) {
+                    const progressText = categoryCard.querySelector('.category-progress');
+                    const progressBar = categoryCard.querySelector('.progress-fill');
+                    
+                    const progressPercentage = (completedQuizzes / totalQuizzes) * 100;
+                    
+                    progressText.innerHTML = `Progress: ${completedQuizzes}/${totalQuizzes} Complete
+                        <div class="progress-bar">
+                            <div class="progress-fill ${progressPercentage === 100 ? 'progress-high' : progressPercentage >= 50 ? 'progress-medium' : 'progress-low'}" style="width: ${progressPercentage}%"></div>
+                        </div>`;
+                }
+            });
+        }
+    </script>
 </body>
 </html>

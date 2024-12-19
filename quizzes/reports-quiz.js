@@ -17,6 +17,14 @@ class ReportsQuiz extends BaseQuiz {
         
         super(config);
         
+        // Set the quiz name as a non-configurable, non-writable property
+        Object.defineProperty(this, 'quizName', {
+            value: 'reports',
+            writable: false,
+            configurable: false,
+            enumerable: true
+        });
+        
         this.player = {
             name: '',
             experience: 0,
@@ -472,14 +480,14 @@ class ReportsQuiz extends BaseQuiz {
             }
         ];
 
-        this.initializeUI();
+        // Initialize UI elements
+        this.gameScreen = document.getElementById('game-screen');
+        this.outcomeScreen = document.getElementById('outcome-screen');
+        this.endScreen = document.getElementById('end-screen');
+        this.levelTransitionContainer = document.getElementById('level-transition-container');
 
-        // Add keyboard navigation
-        document.addEventListener('keydown', (e) => {
-            if (e.key === 'Enter' && e.target.type === 'radio') {
-                this.handleAnswer();
-            }
-        });
+        // Initialize event listeners
+        this.initializeEventListeners();
 
         this.isLoading = false;
     }
@@ -489,10 +497,10 @@ class ReportsQuiz extends BaseQuiz {
             this.isLoading = true;
             this.gameScreen.setAttribute('aria-busy', 'true');
             
-        this.player.experience = 0;
-        this.player.tools = [];
-        this.player.currentScenario = 0;
-        this.player.questionHistory = [];
+            this.player.experience = 0;
+            this.player.tools = [];
+            this.player.currentScenario = 0;
+            this.player.questionHistory = [];
             
             await this.displayScenario();
         } catch (error) {
@@ -530,33 +538,58 @@ class ReportsQuiz extends BaseQuiz {
             return;
         }
 
-        const scenario = this.shuffleScenarioOptions(currentScenarios[this.player.currentScenario]);
+        const scenario = currentScenarios[this.player.currentScenario];
         
-        if (this.player.currentScenario === 0) {
+        // Show level transition message at the start of each level
+        const previousLevel = this.player.questionHistory.length > 0 ? 
+            this.player.questionHistory[this.player.questionHistory.length - 1].scenario.level : null;
+            
+        if (this.player.currentScenario === 0 || previousLevel !== scenario.level) {
+            this.levelTransitionContainer.innerHTML = '';
             const levelMessage = document.createElement('div');
             levelMessage.className = 'level-transition';
+            levelMessage.setAttribute('role', 'alert');
             levelMessage.textContent = `Starting ${scenario.level} Questions`;
-            this.gameScreen.insertBefore(levelMessage, this.gameScreen.firstChild);
             
-            setTimeout(() => levelMessage.remove(), 3000);
+            this.levelTransitionContainer.appendChild(levelMessage);
+            this.levelTransitionContainer.classList.add('active');
             
+            // Update the level indicator
             document.getElementById('level-indicator').textContent = `Level: ${scenario.level}`;
+            
+            setTimeout(() => {
+                this.levelTransitionContainer.classList.remove('active');
+                setTimeout(() => {
+                    this.levelTransitionContainer.innerHTML = '';
+                }, 300);
+            }, 3000);
         }
 
-        // Update UI with scenario details
+        // Create a copy of options with their original indices
+        const shuffledOptions = scenario.options.map((option, index) => ({
+            ...option,
+            originalIndex: index
+        }));
+        
+        // Shuffle the options
+        for (let i = shuffledOptions.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [shuffledOptions[i], shuffledOptions[j]] = [shuffledOptions[j], shuffledOptions[i]];
+        }
+
         document.getElementById('scenario-title').textContent = scenario.title;
         document.getElementById('scenario-description').textContent = scenario.description;
         
         const optionsContainer = document.getElementById('options-container');
         optionsContainer.innerHTML = '';
         
-        scenario.options.forEach((option, index) => {
+        shuffledOptions.forEach((option, index) => {
             const optionElement = document.createElement('div');
             optionElement.className = 'option';
             optionElement.innerHTML = `
                 <input type="radio" 
                     name="option" 
-                    value="${index}" 
+                    value="${option.originalIndex}" 
                     id="option${index}"
                     tabindex="0"
                     aria-label="${option.text}"
@@ -565,12 +598,6 @@ class ReportsQuiz extends BaseQuiz {
             `;
             optionsContainer.appendChild(optionElement);
         });
-
-        // Focus on first option for keyboard navigation
-        const firstOption = optionsContainer.querySelector('input[type="radio"]');
-        if (firstOption) {
-            firstOption.focus();
-        }
 
         this.updateProgress();
     }
@@ -636,39 +663,33 @@ class ReportsQuiz extends BaseQuiz {
         this.startGame();
     }
 
-    endGame() {
-        try {
-            this.gameScreen.classList.add('hidden');
-            this.outcomeScreen.classList.add('hidden');
-            this.endScreen.classList.remove('hidden');
+    initializeEventListeners() {
+        // Add event listeners for the continue and restart buttons
+        document.getElementById('continue-btn').addEventListener('click', () => this.nextScenario());
+        document.getElementById('restart-btn').addEventListener('click', () => this.restartGame());
 
-            const finalScore = Math.min(this.player.experience, this.maxXP);
-            const scorePercentage = Math.round((finalScore / this.maxXP) * 100);
-            
-            // Save the quiz result for the current user
-            const currentUsername = localStorage.getItem('currentUser');
-            if (currentUsername) {
-                try {
-                    const user = new QuizUser(currentUsername);
-                    user.updateQuizScore('communication', scorePercentage);
-                    console.log('Quiz score saved successfully:', scorePercentage);
-                } catch (error) {
-                    console.error('Error saving quiz score:', error);
-                }
-            } else {
-                console.log('No user logged in, score not saved');
+        // Add form submission handler
+        document.getElementById('options-form').addEventListener('submit', (e) => {
+            e.preventDefault();
+            this.handleAnswer();
+        });
+
+        // Add keyboard navigation
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' && e.target.type === 'radio') {
+                this.handleAnswer();
             }
+        });
+    }
 
-            document.getElementById('final-score').textContent = `Final Score: ${finalScore}/${this.maxXP}`;
-
-            const performanceSummary = document.getElementById('performance-summary');
-            const threshold = this.performanceThresholds.find(t => finalScore >= t.threshold);
-            performanceSummary.textContent = threshold.message;
-
-            this.displayQuestionReview();
-            this.generateRecommendations();
+    // In endGame method:
+    if (currentUsername) {
+        try {
+            const user = new QuizUser(currentUsername);
+            user.updateQuizScore('reports', scorePercentage);
+            console.log('Quiz score saved successfully:', scorePercentage);
         } catch (error) {
-            console.error('Error in endGame:', error);
+            console.error('Error saving quiz score:', error);
         }
     }
 }

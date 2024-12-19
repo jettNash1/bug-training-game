@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="QA Learning Hub Admin Login - Secure access to admin dashboard">
+    <title>QA Learning Hub - Admin Login</title>
+    <link rel="icon" type="image/x-icon" href="../assets/favicon.ico">
+    <link rel="stylesheet" href="../styles.css">
+    <script src="../admin.js"></script>
+</head>
+<body class="auth-page">
+    <main class="auth-container" role="main">
+        <div class="auth-card">
+            <header class="app-header" role="banner">
+                <div class="logo">
+                    <img src="../assets/zoonou-logo.svg" alt="Zoonou Logo" width="32" height="32">
+                    <h1>Admin Login</h1>
+                </div>
+            </header>
+            
+            <form id="adminLoginForm" class="auth-form" role="form" aria-labelledby="login-title">
+                <h2 id="login-title" class="visually-hidden">Admin Login Form</h2>
+                <div class="form-group">
+                    <label for="adminUsername">Admin Username</label>
+                    <input type="text" 
+                           id="adminUsername" 
+                           name="adminUsername"
+                           placeholder="Enter admin username" 
+                           required 
+                           aria-required="true"
+                           autocomplete="username">
+                </div>
+                <div class="form-group">
+                    <label for="adminPassword">Password</label>
+                    <input type="password" 
+                           id="adminPassword" 
+                           name="adminPassword"
+                           placeholder="Enter password" 
+                           required 
+                           aria-required="true"
+                           autocomplete="current-password">
+                </div>
+                <button type="submit" class="auth-button" aria-label="Login to admin panel">Login to Admin Panel</button>
+            </form>
+            
+            <nav class="auth-footer" role="navigation" aria-label="Return navigation">
+                <a href="../index.html" class="return-button" role="button" tabindex="0" aria-label="Return to Learning Hub">← Return to Learning Hub</a>
+            </nav>
+        </div>
+    </main>
+</body>
+</html> 

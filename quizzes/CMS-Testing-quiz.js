@@ -1,4 +1,4 @@
-class CommunicationQuiz extends BaseQuiz {
+class CMS_Testing_Quiz extends BaseQuiz {
     constructor() {
         const config = {
             maxXP: 300,
@@ -8,10 +8,10 @@ class CommunicationQuiz extends BaseQuiz {
                 advanced: { questions: 15, minXP: 300 }
             },
             performanceThresholds: [
-                { threshold: 250, message: '🏆 Outstanding! You\'re a communication expert!' },
-                { threshold: 200, message: '👏 Great job! You\'ve shown strong communication skills!' },
+                { threshold: 250, message: '🏆 Outstanding! You\'re a CMS Testing expert!' },
+                { threshold: 200, message: '👏 Great job! You\'ve shown strong CMS Testing skills!' },
                 { threshold: 150, message: '👍 Good work! Keep practicing to improve further.' },
-                { threshold: 0, message: '📚 Consider reviewing communication best practices and try again!' }
+                { threshold: 0, message: '📚 Consider reviewing CMS Testing best practices and try again!' }
             ]
         };
         
@@ -19,7 +19,7 @@ class CommunicationQuiz extends BaseQuiz {
         
         // Set the quiz name
         Object.defineProperty(this, 'quizName', {
-            value: 'communication',
+            value: 'CMS-Testing',
             writable: false,
             configurable: false,
             enumerable: true
@@ -39,57 +39,57 @@ class CommunicationQuiz extends BaseQuiz {
             {
                 id: 1,
                 level: 'Basic',
-                title: 'Daily Communication',
-                description: 'You\'ve just started your workday. What\'s the first thing you should do regarding your communication status?',
+                title: 'Content Creation',
+                description: 'You need to add new content to the CMS. What\'s the first step you should take?',
                 options: [
                     {
-                        text: 'Mark yourself as "Online" and ensure Teams status is accurate',
-                        outcome: 'Perfect! Being visible and accessible is crucial for team communication.',
+                        text: 'Review documentation and verify content requirements before creating',
+                        outcome: 'Perfect! Understanding requirements before content creation is crucial.',
                         experience: 15,
-                        tool: 'Status Management'
+                        tool: 'Content Planning'
                     },
                     {
-                        text: 'Wait for someone to message you first',
-                        outcome: 'Being proactive with your status helps team coordination.',
+                        text: 'Start adding content immediately',
+                        outcome: 'It\'s important to understand requirements first.',
                         experience: -5
                     },
                     {
-                        text: 'Leave your status as is and start working',
-                        outcome: 'Team members need to know your availability.',
+                        text: 'Ask another team member to do it',
+                        outcome: 'Taking initiative while following requirements is important.',
                         experience: -10
                     },
                     {
-                        text: 'Set status to "Do Not Disturb" by default',
-                        outcome: 'Being accessible during work hours is important.',
-                        experience: -0
+                        text: 'Create a draft without checking requirements',
+                        outcome: 'Requirements should be reviewed before content creation.',
+                        experience: 0
                     }
                 ]
             },
             {
                 id: 2,
                 level: 'Basic',
-                title: 'Team Meeting',
-                description: 'During a team meeting, you notice a potential issue with the current testing approach. What should you do?',
+                title: 'Content Validation',
+                description: 'After creating content in the CMS, what\'s the next crucial step?',
                 options: [
                     {
-                        text: 'Raise your concern professionally and suggest alternatives',
-                        outcome: 'Excellent! Constructive feedback with solutions is always valuable.',
+                        text: 'Check the front-end website to verify content appears correctly',
+                        outcome: 'Excellent! Validating content on the front-end is essential for CRUD testing.',
                         experience: 15,
-                        tool: 'Professional Feedback'
+                        tool: 'Content Verification'
                     },
                     {
-                        text: 'Stay silent to avoid conflict',
-                        outcome: 'Issues should be raised professionally to prevent problems later.',
+                        text: 'Move on to creating more content',
+                        outcome: 'Always verify content appears correctly before moving on.',
                         experience: -5
                     },
                     {
-                        text: 'Send a private message to your manager only',
-                        outcome: 'Team discussions benefit from open communication.',
+                        text: 'Assume it worked correctly',
+                        outcome: 'Content should always be verified on the front-end.',
                         experience: -10
                     },
                     {
-                        text: 'Wait until after the meeting and email everyone',
-                        outcome: 'Immediate discussion in meetings is often more effective.',
+                        text: 'Only check in the CMS preview',
+                        outcome: 'Front-end verification is necessary for complete testing.',
                         experience: 0
                     }
                 ]
@@ -97,28 +97,28 @@ class CommunicationQuiz extends BaseQuiz {
             {
                 id: 3,
                 level: 'Basic',
-                title: 'Email Communication',
-                description: 'You need to send an important update about test results. How should you structure your email?',
+                title: 'Content Updates',
+                description: 'You\'ve modified existing content in the CMS. What\'s the most important CRUD check to perform?',
                 options: [
                     {
-                        text: 'Clear subject line, key findings first, detailed results attached',
-                        outcome: 'Excellent! This format ensures key information is immediately visible.',
+                        text: 'Verify the updates are reflected correctly on both CMS and front-end',
+                        outcome: 'Excellent! Complete update verification is crucial for CRUD testing.',
                         experience: 15,
-                        tool: 'Written Communication'
+                        tool: 'Update Verification'
                     },
                     {
-                        text: 'Send all details in the email body without attachments',
-                        outcome: 'Long emails can be overwhelming and hard to reference later.',
+                        text: 'Only check the CMS admin panel',
+                        outcome: 'Updates must be verified on both CMS and front-end.',
                         experience: -10
                     },
                     {
-                        text: 'Just attach the results without explanation',
-                        outcome: 'Context is important for effective communication.',
+                        text: 'Assume updates work automatically',
+                        outcome: 'Never assume updates are successful without verification.',
                         experience: -5
                     },
                     {
-                        text: 'Send multiple emails for different parts of the results',
-                        outcome: 'Fragmented information can lead to confusion.',
+                        text: 'Wait for user feedback',
+                        outcome: 'Proactive verification is essential for content updates.',
                         experience: 5
                     }
                 ]
@@ -126,28 +126,28 @@ class CommunicationQuiz extends BaseQuiz {
             {
                 id: 4,
                 level: 'Basic',
-                title: 'Team Collaboration',
-                description: 'A colleague asks for help understanding a test case you wrote. What\'s the best response?',
+                title: 'Content Deletion',
+                description: 'After deleting content from the CMS, what\'s the essential verification step?',
                 options: [
                     {
-                        text: 'Schedule a quick call to walk through it together',
-                        outcome: 'Perfect! Real-time explanation allows for immediate clarification.',
+                        text: 'Check both CMS and front-end to ensure content is completely removed',
+                        outcome: 'Perfect! Complete deletion verification is essential for CRUD testing.',
                         experience: 15,
-                        tool: 'Collaboration'
+                        tool: 'Deletion Verification'
                     },
                     {
-                        text: 'Tell them to read the documentation again',
-                        outcome: 'This response doesn\'t promote good team collaboration.',
+                        text: 'Only verify in the CMS',
+                        outcome: 'Content must be verified as deleted from all locations.',
                         experience: -10
                     },
                     {
-                        text: 'Forward them to someone else',
-                        outcome: 'As the author, you\'re best positioned to explain.',
+                        text: 'Assume deletion worked',
+                        outcome: 'Deletion must always be verified thoroughly.',
                         experience: -5
                     },
                     {
-                        text: 'Send them a long email explanation',
-                        outcome: 'Direct interaction is often more effective for explanations.',
+                        text: 'Create new content instead',
+                        outcome: 'Deletion verification is crucial before moving forward.',
                         experience: 5
                     }
                 ]
@@ -155,28 +155,28 @@ class CommunicationQuiz extends BaseQuiz {
             {
                 id: 5,
                 level: 'Basic',
-                title: 'Documentation Updates',
-                description: 'You\'ve found outdated information in the test documentation. What should you do?',
+                title: 'Media Management',
+                description: 'You\'re testing image uploads in the CMS. What\'s the first aspect to verify?',
                 options: [
                     {
-                        text: 'Update it and notify the team of important changes',
-                        outcome: 'Excellent! Keeping documentation current and informing others is crucial.',
+                        text: 'Test upload functionality with various file types and sizes',
+                        outcome: 'Excellent! Comprehensive media testing ensures robust functionality.',
                         experience: 15,
-                        tool: 'Documentation Management'
+                        tool: 'Media Testing'
                     },
                     {
-                        text: 'Leave it for someone else to fix',
-                        outcome: 'Everyone is responsible for maintaining documentation.',
+                        text: 'Only test with one image type',
+                        outcome: 'Multiple file types should be tested for thorough verification.',
                         experience: -10
                     },
                     {
-                        text: 'Only update without telling anyone',
-                        outcome: 'Changes should be communicated to the team.',
+                        text: 'Skip media testing entirely',
+                        outcome: 'Media management is a crucial CMS function.',
                         experience: -5
                     },
                     {
-                        text: 'Create a new document instead',
-                        outcome: 'Multiple versions can lead to confusion.',
+                        text: 'Test only small files',
+                        outcome: 'Various file sizes should be tested.',
                         experience: 5
                     }
                 ]
@@ -188,28 +188,28 @@ class CommunicationQuiz extends BaseQuiz {
             {
                 id: 6,
                 level: 'Intermediate',
-                title: 'Bug Report Communication',
-                description: 'You\'ve found a critical bug in production. How should you communicate this?',
+                title: 'User Permissions',
+                description: 'You\'ve discovered that some admin pages are accessible via direct links by non-admin users. How should you handle this?',
                 options: [
                     {
-                        text: 'Document the issue thoroughly and alert relevant stakeholders immediately',
-                        outcome: 'Perfect! Quick, clear communication of critical issues is essential.',
+                        text: 'Document the security issue and immediately report it as high priority',
+                        outcome: 'Perfect! Security issues need immediate attention and proper documentation.',
                         experience: 25,
-                        tool: 'Critical Communication'
+                        tool: 'Security Testing'
                     },
                     {
-                        text: 'Fix it yourself first before telling anyone',
-                        outcome: 'Critical issues should be communicated immediately.',
+                        text: 'Ignore it since it requires direct links',
+                        outcome: 'Security vulnerabilities should never be ignored.',
                         experience: -15
                     },
                     {
-                        text: 'Send a general email to everyone in the company',
-                        outcome: 'Target your communication to relevant stakeholders.',
+                        text: 'Only test with admin accounts',
+                        outcome: 'All user roles should be tested for security.',
                         experience: -10
                     },
                     {
-                        text: 'Message only your immediate team members',
-                        outcome: 'Critical issues often require broader stakeholder awareness.',
+                        text: 'Wait for someone else to find it',
+                        outcome: 'Security issues should be reported immediately.',
                         experience: 5
                     }
                 ]
@@ -217,57 +217,57 @@ class CommunicationQuiz extends BaseQuiz {
             {
                 id: 7,
                 level: 'Intermediate',
-                title: 'Cross-team Collaboration',
-                description: 'You need information from another team to complete your testing. How do you proceed?',
+                title: 'Template Testing',
+                description: 'You\'re testing CMS templates and themes. What\'s the most important aspect to verify?',
                 options: [
                     {
-                        text: 'Schedule a meeting with clear agenda and requirements',
-                        outcome: 'Excellent! Structured communication helps get results efficiently.',
+                        text: 'Test layout rendering across different browsers and devices',
+                        outcome: 'Excellent! Cross-browser compatibility is crucial for templates.',
                         experience: 25,
-                        tool: 'Cross-team Communication'
+                        tool: 'Layout Testing'
                     },
                     {
-                        text: 'Send multiple urgent messages to team members',
-                        outcome: 'Scattered communication can be disruptive and ineffective.',
+                        text: 'Only test in one browser',
+                        outcome: 'Templates must work across different browsers.',
                         experience: -15
                     },
                     {
-                        text: 'Ask your manager to intervene',
-                        outcome: 'Try direct communication first before escalating.',
+                        text: 'Skip template testing',
+                        outcome: 'Template testing is essential for CMS functionality.',
                         experience: -10
                     },
                     {
-                        text: 'Work around the missing information',
-                        outcome: 'This could lead to incomplete or incorrect testing.',
-                        experience: 0
+                        text: 'Test only on desktop',
+                        outcome: 'Multiple devices should be tested.',
+                        experience: 5
                     }
                 ]
             },
             {
                 id: 8,
                 level: 'Intermediate',
-                title: 'Test Results Presentation',
-                description: 'You need to present test results to stakeholders. How do you prepare?',
+                title: 'Version Control',
+                description: 'Content changes need to be tracked. What\'s the best approach to test version control?',
                 options: [
                     {
-                        text: 'Create a clear summary with data visualization and key insights',
-                        outcome: 'Perfect! Visual data and key points make information accessible.',
+                        text: 'Test content revision history and ability to restore previous versions',
+                        outcome: 'Perfect! Version control ensures content can be tracked and restored.',
                         experience: 25,
-                        tool: 'Presentation Skills'
+                        tool: 'Version Management'
                     },
                     {
-                        text: 'Show all raw test data',
-                        outcome: 'Raw data without context can be overwhelming.',
+                        text: 'Only test current version',
+                        outcome: 'Version history is crucial for content management.',
                         experience: -15
                     },
                     {
-                        text: 'Verbal presentation only',
-                        outcome: 'Visual aids help reinforce important points.',
-                        experience: -5
+                        text: 'Ignore version control',
+                        outcome: 'Version tracking is essential for content safety.',
+                        experience: -10
                     },
                     {
-                        text: 'Send results in an email instead',
-                        outcome: 'Important findings often benefit from interactive discussion.',
+                        text: 'Test without saving versions',
+                        outcome: 'Version saving should be verified.',
                         experience: 5
                     }
                 ]
@@ -275,28 +275,28 @@ class CommunicationQuiz extends BaseQuiz {
             {
                 id: 9,
                 level: 'Intermediate',
-                title: 'Conflict Resolution',
-                description: 'There\'s a disagreement about test coverage between team members. How do you handle it?',
+                title: 'SEO Tools',
+                description: 'You\'re testing the CMS\'s SEO features. What should you prioritize?',
                 options: [
                     {
-                        text: 'Organize a discussion to understand all viewpoints and find common ground',
-                        outcome: 'Excellent! Collaborative problem-solving builds team strength.',
+                        text: 'Verify meta tags, URLs, and SEO content management tools function correctly',
+                        outcome: 'Excellent! Comprehensive SEO testing ensures optimization capabilities.',
                         experience: 25,
-                        tool: 'Conflict Resolution'
+                        tool: 'SEO Testing'
                     },
                     {
-                        text: 'Let them resolve it themselves',
-                        outcome: 'Active mediation can prevent escalation.',
+                        text: 'Skip SEO testing entirely',
+                        outcome: 'SEO features are crucial for content visibility.',
                         experience: -15
                     },
                     {
-                        text: 'Take sides with one party',
-                        outcome: 'This can create division in the team.',
-                        experience: -5
+                        text: 'Only test page titles',
+                        outcome: 'All SEO features should be tested.',
+                        experience: -10
                     },
                     {
-                        text: 'Implement both approaches separately',
-                        outcome: 'This could lead to inefficient use of resources.',
+                        text: 'Test basic meta tags only',
+                        outcome: 'Complete SEO functionality should be verified.',
                         experience: 5
                     }
                 ]
@@ -304,29 +304,29 @@ class CommunicationQuiz extends BaseQuiz {
             {
                 id: 10,
                 level: 'Intermediate',
-                title: 'Remote Communication',
-                description: 'Working with an offshore team, you notice communication gaps. What\'s your solution?',
+                title: 'Media Library',
+                description: 'The media library needs testing. What\'s the most comprehensive approach?',
                 options: [
                     {
-                        text: 'Establish regular sync meetings and clear documentation protocols',
-                        outcome: 'Perfect! Structure and consistency improve remote collaboration.',
+                        text: 'Test upload, organization, editing, and retrieval of various media types',
+                        outcome: 'Perfect! Complete media library testing ensures robust functionality.',
                         experience: 25,
-                        tool: 'Remote Collaboration'
+                        tool: 'Media Management'
                     },
                     {
-                        text: 'Increase email frequency',
-                        outcome: 'More emails don\'t necessarily mean better communication.',
+                        text: 'Only test uploads',
+                        outcome: 'All media library features should be tested.',
                         experience: -15
                     },
                     {
-                        text: 'Let them figure out what they need',
-                        outcome: 'Proactive communication prevents misunderstandings.',
-                        experience: -5
+                        text: 'Skip media testing',
+                        outcome: 'Media management is crucial for content.',
+                        experience: -10
                     },
                     {
-                        text: 'Report issues to management',
-                        outcome: 'Try direct solutions before escalating.',
-                        experience: 0
+                        text: 'Test basic functions only',
+                        outcome: 'Comprehensive testing is needed.',
+                        experience: 5
                     }
                 ]
             }
@@ -337,28 +337,28 @@ class CommunicationQuiz extends BaseQuiz {
             {
                 id: 11,
                 level: 'Advanced',
-                title: 'Stakeholder Management',
-                description: 'A key stakeholder is pushing for release despite known issues. How do you handle this?',
+                title: 'Plugin Integration',
+                description: 'You\'re testing a new plugin integration in the CMS. What\'s the most comprehensive approach?',
                 options: [
                     {
-                        text: 'Present data-driven evidence of risks and suggest mitigation strategies',
-                        outcome: 'Excellent! Using data to support your position is highly effective.',
+                        text: 'Test plugin compatibility, functionality, and interactions with other extensions',
+                        outcome: 'Excellent! Comprehensive plugin testing ensures system stability.',
                         experience: 20,
-                        tool: 'Stakeholder Management'
+                        tool: 'Integration Testing'
                     },
                     {
-                        text: 'Agree to release without discussion',
-                        outcome: 'Always communicate risks professionally with evidence.',
+                        text: 'Only test the new features',
+                        outcome: 'Plugin testing should include compatibility checks.',
                         experience: -15
                     },
                     {
-                        text: 'Escalate to senior management immediately',
-                        outcome: 'Try direct communication with stakeholders first.',
+                        text: 'Assume it works if it installs',
+                        outcome: 'Installation success doesn\'t guarantee proper functionality.',
                         experience: -10
                     },
                     {
-                        text: 'Refuse to sign off on the release',
-                        outcome: 'Constructive dialogue is better than confrontation.',
+                        text: 'Test basic functionality only',
+                        outcome: 'Comprehensive testing includes multiple aspects.',
                         experience: -5
                     }
                 ]
@@ -366,57 +366,57 @@ class CommunicationQuiz extends BaseQuiz {
             {
                 id: 12,
                 level: 'Advanced',
-                title: 'Process Improvement',
-                description: 'You\'ve identified ways to improve the testing process. How do you implement change?',
+                title: 'Backup and Recovery',
+                description: 'How should you approach testing the CMS backup system?',
                 options: [
                     {
-                        text: 'Create a detailed proposal with data and gather team feedback',
-                        outcome: 'Perfect! Collaborative approach with evidence increases buy-in.',
+                        text: 'Test backup creation, storage, and complete content restoration process',
+                        outcome: 'Perfect! Complete backup testing ensures data safety.',
                         experience: 20,
-                        tool: 'Change Management'
+                        tool: 'Backup Testing'
                     },
                     {
-                        text: 'Implement changes without discussion',
-                        outcome: 'Changes need team buy-in to be effective.',
+                        text: 'Only test backup creation',
+                        outcome: 'Restoration testing is crucial for backup verification.',
                         experience: -15
                     },
                     {
-                        text: 'Leave it to management to decide',
-                        outcome: 'Taking initiative with team input is valuable.',
-                        experience: -5
+                        text: 'Skip backup testing',
+                        outcome: 'Backup functionality is essential for data security.',
+                        experience: -10
                     },
                     {
-                        text: 'Share ideas informally in team chat',
-                        outcome: 'Formal proposals are better for significant changes.',
-                        experience: -10
+                        text: 'Test partial backups only',
+                        outcome: 'Complete backup testing is necessary.',
+                        experience: -5
                     }
                 ]
             },
             {
                 id: 13,
                 level: 'Advanced',
-                title: 'Crisis Communication',
-                description: 'A major system outage is affecting testing environments. How do you manage communication?',
+                title: 'Performance Testing',
+                description: 'The CMS needs performance testing. What\'s the most important aspect?',
                 options: [
                     {
-                        text: 'Establish regular updates, clear impact assessment, and recovery timeline',
-                        outcome: 'Excellent! Structured crisis communication keeps everyone informed.',
+                        text: 'Test load times, multiple users, and heavy content management scenarios',
+                        outcome: 'Excellent! Comprehensive performance testing ensures system reliability.',
                         experience: 20,
-                        tool: 'Crisis Management'
+                        tool: 'Performance Testing'
                     },
                     {
-                        text: 'Wait for others to notice',
-                        outcome: 'Proactive communication is crucial during crises.',
-                        experience: -10
-                    },
-                    {
-                        text: 'Send one update and wait',
-                        outcome: 'Ongoing communication is important in crisis situations.',
+                        text: 'Only test basic loading',
+                        outcome: 'Multiple aspects of performance should be tested.',
                         experience: -15
                     },
                     {
-                        text: 'Communicate only with your team',
-                        outcome: 'System-wide issues need broader communication.',
+                        text: 'Skip performance testing',
+                        outcome: 'Performance is crucial for system usability.',
+                        experience: -10
+                    },
+                    {
+                        text: 'Test with minimal load',
+                        outcome: 'Real-world scenarios should be tested.',
                         experience: -5
                     }
                 ]
@@ -424,28 +424,28 @@ class CommunicationQuiz extends BaseQuiz {
             {
                 id: 14,
                 level: 'Advanced',
-                title: 'Knowledge Transfer',
-                description: 'You\'re leading knowledge transfer for a complex testing framework. How do you approach it?',
+                title: 'Security Testing',
+                description: 'What\'s the most critical aspect of CMS security testing?',
                 options: [
                     {
-                        text: 'Create comprehensive documentation and conduct interactive sessions',
-                        outcome: 'Perfect! Multiple learning formats support effective knowledge transfer.',
+                        text: 'Test user authentication, permissions, and vulnerability scanning',
+                        outcome: 'Perfect! Comprehensive security testing protects the system.',
                         experience: 20,
-                        tool: 'Knowledge Management'
+                        tool: 'Security Assessment'
                     },
                     {
-                        text: 'Send documentation via email',
-                        outcome: 'Interactive learning is important for complex topics.',
+                        text: 'Only test login',
+                        outcome: 'Multiple security aspects need testing.',
                         experience: -15
                     },
                     {
-                        text: 'Give one presentation only',
-                        outcome: 'Complex topics often need multiple sessions.',
+                        text: 'Skip security testing',
+                        outcome: 'Security testing is essential for system protection.',
                         experience: -10
                     },
                     {
-                        text: 'Let team members learn by themselves',
-                        outcome: 'Structured knowledge transfer is more effective.',
+                        text: 'Test basic access only',
+                        outcome: 'Complete security verification is necessary.',
                         experience: -5
                     }
                 ]
@@ -453,28 +453,28 @@ class CommunicationQuiz extends BaseQuiz {
             {
                 id: 15,
                 level: 'Advanced',
-                title: 'Strategic Communication',
-                description: 'You need to propose a major change in testing strategy. How do you approach this?',
+                title: 'Multi-environment Testing',
+                description: 'How should you approach testing CMS deployment across different environments?',
                 options: [
                     {
-                        text: 'Prepare a comprehensive proposal with ROI analysis and implementation plan',
-                        outcome: 'Excellent! Strategic changes need thorough analysis and clear communication.',
+                        text: 'Test functionality and content migration across all environments systematically',
+                        outcome: 'Excellent! Complete environment testing ensures consistent deployment.',
                         experience: 20,
-                        tool: 'Strategic Planning'
+                        tool: 'Environment Testing'
                     },
                     {
-                        text: 'Send a brief email outlining changes',
-                        outcome: 'Major changes need detailed justification.',
-                        experience: -10
-                    },
-                    {
-                        text: 'Implement changes gradually without formal proposal',
-                        outcome: 'Strategic changes need proper planning and approval.',
+                        text: 'Only test in production',
+                        outcome: 'All environments should be tested before production.',
                         experience: -15
                     },
                     {
-                        text: 'Discuss informally in team meetings',
-                        outcome: 'Formal proposals are needed for strategic changes.',
+                        text: 'Skip environment testing',
+                        outcome: 'Environment testing is crucial for deployment.',
+                        experience: -10
+                    },
+                    {
+                        text: 'Test staging only',
+                        outcome: 'All environments need verification.',
                         experience: -5
                     }
                 ]
@@ -664,6 +664,6 @@ class CommunicationQuiz extends BaseQuiz {
 
 // Start the quiz when the page loads
 document.addEventListener('DOMContentLoaded', () => {
-    const quiz = new CommunicationQuiz();
+    const quiz = new CMS_Testing_Quiz();
     quiz.startGame();
 }); 

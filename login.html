@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>QA Learning Hub - Login</title>
+    <link rel="icon" type="image/x-icon" href="assets/favicon.ico">
+    <link rel="stylesheet" href="styles.css">
+    <script src="QuizUser.js"></script>
+    <script src="api-service.js"></script>
+    <script src="login.js"></script>
+    <script src="auth.js"></script>
+</head>
+<body class="auth-page">
+    <div class="auth-container">
+        <div class="auth-card">
+            <div class="auth-header">
+                <h1>QA Learning Hub</h1>
+                <p>Welcome back to your learning journey</p>
+            </div>
+            
+            <div class="auth-tabs">
+                <button class="auth-tab active" data-tab="login">Login</button>
+                <button class="auth-tab" data-tab="register">Register</button>
+            </div>
+
+            <div class="auth-form" id="loginForm">
+                <div class="form-group">
+                    <label for="loginUsername">Username</label>
+                    <input type="text" id="loginUsername" placeholder="Enter your username">
+                </div>
+                <div class="form-group">
+                    <label for="loginPassword">Password</label>
+                    <input type="password" id="loginPassword" placeholder="Enter your password">
+                </div>
+                <button class="auth-button" onclick="handleLogin()">Login</button>
+            </div>
+
+            <div class="auth-form hidden" id="registerForm">
+                <div class="form-group">
+                    <label for="registerUsername">Choose Username</label>
+                    <input type="text" id="registerUsername" placeholder="Pick a username">
+                </div>
+                <div class="form-group">
+                    <label for="registerPassword">Choose Password</label>
+                    <input type="password" id="registerPassword" placeholder="Create a password">
+                </div>
+                <button class="auth-button" onclick="handleRegister()">Create Account</button>
+            </div>
+        </div>
+    </div>
+</body>
+</html> 
