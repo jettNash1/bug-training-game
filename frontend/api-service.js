@@ -1,9 +1,8 @@
-const API_URL = config.apiUrl;
-
 class APIService {
     constructor() {
         this.baseURL = '/api';
         this.token = localStorage.getItem('token');
+        this.adminToken = localStorage.getItem('adminToken');
     }
 
     async saveQuizResult(quizData) {
@@ -34,20 +33,15 @@ class APIService {
         localStorage.setItem(key, JSON.stringify(quizData));
         return { success: true, data: quizData };
     }
-}
 
-class APIService {
-    constructor() {
-        this.baseUrl = '/api';
-    }
-
+    // Admin methods
     async post(endpoint, data) {
         try {
-            const response = await fetch(this.baseUrl + endpoint, {
+            const response = await fetch(this.baseURL + endpoint, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${localStorage.getItem('adminToken')}`
+                    'Authorization': `Bearer ${this.adminToken}`
                 },
                 body: JSON.stringify(data)
             });
@@ -65,9 +59,9 @@ class APIService {
 
     async get(endpoint) {
         try {
-            const response = await fetch(this.baseUrl + endpoint, {
+            const response = await fetch(this.baseURL + endpoint, {
                 headers: {
-                    'Authorization': `Bearer ${localStorage.getItem('adminToken')}`
+                    'Authorization': `Bearer ${this.adminToken}`
                 }
             });
 
@@ -83,4 +77,5 @@ class APIService {
     }
 }
 
+// Make APIService available globally
 window.APIService = APIService; 
