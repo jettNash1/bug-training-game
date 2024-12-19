@@ -1,6 +1,6 @@
 class AdminDashboard {
     constructor() {
-        this.apiService = new ApiService();
+        this.apiService = new APIService();
         this.init();
     }
 

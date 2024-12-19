@@ -2,7 +2,7 @@ const API_URL = config.apiUrl;
 
 class APIService {
     constructor() {
-        this.baseURL = API_URL;
+        this.baseURL = '/api';
         this.token = localStorage.getItem('token');
     }
 
@@ -36,7 +36,7 @@ class APIService {
     }
 }
 
-class ApiService {
+class APIService {
     constructor() {
         this.baseUrl = '/api';
     }
@@ -83,4 +83,4 @@ class ApiService {
     }
 }
 
-window.apiService = new APIService(); 
+window.APIService = APIService; 
