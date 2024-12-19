@@ -1,20 +1,33 @@
 const jwt = require('jsonwebtoken');
 
-module.exports = function(req, res, next) {
-    // Get token from header
-    const token = req.header('Authorization')?.replace('Bearer ', '');
-
-    // Check if no token
-    if (!token) {
-        return res.status(401).json({ message: 'No token, authorization denied' });
-    }
-
+module.exports = (req, res, next) => {
     try {
-        // Verify token
+        const token = req.header('Authorization')?.replace('Bearer ', '');
+        
+        if (!token) {
+            return res.status(401).json({ 
+                success: false, 
+                message: 'No authentication token provided' 
+            });
+        }
+
         const decoded = jwt.verify(token, process.env.JWT_SECRET);
         req.user = decoded;
+        
+        // Check for admin routes
+        if (req.path.startsWith('/admin') && !decoded.isAdmin) {
+            return res.status(403).json({ 
+                success: false, 
+                message: 'Admin access required' 
+            });
+        }
+
         next();
-    } catch (err) {
-        res.status(401).json({ message: 'Token is not valid' });
+    } catch (error) {
+        console.error('Auth middleware error:', error);
+        res.status(401).json({ 
+            success: false, 
+            message: 'Invalid authentication token' 
+        });
     }
 }; 

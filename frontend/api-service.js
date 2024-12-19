@@ -36,4 +36,51 @@ class APIService {
     }
 }
 
+class ApiService {
+    constructor() {
+        this.baseUrl = '/api';
+    }
+
+    async post(endpoint, data) {
+        try {
+            const response = await fetch(this.baseUrl + endpoint, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${localStorage.getItem('adminToken')}`
+                },
+                body: JSON.stringify(data)
+            });
+
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+
+            return await response.json();
+        } catch (error) {
+            console.error('API Error:', error);
+            throw error;
+        }
+    }
+
+    async get(endpoint) {
+        try {
+            const response = await fetch(this.baseUrl + endpoint, {
+                headers: {
+                    'Authorization': `Bearer ${localStorage.getItem('adminToken')}`
+                }
+            });
+
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+
+            return await response.json();
+        } catch (error) {
+            console.error('API Error:', error);
+            throw error;
+        }
+    }
+}
+
 window.apiService = new APIService(); 
