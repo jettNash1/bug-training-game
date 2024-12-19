@@ -116,17 +116,24 @@ class AdminDashboard {
         const users = [];
         for (let i = 0; i < localStorage.length; i++) {
             const key = localStorage.key(i);
-            if (key && key.startsWith('quizUser_')) {
+            if (key && (key.startsWith('quizUser_') || key.startsWith('user_'))) {
                 try {
                     const userData = JSON.parse(localStorage.getItem(key));
                     if (userData) {
+                        if (!userData.quizResults) {
+                            userData.quizResults = [];
+                        }
+                        if (userData.lastActive && !userData.lastLogin) {
+                            userData.lastLogin = userData.lastActive;
+                        }
                         users.push(userData);
                     }
                 } catch (error) {
-                    console.error('Error parsing user data:', error);
+                    console.error('Error parsing user data:', error, key);
                 }
             }
         }
+        console.log('Found users:', users);
         return users;
     }
 
@@ -146,10 +153,15 @@ class AdminDashboard {
 
     calculateUserProgress(user) {
         if (!user || !user.quizResults) return 0;
-        const totalQuizzes = 11; // Total number of available quizzes
-        const completedQuizzes = Array.isArray(user.quizResults) ? 
-            user.quizResults.length : 
-            Object.keys(user.quizResults || {}).length;
+        
+        let completedQuizzes;
+        if (Array.isArray(user.quizResults)) {
+            completedQuizzes = user.quizResults.length;
+        } else {
+            completedQuizzes = Object.keys(user.quizResults).length;
+        }
+        
+        const totalQuizzes = 11;
         return Math.round((completedQuizzes / totalQuizzes) * 100);
     }
 
@@ -220,7 +232,12 @@ class AdminDashboard {
                         </thead>
                         <tbody>
                             ${quizzes.map(quiz => {
-                                const result = user.quizResults?.find(r => r.quizName === quiz.key);
+                                let result;
+                                if (Array.isArray(user.quizResults)) {
+                                    result = user.quizResults.find(r => r.quizName === quiz.key);
+                                } else {
+                                    result = user.quizResults[quiz.key];
+                                }
                                 return `
                                     <tr>
                                         <td>${quiz.display}</td>
