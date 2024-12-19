@@ -50,10 +50,6 @@ app.use('/api/users', userRoutes);
 const adminRoutes = require('./routes/admin');
 app.use('/api/admin', adminRoutes);
 
-// Add this near your other route registrations
-const usersRouter = require('./routes/users');
-app.use('/api/users', usersRouter);
-
 // Serve static files from the build directory
 app.use(express.static(path.join(__dirname, '../build')));
 

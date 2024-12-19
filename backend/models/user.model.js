@@ -31,14 +31,14 @@ const userSchema = new mongoose.Schema({
     lastLogin: Date,
     quizProgress: {
         type: Map,
-        of: new mongoose.Schema({
+        of: {
             experience: Number,
             tools: [String],
             currentScenario: Number,
             questionHistory: Array,
             lastUpdated: Date
-        }, { _id: false }),
-        default: new Map()
+        },
+        default: {}
     }
 });
 

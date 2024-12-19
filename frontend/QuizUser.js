@@ -155,48 +155,6 @@ class QuizUser {
             throw error;
         }
     }
-
-    async loadAndDisplayProgress() {
-        try {
-            // First try to load from server
-            const token = localStorage.getItem('token');
-            const quizzes = ['communication']; // Add other quiz names as they're implemented
-            
-            for (const quizName of quizzes) {
-                try {
-                    const response = await fetch(`${this.baseUrl}/quiz-progress/${quizName}`, {
-                        headers: {
-                            'Authorization': `Bearer ${token}`
-                        }
-                    });
-
-                    if (response.ok) {
-                        const { data } = await response.json();
-                        this.updateProgressDisplay(quizName, data);
-                    }
-                } catch (error) {
-                    console.error(`Failed to load progress for ${quizName}:`, error);
-                }
-            }
-        } catch (error) {
-            console.error('Failed to load user progress:', error);
-        }
-    }
-
-    updateProgressDisplay(quizName, progress) {
-        const progressElement = document.querySelector(`#${quizName}-progress`);
-        if (progressElement) {
-            if (progress) {
-                const totalQuestions = 15; // Total questions in the quiz
-                const completedQuestions = progress.questionHistory.length;
-                const percentComplete = Math.round((completedQuestions / totalQuestions) * 100);
-                progressElement.textContent = `${percentComplete}% Complete`;
-                progressElement.classList.remove('hidden');
-            } else {
-                progressElement.classList.add('hidden');
-            }
-        }
-    }
 }
 
 // Ensure only one instance is defined

@@ -29,15 +29,7 @@
 
     <div class="quiz-container">
         <div class="quiz-header">
-            <a href="../index.html" 
-               class="back-link" 
-               onclick="event.preventDefault(); 
-                        this.classList.add('loading');
-                        quiz.handleNavigation()
-                            .then(() => window.location.href = '../index.html')
-                            .catch(() => this.classList.remove('loading'))">
-                ← Back to Hub
-            </a>
+            <a href="../index.html" class="back-link">← Back to Hub</a>
             <div class="quiz-progress">
                 <div class="level-info">
                     <span id="level-indicator">Level: Basic</span>
@@ -96,15 +88,7 @@
             </div>
             
             <button id="restart-btn" class="submit-button">Try Again</button>
-            <a href="../index.html" 
-               class="back-link"
-               onclick="event.preventDefault(); 
-                        this.classList.add('loading');
-                        quiz.handleNavigation()
-                            .then(() => window.location.href = '../index.html')
-                            .catch(() => this.classList.remove('loading'))">
-                Return to Hub
-            </a>
+            <a href="../index.html" class="back-link">Return to Hub</a>
         </div>
 
         <div id="loading-indicator" class="loading-indicator hidden">

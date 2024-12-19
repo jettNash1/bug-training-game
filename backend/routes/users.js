@@ -215,67 +215,39 @@ router.post('/quiz-progress', auth, async (req, res) => {
         const user = await User.findById(req.user.id);
         
         if (!user) {
-            return res.status(404).json({ 
-                success: false, 
-                message: 'User not found' 
-            });
+            return res.status(404).json({ success: false, message: 'User not found' });
         }
 
-        // Initialize quizProgress if it doesn't exist
+        // Add or update quiz progress
         if (!user.quizProgress) {
-            user.quizProgress = new Map();
+            user.quizProgress = {};
         }
-
-        // Store progress
-        user.quizProgress.set(quizName, {
+        user.quizProgress[quizName] = {
             ...progress,
             lastUpdated: new Date()
-        });
+        };
 
         await user.save();
-        
-        // Send proper JSON response
-        res.json({ 
-            success: true, 
-            message: 'Progress saved successfully' 
-        });
+        res.json({ success: true });
     } catch (error) {
         console.error('Failed to save progress:', error);
-        res.status(500).json({ 
-            success: false, 
-            error: 'Failed to save progress',
-            details: error.message 
-        });
+        res.status(500).json({ error: 'Failed to save progress' });
     }
 });
 
 router.get('/quiz-progress/:quizName', auth, async (req, res) => {
     try {
-        const { quizName } = req.params;
         const user = await User.findById(req.user.id);
         
         if (!user) {
-            return res.status(404).json({ 
-                success: false, 
-                message: 'User not found' 
-            });
+            return res.status(404).json({ success: false, message: 'User not found' });
         }
 
-        // Get progress from Map
-        const progress = user.quizProgress ? user.quizProgress.get(quizName) : null;
-        
-        // Send proper JSON response
-        res.json({ 
-            success: true, 
-            data: progress || null 
-        });
+        const progress = user.quizProgress ? user.quizProgress[quizName] : null;
+        res.json({ success: true, data: progress });
     } catch (error) {
         console.error('Failed to get progress:', error);
-        res.status(500).json({ 
-            success: false, 
-            error: 'Failed to get progress',
-            details: error.message 
-        });
+        res.status(500).json({ error: 'Failed to get progress' });
     }
 });
 
