@@ -89,6 +89,50 @@ class APIService {
             throw error;
         }
     }
+
+    async saveQuizProgress(quizName, progress) {
+        try {
+            const response = await fetch(`${this.baseURL}/users/quiz-progress`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${this.token}`
+                },
+                body: JSON.stringify({
+                    quizName,
+                    progress
+                })
+            });
+
+            if (!response.ok) {
+                throw new Error('Failed to save quiz progress');
+            }
+
+            return await response.json();
+        } catch (error) {
+            console.error('Failed to save quiz progress:', error);
+            throw error;
+        }
+    }
+
+    async getQuizProgress(quizName) {
+        try {
+            const response = await fetch(`${this.baseURL}/users/quiz-progress/${quizName}`, {
+                headers: {
+                    'Authorization': `Bearer ${this.token}`
+                }
+            });
+
+            if (!response.ok) {
+                throw new Error('Failed to get quiz progress');
+            }
+
+            return await response.json();
+        } catch (error) {
+            console.error('Failed to get quiz progress:', error);
+            throw error;
+        }
+    }
 }
 
 // Make APIService available globally

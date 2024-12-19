@@ -28,7 +28,18 @@ const userSchema = new mongoose.Schema({
         type: Date,
         default: Date.now
     },
-    lastLogin: Date
+    lastLogin: Date,
+    quizProgress: {
+        type: Map,
+        of: {
+            experience: Number,
+            tools: [String],
+            currentScenario: Number,
+            questionHistory: Array,
+            lastUpdated: Date
+        },
+        default: {}
+    }
 });
 
 // Hash password before saving

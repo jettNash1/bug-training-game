@@ -483,14 +483,81 @@ class CommunicationQuiz extends BaseQuiz {
 
         // Initialize UI and add event listeners
         this.initializeEventListeners();
+
+        this.apiService = new APIService();
+
+        // Add references to screens
+        this.gameScreen = document.getElementById('game-screen');
+        this.outcomeScreen = document.getElementById('outcome-screen');
+        
+        if (!this.gameScreen || !this.outcomeScreen) {
+            console.error('Required screen elements not found');
+        }
+
+        this.isLoading = false;
+    }
+
+    async saveProgress() {
+        const progress = {
+            experience: this.player.experience,
+            tools: this.player.tools,
+            currentScenario: this.player.currentScenario,
+            questionHistory: this.player.questionHistory,
+            lastUpdated: new Date().toISOString()
+        };
+
+        try {
+            await this.apiService.saveQuizProgress(this.quizName, progress);
+        } catch (error) {
+            console.error('Failed to save progress:', error);
+            // Continue without saving - don't interrupt the user experience
+        }
+    }
+
+    async loadProgress() {
+        try {
+            const savedProgress = await this.apiService.getQuizProgress(this.quizName);
+            
+            if (savedProgress && savedProgress.data) {
+                const progress = savedProgress.data;
+                
+                // Only restore if the progress is less than 24 hours old
+                const lastUpdated = new Date(progress.lastUpdated);
+                const now = new Date();
+                const hoursSinceUpdate = (now - lastUpdated) / (1000 * 60 * 60);
+                
+                if (hoursSinceUpdate < 24) {
+                    this.player.experience = progress.experience;
+                    this.player.tools = progress.tools;
+                    this.player.currentScenario = progress.currentScenario;
+                    this.player.questionHistory = progress.questionHistory;
+                    return true;
+                }
+            }
+            return false;
+        } catch (error) {
+            console.error('Failed to load progress:', error);
+            return false;
+        }
     }
 
     async startGame() {
+        if (this.isLoading) return;
+        
         try {
-            this.player.experience = 0;
-            this.player.tools = [];
-            this.player.currentScenario = 0;
-            this.player.questionHistory = [];
+            this.isLoading = true;
+            // Show loading state
+            document.getElementById('loading-indicator')?.classList.remove('hidden');
+            
+            const hasProgress = await this.loadProgress();
+            
+            if (!hasProgress) {
+                // Reset player state if no valid progress exists
+                this.player.experience = 0;
+                this.player.tools = [];
+                this.player.currentScenario = 0;
+                this.player.questionHistory = [];
+            }
             
             // Clear any existing transition messages
             const transitionContainer = document.getElementById('level-transition-container');
@@ -501,6 +568,10 @@ class CommunicationQuiz extends BaseQuiz {
         } catch (error) {
             console.error('Failed to start game:', error);
             this.showError('Failed to start the quiz. Please try refreshing the page.');
+        } finally {
+            this.isLoading = false;
+            // Hide loading state
+            document.getElementById('loading-indicator')?.classList.add('hidden');
         }
     }
 
@@ -606,46 +677,60 @@ class CommunicationQuiz extends BaseQuiz {
         this.updateProgress();
     }
 
-    handleAnswer() {
-        const selectedOption = document.querySelector('input[name="option"]:checked');
-        if (!selectedOption) return;
-
-        const currentScenarios = this.getCurrentScenarios();
-        const scenario = currentScenarios[this.player.currentScenario];
-        const originalIndex = parseInt(selectedOption.value);
+    async handleAnswer() {
+        if (this.isLoading) return;
         
-        // Get the original option directly using the stored original index
-        const selectedAnswer = scenario.options[originalIndex];
+        try {
+            this.isLoading = true;
+            const selectedOption = document.querySelector('input[name="option"]:checked');
+            if (!selectedOption) return;
 
-        // Update player experience and history
-        this.player.experience = Math.max(0, Math.min(this.maxXP, this.player.experience + selectedAnswer.experience));
-        this.player.questionHistory.push({
-            scenario: scenario,
-            selectedAnswer: selectedAnswer,
-            maxPossibleXP: Math.max(...scenario.options.map(o => o.experience))
-        });
+            const currentScenarios = this.getCurrentScenarios();
+            const scenario = currentScenarios[this.player.currentScenario];
+            const originalIndex = parseInt(selectedOption.value);
+            
+            const selectedAnswer = scenario.options[originalIndex];
 
-        // Show outcome screen
-        this.gameScreen.classList.add('hidden');
-        this.outcomeScreen.classList.remove('hidden');
-        
-        // Update outcome display
-        document.getElementById('outcome-text').textContent = selectedAnswer.outcome;
-        const xpText = selectedAnswer.experience >= 0 ? 
-            `Experience gained: +${selectedAnswer.experience}` : 
-            `Experience: ${selectedAnswer.experience}`;
-        document.getElementById('xp-gained').textContent = xpText;
-        
-        if (selectedAnswer.tool) {
-            document.getElementById('tool-gained').textContent = `Tool acquired: ${selectedAnswer.tool}`;
-            if (!this.player.tools.includes(selectedAnswer.tool)) {
-                this.player.tools.push(selectedAnswer.tool);
+            // Update player state
+            this.player.experience = Math.max(0, Math.min(this.maxXP, this.player.experience + selectedAnswer.experience));
+            this.player.questionHistory.push({
+                scenario: scenario,
+                selectedAnswer: selectedAnswer,
+                maxPossibleXP: Math.max(...scenario.options.map(o => o.experience))
+            });
+
+            // Save progress after each answer
+            await this.saveProgress();
+
+            // Show outcome screen - with error handling
+            if (this.gameScreen && this.outcomeScreen) {
+                this.gameScreen.classList.add('hidden');
+                this.outcomeScreen.classList.remove('hidden');
             }
-        } else {
-            document.getElementById('tool-gained').textContent = '';
-        }
+            
+            // Update outcome display
+            document.getElementById('outcome-text').textContent = selectedAnswer.outcome;
+            const xpText = selectedAnswer.experience >= 0 ? 
+                `Experience gained: +${selectedAnswer.experience}` : 
+                `Experience: ${selectedAnswer.experience}`;
+            document.getElementById('xp-gained').textContent = xpText;
+            
+            if (selectedAnswer.tool) {
+                document.getElementById('tool-gained').textContent = `Tool acquired: ${selectedAnswer.tool}`;
+                if (!this.player.tools.includes(selectedAnswer.tool)) {
+                    this.player.tools.push(selectedAnswer.tool);
+                }
+            } else {
+                document.getElementById('tool-gained').textContent = '';
+            }
 
-        this.updateProgress();
+            this.updateProgress();
+        } catch (error) {
+            console.error('Failed to handle answer:', error);
+            this.showError('Failed to save your answer. Please try again.');
+        } finally {
+            this.isLoading = false;
+        }
     }
 
     getCurrentScenarios() {
