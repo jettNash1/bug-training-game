@@ -1,6 +1,5 @@
 class AdminDashboard {
     constructor() {
-        this.apiService = new APIService();
         this.init();
     }
 
@@ -21,30 +20,14 @@ class AdminDashboard {
         }
     }
 
-    async handleLogin(username, password) {
-        try {
-            console.log('Attempting login with:', { username });
-            const response = await this.apiService.post('/admin/login', {
-                username,
-                password
-            });
-
-            console.log('Login response:', response);
-
-            if (response.success) {
-                localStorage.setItem('adminToken', response.token);
-                window.location.href = 'admin.html';
-                return true;
-            }
-            return false;
-        } catch (error) {
-            console.error('Login error:', error);
-            if (error.response) {
-                console.error('Response details:', await error.response.text());
-            }
-            alert('Login failed: ' + (error.message || 'Unknown error'));
-            return false;
+    handleLogin(username, password) {
+        // Hardcoded admin credentials
+        if (username === 'admin' && password === 'admin123') {
+            localStorage.setItem('adminToken', 'admin_authenticated');
+            window.location.href = 'admin.html';
+            return true;
         }
+        return false;
     }
 
     setupLoginHandler() {
@@ -54,7 +37,7 @@ class AdminDashboard {
             return;
         }
 
-        form.addEventListener('submit', async (e) => {
+        form.addEventListener('submit', (e) => {
             e.preventDefault();
             const username = document.getElementById('adminUsername').value;
             const password = document.getElementById('adminPassword').value;
@@ -64,7 +47,7 @@ class AdminDashboard {
                 return;
             }
 
-            const success = await this.handleLogin(username, password);
+            const success = this.handleLogin(username, password);
             if (!success) {
                 alert('Invalid admin credentials');
             }
@@ -73,22 +56,12 @@ class AdminDashboard {
 
     checkAdminAuth() {
         const token = localStorage.getItem('adminToken');
-        console.log('Checking admin auth token:', token ? 'Token exists' : 'No token');
-        return !!token;
+        return token === 'admin_authenticated';
     }
 
-    async initializeDashboard() {
+    initializeDashboard() {
         console.log('Initializing dashboard');
-        try {
-            const stats = await this.apiService.get('/admin/stats');
-            this.updateDashboardStats(stats);
-        } catch (error) {
-            console.error('Error initializing dashboard:', error);
-            if (error.message.includes('401')) {
-                alert('Session expired. Please login again.');
-                this.handleLogout();
-            }
-        }
+        // Add any dashboard initialization code here
     }
 
     handleLogout() {
