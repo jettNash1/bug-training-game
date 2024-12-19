@@ -21,6 +21,7 @@ const corsOptions = {
 
 app.use(cors(corsOptions));
 app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
 
 // Debug middleware to log requests
 app.use((req, res, next) => {
@@ -50,12 +51,14 @@ app.get('*', (req, res) => {
 
 // Error handling middleware
 app.use((err, req, res, next) => {
-    console.error('Error:', err);
-    res.status(500).json({ 
-        success: false, 
-        message: 'Something went wrong!',
-        error: err.message 
-    });
+    if (err instanceof SyntaxError && err.status === 400 && 'body' in err) {
+        console.error('JSON Parse Error:', err);
+        return res.status(400).json({ 
+            success: false, 
+            message: 'Invalid JSON payload' 
+        });
+    }
+    next(err);
 });
 
 // Start server

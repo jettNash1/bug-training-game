@@ -37,6 +37,7 @@ class APIService {
     // Admin methods
     async post(endpoint, data) {
         try {
+            console.log(`Making POST request to ${this.baseURL}${endpoint}`, { data });
             const response = await fetch(this.baseURL + endpoint, {
                 method: 'POST',
                 headers: {
@@ -46,11 +47,24 @@ class APIService {
                 body: JSON.stringify(data)
             });
 
+            console.log('Response status:', response.status);
+            const responseText = await response.text();
+            console.log('Response text:', responseText);
+
             if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
+                throw new Error(`HTTP error! status: ${response.status}, body: ${responseText}`);
             }
 
-            return await response.json();
+            if (!responseText) {
+                throw new Error('Empty response from server');
+            }
+
+            try {
+                return JSON.parse(responseText);
+            } catch (e) {
+                console.error('JSON parse error:', e);
+                throw new Error(`Invalid JSON response: ${responseText}`);
+            }
         } catch (error) {
             console.error('API Error:', error);
             throw error;

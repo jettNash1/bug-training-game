@@ -23,7 +23,7 @@ class AdminDashboard {
 
     async handleLogin(username, password) {
         try {
-            console.log('Attempting login...');
+            console.log('Attempting login with:', { username });
             const response = await this.apiService.post('/admin/login', {
                 username,
                 password
@@ -39,6 +39,9 @@ class AdminDashboard {
             return false;
         } catch (error) {
             console.error('Login error:', error);
+            if (error.response) {
+                console.error('Response details:', await error.response.text());
+            }
             alert('Login failed: ' + (error.message || 'Unknown error'));
             return false;
         }

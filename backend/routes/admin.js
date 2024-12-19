@@ -7,6 +7,7 @@ const auth = require('../middleware/auth');
 // Admin login
 router.post('/login', async (req, res) => {
     try {
+        console.log('Admin login attempt:', req.body);
         const { username, password } = req.body;
         
         // Check against environment variables
@@ -19,22 +20,25 @@ router.post('/login', async (req, res) => {
                 { expiresIn: '24h' }
             );
 
-            res.json({ 
+            console.log('Admin login successful');
+            return res.json({ 
                 success: true,
                 token,
                 message: 'Admin login successful'
             });
         } else {
-            res.status(401).json({ 
+            console.log('Admin login failed: Invalid credentials');
+            return res.status(401).json({ 
                 success: false, 
                 message: 'Invalid admin credentials' 
             });
         }
     } catch (error) {
         console.error('Admin login error:', error);
-        res.status(500).json({ 
+        return res.status(500).json({ 
             success: false, 
-            message: 'Server error during admin login' 
+            message: 'Server error during admin login',
+            error: error.message
         });
     }
 });
