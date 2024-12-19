@@ -5,7 +5,9 @@
   "scripts": {
     "start": "node backend/server.js",
     "dev": "nodemon backend/server.js",
-    "test": "jest --watchAll --verbose"
+    "test": "jest --watchAll --verbose",
+    "build": "mkdir -p build && cp -r frontend/* build/ && cp -r backend build/",
+    "postbuild": "cd build && npm install"
   },
   "engines": {
     "node": ">=14.0.0"
