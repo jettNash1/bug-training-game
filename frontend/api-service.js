@@ -105,10 +105,16 @@ class APIService {
             });
 
             if (!response.ok) {
-                throw new Error('Failed to save quiz progress');
+                const errorData = await response.json().catch(() => ({}));
+                throw new Error(errorData.message || 'Failed to save quiz progress');
             }
 
-            return await response.json();
+            const data = await response.json();
+            if (!data.success) {
+                throw new Error(data.message || 'Failed to save quiz progress');
+            }
+
+            return data;
         } catch (error) {
             console.error('Failed to save quiz progress:', error);
             throw error;
@@ -124,10 +130,16 @@ class APIService {
             });
 
             if (!response.ok) {
-                throw new Error('Failed to get quiz progress');
+                const errorData = await response.json().catch(() => ({}));
+                throw new Error(errorData.message || 'Failed to get quiz progress');
             }
 
-            return await response.json();
+            const data = await response.json();
+            if (!data.success) {
+                throw new Error(data.message || 'Failed to get quiz progress');
+            }
+
+            return data;
         } catch (error) {
             console.error('Failed to get quiz progress:', error);
             throw error;

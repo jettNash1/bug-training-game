@@ -1,0 +1,18 @@
+<div class="quiz-card">
+    <h3>Communication Skills Quiz</h3>
+    <p>Test your communication skills in various scenarios.</p>
+    <div class="quiz-info">
+        <span id="communication-progress" class="progress-indicator hidden">0% Complete</span>
+        <a href="pages/communication-quiz.html" class="start-button">Start Quiz</a>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', async () => {
+    const currentUsername = localStorage.getItem('currentUser');
+    if (currentUsername) {
+        const user = new QuizUser(currentUsername);
+        await user.loadAndDisplayProgress();
+    }
+});
+</script> 

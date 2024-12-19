@@ -1133,3 +1133,24 @@ select:disabled {
         transform: translateY(-10px);
     }
 }
+
+.progress-indicator {
+    background-color: #e0f2f1;
+    color: #00796b;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 0.9em;
+    margin-right: 10px;
+}
+
+.quiz-info {
+    display: flex;
+    align-items: center;
+    margin-top: 10px;
+}
+
+.back-link.loading {
+    opacity: 0.7;
+    cursor: wait;
+    pointer-events: none;
+}

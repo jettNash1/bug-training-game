@@ -495,6 +495,11 @@ class CommunicationQuiz extends BaseQuiz {
         }
 
         this.isLoading = false;
+
+        // Add event listener for when user leaves the page
+        window.addEventListener('beforeunload', async () => {
+            await this.saveProgress();
+        });
     }
 
     async saveProgress() {
@@ -527,17 +532,14 @@ class CommunicationQuiz extends BaseQuiz {
                 const hoursSinceUpdate = (now - lastUpdated) / (1000 * 60 * 60);
                 
                 if (hoursSinceUpdate < 24) {
-                    this.player.experience = progress.experience;
-                    this.player.tools = progress.tools;
-                    this.player.currentScenario = progress.currentScenario;
-                    this.player.questionHistory = progress.questionHistory;
-                    return true;
+                    // Return the progress data instead of true
+                    return progress;
                 }
             }
-            return false;
+            return null; // Return null instead of false
         } catch (error) {
             console.error('Failed to load progress:', error);
-            return false;
+            return null; // Return null instead of false
         }
     }
 
@@ -546,12 +548,13 @@ class CommunicationQuiz extends BaseQuiz {
         
         try {
             this.isLoading = true;
-            // Show loading state
             document.getElementById('loading-indicator')?.classList.remove('hidden');
             
-            const hasProgress = await this.loadProgress();
+            const savedProgress = await this.loadProgress();
             
-            if (!hasProgress) {
+            if (savedProgress && savedProgress.data) {
+                await this.continueFromProgress(savedProgress.data);
+            } else {
                 // Reset player state if no valid progress exists
                 this.player.experience = 0;
                 this.player.tools = [];
@@ -559,18 +562,12 @@ class CommunicationQuiz extends BaseQuiz {
                 this.player.questionHistory = [];
             }
             
-            // Clear any existing transition messages
-            const transitionContainer = document.getElementById('level-transition-container');
-            transitionContainer.innerHTML = '';
-            transitionContainer.classList.remove('active');
-            
             await this.displayScenario();
         } catch (error) {
             console.error('Failed to start game:', error);
             this.showError('Failed to start the quiz. Please try refreshing the page.');
         } finally {
             this.isLoading = false;
-            // Hide loading state
             document.getElementById('loading-indicator')?.classList.add('hidden');
         }
     }
@@ -745,10 +742,43 @@ class CommunicationQuiz extends BaseQuiz {
         }
         return this.basicScenarios;
     }
+
+    async continueFromProgress(progress) {
+        this.player.experience = progress.experience;
+        this.player.tools = progress.tools;
+        this.player.currentScenario = progress.currentScenario;
+        this.player.questionHistory = progress.questionHistory;
+
+        // Update UI to reflect current progress
+        document.getElementById('experience-display').textContent = 
+            `XP: ${this.player.experience}/${this.maxXP}`;
+        
+        const totalQuestions = 15;
+        const completedQuestions = this.player.questionHistory.length;
+        document.getElementById('question-progress').textContent = 
+            `Question: ${completedQuestions + 1}/${totalQuestions}`;
+
+        // Show appropriate level indicator
+        const currentLevel = this.getCurrentLevel();
+        document.getElementById('level-indicator').textContent = 
+            `Level: ${currentLevel}`;
+    }
+
+    getCurrentLevel() {
+        const totalAnswered = this.player.questionHistory.length;
+        const currentXP = this.player.experience;
+        
+        if (totalAnswered >= 10 && currentXP >= this.levelThresholds.intermediate.minXP) {
+            return 'Advanced';
+        } else if (totalAnswered >= 5 && currentXP >= this.levelThresholds.basic.minXP) {
+            return 'Intermediate';
+        }
+        return 'Basic';
+    }
 }
 
 // Start the quiz when the page loads
 document.addEventListener('DOMContentLoaded', () => {
-    const quiz = new CommunicationQuiz();
-    quiz.startGame();
+    window.quiz = new CommunicationQuiz(); // Make it globally accessible
+    window.quiz.startGame();
 }); 

@@ -15,6 +15,13 @@ class BaseQuiz {
             currentScenario: 0,
             questionHistory: []
         };
+        
+        // Add save on navigation
+        window.addEventListener('beforeunload', async () => {
+            if (this.saveProgress) {
+                await this.saveProgress();
+            }
+        });
     }
 
     shuffleArray(array) {
@@ -250,5 +257,17 @@ class BaseQuiz {
         }
         
         recommendations.textContent = recommendationText;
+    }
+
+    // Add method to handle navigation away
+    async handleNavigation() {
+        try {
+            if (this.saveProgress) {
+                await this.saveProgress();
+            }
+        } catch (error) {
+            console.error('Failed to save progress during navigation:', error);
+            // Continue with navigation even if save fails
+        }
     }
 } 
