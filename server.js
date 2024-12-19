@@ -1,13 +1,24 @@
+// Update any relative path references
+require('dotenv').config({ path: '../.env' });
+
+// Rest of your server code remains the same
 const express = require('express');
 const cors = require('cors');
 const mongoose = require('mongoose');
-require('dotenv').config();
 
 const app = express();
 const port = process.env.PORT || 3000;
 
 // Middleware
-app.use(cors());
+const corsOptions = {
+  origin: process.env.NODE_ENV === 'production'
+    ? ['https://your-frontend-domain.com']
+    : ['http://localhost:3000'],
+  credentials: true,
+  optionsSuccessStatus: 200
+};
+
+app.use(cors(corsOptions));
 app.use(express.json());
 
 // Debug middleware to log requests

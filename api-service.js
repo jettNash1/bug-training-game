@@ -1,6 +1,8 @@
+const API_URL = config.apiUrl;
+
 class APIService {
     constructor() {
-        this.baseURL = 'http://localhost:3000/api';
+        this.baseURL = API_URL;
         this.token = localStorage.getItem('token');
     }
 
