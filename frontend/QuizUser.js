@@ -150,8 +150,12 @@ export class QuizUser {
 
     async updateQuizScore(quizName, score) {
         try {
+            if (!this.api) {
+                throw new Error('API service not initialized');
+            }
+            
             const result = await this.api.updateQuizScore(quizName, score);
-            if (result) {
+            if (result && result.success) {
                 // Update local quiz results
                 const existingIndex = this.quizResults.findIndex(r => r.quizName === quizName);
                 if (existingIndex !== -1) {
@@ -161,9 +165,10 @@ export class QuizUser {
                 }
                 return true;
             }
-            return false;
+            throw new Error(result?.message || 'Failed to update quiz score');
         } catch (error) {
             console.error('Failed to update quiz score:', error);
+            this.showError(`Failed to update quiz score: ${error.message}`);
             return false;
         }
     }

@@ -425,4 +425,46 @@ router.post('/sync', auth, async (req, res) => {
     }
 });
 
+// Update quiz scores
+router.post('/quiz-scores', auth, async (req, res) => {
+    try {
+        const { quizName, score } = req.body;
+        const user = await User.findById(req.user.id);
+        
+        if (!user) {
+            return res.status(404).json({ success: false, message: 'User not found' });
+        }
+
+        // Find and update or add new quiz result
+        const existingIndex = user.quizResults.findIndex(r => r.quizName === quizName);
+        if (existingIndex !== -1) {
+            // Only update if new score is higher
+            if (score > user.quizResults[existingIndex].score) {
+                user.quizResults[existingIndex].score = score;
+                user.quizResults[existingIndex].updatedAt = new Date();
+            }
+        } else {
+            user.quizResults.push({
+                quizName,
+                score,
+                completedAt: new Date()
+            });
+        }
+
+        await user.save();
+        res.json({ 
+            success: true, 
+            message: 'Quiz score updated successfully',
+            data: user.quizResults 
+        });
+    } catch (error) {
+        console.error('Error updating quiz score:', error);
+        res.status(500).json({ 
+            success: false, 
+            message: 'Failed to update quiz score',
+            error: error.message 
+        });
+    }
+});
+
 module.exports = router;

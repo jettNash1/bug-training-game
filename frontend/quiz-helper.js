@@ -104,11 +104,15 @@ export class BaseQuiz {
     async finishQuiz() {
         this.isLoading = true;
         try {
+            if (!this.player.name) {
+                throw new Error('No user found, cannot save progress');
+            }
+
             const user = new QuizUser(this.player.name);
             const score = this.calculateScore();
             
             // First save the quiz result
-            await user.saveQuizResult(
+            const saveResult = await user.saveQuizResult(
                 this.quizName,
                 score,
                 this.player.experience,
@@ -116,8 +120,15 @@ export class BaseQuiz {
                 this.player.questionHistory
             );
 
+            if (!saveResult) {
+                throw new Error('Failed to save quiz results');
+            }
+
             // Then update the quiz score
-            await user.updateQuizScore(this.quizName, score);
+            const updateResult = await user.updateQuizScore(this.quizName, score);
+            if (!updateResult) {
+                throw new Error('Failed to update quiz score');
+            }
             
             // Redirect to home page
             window.location.href = '/';
@@ -126,7 +137,7 @@ export class BaseQuiz {
             // Show error message to user
             const errorDiv = document.createElement('div');
             errorDiv.className = 'error-notification';
-            errorDiv.textContent = 'Failed to save results. Please try again.';
+            errorDiv.textContent = error.message || 'Failed to save results. Please try again.';
             document.body.appendChild(errorDiv);
             setTimeout(() => errorDiv.remove(), 5000);
         } finally {
