@@ -52,13 +52,17 @@ document.addEventListener('DOMContentLoaded', () => {
 
         try {
             const response = await api.login(username, password);
-            if (response.token) {
+            console.log('Login response:', response);
+            
+            if (response.success && response.token) {
+                console.log('Login successful, storing tokens...');
                 setAuthToken(response.token);
                 setRefreshToken(response.refreshToken);
                 localStorage.setItem('username', username);
                 window.location.href = '/';
             } else {
-                showError('Login failed. Please check your credentials.');
+                console.log('Login failed:', response);
+                showError(response.message || 'Login failed. Please check your credentials.');
             }
         } catch (error) {
             console.error('Login failed:', error);
@@ -78,13 +82,17 @@ document.addEventListener('DOMContentLoaded', () => {
 
         try {
             const response = await api.register(username, password);
-            if (response.token) {
+            console.log('Registration response:', response);
+            
+            if (response.success && response.token) {
+                console.log('Registration successful, storing tokens...');
                 setAuthToken(response.token);
                 setRefreshToken(response.refreshToken);
                 localStorage.setItem('username', username);
                 window.location.href = '/';
             } else {
-                showError('Registration failed. Please try a different username.');
+                console.log('Registration failed:', response);
+                showError(response.message || 'Registration failed. Please try a different username.');
             }
         } catch (error) {
             console.error('Registration failed:', error);

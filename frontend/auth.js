@@ -16,6 +16,8 @@ export async function checkAuth() {
     const token = getAuthToken();
     const username = localStorage.getItem('username');
     
+    console.log('Checking auth:', { hasToken: !!token, hasUsername: !!username, path: window.location.pathname });
+    
     // If we're on the login page and user is authenticated, redirect to index
     if (window.location.pathname.includes('login.html') && token && username) {
         window.location.href = '/';
@@ -31,6 +33,7 @@ export async function checkAuth() {
     // Verify token validity
     if (token && username) {
         try {
+            console.log('Verifying token...');
             const response = await fetch(`${config.apiUrl}/users/verify-token`, {
                 headers: {
                     'Authorization': `Bearer ${token}`,
@@ -38,7 +41,20 @@ export async function checkAuth() {
                 }
             });
 
-            if (!response.ok) {
+            const text = await response.text();
+            console.log('Token verification response:', text);
+
+            let data;
+            try {
+                data = JSON.parse(text);
+            } catch (e) {
+                console.error('Failed to parse token verification response:', e);
+                handleLogout();
+                return;
+            }
+
+            if (!response.ok || !data.valid) {
+                console.log('Token invalid, attempting refresh...');
                 // Token is invalid, try to refresh
                 const refreshToken = getRefreshToken();
                 if (refreshToken) {
@@ -48,22 +64,35 @@ export async function checkAuth() {
                         body: JSON.stringify({ refreshToken })
                     });
                     
-                    if (refreshResponse.ok) {
-                        const { token: newToken } = await refreshResponse.json();
-                        setAuthToken(newToken);
+                    const refreshText = await refreshResponse.text();
+                    console.log('Token refresh response:', refreshText);
+
+                    let refreshData;
+                    try {
+                        refreshData = JSON.parse(refreshText);
+                    } catch (e) {
+                        console.error('Failed to parse token refresh response:', e);
+                        handleLogout();
+                        return;
+                    }
+
+                    if (refreshResponse.ok && refreshData.token) {
+                        console.log('Token refreshed successfully');
+                        setAuthToken(refreshData.token);
                     } else {
-                        // Refresh failed, redirect to login
+                        console.log('Token refresh failed');
                         handleLogout();
                         return;
                     }
                 } else {
-                    // No refresh token, redirect to login
+                    console.log('No refresh token available');
                     handleLogout();
                     return;
                 }
             }
             
             // If we get here, token is valid
+            console.log('Auth check successful');
             updateHeader(username);
         } catch (error) {
             console.error('Auth check failed:', error);
