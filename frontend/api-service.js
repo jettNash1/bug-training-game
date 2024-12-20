@@ -15,6 +15,7 @@ export class APIService {
                 headers: {
                     'Content-Type': 'application/json'
                 },
+                credentials: 'include',
                 body: JSON.stringify({ username, password })
             });
 
@@ -91,8 +92,10 @@ export class APIService {
 
             const response = await fetch(`${this.baseUrl}/users/verify-token`, {
                 headers: {
-                    'Authorization': `Bearer ${token}`
-                }
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                },
+                credentials: 'include'
             });
 
             const text = await response.text();
@@ -120,6 +123,7 @@ export class APIService {
                 headers: {
                     'Content-Type': 'application/json'
                 },
+                credentials: 'include',
                 body: JSON.stringify({ refreshToken })
             });
 
@@ -155,6 +159,7 @@ export class APIService {
 
         const response = await fetch(url, {
             ...options,
+            credentials: 'include',
             headers: {
                 ...options.headers,
                 'Authorization': `Bearer ${token}`
