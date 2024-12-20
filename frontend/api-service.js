@@ -1,6 +1,8 @@
+import config from './config.js';
+
 class APIService {
     constructor() {
-        this.baseURL = '/api';
+        this.baseURL = config.apiUrl;
         this.token = localStorage.getItem('token');
         this.adminToken = localStorage.getItem('adminToken');
         this.currentUser = localStorage.getItem('currentUser');

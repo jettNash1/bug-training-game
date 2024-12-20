@@ -551,7 +551,7 @@ class CommunicationQuiz extends BaseQuiz {
             }
 
             if (progress) {
-                // Set the player state from progress
+                    // Set the player state from progress
                 this.player.experience = progress.experience || 0;
                 this.player.tools = progress.tools || [];
                 this.player.questionHistory = progress.questionHistory || [];
@@ -560,9 +560,9 @@ class CommunicationQuiz extends BaseQuiz {
                 const completedQuestions = this.player.questionHistory.length;
                 this.player.currentScenario = completedQuestions;
 
-                // Update UI
-                this.updateProgress();
-                return true;
+                    // Update UI
+                    this.updateProgress();
+                    return true;
             }
             return false;
         } catch (error) {
@@ -595,8 +595,8 @@ class CommunicationQuiz extends BaseQuiz {
             // Clear any existing transition messages
             const transitionContainer = document.getElementById('level-transition-container');
             if (transitionContainer) {
-                transitionContainer.innerHTML = '';
-                transitionContainer.classList.remove('active');
+            transitionContainer.innerHTML = '';
+            transitionContainer.classList.remove('active');
             }
             
             await this.displayScenario();
