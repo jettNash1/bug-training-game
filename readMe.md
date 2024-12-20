@@ -217,3 +217,22 @@ node -v  # Should be v14.0.0 or higher
 ## License 📄
 
 [MIT License](LICENSE)
+
+## Development Setup
+
+1. Start the backend server:
+
+```bash
+cd backend
+npm install
+npm run dev
+```
+
+2. In a new terminal, start the frontend server:
+```bash
+cd frontend
+npm install
+npm run dev
+```
+
+3. Access the application at http://localhost:8080
