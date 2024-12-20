@@ -200,18 +200,38 @@ export class QuizUser {
             this.updateCategoryProgress('Tickets and Tracking', ['issue-tracking', 'raising-tickets', 'reports', 'CMS-Testing']);
 
             // Update individual quiz progress indicators
-            this.quizResults.forEach(result => {
-                const progressElement = document.getElementById(`${result.quizName}-progress`);
-                if (progressElement) {
-                    progressElement.classList.remove('hidden');
-                    progressElement.style.width = `${result.score}%`;
-                    progressElement.setAttribute('aria-valuenow', result.score);
+            document.querySelectorAll('.quiz-item').forEach(quizItem => {
+                const quizName = quizItem.dataset.quiz;
+                if (!quizName) return;
+
+                const progressElement = document.getElementById(`${quizName}-progress`);
+                if (!progressElement) return;
+
+                const result = this.quizResults.find(r => r.quizName === quizName);
+                
+                // Remove any existing classes
+                progressElement.classList.remove('hidden', 'completed', 'in-progress');
+                quizItem.classList.remove('completed', 'in-progress');
+
+                if (result) {
+                    const score = result.score || 0;
+                    progressElement.textContent = `${score}%`;
+                    
+                    if (score === 100) {
+                        progressElement.classList.add('completed');
+                        quizItem.classList.add('completed');
+                    } else {
+                        progressElement.classList.add('in-progress');
+                        quizItem.classList.add('in-progress');
+                    }
+                } else {
+                    // Not started
+                    progressElement.textContent = '0%';
                 }
             });
 
         } catch (error) {
             console.error('Failed to load user progress:', error);
-            // Show error message to user
             this.showError('Failed to load progress. Please try refreshing the page.');
         }
     }
