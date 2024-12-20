@@ -158,4 +158,15 @@ function updateHeader(username) {
 window.handleLogin = handleLogin;
 window.handleRegister = handleRegister;
 window.handleLogout = handleLogout;
+
+// Token management functions
+export const getAuthToken = () => localStorage.getItem('token');
+export const getRefreshToken = () => localStorage.getItem('refreshToken');
+export const setAuthToken = (token) => localStorage.setItem('token', token);
+export const setRefreshToken = (token) => localStorage.setItem('refreshToken', token);
+export const clearTokens = () => {
+    localStorage.removeItem('token');
+    localStorage.removeItem('refreshToken');
+    localStorage.removeItem('username');
+};
  

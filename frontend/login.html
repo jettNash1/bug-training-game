@@ -6,10 +6,11 @@
     <title>QA Learning Hub - Login</title>
     <link rel="icon" type="image/x-icon" href="assets/favicon.ico">
     <link rel="stylesheet" href="styles.css">
-    <script src="QuizUser.js"></script>
-    <script src="api-service.js"></script>
-    <script src="login.js"></script>
-    <script src="auth.js"></script>
+    <script type="module" src="config.js"></script>
+    <script type="module" src="api-service.js"></script>
+    <script type="module" src="auth.js"></script>
+    <script type="module" src="QuizUser.js"></script>
+    <script type="module" src="login.js"></script>
 </head>
 <body class="auth-page">
     <div class="auth-container">
@@ -33,7 +34,7 @@
                     <label for="loginPassword">Password</label>
                     <input type="password" id="loginPassword" placeholder="Enter your password">
                 </div>
-                <button class="auth-button" onclick="handleLogin()">Login</button>
+                <button class="auth-button" id="loginButton">Login</button>
             </div>
 
             <div class="auth-form hidden" id="registerForm">
@@ -45,7 +46,7 @@
                     <label for="registerPassword">Choose Password</label>
                     <input type="password" id="registerPassword" placeholder="Create a password">
                 </div>
-                <button class="auth-button" onclick="handleRegister()">Create Account</button>
+                <button class="auth-button" id="registerButton">Create Account</button>
             </div>
         </div>
     </div>

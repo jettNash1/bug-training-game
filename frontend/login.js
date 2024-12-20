@@ -1,80 +1,66 @@
-import config from './config.js';
+import { APIService } from './api-service.js';
+import { setAuthToken, setRefreshToken } from './auth.js';
 
-class UserManager {
-    static async login(username, password) {
-        if (!username.trim() || !password.trim()) {
-            throw new Error('Username and password are required');
-        }
+const api = new APIService();
+
+document.addEventListener('DOMContentLoaded', () => {
+    // Tab switching
+    const tabs = document.querySelectorAll('.auth-tab');
+    const forms = document.querySelectorAll('.auth-form');
+
+    tabs.forEach(tab => {
+        tab.addEventListener('click', () => {
+            const targetForm = tab.dataset.tab;
+            
+            // Update active tab
+            tabs.forEach(t => t.classList.remove('active'));
+            tab.classList.add('active');
+            
+            // Show correct form
+            forms.forEach(form => {
+                form.classList.add('hidden');
+                if (form.id === `${targetForm}Form`) {
+                    form.classList.remove('hidden');
+                }
+            });
+        });
+    });
+
+    // Handle login
+    document.getElementById('loginButton').addEventListener('click', async () => {
+        const username = document.getElementById('loginUsername').value;
+        const password = document.getElementById('loginPassword').value;
 
         try {
-            const response = await fetch(`${config.apiUrl}/users/login`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({ username, password })
-            });
-
-            const data = await response.json();
-            
-            if (!response.ok) {
-                throw new Error(data.message || 'Login failed');
+            const response = await api.login(username, password);
+            if (response.success !== false) {
+                setAuthToken(response.token);
+                setRefreshToken(response.refreshToken);
+                localStorage.setItem('username', username);
+                window.location.href = '/';
             }
-
-            localStorage.setItem('token', data.token);
-            localStorage.setItem('refreshToken', data.refreshToken);
-            localStorage.setItem('currentUser', username);
-
-            const user = new QuizUser(username);
-            await user.loadUserData();
-            return user;
         } catch (error) {
-            console.error('Login error:', error);
-            throw new Error(error.message || 'Failed to login');
+            console.error('Login failed:', error);
+            alert('Login failed. Please check your credentials and try again.');
         }
-    }
+    });
 
-    static async register(username, password) {
-        if (!username.trim() || !password.trim()) {
-            throw new Error('Username and password are required');
-        }
+    // Handle registration
+    document.getElementById('registerButton').addEventListener('click', async () => {
+        const username = document.getElementById('registerUsername').value;
+        const password = document.getElementById('registerPassword').value;
 
         try {
-            const response = await fetch(`${config.apiUrl}/users/register`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({ username, password })
-            });
-
-            const data = await response.json();
-            
-            if (!response.ok) {
-                throw new Error(data.message || 'Registration failed');
+            const response = await api.register(username, password);
+            if (response.success !== false) {
+                setAuthToken(response.token);
+                setRefreshToken(response.refreshToken);
+                localStorage.setItem('username', username);
+                window.location.href = '/';
             }
-
-            localStorage.setItem('token', data.token);
-            localStorage.setItem('refreshToken', data.refreshToken);
-            localStorage.setItem('currentUser', username);
-
-            const user = new QuizUser(username);
-            await user.loadUserData();
-            return user;
         } catch (error) {
-            console.error('Registration error:', error);
-            throw new Error(error.message || 'Failed to register');
+            console.error('Registration failed:', error);
+            alert('Registration failed. Please try a different username.');
         }
-    }
-
-    static logout() {
-        localStorage.removeItem('currentUser');
-        localStorage.removeItem('token');
-        localStorage.removeItem('refreshToken');
-        window.location.href = 'login.html';
-    }
-}
-
-window.UserManager = UserManager;
-
-export default UserManager; 
+    });
+}); 

@@ -1,128 +1,134 @@
-import config from './config.js';
+import { config } from './config.js';
+import { getAuthToken, setAuthToken, clearTokens } from './auth.js';
 
 export class APIService {
     constructor() {
-        this.baseURL = config.apiUrl;
-        this.token = localStorage.getItem('token');
-        this.refreshToken = localStorage.getItem('refreshToken');
-        this.currentUser = localStorage.getItem('currentUser');
+        this.baseUrl = config.apiUrl;
     }
 
-    async refreshAuthToken() {
-        if (!this.refreshToken) return false;
-
+    async login(username, password) {
         try {
-            const response = await fetch(`${this.baseURL}/users/refresh-token`, {
+            const response = await fetch(`${this.baseUrl}/users/login`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ refreshToken: this.refreshToken })
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ username, password })
             });
 
-            if (response.ok) {
-                const { token } = await response.json();
-                localStorage.setItem('token', token);
-                this.token = token;
-                return true;
+            const data = await response.json();
+            if (!response.ok) {
+                throw new Error(data.message || 'Login failed');
             }
-            return false;
+            return data;
         } catch (error) {
-            console.error('Token refresh failed:', error);
-            return false;
-        }
-    }
-
-    async makeAuthenticatedRequest(url, options = {}) {
-        // Ensure we have the latest token
-        this.token = localStorage.getItem('token');
-        
-        // Add auth headers
-        const headers = {
-            'Content-Type': 'application/json',
-            ...options.headers
-        };
-
-        if (this.token) {
-            headers['Authorization'] = `Bearer ${this.token}`;
-        }
-
-        try {
-            const response = await fetch(url, {
-                ...options,
-                headers
-            });
-
-            if (response.status === 401) {
-                // Token might be expired, try to refresh
-                const refreshed = await this.refreshAuthToken();
-                if (refreshed) {
-                    // Retry the request with new token
-                    headers['Authorization'] = `Bearer ${this.token}`;
-                    return await fetch(url, {
-                        ...options,
-                        headers
-                    });
-                }
-                throw new Error('Authentication failed');
-            }
-
-            return response;
-        } catch (error) {
-            console.error('API request failed:', error);
+            console.error('Login error:', error);
             throw error;
         }
     }
 
-    async saveQuizResult(quizData) {
+    async register(username, password) {
         try {
-            const response = await this.makeAuthenticatedRequest(`${this.baseURL}/users/quiz-results`, {
+            const response = await fetch(`${this.baseUrl}/users/register`, {
                 method: 'POST',
-                body: JSON.stringify(quizData)
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ username, password })
             });
 
+            const data = await response.json();
             if (!response.ok) {
-                throw new Error('Failed to save quiz results');
+                throw new Error(data.message || 'Registration failed');
             }
-
-            return await response.json();
+            return data;
         } catch (error) {
-            console.error('API Error:', error);
-            // Fallback to localStorage
-            return this.saveToLocalStorage(quizData);
+            console.error('Registration error:', error);
+            throw error;
         }
     }
 
-    saveToLocalStorage(quizData) {
-        const key = `quizUser_${quizData.username}_${quizData.quizName}`;
-        localStorage.setItem(key, JSON.stringify(quizData));
-        return { success: true, data: quizData };
-    }
-
-    async getQuizProgress(quizName) {
+    async verifyToken() {
         try {
-            const response = await this.makeAuthenticatedRequest(`${this.baseURL}/users/quiz-progress/${quizName}`);
+            const token = getAuthToken();
+            if (!token) {
+                return { valid: false };
+            }
 
-            if (!response.ok) {
-                // Try to get from localStorage with user-specific key
-                const storageKey = `quiz_progress_${this.currentUser}_${quizName}`;
-                const localData = localStorage.getItem(storageKey);
-                if (localData) {
-                    const parsed = JSON.parse(localData);
-                    return { success: true, data: parsed.progress };
+            const response = await fetch(`${this.baseUrl}/users/verify-token`, {
+                headers: {
+                    'Authorization': `Bearer ${token}`
                 }
-                return { success: true, data: null };
+            });
+
+            const data = await response.json();
+            return data;
+        } catch (error) {
+            console.error('Token verification error:', error);
+            return { valid: false };
+        }
+    }
+
+    async refreshToken(refreshToken) {
+        try {
+            const response = await fetch(`${this.baseUrl}/users/refresh-token`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ refreshToken })
+            });
+
+            const data = await response.json();
+            if (!response.ok) {
+                throw new Error(data.message || 'Token refresh failed');
             }
 
-            return await response.json();
+            setAuthToken(data.token);
+            return data;
         } catch (error) {
-            console.error('Failed to get quiz progress:', error);
-            // Try to get from localStorage with user-specific key
-            const storageKey = `quiz_progress_${this.currentUser}_${quizName}`;
-            const localData = localStorage.getItem(storageKey);
-            if (localData) {
-                const parsed = JSON.parse(localData);
-                return { success: true, data: parsed.progress };
-            }
-            return { success: true, data: null };
+            console.error('Token refresh error:', error);
+            clearTokens();
+            throw error;
         }
+    }
+
+    async fetchWithAuth(url, options = {}) {
+        const token = getAuthToken();
+        if (!token) {
+            throw new Error('No auth token available');
+        }
+
+        const response = await fetch(url, {
+            ...options,
+            headers: {
+                ...options.headers,
+                'Authorization': `Bearer ${token}`
+            }
+        });
+
+        if (response.status === 401) {
+            // Token expired, try to refresh
+            try {
+                const refreshToken = localStorage.getItem('refreshToken');
+                if (!refreshToken) {
+                    throw new Error('No refresh token available');
+                }
+
+                const refreshData = await this.refreshToken(refreshToken);
+                if (!refreshData.token) {
+                    throw new Error('Failed to refresh token');
+                }
+
+                // Retry original request with new token
+                return await this.fetchWithAuth(url, options);
+            } catch (error) {
+                clearTokens();
+                window.location.href = '/login.html';
+                throw error;
+            }
+        }
+
+        return response;
     }
 } 
