@@ -5,5 +5,5 @@ const isProd = window.location.hostname === 'bug-training-game.onrender.com';
 export const config = {
     apiUrl: isProd 
         ? 'https://bug-training-game.onrender.com/api'
-        : 'http://localhost:3000/api'
+        : 'http://localhost:10000/api'
 }; 

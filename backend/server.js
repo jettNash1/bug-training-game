@@ -8,10 +8,11 @@ console.log('Environment check:', {
     hasAdminUser: !!process.env.ADMIN_USERNAME,
     hasAdminPass: !!process.env.ADMIN_PASSWORD,
     hasJwtSecret: !!process.env.JWT_SECRET,
-    hasJwtRefreshSecret: !!process.env.JWT_REFRESH_SECRET
+    hasJwtRefreshSecret: !!process.env.JWT_REFRESH_SECRET,
+    port: process.env.PORT,
+    mongoUri: process.env.MONGODB_URI ? process.env.MONGODB_URI.split('@')[1] : 'not set'
 });
 
-// Rest of your server code remains the same
 const express = require('express');
 const cors = require('cors');
 const mongoose = require('mongoose');
@@ -24,7 +25,7 @@ const port = process.env.PORT || 3000;
 const corsOptions = {
   origin: process.env.NODE_ENV === 'production'
     ? ['https://bug-training-game.onrender.com']
-    : ['http://localhost:3000', 'http://127.0.0.1:3000'],
+    : ['http://localhost:3000', 'http://127.0.0.1:3000', 'http://localhost:5500', 'http://127.0.0.1:5500'],
   credentials: true,
   optionsSuccessStatus: 200,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
@@ -37,7 +38,23 @@ app.use(express.urlencoded({ extended: true }));
 
 // Debug middleware to log requests
 app.use((req, res, next) => {
-    console.log(`${req.method} ${req.path}`);
+    console.log(`${req.method} ${req.path}`, {
+        headers: req.headers,
+        body: req.body,
+        query: req.query
+    });
+
+    // Capture the original res.json to add logging
+    const originalJson = res.json;
+    res.json = function(data) {
+        console.log('Response:', {
+            path: req.path,
+            statusCode: res.statusCode,
+            data: data
+        });
+        return originalJson.call(this, data);
+    };
+
     next();
 });
 
@@ -171,6 +188,15 @@ app.use((err, req, res, next) => {
         success: false, 
         message: 'Server error',
         error: process.env.NODE_ENV === 'production' ? null : err.message
+    });
+});
+
+// Health check endpoint
+app.get('/health', (req, res) => {
+    res.json({
+        status: 'ok',
+        mongodb: mongoose.connection.readyState === 1 ? 'connected' : 'disconnected',
+        timestamp: new Date().toISOString()
     });
 });
 
