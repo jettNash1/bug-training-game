@@ -1,5 +1,8 @@
+import config from './config.js';
+import UserManager from './login.js';
+
 // Add this function to check authentication status
-function checkAuth() {
+async function checkAuth() {
     const token = localStorage.getItem('token');
     const currentUser = localStorage.getItem('currentUser');
     
@@ -15,42 +18,85 @@ function checkAuth() {
         return;
     }
 
-    // If user is authenticated, update the header
+    // Verify token validity
     if (token && currentUser) {
-        updateHeader(currentUser);
+        try {
+            const response = await fetch(`${config.apiUrl}/users/verify-token`, {
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                }
+            });
+
+            if (!response.ok) {
+                // Token is invalid, try to refresh
+                const refreshToken = localStorage.getItem('refreshToken');
+                if (refreshToken) {
+                    const refreshResponse = await fetch(`${config.apiUrl}/users/refresh-token`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ refreshToken })
+                    });
+                    
+                    if (refreshResponse.ok) {
+                        const { token: newToken } = await refreshResponse.json();
+                        localStorage.setItem('token', newToken);
+                    } else {
+                        // Refresh failed, redirect to login
+                        handleLogout();
+                        return;
+                    }
+                } else {
+                    // No refresh token, redirect to login
+                    handleLogout();
+                    return;
+                }
+            }
+            
+            // If we get here, token is valid
+            updateHeader(currentUser);
+        } catch (error) {
+            console.error('Auth check failed:', error);
+            handleLogout();
+        }
     }
 }
 
-// Add this function to update the header with user info
-function updateHeader(username) {
-    const headerUsername = document.getElementById('headerUsername');
-    if (headerUsername) {
-        headerUsername.textContent = username;
+// Handle login
+async function handleLogin() {
+    const username = document.getElementById('loginUsername').value;
+    const password = document.getElementById('loginPassword').value;
+
+    try {
+        await UserManager.login(username, password);
+        window.location.href = 'index.html';
+    } catch (error) {
+        showError(error.message);
+    }
+}
+
+// Handle register
+async function handleRegister() {
+    const username = document.getElementById('registerUsername').value;
+    const password = document.getElementById('registerPassword').value;
+    
+    try {
+        await UserManager.register(username, password);
+        window.location.href = 'index.html';
+    } catch (error) {
+        showError(error.message);
     }
 }
 
 // Update the logout handler
 async function handleLogout() {
     try {
-        // Clear user-specific data
-        const currentUser = localStorage.getItem('currentUser');
-        if (currentUser) {
-            // Clear all quiz progress for this user
-            Object.keys(localStorage).forEach(key => {
-                if (key.startsWith(`quiz_progress_${currentUser}_`)) {
-                    localStorage.removeItem(key);
-                }
-            });
-        }
-        
-        // Clear auth data
-        localStorage.removeItem('token');
-        localStorage.removeItem('currentUser');
-        
-        // Redirect to login
-        window.location.href = 'login.html';
+        await UserManager.logout();
     } catch (error) {
         console.error('Logout error:', error);
+        // Clear everything anyway
+        localStorage.clear();
+        window.location.href = 'login.html';
     }
 }
 
@@ -86,55 +132,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 });
 
-// Handle login
-async function handleLogin() {
-    const username = document.getElementById('loginUsername').value;
-    const password = document.getElementById('loginPassword').value;
-
-    try {
-        // For demo purposes, accept any non-empty username/password
-        if (username && password) {
-            const user = {
-                username: username,
-                lastActive: new Date().toISOString(),
-                quizResults: []
-            };
-            localStorage.setItem(`user_${username}`, JSON.stringify(user));
-            localStorage.setItem('currentUser', username);
-            localStorage.setItem('token', 'demo_token'); // Add a demo token
-            window.location.href = 'index.html';
-        } else {
-            throw new Error('Please enter username and password');
-        }
-    } catch (error) {
-        showError(error.message);
-    }
-}
-
-// Handle register
-async function handleRegister() {
-    const username = document.getElementById('registerUsername').value;
-    const password = document.getElementById('registerPassword').value;
-    
-    try {
-        if (username && password) {
-            const user = {
-                username: username,
-                lastActive: new Date().toISOString(),
-                quizResults: []
-            };
-            localStorage.setItem(`user_${username}`, JSON.stringify(user));
-            localStorage.setItem('currentUser', username);
-            localStorage.setItem('token', 'demo_token'); // Add a demo token
-            window.location.href = 'index.html';
-        } else {
-            throw new Error('Please enter username and password');
-        }
-    } catch (error) {
-        showError(error.message);
-    }
-}
-
 // Add a nicer error notification system
 function showError(message) {
     const errorDiv = document.createElement('div');
@@ -149,14 +146,16 @@ function showError(message) {
     }, 3000);
 }
 
-// Update user's last active timestamp
-function updateUserActivity(username) {
-    const userKey = `user_${username}`;
-    const userData = localStorage.getItem(userKey);
-    if (userData) {
-        const user = JSON.parse(userData);
-        user.lastActive = new Date().toISOString();
-        localStorage.setItem(userKey, JSON.stringify(user));
+// Update header with user info
+function updateHeader(username) {
+    const headerUsername = document.getElementById('headerUsername');
+    if (headerUsername) {
+        headerUsername.textContent = username;
     }
 }
+
+// Make functions available globally
+window.handleLogin = handleLogin;
+window.handleRegister = handleRegister;
+window.handleLogout = handleLogout;
  

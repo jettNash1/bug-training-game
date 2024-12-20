@@ -1,3 +1,5 @@
+import config from './config.js';
+
 class UserManager {
     static async login(username, password) {
         if (!username.trim() || !password.trim()) {
@@ -5,7 +7,7 @@ class UserManager {
         }
 
         try {
-            const response = await fetch('http://localhost:3000/api/users/login', {
+            const response = await fetch(`${config.apiUrl}/users/login`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
@@ -20,6 +22,7 @@ class UserManager {
             }
 
             localStorage.setItem('token', data.token);
+            localStorage.setItem('refreshToken', data.refreshToken);
             localStorage.setItem('currentUser', username);
 
             const user = new QuizUser(username);
@@ -37,7 +40,7 @@ class UserManager {
         }
 
         try {
-            const response = await fetch('http://localhost:3000/api/users/register', {
+            const response = await fetch(`${config.apiUrl}/users/register`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
@@ -52,6 +55,7 @@ class UserManager {
             }
 
             localStorage.setItem('token', data.token);
+            localStorage.setItem('refreshToken', data.refreshToken);
             localStorage.setItem('currentUser', username);
 
             const user = new QuizUser(username);
@@ -66,6 +70,11 @@ class UserManager {
     static logout() {
         localStorage.removeItem('currentUser');
         localStorage.removeItem('token');
-        window.location.reload();
+        localStorage.removeItem('refreshToken');
+        window.location.href = 'login.html';
     }
-} 
+}
+
+window.UserManager = UserManager;
+
+export default UserManager; 

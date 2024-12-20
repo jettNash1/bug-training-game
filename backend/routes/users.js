@@ -25,12 +25,14 @@ router.post('/register', async (req, res) => {
 
         await user.save();
 
-        // Create token
-        const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET);
+        // Create tokens
+        const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, { expiresIn: '1h' });
+        const refreshToken = jwt.sign({ id: user._id }, process.env.JWT_REFRESH_SECRET, { expiresIn: '7d' });
 
         res.status(201).json({ 
             message: 'User registered successfully',
             token,
+            refreshToken,
             username: user.username
         });
     } catch (error) {
@@ -61,12 +63,14 @@ router.post('/login', async (req, res) => {
         user.lastLogin = new Date();
         await user.save();
 
-        // Create token
-        const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET);
+        // Create tokens
+        const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, { expiresIn: '1h' });
+        const refreshToken = jwt.sign({ id: user._id }, process.env.JWT_REFRESH_SECRET, { expiresIn: '7d' });
 
         res.json({ 
             message: 'Login successful',
             token,
+            refreshToken,
             username: user.username
         });
     } catch (error) {
@@ -254,10 +258,24 @@ router.get('/quiz-progress/:quizName', auth, async (req, res) => {
 router.get('/verify-token', auth, async (req, res) => {
     try {
         // If we get here, the token is valid (auth middleware already verified it)
-        res.json({ success: true, valid: true });
+        const user = await User.findById(req.user.id);
+        if (!user) {
+            return res.status(404).json({ 
+                success: false, 
+                message: 'User not found' 
+            });
+        }
+        res.json({ 
+            success: true, 
+            valid: true,
+            username: user.username
+        });
     } catch (error) {
         console.error('Token verification error:', error);
-        res.status(401).json({ success: false, valid: false });
+        res.status(401).json({ 
+            success: false, 
+            valid: false 
+        });
     }
 });
 
@@ -266,7 +284,10 @@ router.post('/refresh-token', async (req, res) => {
     try {
         const { refreshToken } = req.body;
         if (!refreshToken) {
-            return res.status(400).json({ success: false, message: 'No refresh token provided' });
+            return res.status(400).json({ 
+                success: false, 
+                message: 'No refresh token provided' 
+            });
         }
 
         // Verify refresh token
@@ -274,7 +295,10 @@ router.post('/refresh-token', async (req, res) => {
         const user = await User.findById(decoded.id);
 
         if (!user) {
-            return res.status(404).json({ success: false, message: 'User not found' });
+            return res.status(404).json({ 
+                success: false, 
+                message: 'User not found' 
+            });
         }
 
         // Create new access token
@@ -283,11 +307,14 @@ router.post('/refresh-token', async (req, res) => {
         res.json({ 
             success: true, 
             token,
-            refreshToken: refreshToken // Return same refresh token if still valid
+            username: user.username
         });
     } catch (error) {
         console.error('Token refresh error:', error);
-        res.status(401).json({ success: false, message: 'Invalid refresh token' });
+        res.status(401).json({ 
+            success: false, 
+            message: 'Invalid refresh token' 
+        });
     }
 });
 

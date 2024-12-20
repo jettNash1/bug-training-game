@@ -4,24 +4,78 @@ export class APIService {
     constructor() {
         this.baseURL = config.apiUrl;
         this.token = localStorage.getItem('token');
-        this.adminToken = localStorage.getItem('adminToken');
+        this.refreshToken = localStorage.getItem('refreshToken');
         this.currentUser = localStorage.getItem('currentUser');
     }
 
-    checkAuth() {
-        if (!this.token) {
-            throw new Error('No authentication token found. Please log in.');
+    async refreshAuthToken() {
+        if (!this.refreshToken) return false;
+
+        try {
+            const response = await fetch(`${this.baseURL}/users/refresh-token`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ refreshToken: this.refreshToken })
+            });
+
+            if (response.ok) {
+                const { token } = await response.json();
+                localStorage.setItem('token', token);
+                this.token = token;
+                return true;
+            }
+            return false;
+        } catch (error) {
+            console.error('Token refresh failed:', error);
+            return false;
+        }
+    }
+
+    async makeAuthenticatedRequest(url, options = {}) {
+        // Ensure we have the latest token
+        this.token = localStorage.getItem('token');
+        
+        // Add auth headers
+        const headers = {
+            'Content-Type': 'application/json',
+            ...options.headers
+        };
+
+        if (this.token) {
+            headers['Authorization'] = `Bearer ${this.token}`;
+        }
+
+        try {
+            const response = await fetch(url, {
+                ...options,
+                headers
+            });
+
+            if (response.status === 401) {
+                // Token might be expired, try to refresh
+                const refreshed = await this.refreshAuthToken();
+                if (refreshed) {
+                    // Retry the request with new token
+                    headers['Authorization'] = `Bearer ${this.token}`;
+                    return await fetch(url, {
+                        ...options,
+                        headers
+                    });
+                }
+                throw new Error('Authentication failed');
+            }
+
+            return response;
+        } catch (error) {
+            console.error('API request failed:', error);
+            throw error;
         }
     }
 
     async saveQuizResult(quizData) {
         try {
-            const response = await fetch(`${this.baseURL}/users/quiz-results`, {
+            const response = await this.makeAuthenticatedRequest(`${this.baseURL}/users/quiz-results`, {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${this.token}`
-                },
                 body: JSON.stringify(quizData)
             });
 
@@ -43,116 +97,9 @@ export class APIService {
         return { success: true, data: quizData };
     }
 
-    // Admin methods
-    async post(endpoint, data) {
-        try {
-            console.log(`Making POST request to ${this.baseURL}${endpoint}`, { data });
-            const response = await fetch(this.baseURL + endpoint, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${this.adminToken}`
-                },
-                body: JSON.stringify(data)
-            });
-
-            console.log('Response status:', response.status);
-            const responseText = await response.text();
-            console.log('Response text:', responseText);
-
-            if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}, body: ${responseText}`);
-            }
-
-            if (!responseText) {
-                throw new Error('Empty response from server');
-            }
-
-            try {
-                return JSON.parse(responseText);
-            } catch (e) {
-                console.error('JSON parse error:', e);
-                throw new Error(`Invalid JSON response: ${responseText}`);
-            }
-        } catch (error) {
-            console.error('API Error:', error);
-            throw error;
-        }
-    }
-
-    async get(endpoint) {
-        try {
-            const response = await fetch(this.baseURL + endpoint, {
-                headers: {
-                    'Authorization': `Bearer ${this.adminToken}`
-                }
-            });
-
-            if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
-            }
-
-            return await response.json();
-        } catch (error) {
-            console.error('API Error:', error);
-            throw error;
-        }
-    }
-
-    async saveQuizProgress(quizName, progress) {
-        try {
-            this.checkAuth();
-            console.log('Saving progress to:', `${this.baseURL}/users/quiz-progress`);
-            const response = await fetch(`${this.baseURL}/users/quiz-progress`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${this.token}`
-                },
-                body: JSON.stringify({
-                    quizName,
-                    progress
-                })
-            });
-
-            if (!response.ok) {
-                // Save to localStorage with user-specific key
-                const storageKey = `quiz_progress_${this.currentUser}_${quizName}`;
-                localStorage.setItem(storageKey, JSON.stringify({
-                    progress,
-                    timestamp: new Date().toISOString()
-                }));
-                return { success: true, message: 'Progress saved locally' };
-            }
-
-            const data = await response.json();
-            // Also save to localStorage as backup with user-specific key
-            const storageKey = `quiz_progress_${this.currentUser}_${quizName}`;
-            localStorage.setItem(storageKey, JSON.stringify({
-                progress,
-                timestamp: new Date().toISOString()
-            }));
-            return data;
-        } catch (error) {
-            console.error('Failed to save quiz progress:', error);
-            // Save to localStorage with user-specific key
-            const storageKey = `quiz_progress_${this.currentUser}_${quizName}`;
-            localStorage.setItem(storageKey, JSON.stringify({
-                progress,
-                timestamp: new Date().toISOString()
-            }));
-            return { success: true, message: 'Progress saved locally' };
-        }
-    }
-
     async getQuizProgress(quizName) {
         try {
-            this.checkAuth();
-            const response = await fetch(`${this.baseURL}/users/quiz-progress/${quizName}`, {
-                headers: {
-                    'Authorization': `Bearer ${this.token}`
-                }
-            });
+            const response = await this.makeAuthenticatedRequest(`${this.baseURL}/users/quiz-progress/${quizName}`);
 
             if (!response.ok) {
                 // Try to get from localStorage with user-specific key
@@ -165,8 +112,7 @@ export class APIService {
                 return { success: true, data: null };
             }
 
-            const data = await response.json();
-            return data;
+            return await response.json();
         } catch (error) {
             console.error('Failed to get quiz progress:', error);
             // Try to get from localStorage with user-specific key
