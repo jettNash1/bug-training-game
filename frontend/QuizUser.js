@@ -83,7 +83,10 @@ export class QuizUser {
         try {
             // Verify token is still valid
             const response = await fetch(`${this.baseUrl}/verify-token`, {
-                headers: { 'Authorization': `Bearer ${token}` }
+                headers: { 
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                }
             });
             
             if (!response.ok) {
@@ -102,12 +105,14 @@ export class QuizUser {
                         return newToken;
                     }
                 }
+                localStorage.removeItem('token'); // Clear invalid token
                 return null;
             }
             
             return token;
         } catch (error) {
             console.error('Error verifying token:', error);
+            localStorage.removeItem('token'); // Clear token on error
             return null;
         }
     }
