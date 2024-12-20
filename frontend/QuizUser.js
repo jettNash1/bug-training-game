@@ -167,6 +167,69 @@ export class QuizUser {
             return this.quizProgress[quizName] || null;
         }
     }
+
+    async loadAndDisplayProgress() {
+        try {
+            // Fetch user's quiz results from the server
+            const response = await this.api.fetchWithAuth(`${config.apiUrl}/users/progress`);
+            const data = await response.json();
+
+            if (!response.ok) {
+                throw new Error(data.message || 'Failed to load progress');
+            }
+
+            this.quizResults = data.quizResults || [];
+            
+            // Update progress bars for each category
+            this.updateCategoryProgress('Personal Organisation', ['communication', 'initiative', 'tester-mindset', 'time-management']);
+            this.updateCategoryProgress('Risk Management', ['risk-analysis', 'risk-management']);
+            this.updateCategoryProgress('Test Execution', ['non-functional', 'test-support', 'issue-verification', 'build-verification']);
+            this.updateCategoryProgress('Tickets and Tracking', ['issue-tracking', 'raising-tickets', 'reports', 'CMS-Testing']);
+
+            // Update individual quiz progress indicators
+            this.quizResults.forEach(result => {
+                const progressElement = document.getElementById(`${result.quizName}-progress`);
+                if (progressElement) {
+                    progressElement.classList.remove('hidden');
+                    progressElement.style.width = `${result.score}%`;
+                    progressElement.setAttribute('aria-valuenow', result.score);
+                }
+            });
+
+        } catch (error) {
+            console.error('Failed to load user progress:', error);
+            // Show error message to user
+            const errorDiv = document.createElement('div');
+            errorDiv.className = 'error-notification';
+            errorDiv.textContent = 'Failed to load progress. Please try refreshing the page.';
+            document.body.appendChild(errorDiv);
+            setTimeout(() => errorDiv.remove(), 5000);
+        }
+    }
+
+    updateCategoryProgress(categoryName, quizIds) {
+        const categoryCard = Array.from(document.querySelectorAll('.category-card'))
+            .find(card => card.querySelector('.category-header').textContent.trim() === categoryName);
+        
+        if (!categoryCard) return;
+
+        const completedQuizzes = this.quizResults.filter(result => 
+            quizIds.includes(result.quizName) && result.score >= 70
+        ).length;
+
+        const progressText = categoryCard.querySelector('.progress-text');
+        const progressBar = categoryCard.querySelector('.progress-fill');
+        
+        if (progressText) {
+            progressText.textContent = `Progress: ${completedQuizzes}/${quizIds.length} Complete`;
+        }
+        
+        if (progressBar) {
+            const percentage = (completedQuizzes / quizIds.length) * 100;
+            progressBar.style.width = `${percentage}%`;
+            progressBar.setAttribute('aria-valuenow', percentage);
+        }
+    }
 }
 
 // Make QuizUser available globally for legacy support

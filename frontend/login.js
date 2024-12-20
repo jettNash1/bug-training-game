@@ -17,7 +17,13 @@ function showError(message) {
     }, 3000);
 }
 
+// Only run initialization if we're on the login page
 document.addEventListener('DOMContentLoaded', () => {
+    // Check if we're on the login page
+    if (!window.location.pathname.includes('login.html')) {
+        return;
+    }
+
     // Tab switching
     const tabs = document.querySelectorAll('.auth-tab');
     const forms = document.querySelectorAll('.auth-form');
@@ -41,78 +47,84 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     // Handle login
-    document.getElementById('loginButton').addEventListener('click', async () => {
-        const username = document.getElementById('loginUsername').value;
-        const password = document.getElementById('loginPassword').value;
+    const loginButton = document.getElementById('loginButton');
+    if (loginButton) {
+        loginButton.addEventListener('click', async () => {
+            const username = document.getElementById('loginUsername').value;
+            const password = document.getElementById('loginPassword').value;
 
-        if (!username || !password) {
-            showError('Please enter both username and password');
-            return;
-        }
-
-        try {
-            const response = await api.login(username, password);
-            console.log('Login response:', response);
-            
-            if (response.success && response.token) {
-                console.log('Login successful, storing tokens...');
-                // Store tokens first
-                setAuthToken(response.token);
-                setRefreshToken(response.refreshToken);
-                localStorage.setItem('username', username);
-                
-                // Small delay to ensure tokens are stored
-                await new Promise(resolve => setTimeout(resolve, 100));
-                
-                // Then redirect
-                console.log('Tokens stored, redirecting to index...');
-                window.location.replace('/');
-            } else {
-                console.log('Login failed:', response);
-                showError(response.message || 'Login failed. Please check your credentials.');
+            if (!username || !password) {
+                showError('Please enter both username and password');
+                return;
             }
-        } catch (error) {
-            console.error('Login failed:', error);
-            showError('Login failed. Please check your credentials and try again.');
-        }
-    });
+
+            try {
+                const response = await api.login(username, password);
+                console.log('Login response:', response);
+                
+                if (response.success && response.token) {
+                    console.log('Login successful, storing tokens...');
+                    // Store tokens first
+                    setAuthToken(response.token);
+                    setRefreshToken(response.refreshToken);
+                    localStorage.setItem('username', username);
+                    
+                    // Small delay to ensure tokens are stored
+                    await new Promise(resolve => setTimeout(resolve, 100));
+                    
+                    // Then redirect
+                    console.log('Tokens stored, redirecting to index...');
+                    window.location.replace('/');
+                } else {
+                    console.log('Login failed:', response);
+                    showError(response.message || 'Login failed. Please check your credentials.');
+                }
+            } catch (error) {
+                console.error('Login failed:', error);
+                showError('Login failed. Please check your credentials and try again.');
+            }
+        });
+    }
 
     // Handle registration
-    document.getElementById('registerButton').addEventListener('click', async () => {
-        const username = document.getElementById('registerUsername').value;
-        const password = document.getElementById('registerPassword').value;
+    const registerButton = document.getElementById('registerButton');
+    if (registerButton) {
+        registerButton.addEventListener('click', async () => {
+            const username = document.getElementById('registerUsername').value;
+            const password = document.getElementById('registerPassword').value;
 
-        if (!username || !password) {
-            showError('Please enter both username and password');
-            return;
-        }
-
-        try {
-            const response = await api.register(username, password);
-            console.log('Registration response:', response);
-            
-            if (response.success && response.token) {
-                console.log('Registration successful, storing tokens...');
-                // Store tokens first
-                setAuthToken(response.token);
-                setRefreshToken(response.refreshToken);
-                localStorage.setItem('username', username);
-                
-                // Small delay to ensure tokens are stored
-                await new Promise(resolve => setTimeout(resolve, 100));
-                
-                // Then redirect
-                console.log('Tokens stored, redirecting to index...');
-                window.location.replace('/');
-            } else {
-                console.log('Registration failed:', response);
-                showError(response.message || 'Registration failed. Please try a different username.');
+            if (!username || !password) {
+                showError('Please enter both username and password');
+                return;
             }
-        } catch (error) {
-            console.error('Registration failed:', error);
-            showError('Registration failed. Please try a different username.');
-        }
-    });
+
+            try {
+                const response = await api.register(username, password);
+                console.log('Registration response:', response);
+                
+                if (response.success && response.token) {
+                    console.log('Registration successful, storing tokens...');
+                    // Store tokens first
+                    setAuthToken(response.token);
+                    setRefreshToken(response.refreshToken);
+                    localStorage.setItem('username', username);
+                    
+                    // Small delay to ensure tokens are stored
+                    await new Promise(resolve => setTimeout(resolve, 100));
+                    
+                    // Then redirect
+                    console.log('Tokens stored, redirecting to index...');
+                    window.location.replace('/');
+                } else {
+                    console.log('Registration failed:', response);
+                    showError(response.message || 'Registration failed. Please try a different username.');
+                }
+            } catch (error) {
+                console.error('Registration failed:', error);
+                showError('Registration failed. Please try a different username.');
+            }
+        });
+    }
 
     // Add enter key support for both forms
     document.getElementById('loginPassword').addEventListener('keypress', (e) => {
