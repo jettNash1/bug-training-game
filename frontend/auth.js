@@ -25,12 +25,14 @@ export async function checkAuth() {
     
     // If we're on the login page and user is authenticated, redirect to index
     if (window.location.pathname.includes('login.html') && token && username) {
+        console.log('On login page with valid credentials, redirecting to index');
         window.location.href = '/';
         return;
     }
     
     // If we're on any other page and user is not authenticated, redirect to login
     if (!window.location.pathname.includes('login.html') && (!token || !username)) {
+        console.log('Not authenticated, redirecting to login');
         window.location.href = '/login.html';
         return;
     }
@@ -102,17 +104,17 @@ export async function checkAuth() {
                     if (refreshResponse.ok && refreshData.token) {
                         console.log('Token refreshed successfully');
                         setAuthToken(refreshData.token);
-                        // Retry the original request with the new token
-                        return checkAuth();
+                        // Don't redirect, just update the token
+                        return true;
                     } else {
                         console.log('Token refresh failed');
                         handleLogout();
-                        return;
+                        return false;
                     }
                 } else {
                     console.log('No refresh token available');
                     handleLogout();
-                    return;
+                    return false;
                 }
             }
             
@@ -131,8 +133,18 @@ export async function checkAuth() {
 
 // Logout handler
 export function handleLogout() {
+    console.log('Handling logout...');
+    // Clear tokens first
     clearTokens();
-    window.location.href = '/login.html';
+    
+    // Only redirect if we're not already on the login page
+    if (!window.location.pathname.includes('login.html')) {
+        console.log('Redirecting to login page...');
+        // Use replace instead of href to prevent back button issues
+        window.location.replace('/login.html');
+    } else {
+        console.log('Already on login page, no redirect needed');
+    }
 }
 
 // Update header with user info
@@ -144,10 +156,21 @@ function updateHeader(username) {
 }
 
 // Add event listener to check auth status on page load
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
     // Only check auth if we're not already on the login page to prevent loops
     if (!window.location.pathname.includes('login.html')) {
-        checkAuth();
+        console.log('Checking auth on page load');
+        try {
+            const isAuthenticated = await checkAuth();
+            console.log('Auth check result:', isAuthenticated);
+            if (!isAuthenticated) {
+                console.log('Not authenticated, redirecting to login');
+                window.location.href = '/login.html';
+            }
+        } catch (error) {
+            console.error('Auth check error:', error);
+            window.location.href = '/login.html';
+        }
     }
 });
  
