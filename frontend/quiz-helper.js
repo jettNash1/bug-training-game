@@ -1,9 +1,14 @@
+import { QuizUser } from './QuizUser.js';
+
 export class BaseQuiz {
     constructor(config) {
         this.config = config;
         this.maxXP = config.maxXP;
         this.levelThresholds = config.levelThresholds;
         this.performanceThresholds = config.performanceThresholds;
+        this.gameScreen = document.getElementById('game-screen');
+        this.outcomeScreen = document.getElementById('outcome-screen');
+        this.isLoading = false;
     }
 
     // Base quiz methods...
@@ -100,14 +105,21 @@ export class BaseQuiz {
         this.isLoading = true;
         try {
             const user = new QuizUser(this.player.name);
+            const score = this.calculateScore();
+            
+            // First save the quiz result
             await user.saveQuizResult(
                 this.quizName,
-                this.calculateScore(),
+                score,
                 this.player.experience,
                 this.player.tools,
                 this.player.questionHistory
             );
+
+            // Then update the quiz score
+            await user.updateQuizScore(this.quizName, score);
             
+            // Redirect to home page
             window.location.href = '/';
         } catch (error) {
             console.error('Failed to save quiz results:', error);

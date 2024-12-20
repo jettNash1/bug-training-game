@@ -109,23 +109,8 @@ export class QuizUser {
 
     async saveQuizProgress(quizName, progress) {
         try {
-            const response = await this.api.fetchWithAuth(`${config.apiUrl}/users/quiz-progress`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    quizName,
-                    progress
-                })
-            });
-
-            if (!response.ok) {
-                throw new Error('Failed to save quiz progress');
-            }
-
-            const data = await response.json();
-            if (data.success) {
+            const result = await this.api.saveQuizProgress(quizName, progress);
+            if (result) {
                 this.quizProgress[quizName] = progress;
                 // Update localStorage as backup
                 localStorage.setItem(`quizProgress_${this.username}`, JSON.stringify(this.quizProgress));
@@ -151,14 +136,9 @@ export class QuizUser {
 
     async getQuizProgress(quizName) {
         try {
-            const response = await this.api.fetchWithAuth(`${config.apiUrl}/users/quiz-progress/${quizName}`);
-            if (!response.ok) {
-                throw new Error('Failed to get quiz progress');
-            }
-
-            const data = await response.json();
-            if (data.success) {
-                return data.data;
+            const result = await this.api.getQuizProgress(quizName);
+            if (result) {
+                return result;
             }
             return null;
         } catch (error) {
@@ -166,6 +146,34 @@ export class QuizUser {
             // Try to get from localStorage
             return this.quizProgress[quizName] || null;
         }
+    }
+
+    async updateQuizScore(quizName, score) {
+        try {
+            const result = await this.api.updateQuizScore(quizName, score);
+            if (result) {
+                // Update local quiz results
+                const existingIndex = this.quizResults.findIndex(r => r.quizName === quizName);
+                if (existingIndex !== -1) {
+                    this.quizResults[existingIndex].score = score;
+                } else {
+                    this.quizResults.push({ quizName, score });
+                }
+                return true;
+            }
+            return false;
+        } catch (error) {
+            console.error('Failed to update quiz score:', error);
+            return false;
+        }
+    }
+
+    showError(message) {
+        const errorDiv = document.createElement('div');
+        errorDiv.className = 'error-notification';
+        errorDiv.textContent = message;
+        document.body.appendChild(errorDiv);
+        setTimeout(() => errorDiv.remove(), 5000);
     }
 
     async loadAndDisplayProgress() {
@@ -199,11 +207,7 @@ export class QuizUser {
         } catch (error) {
             console.error('Failed to load user progress:', error);
             // Show error message to user
-            const errorDiv = document.createElement('div');
-            errorDiv.className = 'error-notification';
-            errorDiv.textContent = 'Failed to load progress. Please try refreshing the page.';
-            document.body.appendChild(errorDiv);
-            setTimeout(() => errorDiv.remove(), 5000);
+            this.showError('Failed to load progress. Please try refreshing the page.');
         }
     }
 

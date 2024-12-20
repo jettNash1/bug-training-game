@@ -191,4 +191,57 @@ export class APIService {
 
         return response;
     }
+
+    async getQuizProgress(quizName) {
+        try {
+            const response = await this.fetchWithAuth(`${this.baseUrl}/users/quiz-progress/${quizName}`);
+            if (!response.ok) {
+                throw new Error('Failed to get quiz progress');
+            }
+            return await response.json();
+        } catch (error) {
+            console.error('Failed to get quiz progress:', error);
+            return null;
+        }
+    }
+
+    async saveQuizProgress(quizName, progress) {
+        try {
+            const response = await this.fetchWithAuth(`${this.baseUrl}/users/quiz-progress`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ quizName, progress })
+            });
+
+            if (!response.ok) {
+                throw new Error('Failed to save quiz progress');
+            }
+            return await response.json();
+        } catch (error) {
+            console.error('Failed to save quiz progress:', error);
+            return null;
+        }
+    }
+
+    async updateQuizScore(quizName, score) {
+        try {
+            const response = await this.fetchWithAuth(`${this.baseUrl}/users/quiz-scores`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ quizName, score })
+            });
+
+            if (!response.ok) {
+                throw new Error('Failed to update quiz score');
+            }
+            return await response.json();
+        } catch (error) {
+            console.error('Failed to update quiz score:', error);
+            return null;
+        }
+    }
 } 

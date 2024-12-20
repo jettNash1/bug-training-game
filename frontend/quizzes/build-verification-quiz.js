@@ -505,33 +505,32 @@ class BuildVerificationQuiz extends BaseQuiz {
         };
 
         try {
-            const currentUser = localStorage.getItem('currentUser');
-            if (!currentUser) {
+            const username = localStorage.getItem('username');
+            if (!username) {
                 console.error('No user found, cannot save progress');
                 return;
             }
             
             // Use user-specific key for localStorage
-            const storageKey = `quiz_progress_${currentUser}_${this.quizName}`;
+            const storageKey = `quiz_progress_${username}_${this.quizName}`;
             localStorage.setItem(storageKey, JSON.stringify({ progress }));
             
             await this.apiService.saveQuizProgress(this.quizName, progress);
         } catch (error) {
             console.error('Failed to save progress:', error);
-            // Continue without saving - don't interrupt the user experience
         }
     }
 
     async loadProgress() {
         try {
-            const currentUser = localStorage.getItem('currentUser');
-            if (!currentUser) {
+            const username = localStorage.getItem('username');
+            if (!username) {
                 console.error('No user found, cannot load progress');
                 return false;
             }
 
             // Use user-specific key for localStorage
-            const storageKey = `quiz_progress_${currentUser}_${this.quizName}`;
+            const storageKey = `quiz_progress_${username}_${this.quizName}`;
             const savedProgress = await this.apiService.getQuizProgress(this.quizName);
             let progress = null;
             
@@ -779,10 +778,10 @@ class BuildVerificationQuiz extends BaseQuiz {
             // Save progress with current scenario (before incrementing)
             await this.saveProgress();
 
-            // Also save quiz result and update display
-            const currentUser = localStorage.getItem('currentUser');
-            if (currentUser) {
-                const quizUser = new QuizUser(currentUser);
+            // Save quiz result and update display
+            const username = localStorage.getItem('username');
+            if (username) {
+                const quizUser = new QuizUser(username);
                 const score = Math.round((this.player.experience / this.maxXP) * 100);
                 await quizUser.updateQuizScore(this.quizName, score);
                 
@@ -928,7 +927,7 @@ class BuildVerificationQuiz extends BaseQuiz {
         const scorePercentage = Math.round((finalScore / this.maxXP) * 100);
         
         // Save the final quiz result
-        const currentUsername = localStorage.getItem('currentUser');
+        const currentUsername = localStorage.getItem('username');
         if (currentUsername) {
             try {
                 const user = new QuizUser(currentUsername);

@@ -507,14 +507,14 @@ class CMS_Testing_Quiz extends BaseQuiz {
         };
 
         try {
-            const currentUser = localStorage.getItem('currentUser');
-            if (!currentUser) {
+            const username = localStorage.getItem('username');
+            if (!username) {
                 console.error('No user found, cannot save progress');
                 return;
             }
             
             // Use user-specific key for localStorage
-            const storageKey = `quiz_progress_${currentUser}_${this.quizName}`;
+            const storageKey = `quiz_progress_${username}_${this.quizName}`;
             localStorage.setItem(storageKey, JSON.stringify({ progress }));
             
             await this.apiService.saveQuizProgress(this.quizName, progress);
@@ -526,14 +526,14 @@ class CMS_Testing_Quiz extends BaseQuiz {
 
     async loadProgress() {
         try {
-            const currentUser = localStorage.getItem('currentUser');
-            if (!currentUser) {
+            const username = localStorage.getItem('username');
+            if (!username) {
                 console.error('No user found, cannot load progress');
                 return false;
             }
 
             // Use user-specific key for localStorage
-            const storageKey = `quiz_progress_${currentUser}_${this.quizName}`;
+            const storageKey = `quiz_progress_${username}_${this.quizName}`;
             const savedProgress = await this.apiService.getQuizProgress(this.quizName);
             let progress = null;
             
@@ -782,9 +782,9 @@ class CMS_Testing_Quiz extends BaseQuiz {
             await this.saveProgress();
 
             // Also save quiz result and update display
-            const currentUser = localStorage.getItem('currentUser');
-            if (currentUser) {
-                const quizUser = new QuizUser(currentUser);
+            const username = localStorage.getItem('username');
+            if (username) {
+                const quizUser = new QuizUser(username);
                 const score = Math.round((this.player.experience / this.maxXP) * 100);
                 await quizUser.updateQuizScore(this.quizName, score);
                 
@@ -930,10 +930,10 @@ class CMS_Testing_Quiz extends BaseQuiz {
         const scorePercentage = Math.round((finalScore / this.maxXP) * 100);
         
         // Save the final quiz result
-        const currentUsername = localStorage.getItem('currentUser');
-        if (currentUsername) {
+        const username = localStorage.getItem('username');
+        if (username) {
             try {
-                const user = new QuizUser(currentUsername);
+                const user = new QuizUser(username);
                 user.updateQuizScore(this.quizName, scorePercentage);
                 console.log('Final quiz score saved:', scorePercentage);
             } catch (error) {
