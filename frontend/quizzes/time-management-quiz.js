@@ -512,33 +512,32 @@ class TimeManagementQuiz extends BaseQuiz {
         };
 
         try {
-            const currentUser = localStorage.getItem('currentUser');
-            if (!currentUser) {
+            const username = localStorage.getItem('username');
+            if (!username) {
                 console.error('No user found, cannot save progress');
                 return;
             }
             
             // Use user-specific key for localStorage
-            const storageKey = `quiz_progress_${currentUser}_${this.quizName}`;
+            const storageKey = `quiz_progress_${username}_${this.quizName}`;
             localStorage.setItem(storageKey, JSON.stringify({ progress }));
             
             await this.apiService.saveQuizProgress(this.quizName, progress);
         } catch (error) {
             console.error('Failed to save progress:', error);
-            // Continue without saving - don't interrupt the user experience
         }
     }
 
     async loadProgress() {
         try {
-            const currentUser = localStorage.getItem('currentUser');
-            if (!currentUser) {
+            const username = localStorage.getItem('username');
+            if (!username) {
                 console.error('No user found, cannot load progress');
                 return false;
             }
 
             // Use user-specific key for localStorage
-            const storageKey = `quiz_progress_${currentUser}_${this.quizName}`;
+            const storageKey = `quiz_progress_${username}_${this.quizName}`;
             const savedProgress = await this.apiService.getQuizProgress(this.quizName);
             let progress = null;
             
@@ -561,8 +560,9 @@ class TimeManagementQuiz extends BaseQuiz {
                 this.player.tools = progress.tools || [];
                 this.player.questionHistory = progress.questionHistory || [];
                 
-                // Fixed: Set current scenario to the next unanswered question
-                this.player.currentScenario = this.player.questionHistory.length;
+                // Set the current scenario based on the number of completed questions
+                const completedQuestions = this.player.questionHistory.length;
+                this.player.currentScenario = completedQuestions;
 
                 // Update UI
                 this.updateProgress();
@@ -756,14 +756,14 @@ class TimeManagementQuiz extends BaseQuiz {
             await this.saveProgress();
 
             // Also save quiz result and update display
-            const currentUser = localStorage.getItem('currentUser');
-            if (currentUser) {
-                const quizUser = new QuizUser(currentUser);
+            const username = localStorage.getItem('username');
+            if (username) {
+                const quizUser = new QuizUser(username);
                 const score = Math.round((this.player.experience / this.maxXP) * 100);
-                await quizUser.updateQuizScore(this.quizName, score);
+                await quizUser.updateQuizScore('time-management', score);
                 
                 // Update progress display on index page
-                const progressElement = document.querySelector(`#${this.quizName}-progress`);
+                const progressElement = document.querySelector('#time-management-progress');
                 if (progressElement) {
                     const totalQuestions = 15;
                     const completedQuestions = this.player.questionHistory.length;
@@ -776,7 +776,7 @@ class TimeManagementQuiz extends BaseQuiz {
                         progressElement.classList.remove('hidden');
                         
                         // Update quiz item styling
-                        const quizItem = document.querySelector(`[data-quiz="${this.quizName}"]`);
+                        const quizItem = document.querySelector('[data-quiz="time-management"]');
                         if (quizItem) {
                             quizItem.classList.remove('completed', 'in-progress');
                             if (percentComplete === 100) {
@@ -904,10 +904,10 @@ class TimeManagementQuiz extends BaseQuiz {
         const scorePercentage = Math.round((finalScore / this.maxXP) * 100);
         
         // Save the final quiz result
-        const currentUsername = localStorage.getItem('currentUser');
-        if (currentUsername) {
+        const username = localStorage.getItem('username');
+        if (username) {
             try {
-                const user = new QuizUser(currentUsername);
+                const user = new QuizUser(username);
                 user.updateQuizScore(this.quizName, scorePercentage);
                 console.log('Final quiz score saved:', scorePercentage);
             } catch (error) {

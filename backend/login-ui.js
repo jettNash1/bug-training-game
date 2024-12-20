@@ -45,10 +45,10 @@ async function handleRegister() {
 
 // Check if user is already logged in
 document.addEventListener('DOMContentLoaded', async () => {
-    const currentUser = localStorage.getItem('currentUser');
+    const username = localStorage.getItem('username');
     const token = localStorage.getItem('token');
     
-    if (currentUser && token) {
+    if (username && token) {
         const loginForm = document.getElementById('loginForm');
         const userInfo = document.getElementById('userInfo');
         const userDisplay = document.getElementById('userDisplay');
@@ -56,10 +56,10 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (loginForm && userInfo && userDisplay) {
             loginForm.style.display = 'none';
             userInfo.style.display = 'block';
-            userDisplay.textContent = currentUser;
+            userDisplay.textContent = username;
             
             try {
-                const user = new QuizUser(currentUser);
+                const user = new QuizUser(username);
                 await updateUIForLoggedInUser(user);
             } catch (error) {
                 console.error('Error loading user data:', error);
