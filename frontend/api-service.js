@@ -1,6 +1,6 @@
 import config from './config.js';
 
-class APIService {
+export class APIService {
     constructor() {
         this.baseURL = config.apiUrl;
         this.token = localStorage.getItem('token');
@@ -179,7 +179,4 @@ class APIService {
             return { success: true, data: null };
         }
     }
-}
-
-// Make APIService available globally
-window.APIService = APIService; 
+} 

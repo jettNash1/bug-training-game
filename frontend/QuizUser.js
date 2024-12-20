@@ -1,8 +1,11 @@
+import config from './config.js';
+import { APIService } from './api-service.js';
+
 class QuizUser {
     constructor(username) {
         this.username = username;
         this.quizResults = [];
-        this.baseUrl = process.env.NODE_ENV === 'production' 
+        this.baseUrl = config.environment === 'production'
             ? '/api/users'  // Will be relative to the domain in production
             : 'http://localhost:3000/api/users';
         this.retryAttempts = 3;
@@ -14,9 +17,9 @@ class QuizUser {
         let attempts = 0;
         
         while (attempts < this.retryAttempts) {
-        try {
+            try {
                 const token = await this.getValidToken();
-            if (!token) {
+                if (!token) {
                     throw new Error('No valid authentication token found');
                 }
 
@@ -36,37 +39,37 @@ class QuizUser {
                         'Authorization': `Bearer ${token}`
                     },
                     body: JSON.stringify(quizData)
-            });
+                });
 
-            if (!response.ok) {
-                const errorData = await response.json();
+                if (!response.ok) {
+                    const errorData = await response.json();
                     if (response.status === 401) {
                         // Token might be expired, clear it and retry
                         localStorage.removeItem('token');
                         throw new Error('Token expired');
                     }
-                throw new Error(errorData.message || 'Failed to save quiz result');
-            }
+                    throw new Error(errorData.message || 'Failed to save quiz result');
+                }
 
-            const data = await response.json();
-            if (data.success) {
+                const data = await response.json();
+                if (data.success) {
                     this.quizResults = Array.isArray(data.data) ? data.data : [quizData];
                     // Only use localStorage as temporary cache
-                this.saveToLocalStorage();
+                    this.saveToLocalStorage();
                     await this.loadAndDisplayProgress();
-                return data;
-            } else {
-                throw new Error(data.message || 'Failed to save quiz result');
-            }
-        } catch (error) {
+                    return data;
+                } else {
+                    throw new Error(data.message || 'Failed to save quiz result');
+                }
+            } catch (error) {
                 console.error(`Attempt ${attempts + 1} failed:`, error);
                 if (attempts === this.retryAttempts - 1) {
                     // Only fall back to localStorage on final attempt
                     console.warn('All API attempts failed, falling back to localStorage');
-            this.fallbackToLocalStorage(quizName, score, answers);
+                    this.fallbackToLocalStorage(quizName, score, answers);
                     // Schedule a background sync attempt
                     this.scheduleSync();
-            throw error;
+                    throw error;
                 }
                 attempts++;
                 await new Promise(resolve => setTimeout(resolve, this.retryDelay * attempts));
