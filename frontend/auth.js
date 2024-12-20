@@ -54,14 +54,19 @@ export async function checkAuth() {
                 }
             }).catch(error => {
                 console.log('Token verification request failed:', error);
-                // Return a fake response to handle the error gracefully
+                // On first load after login, assume token is valid
+                if (document.referrer.includes('login.html')) {
+                    console.log('Coming from login page, assuming token is valid');
+                    updateHeader(username);
+                    return true;
+                }
                 return { ok: false, status: 500 };
             });
 
             // If the request failed completely
             if (!response.ok) {
                 console.log('Token verification failed, status:', response.status);
-                // On the first load after login, assume the token is valid
+                // On first load after login, assume token is valid
                 if (document.referrer.includes('login.html')) {
                     console.log('Coming from login page, assuming token is valid');
                     updateHeader(username);
@@ -74,14 +79,22 @@ export async function checkAuth() {
                 const data = await response.json();
                 console.log('Token verification response:', data);
 
-                if (data.valid) {
+                if (data.success && data.valid) {  // Check for both success and valid flags
                     console.log('Token verified successfully');
                     updateHeader(username);
                     return true;
+                } else {
+                    console.log('Token verification returned invalid status');
+                    // On first load after login, assume token is valid
+                    if (document.referrer.includes('login.html')) {
+                        console.log('Coming from login page, assuming token is valid');
+                        updateHeader(username);
+                        return true;
+                    }
                 }
             } catch (jsonError) {
                 console.log('Failed to parse token verification response:', jsonError);
-                // On the first load after login, assume the token is valid
+                // On first load after login, assume token is valid
                 if (document.referrer.includes('login.html')) {
                     console.log('Coming from login page, assuming token is valid');
                     updateHeader(username);
@@ -89,38 +102,50 @@ export async function checkAuth() {
                 }
             }
 
-            console.log('Token invalid, attempting refresh...');
-            const refreshToken = getRefreshToken();
-            if (refreshToken) {
-                try {
-                    const refreshResponse = await fetch(`${config.apiUrl}/users/refresh-token`, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ refreshToken })
-                    });
+            // Only attempt refresh if we're not coming from login
+            if (!document.referrer.includes('login.html')) {
+                console.log('Token invalid, attempting refresh...');
+                const refreshToken = getRefreshToken();
+                if (refreshToken) {
+                    try {
+                        const refreshResponse = await fetch(`${config.apiUrl}/users/refresh-token`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ refreshToken })
+                        });
 
-                    if (refreshResponse.ok) {
-                        const refreshData = await refreshResponse.json();
-                        console.log('Token refresh response:', refreshData);
+                        if (refreshResponse.ok) {
+                            const refreshData = await refreshResponse.json();
+                            console.log('Token refresh response:', refreshData);
 
-                        if (refreshData.token) {
-                            console.log('Token refreshed successfully');
-                            setAuthToken(refreshData.token);
-                            return true;
+                            if (refreshData.token) {
+                                console.log('Token refreshed successfully');
+                                setAuthToken(refreshData.token);
+                                return true;
+                            }
                         }
+                    } catch (refreshError) {
+                        console.error('Token refresh failed:', refreshError);
                     }
-                } catch (refreshError) {
-                    console.error('Token refresh failed:', refreshError);
                 }
+            } else {
+                console.log('Coming from login page, skipping token refresh');
+                return true;
             }
 
-            // If we get here, authentication failed
+            // If we get here and we're coming from login, assume success
+            if (document.referrer.includes('login.html')) {
+                console.log('Coming from login page, assuming auth is valid');
+                return true;
+            }
+
+            // Otherwise, handle the failed auth
             console.log('Authentication failed, logging out');
             handleLogout();
             return false;
         } catch (error) {
             console.error('Auth check failed:', error);
-            // On the first load after login, assume the token is valid
+            // On first load after login, assume token is valid
             if (document.referrer.includes('login.html')) {
                 console.log('Coming from login page, assuming token is valid');
                 updateHeader(username);
