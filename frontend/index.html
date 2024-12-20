@@ -38,29 +38,33 @@
                     Personal Organisation
                 </div>
                 <div class="quiz-list" role="list">
-                    <a href="pages/communication-quiz.html" class="quiz-item" data-quiz="communication" role="listitem">
-                        <div class="quiz-icon" aria-hidden="true">📢</div>
+                    <a href="pages/communication-quiz.html" class="quiz-item" data-quiz="communication">
+                        <div class="quiz-icon" aria-hidden="true">💬</div>
+                        <div id="communication-progress" class="quiz-completion"></div>
                         <div class="quiz-info">
                             <div class="quiz-title">Communication Skills</div>
                             <div class="quiz-description">Master effective communication in testing</div>
                         </div>
                     </a>
-                    <a href="pages/initiative-quiz.html" class="quiz-item" data-quiz="initiative" role="listitem">
+                    <a href="pages/initiative-quiz.html" class="quiz-item" data-quiz="initiative">
                         <div class="quiz-icon" aria-hidden="true">🚀</div>
+                        <div id="initiative-progress" class="quiz-completion"></div>
                         <div class="quiz-info">
                             <div class="quiz-title">Initiative</div>
                             <div class="quiz-description">Learn to take initiative in testing scenarios</div>
                         </div>
                     </a>
-                    <a href="pages/tester-mindset-quiz.html" class="quiz-item" data-quiz="tester-mindset" role="listitem">
+                    <a href="pages/tester-mindset-quiz.html" class="quiz-item" data-quiz="tester-mindset">
                         <div class="quiz-icon" aria-hidden="true">🧠</div>
+                        <div id="tester-mindset-progress" class="quiz-completion"></div>
                         <div class="quiz-info">
                             <div class="quiz-title">Tester Mindset</div>
                             <div class="quiz-description">Develop critical thinking skills</div>
                         </div>
                     </a>
-                    <a href="pages/time-management-quiz.html" class="quiz-item" data-quiz="time-management" role="listitem">
+                    <a href="pages/time-management-quiz.html" class="quiz-item" data-quiz="time-management">
                         <div class="quiz-icon" aria-hidden="true">⏰</div>
+                        <div id="time-management-progress" class="quiz-completion"></div>
                         <div class="quiz-info">
                             <div class="quiz-title">Time Management</div>
                             <div class="quiz-description">Optimize your testing workflow</div>
@@ -68,9 +72,9 @@
                     </a>
                 </div>
                 <div class="category-progress" role="status">
-                    Progress: 0/4 Complete
+                    <div class="progress-text">Progress: 0/4 Complete</div>
                     <div class="progress-bar">
-                        <div class="progress-fill progress-low" style="width: 0%" aria-hidden="true"></div>
+                        <div class="progress-fill" style="width: 0%" aria-hidden="true"></div>
                     </div>
                 </div>
             </div>
@@ -81,15 +85,17 @@
                     Risk Management
                 </div>
                 <div class="quiz-list" role="list">
-                    <a href="pages/risk-analysis.html" class="quiz-item" data-quiz="risk-analysis" role="listitem">
+                    <a href="pages/risk-analysis.html" class="quiz-item" data-quiz="risk-analysis">
                         <div class="quiz-icon" aria-hidden="true">📊</div>
+                        <div id="risk-analysis-progress" class="quiz-completion hidden"></div>
                         <div class="quiz-info">
                             <div class="quiz-title">Risk Analysis</div>
                             <div class="quiz-description">Learn to identify and assess risks</div>
                         </div>
                     </a>
                     <a href="pages/risk-management.html" class="quiz-item" data-quiz="risk-management">
-                        <div class="quiz-icon">🎯</div>
+                        <div class="quiz-icon" aria-hidden="true">🎯</div>
+                        <div id="risk-management-progress" class="quiz-completion hidden"></div>
                         <div class="quiz-info">
                             <div class="quiz-title">Risk Management</div>
                             <div class="quiz-description">Strategies for managing test risks</div>
@@ -97,9 +103,9 @@
                     </a>
                 </div>
                 <div class="category-progress">
-                    Progress: 1/2 Complete
+                    Progress: 0/2 Complete
                     <div class="progress-bar">
-                        <div class="progress-fill progress-medium" style="width: 50%"></div>
+                        <div class="progress-fill" style="width: 0%"></div>
                     </div>
                 </div>
             </div>
@@ -111,28 +117,32 @@
                 </div>
                 <div class="quiz-list">
                     <a href="pages/non-functional-quiz.html" class="quiz-item" data-quiz="non-functional">
-                        <div class="quiz-icon">🔍</div>
+                        <div class="quiz-icon" aria-hidden="true">🔍</div>
+                        <div id="non-functional-progress" class="quiz-completion hidden"></div>
                         <div class="quiz-info">
                             <div class="quiz-title">Non-functional Testing</div>
                             <div class="quiz-description">Performance, security, and usability testing</div>
                         </div>
                     </a>
                     <a href="pages/test-support.html" class="quiz-item" data-quiz="test-support">
-                        <div class="quiz-icon">🛠️</div>
+                        <div class="quiz-icon" aria-hidden="true">🛠️</div>
+                        <div id="test-support-progress" class="quiz-completion hidden"></div>
                         <div class="quiz-info">
                             <div class="quiz-title">Test Support</div>
                             <div class="quiz-description">Tools and techniques for test execution</div>
                         </div>
                     </a>
                     <a href="pages/issue-verification.html" class="quiz-item" data-quiz="issue-verification">
-                        <div class="quiz-icon">✅</div>
+                        <div class="quiz-icon" aria-hidden="true">✅</div>
+                        <div id="issue-verification-progress" class="quiz-completion hidden"></div>
                         <div class="quiz-info">
                             <div class="quiz-title">Issue Verification</div>
                             <div class="quiz-description">Validate and verify bug fixes</div>
                         </div>
                     </a>
                     <a href="pages/build-verification-quiz.html" class="quiz-item" data-quiz="build-verification">
-                        <div class="quiz-icon">✅</div>
+                        <div class="quiz-icon" aria-hidden="true">✅</div>
+                        <div id="build-verification-progress" class="quiz-completion hidden"></div>
                         <div class="quiz-info">
                             <div class="quiz-title">Build Verification</div>
                             <div class="quiz-description">Validate and verify build</div>
@@ -142,7 +152,7 @@
                 <div class="category-progress">
                     Progress: 0/3 Complete
                     <div class="progress-bar">
-                        <div class="progress-fill progress-low" style="width: 0%"></div>
+                        <div class="progress-fill" style="width: 0%"></div>
                     </div>
                 </div>
             </div>
@@ -183,9 +193,9 @@
                     </a>
                 </div>
                 <div class="category-progress">
-                    Progress: 1/4 Complete
+                    Progress: 0/4 Complete
                     <div class="progress-bar">
-                        <div class="progress-fill progress-low" style="width: 33%"></div>
+                        <div class="progress-fill" style="width: 0%"></div>
                     </div>
                 </div>
             </div>
@@ -221,75 +231,29 @@
     </div>
 
     <script>
-        document.addEventListener('DOMContentLoaded', () => {
-            updateQuizCompletionStatus();
+        document.addEventListener('DOMContentLoaded', async () => {
+            const currentUsername = localStorage.getItem('currentUser');
+            if (!currentUsername) {
+                window.location.href = 'login.html';
+                return;
+            }
+
+            try {
+                // Initialize user and load progress
+                const user = new QuizUser(currentUsername);
+                
+                // Display username in header
+                const usernameElement = document.getElementById('headerUsername');
+                if (usernameElement) {
+                    usernameElement.textContent = currentUsername;
+                }
+
+                // Load and display progress
+                await user.loadAndDisplayProgress();
+            } catch (error) {
+                console.error('Failed to initialize user data:', error);
+            }
         });
-
-        function updateQuizCompletionStatus() {
-            const currentUser = localStorage.getItem('currentUser');
-            if (!currentUser) return;
-
-            const userData = localStorage.getItem(`user_${currentUser}`);
-            if (!userData) return;
-
-            const user = JSON.parse(userData);
-            const quizResults = user.quizResults || [];
-
-            console.log('Current quiz results:', quizResults); // Debug log
-
-            // Update individual quiz items
-            document.querySelectorAll('.quiz-item[data-quiz]').forEach(quizItem => {
-                // Remove any existing completion badges
-                const existingBadge = quizItem.querySelector('.quiz-completion');
-                if (existingBadge) {
-                    existingBadge.remove();
-                }
-                
-                // Reset classes
-                quizItem.classList.remove('completed', 'in-progress');
-                
-                const quizName = quizItem.dataset.quiz;
-                const result = quizResults.find(r => r.quizName === quizName);
-
-                console.log(`Checking quiz ${quizName}:`, result); // Debug log
-
-                if (result) {
-                    const score = result.score;
-                    if (score === 100) {
-                        quizItem.classList.add('completed');
-                        // Add completion badge for 100% too
-                        const completion = document.createElement('div');
-                        completion.className = 'quiz-completion completed';
-                        completion.textContent = '100%';
-                        quizItem.appendChild(completion);
-                    } else if (score > 0) {
-                        quizItem.classList.add('in-progress');
-                        const completion = document.createElement('div');
-                        completion.className = 'quiz-completion in-progress';
-                        completion.textContent = `${score}%`;
-                        quizItem.appendChild(completion);
-                    }
-                }
-            });
-
-            // Update category progress
-            document.querySelectorAll('.category-card').forEach(categoryCard => {
-                const totalQuizzes = categoryCard.querySelectorAll('.quiz-item:not(.locked-quiz)').length;
-                const completedQuizzes = categoryCard.querySelectorAll('.quiz-item.completed').length;
-                
-                if (totalQuizzes > 0) {
-                    const progressText = categoryCard.querySelector('.category-progress');
-                    const progressBar = categoryCard.querySelector('.progress-fill');
-                    
-                    const progressPercentage = (completedQuizzes / totalQuizzes) * 100;
-                    
-                    progressText.innerHTML = `Progress: ${completedQuizzes}/${totalQuizzes} Complete
-                        <div class="progress-bar">
-                            <div class="progress-fill ${progressPercentage === 100 ? 'progress-high' : progressPercentage >= 50 ? 'progress-medium' : 'progress-low'}" style="width: ${progressPercentage}%"></div>
-                        </div>`;
-                }
-            });
-        }
     </script>
 </body>
 </html>

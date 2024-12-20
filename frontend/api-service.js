@@ -3,6 +3,13 @@ class APIService {
         this.baseURL = '/api';
         this.token = localStorage.getItem('token');
         this.adminToken = localStorage.getItem('adminToken');
+        this.currentUser = localStorage.getItem('currentUser');
+    }
+
+    checkAuth() {
+        if (!this.token) {
+            throw new Error('No authentication token found. Please log in.');
+        }
     }
 
     async saveQuizResult(quizData) {
@@ -92,6 +99,8 @@ class APIService {
 
     async saveQuizProgress(quizName, progress) {
         try {
+            this.checkAuth();
+            console.log('Saving progress to:', `${this.baseURL}/users/quiz-progress`);
             const response = await fetch(`${this.baseURL}/users/quiz-progress`, {
                 method: 'POST',
                 headers: {
@@ -105,18 +114,38 @@ class APIService {
             });
 
             if (!response.ok) {
-                throw new Error('Failed to save quiz progress');
+                // Save to localStorage with user-specific key
+                const storageKey = `quiz_progress_${this.currentUser}_${quizName}`;
+                localStorage.setItem(storageKey, JSON.stringify({
+                    progress,
+                    timestamp: new Date().toISOString()
+                }));
+                return { success: true, message: 'Progress saved locally' };
             }
 
-            return await response.json();
+            const data = await response.json();
+            // Also save to localStorage as backup with user-specific key
+            const storageKey = `quiz_progress_${this.currentUser}_${quizName}`;
+            localStorage.setItem(storageKey, JSON.stringify({
+                progress,
+                timestamp: new Date().toISOString()
+            }));
+            return data;
         } catch (error) {
             console.error('Failed to save quiz progress:', error);
-            throw error;
+            // Save to localStorage with user-specific key
+            const storageKey = `quiz_progress_${this.currentUser}_${quizName}`;
+            localStorage.setItem(storageKey, JSON.stringify({
+                progress,
+                timestamp: new Date().toISOString()
+            }));
+            return { success: true, message: 'Progress saved locally' };
         }
     }
 
     async getQuizProgress(quizName) {
         try {
+            this.checkAuth();
             const response = await fetch(`${this.baseURL}/users/quiz-progress/${quizName}`, {
                 headers: {
                     'Authorization': `Bearer ${this.token}`
@@ -124,13 +153,28 @@ class APIService {
             });
 
             if (!response.ok) {
-                throw new Error('Failed to get quiz progress');
+                // Try to get from localStorage with user-specific key
+                const storageKey = `quiz_progress_${this.currentUser}_${quizName}`;
+                const localData = localStorage.getItem(storageKey);
+                if (localData) {
+                    const parsed = JSON.parse(localData);
+                    return { success: true, data: parsed.progress };
+                }
+                return { success: true, data: null };
             }
 
-            return await response.json();
+            const data = await response.json();
+            return data;
         } catch (error) {
             console.error('Failed to get quiz progress:', error);
-            throw error;
+            // Try to get from localStorage with user-specific key
+            const storageKey = `quiz_progress_${this.currentUser}_${quizName}`;
+            const localData = localStorage.getItem(storageKey);
+            if (localData) {
+                const parsed = JSON.parse(localData);
+                return { success: true, data: parsed.progress };
+            }
+            return { success: true, data: null };
         }
     }
 }

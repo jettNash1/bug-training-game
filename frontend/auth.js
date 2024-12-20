@@ -30,10 +30,28 @@ function updateHeader(username) {
 }
 
 // Update the logout handler
-function handleLogout() {
-    localStorage.removeItem('token');
-    localStorage.removeItem('currentUser');
-    window.location.href = 'login.html';
+async function handleLogout() {
+    try {
+        // Clear user-specific data
+        const currentUser = localStorage.getItem('currentUser');
+        if (currentUser) {
+            // Clear all quiz progress for this user
+            Object.keys(localStorage).forEach(key => {
+                if (key.startsWith(`quiz_progress_${currentUser}_`)) {
+                    localStorage.removeItem(key);
+                }
+            });
+        }
+        
+        // Clear auth data
+        localStorage.removeItem('token');
+        localStorage.removeItem('currentUser');
+        
+        // Redirect to login
+        window.location.href = 'login.html';
+    } catch (error) {
+        console.error('Logout error:', error);
+    }
 }
 
 // Add event listener to check auth status on page load

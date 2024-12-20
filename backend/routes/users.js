@@ -109,31 +109,29 @@ router.post('/quiz-results', auth, async (req, res) => {
         const user = await User.findById(req.user.id);
         
         if (!user) {
-            return res.status(404).json({ 
-                success: false, 
-                message: 'User not found' 
-            });
+            return res.status(404).json({ success: false, message: 'User not found' });
         }
 
         const quizData = {
             quizName,
-            score,
-            experience: experience || score,
+            score: Math.round(score),
+            experience: Math.round(experience || score),
             tools: tools || [],
             questionHistory: questionHistory || [],
             completedAt: new Date()
         };
 
-        const existingQuizIndex = user.quizResults.findIndex(
-            quiz => quiz.quizName === quizName
-        );
-
-        if (existingQuizIndex > -1) {
-            user.quizResults[existingQuizIndex] = quizData;
+        // Find and update or add new quiz result
+        const existingIndex = user.quizResults.findIndex(r => r.quizName === quizName);
+        if (existingIndex !== -1) {
+            // Only update if new score is higher
+            if (score > user.quizResults[existingIndex].score) {
+                user.quizResults[existingIndex] = quizData;
+            }
         } else {
             user.quizResults.push(quizData);
         }
-        
+
         await user.save();
         res.json({ success: true, data: user.quizResults });
     } catch (error) {
@@ -237,6 +235,7 @@ router.post('/quiz-progress', auth, async (req, res) => {
 
 router.get('/quiz-progress/:quizName', auth, async (req, res) => {
     try {
+        const { quizName } = req.params;
         const user = await User.findById(req.user.id);
         
         if (!user) {
@@ -247,7 +246,86 @@ router.get('/quiz-progress/:quizName', auth, async (req, res) => {
         res.json({ success: true, data: progress });
     } catch (error) {
         console.error('Failed to get progress:', error);
-        res.status(500).json({ error: 'Failed to get progress' });
+        res.status(500).json({ success: false, error: 'Failed to get progress' });
+    }
+});
+
+// Verify token endpoint
+router.get('/verify-token', auth, async (req, res) => {
+    try {
+        // If we get here, the token is valid (auth middleware already verified it)
+        res.json({ success: true, valid: true });
+    } catch (error) {
+        console.error('Token verification error:', error);
+        res.status(401).json({ success: false, valid: false });
+    }
+});
+
+// Refresh token endpoint
+router.post('/refresh-token', async (req, res) => {
+    try {
+        const { refreshToken } = req.body;
+        if (!refreshToken) {
+            return res.status(400).json({ success: false, message: 'No refresh token provided' });
+        }
+
+        // Verify refresh token
+        const decoded = jwt.verify(refreshToken, process.env.JWT_REFRESH_SECRET);
+        const user = await User.findById(decoded.id);
+
+        if (!user) {
+            return res.status(404).json({ success: false, message: 'User not found' });
+        }
+
+        // Create new access token
+        const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, { expiresIn: '1h' });
+        
+        res.json({ 
+            success: true, 
+            token,
+            refreshToken: refreshToken // Return same refresh token if still valid
+        });
+    } catch (error) {
+        console.error('Token refresh error:', error);
+        res.status(401).json({ success: false, message: 'Invalid refresh token' });
+    }
+});
+
+// Sync endpoint for offline data
+router.post('/sync', auth, async (req, res) => {
+    try {
+        const { username, quizResults, timestamp } = req.body;
+        const user = await User.findById(req.user.id);
+
+        if (!user) {
+            return res.status(404).json({ success: false, message: 'User not found' });
+        }
+
+        // Only update if the sync data is newer than existing data
+        const syncTime = new Date(timestamp);
+        
+        quizResults.forEach(newResult => {
+            const existingIndex = user.quizResults.findIndex(r => r.quizName === newResult.quizName);
+            
+            if (existingIndex === -1) {
+                // New quiz result
+                user.quizResults.push(newResult);
+            } else {
+                // Compare timestamps if existing result has one
+                const existingResult = user.quizResults[existingIndex];
+                const existingTime = existingResult.completedAt ? new Date(existingResult.completedAt) : new Date(0);
+                
+                if (syncTime > existingTime) {
+                    user.quizResults[existingIndex] = newResult;
+                }
+            }
+        });
+
+        await user.save();
+        res.json({ success: true, data: user.quizResults });
+    } catch (error) {
+        console.error('Sync error:', error);
+        res.status(500).json({ success: false, message: 'Failed to sync data' });
     }
 });
 
