@@ -68,7 +68,8 @@ router.post('/register', async (req, res) => {
 router.post('/login', async (req, res) => {
     console.log('Login attempt:', { 
         body: req.body,
-        contentType: req.headers['content-type']
+        contentType: req.headers['content-type'],
+        origin: req.get('origin')
     });
 
     try {
@@ -112,7 +113,15 @@ router.post('/login', async (req, res) => {
         const refreshToken = jwt.sign({ id: user._id }, process.env.JWT_REFRESH_SECRET, { expiresIn: '7d' });
 
         console.log('Login successful:', username);
-        res.json({ 
+        
+        // Set response headers
+        res.set({
+            'Content-Type': 'application/json',
+            'Access-Control-Allow-Origin': process.env.ALLOWED_ORIGINS || 'https://bug-training-game.onrender.com',
+            'Access-Control-Allow-Credentials': 'true'
+        });
+
+        return res.json({ 
             success: true,
             message: 'Login successful',
             token,
@@ -121,7 +130,7 @@ router.post('/login', async (req, res) => {
         });
     } catch (error) {
         console.error('Login error:', error);
-        res.status(500).json({ 
+        return res.status(500).json({ 
             success: false,
             message: 'Server error during login',
             error: process.env.NODE_ENV === 'production' ? null : error.message

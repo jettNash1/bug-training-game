@@ -24,7 +24,7 @@ const port = process.env.PORT || 10000;
 // Middleware
 const corsOptions = {
   origin: process.env.NODE_ENV === 'production'
-    ? ['https://bug-training-game.onrender.com']
+    ? [process.env.ALLOWED_ORIGINS || 'https://bug-training-game.onrender.com']
     : ['http://localhost:3000', 'http://127.0.0.1:3000', 'http://localhost:5500', 'http://127.0.0.1:5500'],
   credentials: true,
   optionsSuccessStatus: 200,
@@ -33,6 +33,11 @@ const corsOptions = {
 };
 
 app.use(cors(corsOptions));
+
+// Add CORS preflight
+app.options('*', cors(corsOptions));
+
+// Parse JSON bodies
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
@@ -41,7 +46,8 @@ app.use((req, res, next) => {
     console.log(`${req.method} ${req.path}`, {
         headers: req.headers,
         body: req.body,
-        query: req.query
+        query: req.query,
+        origin: req.get('origin')
     });
 
     // Capture the original res.json to add logging

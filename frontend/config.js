@@ -1,20 +1,16 @@
 // Environment detection
-const isProd = window.location.hostname !== 'localhost' && 
-               window.location.hostname !== '127.0.0.1' &&
-               !window.location.hostname.includes('.preview.');
+const isProd = window.location.hostname === 'bug-training-game.onrender.com';
 
 // Configuration object
 export const config = {
     apiUrl: isProd 
         ? 'https://bug-training-game.onrender.com/api'
-        : 'http://localhost:10000/api',
-    isDev: !isProd
+        : 'http://localhost:10000/api'
 };
 
-// Log configuration in development
-if (!isProd) {
-    console.log('Running in development mode:', {
-        hostname: window.location.hostname,
-        apiUrl: config.apiUrl
-    });
-} 
+// Log configuration
+console.log('App configuration:', {
+    environment: isProd ? 'production' : 'development',
+    hostname: window.location.hostname,
+    apiUrl: config.apiUrl
+}); 
