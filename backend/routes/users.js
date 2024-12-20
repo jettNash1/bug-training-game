@@ -6,14 +6,31 @@ const auth = require('../middleware/auth');
 
 // Register new user
 router.post('/register', async (req, res) => {
+    console.log('Register attempt:', { 
+        body: req.body,
+        contentType: req.headers['content-type']
+    });
+
     try {
         const { username, password } = req.body;
         
+        if (!username || !password) {
+            console.log('Missing credentials:', { username: !!username, password: !!password });
+            return res.status(400).json({ 
+                success: false,
+                message: 'Username and password are required' 
+            });
+        }
+
         // Check if user exists
         let user = await User.findOne({ username });
         
         if (user) {
-            return res.status(409).json({ message: 'User already exists' });
+            console.log('User already exists:', username);
+            return res.status(409).json({ 
+                success: false,
+                message: 'User already exists' 
+            });
         }
 
         // Create new user
@@ -24,12 +41,14 @@ router.post('/register', async (req, res) => {
         });
 
         await user.save();
+        console.log('User created successfully:', username);
 
         // Create tokens
         const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, { expiresIn: '1h' });
         const refreshToken = jwt.sign({ id: user._id }, process.env.JWT_REFRESH_SECRET, { expiresIn: '7d' });
 
         res.status(201).json({ 
+            success: true,
             message: 'User registered successfully',
             token,
             refreshToken,
@@ -37,26 +56,51 @@ router.post('/register', async (req, res) => {
         });
     } catch (error) {
         console.error('Registration error:', error);
-        res.status(500).json({ message: 'Server error' });
+        res.status(500).json({ 
+            success: false,
+            message: 'Server error during registration',
+            error: process.env.NODE_ENV === 'production' ? null : error.message
+        });
     }
 });
 
 // Login user
 router.post('/login', async (req, res) => {
+    console.log('Login attempt:', { 
+        body: req.body,
+        contentType: req.headers['content-type']
+    });
+
     try {
         const { username, password } = req.body;
         
+        if (!username || !password) {
+            console.log('Missing credentials:', { username: !!username, password: !!password });
+            return res.status(400).json({ 
+                success: false,
+                message: 'Username and password are required' 
+            });
+        }
+
         // Find user
         const user = await User.findOne({ username });
         
         if (!user) {
-            return res.status(401).json({ message: 'Invalid credentials' });
+            console.log('User not found:', username);
+            return res.status(401).json({ 
+                success: false,
+                message: 'Invalid credentials' 
+            });
         }
 
         // Check password
         const isMatch = await user.comparePassword(password);
         if (!isMatch) {
-            return res.status(401).json({ message: 'Invalid credentials' });
+            console.log('Invalid password for user:', username);
+            return res.status(401).json({ 
+                success: false,
+                message: 'Invalid credentials' 
+            });
         }
 
         // Update last login
@@ -67,14 +111,21 @@ router.post('/login', async (req, res) => {
         const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, { expiresIn: '1h' });
         const refreshToken = jwt.sign({ id: user._id }, process.env.JWT_REFRESH_SECRET, { expiresIn: '7d' });
 
+        console.log('Login successful:', username);
         res.json({ 
+            success: true,
             message: 'Login successful',
             token,
             refreshToken,
             username: user.username
         });
     } catch (error) {
-        res.status(500).json({ message: 'Server error' });
+        console.error('Login error:', error);
+        res.status(500).json({ 
+            success: false,
+            message: 'Server error during login',
+            error: process.env.NODE_ENV === 'production' ? null : error.message
+        });
     }
 });
 

@@ -8,6 +8,8 @@ export class APIService {
 
     async login(username, password) {
         try {
+            console.log('Attempting login:', { username, url: `${this.baseUrl}/users/login` });
+            
             const response = await fetch(`${this.baseUrl}/users/login`, {
                 method: 'POST',
                 headers: {
@@ -16,10 +18,25 @@ export class APIService {
                 body: JSON.stringify({ username, password })
             });
 
-            const data = await response.json();
+            console.log('Login response status:', response.status);
+            
+            // Try to read the response text first
+            const text = await response.text();
+            console.log('Login response text:', text);
+
+            // Then parse it as JSON if possible
+            let data;
+            try {
+                data = JSON.parse(text);
+            } catch (e) {
+                console.error('Failed to parse response as JSON:', e);
+                throw new Error('Invalid response from server');
+            }
+
             if (!response.ok) {
                 throw new Error(data.message || 'Login failed');
             }
+
             return data;
         } catch (error) {
             console.error('Login error:', error);
@@ -29,6 +46,8 @@ export class APIService {
 
     async register(username, password) {
         try {
+            console.log('Attempting registration:', { username, url: `${this.baseUrl}/users/register` });
+            
             const response = await fetch(`${this.baseUrl}/users/register`, {
                 method: 'POST',
                 headers: {
@@ -37,10 +56,25 @@ export class APIService {
                 body: JSON.stringify({ username, password })
             });
 
-            const data = await response.json();
+            console.log('Registration response status:', response.status);
+            
+            // Try to read the response text first
+            const text = await response.text();
+            console.log('Registration response text:', text);
+
+            // Then parse it as JSON if possible
+            let data;
+            try {
+                data = JSON.parse(text);
+            } catch (e) {
+                console.error('Failed to parse response as JSON:', e);
+                throw new Error('Invalid response from server');
+            }
+
             if (!response.ok) {
                 throw new Error(data.message || 'Registration failed');
             }
+
             return data;
         } catch (error) {
             console.error('Registration error:', error);
@@ -61,7 +95,17 @@ export class APIService {
                 }
             });
 
-            const data = await response.json();
+            const text = await response.text();
+            console.log('Token verification response:', text);
+
+            let data;
+            try {
+                data = JSON.parse(text);
+            } catch (e) {
+                console.error('Failed to parse token verification response:', e);
+                return { valid: false };
+            }
+
             return data;
         } catch (error) {
             console.error('Token verification error:', error);
@@ -79,7 +123,17 @@ export class APIService {
                 body: JSON.stringify({ refreshToken })
             });
 
-            const data = await response.json();
+            const text = await response.text();
+            console.log('Token refresh response:', text);
+
+            let data;
+            try {
+                data = JSON.parse(text);
+            } catch (e) {
+                console.error('Failed to parse token refresh response:', e);
+                throw new Error('Invalid response from server');
+            }
+
             if (!response.ok) {
                 throw new Error(data.message || 'Token refresh failed');
             }
