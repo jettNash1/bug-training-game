@@ -18,7 +18,7 @@
         import { APIService } from './api-service.js';
         
         document.addEventListener('DOMContentLoaded', async () => {
-            const currentUsername = localStorage.getItem('currentUser');
+            const currentUsername = localStorage.getItem('username');
             if (!currentUsername) {
                 window.location.href = 'login.html';
                 return;
