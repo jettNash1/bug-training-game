@@ -1,13 +1,12 @@
 import config from './config.js';
 import { APIService } from './api-service.js';
 
-class QuizUser {
+export class QuizUser {
     constructor(username) {
         this.username = username;
         this.quizResults = [];
-        this.baseUrl = config.environment === 'production'
-            ? '/api/users'  // Will be relative to the domain in production
-            : 'http://localhost:3000/api/users';
+        this.apiService = new APIService();
+        this.baseUrl = config.apiUrl;
         this.retryAttempts = 3;
         this.retryDelay = 1000; // 1 second
     }
@@ -174,11 +173,21 @@ class QuizUser {
         syncQueue.push(pendingData);
         localStorage.setItem('syncQueue', JSON.stringify(syncQueue));
 
-        // Attempt background sync
-        if ('serviceWorker' in navigator && 'sync' in window.registration) {
-            window.registration.sync.register('sync-quiz-data');
+        // Attempt background sync if available
+        if ('serviceWorker' in navigator && navigator.serviceWorker.ready) {
+            navigator.serviceWorker.ready.then(registration => {
+                if ('sync' in registration) {
+                    registration.sync.register('sync-quiz-data')
+                        .catch(error => {
+                            console.warn('Background sync failed:', error);
+                            this.attemptSync();
+                        });
+                } else {
+                    this.attemptSync();
+                }
+            });
         } else {
-            // Fallback for browsers without background sync
+            // Fallback for browsers without service worker support
             this.attemptSync();
         }
     }
@@ -477,7 +486,5 @@ class QuizUser {
     }
 }
 
-// Ensure only one instance is defined
-if (!window.QuizUser) {
-    window.QuizUser = QuizUser;
-} 
+// Make QuizUser available globally for legacy support
+window.QuizUser = QuizUser; 
