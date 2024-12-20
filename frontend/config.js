@@ -4,7 +4,7 @@ const isProd = window.location.hostname === 'bug-training-game.onrender.com';
 // Configuration object
 export const config = {
     apiUrl: isProd 
-        ? 'https://bug-training-game.onrender.com/api'
+        ? 'https://bug-training-game-api.onrender.com/api'
         : 'http://localhost:10000/api'
 };
 
