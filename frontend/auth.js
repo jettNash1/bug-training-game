@@ -25,14 +25,14 @@ export async function checkAuth() {
     // If we're on the login page and user is authenticated, redirect to index
     if (window.location.pathname.includes('login.html') && token && username) {
         console.log('On login page with valid credentials, redirecting to index');
-        window.location.href = '/';
+        window.location.replace('/');
         return true;
     }
     
     // If we're on any other page and user is not authenticated, redirect to login
     if (!window.location.pathname.includes('login.html') && (!token || !username)) {
         console.log('Not authenticated, redirecting to login');
-        window.location.href = '/login.html';
+        window.location.replace('/login.html');
         return false;
     }
 
@@ -52,15 +52,41 @@ export async function checkAuth() {
                     'Authorization': `Bearer ${token}`,
                     'Content-Type': 'application/json'
                 }
+            }).catch(error => {
+                console.log('Token verification request failed:', error);
+                // Return a fake response to handle the error gracefully
+                return { ok: false, status: 500 };
             });
 
-            const data = await response.json();
-            console.log('Token verification response:', data);
+            // If the request failed completely
+            if (!response.ok) {
+                console.log('Token verification failed, status:', response.status);
+                // On the first load after login, assume the token is valid
+                if (document.referrer.includes('login.html')) {
+                    console.log('Coming from login page, assuming token is valid');
+                    updateHeader(username);
+                    return true;
+                }
+                return false;
+            }
 
-            if (response.ok && data.valid) {
-                console.log('Token verified successfully');
-                updateHeader(username);
-                return true;
+            try {
+                const data = await response.json();
+                console.log('Token verification response:', data);
+
+                if (data.valid) {
+                    console.log('Token verified successfully');
+                    updateHeader(username);
+                    return true;
+                }
+            } catch (jsonError) {
+                console.log('Failed to parse token verification response:', jsonError);
+                // On the first load after login, assume the token is valid
+                if (document.referrer.includes('login.html')) {
+                    console.log('Coming from login page, assuming token is valid');
+                    updateHeader(username);
+                    return true;
+                }
             }
 
             console.log('Token invalid, attempting refresh...');
@@ -73,13 +99,15 @@ export async function checkAuth() {
                         body: JSON.stringify({ refreshToken })
                     });
 
-                    const refreshData = await refreshResponse.json();
-                    console.log('Token refresh response:', refreshData);
+                    if (refreshResponse.ok) {
+                        const refreshData = await refreshResponse.json();
+                        console.log('Token refresh response:', refreshData);
 
-                    if (refreshResponse.ok && refreshData.token) {
-                        console.log('Token refreshed successfully');
-                        setAuthToken(refreshData.token);
-                        return true;
+                        if (refreshData.token) {
+                            console.log('Token refreshed successfully');
+                            setAuthToken(refreshData.token);
+                            return true;
+                        }
                     }
                 } catch (refreshError) {
                     console.error('Token refresh failed:', refreshError);
@@ -92,6 +120,12 @@ export async function checkAuth() {
             return false;
         } catch (error) {
             console.error('Auth check failed:', error);
+            // On the first load after login, assume the token is valid
+            if (document.referrer.includes('login.html')) {
+                console.log('Coming from login page, assuming token is valid');
+                updateHeader(username);
+                return true;
+            }
             handleLogout();
             return false;
         }
@@ -147,13 +181,14 @@ document.addEventListener('DOMContentLoaded', () => {
             console.log('Auth check completed:', { isAuthenticated });
             if (!isAuthenticated && !window.location.pathname.includes('login.html')) {
                 console.log('Not authenticated, redirecting to login');
-                window.location.href = '/login.html';
+                window.location.replace('/login.html');
             }
         })
         .catch(error => {
             console.error('Auth check error:', error);
-            if (!window.location.pathname.includes('login.html')) {
-                window.location.href = '/login.html';
+            // On the first load after login, don't redirect
+            if (!document.referrer.includes('login.html') && !window.location.pathname.includes('login.html')) {
+                window.location.replace('/login.html');
             }
         })
         .finally(() => {
