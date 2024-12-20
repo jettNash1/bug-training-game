@@ -24,7 +24,7 @@ const port = process.env.PORT || 3000;
 const corsOptions = {
   origin: process.env.NODE_ENV === 'production'
     ? ['https://bug-training-game.onrender.com']
-    : ['http://localhost:8080', 'http://127.0.0.1:8080'],
+    : ['http://localhost:3000', 'http://127.0.0.1:3000'],
   credentials: true,
   optionsSuccessStatus: 200,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
@@ -131,13 +131,15 @@ app.use('/api/users', userRoutes);
 const adminRoutes = require('./routes/admin');
 app.use('/api/admin', adminRoutes);
 
-// Serve static files from the build directory
-app.use(express.static(path.join(__dirname, '../build')));
-
-// Handle SPA routing
-app.get('*', (req, res) => {
-  res.sendFile(path.join(__dirname, '../build/index.html'));
-});
+// Add headers for development
+if (process.env.NODE_ENV !== 'production') {
+    app.use((req, res, next) => {
+        res.header('Access-Control-Allow-Origin', 'http://localhost:3000');
+        res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
+        res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+        next();
+    });
+}
 
 // Error handling middleware
 app.use((err, req, res, next) => {
@@ -151,26 +153,6 @@ app.use((err, req, res, next) => {
     next(err);
 });
 
-// Add this after your other error middleware
-app.use((err, req, res, next) => {
-    console.error('Server Error:', err);
-    res.status(err.status || 500).json({ 
-        success: false, 
-        message: 'Server error',
-        error: process.env.NODE_ENV === 'production' ? null : err.message
-    });
-});
-
-// Add headers for development
-if (process.env.NODE_ENV !== 'production') {
-    app.use((req, res, next) => {
-        res.header('Access-Control-Allow-Origin', 'http://localhost:8080');
-        res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
-        res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
-        next();
-    });
-}
-
 // Add specific error handler for token verification
 app.use((err, req, res, next) => {
     if (err.name === 'JsonWebTokenError' || err.name === 'TokenExpiredError') {
@@ -180,6 +162,26 @@ app.use((err, req, res, next) => {
         });
     }
     next(err);
+});
+
+// General error handler
+app.use((err, req, res, next) => {
+    console.error('Server Error:', err);
+    res.status(err.status || 500).json({ 
+        success: false, 
+        message: 'Server error',
+        error: process.env.NODE_ENV === 'production' ? null : err.message
+    });
+});
+
+// Serve static files and handle SPA routing AFTER API routes
+app.use(express.static(path.join(__dirname, '../frontend')));
+
+app.get('*', (req, res) => {
+    // Don't interfere with API routes
+    if (!req.path.startsWith('/api')) {
+        res.sendFile(path.join(__dirname, '../frontend/index.html'));
+    }
 });
 
 // Start server
