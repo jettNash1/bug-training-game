@@ -16,7 +16,12 @@ export async function checkAuth() {
     const token = getAuthToken();
     const username = localStorage.getItem('username');
     
-    console.log('Checking auth:', { hasToken: !!token, hasUsername: !!username, path: window.location.pathname });
+    console.log('Checking auth:', { 
+        hasToken: !!token, 
+        hasUsername: !!username, 
+        path: window.location.pathname,
+        tokenPreview: token ? `${token.substring(0, 10)}...` : 'none'
+    });
     
     // If we're on the login page and user is authenticated, redirect to index
     if (window.location.pathname.includes('login.html') && token && username) {
@@ -33,20 +38,29 @@ export async function checkAuth() {
     // Verify token validity
     if (token && username) {
         try {
-            console.log('Verifying token...');
+            console.log('Verifying token at:', `${config.apiUrl}/users/verify-token`);
             const response = await fetch(`${config.apiUrl}/users/verify-token`, {
+                method: 'GET',
                 headers: {
                     'Authorization': `Bearer ${token}`,
-                    'Content-Type': 'application/json'
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json'
                 }
             });
 
+            console.log('Verification response:', {
+                status: response.status,
+                statusText: response.statusText,
+                headers: Object.fromEntries(response.headers.entries())
+            });
+
             const text = await response.text();
-            console.log('Token verification response:', text);
+            console.log('Token verification response text:', text);
 
             let data;
             try {
                 data = JSON.parse(text);
+                console.log('Parsed verification data:', data);
             } catch (e) {
                 console.error('Failed to parse token verification response:', e);
                 handleLogout();
@@ -54,22 +68,31 @@ export async function checkAuth() {
             }
 
             if (!response.ok || !data.valid) {
-                console.log('Token invalid, attempting refresh...');
-                // Token is invalid, try to refresh
+                console.log('Token invalid or expired, attempting refresh...');
                 const refreshToken = getRefreshToken();
                 if (refreshToken) {
+                    console.log('Attempting token refresh...');
                     const refreshResponse = await fetch(`${config.apiUrl}/users/refresh-token`, {
                         method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
+                        headers: { 
+                            'Content-Type': 'application/json',
+                            'Accept': 'application/json'
+                        },
                         body: JSON.stringify({ refreshToken })
                     });
                     
+                    console.log('Refresh response:', {
+                        status: refreshResponse.status,
+                        statusText: refreshResponse.statusText
+                    });
+
                     const refreshText = await refreshResponse.text();
-                    console.log('Token refresh response:', refreshText);
+                    console.log('Token refresh response text:', refreshText);
 
                     let refreshData;
                     try {
                         refreshData = JSON.parse(refreshText);
+                        console.log('Parsed refresh data:', refreshData);
                     } catch (e) {
                         console.error('Failed to parse token refresh response:', e);
                         handleLogout();
@@ -79,6 +102,8 @@ export async function checkAuth() {
                     if (refreshResponse.ok && refreshData.token) {
                         console.log('Token refreshed successfully');
                         setAuthToken(refreshData.token);
+                        // Retry the original request with the new token
+                        return checkAuth();
                     } else {
                         console.log('Token refresh failed');
                         handleLogout();
@@ -94,11 +119,14 @@ export async function checkAuth() {
             // If we get here, token is valid
             console.log('Auth check successful');
             updateHeader(username);
+            return true;
         } catch (error) {
             console.error('Auth check failed:', error);
             handleLogout();
+            return false;
         }
     }
+    return false;
 }
 
 // Logout handler

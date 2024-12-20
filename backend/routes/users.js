@@ -317,14 +317,21 @@ router.get('/quiz-progress/:quizName', auth, async (req, res) => {
 // Verify token endpoint
 router.get('/verify-token', auth, async (req, res) => {
     try {
+        console.log('Token verification request received');
         // If we get here, the token is valid (auth middleware already verified it)
         const user = await User.findById(req.user.id);
+        console.log('User lookup result:', { found: !!user, userId: req.user.id });
+        
         if (!user) {
+            console.log('User not found for token');
             return res.status(404).json({ 
                 success: false, 
+                valid: false,
                 message: 'User not found' 
             });
         }
+
+        console.log('Token verified successfully for user:', user.username);
         res.json({ 
             success: true, 
             valid: true,
@@ -334,7 +341,9 @@ router.get('/verify-token', auth, async (req, res) => {
         console.error('Token verification error:', error);
         res.status(401).json({ 
             success: false, 
-            valid: false 
+            valid: false,
+            message: 'Token verification failed',
+            error: process.env.NODE_ENV === 'production' ? undefined : error.message
         });
     }
 });
