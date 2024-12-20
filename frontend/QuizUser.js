@@ -6,7 +6,7 @@ export class QuizUser {
         this.username = username;
         this.quizResults = [];
         this.apiService = new APIService();
-        this.baseUrl = config.apiUrl;
+        this.baseUrl = `${config.apiUrl}/users`;
         this.retryAttempts = 3;
         this.retryDelay = 1000; // 1 second
     }
@@ -435,23 +435,21 @@ export class QuizUser {
             return;
         }
 
+        // Get progress elements
         const progressBar = categoryCard.querySelector('.progress-bar');
-        const progressFill = categoryCard.querySelector('.progress-bar .progress-fill');
-        const progressText = categoryCard.querySelector('.progress-text');
+        const progressFill = progressBar ? progressBar.querySelector('.progress-fill') : null;
+        const progressText = categoryCard.querySelector('.category-progress');
         
         if (!progressBar || !progressFill || !progressText) {
             console.log(`Progress elements not found for: ${categoryName}`);
-            console.log('progressBar:', progressBar);
-            console.log('progressFill:', progressFill);
-            console.log('progressText:', progressText);
             return;
         }
 
         // Count completed quizzes (100% complete)
         let completedCount = 0;
         quizzes.forEach(quizName => {
-            const quizItem = document.querySelector(`[data-quiz="${quizName}"]`);
-            if (quizItem && quizItem.classList.contains('completed')) {
+            const progressElement = document.getElementById(`${quizName}-progress`);
+            if (progressElement && progressElement.textContent === '100%') {
                 completedCount++;
             }
         });
@@ -461,12 +459,9 @@ export class QuizUser {
         const progressPercentage = (completedCount / totalQuizzes) * 100;
         
         progressText.textContent = `Progress: ${completedCount}/${totalQuizzes} Complete`;
-        
-        // Ensure progress bar and fill are visible and styled correctly
-        progressBar.style.display = 'block';
-        progressFill.style.display = 'block';
         progressFill.style.width = `${progressPercentage}%`;
-        
+        progressFill.style.display = 'block';
+
         // Update progress bar color class
         progressFill.classList.remove('progress-low', 'progress-medium', 'progress-high');
         if (progressPercentage <= 33) {
