@@ -16,15 +16,28 @@ class TesterMindsetQuiz extends BaseQuiz {
         };
         
         super(config);
-        
-        // Set the quiz name
+
+        // Set quiz name
         Object.defineProperty(this, 'quizName', {
             value: 'tester-mindset',
             writable: false,
             configurable: false,
             enumerable: true
         });
-        
+
+        // Initialize screens
+        this.gameScreen = document.getElementById('game-screen');
+        this.outcomeScreen = document.getElementById('outcome-screen');
+        this.endScreen = document.getElementById('end-screen');
+
+        if (!this.gameScreen || !this.outcomeScreen || !this.endScreen) {
+            throw new Error('Required screen elements not found');
+        }
+
+        // Initialize services and state
+        this.apiService = new APIService();
+        this.isLoading = false;
+
         // Initialize player state
         this.player = {
             name: '',
@@ -480,20 +493,27 @@ class TesterMindsetQuiz extends BaseQuiz {
                 ]
             }
         ];
-        // Initialize UI and add event listeners
+
+        // Initialize UI and event listeners
         this.initializeEventListeners();
+    }
 
-        this.apiService = new APIService();
-
-        // Add references to screens
-        this.gameScreen = document.getElementById('game-screen');
-        this.outcomeScreen = document.getElementById('outcome-screen');
-        
-        if (!this.gameScreen || !this.outcomeScreen) {
-            console.error('Required screen elements not found');
+    showError(message) {
+        const errorContainer = document.getElementById('error-container');
+        if (errorContainer) {
+            errorContainer.textContent = message;
+            errorContainer.classList.remove('hidden');
+            setTimeout(() => {
+                errorContainer.classList.add('hidden');
+            }, 5000);
+        } else {
+            console.error('Error container not found:', message);
         }
+    }
 
-        this.isLoading = false;
+    shouldEndGame(questionsAnswered, currentXP) {
+        return questionsAnswered >= 15 || 
+               (questionsAnswered >= 10 && currentXP >= this.levelThresholds.advanced.minXP);
     }
 
     async saveProgress() {

@@ -34,6 +34,14 @@ class RiskManagementQuiz extends BaseQuiz {
             questionHistory: []
         };
 
+        // Initialize screens
+        this.gameScreen = document.getElementById('game-screen');
+        this.outcomeScreen = document.getElementById('outcome-screen');
+        this.endScreen = document.getElementById('end-screen');
+
+        // Initialize API service
+        this.apiService = new APIService();
+
         // Basic Scenarios (IDs 1-5, 75 XP total)
         this.basicScenarios = [
             {
@@ -480,20 +488,25 @@ class RiskManagementQuiz extends BaseQuiz {
             }
         ];
 
-        // Initialize UI and add event listeners
+        // Initialize event listeners
         this.initializeEventListeners();
 
-        this.apiService = new APIService();
-
-        // Add references to screens
-        this.gameScreen = document.getElementById('game-screen');
-        this.outcomeScreen = document.getElementById('outcome-screen');
-        
-        if (!this.gameScreen || !this.outcomeScreen) {
-            console.error('Required screen elements not found');
-        }
-
         this.isLoading = false;
+    }
+
+    showError(message) {
+        const errorContainer = document.getElementById('error-container');
+        if (errorContainer) {
+            errorContainer.textContent = message;
+            errorContainer.classList.remove('hidden');
+            setTimeout(() => {
+                errorContainer.classList.add('hidden');
+            }, 5000);
+        }
+    }
+
+    shouldEndGame(totalQuestionsAnswered, currentXP) {
+        return totalQuestionsAnswered >= 15 || currentXP >= this.maxXP;
     }
 
     async saveProgress() {

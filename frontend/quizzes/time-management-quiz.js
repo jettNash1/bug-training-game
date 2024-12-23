@@ -28,6 +28,17 @@ class TimeManagementQuiz extends BaseQuiz {
             enumerable: true
         });
         
+        // Initialize screen elements
+        this.gameScreen = document.getElementById('game-screen');
+        this.outcomeScreen = document.getElementById('outcome-screen');
+        this.endScreen = document.getElementById('end-screen');
+        
+        // Verify all required elements exist
+        if (!this.gameScreen || !this.outcomeScreen || !this.endScreen) {
+            console.error('Required screen elements not found');
+            this.showError('Error initializing quiz. Please refresh the page.');
+        }
+        
         // Initialize player state
         this.player = {
             name: '',
@@ -36,6 +47,12 @@ class TimeManagementQuiz extends BaseQuiz {
             currentScenario: 0,
             questionHistory: []
         };
+
+        // Initialize API service
+        this.apiService = new APIService();
+
+        // Initialize event listeners
+        this.initializeEventListeners();
 
         // Basic Scenarios (5 questions)
         this.basicScenarios = [
@@ -51,6 +68,76 @@ class TimeManagementQuiz extends BaseQuiz {
         this.advancedScenarios = [
             // ... existing scenarios ...
         ];
+    }
+
+    showError(message) {
+        const errorContainer = document.getElementById('error-container');
+        if (errorContainer) {
+            errorContainer.textContent = message;
+            errorContainer.classList.remove('hidden');
+            setTimeout(() => errorContainer.classList.add('hidden'), 5000);
+        }
+    }
+
+    shouldEndGame(totalQuestionsAnswered, currentXP) {
+        return totalQuestionsAnswered >= 15 || 
+               (totalQuestionsAnswered >= 10 && currentXP >= this.levelThresholds.advanced.minXP);
+    }
+
+    initializeEventListeners() {
+        document.getElementById('start-button').addEventListener('click', () => this.startGame());
+        document.getElementById('next-button').addEventListener('click', () => this.handleNextScenario());
+        document.getElementById('restart-button').addEventListener('click', () => this.restartGame());
+    }
+
+    async handleScenarioComplete(selectedOption) {
+        // Save progress
+        await this.saveProgress();
+        
+        // Update UI
+        this.updateScenarioOutcome(selectedOption);
+        
+        // Check if game should end
+        if (this.shouldEndGame()) {
+            this.showEndScreen();
+        }
+    }
+
+    async saveProgress() {
+        try {
+            await APIService.saveQuizProgress(this.quizName, {
+                experience: this.player.experience,
+                currentScenario: this.player.currentScenario,
+                questionHistory: this.player.questionHistory
+            });
+        } catch (error) {
+            this.showError('Failed to save progress');
+        }
+    }
+
+    getCurrentScenarios() {
+        const totalAnswered = this.player.questionHistory.length;
+        const currentXP = this.player.experience;
+        
+        // Check for level progression
+        if (totalAnswered >= 10 && currentXP >= this.levelThresholds.intermediate.minXP) {
+            return this.advancedScenarios;
+        } else if (totalAnswered >= 5 && currentXP >= this.levelThresholds.basic.minXP) {
+            return this.intermediateScenarios;
+        }
+        return this.basicScenarios;
+    }
+
+    getCurrentLevel() {
+        const totalAnswered = this.player.questionHistory.length;
+        const currentXP = this.player.experience;
+        
+        if (totalAnswered >= 10 && currentXP >= this.levelThresholds.intermediate.minXP) {
+            return 'Advanced';
+        } else if (totalAnswered >= 5 && currentXP >= this.levelThresholds.basic.minXP) {
+            return 'Intermediate';
+        }
+        return 'Basic';
     }
 }
 

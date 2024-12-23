@@ -17,14 +17,20 @@ class ReportsQuiz extends BaseQuiz {
         
         super(config);
         
-        // Set the quiz name as a non-configurable, non-writable property
+        // Set quiz name
         Object.defineProperty(this, 'quizName', {
             value: 'reports',
             writable: false,
             configurable: false,
             enumerable: true
         });
-        
+
+        // Initialize screens
+        this.gameScreen = document.getElementById('game-screen');
+        this.outcomeScreen = document.getElementById('outcome-screen');
+        this.endScreen = document.getElementById('end-screen');
+
+        // Initialize player state
         this.player = {
             name: '',
             experience: 0,
@@ -480,20 +486,23 @@ class ReportsQuiz extends BaseQuiz {
             }
         ];
 
-        // Initialize UI and add event listeners
         this.initializeEventListeners();
-
         this.apiService = new APIService();
+    }
 
-        // Add references to screens
-        this.gameScreen = document.getElementById('game-screen');
-        this.outcomeScreen = document.getElementById('outcome-screen');
-        
-        if (!this.gameScreen || !this.outcomeScreen) {
-            console.error('Required screen elements not found');
+    showError(message) {
+        const errorContainer = document.getElementById('error-container');
+        if (errorContainer) {
+            errorContainer.textContent = message;
+            errorContainer.classList.remove('hidden');
+            setTimeout(() => {
+                errorContainer.classList.add('hidden');
+            }, 3000);
         }
+    }
 
-        this.isLoading = false;
+    shouldEndGame(questionsAnswered, currentXP) {
+        return questionsAnswered >= 15 || currentXP >= this.maxXP;
     }
 
     async saveProgress() {

@@ -166,15 +166,32 @@ export class BaseQuiz {
     }
 
     getCurrentScenario() {
-        const currentLevel = this.determineLevel();
-        const scenarios = this[`${currentLevel}Scenarios`];
-        return scenarios[this.player.currentScenario];
+        const currentScenarios = this.getCurrentScenarios();
+        return currentScenarios[this.player.currentScenario];
     }
 
-    determineLevel() {
-        const { experience } = this.player;
-        if (experience >= this.levelThresholds.advanced.minXP) return 'advanced';
-        if (experience >= this.levelThresholds.intermediate.minXP) return 'intermediate';
-        return 'basic';
+    getCurrentScenarios() {
+        const totalAnswered = this.player.questionHistory.length;
+        const currentXP = this.player.experience;
+        
+        // Check for level progression
+        if (totalAnswered >= 10 && currentXP >= this.levelThresholds.intermediate.minXP) {
+            return this.advancedScenarios;
+        } else if (totalAnswered >= 5 && currentXP >= this.levelThresholds.basic.minXP) {
+            return this.intermediateScenarios;
+        }
+        return this.basicScenarios;
+    }
+
+    getCurrentLevel() {
+        const totalAnswered = this.player.questionHistory.length;
+        const currentXP = this.player.experience;
+        
+        if (totalAnswered >= 10 && currentXP >= this.levelThresholds.intermediate.minXP) {
+            return 'Advanced';
+        } else if (totalAnswered >= 5 && currentXP >= this.levelThresholds.basic.minXP) {
+            return 'Intermediate';
+        }
+        return 'Basic';
     }
 } 

@@ -480,20 +480,19 @@ class IssueVerificationQuiz extends BaseQuiz {
             }
         ];
 
-        // Initialize UI and add event listeners
-        this.initializeEventListeners();
-
-        this.apiService = new APIService();
-
-        // Add references to screens
+        // Initialize screen elements
         this.gameScreen = document.getElementById('game-screen');
         this.outcomeScreen = document.getElementById('outcome-screen');
+        this.endScreen = document.getElementById('end-screen');
         
-        if (!this.gameScreen || !this.outcomeScreen) {
-            console.error('Required screen elements not found');
+        if (!this.gameScreen || !this.outcomeScreen || !this.endScreen) {
+            throw new Error('Required screen elements not found');
         }
 
+        this.initializeEventListeners();
         this.isLoading = false;
+
+        this.apiService = new APIService();
     }
 
     async saveProgress() {
@@ -620,14 +619,22 @@ class IssueVerificationQuiz extends BaseQuiz {
 
     initializeEventListeners() {
         // Add event listeners for the continue and restart buttons
-        document.getElementById('continue-btn').addEventListener('click', () => this.nextScenario());
-        document.getElementById('restart-btn').addEventListener('click', () => this.restartGame());
+        const continueBtn = document.getElementById('continue-btn');
+        const restartBtn = document.getElementById('restart-btn');
+        const optionsForm = document.getElementById('options-form');
 
-        // Add form submission handler
-        document.getElementById('options-form').addEventListener('submit', (e) => {
-            e.preventDefault();
-            this.handleAnswer();
-        });
+        if (continueBtn) {
+            continueBtn.addEventListener('click', () => this.nextScenario());
+        }
+        if (restartBtn) {
+            restartBtn.addEventListener('click', () => this.restartGame());
+        }
+        if (optionsForm) {
+            optionsForm.addEventListener('submit', (e) => {
+                e.preventDefault();
+                this.handleAnswer();
+            });
+        }
 
         // Add keyboard navigation
         document.addEventListener('keydown', (e) => {
@@ -972,6 +979,22 @@ class IssueVerificationQuiz extends BaseQuiz {
         });
 
         this.generateRecommendations();
+    }
+
+    showError(message) {
+        const errorContainer = document.getElementById('error-container');
+        if (errorContainer) {
+            errorContainer.textContent = message;
+            errorContainer.classList.remove('hidden');
+            setTimeout(() => {
+                errorContainer.classList.add('hidden');
+            }, 3000);
+        }
+    }
+
+    shouldEndGame(totalQuestionsAnswered, currentXP) {
+        // End if max questions reached or all XP thresholds met
+        return totalQuestionsAnswered >= 15 || currentXP >= this.maxXP;
     }
 }
 

@@ -487,9 +487,10 @@ class RaisingTicketsQuiz extends BaseQuiz {
         // Add references to screens
         this.gameScreen = document.getElementById('game-screen');
         this.outcomeScreen = document.getElementById('outcome-screen');
+        this.endScreen = document.getElementById('end-screen');
         
-        if (!this.gameScreen || !this.outcomeScreen) {
-            console.error('Required screen elements not found');
+        if (!this.gameScreen || !this.outcomeScreen || !this.endScreen) {
+            throw new Error('Required screen elements not found');
         }
 
         this.isLoading = false;
@@ -970,6 +971,24 @@ class RaisingTicketsQuiz extends BaseQuiz {
         });
 
         this.generateRecommendations();
+    }
+
+    showError(message) {
+        const errorContainer = document.getElementById('error-container');
+        if (errorContainer) {
+            errorContainer.textContent = message;
+            errorContainer.classList.remove('hidden');
+            setTimeout(() => {
+                errorContainer.classList.add('hidden');
+            }, 5000);
+        } else {
+            console.error('Error:', message);
+        }
+    }
+
+    shouldEndGame(totalQuestionsAnswered, currentXP) {
+        return totalQuestionsAnswered >= 15 || 
+               (totalQuestionsAnswered >= 10 && currentXP >= this.levelThresholds.advanced.minXP);
     }
 }
 

@@ -485,11 +485,12 @@ class TestSupportQuiz extends BaseQuiz {
 
         this.apiService = new APIService();
 
-        // Add references to screens
+        // Add required screen element initialization
         this.gameScreen = document.getElementById('game-screen');
         this.outcomeScreen = document.getElementById('outcome-screen');
-        
-        if (!this.gameScreen || !this.outcomeScreen) {
+        this.endScreen = document.getElementById('end-screen');
+
+        if (!this.gameScreen || !this.outcomeScreen || !this.endScreen) {
             console.error('Required screen elements not found');
         }
 
@@ -971,6 +972,27 @@ class TestSupportQuiz extends BaseQuiz {
         });
 
         this.generateRecommendations();
+    }
+
+    // Add required error handling method
+    showError(message) {
+        const errorContainer = document.getElementById('error-container');
+        if (errorContainer) {
+            errorContainer.textContent = message;
+            errorContainer.classList.remove('hidden');
+            setTimeout(() => {
+                errorContainer.classList.add('hidden');
+            }, 5000);
+        } else {
+            console.error('Error container not found');
+            alert(message);
+        }
+    }
+
+    // Add required game end check method
+    shouldEndGame(totalQuestionsAnswered, currentXP) {
+        // End if max questions reached or max XP achieved
+        return totalQuestionsAnswered >= 15 || currentXP >= this.maxXP;
     }
 }
 
