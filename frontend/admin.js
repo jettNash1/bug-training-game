@@ -134,8 +134,7 @@ class AdminDashboard {
     }
 
     async showAdminDashboard() {
-        document.getElementById('adminLoginForm').classList.add('hidden');
-        document.getElementById('adminDashboard').classList.remove('hidden');
+        // No need to hide/show forms since we're on a different page
         await this.updateDashboard();
     }
 
@@ -161,24 +160,35 @@ class AdminDashboard {
                 return;
             }
 
-            // Get all users
-            const response = await this.apiService.fetchWithAuth(`${this.apiService.baseUrl}/admin/users`);
-            if (!response.ok) {
-                if (response.status === 403) {
-                    this.handleAdminLogout();
-                    return;
-                }
-                throw new Error('Failed to fetch users');
-            }
+            // Mock user data for testing
+            this.users = [
+                { username: 'testuser1', lastLogin: new Date().toISOString() },
+                { username: 'testuser2', lastLogin: new Date().toISOString() },
+                { username: 'testuser3', lastLogin: new Date().toISOString() }
+            ];
 
-            const data = await response.json();
-            this.users = data.users || [];
-            console.log('Found users:', this.users);
-
-            // Load progress for each user
+            // Mock progress data
             for (const user of this.users) {
-                const scores = await this.loadUserProgress(user.username);
-                this.userScores.set(user.username, scores);
+                const mockScores = [];
+                const quizTypes = [
+                    'communication', 'initiative', 'time-management', 'tester-mindset',
+                    'risk-analysis', 'risk-management', 'non-functional', 'test-support',
+                    'issue-verification', 'build-verification', 'issue-tracking',
+                    'raising-tickets', 'reports', 'CMS-Testing'
+                ];
+
+                for (const quizId of quizTypes) {
+                    const randomScore = Math.floor(Math.random() * 100);
+                    const randomQuestions = Math.floor((randomScore / 100) * 15);
+                    mockScores.push({
+                        quizName: quizId,
+                        score: randomScore,
+                        questionsAnswered: randomQuestions,
+                        completedAt: new Date().toISOString(),
+                        lastActive: new Date().toISOString()
+                    });
+                }
+                this.userScores.set(user.username, mockScores);
             }
 
             this.updateStatistics();
@@ -205,16 +215,24 @@ class AdminDashboard {
         });
 
         // Update statistics display
-        document.getElementById('totalUsers').textContent = this.users.length;
-        document.getElementById('activeUsers').textContent = activeUsers.size;
-        document.getElementById('averageCompletion').textContent = 
-            `${this.users.length ? Math.round(totalCompletion / this.users.length) : 0}%`;
+        const totalUsersElement = document.getElementById('totalUsers');
+        const activeUsersElement = document.getElementById('activeUsers');
+        const averageCompletionElement = document.getElementById('averageCompletion');
+
+        if (totalUsersElement) totalUsersElement.textContent = this.users.length;
+        if (activeUsersElement) activeUsersElement.textContent = activeUsers.size;
+        if (averageCompletionElement) {
+            averageCompletionElement.textContent = 
+                `${this.users.length ? Math.round(totalCompletion / this.users.length) : 0}%`;
+        }
     }
 
     updateUserList() {
         const usersList = document.getElementById('usersList');
-        const searchInput = document.getElementById('userSearch').value.toLowerCase();
-        const sortBy = document.getElementById('sortBy').value;
+        if (!usersList) return;
+
+        const searchInput = document.getElementById('userSearch')?.value.toLowerCase() || '';
+        const sortBy = document.getElementById('sortBy')?.value || 'username-asc';
         
         let filteredUsers = this.users.filter(user => 
             user.username.toLowerCase().includes(searchInput)

@@ -9,72 +9,72 @@
     <link rel="stylesheet" href="../styles.css">
 </head>
 <body>
-    <header class="app-header" role="banner">
-        <div class="logo">
-            <img src="../assets/zoonou-logo.svg" alt="Zoonou Logo" width="32" height="32">
-            <span class="logo-text">Admin Dashboard</span>
-        </div>
-        <nav class="admin-nav" role="navigation">
-            <a href="../index.html" class="nav-link">Return to Learning Hub</a>
-            <button onclick="window.handleAdminLogout()" class="logout-btn">Logout</button>
-        </nav>
-    </header>
+    <div id="adminDashboard" class="admin-dashboard">
+        <header class="app-header" role="banner">
+            <div class="logo">
+                <img src="../assets/zoonou-logo.svg" alt="Zoonou Logo" width="32" height="32">
+                <span class="logo-text">Admin Dashboard</span>
+            </div>
+            <nav class="admin-nav" role="navigation">
+                <a href="../index.html" class="nav-link">Return to Learning Hub</a>
+                <button onclick="window.adminDashboard.handleAdminLogout()" class="logout-btn">Logout</button>
+            </nav>
+        </header>
 
-    <main class="admin-container" role="main">
-        <!-- Statistics Overview -->
-        <div class="statistics-panel">
-            <div class="stat-card">
-                <h3>Total Users</h3>
-                <div id="totalUsers" class="stat-value">0</div>
-            </div>
-            <div class="stat-card">
-                <h3>Active Today</h3>
-                <div id="activeUsers" class="stat-value">0</div>
-            </div>
-            <div class="stat-card">
-                <h3>Average Completion</h3>
-                <div id="averageCompletion" class="stat-value">0%</div>
-            </div>
-        </div>
-
-        <!-- User Management -->
-        <div class="user-management-panel">
-            <div class="panel-header">
-                <h2>User Management</h2>
-                <div class="search-controls">
-                    <div class="search-field">
-                        <label for="userSearch">Search Users</label>
-                        <input type="text" 
-                               id="userSearch" 
-                               placeholder="Search by username..."
-                               aria-label="Search users">
-                    </div>
-                    <div class="sort-field">
-                        <label for="sortBy">Sort By</label>
-                        <select id="sortBy" aria-label="Sort users by">
-                            <option value="username-asc">Username (A-Z)</option>
-                            <option value="username-desc">Username (Z-A)</option>
-                            <option value="progress-high">Progress (High to Low)</option>
-                            <option value="progress-low">Progress (Low to High)</option>
-                            <option value="last-active">Last Active</option>
-                        </select>
-                    </div>
+        <main class="admin-container" role="main">
+            <!-- Statistics Overview -->
+            <div class="statistics-panel">
+                <div class="stat-card">
+                    <h3>Total Users</h3>
+                    <div id="totalUsers" class="stat-value">0</div>
+                </div>
+                <div class="stat-card">
+                    <h3>Active Today</h3>
+                    <div id="activeUsers" class="stat-value">0</div>
+                </div>
+                <div class="stat-card">
+                    <h3>Average Completion</h3>
+                    <div id="averageCompletion" class="stat-value">0%</div>
                 </div>
             </div>
 
-            <div id="usersList" class="users-list">
-                <!-- User cards will be populated here -->
+            <!-- User Management -->
+            <div class="user-management-panel">
+                <div class="panel-header">
+                    <h2>User Management</h2>
+                    <div class="search-controls">
+                        <div class="search-field">
+                            <label for="userSearch">Search Users</label>
+                            <input type="text" 
+                                   id="userSearch" 
+                                   placeholder="Search by username..."
+                                   aria-label="Search users">
+                        </div>
+                        <div class="sort-field">
+                            <label for="sortBy">Sort By</label>
+                            <select id="sortBy" aria-label="Sort users by">
+                                <option value="username-asc">Username (A-Z)</option>
+                                <option value="username-desc">Username (Z-A)</option>
+                                <option value="progress-high">Progress (High to Low)</option>
+                                <option value="progress-low">Progress (Low to High)</option>
+                                <option value="last-active">Last Active</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="usersList" class="users-list">
+                    <!-- User cards will be populated here -->
+                </div>
             </div>
-        </div>
-    </main>
+        </main>
+    </div>
 
     <!-- Load scripts as modules -->
     <script type="module" src="../config.js"></script>
     <script type="module" src="../api-service.js"></script>
     <script type="module" src="../QuizUser.js"></script>
     <script type="module" src="../quiz-helper.js"></script>
-    <script type="module" src="../login.js"></script>
-    <script type="module" src="../auth.js"></script>
     <script type="module" src="../admin.js"></script>
 </body>
 </html> 
