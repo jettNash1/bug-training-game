@@ -1,5 +1,6 @@
 import { APIService } from '../api-service.js';
 import { BaseQuiz } from '../quiz-helper.js';
+import { QuizUser } from '../QuizUser.js';
 
 class BuildVerificationQuiz extends BaseQuiz {
     constructor() {
@@ -20,60 +21,41 @@ class BuildVerificationQuiz extends BaseQuiz {
         
         super(config);
         
-        // Set the quiz name
-        Object.defineProperty(this, 'quizName', {
-            value: 'build-verification',
-            writable: false,
-            configurable: false,
-            enumerable: true
-        });
+        this.quizName = 'build-verification';
         
         // Initialize screen elements
         this.gameScreen = document.getElementById('game-screen');
         this.outcomeScreen = document.getElementById('outcome-screen');
         this.endScreen = document.getElementById('end-screen');
         
-        // Verify all required elements exist
         if (!this.gameScreen || !this.outcomeScreen || !this.endScreen) {
-            console.error('Required screen elements not found');
-            this.showError('Error initializing quiz. Please refresh the page.');
+            throw new Error('Required screen elements not found');
         }
         
-        // Initialize player state
-        this.player = {
-            name: '',
-            experience: 0,
-            tools: [],
-            currentScenario: 0,
-            questionHistory: []
-        };
-
-        // Initialize API service
+        this.player = new QuizUser();
         this.apiService = new APIService();
-
-        // Initialize event listeners
         this.initializeEventListeners();
     }
 
     showError(message) {
-        const errorContainer = document.getElementById('error-container');
-        if (errorContainer) {
-            errorContainer.textContent = message;
-            errorContainer.classList.remove('hidden');
-            setTimeout(() => errorContainer.classList.add('hidden'), 5000);
+        const errorElement = document.getElementById('error-message');
+        if (errorElement) {
+            errorElement.textContent = message;
+            errorElement.style.display = 'block';
+            setTimeout(() => {
+                errorElement.style.display = 'none';
+            }, 3000);
         }
     }
 
     shouldEndGame(totalQuestionsAnswered, currentXP) {
-        return totalQuestionsAnswered >= 15 || 
-               (totalQuestionsAnswered >= 10 && currentXP >= this.levelThresholds.advanced.minXP);
+        return totalQuestionsAnswered >= 15 || currentXP >= this.maxXP;
     }
 
     getCurrentScenarios() {
         const totalAnswered = this.player.questionHistory.length;
         const currentXP = this.player.experience;
         
-        // Check for level progression
         if (totalAnswered >= 10 && currentXP >= this.levelThresholds.intermediate.minXP) {
             return this.advancedScenarios;
         } else if (totalAnswered >= 5 && currentXP >= this.levelThresholds.basic.minXP) {
@@ -94,5 +76,10 @@ class BuildVerificationQuiz extends BaseQuiz {
         return 'Basic';
     }
 
-    // ... existing scenarios and other methods remain unchanged ...
+    // ... existing scenarios and game logic methods ...
 }
+
+document.addEventListener('DOMContentLoaded', () => {
+    const quiz = new BuildVerificationQuiz();
+    quiz.startGame();
+});

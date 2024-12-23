@@ -1,3 +1,7 @@
+import { APIService } from '../api-service.js';
+import { BaseQuiz } from '../quiz-helper.js';
+import { QuizUser } from '../QuizUser.js';
+
 class InitiativeQuiz extends BaseQuiz {
     constructor() {
         const config = {

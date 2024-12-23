@@ -1,3 +1,8 @@
+// Required imports
+import { APIService } from '../api-service.js';
+import { BaseQuiz } from '../quiz-helper.js';
+import { QuizUser } from '../QuizUser.js';
+
 class IssueVerificationQuiz extends BaseQuiz {
     constructor() {
         const config = {
@@ -863,7 +868,6 @@ class IssueVerificationQuiz extends BaseQuiz {
         const totalAnswered = this.player.questionHistory.length;
         const currentXP = this.player.experience;
         
-        // Check for level progression
         if (totalAnswered >= 10 && currentXP >= this.levelThresholds.intermediate.minXP) {
             return this.advancedScenarios;
         } else if (totalAnswered >= 5 && currentXP >= this.levelThresholds.basic.minXP) {
@@ -982,24 +986,32 @@ class IssueVerificationQuiz extends BaseQuiz {
     }
 
     showError(message) {
-        const errorContainer = document.getElementById('error-container');
-        if (errorContainer) {
-            errorContainer.textContent = message;
-            errorContainer.classList.remove('hidden');
+        const errorElement = document.getElementById('error-message');
+        if (errorElement) {
+            errorElement.textContent = message;
+            errorElement.style.display = 'block';
             setTimeout(() => {
-                errorContainer.classList.add('hidden');
+                errorElement.style.display = 'none';
             }, 3000);
         }
     }
 
     shouldEndGame(totalQuestionsAnswered, currentXP) {
-        // End if max questions reached or all XP thresholds met
         return totalQuestionsAnswered >= 15 || currentXP >= this.maxXP;
     }
 }
 
-// Start the quiz when the page loads
+// Add DOMContentLoaded event listener
 document.addEventListener('DOMContentLoaded', () => {
+    try {
     const quiz = new IssueVerificationQuiz();
     quiz.startGame();
+    } catch (error) {
+        console.error('Failed to initialize quiz:', error);
+        const errorElement = document.getElementById('error-message');
+        if (errorElement) {
+            errorElement.textContent = 'Failed to start the quiz. Please refresh the page.';
+            errorElement.classList.remove('hidden');
+        }
+    }
 }); 

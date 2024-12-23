@@ -1,5 +1,6 @@
 import { APIService } from '../api-service.js';
 import { BaseQuiz } from '../quiz-helper.js';
+import { QuizUser } from '../QuizUser.js';
 
 class TimeManagementQuiz extends BaseQuiz {
     constructor() {
@@ -33,12 +34,6 @@ class TimeManagementQuiz extends BaseQuiz {
         this.outcomeScreen = document.getElementById('outcome-screen');
         this.endScreen = document.getElementById('end-screen');
         
-        // Verify all required elements exist
-        if (!this.gameScreen || !this.outcomeScreen || !this.endScreen) {
-            console.error('Required screen elements not found');
-            this.showError('Error initializing quiz. Please refresh the page.');
-        }
-        
         // Initialize player state
         this.player = {
             name: '',
@@ -47,9 +42,6 @@ class TimeManagementQuiz extends BaseQuiz {
             currentScenario: 0,
             questionHistory: []
         };
-
-        // Initialize API service
-        this.apiService = new APIService();
 
         // Initialize event listeners
         this.initializeEventListeners();
@@ -71,17 +63,18 @@ class TimeManagementQuiz extends BaseQuiz {
     }
 
     showError(message) {
-        const errorContainer = document.getElementById('error-container');
-        if (errorContainer) {
-            errorContainer.textContent = message;
-            errorContainer.classList.remove('hidden');
-            setTimeout(() => errorContainer.classList.add('hidden'), 5000);
+        const errorElement = document.getElementById('error-message');
+        if (errorElement) {
+            errorElement.textContent = message;
+            errorElement.style.display = 'block';
+            setTimeout(() => {
+                errorElement.style.display = 'none';
+            }, 3000);
         }
     }
 
-    shouldEndGame(totalQuestionsAnswered, currentXP) {
-        return totalQuestionsAnswered >= 15 || 
-               (totalQuestionsAnswered >= 10 && currentXP >= this.levelThresholds.advanced.minXP);
+    shouldEndGame() {
+        return this.player.currentScenario >= this.getTotalScenarios();
     }
 
     initializeEventListeners() {

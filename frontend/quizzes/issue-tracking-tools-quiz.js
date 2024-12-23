@@ -1,3 +1,8 @@
+// Required imports
+import { APIService } from '../api-service.js';
+import { BaseQuiz } from '../quiz-helper.js';
+import { QuizUser } from '../QuizUser.js';
+
 class IssueTrackingToolsQuiz extends BaseQuiz {
     constructor() {
         const config = {
@@ -974,12 +979,12 @@ class IssueTrackingToolsQuiz extends BaseQuiz {
     }
 
     showError(message) {
-        const errorContainer = document.getElementById('error-container');
-        if (errorContainer) {
-            errorContainer.textContent = message;
-            errorContainer.classList.remove('hidden');
+        const errorElement = document.getElementById('error-message');
+        if (errorElement) {
+            errorElement.textContent = message;
+            errorElement.style.display = 'block';
             setTimeout(() => {
-                errorContainer.classList.add('hidden');
+                errorElement.style.display = 'none';
             }, 3000);
         }
     }
@@ -987,9 +992,33 @@ class IssueTrackingToolsQuiz extends BaseQuiz {
     shouldEndGame(totalQuestionsAnswered, currentXP) {
         return totalQuestionsAnswered >= 15 || currentXP >= this.maxXP;
     }
+
+    getCurrentScenarios() {
+        const totalAnswered = this.player.questionHistory.length;
+        const currentXP = this.player.experience;
+        
+        if (totalAnswered >= 10 && currentXP >= this.levelThresholds.intermediate.minXP) {
+            return this.advancedScenarios;
+        } else if (totalAnswered >= 5 && currentXP >= this.levelThresholds.basic.minXP) {
+            return this.intermediateScenarios;
+        }
+        return this.basicScenarios;
+    }
+
+    getCurrentLevel() {
+        const totalAnswered = this.player.questionHistory.length;
+        const currentXP = this.player.experience;
+        
+        if (totalAnswered >= 10 && currentXP >= this.levelThresholds.intermediate.minXP) {
+            return 'Advanced';
+        } else if (totalAnswered >= 5 && currentXP >= this.levelThresholds.basic.minXP) {
+            return 'Intermediate';
+        }
+        return 'Basic';
+    }
 }
 
-// Start the quiz when the page loads
+// Initialize quiz when DOM is loaded
 document.addEventListener('DOMContentLoaded', () => {
     const quiz = new IssueTrackingToolsQuiz();
     quiz.startGame();

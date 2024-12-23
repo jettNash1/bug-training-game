@@ -1,5 +1,6 @@
 import { APIService } from '../api-service.js';
 import { BaseQuiz } from '../quiz-helper.js';
+import { QuizUser } from '../QuizUser.js';
 
 class NonFunctionalQuiz extends BaseQuiz {
     constructor() {
@@ -20,38 +21,19 @@ class NonFunctionalQuiz extends BaseQuiz {
         
         super(config);
         
-        // Set the quiz name
-        Object.defineProperty(this, 'quizName', {
-            value: 'non-functional',
-            writable: false,
-            configurable: false,
-            enumerable: true
-        });
-        
-        // Initialize player state
-        this.player = {
-            name: '',
-            experience: 0,
-            tools: [],
-            currentScenario: 0,
-            questionHistory: []
-        };
-
-        // Initialize API service
+        this.quizName = 'non-functional';
+        this.player = new QuizUser();
         this.apiService = new APIService();
 
-        // Initialize all screen elements
+        // Initialize screen elements
         this.gameScreen = document.getElementById('game-screen');
         this.outcomeScreen = document.getElementById('outcome-screen');
         this.endScreen = document.getElementById('end-screen');
 
-        // Verify all required elements exist
         if (!this.gameScreen || !this.outcomeScreen || !this.endScreen) {
-            console.error('Required screen elements not found');
-            this.showError('Error initializing quiz. Please refresh the page.');
+            throw new Error('Required screen elements not found');
         }
 
-        // Initialize event listeners
         this.initializeEventListeners();
     }
 
@@ -73,7 +55,6 @@ class NonFunctionalQuiz extends BaseQuiz {
         const totalAnswered = this.player.questionHistory.length;
         const currentXP = this.player.experience;
         
-        // Check for level progression
         if (totalAnswered >= 10 && currentXP >= this.levelThresholds.intermediate.minXP) {
             return this.advancedScenarios;
         } else if (totalAnswered >= 5 && currentXP >= this.levelThresholds.basic.minXP) {
@@ -94,5 +75,10 @@ class NonFunctionalQuiz extends BaseQuiz {
         return 'Basic';
     }
 
-    // ... existing scenarios and other methods remain unchanged ...
-} 
+    // ... existing scenarios and other methods ...
+}
+
+// Add DOMContentLoaded event listener
+document.addEventListener('DOMContentLoaded', () => {
+    const quiz = new NonFunctionalQuiz();
+}); 

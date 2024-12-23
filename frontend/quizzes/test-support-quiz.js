@@ -1,3 +1,7 @@
+import { APIService } from '../api-service.js';
+import { BaseQuiz } from '../quiz-helper.js';
+import { QuizUser } from '../QuizUser.js';
+
 class TestSupportQuiz extends BaseQuiz {
     constructor() {
         const config = {
@@ -17,14 +21,27 @@ class TestSupportQuiz extends BaseQuiz {
         
         super(config);
         
-        // Set the quiz name as a non-configurable, non-writable property
+        // Set quiz name
         Object.defineProperty(this, 'quizName', {
             value: 'test-support',
             writable: false,
-            configurable: false,
-            enumerable: true
+            configurable: false
         });
+
+        // Initialize required properties
+        this.apiService = new APIService();
+        this.isLoading = false;
         
+        // Initialize screens
+        this.gameScreen = document.getElementById('game-screen');
+        this.outcomeScreen = document.getElementById('outcome-screen');
+        this.endScreen = document.getElementById('end-screen');
+
+        if (!this.gameScreen || !this.outcomeScreen || !this.endScreen) {
+            throw new Error('Required screen elements not found');
+        }
+
+        // Initialize player state
         this.player = {
             name: '',
             experience: 0,
@@ -482,19 +499,45 @@ class TestSupportQuiz extends BaseQuiz {
 
         // Initialize UI and add event listeners
         this.initializeEventListeners();
+    }
 
-        this.apiService = new APIService();
-
-        // Add required screen element initialization
-        this.gameScreen = document.getElementById('game-screen');
-        this.outcomeScreen = document.getElementById('outcome-screen');
-        this.endScreen = document.getElementById('end-screen');
-
-        if (!this.gameScreen || !this.outcomeScreen || !this.endScreen) {
-            console.error('Required screen elements not found');
+    showError(message) {
+        const errorElement = document.getElementById('error-message');
+        if (errorElement) {
+            errorElement.textContent = message;
+            errorElement.style.display = 'block';
+            setTimeout(() => {
+                errorElement.style.display = 'none';
+            }, 3000);
         }
+    }
 
-        this.isLoading = false;
+    shouldEndGame(totalQuestionsAnswered, currentXP) {
+        return totalQuestionsAnswered >= 15 || currentXP >= this.maxXP;
+    }
+
+    getCurrentScenarios() {
+        const totalAnswered = this.player.questionHistory.length;
+        const currentXP = this.player.experience;
+        
+        if (totalAnswered >= 10 && currentXP >= this.levelThresholds.intermediate.minXP) {
+            return this.advancedScenarios;
+        } else if (totalAnswered >= 5 && currentXP >= this.levelThresholds.basic.minXP) {
+            return this.intermediateScenarios;
+        }
+        return this.basicScenarios;
+    }
+
+    getCurrentLevel() {
+        const totalAnswered = this.player.questionHistory.length;
+        const currentXP = this.player.experience;
+        
+        if (totalAnswered >= 10 && currentXP >= this.levelThresholds.intermediate.minXP) {
+            return 'Advanced';
+        } else if (totalAnswered >= 5 && currentXP >= this.levelThresholds.basic.minXP) {
+            return 'Intermediate';
+        }
+        return 'Basic';
     }
 
     async saveProgress() {
@@ -852,19 +895,6 @@ class TestSupportQuiz extends BaseQuiz {
         }
     }
 
-    getCurrentScenarios() {
-        const totalAnswered = this.player.questionHistory.length;
-        const currentXP = this.player.experience;
-        
-        // Check for level progression
-        if (totalAnswered >= 10 && currentXP >= this.levelThresholds.intermediate.minXP) {
-            return this.advancedScenarios;
-        } else if (totalAnswered >= 5 && currentXP >= this.levelThresholds.basic.minXP) {
-            return this.intermediateScenarios;
-        }
-        return this.basicScenarios;
-    }
-
     updateProgress() {
         // Update experience display
         const experienceDisplay = document.getElementById('experience-display');
@@ -894,18 +924,6 @@ class TestSupportQuiz extends BaseQuiz {
             const currentLevel = this.getCurrentLevel();
             levelIndicator.textContent = `Level: ${currentLevel}`;
         }
-    }
-
-    getCurrentLevel() {
-        const totalAnswered = this.player.questionHistory.length;
-        const currentXP = this.player.experience;
-        
-        if (totalAnswered >= 10 && currentXP >= this.levelThresholds.intermediate.minXP) {
-            return 'Advanced';
-        } else if (totalAnswered >= 5 && currentXP >= this.levelThresholds.basic.minXP) {
-            return 'Intermediate';
-        }
-        return 'Basic';
     }
 
     nextScenario() {
@@ -976,16 +994,13 @@ class TestSupportQuiz extends BaseQuiz {
 
     // Add required error handling method
     showError(message) {
-        const errorContainer = document.getElementById('error-container');
-        if (errorContainer) {
-            errorContainer.textContent = message;
-            errorContainer.classList.remove('hidden');
+        const errorElement = document.getElementById('error-message');
+        if (errorElement) {
+            errorElement.textContent = message;
+            errorElement.style.display = 'block';
             setTimeout(() => {
-                errorContainer.classList.add('hidden');
-            }, 5000);
-        } else {
-            console.error('Error container not found');
-            alert(message);
+                errorElement.style.display = 'none';
+            }, 3000);
         }
     }
 
