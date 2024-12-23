@@ -64,16 +64,31 @@ class AdminDashboard {
         try {
             // Check against hardcoded admin credentials
             if (username === 'admin' && password === 'admin123') {
-                // Generate a simple token for admin
-                const token = btoa(JSON.stringify({
-                    isAdmin: true,
-                    username: 'admin',
-                    exp: Date.now() + (24 * 60 * 60 * 1000) // 24 hours
-                }));
+                try {
+                    // First, get an API token
+                    const response = await fetch(`${this.apiService.baseUrl}/users/login`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({ username, password })
+                    });
 
-                localStorage.setItem('token', token);
-                localStorage.setItem('isAdmin', 'true');
-                window.location.href = './admin.html';
+                    if (!response.ok) {
+                        throw new Error('Failed to authenticate with API');
+                    }
+
+                    const data = await response.json();
+                    
+                    // Store both the API token and admin flag
+                    localStorage.setItem('token', data.token);
+                    localStorage.setItem('refreshToken', data.refreshToken);
+                    localStorage.setItem('isAdmin', 'true');
+                    window.location.href = './admin.html';
+                } catch (error) {
+                    console.error('API authentication error:', error);
+                    this.showError('Failed to authenticate with the server');
+                }
             } else {
                 this.showError('Invalid admin credentials');
             }
@@ -113,13 +128,9 @@ class AdminDashboard {
         
         for (const quizId of quizTypes) {
             try {
-                const token = localStorage.getItem('token');
-                const response = await fetch(`${this.apiService.baseUrl}/users/${username}/quiz-progress/${quizId}`, {
-                    headers: {
-                        'Authorization': `Bearer ${token}`,
-                        'Content-Type': 'application/json'
-                    }
-                });
+                const response = await this.apiService.fetchWithAuth(
+                    `${this.apiService.baseUrl}/users/${username}/quiz-progress/${quizId}`
+                );
 
                 if (response.ok) {
                     const progress = await response.json();
@@ -158,26 +169,10 @@ class AdminDashboard {
                 return;
             }
 
-            // Verify token
             try {
-                const tokenData = JSON.parse(atob(token));
-                if (!tokenData.isAdmin || tokenData.exp < Date.now()) {
-                    this.handleAdminLogout();
-                    return;
-                }
-            } catch (e) {
-                this.handleAdminLogout();
-                return;
-            }
-
-            // Fetch real user data from the server
-            try {
-                const response = await fetch(`${this.apiService.baseUrl}/users`, {
-                    headers: {
-                        'Authorization': `Bearer ${token}`,
-                        'Content-Type': 'application/json'
-                    }
-                });
+                const response = await this.apiService.fetchWithAuth(
+                    `${this.apiService.baseUrl}/users`
+                );
 
                 if (!response.ok) {
                     throw new Error('Failed to fetch users');
@@ -364,14 +359,15 @@ class AdminDashboard {
 
     async resetUserProgress(username, quizName) {
         try {
-            const token = localStorage.getItem('token');
-            const response = await fetch(`${this.apiService.baseUrl}/users/${username}/quiz-progress/${quizName}/reset`, {
-                method: 'POST',
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                    'Content-Type': 'application/json'
+            const response = await this.apiService.fetchWithAuth(
+                `${this.apiService.baseUrl}/users/${username}/quiz-progress/${quizName}/reset`,
+                { 
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
                 }
-            });
+            );
             
             if (!response.ok) {
                 throw new Error('Failed to reset quiz progress');
