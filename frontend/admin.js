@@ -7,22 +7,49 @@ class AdminDashboard {
         this.users = [];
         this.userScores = new Map();
         this.init();
+        this.setupTokenRefresh();
+    }
+
+    setupTokenRefresh() {
+        // Check token every 5 minutes
+        setInterval(async () => {
+            const token = localStorage.getItem('token');
+            const isAdmin = localStorage.getItem('isAdmin');
+            
+            if (token && isAdmin === 'true') {
+                try {
+                    const response = await this.apiService.fetchWithAuth(
+                        `${this.apiService.baseUrl}/admin/verify-token`,
+                        { method: 'GET' }
+                    );
+                    
+                    if (!response.ok) {
+                        // Token is invalid, redirect to login
+                        this.handleAdminLogout();
+                    }
+                } catch (error) {
+                    console.error('Token refresh error:', error);
+                    this.handleAdminLogout();
+                }
+            }
+        }, 300000); // 5 minutes
     }
 
     async init() {
         console.log('Initializing AdminDashboard');
         const token = localStorage.getItem('token');
+        const isAdmin = localStorage.getItem('isAdmin');
         
         // Check if we're on the login page
         if (window.location.pathname.includes('admin-login.html')) {
-            if (token) {
-                // If already logged in, redirect to admin dashboard
+            if (token && isAdmin === 'true') {
+                // If already logged in as admin, redirect to admin dashboard
                 window.location.href = './admin.html';
                 return;
             }
         } else if (window.location.pathname.includes('admin.html')) {
-            if (!token) {
-                // If not logged in, redirect to login page
+            if (!token || isAdmin !== 'true') {
+                // If not logged in as admin, redirect to login page
                 window.location.href = './admin-login.html';
                 return;
             }
@@ -40,7 +67,9 @@ class AdminDashboard {
 
         try {
             const response = await this.apiService.login(username, password);
-            if (response.success) {
+            if (response.success && response.token) {
+                localStorage.setItem('token', response.token);
+                localStorage.setItem('isAdmin', 'true');
                 window.location.href = './admin.html';
             } else {
                 this.showError('Invalid admin credentials');
@@ -54,6 +83,7 @@ class AdminDashboard {
     async handleAdminLogout() {
         try {
             localStorage.removeItem('token');
+            localStorage.removeItem('isAdmin');
             localStorage.removeItem('refreshToken');
             window.location.href = './admin-login.html';
         } catch (error) {
@@ -108,8 +138,24 @@ class AdminDashboard {
 
     async updateDashboard() {
         try {
+            const token = localStorage.getItem('token');
+            const isAdmin = localStorage.getItem('isAdmin');
+            
+            if (!token || isAdmin !== 'true') {
+                this.handleAdminLogout();
+                return;
+            }
+
             // Get all users
-            const response = await this.apiService.fetchWithAuth(`${this.apiService.baseUrl}/users`);
+            const response = await this.apiService.fetchWithAuth(`${this.apiService.baseUrl}/admin/users`);
+            if (!response.ok) {
+                if (response.status === 403) {
+                    this.handleAdminLogout();
+                    return;
+                }
+                throw new Error('Failed to fetch users');
+            }
+
             const data = await response.json();
             this.users = data.users || [];
             console.log('Found users:', this.users);

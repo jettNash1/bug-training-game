@@ -26,11 +26,16 @@ router.post('/login', async (req, res) => {
             });
         }
 
+        // Strict comparison for admin credentials
         if (username === process.env.ADMIN_USERNAME && 
             password === process.env.ADMIN_PASSWORD) {
             
+            // Generate admin-specific token with isAdmin flag
             const token = jwt.sign(
-                { isAdmin: true }, 
+                { 
+                    isAdmin: true,
+                    username: process.env.ADMIN_USERNAME
+                }, 
                 process.env.JWT_SECRET,
                 { expiresIn: '24h' }
             );
@@ -39,7 +44,8 @@ router.post('/login', async (req, res) => {
             return res.json({ 
                 success: true,
                 token,
-                message: 'Admin login successful'
+                message: 'Admin login successful',
+                isAdmin: true
             });
         } else {
             console.log('Admin login failed: Invalid credentials');
@@ -60,6 +66,14 @@ router.post('/login', async (req, res) => {
 
 router.get('/users', auth, async (req, res) => {
     try {
+        // Verify admin status
+        if (!req.user.isAdmin) {
+            return res.status(403).json({
+                success: false,
+                message: 'Admin access required'
+            });
+        }
+
         const users = await User.find({}, '-__v')
             .sort({ username: 1 });
         res.json({ success: true, users });
@@ -70,6 +84,14 @@ router.get('/users', auth, async (req, res) => {
 
 router.get('/stats', auth, async (req, res) => {
     try {
+        // Verify admin status
+        if (!req.user.isAdmin) {
+            return res.status(403).json({
+                success: false,
+                message: 'Admin access required'
+            });
+        }
+
         const totalUsers = await User.countDocuments();
         const quizStats = await User.aggregate([
             { $unwind: '$quizResults' },
