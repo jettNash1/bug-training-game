@@ -379,25 +379,32 @@ class AdminDashboard {
             </div>
             <div class="user-details-body">
                 <div class="quiz-progress-list">
-                    ${sortedScores.map(score => `
-                        <div class="quiz-progress-item ${score.score > 0 ? 'started' : 'not-started'}">
-                            <div class="quiz-info">
-                                <h3>${this.getQuizDisplayName(score.quizName)}</h3>
-                                <div class="progress-details">
-                                    <span class="score">Progress: ${score.score}%</span>
-                                    <span class="questions">Questions Completed: ${score.questionsAnswered}/15</span>
-                                    <span class="experience">XP Earned: ${score.experience}/300</span>
-                                    ${score.lastActive ? 
-                                        `<span class="last-active">Last Active: ${new Date(score.lastActive).toLocaleDateString()}</span>` :
-                                        '<span class="last-active">Not Started</span>'
-                                    }
+                    ${sortedScores.map(score => {
+                        // Calculate questions completed based on progress percentage
+                        const questionsCompleted = Math.round((score.score / 100) * 15);
+                        // Calculate XP earned based on progress percentage
+                        const xpEarned = Math.round((score.score / 100) * 300);
+                        
+                        return `
+                            <div class="quiz-progress-item ${score.score > 0 ? 'started' : 'not-started'}">
+                                <div class="quiz-info">
+                                    <h3>${this.getQuizDisplayName(score.quizName)}</h3>
+                                    <div class="progress-details">
+                                        <span class="score">Progress: ${Math.round(score.score)}%</span>
+                                        <span class="questions">Questions Completed: ${questionsCompleted}/15</span>
+                                        <span class="experience">XP Earned: ${xpEarned}/300</span>
+                                        ${score.lastActive ? 
+                                            `<span class="last-active">Last Active: ${new Date(score.lastActive).toLocaleDateString()}</span>` :
+                                            '<span class="last-active">Not Started</span>'
+                                        }
+                                    </div>
                                 </div>
+                                <button class="reset-button" onclick="window.adminDashboard.resetUserProgress('${username}', '${score.quizName}')">
+                                    Reset Progress
+                                </button>
                             </div>
-                            <button class="reset-button" onclick="window.adminDashboard.resetUserProgress('${username}', '${score.quizName}')">
-                                Reset Progress
-                            </button>
-                        </div>
-                    `).join('')}
+                        `;
+                    }).join('')}
                 </div>
             </div>
         `;
@@ -428,6 +435,7 @@ class AdminDashboard {
 
     async resetUserProgress(username, quizName) {
         try {
+            // First, update the user's quiz progress in the database
             const response = await this.apiService.fetchWithAuth(
                 `${this.apiService.baseUrl}/admin/users/${username}/quiz-progress/${quizName}/reset`,
                 { 
@@ -439,14 +447,38 @@ class AdminDashboard {
             );
             
             if (!response.ok) {
-                throw new Error('Failed to reset quiz progress');
+                const errorData = await response.json();
+                throw new Error(errorData.message || 'Failed to reset quiz progress');
             }
 
-            this.showError(`Successfully reset ${quizName} for ${username}`);
-            await this.updateDashboard(); // Refresh the dashboard
+            // Update local state
+            const scores = this.userScores.get(username) || [];
+            const scoreIndex = scores.findIndex(s => s.quizName === quizName);
+            if (scoreIndex !== -1) {
+                scores[scoreIndex] = {
+                    ...scores[scoreIndex],
+                    score: 0,
+                    questionsAnswered: 0,
+                    completedAt: null,
+                    lastActive: null,
+                    experience: 0
+                };
+                this.userScores.set(username, scores);
+            }
+
+            // Update the UI
+            this.updateUserList();
+            this.showError(`Successfully reset ${this.getQuizDisplayName(quizName)} for ${username}`);
+            
+            // Close the current details overlay and show updated details
+            const existingOverlay = document.querySelector('.user-details-overlay');
+            if (existingOverlay) {
+                existingOverlay.remove();
+                this.showUserDetails(username);
+            }
         } catch (error) {
             console.error('Error resetting progress:', error);
-            this.showError('Failed to reset quiz progress');
+            this.showError(`Failed to reset progress: ${error.message}`);
         }
     }
 
