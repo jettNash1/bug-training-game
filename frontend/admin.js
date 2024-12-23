@@ -437,14 +437,14 @@ class AdminDashboard {
         try {
             // First, update the user's quiz progress in the database
             const response = await this.apiService.fetchWithAuth(
-                `${this.apiService.baseUrl}/users/${username}/quiz-progress`,
+                `${this.apiService.baseUrl}/users/quiz-progress`,
                 { 
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'
                     },
                     body: JSON.stringify({
-                        quizName: quizName,
+                        quizName,
                         progress: {
                             experience: 0,
                             questionHistory: [],
@@ -476,6 +476,13 @@ class AdminDashboard {
                 throw new Error(errorMessage);
             }
 
+            // Also reset quiz score
+            try {
+                await this.apiService.updateQuizScore(quizName, 0);
+            } catch (error) {
+                console.error('Error resetting quiz score:', error);
+            }
+
             // Find and update the user in our users array
             const userIndex = this.users.findIndex(u => u.username === username);
             if (userIndex !== -1) {
@@ -496,25 +503,6 @@ class AdminDashboard {
                 const resultIndex = this.users[userIndex].quizResults.findIndex(r => r.quizName === quizName);
                 if (resultIndex !== -1) {
                     this.users[userIndex].quizResults.splice(resultIndex, 1);
-                }
-
-                // Also reset quiz score
-                try {
-                    await this.apiService.fetchWithAuth(
-                        `${this.apiService.baseUrl}/users/${username}/quiz-scores`,
-                        {
-                            method: 'POST',
-                            headers: {
-                                'Content-Type': 'application/json'
-                            },
-                            body: JSON.stringify({
-                                quizName: quizName,
-                                score: 0
-                            })
-                        }
-                    );
-                } catch (error) {
-                    console.error('Error resetting quiz score:', error);
                 }
             }
 
