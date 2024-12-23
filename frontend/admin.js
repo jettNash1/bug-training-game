@@ -442,13 +442,49 @@ class AdminDashboard {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'
-                    }
+                    },
+                    body: JSON.stringify({
+                        reset: true,
+                        username: username,
+                        quizName: quizName
+                    })
                 }
             );
             
             if (!response.ok) {
-                const errorData = await response.json();
-                throw new Error(errorData.message || 'Failed to reset quiz progress');
+                let errorMessage = 'Failed to reset quiz progress';
+                try {
+                    const errorData = await response.json();
+                    errorMessage = errorData.message || errorMessage;
+                } catch (e) {
+                    // If response is not JSON, try to get text
+                    const text = await response.text();
+                    console.error('Non-JSON error response:', text);
+                }
+                throw new Error(errorMessage);
+            }
+
+            // Find and update the user in our users array
+            const userIndex = this.users.findIndex(u => u.username === username);
+            if (userIndex !== -1) {
+                // Reset quiz progress
+                if (!this.users[userIndex].quizProgress) {
+                    this.users[userIndex].quizProgress = {};
+                }
+                this.users[userIndex].quizProgress[quizName] = {
+                    experience: 0,
+                    questionHistory: [],
+                    lastUpdated: new Date().toISOString()
+                };
+
+                // Reset quiz results
+                if (!this.users[userIndex].quizResults) {
+                    this.users[userIndex].quizResults = [];
+                }
+                const resultIndex = this.users[userIndex].quizResults.findIndex(r => r.quizName === quizName);
+                if (resultIndex !== -1) {
+                    this.users[userIndex].quizResults.splice(resultIndex, 1);
+                }
             }
 
             // Update local state
@@ -460,7 +496,7 @@ class AdminDashboard {
                     score: 0,
                     questionsAnswered: 0,
                     completedAt: null,
-                    lastActive: null,
+                    lastActive: new Date().toISOString(),
                     experience: 0
                 };
                 this.userScores.set(username, scores);
