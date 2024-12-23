@@ -148,6 +148,7 @@ body {
     font-weight: 500;
     border-radius: 0 12px 0 12px;
     transition: all 0.3s ease;
+    z-index: 1;
 }
 
 /* Progress states */
@@ -166,6 +167,7 @@ body {
 .quiz-item[data-progress="100"] .quiz-completion {
     background: var(--success-color);
     color: white;
+    display: block;
 }
 
 .quiz-item:not([data-progress="0"]):not([data-progress="100"]) {
@@ -175,6 +177,7 @@ body {
 .quiz-item:not([data-progress="0"]):not([data-progress="100"]) .quiz-completion {
     background: var(--warning-color);
     color: var(--text-primary);
+    display: block;
 }
 
 .category-progress {
