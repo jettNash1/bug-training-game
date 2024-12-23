@@ -15,6 +15,21 @@ class IndexPage {
         this.updateCategoryProgress();
     }
 
+    handleLogout() {
+        try {
+            // Clear all auth-related data
+            localStorage.removeItem('token');
+            localStorage.removeItem('refreshToken');
+            localStorage.removeItem('username');
+            localStorage.removeItem('isAdmin');
+            
+            // Redirect to login page
+            window.location.href = '/login.html';
+        } catch (error) {
+            console.error('Logout error:', error);
+        }
+    }
+
     async loadUserProgress() {
         try {
             const username = localStorage.getItem('username');
@@ -182,6 +197,21 @@ class IndexPage {
 }
 
 // Initialize the index page when the DOM is loaded
+let indexPage;
 document.addEventListener('DOMContentLoaded', () => {
-    new IndexPage();
-}); 
+    indexPage = new IndexPage();
+});
+
+// Expose handleLogout to the window object
+window.handleLogout = () => {
+    if (indexPage) {
+        indexPage.handleLogout();
+    } else {
+        // Fallback if indexPage is not initialized
+        localStorage.removeItem('token');
+        localStorage.removeItem('refreshToken');
+        localStorage.removeItem('username');
+        localStorage.removeItem('isAdmin');
+        window.location.href = '/login.html';
+    }
+}; 
