@@ -41,6 +41,17 @@
             }
         });
     </script>
+    <style>
+        .quiz-completion {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            height: 4px;
+            width: 0;
+            transition: width 0.3s ease-in-out;
+            background-color: #F44336;
+        }
+    </style>
 </head>
 <body>
     <header class="app-header" role="banner">
@@ -116,7 +127,7 @@
                 <div class="quiz-list" role="list">
                     <a href="pages/risk-analysis.html" class="quiz-item" data-quiz="risk-analysis">
                         <div class="quiz-icon" aria-hidden="true">📊</div>
-                        <div id="risk-analysis-progress" class="quiz-completion hidden"></div>
+                        <div id="risk-analysis-progress" class="quiz-completion"></div>
                         <div class="quiz-info">
                             <div class="quiz-title">Risk Analysis</div>
                             <div class="quiz-description">Learn to identify and assess risks</div>
@@ -124,7 +135,7 @@
                     </a>
                     <a href="pages/risk-management.html" class="quiz-item" data-quiz="risk-management">
                         <div class="quiz-icon" aria-hidden="true">🎯</div>
-                        <div id="risk-management-progress" class="quiz-completion hidden"></div>
+                        <div id="risk-management-progress" class="quiz-completion"></div>
                         <div class="quiz-info">
                             <div class="quiz-title">Risk Management</div>
                             <div class="quiz-description">Strategies for managing test risks</div>
@@ -147,7 +158,7 @@
                 <div class="quiz-list">
                     <a href="pages/non-functional-quiz.html" class="quiz-item" data-quiz="non-functional">
                         <div class="quiz-icon" aria-hidden="true">🔍</div>
-                        <div id="non-functional-progress" class="quiz-completion hidden"></div>
+                        <div id="non-functional-progress" class="quiz-completion"></div>
                         <div class="quiz-info">
                             <div class="quiz-title">Non-functional Testing</div>
                             <div class="quiz-description">Performance, security, and usability testing</div>
@@ -155,7 +166,7 @@
                     </a>
                     <a href="pages/test-support.html" class="quiz-item" data-quiz="test-support">
                         <div class="quiz-icon" aria-hidden="true">🛠️</div>
-                        <div id="test-support-progress" class="quiz-completion hidden"></div>
+                        <div id="test-support-progress" class="quiz-completion"></div>
                         <div class="quiz-info">
                             <div class="quiz-title">Test Support</div>
                             <div class="quiz-description">Tools and techniques for test execution</div>
@@ -163,7 +174,7 @@
                     </a>
                     <a href="pages/issue-verification.html" class="quiz-item" data-quiz="issue-verification">
                         <div class="quiz-icon" aria-hidden="true">✅</div>
-                        <div id="issue-verification-progress" class="quiz-completion hidden"></div>
+                        <div id="issue-verification-progress" class="quiz-completion"></div>
                         <div class="quiz-info">
                             <div class="quiz-title">Issue Verification</div>
                             <div class="quiz-description">Validate and verify bug fixes</div>
@@ -171,7 +182,7 @@
                     </a>
                     <a href="pages/build-verification-quiz.html" class="quiz-item" data-quiz="build-verification">
                         <div class="quiz-icon" aria-hidden="true">✅</div>
-                        <div id="build-verification-progress" class="quiz-completion hidden"></div>
+                        <div id="build-verification-progress" class="quiz-completion"></div>
                         <div class="quiz-info">
                             <div class="quiz-title">Build Verification</div>
                             <div class="quiz-description">Validate and verify build</div>
@@ -193,7 +204,7 @@
                 </div>
                 <div class="quiz-list">
                     <a href="pages/issue-tracking-tools-quiz.html" class="quiz-item" data-quiz="issue-tracking">
-                        <div class="quiz-icon">📝</div>
+                        <div class="quiz-icon" aria-hidden="true">📝</div>
                         <div id="issue-tracking-progress" class="quiz-completion"></div>
                         <div class="quiz-info">
                             <div class="quiz-title">Issue Tracking Tools</div>
@@ -201,7 +212,7 @@
                         </div>
                     </a>
                     <a href="pages/raising-tickets.html" class="quiz-item" data-quiz="raising-tickets">
-                        <div class="quiz-icon">🎫</div>
+                        <div class="quiz-icon" aria-hidden="true">🎫</div>
                         <div id="raising-tickets-progress" class="quiz-completion"></div>
                         <div class="quiz-info">
                             <div class="quiz-title">Raising Tickets</div>
@@ -209,7 +220,7 @@
                         </div>
                     </a>
                     <a href="pages/reports-quiz.html" class="quiz-item" data-quiz="reports">
-                        <div class="quiz-icon">📊</div>
+                        <div class="quiz-icon" aria-hidden="true">📊</div>
                         <div id="reports-progress" class="quiz-completion"></div>
                         <div class="quiz-info">
                             <div class="quiz-title">Reports</div>
@@ -217,7 +228,7 @@
                         </div>
                     </a>
                     <a href="pages/CMS-Testing-quiz.html" class="quiz-item" data-quiz="CMS-Testing">
-                        <div class="quiz-icon">📊</div>
+                        <div class="quiz-icon" aria-hidden="true">📊</div>
                         <div id="CMS-Testing-progress" class="quiz-completion"></div>
                         <div class="quiz-info">
                             <div class="quiz-title">CMS Testing</div>

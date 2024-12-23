@@ -817,10 +817,10 @@ class CMS_Testing_Quiz extends BaseQuiz {
             if (username) {
                 const quizUser = new QuizUser(username);
                 const score = Math.round((this.player.experience / this.maxXP) * 100);
-                await quizUser.updateQuizScore('communication', score);
+                await quizUser.updateQuizScore(this.quizName, score);
                 
                 // Update progress display on index page
-                const progressElement = document.querySelector('#communication-progress');
+                const progressElement = document.querySelector(`#${this.quizName}-progress`);
                 if (progressElement) {
                     const totalQuestions = 15;
                     const completedQuestions = this.player.questionHistory.length;
@@ -829,21 +829,34 @@ class CMS_Testing_Quiz extends BaseQuiz {
                     // Only update if we're on the index page and this is the current user
                     const onIndexPage = window.location.pathname.endsWith('index.html');
                     if (onIndexPage) {
-                        progressElement.textContent = `${percentComplete}% Complete`;
-                        progressElement.classList.remove('hidden');
+                        // Only show percentage if progress has started but not complete
+                        if (percentComplete > 0 && percentComplete < 100) {
+                            progressElement.textContent = `${percentComplete}% Complete`;
+                            progressElement.classList.remove('hidden');
+                        } else if (percentComplete === 100) {
+                            progressElement.textContent = `${percentComplete}% Complete`;
+                            progressElement.classList.remove('hidden');
+                        } else {
+                            progressElement.textContent = '';
+                            progressElement.classList.add('hidden');
+                        }
                         
                         // Update quiz item styling
-                        const quizItem = document.querySelector('[data-quiz="communication"]');
+                        const quizItem = document.querySelector(`[data-quiz="${this.quizName}"]`);
                         if (quizItem) {
                             quizItem.classList.remove('completed', 'in-progress');
                             if (percentComplete === 100) {
                                 quizItem.classList.add('completed');
                                 progressElement.classList.add('completed');
                                 progressElement.classList.remove('in-progress');
+                                quizItem.style.backgroundColor = '#90EE90'; // Green
                             } else if (percentComplete > 0) {
                                 quizItem.classList.add('in-progress');
                                 progressElement.classList.add('in-progress');
                                 progressElement.classList.remove('completed');
+                                quizItem.style.backgroundColor = '#FFFF99'; // Yellow
+                            } else {
+                                quizItem.style.backgroundColor = '#FFFFFF'; // White
                             }
                         }
                     }
