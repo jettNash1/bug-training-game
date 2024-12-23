@@ -23,27 +23,67 @@ class IndexPage {
                 return;
             }
 
+            console.log('Loading progress for user:', username);
+            
             // Get progress for each quiz
             this.quizScores = [];
             for (const item of this.quizItems) {
                 const quizId = item.dataset.quiz;
                 try {
-                    const progress = await this.apiService.getQuizProgress(quizId);
-                    if (progress && progress.data) {
+                    console.log(`Fetching progress for quiz: ${quizId}`);
+                    
+                    // Try getting progress from server first
+                    const serverProgress = await this.apiService.getQuizProgress(quizId);
+                    console.log(`Server progress for ${quizId}:`, serverProgress);
+                    
+                    // Try getting progress from localStorage as backup
+                    const storageKey = `quiz_progress_${username}_${quizId}`;
+                    const localData = localStorage.getItem(storageKey);
+                    let localProgress = null;
+                    if (localData) {
+                        try {
+                            const parsed = JSON.parse(localData);
+                            localProgress = parsed.progress;
+                            console.log(`Local progress for ${quizId}:`, localProgress);
+                        } catch (e) {
+                            console.error(`Error parsing local progress for ${quizId}:`, e);
+                        }
+                    }
+                    
+                    // Use server progress if available, otherwise use local progress
+                    const progress = serverProgress?.data || localProgress;
+                    
+                    if (progress) {
                         // Calculate score based on completed questions
-                        const questionsAnswered = progress.data.questionHistory ? progress.data.questionHistory.length : 0;
+                        const questionsAnswered = progress.questionHistory ? progress.questionHistory.length : 0;
                         const score = Math.round((questionsAnswered / 15) * 100); // 15 questions per quiz
+                        console.log(`${quizId} questions answered: ${questionsAnswered}, calculated score: ${score}%`);
+                        
                         this.quizScores.push({
                             quizName: quizId,
-                            score: score
+                            score: score,
+                            questionsAnswered: questionsAnswered
+                        });
+                    } else {
+                        console.log(`No progress data found for ${quizId}`);
+                        this.quizScores.push({
+                            quizName: quizId,
+                            score: 0,
+                            questionsAnswered: 0
                         });
                     }
                 } catch (error) {
                     console.error(`Error loading progress for quiz ${quizId}:`, error);
+                    // Add a zero score entry if we fail to load progress
+                    this.quizScores.push({
+                        quizName: quizId,
+                        score: 0,
+                        questionsAnswered: 0
+                    });
                 }
             }
             
-            console.log('Loaded quiz scores:', this.quizScores);
+            console.log('Final quiz scores:', this.quizScores);
         } catch (error) {
             console.error('Error loading user progress:', error);
         }
@@ -61,7 +101,11 @@ class IndexPage {
                 const quizScore = this.quizScores.find(score => score.quizName === quizId);
                 const percentage = quizScore ? quizScore.score : 0;
 
-                console.log(`Quiz ${quizId} progress: ${percentage}%`);
+                console.log(`Updating UI for ${quizId}:`, {
+                    score: percentage,
+                    element: progressElement,
+                    quizScore
+                });
                 
                 // Update the quiz item's data-progress attribute
                 item.setAttribute('data-progress', percentage);
@@ -70,21 +114,20 @@ class IndexPage {
                 if (percentage > 0) {
                     progressElement.textContent = `${percentage}%`;
                     progressElement.style.display = 'block';
+                    
+                    // Update background color based on progress
+                    if (percentage === 100) {
+                        item.style.background = 'linear-gradient(to right, rgba(46, 204, 113, 0.1), rgba(46, 204, 113, 0.2))';
+                        progressElement.style.background = 'var(--success-color)';
+                        progressElement.style.color = 'white';
+                    } else {
+                        item.style.background = 'linear-gradient(to right, rgba(241, 196, 15, 0.1), rgba(241, 196, 15, 0.2))';
+                        progressElement.style.background = 'var(--warning-color)';
+                        progressElement.style.color = 'var(--text-primary)';
+                    }
                 } else {
                     progressElement.textContent = '';
                     progressElement.style.display = 'none';
-                }
-
-                // Update background color based on progress
-                if (percentage === 100) {
-                    item.style.background = 'linear-gradient(to right, rgba(46, 204, 113, 0.1), rgba(46, 204, 113, 0.2))';
-                    progressElement.style.background = 'var(--success-color)';
-                    progressElement.style.color = 'white';
-                } else if (percentage > 0) {
-                    item.style.background = 'linear-gradient(to right, rgba(241, 196, 15, 0.1), rgba(241, 196, 15, 0.2))';
-                    progressElement.style.background = 'var(--warning-color)';
-                    progressElement.style.color = 'var(--text-primary)';
-                } else {
                     item.style.background = 'var(--card-background)';
                 }
             }
@@ -118,6 +161,13 @@ class IndexPage {
                 
                 const totalQuizzes = quizItems.length;
                 const categoryPercentage = Math.round(totalProgress / totalQuizzes);
+                
+                console.log('Category progress:', {
+                    category: category.querySelector('.category-header').textContent.trim(),
+                    completedQuizzes,
+                    totalQuizzes,
+                    categoryPercentage
+                });
                 
                 progressBar.style.width = `${categoryPercentage}%`;
                 progressText.innerHTML = `
