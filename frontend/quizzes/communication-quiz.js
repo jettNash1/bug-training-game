@@ -37,390 +37,417 @@ class CommunicationQuiz extends BaseQuiz {
             questionHistory: []
         };
 
-        // Basic Scenarios (5 questions)
+        // Initialize API service
+        this.apiService = new APIService();
+
+        // Initialize all screen elements
+        this.gameScreen = document.getElementById('game-screen');
+        this.outcomeScreen = document.getElementById('outcome-screen');
+        this.endScreen = document.getElementById('end-screen');
+        
+        // Verify all required elements exist
+        if (!this.gameScreen) {
+            console.error('Game screen element not found');
+            this.showError('Quiz initialization failed. Please refresh the page.');
+            return;
+        }
+        
+        if (!this.outcomeScreen) {
+            console.error('Outcome screen element not found');
+            this.showError('Quiz initialization failed. Please refresh the page.');
+            return;
+        }
+        
+        if (!this.endScreen) {
+            console.error('End screen element not found');
+            this.showError('Quiz initialization failed. Please refresh the page.');
+            return;
+        }
+
+        // Basic Scenarios (IDs 1-5)
         this.basicScenarios = [
             {
                 id: 1,
                 level: 'Basic',
-                title: 'Daily Communication',
-                description: 'You\'ve just started your workday. What\'s the first thing you should do regarding your communication status?',
+                title: 'Daily Stand-up',
+                description: 'You\'re attending a daily stand-up meeting. What\'s the most effective way to communicate your progress?',
                 options: [
                     {
-                        text: 'Mark yourself as "Online" and ensure Teams status is accurate',
-                        outcome: 'Perfect! Being visible and accessible is crucial for team communication.',
+                        text: 'Clearly state what you completed yesterday, what you\'re working on today, and any blockers',
+                        outcome: 'Perfect! This provides a clear and structured update.',
                         experience: 15,
-                        tool: 'Status Management'
+                        tool: 'Meeting Communication'
                     },
                     {
-                        text: 'Wait for someone to message you first',
-                        outcome: 'Being proactive with your status helps team coordination.',
+                        text: 'Give a detailed explanation of every task you worked on',
+                        outcome: 'Stand-ups should be concise and focused.',
                         experience: -5
                     },
                     {
-                        text: 'Leave your status as is and start working',
-                        outcome: 'Team members need to know your availability.',
+                        text: 'Just say everything is fine',
+                        outcome: 'Updates should be specific and informative.',
                         experience: -10
                     },
                     {
-                        text: 'Set status to "Do Not Disturb" by default',
-                        outcome: 'Being accessible during work hours is important.',
-                        experience: -0
+                        text: 'Wait for others to ask you questions',
+                        outcome: 'Be proactive in providing updates.',
+                        experience: -5
                     }
                 ]
             },
             {
                 id: 2,
                 level: 'Basic',
-                title: 'Team Meeting',
-                description: 'During a team meeting, you notice a potential issue with the current testing approach. What should you do?',
+                title: 'Email Communication',
+                description: 'You need to send an important update to the team. How should you structure your email?',
                 options: [
                     {
-                        text: 'Raise your concern professionally and suggest alternatives',
-                        outcome: 'Excellent! Constructive feedback with solutions is always valuable.',
+                        text: 'Use a clear subject line, organize content with headings, and highlight key points',
+                        outcome: 'Excellent! This makes the email easy to read and understand.',
                         experience: 15,
-                        tool: 'Professional Feedback'
+                        tool: 'Email Etiquette'
                     },
                     {
-                        text: 'Stay silent to avoid conflict',
-                        outcome: 'Issues should be raised professionally to prevent problems later.',
-                        experience: -5
-                    },
-                    {
-                        text: 'Send a private message to your manager only',
-                        outcome: 'Team discussions benefit from open communication.',
+                        text: 'Write one long paragraph with all information',
+                        outcome: 'Emails should be well-organized and easy to scan.',
                         experience: -10
                     },
                     {
-                        text: 'Wait until after the meeting and email everyone',
-                        outcome: 'Immediate discussion in meetings is often more effective.',
-                        experience: 0
+                        text: 'Send multiple short emails instead',
+                        outcome: 'Important updates should be consolidated when possible.',
+                        experience: -5
+                    },
+                    {
+                        text: 'Use informal language and emojis',
+                        outcome: 'Professional communication requires appropriate tone.',
+                        experience: -5
                     }
                 ]
             },
             {
                 id: 3,
                 level: 'Basic',
-                title: 'Email Communication',
-                description: 'You need to send an important update about test results. How should you structure your email?',
+                title: 'Team Chat',
+                description: 'A colleague asks a technical question in the team chat. What\'s the best response?',
                 options: [
                     {
-                        text: 'Clear subject line, key findings first, detailed results attached',
-                        outcome: 'Excellent! This format ensures key information is immediately visible.',
+                        text: 'Provide a clear answer with relevant documentation links',
+                        outcome: 'Perfect! This helps now and in the future.',
                         experience: 15,
-                        tool: 'Written Communication'
+                        tool: 'Documentation Reference'
                     },
                     {
-                        text: 'Send all details in the email body without attachments',
-                        outcome: 'Long emails can be overwhelming and hard to reference later.',
+                        text: 'Tell them to Google it',
+                        outcome: 'This isn\'t helpful or collaborative.',
+                        experience: -15
+                    },
+                    {
+                        text: 'Ignore the question',
+                        outcome: 'Team communication requires active participation.',
                         experience: -10
                     },
                     {
-                        text: 'Just attach the results without explanation',
-                        outcome: 'Context is important for effective communication.',
+                        text: 'Give a vague answer',
+                        outcome: 'Clear and specific responses are more helpful.',
                         experience: -5
-                    },
-                    {
-                        text: 'Send multiple emails for different parts of the results',
-                        outcome: 'Fragmented information can lead to confusion.',
-                        experience: 5
                     }
                 ]
             },
             {
                 id: 4,
                 level: 'Basic',
-                title: 'Team Collaboration',
-                description: 'A colleague asks for help understanding a test case you wrote. What\'s the best response?',
+                title: 'Status Updates',
+                description: 'You\'ve encountered a delay in your work. How should you communicate this?',
                 options: [
                     {
-                        text: 'Schedule a quick call to walk through it together',
-                        outcome: 'Perfect! Real-time explanation allows for immediate clarification.',
+                        text: 'Promptly inform stakeholders, explain the cause, and provide an updated timeline',
+                        outcome: 'Excellent! This maintains transparency and trust.',
                         experience: 15,
-                        tool: 'Collaboration'
+                        tool: 'Status Reporting'
                     },
                     {
-                        text: 'Tell them to read the documentation again',
-                        outcome: 'This response doesn\'t promote good team collaboration.',
+                        text: 'Wait until someone asks about the delay',
+                        outcome: 'Delays should be communicated proactively.',
                         experience: -10
                     },
                     {
-                        text: 'Forward them to someone else',
-                        outcome: 'As the author, you\'re best positioned to explain.',
+                        text: 'Only mention it in the next scheduled meeting',
+                        outcome: 'Important updates shouldn\'t wait for scheduled meetings.',
                         experience: -5
                     },
                     {
-                        text: 'Send them a long email explanation',
-                        outcome: 'Direct interaction is often more effective for explanations.',
-                        experience: 5
+                        text: 'Try to handle it without telling anyone',
+                        outcome: 'Transparency is important in team communication.',
+                        experience: -15
                     }
                 ]
             },
             {
                 id: 5,
                 level: 'Basic',
-                title: 'Documentation Updates',
-                description: 'You\'ve found outdated information in the test documentation. What should you do?',
+                title: 'Documentation',
+                description: 'You\'ve completed a new feature. How should you document it?',
                 options: [
                     {
-                        text: 'Update it and notify the team of important changes',
-                        outcome: 'Excellent! Keeping documentation current and informing others is crucial.',
+                        text: 'Write clear, organized documentation with examples and update relevant guides',
+                        outcome: 'Perfect! This helps the team understand and maintain the feature.',
                         experience: 15,
-                        tool: 'Documentation Management'
+                        tool: 'Technical Documentation'
                     },
                     {
-                        text: 'Leave it for someone else to fix',
-                        outcome: 'Everyone is responsible for maintaining documentation.',
-                        experience: -10
-                    },
-                    {
-                        text: 'Only update without telling anyone',
-                        outcome: 'Changes should be communicated to the team.',
+                        text: 'Leave comments in the code only',
+                        outcome: 'Proper documentation should be more comprehensive.',
                         experience: -5
                     },
                     {
-                        text: 'Create a new document instead',
-                        outcome: 'Multiple versions can lead to confusion.',
-                        experience: 5
+                        text: 'Skip documentation since the code is self-explanatory',
+                        outcome: 'Documentation is crucial for team knowledge.',
+                        experience: -15
+                    },
+                    {
+                        text: 'Create a quick note in your personal files',
+                        outcome: 'Documentation should be accessible to the team.',
+                        experience: -10
                     }
                 ]
             }
         ];
 
-        // Intermediate Scenarios (5 questions)
+        // Intermediate Scenarios (IDs 6-10)
         this.intermediateScenarios = [
             {
                 id: 6,
                 level: 'Intermediate',
-                title: 'Bug Report Communication',
-                description: 'You\'ve found a critical bug in production. How should you communicate this?',
+                title: 'Stakeholder Communication',
+                description: 'You need to explain a technical issue to non-technical stakeholders. How should you approach this?',
                 options: [
                     {
-                        text: 'Document the issue thoroughly and alert relevant stakeholders immediately',
-                        outcome: 'Perfect! Quick, clear communication of critical issues is essential.',
+                        text: 'Use clear analogies and visual aids, avoid jargon, and focus on business impact',
+                        outcome: 'Excellent! This makes technical concepts accessible.',
                         experience: 25,
-                        tool: 'Critical Communication'
+                        tool: 'Stakeholder Communication'
                     },
                     {
-                        text: 'Fix it yourself first before telling anyone',
-                        outcome: 'Critical issues should be communicated immediately.',
+                        text: 'Use technical terms to sound professional',
+                        outcome: 'Technical jargon can confuse non-technical stakeholders.',
                         experience: -15
                     },
                     {
-                        text: 'Send a general email to everyone in the company',
-                        outcome: 'Target your communication to relevant stakeholders.',
+                        text: 'Keep it very brief to avoid confusion',
+                        outcome: 'Clear explanation is needed for understanding.',
                         experience: -10
                     },
                     {
-                        text: 'Message only your immediate team members',
-                        outcome: 'Critical issues often require broader stakeholder awareness.',
-                        experience: 5
+                        text: 'Let someone else handle it',
+                        outcome: 'Technical communication is an important skill.',
+                        experience: -20
                     }
                 ]
             },
             {
                 id: 7,
                 level: 'Intermediate',
-                title: 'Cross-team Collaboration',
-                description: 'You need information from another team to complete your testing. How do you proceed?',
+                title: 'Conflict Resolution',
+                description: 'There\'s a disagreement in the team about a technical approach. How do you handle it?',
                 options: [
                     {
-                        text: 'Schedule a meeting with clear agenda and requirements',
-                        outcome: 'Excellent! Structured communication helps get results efficiently.',
+                        text: 'Facilitate a discussion, document different viewpoints, and work toward consensus',
+                        outcome: 'Perfect! This promotes constructive resolution.',
                         experience: 25,
-                        tool: 'Cross-team Communication'
+                        tool: 'Conflict Resolution'
                     },
                     {
-                        text: 'Send multiple urgent messages to team members',
-                        outcome: 'Scattered communication can be disruptive and ineffective.',
-                        experience: -15
-                    },
-                    {
-                        text: 'Ask your manager to intervene',
-                        outcome: 'Try direct communication first before escalating.',
+                        text: 'Let the most senior person decide',
+                        outcome: 'Team input and consensus are valuable.',
                         experience: -10
                     },
                     {
-                        text: 'Work around the missing information',
-                        outcome: 'This could lead to incomplete or incorrect testing.',
-                        experience: 0
+                        text: 'Avoid the conflict',
+                        outcome: 'Conflicts should be addressed professionally.',
+                        experience: -15
+                    },
+                    {
+                        text: 'Push for your preferred solution',
+                        outcome: 'Consider all viewpoints in technical discussions.',
+                        experience: -20
                     }
                 ]
             },
             {
                 id: 8,
                 level: 'Intermediate',
-                title: 'Test Results Presentation',
-                description: 'You need to present test results to stakeholders. How do you prepare?',
+                title: 'Code Review Communication',
+                description: 'You\'re reviewing a colleague\'s code and find several issues. How do you communicate this?',
                 options: [
                     {
-                        text: 'Create a clear summary with data visualization and key insights',
-                        outcome: 'Perfect! Visual data and key points make information accessible.',
+                        text: 'Provide specific, constructive feedback with examples and suggestions for improvement',
+                        outcome: 'Excellent! This helps learning and improvement.',
                         experience: 25,
-                        tool: 'Presentation Skills'
+                        tool: 'Code Review'
                     },
                     {
-                        text: 'Show all raw test data',
-                        outcome: 'Raw data without context can be overwhelming.',
+                        text: 'List all the problems found',
+                        outcome: 'Feedback should be constructive and helpful.',
+                        experience: -10
+                    },
+                    {
+                        text: 'Just say it needs work',
+                        outcome: 'Specific feedback is more valuable.',
                         experience: -15
                     },
                     {
-                        text: 'Verbal presentation only',
-                        outcome: 'Visual aids help reinforce important points.',
-                        experience: -5
-                    },
-                    {
-                        text: 'Send results in an email instead',
-                        outcome: 'Important findings often benefit from interactive discussion.',
-                        experience: 5
+                        text: 'Approve it to avoid confrontation',
+                        outcome: 'Honest, constructive feedback is important.',
+                        experience: -20
                     }
                 ]
             },
             {
                 id: 9,
                 level: 'Intermediate',
-                title: 'Conflict Resolution',
-                description: 'There\'s a disagreement about test coverage between team members. How do you handle it?',
+                title: 'Remote Communication',
+                description: 'You\'re working remotely and need to collaborate on a complex task. How do you ensure effective communication?',
                 options: [
                     {
-                        text: 'Organize a discussion to understand all viewpoints and find common ground',
-                        outcome: 'Excellent! Collaborative problem-solving builds team strength.',
+                        text: 'Set up regular video calls, use screen sharing, and maintain detailed documentation',
+                        outcome: 'Perfect! This maintains clear communication channels.',
                         experience: 25,
-                        tool: 'Conflict Resolution'
+                        tool: 'Remote Collaboration'
                     },
                     {
-                        text: 'Let them resolve it themselves',
-                        outcome: 'Active mediation can prevent escalation.',
+                        text: 'Rely on email only',
+                        outcome: 'Multiple communication channels are often needed.',
                         experience: -15
                     },
                     {
-                        text: 'Take sides with one party',
-                        outcome: 'This can create division in the team.',
-                        experience: -5
+                        text: 'Wait for others to initiate communication',
+                        outcome: 'Be proactive in remote communication.',
+                        experience: -10
                     },
                     {
-                        text: 'Implement both approaches separately',
-                        outcome: 'This could lead to inefficient use of resources.',
-                        experience: 5
+                        text: 'Handle everything through chat',
+                        outcome: 'Complex tasks often need richer communication.',
+                        experience: -5
                     }
                 ]
             },
             {
                 id: 10,
                 level: 'Intermediate',
-                title: 'Remote Communication',
-                description: 'Working with an offshore team, you notice communication gaps. What\'s your solution?',
+                title: 'Project Updates',
+                description: 'You\'re leading a project and need to communicate progress to multiple teams. What\'s the best approach?',
                 options: [
                     {
-                        text: 'Establish regular sync meetings and clear documentation protocols',
-                        outcome: 'Perfect! Structure and consistency improve remote collaboration.',
+                        text: 'Create a structured report with key metrics, milestones, and risks, and schedule a presentation',
+                        outcome: 'Excellent! This provides comprehensive project visibility.',
                         experience: 25,
-                        tool: 'Remote Collaboration'
+                        tool: 'Project Communication'
                     },
                     {
-                        text: 'Increase email frequency',
-                        outcome: 'More emails don\'t necessarily mean better communication.',
+                        text: 'Send quick updates as things happen',
+                        outcome: 'Project updates should be organized and regular.',
+                        experience: -10
+                    },
+                    {
+                        text: 'Update only your immediate team',
+                        outcome: 'All stakeholders need appropriate updates.',
                         experience: -15
                     },
                     {
-                        text: 'Let them figure out what they need',
-                        outcome: 'Proactive communication prevents misunderstandings.',
-                        experience: -5
-                    },
-                    {
-                        text: 'Report issues to management',
-                        outcome: 'Try direct solutions before escalating.',
-                        experience: 0
+                        text: 'Wait for the next quarterly review',
+                        outcome: 'Regular project communication is important.',
+                        experience: -20
                     }
                 ]
             }
         ];
 
-        // Advanced Scenarios (5 questions)
+        // Advanced Scenarios (IDs 11-15)
         this.advancedScenarios = [
             {
                 id: 11,
                 level: 'Advanced',
-                title: 'Stakeholder Management',
-                description: 'A key stakeholder is pushing for release despite known issues. How do you handle this?',
+                title: 'Crisis Communication',
+                description: 'A critical system issue is affecting multiple teams. How do you manage communication?',
                 options: [
                     {
-                        text: 'Present data-driven evidence of risks and suggest mitigation strategies',
-                        outcome: 'Excellent! Using data to support your position is highly effective.',
-                        experience: 20,
-                        tool: 'Stakeholder Management'
+                        text: 'Establish a clear communication channel, provide regular updates, and document the resolution process',
+                        outcome: 'Perfect! This ensures effective crisis management.',
+                        experience: 35,
+                        tool: 'Crisis Management'
                     },
                     {
-                        text: 'Agree to release without discussion',
-                        outcome: 'Always communicate risks professionally with evidence.',
-                        experience: -15
+                        text: 'Send one mass email about the issue',
+                        outcome: 'Critical issues need ongoing communication.',
+                        experience: -20
                     },
                     {
-                        text: 'Escalate to senior management immediately',
-                        outcome: 'Try direct communication with stakeholders first.',
-                        experience: -10
+                        text: 'Let each team handle their own communications',
+                        outcome: 'Coordinated communication is crucial in crises.',
+                        experience: -25
                     },
                     {
-                        text: 'Refuse to sign off on the release',
-                        outcome: 'Constructive dialogue is better than confrontation.',
-                        experience: -5
+                        text: 'Wait until the issue is resolved to communicate',
+                        outcome: 'Proactive communication is essential in crises.',
+                        experience: -30
                     }
                 ]
             },
             {
                 id: 12,
                 level: 'Advanced',
-                title: 'Process Improvement',
-                description: 'You\'ve identified ways to improve the testing process. How do you implement change?',
+                title: 'Cross-cultural Communication',
+                description: 'You\'re working with a global team across different time zones and cultures. How do you ensure effective communication?',
                 options: [
                     {
-                        text: 'Create a detailed proposal with data and gather team feedback',
-                        outcome: 'Perfect! Collaborative approach with evidence increases buy-in.',
-                        experience: 20,
-                        tool: 'Change Management'
+                        text: 'Use clear, inclusive language, provide written follow-ups, and be mindful of cultural differences',
+                        outcome: 'Excellent! This promotes inclusive global collaboration.',
+                        experience: 35,
+                        tool: 'Global Communication'
                     },
                     {
-                        text: 'Implement changes without discussion',
-                        outcome: 'Changes need team buy-in to be effective.',
+                        text: 'Stick to your preferred communication style',
+                        outcome: 'Adapt communication for different cultures.',
+                        experience: -25
+                    },
+                    {
+                        text: 'Only communicate during your working hours',
+                        outcome: 'Consider time zones in global teams.',
+                        experience: -20
+                    },
+                    {
+                        text: 'Use informal language to seem friendly',
+                        outcome: 'Professional tone is important across cultures.',
                         experience: -15
-                    },
-                    {
-                        text: 'Leave it to management to decide',
-                        outcome: 'Taking initiative with team input is valuable.',
-                        experience: -5
-                    },
-                    {
-                        text: 'Share ideas informally in team chat',
-                        outcome: 'Formal proposals are better for significant changes.',
-                        experience: -10
                     }
                 ]
             },
             {
                 id: 13,
                 level: 'Advanced',
-                title: 'Crisis Communication',
-                description: 'A major system outage is affecting testing environments. How do you manage communication?',
+                title: 'Technical Presentation',
+                description: 'You need to present a complex technical solution to a diverse audience. How do you prepare?',
                 options: [
                     {
-                        text: 'Establish regular updates, clear impact assessment, and recovery timeline',
-                        outcome: 'Excellent! Structured crisis communication keeps everyone informed.',
-                        experience: 20,
-                        tool: 'Crisis Management'
+                        text: 'Create multiple versions of the presentation with appropriate technical depth for different audiences',
+                        outcome: 'Perfect! This ensures understanding at all levels.',
+                        experience: 35,
+                        tool: 'Technical Presentation'
                     },
                     {
-                        text: 'Wait for others to notice',
-                        outcome: 'Proactive communication is crucial during crises.',
-                        experience: -10
+                        text: 'Focus only on technical details',
+                        outcome: 'Consider the diverse audience needs.',
+                        experience: -25
                     },
                     {
-                        text: 'Send one update and wait',
-                        outcome: 'Ongoing communication is important in crisis situations.',
+                        text: 'Keep it very high-level for everyone',
+                        outcome: 'Balance technical depth for different audiences.',
                         experience: -15
                     },
                     {
-                        text: 'Communicate only with your team',
-                        outcome: 'System-wide issues need broader communication.',
-                        experience: -5
+                        text: 'Have someone else present',
+                        outcome: 'Develop your presentation skills.',
+                        experience: -30
                     }
                 ]
             },
@@ -428,28 +455,28 @@ class CommunicationQuiz extends BaseQuiz {
                 id: 14,
                 level: 'Advanced',
                 title: 'Knowledge Transfer',
-                description: 'You\'re leading knowledge transfer for a complex testing framework. How do you approach it?',
+                description: 'You\'re leaving a project and need to ensure knowledge transfer. How do you handle this?',
                 options: [
                     {
-                        text: 'Create comprehensive documentation and conduct interactive sessions',
-                        outcome: 'Perfect! Multiple learning formats support effective knowledge transfer.',
-                        experience: 20,
+                        text: 'Create comprehensive documentation, conduct training sessions, and have overlap period with new team',
+                        outcome: 'Excellent! This ensures smooth transition.',
+                        experience: 35,
                         tool: 'Knowledge Management'
                     },
                     {
-                        text: 'Send documentation via email',
-                        outcome: 'Interactive learning is important for complex topics.',
-                        experience: -15
+                        text: 'Leave detailed code comments',
+                        outcome: 'Knowledge transfer needs multiple approaches.',
+                        experience: -20
                     },
                     {
-                        text: 'Give one presentation only',
-                        outcome: 'Complex topics often need multiple sessions.',
-                        experience: -10
+                        text: 'Have one handoff meeting',
+                        outcome: 'Thorough knowledge transfer takes time.',
+                        experience: -25
                     },
                     {
-                        text: 'Let team members learn by themselves',
-                        outcome: 'Structured knowledge transfer is more effective.',
-                        experience: -5
+                        text: 'Let the new team figure it out',
+                        outcome: 'Proper handoff is crucial for continuity.',
+                        experience: -30
                     }
                 ]
             },
@@ -457,28 +484,28 @@ class CommunicationQuiz extends BaseQuiz {
                 id: 15,
                 level: 'Advanced',
                 title: 'Strategic Communication',
-                description: 'You need to propose a major change in testing strategy. How do you approach this?',
+                description: 'You need to propose a major technical change that will impact multiple departments. How do you approach this?',
                 options: [
                     {
-                        text: 'Prepare a comprehensive proposal with ROI analysis and implementation plan',
-                        outcome: 'Excellent! Strategic changes need thorough analysis and clear communication.',
-                        experience: 20,
-                        tool: 'Strategic Planning'
+                        text: 'Prepare a detailed proposal with impact analysis, gather feedback from stakeholders, and present a phased implementation plan',
+                        outcome: 'Perfect! This demonstrates strategic thinking and stakeholder management.',
+                        experience: 35,
+                        tool: 'Change Management'
                     },
                     {
-                        text: 'Send a brief email outlining changes',
-                        outcome: 'Major changes need detailed justification.',
-                        experience: -10
+                        text: 'Send a proposal by email',
+                        outcome: 'Major changes need comprehensive communication.',
+                        experience: -25
                     },
                     {
-                        text: 'Implement changes gradually without formal proposal',
-                        outcome: 'Strategic changes need proper planning and approval.',
-                        experience: -15
+                        text: 'Start implementing and inform others later',
+                        outcome: 'Changes should be communicated beforehand.',
+                        experience: -30
                     },
                     {
-                        text: 'Discuss informally in team meetings',
-                        outcome: 'Formal proposals are needed for strategic changes.',
-                        experience: -5
+                        text: 'Let management handle the communication',
+                        outcome: 'Technical leads should drive technical changes.',
+                        experience: -20
                     }
                 ]
             }
@@ -487,17 +514,21 @@ class CommunicationQuiz extends BaseQuiz {
         // Initialize UI and add event listeners
         this.initializeEventListeners();
 
-        this.apiService = new APIService();
-
-        // Add references to screens
-        this.gameScreen = document.getElementById('game-screen');
-        this.outcomeScreen = document.getElementById('outcome-screen');
-        
-        if (!this.gameScreen || !this.outcomeScreen) {
-            console.error('Required screen elements not found');
-        }
-
         this.isLoading = false;
+    }
+
+    showError(message) {
+        const errorDiv = document.createElement('div');
+        errorDiv.className = 'error-notification';
+        errorDiv.setAttribute('role', 'alert');
+        errorDiv.textContent = message;
+        document.body.appendChild(errorDiv);
+        setTimeout(() => errorDiv.remove(), 5000);
+    }
+
+    shouldEndGame(totalQuestionsAnswered, currentXP) {
+        // End game if we've answered all questions or reached max XP
+        return totalQuestionsAnswered >= 15 || currentXP >= this.maxXP;
     }
 
     async saveProgress() {
@@ -559,9 +590,8 @@ class CommunicationQuiz extends BaseQuiz {
                 this.player.tools = progress.tools || [];
                 this.player.questionHistory = progress.questionHistory || [];
                 
-                // Set the current scenario based on the number of completed questions
-                const completedQuestions = this.player.questionHistory.length;
-                this.player.currentScenario = completedQuestions;
+                // Fixed: Set current scenario to the next unanswered question
+                this.player.currentScenario = this.player.questionHistory.length;
 
                 // Update UI
                 this.updateProgress();
@@ -625,11 +655,11 @@ class CommunicationQuiz extends BaseQuiz {
 
     initializeEventListeners() {
         // Add event listeners for the continue and restart buttons
-        document.getElementById('continue-btn').addEventListener('click', () => this.nextScenario());
-        document.getElementById('restart-btn').addEventListener('click', () => this.restartGame());
+        document.getElementById('continue-btn')?.addEventListener('click', () => this.nextScenario());
+        document.getElementById('restart-btn')?.addEventListener('click', () => this.restartGame());
 
         // Add form submission handler
-        document.getElementById('options-form').addEventListener('submit', (e) => {
+        document.getElementById('options-form')?.addEventListener('submit', (e) => {
             e.preventDefault();
             this.handleAnswer();
         });
@@ -665,6 +695,16 @@ class CommunicationQuiz extends BaseQuiz {
         }
 
         const scenario = currentScenarios[this.player.currentScenario];
+        if (!scenario) {
+            console.error('No scenario found for index:', this.player.currentScenario);
+            console.log('Current scenarios:', currentScenarios);
+            console.log('Current state:', {
+                totalAnswered: this.player.questionHistory.length,
+                currentXP: this.player.experience,
+                currentScenario: this.player.currentScenario
+            });
+            return;
+        }
         
         // Show level transition message at the start of each level
         const previousLevel = this.player.questionHistory.length > 0 ? 
@@ -672,28 +712,46 @@ class CommunicationQuiz extends BaseQuiz {
             
         if (this.player.currentScenario === 0 || previousLevel !== scenario.level) {
             const transitionContainer = document.getElementById('level-transition-container');
-            transitionContainer.innerHTML = ''; // Clear any existing messages
-            
-            const levelMessage = document.createElement('div');
-            levelMessage.className = 'level-transition';
-            levelMessage.setAttribute('role', 'alert');
-            levelMessage.textContent = `Starting ${scenario.level} Questions`;
-            
-            transitionContainer.appendChild(levelMessage);
-            transitionContainer.classList.add('active');
-            
-            // Update the level indicator
-            document.getElementById('level-indicator').textContent = `Level: ${scenario.level}`;
-            
-            // Remove the message and container height after animation
-            setTimeout(() => {
-                transitionContainer.classList.remove('active');
+            if (transitionContainer) {
+                transitionContainer.innerHTML = ''; // Clear any existing messages
+                
+                const levelMessage = document.createElement('div');
+                levelMessage.className = 'level-transition';
+                levelMessage.setAttribute('role', 'alert');
+                levelMessage.textContent = `Starting ${scenario.level} Questions`;
+                
+                transitionContainer.appendChild(levelMessage);
+                transitionContainer.classList.add('active');
+                
+                // Update the level indicator
+                const levelIndicator = document.getElementById('level-indicator');
+                if (levelIndicator) {
+                    levelIndicator.textContent = `Level: ${scenario.level}`;
+                }
+                
+                // Remove the message and container height after animation
                 setTimeout(() => {
-                    transitionContainer.innerHTML = '';
-                }, 300); // Wait for height transition to complete
-            }, 3000);
+                    transitionContainer.classList.remove('active');
+                    setTimeout(() => {
+                        transitionContainer.innerHTML = '';
+                    }, 300); // Wait for height transition to complete
+                }, 3000);
+            }
         }
 
+        // Update scenario display
+        const titleElement = document.getElementById('scenario-title');
+        const descriptionElement = document.getElementById('scenario-description');
+        const optionsContainer = document.getElementById('options-container');
+
+        if (!titleElement || !descriptionElement || !optionsContainer) {
+            console.error('Required elements not found');
+            return;
+        }
+
+        titleElement.textContent = scenario.title;
+        descriptionElement.textContent = scenario.description;
+        
         // Create a copy of options with their original indices
         const shuffledOptions = scenario.options.map((option, index) => ({
             ...option,
@@ -706,10 +764,6 @@ class CommunicationQuiz extends BaseQuiz {
             [shuffledOptions[i], shuffledOptions[j]] = [shuffledOptions[j], shuffledOptions[i]];
         }
 
-        document.getElementById('scenario-title').textContent = scenario.title;
-        document.getElementById('scenario-description').textContent = scenario.description;
-        
-        const optionsContainer = document.getElementById('options-container');
         optionsContainer.innerHTML = '';
         
         shuffledOptions.forEach((option, index) => {
@@ -833,17 +887,18 @@ class CommunicationQuiz extends BaseQuiz {
         }
     }
 
-    getCurrentScenarios() {
-        const totalAnswered = this.player.questionHistory.length;
-        const currentXP = this.player.experience;
+    nextScenario() {
+        // Increment scenario counter
+        this.player.currentScenario++;
         
-        // Check for level progression
-        if (totalAnswered >= 10 && currentXP >= this.levelThresholds.intermediate.minXP) {
-            return this.advancedScenarios;
-        } else if (totalAnswered >= 5 && currentXP >= this.levelThresholds.basic.minXP) {
-            return this.intermediateScenarios;
+        // Hide outcome screen and show game screen
+        if (this.outcomeScreen && this.gameScreen) {
+            this.outcomeScreen.classList.add('hidden');
+            this.gameScreen.classList.remove('hidden');
         }
-        return this.basicScenarios;
+        
+        // Display next scenario
+        this.displayScenario();
     }
 
     updateProgress() {
@@ -877,6 +932,48 @@ class CommunicationQuiz extends BaseQuiz {
         }
     }
 
+    restartGame() {
+        // Reset player state
+        this.player = {
+            name: localStorage.getItem('username'),
+            experience: 0,
+            tools: [],
+            currentScenario: 0,
+            questionHistory: []
+        };
+
+        // Reset UI
+        this.gameScreen.classList.remove('hidden');
+        this.outcomeScreen.classList.add('hidden');
+        this.endScreen.classList.add('hidden');
+
+        // Clear any existing transition messages
+        const transitionContainer = document.getElementById('level-transition-container');
+        if (transitionContainer) {
+            transitionContainer.innerHTML = '';
+            transitionContainer.classList.remove('active');
+        }
+
+        // Update progress display
+        this.updateProgress();
+
+        // Start from first scenario
+        this.displayScenario();
+    }
+
+    getCurrentScenarios() {
+        const totalAnswered = this.player.questionHistory.length;
+        const currentXP = this.player.experience;
+        
+        // Check for level progression
+        if (totalAnswered >= 10 && currentXP >= this.levelThresholds.intermediate.minXP) {
+            return this.advancedScenarios;
+        } else if (totalAnswered >= 5 && currentXP >= this.levelThresholds.basic.minXP) {
+            return this.intermediateScenarios;
+        }
+        return this.basicScenarios;
+    }
+
     getCurrentLevel() {
         const totalAnswered = this.player.questionHistory.length;
         const currentXP = this.player.experience;
@@ -889,16 +986,108 @@ class CommunicationQuiz extends BaseQuiz {
         return 'Basic';
     }
 
-    nextScenario() {
-        // Increment scenario counter
-        this.player.currentScenario++;
-        
-        // Hide outcome screen
-        this.outcomeScreen.classList.add('hidden');
-        this.gameScreen.classList.remove('hidden');
-        
-        // Display next scenario
-        this.displayScenario();
+    generateRecommendations() {
+        const recommendationsContainer = document.getElementById('recommendations');
+        if (!recommendationsContainer) return;
+
+        const score = Math.round((this.player.experience / this.maxXP) * 100);
+        const weakAreas = [];
+        const strongAreas = [];
+
+        // Analyze performance in different areas
+        this.player.questionHistory.forEach(record => {
+            const maxXP = record.maxPossibleXP;
+            const earnedXP = record.selectedAnswer.experience;
+            const isCorrect = earnedXP === maxXP;
+
+            // Categorize the question based on its content
+            const questionType = this.categorizeQuestion(record.scenario);
+            
+            if (isCorrect) {
+                if (!strongAreas.includes(questionType)) {
+                    strongAreas.push(questionType);
+                }
+            } else {
+                if (!weakAreas.includes(questionType)) {
+                    weakAreas.push(questionType);
+                }
+            }
+        });
+
+        // Generate recommendations HTML
+        let recommendationsHTML = '';
+
+        if (score >= 80) {
+            recommendationsHTML += '<p>🌟 Excellent performance! Here are some ways to further enhance your skills:</p>';
+        } else if (score >= 60) {
+            recommendationsHTML += '<p>👍 Good effort! Here are some areas to focus on:</p>';
+        } else {
+            recommendationsHTML += '<p>📚 Here are key areas for improvement:</p>';
+        }
+
+        recommendationsHTML += '<ul>';
+
+        // Add recommendations for weak areas
+        weakAreas.forEach(area => {
+            recommendationsHTML += `<li>${this.getRecommendation(area)}</li>`;
+        });
+
+        // If there are strong areas but still room for improvement
+        if (strongAreas.length > 0 && score < 100) {
+            recommendationsHTML += '<li>Continue practicing your strengths in: ' + 
+                strongAreas.join(', ') + '</li>';
+        }
+
+        // Add general recommendations based on score
+        if (score < 70) {
+            recommendationsHTML += `
+                <li>Review the communication best practices documentation</li>
+                <li>Practice active listening techniques</li>
+                <li>Focus on clear and concise messaging</li>
+            `;
+        }
+
+        recommendationsHTML += '</ul>';
+        recommendationsContainer.innerHTML = recommendationsHTML;
+    }
+
+    categorizeQuestion(scenario) {
+        // Categorize questions based on their content
+        const title = scenario.title.toLowerCase();
+        const description = scenario.description.toLowerCase();
+
+        if (title.includes('daily') || description.includes('daily')) {
+            return 'Daily Communication';
+        } else if (title.includes('team') || description.includes('team')) {
+            return 'Team Collaboration';
+        } else if (title.includes('stakeholder') || description.includes('stakeholder')) {
+            return 'Stakeholder Management';
+        } else if (title.includes('conflict') || description.includes('conflict')) {
+            return 'Conflict Resolution';
+        } else if (title.includes('remote') || description.includes('remote')) {
+            return 'Remote Communication';
+        } else if (title.includes('documentation') || description.includes('documentation')) {
+            return 'Documentation';
+        } else if (title.includes('presentation') || description.includes('presentation')) {
+            return 'Presentation Skills';
+        } else {
+            return 'General Communication';
+        }
+    }
+
+    getRecommendation(area) {
+        const recommendations = {
+            'Daily Communication': 'Practice maintaining clear status updates and regular check-ins with team members.',
+            'Team Collaboration': 'Focus on active listening and providing constructive feedback in team settings.',
+            'Stakeholder Management': 'Work on presenting information clearly and managing expectations effectively.',
+            'Conflict Resolution': 'Study conflict resolution techniques and practice diplomatic communication.',
+            'Remote Communication': 'Improve virtual communication skills and use of collaboration tools.',
+            'Documentation': 'Enhance documentation skills with clear, concise, and well-structured content.',
+            'Presentation Skills': 'Practice presenting technical information in a clear and engaging manner.',
+            'General Communication': 'Focus on fundamental communication principles and professional etiquette.'
+        };
+
+        return recommendations[area] || 'Continue practicing general communication skills.';
     }
 
     endGame() {

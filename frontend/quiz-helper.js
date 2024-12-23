@@ -11,6 +11,20 @@ export class BaseQuiz {
         this.isLoading = false;
     }
 
+    showError(message) {
+        const errorDiv = document.createElement('div');
+        errorDiv.className = 'error-notification';
+        errorDiv.setAttribute('role', 'alert');
+        errorDiv.textContent = message;
+        document.body.appendChild(errorDiv);
+        setTimeout(() => errorDiv.remove(), 5000);
+    }
+
+    shouldEndGame(totalQuestionsAnswered, currentXP) {
+        // End game if we've answered all questions or reached max XP
+        return totalQuestionsAnswered >= 15 || currentXP >= this.maxXP;
+    }
+
     // Base quiz methods...
     initializeEventListeners() {
         // Add event listeners for quiz navigation and interaction
