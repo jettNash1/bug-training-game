@@ -113,17 +113,27 @@ class AdminDashboard {
         
         for (const quizId of quizTypes) {
             try {
-                const progress = await this.apiService.getQuizProgress(quizId, username);
-                if (progress && progress.data) {
-                    const questionsAnswered = progress.data.questionHistory ? progress.data.questionHistory.length : 0;
-                    const score = Math.round((questionsAnswered / 15) * 100);
-                    scores.push({
-                        quizName: quizId,
-                        score: score,
-                        questionsAnswered: questionsAnswered,
-                        completedAt: progress.data.lastUpdated || new Date().toISOString(),
-                        lastActive: progress.data.lastUpdated
-                    });
+                const token = localStorage.getItem('token');
+                const response = await fetch(`${this.apiService.baseUrl}/users/${username}/quiz-progress/${quizId}`, {
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                if (response.ok) {
+                    const progress = await response.json();
+                    if (progress && progress.data) {
+                        const questionsAnswered = progress.data.questionHistory ? progress.data.questionHistory.length : 0;
+                        const score = Math.round((questionsAnswered / 15) * 100);
+                        scores.push({
+                            quizName: quizId,
+                            score: score,
+                            questionsAnswered: questionsAnswered,
+                            completedAt: progress.data.lastUpdated || new Date().toISOString(),
+                            lastActive: progress.data.lastUpdated
+                        });
+                    }
                 }
             } catch (error) {
                 console.error(`Error loading progress for ${quizId}:`, error);
@@ -160,39 +170,35 @@ class AdminDashboard {
                 return;
             }
 
-            // Mock user data for testing
-            this.users = [
-                { username: 'testuser1', lastLogin: new Date().toISOString() },
-                { username: 'testuser2', lastLogin: new Date().toISOString() },
-                { username: 'testuser3', lastLogin: new Date().toISOString() }
-            ];
+            // Fetch real user data from the server
+            try {
+                const response = await fetch(`${this.apiService.baseUrl}/users`, {
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
 
-            // Mock progress data
-            for (const user of this.users) {
-                const mockScores = [];
-                const quizTypes = [
-                    'communication', 'initiative', 'time-management', 'tester-mindset',
-                    'risk-analysis', 'risk-management', 'non-functional', 'test-support',
-                    'issue-verification', 'build-verification', 'issue-tracking',
-                    'raising-tickets', 'reports', 'CMS-Testing'
-                ];
-
-                for (const quizId of quizTypes) {
-                    const randomScore = Math.floor(Math.random() * 100);
-                    const randomQuestions = Math.floor((randomScore / 100) * 15);
-                    mockScores.push({
-                        quizName: quizId,
-                        score: randomScore,
-                        questionsAnswered: randomQuestions,
-                        completedAt: new Date().toISOString(),
-                        lastActive: new Date().toISOString()
-                    });
+                if (!response.ok) {
+                    throw new Error('Failed to fetch users');
                 }
-                this.userScores.set(user.username, mockScores);
-            }
 
-            this.updateStatistics();
-            this.updateUserList();
+                const data = await response.json();
+                this.users = data.users || [];
+                console.log('Found users:', this.users);
+
+                // Load progress for each user
+                for (const user of this.users) {
+                    const scores = await this.loadUserProgress(user.username);
+                    this.userScores.set(user.username, scores);
+                }
+
+                this.updateStatistics();
+                this.updateUserList();
+            } catch (error) {
+                console.error('Error fetching users:', error);
+                this.showError('Failed to fetch user data');
+            }
         } catch (error) {
             console.error('Error updating dashboard:', error);
             this.showError('Failed to update dashboard');
@@ -320,7 +326,7 @@ class AdminDashboard {
                                 <div class="progress-details">
                                     <span class="score">${score.score}% Complete</span>
                                     <span class="questions">Questions: ${score.questionsAnswered}/15</span>
-                                    <span class="last-active">Last Active: ${new Date(score.lastActive).toLocaleDateString()}</span>
+                                    <span class="last-active">Last Active: ${score.lastActive ? new Date(score.lastActive).toLocaleDateString() : 'Never'}</span>
                                 </div>
                             </div>
                             <button class="reset-button" onclick="window.adminDashboard.resetUserProgress('${username}', '${score.quizName}')">
@@ -358,17 +364,21 @@ class AdminDashboard {
 
     async resetUserProgress(username, quizName) {
         try {
-            const response = await this.apiService.fetchWithAuth(
-                `${this.apiService.baseUrl}/users/${username}/reset-quiz/${quizName}`,
-                { method: 'POST' }
-            );
+            const token = localStorage.getItem('token');
+            const response = await fetch(`${this.apiService.baseUrl}/users/${username}/quiz-progress/${quizName}/reset`, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                }
+            });
             
-            if (response.ok) {
-                this.showError(`Successfully reset ${quizName} for ${username}`);
-                await this.updateDashboard();
-            } else {
-                this.showError('Failed to reset quiz progress');
+            if (!response.ok) {
+                throw new Error('Failed to reset quiz progress');
             }
+
+            this.showError(`Successfully reset ${quizName} for ${username}`);
+            await this.updateDashboard(); // Refresh the dashboard
         } catch (error) {
             console.error('Error resetting progress:', error);
             this.showError('Failed to reset quiz progress');
