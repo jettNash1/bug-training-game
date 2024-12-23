@@ -437,14 +437,13 @@ class AdminDashboard {
         try {
             // First, update the user's quiz progress in the database
             const response = await this.apiService.fetchWithAuth(
-                `${this.apiService.baseUrl}/admin/users/${username}/quiz-progress/${quizName}/reset`,
+                `${this.apiService.baseUrl}/admin/quiz-progress/reset`,
                 { 
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'
                     },
                     body: JSON.stringify({
-                        reset: true,
                         username: username,
                         quizName: quizName
                     })
