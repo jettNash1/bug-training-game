@@ -1,6 +1,5 @@
 import { APIService } from '../api-service.js';
 import { BaseQuiz } from '../quiz-helper.js';
-import { QuizUser } from '../QuizUser.js';
 
 class TimeManagementQuiz extends BaseQuiz {
     constructor() {
@@ -29,13 +28,8 @@ class TimeManagementQuiz extends BaseQuiz {
             enumerable: true
         });
         
-        // Initialize screen elements
-        this.gameScreen = document.getElementById('game-screen');
-        this.outcomeScreen = document.getElementById('outcome-screen');
-        this.endScreen = document.getElementById('end-screen');
-        
-        // Initialize player state
-        this.player = {
+         // Initialize player state
+         this.player = {
             name: '',
             experience: 0,
             tools: [],
@@ -43,69 +37,926 @@ class TimeManagementQuiz extends BaseQuiz {
             questionHistory: []
         };
 
-        // Initialize event listeners
+        // Initialize API service
+        this.apiService = new APIService();
+
+        // Initialize all screen elements
+        this.gameScreen = document.getElementById('game-screen');
+        this.outcomeScreen = document.getElementById('outcome-screen');
+        this.endScreen = document.getElementById('end-screen');
+        
+        // Verify all required elements exist
+        if (!this.gameScreen) {
+            console.error('Game screen element not found');
+            this.showError('Quiz initialization failed. Please refresh the page.');
+            return;
+        }
+        
+        if (!this.outcomeScreen) {
+            console.error('Outcome screen element not found');
+            this.showError('Quiz initialization failed. Please refresh the page.');
+            return;
+        }
+        
+        if (!this.endScreen) {
+            console.error('End screen element not found');
+            this.showError('Quiz initialization failed. Please refresh the page.');
+            return;
+        }
+
+        // Basic Scenarios (IDs 1-5, 75 XP total)
+        this.basicScenarios = [
+            {
+                id: 1,
+                level: 'Basic',
+                title: 'Weekly Planning',
+                description: 'What\'s the first step in planning your week ahead effectively?',
+                options: [
+                    {
+                        text: 'Review your calendar for meetings and prepare for any necessary preparation or wrap-up activities',
+                        outcome: 'Perfect! Starting with calendar review helps structure your week.',
+                        experience: 15,
+                        tool: 'Calendar Management'
+                    },
+                    {
+                        text: 'Start working on the first task you see',
+                        outcome: 'Planning ahead is more effective than reactive working.',
+                        experience: -5
+                    },
+                    {
+                        text: 'Wait for daily assignments',
+                        outcome: 'Proactive planning is better than waiting for instructions.',
+                        experience: -10
+                    },
+                    {
+                        text: 'Focus only on today\'s tasks',
+                        outcome: 'Looking ahead helps prevent future bottlenecks.',
+                        experience: 0
+                    }
+                ]
+            },
+            {
+                id: 2,
+                level: 'Basic',
+                title: 'Workspace Organization',
+                description: 'How should you prepare your workspace for efficient testing?',
+                options: [
+                    {
+                        text: 'Clean workspace, organized email inbox, pinned relevant channels, charged devices',
+                        outcome: 'Excellent! An organized workspace increases efficiency.',
+                        experience: 15,
+                        tool: 'Workspace Management'
+                    },
+                    {
+                        text: 'Keep all channels and tabs open',
+                        outcome: 'Too many open items can cause confusion and slow you down.',
+                        experience: -5
+                    },
+                    {
+                        text: 'Start working without preparation',
+                        outcome: 'Preparation prevents delays and increases productivity.',
+                        experience: -10
+                    },
+                    {
+                        text: 'Only focus on device setup',
+                        outcome: 'Complete workspace organization is important.',
+                        experience: 0
+                    }
+                ]
+            },
+            {
+                id: 3,
+                level: 'Basic',
+                title: 'Project Documentation Review',
+                description: 'When should you review project documentation for a new assignment?',
+                options: [
+                    {
+                        text: 'Before the first session, using unsold time if needed',
+                        outcome: 'Perfect! Early preparation ensures efficient testing.',
+                        experience: 15,
+                        tool: 'Documentation Review'
+                    },
+                    {
+                        text: 'During the first test session',
+                        outcome: 'Review should be done before testing begins.',
+                        experience: -5
+                    },
+                    {
+                        text: 'Only when issues arise',
+                        outcome: 'Proactive review prevents issues and saves time.',
+                        experience: -10
+                    },
+                    {
+                        text: 'After the first standup',
+                        outcome: 'Documentation should be reviewed before meetings.',
+                        experience: 0
+                    }
+                ]
+            },
+            {
+                id: 4,
+                level: 'Basic',
+                title: 'Daily Preparation',
+                description: 'What\'s the most important first step in preparing for your day?',
+                options: [
+                    {
+                        text: 'Check the resource sheet and review any project changes',
+                        outcome: 'Excellent! Resource updates are crucial for daily planning.',
+                        experience: 15,
+                        tool: 'Resource Management'
+                    },
+                    {
+                        text: 'Start testing immediately',
+                        outcome: 'Checking resources first prevents misdirected effort.',
+                        experience: -10
+                    },
+                    {
+                        text: 'Wait for team instructions',
+                        outcome: 'Proactive preparation is better than waiting.',
+                        experience: -5
+                    },
+                    {
+                        text: 'Review yesterday\'s work only',
+                        outcome: 'Current resource status is most important.',
+                        experience: 0
+                    }
+                ]
+            },
+            {
+                id: 5,
+                level: 'Basic',
+                title: 'Meeting Management',
+                description: 'How should you handle meetings in your schedule?',
+                options: [
+                    {
+                        text: 'Factor in preparation and wrap-up time, not just meeting duration',
+                        outcome: 'Perfect! Complete meeting time management includes preparation.',
+                        experience: 15,
+                        tool: 'Meeting Planning'
+                    },
+                    {
+                        text: 'Schedule back-to-back',
+                        outcome: 'Buffer time is needed for effective meetings.',
+                        experience: -10
+                    },
+                    {
+                        text: 'Join at exact start time',
+                        outcome: 'Preparation time ensures productive meetings.',
+                        experience: -5
+                    },
+                    {
+                        text: 'Focus only on meeting duration',
+                        outcome: 'Consider full meeting impact on schedule.',
+                        experience: 0
+                    }
+                ]
+            }
+        ];
+
+        // Intermediate Scenarios (IDs 6-10, 125 XP total)
+        this.intermediateScenarios = [
+            {
+                id: 6,
+                level: 'Intermediate',
+                title: 'Project Timing Estimation',
+                description: 'How do you determine appropriate time allocation for test activities?',
+                options: [
+                    {
+                        text: 'Review SoW timings, environment count, software size, and core user journeys',
+                        outcome: 'Excellent! Comprehensive review ensures accurate timing.',
+                        experience: 25,
+                        tool: 'Time Estimation'
+                    },
+                    {
+                        text: 'Use standard timings for all projects',
+                        outcome: 'Each project needs custom time estimation.',
+                        experience: -15
+                    },
+                    {
+                        text: 'Base on previous similar projects only',
+                        outcome: 'Current project specifics need consideration.',
+                        experience: -10
+                    },
+                    {
+                        text: 'Estimate without reviewing scope',
+                        outcome: 'Scope review is crucial for timing.',
+                        experience: -5
+                    }
+                ]
+            },
+            {
+                id: 7,
+                level: 'Intermediate',
+                title: 'Team Workload Distribution',
+                description: 'How do you divide test tasks among team members?',
+                options: [
+                    {
+                        text: 'Consider experience levels, individual paces, and project familiarity',
+                        outcome: 'Perfect! Fair distribution considers individual capabilities.',
+                        experience: 25,
+                        tool: 'Workload Management'
+                    },
+                    {
+                        text: 'Divide equally by number',
+                        outcome: 'Task division should consider experience levels.',
+                        experience: -15
+                    },
+                    {
+                        text: 'Assign randomly',
+                        outcome: 'Strategic assignment ensures efficient testing.',
+                        experience: -10
+                    },
+                    {
+                        text: 'Let team members choose',
+                        outcome: 'Structured distribution needed for coverage.',
+                        experience: -5
+                    }
+                ]
+            },
+            {
+                id: 8,
+                level: 'Intermediate',
+                title: 'Test Coverage Prioritization',
+                description: 'How do you prioritize different areas of testing?',
+                options: [
+                    {
+                        text: 'Analyze client priorities, core functions, and user patterns',
+                        outcome: 'Excellent! Strategic prioritization maximizes value.',
+                        experience: 25,
+                        tool: 'Priority Management'
+                    },
+                    {
+                        text: 'Test in linear order',
+                        outcome: 'Priority-based testing is more effective.',
+                        experience: -15
+                    },
+                    {
+                        text: 'Focus on easy areas first',
+                        outcome: 'Prioritize based on importance, not ease.',
+                        experience: -10
+                    },
+                    {
+                        text: 'Follow personal preferences',
+                        outcome: 'Client needs should drive priorities.',
+                        experience: -5
+                    }
+                ]
+            },
+            {
+                id: 9,
+                level: 'Intermediate',
+                title: 'Progress Monitoring',
+                description: 'How do you track testing progress throughout the day?',
+                options: [
+                    {
+                        text: 'Regularly assess coverage, adjust timings, and communicate any concerns',
+                        outcome: 'Perfect! Active monitoring enables timely adjustments.',
+                        experience: 25,
+                        tool: 'Progress Tracking'
+                    },
+                    {
+                        text: 'Wait until end of day',
+                        outcome: 'Regular progress checks prevent delays.',
+                        experience: -15
+                    },
+                    {
+                        text: 'Only track when asked',
+                        outcome: 'Proactive monitoring is essential.',
+                        experience: -10
+                    },
+                    {
+                        text: 'Focus on speed over tracking',
+                        outcome: 'Balance speed with progress monitoring.',
+                        experience: -5
+                    }
+                ]
+            },
+            {
+                id: 10,
+                level: 'Intermediate',
+                title: 'Environment Testing Order',
+                description: 'How do you manage time across multiple test environments?',
+                options: [
+                    {
+                        text: 'Start with primary environment, then adjust timing for others based on global issues',
+                        outcome: 'Excellent! Efficient environment coverage strategy.',
+                        experience: 25,
+                        tool: 'Environment Management'
+                    },
+                    {
+                        text: 'Test all equally',
+                        outcome: 'Adapt timing based on previous findings.',
+                        experience: -15
+                    },
+                    {
+                        text: 'Random environment order',
+                        outcome: 'Strategic order maximizes efficiency.',
+                        experience: -10
+                    },
+                    {
+                        text: 'Skip secondary environments',
+                        outcome: 'All environments need appropriate coverage.',
+                        experience: -5
+                    }
+                ]
+            }
+        ];
+
+        // Advanced Scenarios (IDs 11-15, 100 XP total)
+        this.advancedScenarios = [
+            {
+                id: 11,
+                level: 'Advanced',
+                title: 'Multiple Project Management',
+                description: 'How do you manage time when working on multiple projects in a week?',
+                options: [
+                    {
+                        text: 'Review all project requirements, create daily schedules, maintain clear separation',
+                        outcome: 'Perfect! Structured approach to multiple projects.',
+                        experience: 20,
+                        tool: 'Multi-Project Management'
+                    },
+                    {
+                        text: 'Handle projects as they come',
+                        outcome: 'Advance planning needed for multiple projects.',
+                        experience: -15
+                    },
+                    {
+                        text: 'Focus on one project at a time',
+                        outcome: 'Balance needed across all projects.',
+                        experience: -10
+                    },
+                    {
+                        text: 'Multitask between projects',
+                        outcome: 'Clear project separation is more effective.',
+                        experience: -5
+                    }
+                ]
+            },
+            {
+                id: 12,
+                level: 'Advanced',
+                title: 'Risk Management',
+                description: 'How do you handle potential timing risks in a project?',
+                options: [
+                    {
+                        text: 'Identify risks early, implement mitigation steps, communicate with PM',
+                        outcome: 'Excellent! Proactive risk management saves time.',
+                        experience: 20,
+                        tool: 'Risk Management'
+                    },
+                    {
+                        text: 'Deal with issues as they arise',
+                        outcome: 'Early risk identification prevents delays.',
+                        experience: -15
+                    },
+                    {
+                        text: 'Ignore minor risks',
+                        outcome: 'All risks need appropriate attention.',
+                        experience: -10
+                    },
+                    {
+                        text: 'Handle risks without reporting',
+                        outcome: 'Risk communication is essential.',
+                        experience: -5
+                    }
+                ]
+            },
+            {
+                id: 13,
+                level: 'Advanced',
+                title: 'Late Stage Issues',
+                description: 'You discover major issues late in the testing window. How do you manage this?',
+                options: [
+                    {
+                        text: 'Immediately notify PM, document thoroughly, reprioritize remaining time',
+                        outcome: 'Perfect! Quick response and clear communication.',
+                        experience: 20,
+                        tool: 'Issue Management'
+                    },
+                    {
+                        text: 'Continue with original plan',
+                        outcome: 'Major issues need immediate attention.',
+                        experience: -15
+                    },
+                    {
+                        text: 'Rush through remaining tests',
+                        outcome: 'Maintain quality while reprioritizing.',
+                        experience: -10
+                    },
+                    {
+                        text: 'Skip documentation for speed',
+                        outcome: 'Proper documentation remains important.',
+                        experience: -5
+                    }
+                ]
+            },
+            {
+                id: 14,
+                level: 'Advanced',
+                title: 'Resource Changes',
+                description: 'How do you handle unexpected resource sheet changes?',
+                options: [
+                    {
+                        text: 'Review changes immediately, adjust plans, ensure smooth transitions',
+                        outcome: 'Excellent! Adaptable planning maintains efficiency.',
+                        experience: 20,
+                        tool: 'Change Management'
+                    },
+                    {
+                        text: 'Continue current task',
+                        outcome: 'Quick adaptation to changes needed.',
+                        experience: -15
+                    },
+                    {
+                        text: 'Wait for instructions',
+                        outcome: 'Proactive response to changes required.',
+                        experience: -10
+                    },
+                    {
+                        text: 'Ignore minor changes',
+                        outcome: 'All resource changes need attention.',
+                        experience: -5
+                    }
+                ]
+            },
+            {
+                id: 15,
+                level: 'Advanced',
+                title: 'Long-Term Planning',
+                description: 'How do you maintain effective time management on long-term projects?',
+                options: [
+                    {
+                        text: 'Establish sustainable routines, regularly review efficiency, adapt processes as needed',
+                        outcome: 'Perfect! Sustainable approach to long-term projects.',
+                        experience: 20,
+                        tool: 'Long-term Planning'
+                    },
+                    {
+                        text: 'Keep same routine without review',
+                        outcome: 'Regular process review improves efficiency.',
+                        experience: -15
+                    },
+                    {
+                        text: 'Focus only on daily tasks',
+                        outcome: 'Long-term view needed for sustainability.',
+                        experience: -10
+                    },
+                    {
+                        text: 'Change processes frequently',
+                        outcome: 'Balanced adaptation better than frequent changes.',
+                        experience: -5
+                    }
+                ]
+            }
+        ];
+
+        // Initialize UI and add event listeners
         this.initializeEventListeners();
 
-        // Basic Scenarios (5 questions)
-        this.basicScenarios = [
-            // ... existing scenarios ...
-        ];
-
-        // Intermediate Scenarios (5 questions)
-        this.intermediateScenarios = [
-            // ... existing scenarios ...
-        ];
-
-        // Advanced Scenarios (5 questions)
-        this.advancedScenarios = [
-            // ... existing scenarios ...
-        ];
+        this.isLoading = false;
     }
 
     showError(message) {
-        const errorElement = document.getElementById('error-message');
-        if (errorElement) {
-            errorElement.textContent = message;
-            errorElement.style.display = 'block';
-            setTimeout(() => {
-                errorElement.style.display = 'none';
-            }, 3000);
-        }
+        const errorDiv = document.createElement('div');
+        errorDiv.className = 'error-notification';
+        errorDiv.setAttribute('role', 'alert');
+        errorDiv.textContent = message;
+        document.body.appendChild(errorDiv);
+        setTimeout(() => errorDiv.remove(), 5000);
     }
 
-    shouldEndGame() {
-        return this.player.currentScenario >= this.getTotalScenarios();
-    }
-
-    initializeEventListeners() {
-        document.getElementById('start-button').addEventListener('click', () => this.startGame());
-        document.getElementById('next-button').addEventListener('click', () => this.handleNextScenario());
-        document.getElementById('restart-button').addEventListener('click', () => this.restartGame());
-    }
-
-    async handleScenarioComplete(selectedOption) {
-        // Save progress
-        await this.saveProgress();
-        
-        // Update UI
-        this.updateScenarioOutcome(selectedOption);
-        
-        // Check if game should end
-        if (this.shouldEndGame()) {
-            this.showEndScreen();
-        }
+    shouldEndGame(totalQuestionsAnswered, currentXP) {
+        // End game if we've answered all questions or reached max XP
+        return totalQuestionsAnswered >= 15 || currentXP >= this.maxXP;
     }
 
     async saveProgress() {
+        const progress = {
+            experience: this.player.experience,
+            tools: this.player.tools,
+            currentScenario: this.player.currentScenario,
+            questionHistory: this.player.questionHistory,
+            lastUpdated: new Date().toISOString()
+        };
+
         try {
-            await APIService.saveQuizProgress(this.quizName, {
-                experience: this.player.experience,
-                currentScenario: this.player.currentScenario,
-                questionHistory: this.player.questionHistory
-            });
+            const username = localStorage.getItem('username');
+            if (!username) {
+                console.error('No user found, cannot save progress');
+                return;
+            }
+            
+            // Use user-specific key for localStorage
+            const storageKey = `quiz_progress_${username}_${this.quizName}`;
+            localStorage.setItem(storageKey, JSON.stringify({ progress }));
+            
+            await this.apiService.saveQuizProgress(this.quizName, progress);
         } catch (error) {
-            this.showError('Failed to save progress');
+            console.error('Failed to save progress:', error);
+            // Continue without saving - don't interrupt the user experience
         }
+    }
+
+    async loadProgress() {
+        try {
+            const username = localStorage.getItem('username');
+            if (!username) {
+                console.error('No user found, cannot load progress');
+                return false;
+            }
+
+            // Use user-specific key for localStorage
+            const storageKey = `quiz_progress_${username}_${this.quizName}`;
+            const savedProgress = await this.apiService.getQuizProgress(this.quizName);
+            let progress = null;
+            
+            if (savedProgress && savedProgress.data) {
+                progress = savedProgress.data;
+            } else {
+                // Try loading from localStorage
+                const localData = localStorage.getItem(storageKey);
+                if (localData) {
+                    const parsed = JSON.parse(localData);
+                    if (parsed.progress) {
+                        progress = parsed.progress;
+                    }
+                }
+            }
+
+            if (progress) {
+                // Set the player state from progress
+                this.player.experience = progress.experience || 0;
+                this.player.tools = progress.tools || [];
+                this.player.questionHistory = progress.questionHistory || [];
+                
+                // Fixed: Set current scenario to the next unanswered question
+                this.player.currentScenario = this.player.questionHistory.length;
+
+                // Update UI
+                this.updateProgress();
+                return true;
+            }
+            return false;
+        } catch (error) {
+            console.error('Failed to load progress:', error);
+            return false;
+        }
+    }
+
+    async startGame() {
+        if (this.isLoading) return;
+        
+        try {
+            this.isLoading = true;
+            // Show loading state
+            const loadingIndicator = document.getElementById('loading-indicator');
+            if (loadingIndicator) {
+                loadingIndicator.classList.remove('hidden');
+            }
+            // Set player name from localStorage
+            this.player.name = localStorage.getItem('username');
+            if (!this.player.name) {
+                window.location.href = '/login.html';
+                return;
+            }
+            const hasProgress = await this.loadProgress();
+            
+            if (!hasProgress) {
+                // Reset player state if no valid progress exists
+                this.player.experience = 0;
+                this.player.tools = [];
+                this.player.currentScenario = 0;
+                this.player.questionHistory = [];
+            }
+            
+            // Clear any existing transition messages
+            const transitionContainer = document.getElementById('level-transition-container');
+            if (transitionContainer) {
+                transitionContainer.innerHTML = '';
+                transitionContainer.classList.remove('active');
+            }
+            
+            await this.displayScenario();
+        } catch (error) {
+            console.error('Failed to start game:', error);
+            this.showError('Failed to start the quiz. Please try refreshing the page.');
+        } finally {
+            this.isLoading = false;
+            // Hide loading state
+            const loadingIndicator = document.getElementById('loading-indicator');
+            if (loadingIndicator) {
+                loadingIndicator.classList.add('hidden');
+            }
+        }
+    }
+
+    initializeEventListeners() {
+        // Add event listeners for the continue and restart buttons
+        document.getElementById('continue-btn')?.addEventListener('click', () => this.nextScenario());
+        document.getElementById('restart-btn')?.addEventListener('click', () => this.restartGame());
+
+        // Add form submission handler
+        document.getElementById('options-form')?.addEventListener('submit', (e) => {
+            e.preventDefault();
+            this.handleAnswer();
+        });
+
+        // Add keyboard navigation
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' && e.target.type === 'radio') {
+                this.handleAnswer();
+            }
+        });
+    }
+
+    displayScenario() {
+        const currentScenarios = this.getCurrentScenarios();
+        
+        // Check if quiz should end
+        if (this.player.questionHistory.length >= 15) {
+            this.endGame();
+            return;
+        }
+        
+        if (this.player.currentScenario >= currentScenarios.length) {
+            const totalQuestionsAnswered = this.player.questionHistory.length;
+            
+            if (this.shouldEndGame(totalQuestionsAnswered, this.player.experience)) {
+                this.endGame();
+                return;
+            }
+            
+            this.player.currentScenario = 0;
+            this.displayScenario();
+            return;
+        }
+
+        const scenario = currentScenarios[this.player.currentScenario];
+        if (!scenario) {
+            console.error('No scenario found for index:', this.player.currentScenario);
+            console.log('Current scenarios:', currentScenarios);
+            console.log('Current state:', {
+                totalAnswered: this.player.questionHistory.length,
+                currentXP: this.player.experience,
+                currentScenario: this.player.currentScenario
+            });
+            return;
+        }
+        
+        // Show level transition message at the start of each level
+        const previousLevel = this.player.questionHistory.length > 0 ? 
+            this.player.questionHistory[this.player.questionHistory.length - 1].scenario.level : null;
+            
+        if (this.player.currentScenario === 0 || previousLevel !== scenario.level) {
+            const transitionContainer = document.getElementById('level-transition-container');
+            if (transitionContainer) {
+                transitionContainer.innerHTML = ''; // Clear any existing messages
+                
+                const levelMessage = document.createElement('div');
+                levelMessage.className = 'level-transition';
+                levelMessage.setAttribute('role', 'alert');
+                levelMessage.textContent = `Starting ${scenario.level} Questions`;
+                
+                transitionContainer.appendChild(levelMessage);
+                transitionContainer.classList.add('active');
+                
+                // Update the level indicator
+                const levelIndicator = document.getElementById('level-indicator');
+                if (levelIndicator) {
+                    levelIndicator.textContent = `Level: ${scenario.level}`;
+                }
+                
+                // Remove the message and container height after animation
+                setTimeout(() => {
+                    transitionContainer.classList.remove('active');
+                    setTimeout(() => {
+                        transitionContainer.innerHTML = '';
+                    }, 300); // Wait for height transition to complete
+                }, 3000);
+            }
+        }
+
+        // Update scenario display
+        const titleElement = document.getElementById('scenario-title');
+        const descriptionElement = document.getElementById('scenario-description');
+        const optionsContainer = document.getElementById('options-container');
+
+        if (!titleElement || !descriptionElement || !optionsContainer) {
+            console.error('Required elements not found');
+            return;
+        }
+
+        titleElement.textContent = scenario.title;
+        descriptionElement.textContent = scenario.description;
+        
+        // Create a copy of options with their original indices
+        const shuffledOptions = scenario.options.map((option, index) => ({
+            ...option,
+            originalIndex: index
+        }));
+        
+        // Shuffle the options
+        for (let i = shuffledOptions.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [shuffledOptions[i], shuffledOptions[j]] = [shuffledOptions[j], shuffledOptions[i]];
+        }
+
+        optionsContainer.innerHTML = '';
+        
+        shuffledOptions.forEach((option, index) => {
+            const optionElement = document.createElement('div');
+            optionElement.className = 'option';
+            optionElement.innerHTML = `
+                <input type="radio" 
+                    name="option" 
+                    value="${option.originalIndex}" 
+                    id="option${index}"
+                    tabindex="0"
+                    aria-label="${option.text}"
+                    role="radio">
+                <label for="option${index}">${option.text}</label>
+            `;
+            optionsContainer.appendChild(optionElement);
+        });
+
+        this.updateProgress();
+    }
+
+    async handleAnswer() {
+        if (this.isLoading) return;
+        
+        const submitButton = document.querySelector('.submit-button');
+        if (submitButton) {
+            submitButton.disabled = true;
+        }
+        
+        try {
+            this.isLoading = true;
+            const selectedOption = document.querySelector('input[name="option"]:checked');
+            if (!selectedOption) return;
+
+            const currentScenarios = this.getCurrentScenarios();
+            const scenario = currentScenarios[this.player.currentScenario];
+            const originalIndex = parseInt(selectedOption.value);
+            
+            const selectedAnswer = scenario.options[originalIndex];
+
+            // Update player state
+            this.player.experience = Math.max(0, Math.min(this.maxXP, this.player.experience + selectedAnswer.experience));
+            this.player.questionHistory.push({
+                scenario: scenario,
+                selectedAnswer: selectedAnswer,
+                maxPossibleXP: Math.max(...scenario.options.map(o => o.experience))
+            });
+
+            // Save progress with current scenario (before incrementing)
+            await this.saveProgress();
+
+            // Also save quiz result and update display
+            const username = localStorage.getItem('username');
+            if (username) {
+                const quizUser = new QuizUser(username);
+                const score = Math.round((this.player.experience / this.maxXP) * 100);
+                await quizUser.updateQuizScore('communication', score);
+                
+                // Update progress display on index page
+                const progressElement = document.querySelector('#communication-progress');
+                if (progressElement) {
+                    const totalQuestions = 15;
+                    const completedQuestions = this.player.questionHistory.length;
+                    const percentComplete = Math.round((completedQuestions / totalQuestions) * 100);
+                    
+                    // Only update if we're on the index page and this is the current user
+                    const onIndexPage = window.location.pathname.endsWith('index.html');
+                    if (onIndexPage) {
+                        progressElement.textContent = `${percentComplete}% Complete`;
+                        progressElement.classList.remove('hidden');
+                        
+                        // Update quiz item styling
+                        const quizItem = document.querySelector('[data-quiz="communication"]');
+                        if (quizItem) {
+                            quizItem.classList.remove('completed', 'in-progress');
+                            if (percentComplete === 100) {
+                                quizItem.classList.add('completed');
+                                progressElement.classList.add('completed');
+                                progressElement.classList.remove('in-progress');
+                            } else if (percentComplete > 0) {
+                                quizItem.classList.add('in-progress');
+                                progressElement.classList.add('in-progress');
+                                progressElement.classList.remove('completed');
+                            }
+                        }
+                    }
+                }
+            }
+
+            // Show outcome screen
+            if (this.gameScreen && this.outcomeScreen) {
+                this.gameScreen.classList.add('hidden');
+                this.outcomeScreen.classList.remove('hidden');
+            }
+            
+            // Update outcome display
+            document.getElementById('outcome-text').textContent = selectedAnswer.outcome;
+            const xpText = selectedAnswer.experience >= 0 ? 
+                `Experience gained: +${selectedAnswer.experience}` : 
+                `Experience: ${selectedAnswer.experience}`;
+            document.getElementById('xp-gained').textContent = xpText;
+            
+            if (selectedAnswer.tool) {
+                document.getElementById('tool-gained').textContent = `Tool acquired: ${selectedAnswer.tool}`;
+                if (!this.player.tools.includes(selectedAnswer.tool)) {
+                    this.player.tools.push(selectedAnswer.tool);
+                }
+            } else {
+                document.getElementById('tool-gained').textContent = '';
+            }
+
+            this.updateProgress();
+        } catch (error) {
+            console.error('Failed to handle answer:', error);
+            this.showError('Failed to save your answer. Please try again.');
+        } finally {
+            this.isLoading = false;
+            if (submitButton) {
+                submitButton.disabled = false;
+            }
+        }
+    }
+
+    nextScenario() {
+        // Increment scenario counter
+        this.player.currentScenario++;
+        
+        // Hide outcome screen and show game screen
+        if (this.outcomeScreen && this.gameScreen) {
+            this.outcomeScreen.classList.add('hidden');
+            this.gameScreen.classList.remove('hidden');
+        }
+        
+        // Display next scenario
+        this.displayScenario();
+    }
+
+    updateProgress() {
+        // Update experience display
+        const experienceDisplay = document.getElementById('experience-display');
+        if (experienceDisplay) {
+            experienceDisplay.textContent = `XP: ${this.player.experience}/${this.maxXP}`;
+        }
+
+        // Update question progress
+        const questionProgress = document.getElementById('question-progress');
+        const progressFill = document.getElementById('progress-fill');
+        if (questionProgress && progressFill) {
+            const totalQuestions = 15;
+            const completedQuestions = this.player.questionHistory.length;
+            const currentQuestion = completedQuestions + 1;
+            
+            // Update question counter
+            questionProgress.textContent = `Question: ${currentQuestion}/${totalQuestions}`;
+            
+            // Update progress bar
+            const progressPercentage = (completedQuestions / totalQuestions) * 100;
+            progressFill.style.width = `${progressPercentage}%`;
+        }
+
+        // Update level indicator
+        const levelIndicator = document.getElementById('level-indicator');
+        if (levelIndicator) {
+            const currentLevel = this.getCurrentLevel();
+            levelIndicator.textContent = `Level: ${currentLevel}`;
+        }
+    }
+
+    restartGame() {
+        // Reset player state
+        this.player = {
+            name: localStorage.getItem('username'),
+            experience: 0,
+            tools: [],
+            currentScenario: 0,
+            questionHistory: []
+        };
+
+        // Reset UI
+        this.gameScreen.classList.remove('hidden');
+        this.outcomeScreen.classList.add('hidden');
+        this.endScreen.classList.add('hidden');
+
+        // Clear any existing transition messages
+        const transitionContainer = document.getElementById('level-transition-container');
+        if (transitionContainer) {
+            transitionContainer.innerHTML = '';
+            transitionContainer.classList.remove('active');
+        }
+
+        // Update progress display
+        this.updateProgress();
+
+        // Start from first scenario
+        this.displayScenario();
     }
 
     getCurrentScenarios() {
@@ -131,6 +982,164 @@ class TimeManagementQuiz extends BaseQuiz {
             return 'Intermediate';
         }
         return 'Basic';
+    }
+
+    generateRecommendations() {
+        const recommendationsContainer = document.getElementById('recommendations');
+        if (!recommendationsContainer) return;
+
+        const score = Math.round((this.player.experience / this.maxXP) * 100);
+        const weakAreas = [];
+        const strongAreas = [];
+
+        // Analyze performance in different areas
+        this.player.questionHistory.forEach(record => {
+            const maxXP = record.maxPossibleXP;
+            const earnedXP = record.selectedAnswer.experience;
+            const isCorrect = earnedXP === maxXP;
+
+            // Categorize the question based on its content
+            const questionType = this.categorizeQuestion(record.scenario);
+            
+            if (isCorrect) {
+                if (!strongAreas.includes(questionType)) {
+                    strongAreas.push(questionType);
+                }
+            } else {
+                if (!weakAreas.includes(questionType)) {
+                    weakAreas.push(questionType);
+                }
+            }
+        });
+
+        // Generate recommendations HTML
+        let recommendationsHTML = '';
+
+        if (score >= 80) {
+            recommendationsHTML += '<p>🌟 Excellent performance! Here are some ways to further enhance your skills:</p>';
+        } else if (score >= 60) {
+            recommendationsHTML += '<p>👍 Good effort! Here are some areas to focus on:</p>';
+        } else {
+            recommendationsHTML += '<p>📚 Here are key areas for improvement:</p>';
+        }
+
+        recommendationsHTML += '<ul>';
+
+        // Add recommendations for weak areas
+        weakAreas.forEach(area => {
+            recommendationsHTML += `<li>${this.getRecommendation(area)}</li>`;
+        });
+
+        // If there are strong areas but still room for improvement
+        if (strongAreas.length > 0 && score < 100) {
+            recommendationsHTML += '<li>Continue practicing your strengths in: ' + 
+                strongAreas.join(', ') + '</li>';
+        }
+
+        // Add general recommendations based on score
+        if (score < 70) {
+            recommendationsHTML += `
+                <li>Review the communication best practices documentation</li>
+                <li>Practice active listening techniques</li>
+                <li>Focus on clear and concise messaging</li>
+            `;
+        }
+
+        recommendationsHTML += '</ul>';
+        recommendationsContainer.innerHTML = recommendationsHTML;
+    }
+
+    categorizeQuestion(scenario) {
+        // Categorize questions based on their content
+        const title = scenario.title.toLowerCase();
+        const description = scenario.description.toLowerCase();
+
+        if (title.includes('daily') || description.includes('daily')) {
+            return 'Daily Communication';
+        } else if (title.includes('team') || description.includes('team')) {
+            return 'Team Collaboration';
+        } else if (title.includes('stakeholder') || description.includes('stakeholder')) {
+            return 'Stakeholder Management';
+        } else if (title.includes('conflict') || description.includes('conflict')) {
+            return 'Conflict Resolution';
+        } else if (title.includes('remote') || description.includes('remote')) {
+            return 'Remote Communication';
+        } else if (title.includes('documentation') || description.includes('documentation')) {
+            return 'Documentation';
+        } else if (title.includes('presentation') || description.includes('presentation')) {
+            return 'Presentation Skills';
+        } else {
+            return 'General Communication';
+        }
+    }
+
+    getRecommendation(area) {
+        const recommendations = {
+            'Daily Communication': 'Practice maintaining clear status updates and regular check-ins with team members.',
+            'Team Collaboration': 'Focus on active listening and providing constructive feedback in team settings.',
+            'Stakeholder Management': 'Work on presenting information clearly and managing expectations effectively.',
+            'Conflict Resolution': 'Study conflict resolution techniques and practice diplomatic communication.',
+            'Remote Communication': 'Improve virtual communication skills and use of collaboration tools.',
+            'Documentation': 'Enhance documentation skills with clear, concise, and well-structured content.',
+            'Presentation Skills': 'Practice presenting technical information in a clear and engaging manner.',
+            'General Communication': 'Focus on fundamental communication principles and professional etiquette.'
+        };
+
+        return recommendations[area] || 'Continue practicing general communication skills.';
+    }
+
+    endGame() {
+        this.gameScreen.classList.add('hidden');
+        this.outcomeScreen.classList.add('hidden');
+        this.endScreen.classList.remove('hidden');
+
+        const finalScore = Math.min(this.player.experience, this.maxXP);
+        const scorePercentage = Math.round((finalScore / this.maxXP) * 100);
+        
+        // Save the final quiz result
+        const username = localStorage.getItem('username');
+        if (username) {
+            try {
+                const user = new QuizUser(username);
+                user.updateQuizScore(this.quizName, scorePercentage);
+                console.log('Final quiz score saved:', scorePercentage);
+            } catch (error) {
+                console.error('Error saving final quiz score:', error);
+            }
+        }
+
+        document.getElementById('final-score').textContent = `Final Score: ${finalScore}/${this.maxXP}`;
+
+        const performanceSummary = document.getElementById('performance-summary');
+        const threshold = this.performanceThresholds.find(t => finalScore >= t.threshold);
+        performanceSummary.textContent = threshold.message;
+
+        // Display question review
+        const reviewList = document.getElementById('question-review');
+        reviewList.innerHTML = '';
+        
+        this.player.questionHistory.forEach((record, index) => {
+            const reviewItem = document.createElement('div');
+            reviewItem.className = 'review-item';
+            
+            const maxXP = record.maxPossibleXP;
+            const earnedXP = record.selectedAnswer.experience;
+            const isCorrect = earnedXP === maxXP;
+            
+            reviewItem.classList.add(isCorrect ? 'correct' : 'incorrect');
+            
+            reviewItem.innerHTML = `
+                <h4>Question ${index + 1}</h4>
+                <p>${record.scenario.description}</p>
+                <p><strong>Your Answer:</strong> ${record.selectedAnswer.text}</p>
+                <p><strong>Outcome:</strong> ${record.selectedAnswer.outcome}</p>
+                <p><strong>Experience Earned:</strong> ${earnedXP}/${maxXP}</p>
+            `;
+            
+            reviewList.appendChild(reviewItem);
+        });
+
+        this.generateRecommendations();
     }
 }
 

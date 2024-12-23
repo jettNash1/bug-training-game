@@ -1,7 +1,5 @@
-// Required imports
 import { APIService } from '../api-service.js';
 import { BaseQuiz } from '../quiz-helper.js';
-import { QuizUser } from '../QuizUser.js';
 
 class IssueVerificationQuiz extends BaseQuiz {
     constructor() {
@@ -37,6 +35,33 @@ class IssueVerificationQuiz extends BaseQuiz {
             currentScenario: 0,
             questionHistory: []
         };
+        
+        // Initialize API service
+        this.apiService = new APIService();
+
+        // Initialize all screen elements
+        this.gameScreen = document.getElementById('game-screen');
+        this.outcomeScreen = document.getElementById('outcome-screen');
+        this.endScreen = document.getElementById('end-screen');
+       
+        // Verify all required elements exist
+        if (!this.gameScreen) {
+            console.error('Game screen element not found');
+            this.showError('Quiz initialization failed. Please refresh the page.');
+            return;
+        }
+       
+        if (!this.outcomeScreen) {
+            console.error('Outcome screen element not found');
+            this.showError('Quiz initialization failed. Please refresh the page.');
+            return;
+        }
+       
+        if (!this.endScreen) {
+            console.error('End screen element not found');
+            this.showError('Quiz initialization failed. Please refresh the page.');
+            return;
+        }
 
         // Basic Scenarios (IDs 1-5, 75 XP total)
         this.basicScenarios = [
@@ -485,19 +510,24 @@ class IssueVerificationQuiz extends BaseQuiz {
             }
         ];
 
-        // Initialize screen elements
-        this.gameScreen = document.getElementById('game-screen');
-        this.outcomeScreen = document.getElementById('outcome-screen');
-        this.endScreen = document.getElementById('end-screen');
-        
-        if (!this.gameScreen || !this.outcomeScreen || !this.endScreen) {
-            throw new Error('Required screen elements not found');
-        }
-
+        // Initialize UI and add event listeners
         this.initializeEventListeners();
-        this.isLoading = false;
 
-        this.apiService = new APIService();
+        this.isLoading = false;
+    }
+
+    showError(message) {
+        const errorDiv = document.createElement('div');
+        errorDiv.className = 'error-notification';
+        errorDiv.setAttribute('role', 'alert');
+        errorDiv.textContent = message;
+        document.body.appendChild(errorDiv);
+        setTimeout(() => errorDiv.remove(), 5000);
+    }
+
+    shouldEndGame(totalQuestionsAnswered, currentXP) {
+        // End game if we've answered all questions or reached max XP
+        return totalQuestionsAnswered >= 15 || currentXP >= this.maxXP;
     }
 
     async saveProgress() {
@@ -554,24 +584,17 @@ class IssueVerificationQuiz extends BaseQuiz {
             }
 
             if (progress) {
-                // Only restore if the progress is less than 24 hours old
-                const lastUpdated = new Date(progress.lastUpdated);
-                const now = new Date();
-                const hoursSinceUpdate = (now - lastUpdated) / (1000 * 60 * 60);
+                // Set the player state from progress
+                this.player.experience = progress.experience || 0;
+                this.player.tools = progress.tools || [];
+                this.player.questionHistory = progress.questionHistory || [];
                 
-                if (hoursSinceUpdate < 24) {
-                    // Set the player state from progress
-                    this.player.experience = progress.experience || 0;
-                    this.player.tools = progress.tools || [];
-                    this.player.questionHistory = progress.questionHistory || [];
-                    
-                    // Fixed: Set current scenario to the next unanswered question
-                    this.player.currentScenario = this.player.questionHistory.length;
+                // Fixed: Set current scenario to the next unanswered question
+                this.player.currentScenario = this.player.questionHistory.length;
 
-                    // Update UI
-                    this.updateProgress();
-                    return true;
-                }
+                // Update UI
+                this.updateProgress();
+                return true;
             }
             return false;
         } catch (error) {
@@ -590,7 +613,12 @@ class IssueVerificationQuiz extends BaseQuiz {
             if (loadingIndicator) {
                 loadingIndicator.classList.remove('hidden');
             }
-            
+            // Set player name from localStorage
+            this.player.name = localStorage.getItem('username');
+            if (!this.player.name) {
+                window.location.href = '/login.html';
+                return;
+            }
             const hasProgress = await this.loadProgress();
             
             if (!hasProgress) {
@@ -624,22 +652,14 @@ class IssueVerificationQuiz extends BaseQuiz {
 
     initializeEventListeners() {
         // Add event listeners for the continue and restart buttons
-        const continueBtn = document.getElementById('continue-btn');
-        const restartBtn = document.getElementById('restart-btn');
-        const optionsForm = document.getElementById('options-form');
+        document.getElementById('continue-btn')?.addEventListener('click', () => this.nextScenario());
+        document.getElementById('restart-btn')?.addEventListener('click', () => this.restartGame());
 
-        if (continueBtn) {
-            continueBtn.addEventListener('click', () => this.nextScenario());
-        }
-        if (restartBtn) {
-            restartBtn.addEventListener('click', () => this.restartGame());
-        }
-        if (optionsForm) {
-            optionsForm.addEventListener('submit', (e) => {
-                e.preventDefault();
-                this.handleAnswer();
-            });
-        }
+        // Add form submission handler
+        document.getElementById('options-form')?.addEventListener('submit', (e) => {
+            e.preventDefault();
+            this.handleAnswer();
+        });
 
         // Add keyboard navigation
         document.addEventListener('keydown', (e) => {
@@ -797,10 +817,10 @@ class IssueVerificationQuiz extends BaseQuiz {
             if (username) {
                 const quizUser = new QuizUser(username);
                 const score = Math.round((this.player.experience / this.maxXP) * 100);
-                await quizUser.updateQuizScore(this.quizName, score);
+                await quizUser.updateQuizScore('communication', score);
                 
                 // Update progress display on index page
-                const progressElement = document.querySelector(`#${this.quizName}-progress`);
+                const progressElement = document.querySelector('#communication-progress');
                 if (progressElement) {
                     const totalQuestions = 15;
                     const completedQuestions = this.player.questionHistory.length;
@@ -813,7 +833,7 @@ class IssueVerificationQuiz extends BaseQuiz {
                         progressElement.classList.remove('hidden');
                         
                         // Update quiz item styling
-                        const quizItem = document.querySelector(`[data-quiz="${this.quizName}"]`);
+                        const quizItem = document.querySelector('[data-quiz="communication"]');
                         if (quizItem) {
                             quizItem.classList.remove('completed', 'in-progress');
                             if (percentComplete === 100) {
@@ -864,16 +884,18 @@ class IssueVerificationQuiz extends BaseQuiz {
         }
     }
 
-    getCurrentScenarios() {
-        const totalAnswered = this.player.questionHistory.length;
-        const currentXP = this.player.experience;
+    nextScenario() {
+        // Increment scenario counter
+        this.player.currentScenario++;
         
-        if (totalAnswered >= 10 && currentXP >= this.levelThresholds.intermediate.minXP) {
-            return this.advancedScenarios;
-        } else if (totalAnswered >= 5 && currentXP >= this.levelThresholds.basic.minXP) {
-            return this.intermediateScenarios;
+        // Hide outcome screen and show game screen
+        if (this.outcomeScreen && this.gameScreen) {
+            this.outcomeScreen.classList.add('hidden');
+            this.gameScreen.classList.remove('hidden');
         }
-        return this.basicScenarios;
+        
+        // Display next scenario
+        this.displayScenario();
     }
 
     updateProgress() {
@@ -907,6 +929,48 @@ class IssueVerificationQuiz extends BaseQuiz {
         }
     }
 
+    restartGame() {
+        // Reset player state
+        this.player = {
+            name: localStorage.getItem('username'),
+            experience: 0,
+            tools: [],
+            currentScenario: 0,
+            questionHistory: []
+        };
+
+        // Reset UI
+        this.gameScreen.classList.remove('hidden');
+        this.outcomeScreen.classList.add('hidden');
+        this.endScreen.classList.add('hidden');
+
+        // Clear any existing transition messages
+        const transitionContainer = document.getElementById('level-transition-container');
+        if (transitionContainer) {
+            transitionContainer.innerHTML = '';
+            transitionContainer.classList.remove('active');
+        }
+
+        // Update progress display
+        this.updateProgress();
+
+        // Start from first scenario
+        this.displayScenario();
+    }
+
+    getCurrentScenarios() {
+        const totalAnswered = this.player.questionHistory.length;
+        const currentXP = this.player.experience;
+        
+        // Check for level progression
+        if (totalAnswered >= 10 && currentXP >= this.levelThresholds.intermediate.minXP) {
+            return this.advancedScenarios;
+        } else if (totalAnswered >= 5 && currentXP >= this.levelThresholds.basic.minXP) {
+            return this.intermediateScenarios;
+        }
+        return this.basicScenarios;
+    }
+
     getCurrentLevel() {
         const totalAnswered = this.player.questionHistory.length;
         const currentXP = this.player.experience;
@@ -919,16 +983,108 @@ class IssueVerificationQuiz extends BaseQuiz {
         return 'Basic';
     }
 
-    nextScenario() {
-        // Increment scenario counter
-        this.player.currentScenario++;
-        
-        // Hide outcome screen
-        this.outcomeScreen.classList.add('hidden');
-        this.gameScreen.classList.remove('hidden');
-        
-        // Display next scenario
-        this.displayScenario();
+    generateRecommendations() {
+        const recommendationsContainer = document.getElementById('recommendations');
+        if (!recommendationsContainer) return;
+
+        const score = Math.round((this.player.experience / this.maxXP) * 100);
+        const weakAreas = [];
+        const strongAreas = [];
+
+        // Analyze performance in different areas
+        this.player.questionHistory.forEach(record => {
+            const maxXP = record.maxPossibleXP;
+            const earnedXP = record.selectedAnswer.experience;
+            const isCorrect = earnedXP === maxXP;
+
+            // Categorize the question based on its content
+            const questionType = this.categorizeQuestion(record.scenario);
+            
+            if (isCorrect) {
+                if (!strongAreas.includes(questionType)) {
+                    strongAreas.push(questionType);
+                }
+            } else {
+                if (!weakAreas.includes(questionType)) {
+                    weakAreas.push(questionType);
+                }
+            }
+        });
+
+        // Generate recommendations HTML
+        let recommendationsHTML = '';
+
+        if (score >= 80) {
+            recommendationsHTML += '<p>🌟 Excellent performance! Here are some ways to further enhance your skills:</p>';
+        } else if (score >= 60) {
+            recommendationsHTML += '<p>👍 Good effort! Here are some areas to focus on:</p>';
+        } else {
+            recommendationsHTML += '<p>📚 Here are key areas for improvement:</p>';
+        }
+
+        recommendationsHTML += '<ul>';
+
+        // Add recommendations for weak areas
+        weakAreas.forEach(area => {
+            recommendationsHTML += `<li>${this.getRecommendation(area)}</li>`;
+        });
+
+        // If there are strong areas but still room for improvement
+        if (strongAreas.length > 0 && score < 100) {
+            recommendationsHTML += '<li>Continue practicing your strengths in: ' + 
+                strongAreas.join(', ') + '</li>';
+        }
+
+        // Add general recommendations based on score
+        if (score < 70) {
+            recommendationsHTML += `
+                <li>Review the communication best practices documentation</li>
+                <li>Practice active listening techniques</li>
+                <li>Focus on clear and concise messaging</li>
+            `;
+        }
+
+        recommendationsHTML += '</ul>';
+        recommendationsContainer.innerHTML = recommendationsHTML;
+    }
+
+    categorizeQuestion(scenario) {
+        // Categorize questions based on their content
+        const title = scenario.title.toLowerCase();
+        const description = scenario.description.toLowerCase();
+
+        if (title.includes('daily') || description.includes('daily')) {
+            return 'Daily Communication';
+        } else if (title.includes('team') || description.includes('team')) {
+            return 'Team Collaboration';
+        } else if (title.includes('stakeholder') || description.includes('stakeholder')) {
+            return 'Stakeholder Management';
+        } else if (title.includes('conflict') || description.includes('conflict')) {
+            return 'Conflict Resolution';
+        } else if (title.includes('remote') || description.includes('remote')) {
+            return 'Remote Communication';
+        } else if (title.includes('documentation') || description.includes('documentation')) {
+            return 'Documentation';
+        } else if (title.includes('presentation') || description.includes('presentation')) {
+            return 'Presentation Skills';
+        } else {
+            return 'General Communication';
+        }
+    }
+
+    getRecommendation(area) {
+        const recommendations = {
+            'Daily Communication': 'Practice maintaining clear status updates and regular check-ins with team members.',
+            'Team Collaboration': 'Focus on active listening and providing constructive feedback in team settings.',
+            'Stakeholder Management': 'Work on presenting information clearly and managing expectations effectively.',
+            'Conflict Resolution': 'Study conflict resolution techniques and practice diplomatic communication.',
+            'Remote Communication': 'Improve virtual communication skills and use of collaboration tools.',
+            'Documentation': 'Enhance documentation skills with clear, concise, and well-structured content.',
+            'Presentation Skills': 'Practice presenting technical information in a clear and engaging manner.',
+            'General Communication': 'Focus on fundamental communication principles and professional etiquette.'
+        };
+
+        return recommendations[area] || 'Continue practicing general communication skills.';
     }
 
     endGame() {
@@ -984,34 +1140,10 @@ class IssueVerificationQuiz extends BaseQuiz {
 
         this.generateRecommendations();
     }
-
-    showError(message) {
-        const errorElement = document.getElementById('error-message');
-        if (errorElement) {
-            errorElement.textContent = message;
-            errorElement.style.display = 'block';
-            setTimeout(() => {
-                errorElement.style.display = 'none';
-            }, 3000);
-        }
-    }
-
-    shouldEndGame(totalQuestionsAnswered, currentXP) {
-        return totalQuestionsAnswered >= 15 || currentXP >= this.maxXP;
-    }
 }
 
 // Add DOMContentLoaded event listener
 document.addEventListener('DOMContentLoaded', () => {
-    try {
     const quiz = new IssueVerificationQuiz();
     quiz.startGame();
-    } catch (error) {
-        console.error('Failed to initialize quiz:', error);
-        const errorElement = document.getElementById('error-message');
-        if (errorElement) {
-            errorElement.textContent = 'Failed to start the quiz. Please refresh the page.';
-            errorElement.classList.remove('hidden');
-        }
-    }
 }); 
