@@ -495,7 +495,7 @@ class AdminDashboard {
             // Find and update the user in our users array
             const userIndex = this.users.findIndex(u => u.username === username);
             if (userIndex !== -1) {
-                // Reset quiz progress
+                // Reset quiz progress for the specific quiz only
                 if (!this.users[userIndex].quizProgress) {
                     this.users[userIndex].quizProgress = {};
                 }
@@ -505,17 +505,15 @@ class AdminDashboard {
                     lastUpdated: new Date().toISOString()
                 };
 
-                // Reset quiz results
-                if (!this.users[userIndex].quizResults) {
-                    this.users[userIndex].quizResults = [];
-                }
-                const resultIndex = this.users[userIndex].quizResults.findIndex(r => r.quizName === quizName);
-                if (resultIndex !== -1) {
-                    this.users[userIndex].quizResults.splice(resultIndex, 1);
+                // Reset quiz results for the specific quiz only
+                if (this.users[userIndex].quizResults) {
+                    this.users[userIndex].quizResults = this.users[userIndex].quizResults.filter(
+                        result => result.quizName !== quizName
+                    );
                 }
             }
 
-            // Update local state
+            // Update local state for the specific quiz only
             const scores = this.userScores.get(username) || [];
             const scoreIndex = scores.findIndex(s => s.quizName === quizName);
             if (scoreIndex !== -1) {
@@ -530,7 +528,7 @@ class AdminDashboard {
                 this.userScores.set(username, scores);
             }
 
-            // Clear local storage for this quiz
+            // Clear local storage for this specific quiz only
             const storageKey = `quiz_progress_${username}_${quizName}`;
             localStorage.removeItem(storageKey);
 
