@@ -23,11 +23,12 @@ class IndexPage {
                 return;
             }
 
-            const progress = await this.apiService.getUserProgress();
-            console.log('Loaded user progress:', progress);
+            // Fetch all quiz scores from the server
+            const scores = await this.apiService.getAllQuizScores(username);
+            console.log('Loaded quiz scores:', scores);
             
-            if (progress) {
-                this.user.setProgress(progress);
+            if (scores && scores.data) {
+                this.quizScores = scores.data;
             }
         } catch (error) {
             console.error('Error loading user progress:', error);
@@ -35,33 +36,16 @@ class IndexPage {
     }
 
     updateQuizProgress() {
+        if (!this.quizScores) return;
+
         this.quizItems.forEach(item => {
             const quizId = item.dataset.quiz;
             const progressElement = document.getElementById(`${quizId}-progress`);
             
             if (progressElement) {
-                // Get progress from localStorage first
-                const storageKey = `quiz_progress_${this.user.username}_${quizId}`;
-                let progress = null;
-                
-                try {
-                    const storedProgress = localStorage.getItem(storageKey);
-                    if (storedProgress) {
-                        const parsed = JSON.parse(storedProgress);
-                        if (parsed.progress) {
-                            progress = parsed.progress;
-                        }
-                    }
-                } catch (error) {
-                    console.error(`Error reading progress for ${quizId}:`, error);
-                }
-
-                // Calculate percentage
-                let percentage = 0;
-                if (progress) {
-                    const questionsAnswered = progress.questionHistory ? progress.questionHistory.length : 0;
-                    percentage = Math.round((questionsAnswered / 15) * 100); // 15 is total questions per quiz
-                }
+                // Find the score for this quiz
+                const quizScore = this.quizScores.find(score => score.quizName === quizId);
+                const percentage = quizScore ? quizScore.score : 0;
 
                 console.log(`Quiz ${quizId} progress: ${percentage}%`);
                 
@@ -81,6 +65,8 @@ class IndexPage {
     }
 
     updateCategoryProgress() {
+        if (!this.quizScores) return;
+
         const categories = document.querySelectorAll('.category-card');
         
         categories.forEach(category => {
@@ -90,16 +76,21 @@ class IndexPage {
             
             if (quizItems.length && progressBar && progressText) {
                 let completedQuizzes = 0;
+                let totalProgress = 0;
                 
                 quizItems.forEach(item => {
-                    const progress = parseInt(item.getAttribute('data-progress')) || 0;
+                    const quizId = item.dataset.quiz;
+                    const quizScore = this.quizScores.find(score => score.quizName === quizId);
+                    const progress = quizScore ? quizScore.score : 0;
+                    
                     if (progress === 100) {
                         completedQuizzes++;
                     }
+                    totalProgress += progress;
                 });
                 
                 const totalQuizzes = quizItems.length;
-                const categoryPercentage = (completedQuizzes / totalQuizzes) * 100;
+                const categoryPercentage = Math.round(totalProgress / totalQuizzes);
                 
                 progressBar.style.width = `${categoryPercentage}%`;
                 progressText.textContent = `Progress: ${completedQuizzes}/${totalQuizzes} Complete`;
