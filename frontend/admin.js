@@ -66,7 +66,7 @@ class AdminDashboard {
             if (username === 'admin' && password === 'admin123') {
                 try {
                     // First, get an API token
-                    const response = await fetch(`${this.apiService.baseUrl}/users/login`, {
+                    const response = await fetch(`${this.apiService.baseUrl}/admin/login`, {
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/json'
