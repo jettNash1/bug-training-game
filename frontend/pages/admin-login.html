@@ -7,8 +7,6 @@
     <title>QA Learning Hub - Admin Login</title>
     <link rel="icon" type="image/x-icon" href="../assets/favicon.ico">
     <link rel="stylesheet" href="../styles.css">
-    <script src="../api-service.js"></script>
-    <script src="../admin.js"></script>
 </head>
 <body class="auth-page">
     <main class="auth-container" role="main">
@@ -20,13 +18,13 @@
                 </div>
             </header>
             
-            <form id="adminLoginForm" class="auth-form" role="form" aria-labelledby="login-title">
+            <form id="adminLoginForm" class="auth-form" role="form" aria-labelledby="login-title" onsubmit="event.preventDefault(); window.handleAdminLogin();">
                 <h2 id="login-title" class="visually-hidden">Admin Login Form</h2>
                 <div class="form-group">
                     <label for="adminUsername">Admin Username</label>
                     <input type="text" 
                            id="adminUsername" 
-                           name="adminUsername"
+                           name="username"
                            placeholder="Enter admin username" 
                            required 
                            aria-required="true"
@@ -36,7 +34,7 @@
                     <label for="adminPassword">Password</label>
                     <input type="password" 
                            id="adminPassword" 
-                           name="adminPassword"
+                           name="password"
                            placeholder="Enter password" 
                            required 
                            aria-required="true"
@@ -50,5 +48,14 @@
             </nav>
         </div>
     </main>
+
+    <!-- Load scripts as modules -->
+    <script type="module" src="../config.js"></script>
+    <script type="module" src="../api-service.js"></script>
+    <script type="module" src="../QuizUser.js"></script>
+    <script type="module" src="../quiz-helper.js"></script>
+    <script type="module" src="../login.js"></script>
+    <script type="module" src="../auth.js"></script>
+    <script type="module" src="../admin.js"></script>
 </body>
 </html> 

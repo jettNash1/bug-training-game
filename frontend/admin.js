@@ -1,321 +1,317 @@
+import { APIService } from './api-service.js';
+import { QuizUser } from './QuizUser.js';
+
 class AdminDashboard {
     constructor() {
+        this.apiService = new APIService();
+        this.users = [];
+        this.userScores = new Map();
         this.init();
     }
 
     async init() {
         console.log('Initializing AdminDashboard');
-        console.log('Current path:', window.location.pathname);
+        const token = localStorage.getItem('token');
         
+        // Check if we're on the login page
         if (window.location.pathname.includes('admin-login.html')) {
-            console.log('Setting up login handler');
-            this.setupLoginHandler();
+            if (token) {
+                // If already logged in, redirect to admin dashboard
+                window.location.href = './admin.html';
+                return;
+            }
         } else if (window.location.pathname.includes('admin.html')) {
-            if (!this.checkAdminAuth()) {
-                console.log('No auth token found, redirecting to login');
-                window.location.href = 'admin-login.html';
+            if (!token) {
+                // If not logged in, redirect to login page
+                window.location.href = './admin-login.html';
                 return;
             }
-            this.initializeDashboard();
+            await this.showAdminDashboard();
+            
+            // Add event listeners for dashboard
+            document.getElementById('userSearch').addEventListener('input', this.debounce(this.updateDashboard.bind(this), 300));
+            document.getElementById('sortBy').addEventListener('change', this.updateDashboard.bind(this));
         }
     }
 
-    handleLogin(username, password) {
-        // Hardcoded admin credentials
-        if (username === 'admin' && password === 'admin123') {
-            localStorage.setItem('adminToken', 'admin_authenticated');
-            window.location.href = 'admin.html';
-            return true;
-        }
-        return false;
-    }
+    async handleAdminLogin() {
+        const username = document.getElementById('adminUsername').value;
+        const password = document.getElementById('adminPassword').value;
 
-    setupLoginHandler() {
-        const form = document.getElementById('adminLoginForm');
-        if (!form) {
-            console.error('Login form not found!');
-            return;
-        }
-
-        form.addEventListener('submit', (e) => {
-            e.preventDefault();
-            const username = document.getElementById('adminUsername').value;
-            const password = document.getElementById('adminPassword').value;
-
-            if (!username || !password) {
-                alert('Please enter both username and password');
-                return;
+        try {
+            const response = await this.apiService.login(username, password);
+            if (response.success) {
+                window.location.href = './admin.html';
+            } else {
+                this.showError('Invalid admin credentials');
             }
-
-            const success = this.handleLogin(username, password);
-            if (!success) {
-                alert('Invalid admin credentials');
-            }
-        });
+        } catch (error) {
+            console.error('Login error:', error);
+            this.showError('Login failed. Please try again.');
+        }
     }
 
-    checkAdminAuth() {
-        const token = localStorage.getItem('adminToken');
-        return token === 'admin_authenticated';
+    async handleAdminLogout() {
+        try {
+            localStorage.removeItem('token');
+            localStorage.removeItem('refreshToken');
+            window.location.href = './admin-login.html';
+        } catch (error) {
+            console.error('Logout error:', error);
+        }
     }
 
-    initializeDashboard() {
-        console.log('Initializing dashboard');
-        this.loadUserStats();
-        this.loadUserList();
+    showError(message) {
+        const errorDiv = document.createElement('div');
+        errorDiv.className = 'error-notification';
+        errorDiv.textContent = message;
+        document.body.appendChild(errorDiv);
+        setTimeout(() => errorDiv.remove(), 5000);
     }
 
-    loadUserStats() {
-        const users = this.getAllUsers();
-        const totalUsers = users.length;
-        const activeToday = this.getActiveUsers(users);
-        const avgCompletion = this.getAverageCompletion(users);
-
-        // Update stats in the dashboard
-        document.getElementById('totalUsers').textContent = totalUsers;
-        document.getElementById('activeUsers').textContent = activeToday;
-        document.getElementById('avgCompletion').textContent = `${avgCompletion}%`;
-    }
-
-    loadUserList() {
-        const users = this.getAllUsers();
-        const tbody = document.getElementById('userTableBody');
-        if (!tbody) return;
-
-        tbody.innerHTML = '';
-        users.forEach(user => {
-            const progress = this.calculateUserProgress(user);
-            const tr = document.createElement('tr');
-            tr.innerHTML = `
-                <td>${user.username}</td>
-                <td>
-                    <div class="user-progress">
-                        <div class="progress-bar-small">
-                            <div class="progress-fill-small" style="width: ${progress}%"></div>
-                        </div>
-                        <span>${progress}%</span>
-                    </div>
-                </td>
-                <td>${this.formatDate(user.lastLogin || 'Never')}</td>
-                <td>
-                    <div class="action-buttons">
-                        <button class="action-button view-button" onclick="dashboard.viewUserDetails('${user.username}')">
-                            View
-                        </button>
-                        <button class="action-button reset-button" onclick="dashboard.resetUserProgress('${user.username}')">
-                            Reset
-                        </button>
-                    </div>
-                </td>
-            `;
-            tbody.appendChild(tr);
-        });
-    }
-
-    getAllUsers() {
-        const users = [];
-        for (let i = 0; i < localStorage.length; i++) {
-            const key = localStorage.key(i);
-            if (key && (key.startsWith('quizUser_') || key.startsWith('user_'))) {
-                try {
-                    const userData = JSON.parse(localStorage.getItem(key));
-                    if (userData) {
-                        if (!userData.quizResults) {
-                            userData.quizResults = [];
-                        }
-                        if (userData.lastActive && !userData.lastLogin) {
-                            userData.lastLogin = userData.lastActive;
-                        }
-                        users.push(userData);
-                    }
-                } catch (error) {
-                    console.error('Error parsing user data:', error, key);
+    async loadUserProgress(username) {
+        const scores = [];
+        const quizTypes = [
+            'communication', 'initiative', 'time-management', 'tester-mindset',
+            'risk-analysis', 'risk-management', 'non-functional', 'test-support',
+            'issue-verification', 'build-verification', 'issue-tracking',
+            'raising-tickets', 'reports', 'CMS-Testing'
+        ];
+        
+        for (const quizId of quizTypes) {
+            try {
+                const progress = await this.apiService.getQuizProgress(quizId, username);
+                if (progress && progress.data) {
+                    const questionsAnswered = progress.data.questionHistory ? progress.data.questionHistory.length : 0;
+                    const score = Math.round((questionsAnswered / 15) * 100);
+                    scores.push({
+                        quizName: quizId,
+                        score: score,
+                        questionsAnswered: questionsAnswered,
+                        completedAt: progress.data.lastUpdated || new Date().toISOString(),
+                        lastActive: progress.data.lastUpdated
+                    });
                 }
+            } catch (error) {
+                console.error(`Error loading progress for ${quizId}:`, error);
             }
         }
-        console.log('Found users:', users);
-        return users;
+        
+        return scores;
     }
 
-    getActiveUsers(users) {
-        const twentyFourHoursAgo = Date.now() - (24 * 60 * 60 * 1000);
-        return users.filter(user => {
-            const lastActive = new Date(user.lastLogin || 0).getTime();
-            return lastActive > twentyFourHoursAgo;
-        }).length;
+    async showAdminDashboard() {
+        document.getElementById('adminLoginForm').classList.add('hidden');
+        document.getElementById('adminDashboard').classList.remove('hidden');
+        await this.updateDashboard();
     }
 
-    getAverageCompletion(users) {
-        if (!users.length) return 0;
-        const totalProgress = users.reduce((sum, user) => sum + this.calculateUserProgress(user), 0);
-        return Math.round(totalProgress / users.length);
+    async updateDashboard() {
+        try {
+            // Get all users
+            const response = await this.apiService.fetchWithAuth(`${this.apiService.baseUrl}/users`);
+            const data = await response.json();
+            this.users = data.users || [];
+            console.log('Found users:', this.users);
+
+            // Load progress for each user
+            for (const user of this.users) {
+                const scores = await this.loadUserProgress(user.username);
+                this.userScores.set(user.username, scores);
+            }
+
+            this.updateStatistics();
+            this.updateUserList();
+        } catch (error) {
+            console.error('Error updating dashboard:', error);
+            this.showError('Failed to update dashboard');
+        }
+    }
+
+    updateStatistics() {
+        const today = new Date().toISOString().split('T')[0];
+        let totalCompletion = 0;
+        let activeUsers = new Set();
+
+        this.users.forEach(user => {
+            const scores = this.userScores.get(user.username) || [];
+            if (scores.some(score => score.lastActive?.startsWith(today))) {
+                activeUsers.add(user.username);
+            }
+
+            const userCompletion = this.calculateUserProgress(user);
+            totalCompletion += userCompletion;
+        });
+
+        // Update statistics display
+        document.getElementById('totalUsers').textContent = this.users.length;
+        document.getElementById('activeUsers').textContent = activeUsers.size;
+        document.getElementById('averageCompletion').textContent = 
+            `${this.users.length ? Math.round(totalCompletion / this.users.length) : 0}%`;
+    }
+
+    updateUserList() {
+        const usersList = document.getElementById('usersList');
+        const searchInput = document.getElementById('userSearch').value.toLowerCase();
+        const sortBy = document.getElementById('sortBy').value;
+        
+        let filteredUsers = this.users.filter(user => 
+            user.username.toLowerCase().includes(searchInput)
+        );
+
+        // Sort users
+        filteredUsers.sort((a, b) => {
+            switch (sortBy) {
+                case 'username-asc':
+                    return a.username.localeCompare(b.username);
+                case 'username-desc':
+                    return b.username.localeCompare(a.username);
+                case 'progress-high':
+                    return this.calculateUserProgress(b) - this.calculateUserProgress(a);
+                case 'progress-low':
+                    return this.calculateUserProgress(a) - this.calculateUserProgress(b);
+                case 'last-active':
+                    return this.getLastActiveDate(b) - this.getLastActiveDate(a);
+                default:
+                    return 0;
+            }
+        });
+
+        usersList.innerHTML = '';
+
+        filteredUsers.forEach(user => {
+            const scores = this.userScores.get(user.username) || [];
+            const card = document.createElement('div');
+            card.className = 'user-card';
+
+            const progress = this.calculateUserProgress(user);
+            const lastActive = this.getLastActiveDate(user);
+
+            card.innerHTML = `
+                <div class="user-header">
+                    <h4>${user.username}</h4>
+                    <div class="user-stats">
+                        <div class="total-score">Overall Progress: ${progress.toFixed(1)}%</div>
+                        <div class="last-active">Last Active: ${lastActive ? new Date(lastActive).toLocaleDateString() : 'Never'}</div>
+                    </div>
+                </div>
+                <button class="view-details-btn" onclick="window.adminDashboard.showUserDetails('${user.username}')">
+                    View Details
+                </button>
+            `;
+
+            usersList.appendChild(card);
+        });
     }
 
     calculateUserProgress(user) {
-        if (!user || !user.quizResults) return 0;
-        
-        let completedQuizzes;
-        if (Array.isArray(user.quizResults)) {
-            completedQuizzes = user.quizResults.length;
-        } else {
-            completedQuizzes = Object.keys(user.quizResults).length;
-        }
-        
-        const totalQuizzes = 11;
-        return Math.round((completedQuizzes / totalQuizzes) * 100);
+        const scores = this.userScores.get(user.username) || [];
+        if (!scores.length) return 0;
+        const totalScore = scores.reduce((sum, score) => sum + score.score, 0);
+        return Math.round(totalScore / scores.length);
     }
 
-    viewUserDetails(username) {
-        const users = this.getAllUsers();
-        const user = users.find(u => u.username === username);
-        if (!user) return;
+    getLastActiveDate(user) {
+        const scores = this.userScores.get(user.username) || [];
+        if (!scores.length) return 0;
+        return Math.max(...scores.map(score => 
+            score.lastActive ? new Date(score.lastActive).getTime() : 0
+        ));
+    }
 
-        const panel = document.getElementById('userDetailsPanel');
-        const content = document.getElementById('userDetailsContent');
-        if (!panel || !content) return;
-
+    async showUserDetails(username) {
+        const scores = this.userScores.get(username) || [];
+        const overlay = document.createElement('div');
+        overlay.className = 'user-details-overlay';
+        
+        const content = document.createElement('div');
+        content.className = 'user-details-content';
+        
         content.innerHTML = `
-            <button class="close-button" onclick="dashboard.closeUserDetails()" aria-label="Close user details">×</button>
-            ${this.generateUserDetailsHTML(user)}
-        `;
-        panel.classList.remove('hidden');
-    }
-
-    generateUserDetailsHTML(user) {
-        return `
-            <div class="user-details-content">
-                <h4>${user.username}'s Details</h4>
-                <p>Last Active: ${this.formatDate(user.lastLogin || 'Never')}</p>
-                <p>Overall Progress: ${this.calculateUserProgress(user)}%</p>
-                <div class="quiz-results">
-                    <h5>Quiz Results</h5>
-                    ${this.generateQuizResultsHTML(user)}
+            <div class="user-details-header">
+                <h2>${username}'s Progress</h2>
+                <button class="close-button" onclick="this.closest('.user-details-overlay').remove()">×</button>
+            </div>
+            <div class="user-details-body">
+                <div class="quiz-progress-list">
+                    ${scores.map(score => `
+                        <div class="quiz-progress-item">
+                            <div class="quiz-info">
+                                <h3>${this.getQuizDisplayName(score.quizName)}</h3>
+                                <div class="progress-details">
+                                    <span class="score">${score.score}% Complete</span>
+                                    <span class="questions">Questions: ${score.questionsAnswered}/15</span>
+                                    <span class="last-active">Last Active: ${new Date(score.lastActive).toLocaleDateString()}</span>
+                                </div>
+                            </div>
+                            <button class="reset-button" onclick="window.adminDashboard.resetUserProgress('${username}', '${score.quizName}')">
+                                Reset Progress
+                            </button>
+                        </div>
+                    `).join('')}
                 </div>
             </div>
         `;
-    }
-
-    generateQuizResultsHTML(user) {
-        const quizCategories = {
-            'Personal Organisation': [
-                { display: 'Communication Skills', key: 'communication' },
-                { display: 'Initiative', key: 'initiative' },
-                { display: 'Tester Mindset', key: 'tester-mindset' },
-                { display: 'Time Management', key: 'time-management' }
-            ],
-            'Risk Management': [
-                { display: 'Risk Analysis', key: 'risk-analysis' },
-                { display: 'Risk Management', key: 'risk-management' }
-            ],
-            'Test Execution': [
-                { display: 'Non-functional Testing', key: 'non-functional' },
-                { display: 'Test Support', key: 'test-support' },
-                { display: 'Issue Verification', key: 'issue-verification' }
-            ],
-            'Tickets and Tracking': [
-                { display: 'Issue Tracking Tools', key: 'issue-tracking' },
-                { display: 'Raising Tickets', key: 'raising-tickets' },
-                { display: 'Reports', key: 'reports' }
-            ]
-        };
-
-        let html = '';
-        for (const [category, quizzes] of Object.entries(quizCategories)) {
-            html += `
-                <div class="quiz-category">
-                    <h6>${category}</h6>
-                    <table class="quiz-results-table">
-                        <thead>
-                            <tr>
-                                <th>Quiz</th>
-                                <th>Status</th>
-                                <th>Score</th>
-                                <th>Completed</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            ${quizzes.map(quiz => {
-                                let result;
-                                if (Array.isArray(user.quizResults)) {
-                                    result = user.quizResults.find(r => r.quizName === quiz.key);
-                                } else {
-                                    result = user.quizResults[quiz.key];
-                                }
-                                return `
-                                    <tr>
-                                        <td>${quiz.display}</td>
-                                        <td>${result ? 'Completed' : 'Not Started'}</td>
-                                        <td>${result ? result.score + '%' : '-'}</td>
-                                        <td>${result ? this.formatDate(result.completedAt) : '-'}</td>
-                                    </tr>
-                                `;
-                            }).join('')}
-                        </tbody>
-                    </table>
-                </div>
-            `;
-        }
-        return html || '<p>No quizzes completed yet.</p>';
-    }
-
-    formatDate(date) {
-        if (!date || date === 'Never') return 'Never';
-        const d = new Date(date);
-        if (isNaN(d.getTime())) return 'Never';
-
-        const now = new Date();
-        const diffMs = now - d;
-        const diffMins = Math.floor(diffMs / (1000 * 60));
-        const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
-        const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
-
-        if (diffMins < 1) return 'Just now';
-        if (diffMins < 60) return `${diffMins} minutes ago`;
-        if (diffHours < 24) return `${diffHours} hours ago`;
-        if (diffDays < 7) return `${diffDays} days ago`;
-
-        return d.toLocaleDateString('en-GB', {
-            day: 'numeric',
-            month: 'short',
-            year: 'numeric'
-        });
-    }
-
-    resetUserProgress(username) {
-        if (!confirm(`Are you sure you want to reset progress for ${username}?`)) return;
         
-        const key = `quizUser_${username}`;
-        const userData = localStorage.getItem(key);
-        if (userData) {
-            try {
-                const user = JSON.parse(userData);
-                user.quizResults = [];
-                localStorage.setItem(key, JSON.stringify(user));
-                this.loadUserStats();
-                this.loadUserList();
-                alert(`Progress reset for ${username}`);
-            } catch (error) {
-                console.error('Error resetting user progress:', error);
-                alert('Failed to reset user progress');
+        overlay.appendChild(content);
+        document.body.appendChild(overlay);
+    }
+
+    getQuizDisplayName(quizId) {
+        const displayNames = {
+            'communication': 'Communication',
+            'initiative': 'Initiative',
+            'time-management': 'Time Management',
+            'tester-mindset': 'Tester Mindset',
+            'risk-analysis': 'Risk Analysis',
+            'risk-management': 'Risk Management',
+            'non-functional': 'Non-functional Testing',
+            'test-support': 'Test Support',
+            'issue-verification': 'Issue Verification',
+            'build-verification': 'Build Verification',
+            'issue-tracking': 'Issue Tracking Tools',
+            'raising-tickets': 'Raising Tickets',
+            'reports': 'Reports',
+            'CMS-Testing': 'CMS Testing'
+        };
+        return displayNames[quizId] || quizId;
+    }
+
+    async resetUserProgress(username, quizName) {
+        try {
+            const response = await this.apiService.fetchWithAuth(
+                `${this.apiService.baseUrl}/users/${username}/reset-quiz/${quizName}`,
+                { method: 'POST' }
+            );
+            
+            if (response.ok) {
+                this.showError(`Successfully reset ${quizName} for ${username}`);
+                await this.updateDashboard();
+            } else {
+                this.showError('Failed to reset quiz progress');
             }
+        } catch (error) {
+            console.error('Error resetting progress:', error);
+            this.showError('Failed to reset quiz progress');
         }
     }
 
-    handleLogout() {
-        localStorage.removeItem('adminToken');
-        window.location.href = 'admin-login.html';
-    }
-
-    closeUserDetails() {
-        const panel = document.getElementById('userDetailsPanel');
-        if (panel) {
-            panel.classList.add('hidden');
-        }
+    debounce(func, wait) {
+        let timeout;
+        return function executedFunction(...args) {
+            const later = () => {
+                clearTimeout(timeout);
+                func(...args);
+            };
+            clearTimeout(timeout);
+            timeout = setTimeout(later, wait);
+        };
     }
 }
 
-// Initialize the dashboard when the page loads
-document.addEventListener('DOMContentLoaded', () => {
-    console.log('DOM loaded, initializing AdminDashboard');
-    window.dashboard = new AdminDashboard();
-}); 
+// Initialize the dashboard and expose it to the window
+window.adminDashboard = new AdminDashboard();
+
+// Expose functions to window for onclick handlers
+window.handleAdminLogin = () => window.adminDashboard.handleAdminLogin();
+window.handleAdminLogout = () => window.adminDashboard.handleAdminLogout(); 
