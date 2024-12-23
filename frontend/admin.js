@@ -184,14 +184,23 @@ class AdminDashboard {
                     this.users = data.users;
                     console.log('Found users:', this.users);
 
-                    // Load progress for each user
-                    for (const user of this.users) {
-                        const scores = await this.loadUserProgress(user.username);
-                        this.userScores.set(user.username, scores);
-                    }
-
+                    // Update the display first with basic user info
                     this.updateStatistics();
                     this.updateUserList();
+
+                    // Then load progress in the background
+                    console.log('Loading user progress...');
+                    for (const user of this.users) {
+                        try {
+                            const scores = await this.loadUserProgress(user.username);
+                            this.userScores.set(user.username, scores);
+                            // Update the display after each user's progress is loaded
+                            this.updateUserList();
+                        } catch (error) {
+                            console.error(`Error loading progress for ${user.username}:`, error);
+                            // Continue with other users even if one fails
+                        }
+                    }
                 } else {
                     console.error('Invalid user data format:', data);
                     this.showError('Failed to load user data');
@@ -235,16 +244,22 @@ class AdminDashboard {
     }
 
     updateUserList() {
+        console.log('Updating user list...');
         const usersList = document.getElementById('usersList');
-        if (!usersList) return;
+        if (!usersList) {
+            console.error('usersList element not found!');
+            return;
+        }
 
         const searchInput = document.getElementById('userSearch')?.value.toLowerCase() || '';
         const sortBy = document.getElementById('sortBy')?.value || 'username-asc';
         
+        console.log('Filtering users with search:', searchInput);
         let filteredUsers = this.users.filter(user => 
             user.username.toLowerCase().includes(searchInput)
         );
 
+        console.log('Sorting users by:', sortBy);
         // Sort users
         filteredUsers.sort((a, b) => {
             switch (sortBy) {
@@ -263,8 +278,10 @@ class AdminDashboard {
             }
         });
 
+        console.log('Clearing existing user list');
         usersList.innerHTML = '';
 
+        console.log('Creating user cards for', filteredUsers.length, 'users');
         filteredUsers.forEach(user => {
             const scores = this.userScores.get(user.username) || [];
             const card = document.createElement('div');
@@ -288,6 +305,7 @@ class AdminDashboard {
 
             usersList.appendChild(card);
         });
+        console.log('User list update complete');
     }
 
     calculateUserProgress(user) {
