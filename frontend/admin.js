@@ -18,17 +18,13 @@ class AdminDashboard {
             
             if (token && isAdmin === 'true') {
                 try {
-                    const response = await this.apiService.fetchWithAuth(
-                        `${this.apiService.baseUrl}/admin/verify-token`,
-                        { method: 'GET' }
-                    );
-                    
-                    if (!response.ok) {
-                        // Token is invalid, redirect to login
+                    // Verify token locally
+                    const tokenData = JSON.parse(atob(token));
+                    if (!tokenData.isAdmin || tokenData.exp < Date.now()) {
                         this.handleAdminLogout();
                     }
                 } catch (error) {
-                    console.error('Token refresh error:', error);
+                    console.error('Token verification error:', error);
                     this.handleAdminLogout();
                 }
             }
@@ -66,9 +62,16 @@ class AdminDashboard {
         const password = document.getElementById('adminPassword').value;
 
         try {
-            const response = await this.apiService.login(username, password);
-            if (response.success && response.token) {
-                localStorage.setItem('token', response.token);
+            // Check against hardcoded admin credentials
+            if (username === 'admin' && password === 'admin123') {
+                // Generate a simple token for admin
+                const token = btoa(JSON.stringify({
+                    isAdmin: true,
+                    username: 'admin',
+                    exp: Date.now() + (24 * 60 * 60 * 1000) // 24 hours
+                }));
+
+                localStorage.setItem('token', token);
                 localStorage.setItem('isAdmin', 'true');
                 window.location.href = './admin.html';
             } else {
@@ -142,6 +145,18 @@ class AdminDashboard {
             const isAdmin = localStorage.getItem('isAdmin');
             
             if (!token || isAdmin !== 'true') {
+                this.handleAdminLogout();
+                return;
+            }
+
+            // Verify token
+            try {
+                const tokenData = JSON.parse(atob(token));
+                if (!tokenData.isAdmin || tokenData.exp < Date.now()) {
+                    this.handleAdminLogout();
+                    return;
+                }
+            } catch (e) {
                 this.handleAdminLogout();
                 return;
             }

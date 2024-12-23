@@ -18,7 +18,7 @@
                 </div>
             </header>
             
-            <form id="adminLoginForm" class="auth-form" role="form" aria-labelledby="login-title" onsubmit="event.preventDefault(); window.handleAdminLogin();">
+            <form id="adminLoginForm" class="auth-form" role="form" aria-labelledby="login-title">
                 <h2 id="login-title" class="visually-hidden">Admin Login Form</h2>
                 <div class="form-group">
                     <label for="adminUsername">Admin Username</label>
@@ -54,8 +54,13 @@
     <script type="module" src="../api-service.js"></script>
     <script type="module" src="../QuizUser.js"></script>
     <script type="module" src="../quiz-helper.js"></script>
-    <script type="module" src="../login.js"></script>
-    <script type="module" src="../auth.js"></script>
     <script type="module" src="../admin.js"></script>
+
+    <script>
+        document.getElementById('adminLoginForm').addEventListener('submit', async (event) => {
+            event.preventDefault();
+            await window.adminDashboard.handleAdminLogin();
+        });
+    </script>
 </body>
 </html> 
