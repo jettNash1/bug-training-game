@@ -435,9 +435,9 @@ class AdminDashboard {
 
     async resetUserProgress(username, quizName) {
         try {
-            // First, update the user's quiz progress in the database
+            // First, update the user's quiz progress in the database using admin endpoint
             const response = await this.apiService.fetchWithAuth(
-                `${this.apiService.baseUrl}/users/quiz-progress`,
+                `${this.apiService.baseUrl}/admin/users/${username}/quiz-progress/reset`,
                 { 
                     method: 'POST',
                     headers: {
@@ -476,9 +476,18 @@ class AdminDashboard {
                 throw new Error(errorMessage);
             }
 
-            // Also reset quiz score
+            // Also reset quiz score using admin endpoint
             try {
-                await this.apiService.updateQuizScore(quizName, 0);
+                await this.apiService.fetchWithAuth(
+                    `${this.apiService.baseUrl}/admin/users/${username}/quiz-scores/reset`,
+                    {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({ quizName })
+                    }
+                );
             } catch (error) {
                 console.error('Error resetting quiz score:', error);
             }

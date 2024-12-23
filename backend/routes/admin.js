@@ -110,4 +110,100 @@ router.get('/stats', auth, async (req, res) => {
     }
 });
 
+// Reset a user's quiz progress
+router.post('/users/:username/quiz-progress/reset', auth, async (req, res) => {
+    try {
+        // Verify admin status
+        if (!req.user.isAdmin) {
+            return res.status(403).json({
+                success: false,
+                message: 'Admin access required'
+            });
+        }
+
+        const { username } = req.params;
+        const { quizName } = req.body;
+
+        // Find the user
+        const user = await User.findOne({ username });
+        if (!user) {
+            return res.status(404).json({
+                success: false,
+                message: 'User not found'
+            });
+        }
+
+        // Reset quiz progress
+        if (!user.quizProgress) {
+            user.quizProgress = {};
+        }
+        user.quizProgress[quizName] = {
+            experience: 0,
+            questionHistory: [],
+            lastUpdated: new Date()
+        };
+
+        // Remove quiz result if it exists
+        if (user.quizResults) {
+            user.quizResults = user.quizResults.filter(result => result.quizName !== quizName);
+        }
+
+        await user.save();
+        res.json({ 
+            success: true,
+            message: `Quiz progress reset for user ${username}`
+        });
+    } catch (error) {
+        console.error('Error resetting quiz progress:', error);
+        res.status(500).json({ 
+            success: false,
+            message: 'Failed to reset quiz progress',
+            error: error.message
+        });
+    }
+});
+
+// Reset a user's quiz score
+router.post('/users/:username/quiz-scores/reset', auth, async (req, res) => {
+    try {
+        // Verify admin status
+        if (!req.user.isAdmin) {
+            return res.status(403).json({
+                success: false,
+                message: 'Admin access required'
+            });
+        }
+
+        const { username } = req.params;
+        const { quizName } = req.body;
+
+        // Find the user
+        const user = await User.findOne({ username });
+        if (!user) {
+            return res.status(404).json({
+                success: false,
+                message: 'User not found'
+            });
+        }
+
+        // Remove quiz result if it exists
+        if (user.quizResults) {
+            user.quizResults = user.quizResults.filter(result => result.quizName !== quizName);
+        }
+
+        await user.save();
+        res.json({ 
+            success: true,
+            message: `Quiz score reset for user ${username}`
+        });
+    } catch (error) {
+        console.error('Error resetting quiz score:', error);
+        res.status(500).json({ 
+            success: false,
+            message: 'Failed to reset quiz score',
+            error: error.message
+        });
+    }
+});
+
 module.exports = router; 
