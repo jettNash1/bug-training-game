@@ -451,15 +451,24 @@ class AdminDashboard {
                 }
             );
             
+            // Read the response body once
+            let responseBody;
+            try {
+                responseBody = await response.text();
+            } catch (e) {
+                console.error('Failed to read response:', e);
+                responseBody = '';
+            }
+
             if (!response.ok) {
                 let errorMessage = 'Failed to reset quiz progress';
                 try {
-                    const errorData = await response.json();
+                    // Try to parse the response as JSON
+                    const errorData = JSON.parse(responseBody);
                     errorMessage = errorData.message || errorMessage;
                 } catch (e) {
-                    // If response is not JSON, try to get text
-                    const text = await response.text();
-                    console.error('Non-JSON error response:', text);
+                    // If not JSON, log the raw response
+                    console.error('Non-JSON error response:', responseBody);
                 }
                 throw new Error(errorMessage);
             }
