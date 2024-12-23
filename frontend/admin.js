@@ -135,14 +135,27 @@ class AdminDashboard {
                 if (response.ok) {
                     const progress = await response.json();
                     if (progress && progress.data) {
-                        const questionsAnswered = progress.data.questionHistory ? progress.data.questionHistory.length : 0;
-                        const score = Math.round((questionsAnswered / 15) * 100);
+                        // Calculate progress based on quiz results if available
+                        let score = 0;
+                        let questionsAnswered = 0;
+                        
+                        if (progress.data.questionHistory) {
+                            questionsAnswered = progress.data.questionHistory.length;
+                            // Calculate score based on experience points if available
+                            if (progress.data.experience) {
+                                score = Math.round((progress.data.experience / 300) * 100); // 300 is max XP
+                            } else {
+                                score = Math.round((questionsAnswered / 15) * 100); // 15 is total questions
+                            }
+                        }
+                        
                         scores.push({
                             quizName: quizId,
                             score: score,
                             questionsAnswered: questionsAnswered,
-                            completedAt: progress.data.lastUpdated || new Date().toISOString(),
-                            lastActive: progress.data.lastUpdated
+                            completedAt: progress.data.lastUpdated || null,
+                            lastActive: progress.data.lastUpdated || null,
+                            experience: progress.data.experience || 0
                         });
                     }
                 }
@@ -311,16 +324,26 @@ class AdminDashboard {
     calculateUserProgress(user) {
         const scores = this.userScores.get(user.username) || [];
         if (!scores.length) return 0;
-        const totalScore = scores.reduce((sum, score) => sum + score.score, 0);
-        return Math.round(totalScore / scores.length);
+        
+        // Calculate total progress across all quizzes
+        const completedQuizzes = scores.filter(score => score.score > 0);
+        if (completedQuizzes.length === 0) return 0;
+        
+        const totalProgress = completedQuizzes.reduce((sum, score) => sum + score.score, 0);
+        return Math.round(totalProgress / completedQuizzes.length);
     }
 
     getLastActiveDate(user) {
         const scores = this.userScores.get(user.username) || [];
         if (!scores.length) return 0;
-        return Math.max(...scores.map(score => 
-            score.lastActive ? new Date(score.lastActive).getTime() : 0
-        ));
+        
+        // Find the most recent activity date
+        const activeDates = scores
+            .map(score => score.lastActive)
+            .filter(date => date) // Remove null/undefined dates
+            .map(date => new Date(date).getTime());
+            
+        return activeDates.length > 0 ? Math.max(...activeDates) : 0;
     }
 
     async showUserDetails(username) {
@@ -331,6 +354,9 @@ class AdminDashboard {
         const content = document.createElement('div');
         content.className = 'user-details-content';
         
+        // Sort quizzes by completion percentage
+        const sortedScores = [...scores].sort((a, b) => b.score - a.score);
+        
         content.innerHTML = `
             <div class="user-details-header">
                 <h2>${username}'s Progress</h2>
@@ -338,21 +364,25 @@ class AdminDashboard {
             </div>
             <div class="user-details-body">
                 <div class="quiz-progress-list">
-                    ${scores.map(score => `
+                    ${sortedScores.length > 0 ? sortedScores.map(score => `
                         <div class="quiz-progress-item">
                             <div class="quiz-info">
                                 <h3>${this.getQuizDisplayName(score.quizName)}</h3>
                                 <div class="progress-details">
-                                    <span class="score">${score.score}% Complete</span>
-                                    <span class="questions">Questions: ${score.questionsAnswered}/15</span>
-                                    <span class="last-active">Last Active: ${score.lastActive ? new Date(score.lastActive).toLocaleDateString() : 'Never'}</span>
+                                    <span class="score">Progress: ${score.score}%</span>
+                                    <span class="questions">Questions Completed: ${score.questionsAnswered}/15</span>
+                                    <span class="experience">XP Earned: ${score.experience}/300</span>
+                                    ${score.lastActive ? 
+                                        `<span class="last-active">Last Active: ${new Date(score.lastActive).toLocaleDateString()}</span>` :
+                                        '<span class="last-active">Not Started</span>'
+                                    }
                                 </div>
                             </div>
                             <button class="reset-button" onclick="window.adminDashboard.resetUserProgress('${username}', '${score.quizName}')">
                                 Reset Progress
                             </button>
                         </div>
-                    `).join('')}
+                    `).join('') : '<p>No quiz progress found</p>'}
                 </div>
             </div>
         `;
