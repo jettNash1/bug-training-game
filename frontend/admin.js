@@ -530,6 +530,10 @@ class AdminDashboard {
                 this.userScores.set(username, scores);
             }
 
+            // Clear local storage for this quiz
+            const storageKey = `quiz_progress_${username}_${quizName}`;
+            localStorage.removeItem(storageKey);
+
             // Update the UI
             this.updateUserList();
             this.showError(`Successfully reset ${this.getQuizDisplayName(quizName)} for ${username}`);
