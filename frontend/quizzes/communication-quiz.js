@@ -614,14 +614,12 @@ class CommunicationQuiz extends BaseQuiz {
             if (loadingIndicator) {
                 loadingIndicator.classList.remove('hidden');
             }
-            
             // Set player name from localStorage
             this.player.name = localStorage.getItem('username');
             if (!this.player.name) {
                 window.location.href = '/login.html';
                 return;
             }
-            
             const hasProgress = await this.loadProgress();
             
             if (!hasProgress) {
