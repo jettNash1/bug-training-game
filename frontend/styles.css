@@ -100,16 +100,16 @@ body {
 .quiz-item {
     position: relative;
     display: flex;
-    align-items: center;
-    padding: 1rem;
-    margin-bottom: 1rem;
-    background-color: #ffffff;
-    border-radius: 8px;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    align-items: flex-start;
+    padding: 1.5rem;
+    border-radius: 12px;
+    background: var(--card-background);
+    color: var(--text-primary);
     text-decoration: none;
-    color: inherit;
-    transition: transform 0.2s ease-in-out;
-    overflow: hidden;
+    transition: all 0.2s ease;
+    border: 1px solid rgba(0, 0, 0, 0.08);
+    gap: 1.25rem;
+    cursor: pointer;
 }
 
 .quiz-item:hover {
@@ -119,46 +119,62 @@ body {
 
 .quiz-icon {
     font-size: 1.5rem;
-    margin-right: 1rem;
     min-width: 2rem;
     text-align: center;
 }
 
 .quiz-info {
     flex-grow: 1;
+    display: flex;
+    flex-direction: column;
 }
 
 .quiz-title {
-    font-weight: bold;
+    font-weight: 600;
     margin-bottom: 0.25rem;
 }
 
 .quiz-description {
     font-size: 0.9rem;
-    color: #666;
+    color: var(--text-muted);
 }
 
 .quiz-completion {
     position: absolute;
-    bottom: 0;
-    left: 0;
-    height: 4px;
-    width: 0;
-    transition: width 0.3s ease-in-out, background-color 0.3s ease-in-out;
+    top: 0;
+    right: 0;
+    padding: 0.25rem 0.75rem;
+    font-size: 0.85rem;
+    font-weight: 500;
+    border-radius: 0 12px 0 12px;
+    transition: all 0.3s ease;
 }
 
-.quiz-completion.in-progress {
-    background: var(--warning-color);
-    color: var(--text-primary);
+/* Progress states */
+.quiz-item[data-progress="0"] {
+    background: var(--card-background);
 }
 
-.quiz-completion.completed {
+.quiz-item[data-progress="0"] .quiz-completion {
+    display: none;
+}
+
+.quiz-item[data-progress="100"] {
+    background: linear-gradient(to right, rgba(46, 204, 113, 0.1), rgba(46, 204, 113, 0.2));
+}
+
+.quiz-item[data-progress="100"] .quiz-completion {
     background: var(--success-color);
     color: white;
 }
 
-.quiz-completion:not(:empty) {
-    display: block !important;
+.quiz-item:not([data-progress="0"]):not([data-progress="100"]) {
+    background: linear-gradient(to right, rgba(241, 196, 15, 0.1), rgba(241, 196, 15, 0.2));
+}
+
+.quiz-item:not([data-progress="0"]):not([data-progress="100"]) .quiz-completion {
+    background: var(--warning-color);
+    color: var(--text-primary);
 }
 
 .category-progress {
