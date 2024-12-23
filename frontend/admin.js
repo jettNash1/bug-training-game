@@ -129,7 +129,7 @@ class AdminDashboard {
         for (const quizId of quizTypes) {
             try {
                 const response = await this.apiService.fetchWithAuth(
-                    `${this.apiService.baseUrl}/users/${username}/quiz-progress/${quizId}`
+                    `${this.apiService.baseUrl}/admin/users/${username}/quiz-progress/${quizId}`
                 );
 
                 if (response.ok) {
@@ -170,8 +170,9 @@ class AdminDashboard {
             }
 
             try {
+                // Use the correct admin endpoint for fetching users
                 const response = await this.apiService.fetchWithAuth(
-                    `${this.apiService.baseUrl}/users`
+                    `${this.apiService.baseUrl}/admin/users`
                 );
 
                 if (!response.ok) {
@@ -179,17 +180,22 @@ class AdminDashboard {
                 }
 
                 const data = await response.json();
-                this.users = data.users || [];
-                console.log('Found users:', this.users);
+                if (data.success && Array.isArray(data.users)) {
+                    this.users = data.users;
+                    console.log('Found users:', this.users);
 
-                // Load progress for each user
-                for (const user of this.users) {
-                    const scores = await this.loadUserProgress(user.username);
-                    this.userScores.set(user.username, scores);
+                    // Load progress for each user
+                    for (const user of this.users) {
+                        const scores = await this.loadUserProgress(user.username);
+                        this.userScores.set(user.username, scores);
+                    }
+
+                    this.updateStatistics();
+                    this.updateUserList();
+                } else {
+                    console.error('Invalid user data format:', data);
+                    this.showError('Failed to load user data');
                 }
-
-                this.updateStatistics();
-                this.updateUserList();
             } catch (error) {
                 console.error('Error fetching users:', error);
                 this.showError('Failed to fetch user data');
@@ -360,7 +366,7 @@ class AdminDashboard {
     async resetUserProgress(username, quizName) {
         try {
             const response = await this.apiService.fetchWithAuth(
-                `${this.apiService.baseUrl}/users/${username}/quiz-progress/${quizName}/reset`,
+                `${this.apiService.baseUrl}/admin/users/${username}/quiz-progress/${quizName}/reset`,
                 { 
                     method: 'POST',
                     headers: {
