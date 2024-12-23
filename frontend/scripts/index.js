@@ -23,13 +23,27 @@ class IndexPage {
                 return;
             }
 
-            // Fetch all quiz scores from the server
-            const scores = await this.apiService.getAllQuizScores(username);
-            console.log('Loaded quiz scores:', scores);
-            
-            if (scores && scores.data) {
-                this.quizScores = scores.data;
+            // Get progress for each quiz
+            this.quizScores = [];
+            for (const item of this.quizItems) {
+                const quizId = item.dataset.quiz;
+                try {
+                    const progress = await this.apiService.getQuizProgress(quizId);
+                    if (progress && progress.data) {
+                        // Calculate score based on completed questions
+                        const questionsAnswered = progress.data.questionHistory ? progress.data.questionHistory.length : 0;
+                        const score = Math.round((questionsAnswered / 15) * 100); // 15 questions per quiz
+                        this.quizScores.push({
+                            quizName: quizId,
+                            score: score
+                        });
+                    }
+                } catch (error) {
+                    console.error(`Error loading progress for quiz ${quizId}:`, error);
+                }
             }
+            
+            console.log('Loaded quiz scores:', this.quizScores);
         } catch (error) {
             console.error('Error loading user progress:', error);
         }
