@@ -118,7 +118,7 @@ class AdminDashboard {
     }
 
     async loadUserProgress(username) {
-        const scores = [];
+        // Get all quiz types
         const quizTypes = [
             'communication', 'initiative', 'time-management', 'tester-mindset',
             'risk-analysis', 'risk-management', 'non-functional', 'test-support',
@@ -126,42 +126,58 @@ class AdminDashboard {
             'raising-tickets', 'reports', 'CMS-Testing'
         ];
         
-        for (const quizId of quizTypes) {
-            try {
-                const response = await this.apiService.fetchWithAuth(
-                    `${this.apiService.baseUrl}/admin/users/${username}/quiz-progress/${quizId}`
-                );
+        // Initialize scores for all quiz types
+        const scores = quizTypes.map(quizId => ({
+            quizName: quizId,
+            score: 0,
+            questionsAnswered: 0,
+            completedAt: null,
+            lastActive: null,
+            experience: 0
+        }));
 
-                if (response.ok) {
-                    const progress = await response.json();
-                    if (progress && progress.data) {
-                        // Calculate progress based on quiz results if available
-                        let score = 0;
-                        let questionsAnswered = 0;
-                        
-                        if (progress.data.questionHistory) {
-                            questionsAnswered = progress.data.questionHistory.length;
-                            // Calculate score based on experience points if available
-                            if (progress.data.experience) {
-                                score = Math.round((progress.data.experience / 300) * 100); // 300 is max XP
-                            } else {
-                                score = Math.round((questionsAnswered / 15) * 100); // 15 is total questions
-                            }
-                        }
-                        
-                        scores.push({
-                            quizName: quizId,
-                            score: score,
-                            questionsAnswered: questionsAnswered,
-                            completedAt: progress.data.lastUpdated || null,
-                            lastActive: progress.data.lastUpdated || null,
-                            experience: progress.data.experience || 0
-                        });
+        try {
+            // Find the user in our users array
+            const user = this.users.find(u => u.username === username);
+            if (!user) return scores;
+
+            // Update scores with actual progress from user data
+            if (user.quizResults && Array.isArray(user.quizResults)) {
+                user.quizResults.forEach(result => {
+                    const scoreIndex = scores.findIndex(s => s.quizName === result.quizName);
+                    if (scoreIndex !== -1) {
+                        scores[scoreIndex] = {
+                            ...scores[scoreIndex],
+                            score: result.score || 0,
+                            completedAt: result.completedAt || null,
+                            lastActive: result.lastActive || result.completedAt || null
+                        };
                     }
-                }
-            } catch (error) {
-                console.error(`Error loading progress for ${quizId}:`, error);
+                });
             }
+
+            // Update with quiz progress if available
+            if (user.quizProgress) {
+                Object.entries(user.quizProgress).forEach(([quizName, progress]) => {
+                    const scoreIndex = scores.findIndex(s => s.quizName === quizName);
+                    if (scoreIndex !== -1 && progress) {
+                        const questionsAnswered = progress.questionHistory ? progress.questionHistory.length : 0;
+                        const experience = progress.experience || 0;
+                        scores[scoreIndex] = {
+                            ...scores[scoreIndex],
+                            questionsAnswered,
+                            experience,
+                            lastActive: progress.lastUpdated || scores[scoreIndex].lastActive,
+                            score: Math.max(
+                                scores[scoreIndex].score,
+                                experience ? Math.round((experience / 300) * 100) : Math.round((questionsAnswered / 15) * 100)
+                            )
+                        };
+                    }
+                });
+            }
+        } catch (error) {
+            console.error(`Error loading progress for ${username}:`, error);
         }
         
         return scores;
@@ -273,7 +289,6 @@ class AdminDashboard {
         );
 
         console.log('Sorting users by:', sortBy);
-        // Sort users
         filteredUsers.sort((a, b) => {
             switch (sortBy) {
                 case 'username-asc':
@@ -302,12 +317,15 @@ class AdminDashboard {
 
             const progress = this.calculateUserProgress(user);
             const lastActive = this.getLastActiveDate(user);
+            const completedQuizzes = scores.filter(score => score.score > 0).length;
+            const totalQuizzes = scores.length;
 
             card.innerHTML = `
                 <div class="user-header">
                     <h4>${user.username}</h4>
                     <div class="user-stats">
                         <div class="total-score">Overall Progress: ${progress.toFixed(1)}%</div>
+                        <div class="quiz-completion">Completed Quizzes: ${completedQuizzes}/${totalQuizzes}</div>
                         <div class="last-active">Last Active: ${lastActive ? new Date(lastActive).toLocaleDateString() : 'Never'}</div>
                     </div>
                 </div>
@@ -325,12 +343,9 @@ class AdminDashboard {
         const scores = this.userScores.get(user.username) || [];
         if (!scores.length) return 0;
         
-        // Calculate total progress across all quizzes
-        const completedQuizzes = scores.filter(score => score.score > 0);
-        if (completedQuizzes.length === 0) return 0;
-        
-        const totalProgress = completedQuizzes.reduce((sum, score) => sum + score.score, 0);
-        return Math.round(totalProgress / completedQuizzes.length);
+        // Calculate average progress across all quizzes
+        const totalProgress = scores.reduce((sum, score) => sum + score.score, 0);
+        return Math.round(totalProgress / scores.length);
     }
 
     getLastActiveDate(user) {
@@ -364,8 +379,8 @@ class AdminDashboard {
             </div>
             <div class="user-details-body">
                 <div class="quiz-progress-list">
-                    ${sortedScores.length > 0 ? sortedScores.map(score => `
-                        <div class="quiz-progress-item">
+                    ${sortedScores.map(score => `
+                        <div class="quiz-progress-item ${score.score > 0 ? 'started' : 'not-started'}">
                             <div class="quiz-info">
                                 <h3>${this.getQuizDisplayName(score.quizName)}</h3>
                                 <div class="progress-details">
@@ -382,7 +397,7 @@ class AdminDashboard {
                                 Reset Progress
                             </button>
                         </div>
-                    `).join('') : '<p>No quiz progress found</p>'}
+                    `).join('')}
                 </div>
             </div>
         `;
