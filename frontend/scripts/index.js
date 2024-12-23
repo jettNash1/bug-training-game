@@ -1,11 +1,11 @@
-import { APIService } from './api-service.js';
-import { QuizUser } from './quiz-user.js';
+import { APIService } from '../api-service.js';
+import { QuizUser } from '../QuizUser.js';
 
 class IndexPage {
     constructor() {
         this.apiService = new APIService();
         this.user = new QuizUser(localStorage.getItem('username'));
-        this.quizItems = document.querySelectorAll('.quiz-item');
+        this.quizItems = document.querySelectorAll('.quiz-item:not(.locked-quiz)');
         this.initialize();
     }
 
@@ -60,6 +60,19 @@ class IndexPage {
                     progressElement.textContent = '';
                     progressElement.style.display = 'none';
                 }
+
+                // Update background color based on progress
+                if (percentage === 100) {
+                    item.style.background = 'linear-gradient(to right, rgba(46, 204, 113, 0.1), rgba(46, 204, 113, 0.2))';
+                    progressElement.style.background = 'var(--success-color)';
+                    progressElement.style.color = 'white';
+                } else if (percentage > 0) {
+                    item.style.background = 'linear-gradient(to right, rgba(241, 196, 15, 0.1), rgba(241, 196, 15, 0.2))';
+                    progressElement.style.background = 'var(--warning-color)';
+                    progressElement.style.color = 'var(--text-primary)';
+                } else {
+                    item.style.background = 'var(--card-background)';
+                }
             }
         });
     }
@@ -70,9 +83,9 @@ class IndexPage {
         const categories = document.querySelectorAll('.category-card');
         
         categories.forEach(category => {
-            const quizItems = category.querySelectorAll('.quiz-item');
+            const quizItems = category.querySelectorAll('.quiz-item:not(.locked-quiz)');
             const progressBar = category.querySelector('.progress-fill');
-            const progressText = category.querySelector('.progress-text');
+            const progressText = category.querySelector('.category-progress');
             
             if (quizItems.length && progressBar && progressText) {
                 let completedQuizzes = 0;
@@ -93,7 +106,12 @@ class IndexPage {
                 const categoryPercentage = Math.round(totalProgress / totalQuizzes);
                 
                 progressBar.style.width = `${categoryPercentage}%`;
-                progressText.textContent = `Progress: ${completedQuizzes}/${totalQuizzes} Complete`;
+                progressText.innerHTML = `
+                    <div class="progress-text">Progress: ${completedQuizzes}/${totalQuizzes} Complete</div>
+                    <div class="progress-bar">
+                        <div class="progress-fill" style="width: ${categoryPercentage}%"></div>
+                    </div>
+                `;
             }
         });
     }
