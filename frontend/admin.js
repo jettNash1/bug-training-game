@@ -437,15 +437,19 @@ class AdminDashboard {
         try {
             // First, update the user's quiz progress in the database
             const response = await this.apiService.fetchWithAuth(
-                `${this.apiService.baseUrl}/admin/quiz-progress/reset`,
+                `${this.apiService.baseUrl}/users/quiz-progress`,
                 { 
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'
                     },
                     body: JSON.stringify({
-                        username: username,
-                        quizName: quizName
+                        quizName: quizName,
+                        progress: {
+                            experience: 0,
+                            questionHistory: [],
+                            lastUpdated: new Date().toISOString()
+                        }
                     })
                 }
             );
@@ -492,6 +496,25 @@ class AdminDashboard {
                 const resultIndex = this.users[userIndex].quizResults.findIndex(r => r.quizName === quizName);
                 if (resultIndex !== -1) {
                     this.users[userIndex].quizResults.splice(resultIndex, 1);
+                }
+
+                // Also reset quiz score
+                try {
+                    await this.apiService.fetchWithAuth(
+                        `${this.apiService.baseUrl}/users/quiz-scores`,
+                        {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json'
+                            },
+                            body: JSON.stringify({
+                                quizName: quizName,
+                                score: 0
+                            })
+                        }
+                    );
+                } catch (error) {
+                    console.error('Error resetting quiz score:', error);
                 }
             }
 
