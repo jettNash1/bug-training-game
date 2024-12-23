@@ -437,7 +437,7 @@ class AdminDashboard {
         try {
             // First, update the user's quiz progress in the database
             const response = await this.apiService.fetchWithAuth(
-                `${this.apiService.baseUrl}/users/quiz-progress`,
+                `${this.apiService.baseUrl}/users/${username}/quiz-progress`,
                 { 
                     method: 'POST',
                     headers: {
@@ -501,7 +501,7 @@ class AdminDashboard {
                 // Also reset quiz score
                 try {
                     await this.apiService.fetchWithAuth(
-                        `${this.apiService.baseUrl}/users/quiz-scores`,
+                        `${this.apiService.baseUrl}/users/${username}/quiz-scores`,
                         {
                             method: 'POST',
                             headers: {
@@ -543,6 +543,9 @@ class AdminDashboard {
                 existingOverlay.remove();
                 this.showUserDetails(username);
             }
+
+            // Refresh the user data from server
+            await this.updateDashboard();
         } catch (error) {
             console.error('Error resetting progress:', error);
             this.showError(`Failed to reset progress: ${error.message}`);
