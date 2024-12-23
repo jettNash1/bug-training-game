@@ -20,8 +20,8 @@ class NonFunctionalQuiz extends BaseQuiz {
         
         super(config);
         
-       // Set the quiz name
-       Object.defineProperty(this, 'quizName', {
+        // Set the quiz name
+        Object.defineProperty(this, 'quizName', {
         value: 'communication',
         writable: false,
         configurable: false,
