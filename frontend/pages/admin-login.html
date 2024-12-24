@@ -56,6 +56,9 @@
 
     <script>
         document.addEventListener('DOMContentLoaded', () => {
+            // Create AdminDashboard instance
+            window.adminDashboard = new AdminDashboard();
+
             // Check if already logged in as admin
             const adminToken = localStorage.getItem('adminToken');
             if (adminToken) {
