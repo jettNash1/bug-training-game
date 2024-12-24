@@ -348,22 +348,16 @@ export class AdminDashboard {
     }
 
     updateUserList() {
-        console.log('Updating user list...');
         const usersList = document.getElementById('usersList');
-        if (!usersList) {
-            console.error('usersList element not found!');
-            return;
-        }
+        if (!usersList) return;
 
         const searchInput = document.getElementById('userSearch')?.value.toLowerCase() || '';
         const sortBy = document.getElementById('sortBy')?.value || 'username-asc';
         
-        console.log('Filtering users with search:', searchInput);
         let filteredUsers = this.users.filter(user => 
             user.username.toLowerCase().includes(searchInput)
         );
 
-        console.log('Sorting users by:', sortBy);
         filteredUsers.sort((a, b) => {
             switch (sortBy) {
                 case 'username-asc':
@@ -381,10 +375,8 @@ export class AdminDashboard {
             }
         });
 
-        console.log('Clearing existing user list');
         usersList.innerHTML = '';
 
-        console.log('Creating user cards for', filteredUsers.length, 'users');
         filteredUsers.forEach(user => {
             const scores = this.userScores.get(user.username) || [];
             const card = document.createElement('div');
@@ -411,26 +403,26 @@ export class AdminDashboard {
 
             usersList.appendChild(card);
         });
-        console.log('User list update complete');
     }
 
     calculateUserProgress(user) {
         const scores = this.userScores.get(user.username) || [];
         if (!scores.length) return 0;
         
-        // Calculate average progress across all quizzes
-        const totalProgress = scores.reduce((sum, score) => sum + score.score, 0);
-        return Math.round(totalProgress / scores.length);
+        const completedScores = scores.filter(score => score.score > 0);
+        if (!completedScores.length) return 0;
+        
+        const totalProgress = completedScores.reduce((sum, score) => sum + score.score, 0);
+        return totalProgress / scores.length;
     }
 
     getLastActiveDate(user) {
         const scores = this.userScores.get(user.username) || [];
         if (!scores.length) return 0;
         
-        // Find the most recent activity date
         const activeDates = scores
             .map(score => score.lastActive)
-            .filter(date => date) // Remove null/undefined dates
+            .filter(date => date)
             .map(date => new Date(date).getTime());
             
         return activeDates.length > 0 ? Math.max(...activeDates) : 0;
@@ -438,7 +430,6 @@ export class AdminDashboard {
 
     async showUserDetails(username) {
         const scores = this.userScores.get(username) || [];
-        console.log('User scores for', username, ':', scores); // Debug log
         
         const overlay = document.createElement('div');
         overlay.className = 'user-details-overlay';
@@ -448,7 +439,6 @@ export class AdminDashboard {
         
         // Sort quizzes by completion percentage
         const sortedScores = [...scores].sort((a, b) => b.score - a.score);
-        console.log('Sorted scores:', sortedScores); // Debug log
         
         content.innerHTML = `
             <div class="user-details-header">
@@ -458,12 +448,7 @@ export class AdminDashboard {
             <div class="user-details-body">
                 <div class="quiz-progress-list">
                     ${sortedScores.map(score => {
-                        // Debug log for each quiz
-                        console.log(`Processing quiz: ${score.quizName}`, score);
-                        
-                        // Calculate questions completed based on progress percentage
                         const questionsCompleted = Math.round((score.score / 100) * 15);
-                        // Calculate XP earned based on progress percentage
                         const xpEarned = Math.round((score.score / 100) * 300);
                         
                         return `
