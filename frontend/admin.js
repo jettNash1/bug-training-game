@@ -425,7 +425,7 @@ class AdminDashboard {
             'test-support': 'Test Support',
             'issue-verification': 'Issue Verification',
             'build-verification': 'Build Verification',
-            'issue-tracking': 'Issue Tracking Tools',
+            'issue-tracking-tools': 'Issue Tracking Tools',
             'raising-tickets': 'Raising Tickets',
             'reports': 'Reports',
             'CMS-Testing': 'CMS Testing'
