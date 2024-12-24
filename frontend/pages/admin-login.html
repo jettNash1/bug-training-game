@@ -51,19 +51,9 @@
 
     <!-- Load only required scripts -->
     <script type="module">
-        import { AdminDashboard, handleAdminLogin } from '../admin.js';
+        import { handleAdminLogin } from '../admin.js';
         
         document.addEventListener('DOMContentLoaded', () => {
-            // Initialize AdminDashboard
-            window.adminDashboard = new AdminDashboard();
-
-            // Check if already logged in as admin
-            const adminToken = localStorage.getItem('adminToken');
-            if (adminToken) {
-                window.location.href = '/pages/admin.html';
-                return;
-            }
-
             // Add form submit handler
             document.getElementById('adminLoginForm').addEventListener('submit', async (event) => {
                 event.preventDefault();

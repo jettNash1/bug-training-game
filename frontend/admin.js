@@ -7,60 +7,68 @@ export class AdminDashboard {
         this.users = [];
         this.userScores = new Map();
         this.init();
-        this.setupTokenRefresh();
-    }
-
-    setupTokenRefresh() {
-        // Check token every 5 minutes
-        setInterval(async () => {
-            const adminToken = localStorage.getItem('adminToken');
-            
-            if (adminToken) {
-                try {
-                    // Verify token locally
-                    const tokenData = JSON.parse(atob(adminToken));
-                    if (!tokenData.isAdmin || tokenData.exp < Date.now() / 1000) {
-                        this.handleAdminLogout();
-                    }
-                } catch (error) {
-                    console.error('Token verification error:', error);
-                    this.handleAdminLogout();
-                }
-            }
-        }, 300000); // 5 minutes
     }
 
     async init() {
         console.log('Initializing AdminDashboard');
         const adminToken = localStorage.getItem('adminToken');
+        const currentPath = window.location.pathname;
         
-        // Check if we're on the login page
-        if (window.location.pathname.includes('admin-login.html')) {
-            if (this.verifyAdminToken(adminToken)) {
-                // If already logged in as admin, redirect to admin dashboard
-                window.location.href = '/pages/admin.html';
-                return;
-            }
-        } else if (window.location.pathname.includes('admin.html')) {
-            if (!this.verifyAdminToken(adminToken)) {
-                // If not logged in as admin, redirect to login page
-                window.location.href = '/pages/admin-login.html';
-                return;
-            }
-            await this.showAdminDashboard();
+        // Only verify token if we're on admin pages
+        if (currentPath.includes('admin')) {
+            const isTokenValid = await this.verifyAdminToken(adminToken);
             
-            // Add event listeners for dashboard
-            document.getElementById('userSearch').addEventListener('input', this.debounce(this.updateDashboard.bind(this), 300));
-            document.getElementById('sortBy').addEventListener('change', this.updateDashboard.bind(this));
+            if (currentPath.includes('admin-login.html')) {
+                if (isTokenValid) {
+                    // If on login page with valid token, redirect to admin panel
+                    window.location.href = '/pages/admin.html';
+                    return;
+                }
+            } else if (currentPath.includes('admin.html')) {
+                if (!isTokenValid) {
+                    // If on admin panel without valid token, redirect to login
+                    window.location.href = '/pages/admin-login.html';
+                    return;
+                }
+                // Setup dashboard only if we're on the admin panel with valid token
+                await this.setupDashboard();
+            }
         }
     }
 
-    verifyAdminToken(token) {
+    async setupDashboard() {
+        await this.showAdminDashboard();
+        
+        // Add event listeners for dashboard
+        const userSearch = document.getElementById('userSearch');
+        const sortBy = document.getElementById('sortBy');
+        
+        if (userSearch) {
+            userSearch.addEventListener('input', this.debounce(this.updateDashboard.bind(this), 300));
+        }
+        if (sortBy) {
+            sortBy.addEventListener('change', this.updateDashboard.bind(this));
+        }
+    }
+
+    async verifyAdminToken(token) {
         if (!token) return false;
         
         try {
-            const tokenData = JSON.parse(atob(token));
-            return tokenData.isAdmin && tokenData.exp > Date.now() / 1000;
+            const response = await fetch(`${this.apiService.baseUrl}/admin/verify-token`, {
+                method: 'GET',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                }
+            });
+
+            if (!response.ok) {
+                return false;
+            }
+
+            const data = await response.json();
+            return data.success && data.valid && data.isAdmin;
         } catch (error) {
             console.error('Admin token verification failed:', error);
             return false;
@@ -80,10 +88,6 @@ export class AdminDashboard {
                 body: JSON.stringify({ username, password })
             });
 
-            if (!response.ok) {
-                throw new Error('Invalid admin credentials');
-            }
-
             const data = await response.json();
             
             if (data.success && data.token && data.isAdmin) {
@@ -91,7 +95,7 @@ export class AdminDashboard {
                 localStorage.setItem('adminToken', data.token);
                 window.location.href = '/pages/admin.html';
             } else {
-                this.showError('Invalid admin credentials');
+                this.showError(data.message || 'Invalid admin credentials');
             }
         } catch (error) {
             console.error('Login error:', error);
@@ -100,12 +104,8 @@ export class AdminDashboard {
     }
 
     async handleAdminLogout() {
-        try {
-            localStorage.removeItem('adminToken');
-            window.location.href = '/pages/admin-login.html';
-        } catch (error) {
-            console.error('Logout error:', error);
-        }
+        localStorage.removeItem('adminToken');
+        window.location.href = '/pages/admin-login.html';
     }
 
     showError(message) {
@@ -562,21 +562,15 @@ export class AdminDashboard {
     }
 }
 
-// Initialize the dashboard only if we're on the admin panel page
-if (window.location.pathname.includes('/pages/admin.html')) {
-    window.adminDashboard = new AdminDashboard();
-}
+// Initialize the dashboard
+const adminDashboard = new AdminDashboard();
+window.adminDashboard = adminDashboard;
 
 // Export these functions for direct use in HTML
 export const handleAdminLogin = async () => {
-    if (!window.adminDashboard) {
-        window.adminDashboard = new AdminDashboard();
-    }
     await window.adminDashboard.handleAdminLogin();
 };
 
 export const handleAdminLogout = () => {
-    if (window.adminDashboard) {
-        window.adminDashboard.handleAdminLogout();
-    }
+    window.adminDashboard.handleAdminLogout();
 }; 
