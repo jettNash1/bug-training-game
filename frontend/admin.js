@@ -492,7 +492,7 @@ class AdminDashboard {
             }
 
             // Update userScores for the specific quiz only
-            const scores = this.userScores.get(u sername) || [];
+            const scores = this.userScores.get(username) || [];
             const scoreIndex = scores.findIndex(s => s.quizName === quizName);
             if (scoreIndex !== -1) {
                 scores[scoreIndex] = {
