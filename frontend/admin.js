@@ -435,16 +435,15 @@ class AdminDashboard {
 
     async resetUserProgress(username, quizName) {
         try {
-            // First, update the user's quiz progress in the database using admin endpoint
+            // Reset only the specific quiz progress
             const response = await this.apiService.fetchWithAuth(
-                `${this.apiService.baseUrl}/admin/users/${username}/quiz-progress/reset`,
+                `${this.apiService.baseUrl}/admin/users/${username}/quiz-progress/${quizName}/reset`,  // Updated endpoint
                 { 
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'
                     },
                     body: JSON.stringify({
-                        quizName,
                         progress: {
                             experience: 0,
                             questionHistory: [],
@@ -453,68 +452,47 @@ class AdminDashboard {
                     })
                 }
             );
-            
-            // Read the response body once
-            let responseBody;
-            try {
-                responseBody = await response.text();
-            } catch (e) {
-                console.error('Failed to read response:', e);
-                responseBody = '';
-            }
 
             if (!response.ok) {
-                let errorMessage = 'Failed to reset quiz progress';
-                try {
-                    // Try to parse the response as JSON
-                    const errorData = JSON.parse(responseBody);
-                    errorMessage = errorData.message || errorMessage;
-                } catch (e) {
-                    // If not JSON, log the raw response
-                    console.error('Non-JSON error response:', responseBody);
-                }
-                throw new Error(errorMessage);
+                const errorData = await response.json();
+                throw new Error(errorData.message || 'Failed to reset quiz progress');
             }
 
-            // Also reset quiz score using admin endpoint
-            try {
-                await this.apiService.fetchWithAuth(
-                    `${this.apiService.baseUrl}/admin/users/${username}/quiz-scores/reset`,
-                    {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json'
-                        },
-                        body: JSON.stringify({ quizName })
+            // Reset only the specific quiz score
+            await this.apiService.fetchWithAuth(
+                `${this.apiService.baseUrl}/admin/users/${username}/quiz-scores/${quizName}/reset`,  // Updated endpoint
+                {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
                     }
-                );
-            } catch (error) {
-                console.error('Error resetting quiz score:', error);
-            }
+                }
+            );
 
-            // Find and update the user in our users array
+            // Update local state for the specific user and quiz
             const userIndex = this.users.findIndex(u => u.username === username);
             if (userIndex !== -1) {
-                // Reset quiz progress for the specific quiz only
-                if (!this.users[userIndex].quizProgress) {
-                    this.users[userIndex].quizProgress = {};
+                const user = this.users[userIndex];
+                
+                // Reset only the specific quiz progress
+                if (user.quizProgress) {
+                    user.quizProgress[quizName] = {
+                        experience: 0,
+                        questionHistory: [],
+                        lastUpdated: new Date().toISOString()
+                    };
                 }
-                this.users[userIndex].quizProgress[quizName] = {
-                    experience: 0,
-                    questionHistory: [],
-                    lastUpdated: new Date().toISOString()
-                };
 
-                // Reset quiz results for the specific quiz only
-                if (this.users[userIndex].quizResults) {
-                    this.users[userIndex].quizResults = this.users[userIndex].quizResults.filter(
+                // Remove only the specific quiz result
+                if (user.quizResults) {
+                    user.quizResults = user.quizResults.filter(
                         result => result.quizName !== quizName
                     );
                 }
             }
 
-            // Update local state for the specific quiz only
-            const scores = this.userScores.get(username) || [];
+            // Update userScores for the specific quiz only
+            const scores = this.userScores.get(u sername) || [];
             const scoreIndex = scores.findIndex(s => s.quizName === quizName);
             if (scoreIndex !== -1) {
                 scores[scoreIndex] = {
@@ -528,22 +506,21 @@ class AdminDashboard {
                 this.userScores.set(username, scores);
             }
 
-            // Clear local storage for this specific quiz only
-            const storageKey = `quiz_progress_${username}_${quizName}`;
-            localStorage.removeItem(storageKey);
+            // Clear only the specific quiz progress from local storage
+            localStorage.removeItem(`quiz_progress_${username}_${quizName}`);
 
-            // Update the UI
+            // Update UI
             this.updateUserList();
             this.showError(`Successfully reset ${this.getQuizDisplayName(quizName)} for ${username}`);
             
-            // Close the current details overlay and show updated details
+            // Refresh the details view
             const existingOverlay = document.querySelector('.user-details-overlay');
             if (existingOverlay) {
                 existingOverlay.remove();
                 this.showUserDetails(username);
             }
 
-            // Refresh the user data from server
+            // Refresh only the affected user's data
             await this.updateDashboard();
         } catch (error) {
             console.error('Error resetting progress:', error);
