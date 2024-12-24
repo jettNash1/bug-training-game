@@ -197,7 +197,7 @@ export class QuizUser {
             this.updateCategoryProgress('Personal Organisation', ['communication', 'initiative', 'tester-mindset', 'time-management']);
             this.updateCategoryProgress('Risk Management', ['risk-analysis', 'risk-management']);
             this.updateCategoryProgress('Test Execution', ['non-functional', 'test-support', 'issue-verification', 'build-verification']);
-            this.updateCategoryProgress('Tickets and Tracking', ['issue-tracking', 'raising-tickets', 'reports', 'CMS-Testing']);
+            this.updateCategoryProgress('Tickets and Tracking', ['issue-tracking-tools', 'raising-tickets', 'reports', 'CMS-Testing']);
 
             // Update individual quiz progress indicators
             document.querySelectorAll('.quiz-item').forEach(quizItem => {
