@@ -1,5 +1,8 @@
 import { config } from './config.js';
 
+// Add this at the top with other imports
+const ADMIN_PATHS = ['/pages/admin-login.html', '/pages/admin.html'];
+
 // Token management functions
 export const getAuthToken = () => localStorage.getItem('token');
 export const getRefreshToken = () => localStorage.getItem('refreshToken');
@@ -13,6 +16,12 @@ export const clearTokens = () => {
 
 // Auth check function
 export async function checkAuth() {
+    // First check if we're on an admin page
+    if (ADMIN_PATHS.some(path => window.location.pathname.includes(path))) {
+        console.log('On admin page, skipping regular auth check');
+        return true;
+    }
+
     const token = getAuthToken();
     const username = localStorage.getItem('username');
     const refreshToken = getRefreshToken();
@@ -165,9 +174,10 @@ function updateHeader(username) {
 let authCheckInProgress = false;
 
 document.addEventListener('DOMContentLoaded', () => {
-    // Skip auth check on login page
-    if (window.location.pathname.includes('login.html')) {
-        console.log('On login page, skipping initial auth check');
+    // Skip auth check on login pages and admin pages
+    if (window.location.pathname.includes('login.html') || 
+        ADMIN_PATHS.some(path => window.location.pathname.includes(path))) {
+        console.log('On login or admin page, skipping initial auth check');
         return;
     }
 
