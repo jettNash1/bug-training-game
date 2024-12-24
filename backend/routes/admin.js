@@ -175,19 +175,26 @@ router.post('/users/:username/quiz-progress/:quizName/reset', auth, async (req, 
         if (!user.quizProgress) {
             user.quizProgress = {};
         }
-        user.quizProgress[quizName] = {
-            experience: 0,
-            questionHistory: [],
-            lastUpdated: new Date()
-        };
+
+        // Completely remove the quiz progress
+        delete user.quizProgress[quizName];
 
         // Remove quiz result if it exists
         if (user.quizResults) {
             const initialLength = user.quizResults.length;
-            user.quizResults = user.quizResults.filter(result => result.quizName !== quizName);
+            user.quizResults = user.quizResults.filter(result => {
+                // Handle both camelCase and hyphenated formats
+                const normalizedQuizName = result.quizName
+                    .replace(/([A-Z])/g, '-$1')
+                    .toLowerCase()
+                    .replace(/^-/, '');
+                return normalizedQuizName !== quizName.toLowerCase() &&
+                       result.quizName !== quizName;
+            });
             console.log(`Removed ${initialLength - user.quizResults.length} quiz results for ${quizName}`);
         }
 
+        // Save the updated user document
         await user.save();
         console.log('Successfully reset quiz progress for:', { username, quizName });
         
@@ -234,10 +241,24 @@ router.post('/users/:username/quiz-scores/reset', auth, async (req, res) => {
         // Remove quiz result if it exists
         if (user.quizResults) {
             const initialLength = user.quizResults.length;
-            user.quizResults = user.quizResults.filter(result => result.quizName !== quizName);
+            user.quizResults = user.quizResults.filter(result => {
+                // Handle both camelCase and hyphenated formats
+                const normalizedQuizName = result.quizName
+                    .replace(/([A-Z])/g, '-$1')
+                    .toLowerCase()
+                    .replace(/^-/, '');
+                return normalizedQuizName !== quizName.toLowerCase() &&
+                       result.quizName !== quizName;
+            });
             console.log(`Removed ${initialLength - user.quizResults.length} quiz results for ${quizName}`);
         }
 
+        // Also ensure quiz progress is reset
+        if (user.quizProgress) {
+            delete user.quizProgress[quizName];
+        }
+
+        // Save the updated user document
         await user.save();
         console.log('Successfully reset quiz score for:', { username, quizName });
         

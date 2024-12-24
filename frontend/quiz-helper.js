@@ -143,20 +143,31 @@ export class BaseQuiz {
             if (!updateResult) {
                 throw new Error('Failed to update quiz score');
             }
+
+            // Clear any local storage data for this quiz
+            this.clearQuizLocalStorage(user.username, this.quizName);
             
             // Redirect to home page
             window.location.href = '/';
         } catch (error) {
             console.error('Failed to save quiz results:', error);
-            // Show error message to user
-            const errorDiv = document.createElement('div');
-            errorDiv.className = 'error-notification';
-            errorDiv.textContent = error.message || 'Failed to save results. Please try again.';
-            document.body.appendChild(errorDiv);
-            setTimeout(() => errorDiv.remove(), 5000);
+            this.showError(error.message || 'Failed to save results. Please try again.');
         } finally {
             this.isLoading = false;
         }
+    }
+
+    clearQuizLocalStorage(username, quizName) {
+        // Clear both hyphenated and camelCase versions
+        const normalizedName = this.normalizeQuizName(quizName);
+        localStorage.removeItem(`quiz_progress_${username}_${quizName}`);
+        localStorage.removeItem(`quiz_progress_${username}_${normalizedName}`);
+        localStorage.removeItem(`quizResults_${username}_${quizName}`);
+        localStorage.removeItem(`quizResults_${username}_${normalizedName}`);
+    }
+
+    normalizeQuizName(quizName) {
+        return quizName.replace(/-([a-z])/g, g => g[1].toUpperCase());
     }
 
     calculateScore() {

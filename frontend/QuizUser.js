@@ -18,6 +18,8 @@ export class QuizUser {
             const data = await response.json();
             if (data.success) {
                 this.quizResults = data.data || [];
+                // Clear any stale progress data from localStorage
+                this.clearLocalStorageData();
                 return true;
             }
             return false;
@@ -27,6 +29,42 @@ export class QuizUser {
             this.loadFromLocalStorage();
             return false;
         }
+    }
+
+    clearLocalStorageData() {
+        // Clear all quiz-related data for this user
+        const quizTypes = [
+            'communication',
+            'initiative', 
+            'time-management',
+            'tester-mindset',
+            'risk-analysis',
+            'risk-management',
+            'non-functional',
+            'test-support',
+            'issue-verification',
+            'build-verification',
+            'issue-tracking-tools',
+            'raising-tickets',
+            'reports',
+            'CMS-Testing'
+        ];
+
+        quizTypes.forEach(quizName => {
+            // Clear both hyphenated and camelCase versions
+            localStorage.removeItem(`quiz_progress_${this.username}_${quizName}`);
+            localStorage.removeItem(`quiz_progress_${this.username}_${this.normalizeQuizName(quizName)}`);
+            localStorage.removeItem(`quizResults_${this.username}_${quizName}`);
+            localStorage.removeItem(`quizResults_${this.username}_${this.normalizeQuizName(quizName)}`);
+        });
+
+        // Clear general user data
+        localStorage.removeItem(`quizResults_${this.username}`);
+        localStorage.removeItem(`quizProgress_${this.username}`);
+    }
+
+    normalizeQuizName(quizName) {
+        return quizName.replace(/-([a-z])/g, g => g[1].toUpperCase());
     }
 
     loadFromLocalStorage() {
@@ -54,6 +92,7 @@ export class QuizUser {
             experience: Math.round(experience || score),
             tools: tools || [],
             questionHistory: questionHistory || [],
+            questionsAnswered: questionHistory ? questionHistory.length : 0,
             completedAt: new Date().toISOString()
         };
 

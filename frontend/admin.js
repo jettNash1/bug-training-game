@@ -496,7 +496,7 @@ export class AdminDashboard {
             const adminToken = localStorage.getItem('adminToken');
             if (!adminToken) {
                 this.handleAdminLogout();
-                return;
+                return false;
             }
 
             // Fetch fresh users data
@@ -519,6 +519,29 @@ export class AdminDashboard {
                 // Clear and reload all user scores
                 this.userScores.clear();
                 for (const user of this.users) {
+                    // Clear any local storage for this user's quizzes
+                    const quizTypes = [
+                        'communication',
+                        'initiative', 
+                        'time-management',
+                        'tester-mindset',
+                        'risk-analysis',
+                        'risk-management',
+                        'non-functional',
+                        'test-support',
+                        'issue-verification',
+                        'build-verification',
+                        'issue-tracking-tools',
+                        'raising-tickets',
+                        'reports',
+                        'cms-testing'
+                    ];
+                    
+                    quizTypes.forEach(quizName => {
+                        localStorage.removeItem(`quiz_progress_${user.username}_${quizName}`);
+                        localStorage.removeItem(`quiz_progress_${user.username}_${this.normalizeQuizName(quizName)}`);
+                    });
+
                     const scores = await this.loadUserProgress(user.username);
                     this.userScores.set(user.username, scores);
                 }
@@ -705,11 +728,25 @@ export class AdminDashboard {
                 throw new Error(scoreData.message || 'Failed to reset quiz score');
             }
 
-            // Refresh all data
-            const refreshSuccess = await this.refreshAllData();
-            if (!refreshSuccess) {
-                throw new Error('Failed to refresh data after reset');
+            // Clear local storage for this quiz
+            localStorage.removeItem(`quiz_progress_${username}_${quizName}`);
+            localStorage.removeItem(`quiz_progress_${username}_${apiQuizName}`);
+
+            // Update the user in our local data
+            if (progressData.user) {
+                const userIndex = this.users.findIndex(u => u.username === username);
+                if (userIndex !== -1) {
+                    this.users[userIndex] = progressData.user;
+                }
             }
+
+            // Clear and reload the user's scores
+            const scores = await this.loadUserProgress(username);
+            this.userScores.set(username, scores);
+
+            // Update UI
+            this.updateStatistics();
+            this.updateUserList();
 
             // Show success message
             this.showError(`Successfully reset ${this.getQuizDisplayName(quizName)} for ${username}`);
@@ -720,6 +757,9 @@ export class AdminDashboard {
                 existingOverlay.remove();
                 await this.showUserDetails(username);
             }
+
+            // Do a final refresh of all data to ensure consistency
+            await this.refreshAllData();
 
         } catch (error) {
             console.error('Error resetting progress:', error);
