@@ -1,6 +1,7 @@
 import { APIService } from './api-service.js';
 
-class AdminDashboard {
+// Export the AdminDashboard class
+export class AdminDashboard {
     constructor() {
         this.apiService = new APIService();
         this.users = [];
@@ -561,9 +562,21 @@ class AdminDashboard {
     }
 }
 
-// Initialize the dashboard and expose it to the window
-window.adminDashboard = new AdminDashboard();
+// Initialize the dashboard only if we're on the admin panel page
+if (window.location.pathname.includes('/pages/admin.html')) {
+    window.adminDashboard = new AdminDashboard();
+}
 
-// Expose functions to window for onclick handlers
-window.handleAdminLogin = () => window.adminDashboard.handleAdminLogin();
-window.handleAdminLogout = () => window.adminDashboard.handleAdminLogout(); 
+// Export these functions for direct use in HTML
+export const handleAdminLogin = async () => {
+    if (!window.adminDashboard) {
+        window.adminDashboard = new AdminDashboard();
+    }
+    await window.adminDashboard.handleAdminLogin();
+};
+
+export const handleAdminLogout = () => {
+    if (window.adminDashboard) {
+        window.adminDashboard.handleAdminLogout();
+    }
+}; 

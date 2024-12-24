@@ -50,13 +50,11 @@
     </main>
 
     <!-- Load only required scripts -->
-    <script type="module" src="../config.js"></script>
-    <script type="module" src="../api-service.js"></script>
-    <script type="module" src="../admin.js"></script>
-
-    <script>
+    <script type="module">
+        import { AdminDashboard, handleAdminLogin } from '../admin.js';
+        
         document.addEventListener('DOMContentLoaded', () => {
-            // Create AdminDashboard instance
+            // Initialize AdminDashboard
             window.adminDashboard = new AdminDashboard();
 
             // Check if already logged in as admin
@@ -66,9 +64,10 @@
                 return;
             }
 
+            // Add form submit handler
             document.getElementById('adminLoginForm').addEventListener('submit', async (event) => {
                 event.preventDefault();
-                await window.adminDashboard.handleAdminLogin();
+                await handleAdminLogin();
             });
         });
     </script>
