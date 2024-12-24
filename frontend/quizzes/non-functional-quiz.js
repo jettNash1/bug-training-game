@@ -510,6 +510,7 @@ class NonFunctionalQuiz extends BaseQuiz {
                 ]
             }
         ];
+
         // Initialize UI and add event listeners
         this.initializeEventListeners();
 
@@ -817,10 +818,10 @@ class NonFunctionalQuiz extends BaseQuiz {
             if (username) {
                 const quizUser = new QuizUser(username);
                 const score = Math.round((this.player.experience / this.maxXP) * 100);
-                await quizUser.updateQuizScore('communication', score);
+                await quizUser.updateQuizScore('non-functional', score);
                 
                 // Update progress display on index page
-                const progressElement = document.querySelector('#communication-progress');
+                const progressElement = document.querySelector('#non-functional-progress');
                 if (progressElement) {
                     const totalQuestions = 15;
                     const completedQuestions = this.player.questionHistory.length;
@@ -833,7 +834,7 @@ class NonFunctionalQuiz extends BaseQuiz {
                         progressElement.classList.remove('hidden');
                         
                         // Update quiz item styling
-                        const quizItem = document.querySelector('[data-quiz="communication"]');
+                        const quizItem = document.querySelector('[data-quiz="non-functional"]');
                         if (quizItem) {
                             quizItem.classList.remove('completed', 'in-progress');
                             if (percentComplete === 100) {
