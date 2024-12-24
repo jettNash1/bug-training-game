@@ -22,7 +22,7 @@ class NonFunctionalQuiz extends BaseQuiz {
         
         // Set the quiz name
         Object.defineProperty(this, 'quizName', {
-        value: 'communication',
+        value: 'non-functional',
         writable: false,
         configurable: false,
         enumerable: true
