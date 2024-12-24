@@ -159,10 +159,12 @@ router.post('/users/:username/quiz-progress/:quizName/reset', auth, async (req, 
         }
 
         const { username, quizName } = req.params;
+        console.log('Attempting to reset quiz progress:', { username, quizName });
 
         // Find the user
         const user = await User.findOne({ username });
         if (!user) {
+            console.log('User not found:', username);
             return res.status(404).json({
                 success: false,
                 message: 'User not found'
@@ -181,13 +183,18 @@ router.post('/users/:username/quiz-progress/:quizName/reset', auth, async (req, 
 
         // Remove quiz result if it exists
         if (user.quizResults) {
+            const initialLength = user.quizResults.length;
             user.quizResults = user.quizResults.filter(result => result.quizName !== quizName);
+            console.log(`Removed ${initialLength - user.quizResults.length} quiz results for ${quizName}`);
         }
 
         await user.save();
+        console.log('Successfully reset quiz progress for:', { username, quizName });
+        
         res.json({ 
             success: true,
-            message: `Quiz progress reset for user ${username}`
+            message: `Quiz progress reset for user ${username}`,
+            user: user
         });
     } catch (error) {
         console.error('Error resetting quiz progress:', error);
@@ -212,10 +219,12 @@ router.post('/users/:username/quiz-scores/reset', auth, async (req, res) => {
 
         const { username } = req.params;
         const { quizName } = req.body;
+        console.log('Attempting to reset quiz score:', { username, quizName });
 
         // Find the user
         const user = await User.findOne({ username });
         if (!user) {
+            console.log('User not found:', username);
             return res.status(404).json({
                 success: false,
                 message: 'User not found'
@@ -224,13 +233,18 @@ router.post('/users/:username/quiz-scores/reset', auth, async (req, res) => {
 
         // Remove quiz result if it exists
         if (user.quizResults) {
+            const initialLength = user.quizResults.length;
             user.quizResults = user.quizResults.filter(result => result.quizName !== quizName);
+            console.log(`Removed ${initialLength - user.quizResults.length} quiz results for ${quizName}`);
         }
 
         await user.save();
+        console.log('Successfully reset quiz score for:', { username, quizName });
+        
         res.json({ 
             success: true,
-            message: `Quiz score reset for user ${username}`
+            message: `Quiz score reset for user ${username}`,
+            user: user
         });
     } catch (error) {
         console.error('Error resetting quiz score:', error);

@@ -525,7 +525,7 @@ export class AdminDashboard {
             console.log('Resetting progress for quiz:', { original: quizName, apiFormat: apiQuizName });
 
             // Reset the quiz progress
-            const response = await fetch(
+            const progressResponse = await fetch(
                 `${this.apiService.baseUrl}/admin/users/${username}/quiz-progress/${apiQuizName}/reset`,
                 { 
                     method: 'POST',
@@ -536,9 +536,11 @@ export class AdminDashboard {
                 }
             );
 
-            if (!response.ok) {
-                const errorData = await response.json();
-                throw new Error(errorData.message || 'Failed to reset quiz progress');
+            const progressData = await progressResponse.json();
+            console.log('Progress reset response:', progressData);
+
+            if (!progressResponse.ok) {
+                throw new Error(progressData.message || 'Failed to reset quiz progress');
             }
 
             // Reset the quiz score
@@ -554,14 +556,16 @@ export class AdminDashboard {
                 }
             );
 
+            const scoreData = await scoreResponse.json();
+            console.log('Score reset response:', scoreData);
+
             if (!scoreResponse.ok) {
-                const errorData = await scoreResponse.json();
-                throw new Error(errorData.message || 'Failed to reset quiz score');
+                throw new Error(scoreData.message || 'Failed to reset quiz score');
             }
 
-            // Fetch fresh user data to ensure we have the latest state
-            const userResponse = await fetch(
-                `${this.apiService.baseUrl}/admin/users/${username}`,
+            // Fetch all users to get updated data
+            const usersResponse = await fetch(
+                `${this.apiService.baseUrl}/admin/users`,
                 {
                     headers: {
                         'Authorization': `Bearer ${adminToken}`,
@@ -570,37 +574,41 @@ export class AdminDashboard {
                 }
             );
 
-            if (!userResponse.ok) {
-                throw new Error('Failed to fetch updated user data');
+            if (!usersResponse.ok) {
+                throw new Error('Failed to fetch updated users data');
             }
 
-            const userData = await userResponse.json();
-            if (!userData.success) {
-                throw new Error('Failed to get updated user data');
-            }
+            const usersData = await usersResponse.json();
+            console.log('Updated users data:', usersData);
 
-            // Update the local user data with fresh data from server
-            const userIndex = this.users.findIndex(u => u.username === username);
-            if (userIndex !== -1) {
-                this.users[userIndex] = userData.user;
-            }
+            if (usersData.success && Array.isArray(usersData.users)) {
+                // Update our users array
+                this.users = usersData.users;
+                
+                // Update the specific user's scores
+                const updatedUser = this.users.find(u => u.username === username);
+                if (updatedUser) {
+                    const scores = await this.loadUserProgress(username);
+                    this.userScores.set(username, scores);
 
-            // Update the user's scores with fresh data
-            const scores = await this.loadUserProgress(username);
-            this.userScores.set(username, scores);
+                    // Update all UI elements
+                    this.updateStatistics();
+                    this.updateUserList();
+                    
+                    // Show success message
+                    this.showError(`Successfully reset ${this.getQuizDisplayName(quizName)} for ${username}`);
 
-            // Update all UI elements
-            this.updateStatistics();
-            this.updateUserList();
-            
-            // Show success message
-            this.showError(`Successfully reset ${this.getQuizDisplayName(quizName)} for ${username}`);
-
-            // Refresh the details view if it's open
-            const existingOverlay = document.querySelector('.user-details-overlay');
-            if (existingOverlay) {
-                existingOverlay.remove();
-                await this.showUserDetails(username);
+                    // Refresh the details view if it's open
+                    const existingOverlay = document.querySelector('.user-details-overlay');
+                    if (existingOverlay) {
+                        existingOverlay.remove();
+                        await this.showUserDetails(username);
+                    }
+                } else {
+                    throw new Error('User not found in updated data');
+                }
+            } else {
+                throw new Error('Invalid users data format received');
             }
 
         } catch (error) {
