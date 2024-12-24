@@ -111,7 +111,7 @@ router.get('/stats', auth, async (req, res) => {
 });
 
 // Reset a user's quiz progress
-router.post('/users/:username/quiz-progress/reset', auth, async (req, res) => {
+router.post('/users/:username/quiz-progress/:quizName/reset', auth, async (req, res) => {
     try {
         // Verify admin status
         if (!req.user.isAdmin) {
@@ -121,8 +121,7 @@ router.post('/users/:username/quiz-progress/reset', auth, async (req, res) => {
             });
         }
 
-        const { username } = req.params;
-        const { quizName } = req.body;
+        const { username, quizName } = req.params;
 
         // Find the user
         const user = await User.findOne({ username });

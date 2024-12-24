@@ -437,31 +437,8 @@ class AdminDashboard {
         try {
             // Reset only the specific quiz progress
             const response = await this.apiService.fetchWithAuth(
-                `${this.apiService.baseUrl}/admin/users/${username}/quiz-progress/${quizName}/reset`,  // Updated endpoint
+                `${this.apiService.baseUrl}/admin/users/${username}/quiz-progress/${quizName}/reset`,
                 { 
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({
-                        progress: {
-                            experience: 0,
-                            questionHistory: [],
-                            lastUpdated: new Date().toISOString()
-                        }
-                    })
-                }
-            );
-
-            if (!response.ok) {
-                const errorData = await response.json();
-                throw new Error(errorData.message || 'Failed to reset quiz progress');
-            }
-
-            // Reset only the specific quiz score
-            await this.apiService.fetchWithAuth(
-                `${this.apiService.baseUrl}/admin/users/${username}/quiz-scores/${quizName}/reset`,  // Updated endpoint
-                {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'
@@ -469,19 +446,32 @@ class AdminDashboard {
                 }
             );
 
+            if (!response.ok) {
+                let errorMessage = 'Failed to reset quiz progress';
+                try {
+                    const errorData = await response.json();
+                    errorMessage = errorData.message || errorMessage;
+                } catch (e) {
+                    // If response isn't JSON, use status text
+                    errorMessage = response.statusText || errorMessage;
+                }
+                throw new Error(errorMessage);
+            }
+
             // Update local state for the specific user and quiz
             const userIndex = this.users.findIndex(u => u.username === username);
             if (userIndex !== -1) {
                 const user = this.users[userIndex];
                 
                 // Reset only the specific quiz progress
-                if (user.quizProgress) {
-                    user.quizProgress[quizName] = {
-                        experience: 0,
-                        questionHistory: [],
-                        lastUpdated: new Date().toISOString()
-                    };
+                if (!user.quizProgress) {
+                    user.quizProgress = {};
                 }
+                user.quizProgress[quizName] = {
+                    experience: 0,
+                    questionHistory: [],
+                    lastUpdated: new Date().toISOString()
+                };
 
                 // Remove only the specific quiz result
                 if (user.quizResults) {
