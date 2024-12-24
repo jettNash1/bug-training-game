@@ -519,9 +519,14 @@ export class AdminDashboard {
         try {
             const adminToken = localStorage.getItem('adminToken');
             
+            // Convert hyphenated names to camelCase for the API
+            const apiQuizName = quizName.replace(/-([a-z])/g, g => g[1].toUpperCase());
+            
+            console.log('Resetting progress for quiz:', { original: quizName, apiFormat: apiQuizName });
+
             // Reset the quiz progress
             const response = await fetch(
-                `${this.apiService.baseUrl}/admin/users/${username}/quiz-progress/${quizName}/reset`,
+                `${this.apiService.baseUrl}/admin/users/${username}/quiz-progress/${apiQuizName}/reset`,
                 { 
                     method: 'POST',
                     headers: {
@@ -532,7 +537,8 @@ export class AdminDashboard {
             );
 
             if (!response.ok) {
-                throw new Error('Failed to reset quiz progress');
+                const errorData = await response.json();
+                throw new Error(errorData.message || 'Failed to reset quiz progress');
             }
 
             // Reset the quiz score
@@ -544,47 +550,44 @@ export class AdminDashboard {
                         'Authorization': `Bearer ${adminToken}`,
                         'Content-Type': 'application/json'
                     },
-                    body: JSON.stringify({ quizName })
+                    body: JSON.stringify({ quizName: apiQuizName })
                 }
             );
 
             if (!scoreResponse.ok) {
-                throw new Error('Failed to reset quiz score');
+                const errorData = await scoreResponse.json();
+                throw new Error(errorData.message || 'Failed to reset quiz score');
             }
 
-            // Update the local user data immediately
-            const user = this.users.find(u => u.username === username);
-            if (user) {
-                // Remove the quiz result
-                if (user.quizResults) {
-                    user.quizResults = user.quizResults.filter(result => {
-                        const normalizedQuizName = result.quizName.replace(/([A-Z])/g, '-$1').toLowerCase();
-                        return result.quizName !== quizName && normalizedQuizName !== quizName;
-                    });
+            // Fetch fresh user data to ensure we have the latest state
+            const userResponse = await fetch(
+                `${this.apiService.baseUrl}/admin/users/${username}`,
+                {
+                    headers: {
+                        'Authorization': `Bearer ${adminToken}`,
+                        'Content-Type': 'application/json'
+                    }
                 }
-                
-                // Reset quiz progress
-                if (user.quizProgress) {
-                    delete user.quizProgress[quizName];
-                }
+            );
+
+            if (!userResponse.ok) {
+                throw new Error('Failed to fetch updated user data');
             }
 
-            // Update the user's scores in our local Map
-            const scores = this.userScores.get(username) || [];
-            const updatedScores = scores.map(score => {
-                if (score.quizName === quizName) {
-                    return {
-                        ...score,
-                        score: 0,
-                        questionsAnswered: 0,
-                        completedAt: null,
-                        lastActive: new Date().toISOString(),
-                        experience: 0
-                    };
-                }
-                return score;
-            });
-            this.userScores.set(username, updatedScores);
+            const userData = await userResponse.json();
+            if (!userData.success) {
+                throw new Error('Failed to get updated user data');
+            }
+
+            // Update the local user data with fresh data from server
+            const userIndex = this.users.findIndex(u => u.username === username);
+            if (userIndex !== -1) {
+                this.users[userIndex] = userData.user;
+            }
+
+            // Update the user's scores with fresh data
+            const scores = await this.loadUserProgress(username);
+            this.userScores.set(username, scores);
 
             // Update all UI elements
             this.updateStatistics();
@@ -599,9 +602,6 @@ export class AdminDashboard {
                 existingOverlay.remove();
                 await this.showUserDetails(username);
             }
-
-            // Fetch fresh data from server to ensure consistency
-            await this.updateDashboard();
 
         } catch (error) {
             console.error('Error resetting progress:', error);
