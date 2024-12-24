@@ -166,13 +166,27 @@ export class AdminDashboard {
                     });
                     
                     if (scoreIndex !== -1) {
+                        // Get questions answered from answers array if available
+                        let questionsAnswered = 0;
+                        if (result.answers && Array.isArray(result.answers)) {
+                            questionsAnswered = result.answers.length;
+                        } else if (result.questionsAnswered) {
+                            questionsAnswered = result.questionsAnswered;
+                        }
+
+                        // Calculate experience based on score if not provided
+                        let experience = result.experience;
+                        if (typeof experience !== 'number' && result.score) {
+                            experience = Math.round((result.score / 100) * 300);
+                        }
+
                         scores[scoreIndex] = {
                             ...scores[scoreIndex],
                             score: result.score || 0,
-                            questionsAnswered: result.questionsAnswered || 0,
+                            questionsAnswered,
                             completedAt: result.completedAt,
                             lastActive: result.completedAt,
-                            experience: result.experience || 0
+                            experience: experience || 0
                         };
                     }
                 });
@@ -195,9 +209,15 @@ export class AdminDashboard {
                     });
                     
                     if (scoreIndex !== -1 && progress) {
+                        // Get the most accurate questions answered count
+                        let questionsAnswered = scores[scoreIndex].questionsAnswered;
+                        if (progress.questionHistory && Array.isArray(progress.questionHistory)) {
+                            questionsAnswered = Math.max(questionsAnswered, progress.questionHistory.length);
+                        }
+
                         scores[scoreIndex] = {
                             ...scores[scoreIndex],
-                            questionsAnswered: progress.questionHistory ? progress.questionHistory.length : scores[scoreIndex].questionsAnswered,
+                            questionsAnswered,
                             experience: progress.experience || scores[scoreIndex].experience,
                             lastActive: progress.lastUpdated || scores[scoreIndex].lastActive
                         };
@@ -215,6 +235,7 @@ export class AdminDashboard {
                 });
             }
 
+            console.log('Loaded progress for user:', username, scores);
             return scores;
         } catch (error) {
             console.error(`Error loading progress for ${username}:`, error);
