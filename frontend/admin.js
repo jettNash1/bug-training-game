@@ -147,55 +147,59 @@ export class AdminDashboard {
 
         try {
             const adminToken = localStorage.getItem('adminToken');
-            // Get user progress using admin auth
-            const response = await fetch(
-                `${this.apiService.baseUrl}/admin/users/${username}/progress`,
-                {
-                    headers: {
-                        'Authorization': `Bearer ${adminToken}`,
-                        'Content-Type': 'application/json'
-                    }
-                }
-            );
+            // Get user data directly from our users array
+            const user = this.users.find(u => u.username === username);
+            if (!user) return scores;
 
-            if (!response.ok) {
-                throw new Error('Failed to fetch user progress');
-            }
-
-            const data = await response.json();
-            
-            // Update scores with actual progress from user data
-            if (data.quizResults && Array.isArray(data.quizResults)) {
-                data.quizResults.forEach(result => {
-                    const scoreIndex = scores.findIndex(s => s.quizName === result.quizName);
+            // Process quiz results from user data
+            if (user.quizResults && Array.isArray(user.quizResults)) {
+                user.quizResults.forEach(result => {
+                    // Handle both formats of quiz names (with and without hyphen)
+                    const normalizedQuizName = result.quizName.replace(/([A-Z])/g, '-$1').toLowerCase();
+                    const scoreIndex = scores.findIndex(s => 
+                        s.quizName === result.quizName || 
+                        s.quizName === normalizedQuizName
+                    );
+                    
                     if (scoreIndex !== -1) {
                         scores[scoreIndex] = {
                             ...scores[scoreIndex],
                             score: result.score || 0,
-                            completedAt: result.completedAt || null,
-                            lastActive: result.lastActive || result.completedAt || null
+                            questionsAnswered: Math.ceil((result.score / 100) * 15),
+                            completedAt: result.completedAt,
+                            lastActive: result.completedAt,
+                            experience: Math.ceil((result.score / 100) * 300)
                         };
                     }
                 });
             }
 
             // Update with quiz progress if available
-            if (data.quizProgress) {
-                Object.entries(data.quizProgress).forEach(([quizName, progress]) => {
-                    const scoreIndex = scores.findIndex(s => s.quizName === quizName);
+            if (user.quizProgress) {
+                Object.entries(user.quizProgress).forEach(([quizName, progress]) => {
+                    const normalizedQuizName = quizName.replace(/([A-Z])/g, '-$1').toLowerCase();
+                    const scoreIndex = scores.findIndex(s => 
+                        s.quizName === quizName || 
+                        s.quizName === normalizedQuizName
+                    );
+                    
                     if (scoreIndex !== -1 && progress) {
                         const questionsAnswered = progress.questionHistory ? progress.questionHistory.length : 0;
-                        const experience = progress.experience || 0;
                         scores[scoreIndex] = {
                             ...scores[scoreIndex],
-                            questionsAnswered,
-                            experience,
-                            lastActive: progress.lastUpdated || scores[scoreIndex].lastActive,
-                            score: Math.max(
-                                scores[scoreIndex].score,
-                                experience ? Math.round((experience / 300) * 100) : Math.round((questionsAnswered / 15) * 100)
-                            )
+                            questionsAnswered: Math.max(scores[scoreIndex].questionsAnswered, questionsAnswered),
+                            lastActive: progress.lastUpdated || scores[scoreIndex].lastActive
                         };
+                    }
+                });
+            }
+
+            // Update last active from user's lastLogin if available
+            const lastLogin = user.lastLogin ? new Date(user.lastLogin) : null;
+            if (lastLogin) {
+                scores.forEach(score => {
+                    if (!score.lastActive || new Date(score.lastActive) < lastLogin) {
+                        score.lastActive = lastLogin;
                     }
                 });
             }
@@ -409,23 +413,29 @@ export class AdminDashboard {
         const scores = this.userScores.get(user.username) || [];
         if (!scores.length) return 0;
         
+        // Only count quizzes that have been attempted
         const completedScores = scores.filter(score => score.score > 0);
         if (!completedScores.length) return 0;
         
         const totalProgress = completedScores.reduce((sum, score) => sum + score.score, 0);
-        return totalProgress / scores.length;
+        return totalProgress / scores.length; // Divide by total number of quizzes for overall progress
     }
 
     getLastActiveDate(user) {
-        const scores = this.userScores.get(user.username) || [];
-        if (!scores.length) return 0;
+        if (!user) return 0;
         
-        const activeDates = scores
+        // First check user's last login
+        const lastLogin = user.lastLogin ? new Date(user.lastLogin).getTime() : 0;
+        
+        // Then check quiz results and progress
+        const scores = this.userScores.get(user.username) || [];
+        const quizDates = scores
             .map(score => score.lastActive)
             .filter(date => date)
             .map(date => new Date(date).getTime());
             
-        return activeDates.length > 0 ? Math.max(...activeDates) : 0;
+        // Return the most recent date
+        return Math.max(lastLogin, ...quizDates) || 0;
     }
 
     async showUserDetails(username) {
