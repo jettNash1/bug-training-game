@@ -35,13 +35,13 @@ class AdminDashboard {
         
         // Check if we're on the login page
         if (window.location.pathname.includes('admin-login.html')) {
-            if (adminToken) {
+            if (this.verifyAdminToken(adminToken)) {
                 // If already logged in as admin, redirect to admin dashboard
                 window.location.href = '/pages/admin.html';
                 return;
             }
         } else if (window.location.pathname.includes('admin.html')) {
-            if (!adminToken) {
+            if (!this.verifyAdminToken(adminToken)) {
                 // If not logged in as admin, redirect to login page
                 window.location.href = '/pages/admin-login.html';
                 return;
@@ -51,6 +51,18 @@ class AdminDashboard {
             // Add event listeners for dashboard
             document.getElementById('userSearch').addEventListener('input', this.debounce(this.updateDashboard.bind(this), 300));
             document.getElementById('sortBy').addEventListener('change', this.updateDashboard.bind(this));
+        }
+    }
+
+    verifyAdminToken(token) {
+        if (!token) return false;
+        
+        try {
+            const tokenData = JSON.parse(atob(token));
+            return tokenData.isAdmin && tokenData.exp > Date.now() / 1000;
+        } catch (error) {
+            console.error('Admin token verification failed:', error);
+            return false;
         }
     }
 
