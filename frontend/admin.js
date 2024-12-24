@@ -375,6 +375,8 @@ class AdminDashboard {
 
     async showUserDetails(username) {
         const scores = this.userScores.get(username) || [];
+        console.log('User scores for', username, ':', scores); // Debug log
+        
         const overlay = document.createElement('div');
         overlay.className = 'user-details-overlay';
         
@@ -383,6 +385,7 @@ class AdminDashboard {
         
         // Sort quizzes by completion percentage
         const sortedScores = [...scores].sort((a, b) => b.score - a.score);
+        console.log('Sorted scores:', sortedScores); // Debug log
         
         content.innerHTML = `
             <div class="user-details-header">
@@ -392,13 +395,16 @@ class AdminDashboard {
             <div class="user-details-body">
                 <div class="quiz-progress-list">
                     ${sortedScores.map(score => {
+                        // Debug log for each quiz
+                        console.log(`Processing quiz: ${score.quizName}`, score);
+                        
                         // Calculate questions completed based on progress percentage
                         const questionsCompleted = Math.round((score.score / 100) * 15);
                         // Calculate XP earned based on progress percentage
                         const xpEarned = Math.round((score.score / 100) * 300);
                         
                         return `
-                            <div class="quiz-progress-item ${score.score > 0 ? 'started' : 'not-started'}">
+                            <div class="quiz-progress-item ${score.score > 0 ? 'started' : 'not-started'}" data-quiz="${score.quizName}">
                                 <div class="quiz-info">
                                     <h3>${this.getQuizDisplayName(score.quizName)}</h3>
                                     <div class="progress-details">
@@ -442,6 +448,10 @@ class AdminDashboard {
             'reports': 'Reports',
             'CMS-Testing': 'CMS Testing'
         };
+        
+        // Debug log for quiz name mapping
+        console.log(`Getting display name for quiz: ${quizId} -> ${displayNames[quizId] || quizId}`);
+        
         return displayNames[quizId] || quizId;
     }
 
