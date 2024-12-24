@@ -166,15 +166,25 @@ export class AdminDashboard {
                     });
                     
                     if (scoreIndex !== -1) {
-                        // Get questions answered from answers array if available
+                        // Get questions answered from various sources
                         let questionsAnswered = 0;
+                        
+                        // First try to get from answers array
                         if (result.answers && Array.isArray(result.answers)) {
                             questionsAnswered = result.answers.length;
-                        } else if (result.questionsAnswered) {
+                        } 
+                        // Then try questionsAnswered property
+                        else if (result.questionsAnswered) {
                             questionsAnswered = result.questionsAnswered;
                         }
+                        // Finally, calculate from score if we have no other data
+                        else if (result.score > 0) {
+                            // If they have a score, they must have answered some questions
+                            // Calculate based on score percentage (minimum 1 question if they have any score)
+                            questionsAnswered = Math.max(1, Math.ceil((result.score / 100) * 15));
+                        }
 
-                        // Calculate experience based on score if not provided
+                        // Calculate experience if not provided
                         let experience = result.experience;
                         if (typeof experience !== 'number' && result.score) {
                             experience = Math.round((result.score / 100) * 300);
@@ -209,10 +219,16 @@ export class AdminDashboard {
                     });
                     
                     if (scoreIndex !== -1 && progress) {
-                        // Get the most accurate questions answered count
+                        // Get questions answered from progress data
                         let questionsAnswered = scores[scoreIndex].questionsAnswered;
+                        
+                        // Update from question history if available
                         if (progress.questionHistory && Array.isArray(progress.questionHistory)) {
                             questionsAnswered = Math.max(questionsAnswered, progress.questionHistory.length);
+                        }
+                        // If we have no questions answered but have a score, calculate from score
+                        else if (questionsAnswered === 0 && scores[scoreIndex].score > 0) {
+                            questionsAnswered = Math.max(1, Math.ceil((scores[scoreIndex].score / 100) * 15));
                         }
 
                         scores[scoreIndex] = {
