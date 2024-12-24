@@ -532,19 +532,43 @@ export class AdminDashboard {
                 throw new Error('Failed to reset quiz progress');
             }
 
-            // Update local state
-            const scores = await this.loadUserProgress(username);
-            this.userScores.set(username, scores);
+            // Get updated user data
+            const userResponse = await fetch(`${this.apiService.baseUrl}/admin/users`, {
+                headers: {
+                    'Authorization': `Bearer ${adminToken}`,
+                    'Content-Type': 'application/json'
+                }
+            });
 
-            // Update UI
-            this.updateUserList();
-            this.showError(`Successfully reset ${this.getQuizDisplayName(quizName)} for ${username}`);
-            
-            // Refresh the details view
-            const existingOverlay = document.querySelector('.user-details-overlay');
-            if (existingOverlay) {
-                existingOverlay.remove();
-                this.showUserDetails(username);
+            if (!userResponse.ok) {
+                throw new Error('Failed to fetch updated user data');
+            }
+
+            const userData = await userResponse.json();
+            if (userData.success && Array.isArray(userData.users)) {
+                // Update the specific user in our users array
+                const userIndex = this.users.findIndex(u => u.username === username);
+                if (userIndex !== -1) {
+                    this.users[userIndex] = userData.users.find(u => u.username === username);
+                }
+
+                // Update the user's scores
+                const scores = await this.loadUserProgress(username);
+                this.userScores.set(username, scores);
+
+                // Update all UI elements
+                this.updateStatistics();
+                this.updateUserList();
+                
+                // Show success message
+                this.showError(`Successfully reset ${this.getQuizDisplayName(quizName)} for ${username}`);
+
+                // Refresh the details view if it's open
+                const existingOverlay = document.querySelector('.user-details-overlay');
+                if (existingOverlay) {
+                    existingOverlay.remove();
+                    await this.showUserDetails(username);
+                }
             }
         } catch (error) {
             console.error('Error resetting progress:', error);
