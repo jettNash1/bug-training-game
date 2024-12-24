@@ -509,20 +509,45 @@ export class AdminDashboard {
             'CMS-Testing': 'CMS Testing'
         };
         
-        // Debug log for quiz name mapping
-        console.log(`Getting display name for quiz: ${quizId} -> ${displayNames[quizId] || quizId}`);
-        
         return displayNames[quizId] || quizId;
+    }
+
+    normalizeQuizName(quizName) {
+        // Map of special cases where the API name differs from our standard format
+        const specialCases = {
+            'tester-mindset': 'testerMindset',
+            'risk-analysis': 'riskAnalysis',
+            'risk-management': 'riskManagement',
+            'time-management': 'timeManagement',
+            'non-functional': 'nonFunctional',
+            'test-support': 'testSupport',
+            'issue-verification': 'issueVerification',
+            'build-verification': 'buildVerification',
+            'issue-tracking-tools': 'issueTrackingTools',
+            'raising-tickets': 'raisingTickets',
+            'CMS-Testing': 'cmsTesting'
+        };
+
+        // If we have a special case mapping, use it
+        if (specialCases[quizName]) {
+            return specialCases[quizName];
+        }
+
+        // Otherwise, convert from hyphenated to camelCase
+        return quizName.replace(/-([a-z])/g, g => g[1].toUpperCase());
     }
 
     async resetUserProgress(username, quizName) {
         try {
             const adminToken = localStorage.getItem('adminToken');
             
-            // Convert hyphenated names to camelCase for the API
-            const apiQuizName = quizName.replace(/-([a-z])/g, g => g[1].toUpperCase());
+            // Convert quiz name to API format
+            const apiQuizName = this.normalizeQuizName(quizName);
             
-            console.log('Resetting progress for quiz:', { original: quizName, apiFormat: apiQuizName });
+            console.log('Resetting progress for quiz:', { 
+                original: quizName, 
+                apiFormat: apiQuizName 
+            });
 
             // Reset the quiz progress
             const progressResponse = await fetch(
