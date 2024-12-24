@@ -1,5 +1,4 @@
 import { APIService } from './api-service.js';
-import { QuizUser } from './QuizUser.js';
 
 class AdminDashboard {
     constructor() {
@@ -13,14 +12,13 @@ class AdminDashboard {
     setupTokenRefresh() {
         // Check token every 5 minutes
         setInterval(async () => {
-            const token = localStorage.getItem('token');
-            const isAdmin = localStorage.getItem('isAdmin');
+            const adminToken = localStorage.getItem('adminToken');
             
-            if (token && isAdmin === 'true') {
+            if (adminToken) {
                 try {
                     // Verify token locally
-                    const tokenData = JSON.parse(atob(token));
-                    if (!tokenData.isAdmin || tokenData.exp < Date.now()) {
+                    const tokenData = JSON.parse(atob(adminToken.split('.')[1]));
+                    if (!tokenData.isAdmin || tokenData.exp < Date.now() / 1000) {
                         this.handleAdminLogout();
                     }
                 } catch (error) {
@@ -33,18 +31,17 @@ class AdminDashboard {
 
     async init() {
         console.log('Initializing AdminDashboard');
-        const token = localStorage.getItem('token');
-        const isAdmin = localStorage.getItem('isAdmin');
+        const adminToken = localStorage.getItem('adminToken');
         
         // Check if we're on the login page
         if (window.location.pathname.includes('admin-login.html')) {
-            if (token && isAdmin === 'true') {
+            if (adminToken) {
                 // If already logged in as admin, redirect to admin dashboard
                 window.location.href = './admin.html';
                 return;
             }
         } else if (window.location.pathname.includes('admin.html')) {
-            if (!token || isAdmin !== 'true') {
+            if (!adminToken) {
                 // If not logged in as admin, redirect to login page
                 window.location.href = './admin-login.html';
                 return;
@@ -80,10 +77,8 @@ class AdminDashboard {
 
                     const data = await response.json();
                     
-                    // Store both the API token and admin flag
-                    localStorage.setItem('token', data.token);
-                    localStorage.setItem('refreshToken', data.refreshToken);
-                    localStorage.setItem('isAdmin', 'true');
+                    // Store admin token separately from regular user token
+                    localStorage.setItem('adminToken', data.token);
                     window.location.href = './admin.html';
                 } catch (error) {
                     console.error('API authentication error:', error);
@@ -100,9 +95,7 @@ class AdminDashboard {
 
     async handleAdminLogout() {
         try {
-            localStorage.removeItem('token');
-            localStorage.removeItem('isAdmin');
-            localStorage.removeItem('refreshToken');
+            localStorage.removeItem('adminToken');
             window.location.href = './admin-login.html';
         } catch (error) {
             console.error('Logout error:', error);
@@ -130,7 +123,7 @@ class AdminDashboard {
             'test-support',
             'issue-verification',
             'build-verification',
-            'issue-tracking-tools',  // Changed from 'issue-tracking'
+            'issue-tracking-tools',
             'raising-tickets',
             'reports',
             'CMS-Testing'
@@ -151,9 +144,20 @@ class AdminDashboard {
             const user = this.users.find(u => u.username === username);
             if (!user) return scores;
 
+            // Get user progress using admin auth
+            const response = await this.apiService.fetchWithAdminAuth(
+                `${this.apiService.baseUrl}/admin/users/${username}/progress`
+            );
+
+            if (!response.ok) {
+                throw new Error('Failed to fetch user progress');
+            }
+
+            const data = await response.json();
+            
             // Update scores with actual progress from user data
-            if (user.quizResults && Array.isArray(user.quizResults)) {
-                user.quizResults.forEach(result => {
+            if (data.quizResults && Array.isArray(data.quizResults)) {
+                data.quizResults.forEach(result => {
                     const scoreIndex = scores.findIndex(s => s.quizName === result.quizName);
                     if (scoreIndex !== -1) {
                         scores[scoreIndex] = {
@@ -167,8 +171,8 @@ class AdminDashboard {
             }
 
             // Update with quiz progress if available
-            if (user.quizProgress) {
-                Object.entries(user.quizProgress).forEach(([quizName, progress]) => {
+            if (data.quizProgress) {
+                Object.entries(data.quizProgress).forEach(([quizName, progress]) => {
                     const scoreIndex = scores.findIndex(s => s.quizName === quizName);
                     if (scoreIndex !== -1 && progress) {
                         const questionsAnswered = progress.questionHistory ? progress.questionHistory.length : 0;
@@ -202,17 +206,16 @@ class AdminDashboard {
 
     async updateDashboard() {
         try {
-            const token = localStorage.getItem('token');
-            const isAdmin = localStorage.getItem('isAdmin');
+            const adminToken = localStorage.getItem('adminToken');
             
-            if (!token || isAdmin !== 'true') {
+            if (!adminToken) {
                 this.handleAdminLogout();
                 return;
             }
 
             try {
-                // Use the correct admin endpoint for fetching users
-                const response = await this.apiService.fetchWithAuth(
+                // Use the admin-specific fetch method
+                const response = await this.apiService.fetchWithAdminAuth(
                     `${this.apiService.baseUrl}/admin/users`
                 );
 

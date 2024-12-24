@@ -6,6 +6,36 @@ export class APIService {
         this.baseUrl = config.apiUrl;
     }
 
+    // Helper method to get admin auth header
+    getAdminAuthHeader() {
+        const adminToken = localStorage.getItem('adminToken');
+        return adminToken ? { 'Authorization': `Bearer ${adminToken}` } : {};
+    }
+
+    // Admin-specific fetch method
+    async fetchWithAdminAuth(url, options = {}) {
+        const headers = {
+            ...this.getAdminAuthHeader(),
+            'Content-Type': 'application/json',
+            ...options.headers
+        };
+
+        const response = await fetch(url, {
+            ...options,
+            headers
+        });
+
+        if (response.status === 401) {
+            // If unauthorized, redirect to admin login
+            localStorage.removeItem('adminToken');
+            window.location.href = '/pages/admin-login.html';
+            throw new Error('Admin authentication required');
+        }
+
+        return response;
+    }
+
+    // Regular user authentication methods
     async login(username, password) {
         try {
             console.log('Attempting login:', { username, url: `${this.baseUrl}/users/login` });
