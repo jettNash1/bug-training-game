@@ -37,13 +37,13 @@ class AdminDashboard {
         if (window.location.pathname.includes('admin-login.html')) {
             if (adminToken) {
                 // If already logged in as admin, redirect to admin dashboard
-                window.location.href = './admin.html';
+                window.location.href = '/pages/admin.html';
                 return;
             }
         } else if (window.location.pathname.includes('admin.html')) {
             if (!adminToken) {
                 // If not logged in as admin, redirect to login page
-                window.location.href = './admin-login.html';
+                window.location.href = '/pages/admin-login.html';
                 return;
             }
             await this.showAdminDashboard();
@@ -79,7 +79,7 @@ class AdminDashboard {
                     
                     // Store admin token separately from regular user token
                     localStorage.setItem('adminToken', data.token);
-                    window.location.href = './admin.html';
+                    window.location.href = '/pages/admin.html';
                 } catch (error) {
                     console.error('API authentication error:', error);
                     this.showError('Failed to authenticate with the server');
@@ -96,7 +96,7 @@ class AdminDashboard {
     async handleAdminLogout() {
         try {
             localStorage.removeItem('adminToken');
-            window.location.href = './admin-login.html';
+            window.location.href = '/pages/admin-login.html';
         } catch (error) {
             console.error('Logout error:', error);
         }

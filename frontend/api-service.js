@@ -28,6 +28,7 @@ export class APIService {
         if (response.status === 401) {
             // If unauthorized, redirect to admin login
             localStorage.removeItem('adminToken');
+            // Use consistent path for admin login
             window.location.href = '/pages/admin-login.html';
             throw new Error('Admin authentication required');
         }

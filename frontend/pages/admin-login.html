@@ -44,22 +44,29 @@
             </form>
             
             <nav class="auth-footer" role="navigation" aria-label="Return navigation">
-                <a href="../index.html" class="return-button" role="button" tabindex="0" aria-label="Return to Learning Hub">← Return to Learning Hub</a>
+                <a href="../login.html" class="return-button" role="button" tabindex="0" aria-label="Return to standard login page">← Return to Standard Login</a>
             </nav>
         </div>
     </main>
 
-    <!-- Load scripts as modules -->
+    <!-- Load only required scripts -->
     <script type="module" src="../config.js"></script>
     <script type="module" src="../api-service.js"></script>
-    <script type="module" src="../QuizUser.js"></script>
-    <script type="module" src="../quiz-helper.js"></script>
     <script type="module" src="../admin.js"></script>
 
     <script>
-        document.getElementById('adminLoginForm').addEventListener('submit', async (event) => {
-            event.preventDefault();
-            await window.adminDashboard.handleAdminLogin();
+        document.addEventListener('DOMContentLoaded', () => {
+            // Check if already logged in as admin
+            const adminToken = localStorage.getItem('adminToken');
+            if (adminToken) {
+                window.location.href = '/pages/admin.html';
+                return;
+            }
+
+            document.getElementById('adminLoginForm').addEventListener('submit', async (event) => {
+                event.preventDefault();
+                await window.adminDashboard.handleAdminLogin();
+            });
         });
     </script>
 </body>
