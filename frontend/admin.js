@@ -324,13 +324,18 @@ export class AdminDashboard {
     }
 
     updateStatistics() {
-        const today = new Date().toISOString().split('T')[0];
+        const today = new Date().setHours(0, 0, 0, 0); // Start of today
         let totalCompletion = 0;
         let activeUsers = new Set();
 
         this.users.forEach(user => {
             const scores = this.userScores.get(user.username) || [];
-            if (scores.some(score => score.lastActive?.startsWith(today))) {
+            // Check if user was active today
+            if (scores.some(score => {
+                if (!score.lastActive) return false;
+                const activeDate = new Date(score.lastActive).setHours(0, 0, 0, 0);
+                return activeDate === today;
+            })) {
                 activeUsers.add(user.username);
             }
 
@@ -397,7 +402,7 @@ export class AdminDashboard {
                     <div class="user-stats">
                         <div class="total-score">Overall Progress: ${progress.toFixed(1)}%</div>
                         <div class="quiz-completion">Completed Quizzes: ${completedQuizzes}/${totalQuizzes}</div>
-                        <div class="last-active">Last Active: ${lastActive ? new Date(lastActive).toLocaleDateString() : 'Never'}</div>
+                        <div class="last-active">Last Active: ${this.formatDate(lastActive)}</div>
                     </div>
                 </div>
                 <button class="view-details-btn" onclick="window.adminDashboard.showUserDetails('${user.username}')">
@@ -469,10 +474,7 @@ export class AdminDashboard {
                                         <span class="score">Progress: ${Math.round(score.score)}%</span>
                                         <span class="questions">Questions Completed: ${questionsCompleted}/15</span>
                                         <span class="experience">XP Earned: ${xpEarned}/300</span>
-                                        ${score.lastActive ? 
-                                            `<span class="last-active">Last Active: ${new Date(score.lastActive).toLocaleDateString()}</span>` :
-                                            '<span class="last-active">Not Started</span>'
-                                        }
+                                        <span class="last-active">Last Active: ${this.formatDate(score.lastActive)}</span>
                                     </div>
                                 </div>
                                 <button class="reset-button" onclick="window.adminDashboard.resetUserProgress('${username}', '${score.quizName}')">
@@ -532,6 +534,23 @@ export class AdminDashboard {
                 throw new Error('Failed to reset quiz progress');
             }
 
+            // Also reset the quiz score
+            const scoreResponse = await fetch(
+                `${this.apiService.baseUrl}/admin/users/${username}/quiz-scores/reset`,
+                {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${adminToken}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ quizName })
+                }
+            );
+
+            if (!scoreResponse.ok) {
+                throw new Error('Failed to reset quiz score');
+            }
+
             // Get updated user data
             const userResponse = await fetch(`${this.apiService.baseUrl}/admin/users`, {
                 headers: {
@@ -586,6 +605,13 @@ export class AdminDashboard {
             clearTimeout(timeout);
             timeout = setTimeout(later, wait);
         };
+    }
+
+    formatDate(date) {
+        if (!date) return 'Never';
+        const d = new Date(date);
+        if (isNaN(d.getTime())) return 'Never';
+        return d.toLocaleDateString();
     }
 }
 
