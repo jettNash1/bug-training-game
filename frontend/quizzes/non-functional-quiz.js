@@ -1146,4 +1146,5 @@ class NonFunctionalQuiz extends BaseQuiz {
 // Add DOMContentLoaded event listener
 document.addEventListener('DOMContentLoaded', () => {
     const quiz = new NonFunctionalQuiz();
-}); 
+    quiz.startGame();
+});
