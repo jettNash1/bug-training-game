@@ -518,7 +518,8 @@ export class AdminDashboard {
     async resetUserProgress(username, quizName) {
         try {
             const adminToken = localStorage.getItem('adminToken');
-            // Reset only the specific quiz progress
+            
+            // Reset the quiz progress
             const response = await fetch(
                 `${this.apiService.baseUrl}/admin/users/${username}/quiz-progress/${quizName}/reset`,
                 { 
@@ -534,7 +535,7 @@ export class AdminDashboard {
                 throw new Error('Failed to reset quiz progress');
             }
 
-            // Also reset the quiz score
+            // Reset the quiz score
             const scoreResponse = await fetch(
                 `${this.apiService.baseUrl}/admin/users/${username}/quiz-scores/reset`,
                 {
@@ -551,44 +552,57 @@ export class AdminDashboard {
                 throw new Error('Failed to reset quiz score');
             }
 
-            // Get updated user data
-            const userResponse = await fetch(`${this.apiService.baseUrl}/admin/users`, {
-                headers: {
-                    'Authorization': `Bearer ${adminToken}`,
-                    'Content-Type': 'application/json'
+            // Update the local user data immediately
+            const user = this.users.find(u => u.username === username);
+            if (user) {
+                // Remove the quiz result
+                if (user.quizResults) {
+                    user.quizResults = user.quizResults.filter(result => {
+                        const normalizedQuizName = result.quizName.replace(/([A-Z])/g, '-$1').toLowerCase();
+                        return result.quizName !== quizName && normalizedQuizName !== quizName;
+                    });
                 }
-            });
-
-            if (!userResponse.ok) {
-                throw new Error('Failed to fetch updated user data');
-            }
-
-            const userData = await userResponse.json();
-            if (userData.success && Array.isArray(userData.users)) {
-                // Update the specific user in our users array
-                const userIndex = this.users.findIndex(u => u.username === username);
-                if (userIndex !== -1) {
-                    this.users[userIndex] = userData.users.find(u => u.username === username);
-                }
-
-                // Update the user's scores
-                const scores = await this.loadUserProgress(username);
-                this.userScores.set(username, scores);
-
-                // Update all UI elements
-                this.updateStatistics();
-                this.updateUserList();
                 
-                // Show success message
-                this.showError(`Successfully reset ${this.getQuizDisplayName(quizName)} for ${username}`);
-
-                // Refresh the details view if it's open
-                const existingOverlay = document.querySelector('.user-details-overlay');
-                if (existingOverlay) {
-                    existingOverlay.remove();
-                    await this.showUserDetails(username);
+                // Reset quiz progress
+                if (user.quizProgress) {
+                    delete user.quizProgress[quizName];
                 }
             }
+
+            // Update the user's scores in our local Map
+            const scores = this.userScores.get(username) || [];
+            const updatedScores = scores.map(score => {
+                if (score.quizName === quizName) {
+                    return {
+                        ...score,
+                        score: 0,
+                        questionsAnswered: 0,
+                        completedAt: null,
+                        lastActive: new Date().toISOString(),
+                        experience: 0
+                    };
+                }
+                return score;
+            });
+            this.userScores.set(username, updatedScores);
+
+            // Update all UI elements
+            this.updateStatistics();
+            this.updateUserList();
+            
+            // Show success message
+            this.showError(`Successfully reset ${this.getQuizDisplayName(quizName)} for ${username}`);
+
+            // Refresh the details view if it's open
+            const existingOverlay = document.querySelector('.user-details-overlay');
+            if (existingOverlay) {
+                existingOverlay.remove();
+                await this.showUserDetails(username);
+            }
+
+            // Fetch fresh data from server to ensure consistency
+            await this.updateDashboard();
+
         } catch (error) {
             console.error('Error resetting progress:', error);
             this.showError(`Failed to reset progress: ${error.message}`);
