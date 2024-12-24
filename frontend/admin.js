@@ -118,12 +118,22 @@ class AdminDashboard {
     }
 
     async loadUserProgress(username) {
-        // Get all quiz types
+        // Get all quiz types with correct names matching the quiz files
         const quizTypes = [
-            'communication', 'initiative', 'time-management', 'tester-mindset',
-            'risk-analysis', 'risk-management', 'non-functional', 'test-support',
-            'issue-verification', 'build-verification', 'issue-tracking',
-            'raising-tickets', 'reports', 'CMS-Testing'
+            'communication',
+            'initiative', 
+            'time-management',
+            'tester-mindset',
+            'risk-analysis',
+            'risk-management',
+            'non-functional',
+            'test-support',
+            'issue-verification',
+            'build-verification',
+            'issue-tracking-tools',  // Changed from 'issue-tracking'
+            'raising-tickets',
+            'reports',
+            'CMS-Testing'
         ];
         
         // Initialize scores for all quiz types
@@ -176,11 +186,13 @@ class AdminDashboard {
                     }
                 });
             }
+
+            this.userScores.set(username, scores);
+            return scores;
         } catch (error) {
             console.error(`Error loading progress for ${username}:`, error);
+            return scores;
         }
-        
-        return scores;
     }
 
     async showAdminDashboard() {
