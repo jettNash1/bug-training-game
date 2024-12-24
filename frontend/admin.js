@@ -132,7 +132,7 @@ export class AdminDashboard {
             'issue-tracking-tools',
             'raising-tickets',
             'reports',
-            'CMS-Testing'
+            'cms-testing'
         ];
         
         // Initialize scores for all quiz types
@@ -146,29 +146,33 @@ export class AdminDashboard {
         }));
 
         try {
-            const adminToken = localStorage.getItem('adminToken');
-            // Get user data directly from our users array
             const user = this.users.find(u => u.username === username);
             if (!user) return scores;
 
             // Process quiz results from user data
             if (user.quizResults && Array.isArray(user.quizResults)) {
                 user.quizResults.forEach(result => {
-                    // Handle both formats of quiz names (with and without hyphen)
-                    const normalizedQuizName = result.quizName.replace(/([A-Z])/g, '-$1').toLowerCase();
-                    const scoreIndex = scores.findIndex(s => 
-                        s.quizName === result.quizName || 
-                        s.quizName === normalizedQuizName
-                    );
+                    // Convert API format back to our display format
+                    const displayQuizName = result.quizName
+                        .replace(/([A-Z])/g, '-$1')
+                        .toLowerCase()
+                        .replace(/^-/, '');
+                    
+                    const scoreIndex = scores.findIndex(s => {
+                        const normalizedScoreName = s.quizName.toLowerCase().replace(/\s+/g, '');
+                        const normalizedDisplayName = displayQuizName.toLowerCase().replace(/\s+/g, '');
+                        return normalizedScoreName === normalizedDisplayName ||
+                               normalizedScoreName === result.quizName.toLowerCase();
+                    });
                     
                     if (scoreIndex !== -1) {
                         scores[scoreIndex] = {
                             ...scores[scoreIndex],
                             score: result.score || 0,
-                            questionsAnswered: Math.ceil((result.score / 100) * 15),
+                            questionsAnswered: result.questionsAnswered || 0,
                             completedAt: result.completedAt,
                             lastActive: result.completedAt,
-                            experience: Math.ceil((result.score / 100) * 300)
+                            experience: result.experience || 0
                         };
                     }
                 });
@@ -177,17 +181,24 @@ export class AdminDashboard {
             // Update with quiz progress if available
             if (user.quizProgress) {
                 Object.entries(user.quizProgress).forEach(([quizName, progress]) => {
-                    const normalizedQuizName = quizName.replace(/([A-Z])/g, '-$1').toLowerCase();
-                    const scoreIndex = scores.findIndex(s => 
-                        s.quizName === quizName || 
-                        s.quizName === normalizedQuizName
-                    );
+                    // Convert API format back to our display format
+                    const displayQuizName = quizName
+                        .replace(/([A-Z])/g, '-$1')
+                        .toLowerCase()
+                        .replace(/^-/, '');
+                    
+                    const scoreIndex = scores.findIndex(s => {
+                        const normalizedScoreName = s.quizName.toLowerCase().replace(/\s+/g, '');
+                        const normalizedDisplayName = displayQuizName.toLowerCase().replace(/\s+/g, '');
+                        return normalizedScoreName === normalizedDisplayName ||
+                               normalizedScoreName === quizName.toLowerCase();
+                    });
                     
                     if (scoreIndex !== -1 && progress) {
-                        const questionsAnswered = progress.questionHistory ? progress.questionHistory.length : 0;
                         scores[scoreIndex] = {
                             ...scores[scoreIndex],
-                            questionsAnswered: Math.max(scores[scoreIndex].questionsAnswered, questionsAnswered),
+                            questionsAnswered: progress.questionHistory ? progress.questionHistory.length : scores[scoreIndex].questionsAnswered,
+                            experience: progress.experience || scores[scoreIndex].experience,
                             lastActive: progress.lastUpdated || scores[scoreIndex].lastActive
                         };
                     }
@@ -443,7 +454,56 @@ export class AdminDashboard {
         return Math.max(lastLogin, ...quizDates) || 0;
     }
 
+    async refreshAllData() {
+        try {
+            const adminToken = localStorage.getItem('adminToken');
+            if (!adminToken) {
+                this.handleAdminLogout();
+                return;
+            }
+
+            // Fetch fresh users data
+            const response = await fetch(`${this.apiService.baseUrl}/admin/users`, {
+                headers: {
+                    'Authorization': `Bearer ${adminToken}`,
+                    'Content-Type': 'application/json'
+                }
+            });
+
+            if (!response.ok) {
+                throw new Error('Failed to fetch updated users data');
+            }
+
+            const data = await response.json();
+            if (data.success && Array.isArray(data.users)) {
+                // Update users array
+                this.users = data.users;
+                
+                // Clear and reload all user scores
+                this.userScores.clear();
+                for (const user of this.users) {
+                    const scores = await this.loadUserProgress(user.username);
+                    this.userScores.set(user.username, scores);
+                }
+
+                // Update UI
+                this.updateStatistics();
+                this.updateUserList();
+                return true;
+            } else {
+                throw new Error('Invalid users data format received');
+            }
+        } catch (error) {
+            console.error('Error refreshing data:', error);
+            this.showError('Failed to refresh data');
+            return false;
+        }
+    }
+
     async showUserDetails(username) {
+        // Refresh all data before showing details
+        await this.refreshAllData();
+        
         const scores = this.userScores.get(username) || [];
         
         const overlay = document.createElement('div');
@@ -458,22 +518,19 @@ export class AdminDashboard {
         content.innerHTML = `
             <div class="user-details-header">
                 <h2>${username}'s Progress</h2>
-                <button class="close-button" onclick="this.closest('.user-details-overlay').remove()">×</button>
+                <button class="close-button" onclick="window.adminDashboard.closeUserDetails()">×</button>
             </div>
             <div class="user-details-body">
                 <div class="quiz-progress-list">
                     ${sortedScores.map(score => {
-                        const questionsCompleted = Math.round((score.score / 100) * 15);
-                        const xpEarned = Math.round((score.score / 100) * 300);
-                        
                         return `
                             <div class="quiz-progress-item ${score.score > 0 ? 'started' : 'not-started'}" data-quiz="${score.quizName}">
                                 <div class="quiz-info">
                                     <h3>${this.getQuizDisplayName(score.quizName)}</h3>
                                     <div class="progress-details">
                                         <span class="score">Progress: ${Math.round(score.score)}%</span>
-                                        <span class="questions">Questions Completed: ${questionsCompleted}/15</span>
-                                        <span class="experience">XP Earned: ${xpEarned}/300</span>
+                                        <span class="questions">Questions Completed: ${score.questionsAnswered}/15</span>
+                                        <span class="experience">XP Earned: ${score.experience}/300</span>
                                         <span class="last-active">Last Active: ${this.formatDate(score.lastActive)}</span>
                                     </div>
                                 </div>
@@ -491,6 +548,15 @@ export class AdminDashboard {
         document.body.appendChild(overlay);
     }
 
+    closeUserDetails() {
+        const overlay = document.querySelector('.user-details-overlay');
+        if (overlay) {
+            overlay.remove();
+        }
+        // Refresh all data when closing details view
+        this.refreshAllData();
+    }
+
     getQuizDisplayName(quizId) {
         const displayNames = {
             'communication': 'Communication',
@@ -506,15 +572,20 @@ export class AdminDashboard {
             'issue-tracking-tools': 'Issue Tracking Tools',
             'raising-tickets': 'Raising Tickets',
             'reports': 'Reports',
-            'CMS-Testing': 'CMS Testing'
+            'cms-testing': 'CMS Testing'
         };
         
         return displayNames[quizId] || quizId;
     }
 
     normalizeQuizName(quizName) {
+        // First, convert the input to lowercase and remove any spaces
+        const normalizedInput = quizName.toLowerCase().replace(/\s+/g, '');
+
         // Map of special cases where the API name differs from our standard format
         const specialCases = {
+            'communication': 'communication',  // Keep as is
+            'initiative': 'initiative',        // Keep as is
             'tester-mindset': 'testerMindset',
             'risk-analysis': 'riskAnalysis',
             'risk-management': 'riskManagement',
@@ -525,16 +596,24 @@ export class AdminDashboard {
             'build-verification': 'buildVerification',
             'issue-tracking-tools': 'issueTrackingTools',
             'raising-tickets': 'raisingTickets',
-            'CMS-Testing': 'cmsTesting'
+            'reports': 'reports',              // Keep as is
+            'cms-testing': 'cmsTesting'
         };
 
+        console.log('Normalizing quiz name:', {
+            input: quizName,
+            normalizedInput,
+            specialCase: specialCases[normalizedInput],
+            hasMapping: !!specialCases[normalizedInput]
+        });
+
         // If we have a special case mapping, use it
-        if (specialCases[quizName]) {
-            return specialCases[quizName];
+        if (specialCases[normalizedInput]) {
+            return specialCases[normalizedInput];
         }
 
         // Otherwise, convert from hyphenated to camelCase
-        return quizName.replace(/-([a-z])/g, g => g[1].toUpperCase());
+        return normalizedInput.replace(/-([a-z])/g, g => g[1].toUpperCase());
     }
 
     async resetUserProgress(username, quizName) {
@@ -546,7 +625,8 @@ export class AdminDashboard {
             
             console.log('Resetting progress for quiz:', { 
                 original: quizName, 
-                apiFormat: apiQuizName 
+                apiFormat: apiQuizName,
+                username: username
             });
 
             // Reset the quiz progress
@@ -588,52 +668,20 @@ export class AdminDashboard {
                 throw new Error(scoreData.message || 'Failed to reset quiz score');
             }
 
-            // Fetch all users to get updated data
-            const usersResponse = await fetch(
-                `${this.apiService.baseUrl}/admin/users`,
-                {
-                    headers: {
-                        'Authorization': `Bearer ${adminToken}`,
-                        'Content-Type': 'application/json'
-                    }
-                }
-            );
-
-            if (!usersResponse.ok) {
-                throw new Error('Failed to fetch updated users data');
+            // Refresh all data
+            const refreshSuccess = await this.refreshAllData();
+            if (!refreshSuccess) {
+                throw new Error('Failed to refresh data after reset');
             }
 
-            const usersData = await usersResponse.json();
-            console.log('Updated users data:', usersData);
+            // Show success message
+            this.showError(`Successfully reset ${this.getQuizDisplayName(quizName)} for ${username}`);
 
-            if (usersData.success && Array.isArray(usersData.users)) {
-                // Update our users array
-                this.users = usersData.users;
-                
-                // Update the specific user's scores
-                const updatedUser = this.users.find(u => u.username === username);
-                if (updatedUser) {
-                    const scores = await this.loadUserProgress(username);
-                    this.userScores.set(username, scores);
-
-                    // Update all UI elements
-                    this.updateStatistics();
-                    this.updateUserList();
-                    
-                    // Show success message
-                    this.showError(`Successfully reset ${this.getQuizDisplayName(quizName)} for ${username}`);
-
-                    // Refresh the details view if it's open
-                    const existingOverlay = document.querySelector('.user-details-overlay');
-                    if (existingOverlay) {
-                        existingOverlay.remove();
-                        await this.showUserDetails(username);
-                    }
-                } else {
-                    throw new Error('User not found in updated data');
-                }
-            } else {
-                throw new Error('Invalid users data format received');
+            // Refresh the details view if it's open
+            const existingOverlay = document.querySelector('.user-details-overlay');
+            if (existingOverlay) {
+                existingOverlay.remove();
+                await this.showUserDetails(username);
             }
 
         } catch (error) {
