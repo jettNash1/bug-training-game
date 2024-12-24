@@ -14,14 +14,62 @@ export const clearTokens = () => {
     localStorage.removeItem('username');
 };
 
+// Add admin token management functions
+export const getAdminToken = () => localStorage.getItem('adminToken');
+export const setAdminToken = (token) => localStorage.setItem('adminToken', token);
+export const clearAdminToken = () => localStorage.removeItem('adminToken');
+
 // Auth check function
 export async function checkAuth() {
-    // First check if we're on an admin page
-    if (ADMIN_PATHS.some(path => window.location.pathname.includes(path))) {
-        console.log('On admin page, skipping regular auth check');
-        return true;
+    const currentPath = window.location.pathname;
+    
+    // Handle admin authentication
+    if (ADMIN_PATHS.some(path => currentPath.includes(path))) {
+        const adminToken = getAdminToken();
+        
+        // If on admin login page and has valid token, redirect to admin panel
+        if (currentPath.includes('admin-login.html') && adminToken) {
+            window.location.replace('/pages/admin.html');
+            return true;
+        }
+        
+        // If on admin panel and no token, redirect to admin login
+        if (currentPath.includes('admin.html') && !adminToken) {
+            window.location.replace('/pages/admin-login.html');
+            return false;
+        }
+        
+        // If has admin token, verify it
+        if (adminToken) {
+            try {
+                const response = await fetch(`${config.apiUrl}/admin/verify-token`, {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': `Bearer ${adminToken}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                if (!response.ok) {
+                    clearAdminToken();
+                    window.location.replace('/pages/admin-login.html');
+                    return false;
+                }
+
+                const data = await response.json();
+                return data.success && data.valid && data.isAdmin;
+            } catch (error) {
+                console.error('Admin auth check failed:', error);
+                clearAdminToken();
+                window.location.replace('/pages/admin-login.html');
+                return false;
+            }
+        }
+        
+        return currentPath.includes('admin-login.html');
     }
 
+    // Handle regular user authentication
     const token = getAuthToken();
     const username = localStorage.getItem('username');
     const refreshToken = getRefreshToken();

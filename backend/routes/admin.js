@@ -4,10 +4,47 @@ const User = require('../models/user.model');
 const jwt = require('jsonwebtoken');
 const auth = require('../middleware/auth');
 
+// Admin token verification
+router.get('/verify-token', async (req, res) => {
+    try {
+        const token = req.headers.authorization ? req.headers.authorization.split(' ')[1] : null;
+        
+        if (!token) {
+            return res.status(401).json({
+                success: false,
+                valid: false,
+                message: 'No token provided'
+            });
+        }
+
+        const decoded = jwt.verify(token, process.env.JWT_SECRET);
+        
+        if (!decoded.isAdmin) {
+            return res.status(403).json({
+                success: false,
+                valid: false,
+                message: 'Not an admin token'
+            });
+        }
+
+        return res.json({
+            success: true,
+            valid: true,
+            isAdmin: true
+        });
+    } catch (error) {
+        console.error('Token verification error:', error);
+        return res.status(401).json({
+            success: false,
+            valid: false,
+            message: 'Invalid token'
+        });
+    }
+});
+
 // Admin login
 router.post('/login', async (req, res) => {
     try {
-        console.log('Admin login attempt:', req.body);
         const { username, password } = req.body;
         
         // Debug log to check environment variables

@@ -71,23 +71,27 @@ class AdminDashboard {
         const password = document.getElementById('adminPassword').value;
 
         try {
-            // Check against hardcoded admin credentials
-            if (username !== 'admin' || password !== 'admin123') {
-                this.showError('Invalid admin credentials');
-                return;
+            const response = await fetch(`${this.apiService.baseUrl}/admin/login`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ username, password })
+            });
+
+            if (!response.ok) {
+                throw new Error('Invalid admin credentials');
             }
 
-            // Create a simple admin token with isAdmin flag
-            const adminToken = btoa(JSON.stringify({
-                isAdmin: true,
-                username: 'admin',
-                exp: Math.floor(Date.now() / 1000) + (24 * 60 * 60) // 24 hours expiry
-            }));
-
-            // Store admin token
-            localStorage.setItem('adminToken', adminToken);
-            window.location.href = '/pages/admin.html';
-
+            const data = await response.json();
+            
+            if (data.success && data.token && data.isAdmin) {
+                // Store admin token
+                localStorage.setItem('adminToken', data.token);
+                window.location.href = '/pages/admin.html';
+            } else {
+                this.showError('Invalid admin credentials');
+            }
         } catch (error) {
             console.error('Login error:', error);
             this.showError('Login failed. Please try again.');
