@@ -17,7 +17,7 @@ class AdminDashboard {
             if (adminToken) {
                 try {
                     // Verify token locally
-                    const tokenData = JSON.parse(atob(adminToken.split('.')[1]));
+                    const tokenData = JSON.parse(atob(adminToken));
                     if (!tokenData.isAdmin || tokenData.exp < Date.now() / 1000) {
                         this.handleAdminLogout();
                     }
@@ -60,33 +60,22 @@ class AdminDashboard {
 
         try {
             // Check against hardcoded admin credentials
-            if (username === 'admin' && password === 'admin123') {
-                try {
-                    // First, get an API token
-                    const response = await fetch(`${this.apiService.baseUrl}/admin/login`, {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json'
-                        },
-                        body: JSON.stringify({ username, password })
-                    });
-
-                    if (!response.ok) {
-                        throw new Error('Failed to authenticate with API');
-                    }
-
-                    const data = await response.json();
-                    
-                    // Store admin token separately from regular user token
-                    localStorage.setItem('adminToken', data.token);
-                    window.location.href = '/pages/admin.html';
-                } catch (error) {
-                    console.error('API authentication error:', error);
-                    this.showError('Failed to authenticate with the server');
-                }
-            } else {
+            if (username !== 'admin' || password !== 'admin123') {
                 this.showError('Invalid admin credentials');
+                return;
             }
+
+            // Create a simple admin token with isAdmin flag
+            const adminToken = btoa(JSON.stringify({
+                isAdmin: true,
+                username: 'admin',
+                exp: Math.floor(Date.now() / 1000) + (24 * 60 * 60) // 24 hours expiry
+            }));
+
+            // Store admin token
+            localStorage.setItem('adminToken', adminToken);
+            window.location.href = '/pages/admin.html';
+
         } catch (error) {
             console.error('Login error:', error);
             this.showError('Login failed. Please try again.');
