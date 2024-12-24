@@ -146,13 +146,16 @@ export class AdminDashboard {
         }));
 
         try {
-            // Find the user in our users array
-            const user = this.users.find(u => u.username === username);
-            if (!user) return scores;
-
+            const adminToken = localStorage.getItem('adminToken');
             // Get user progress using admin auth
-            const response = await this.apiService.fetchWithAdminAuth(
-                `${this.apiService.baseUrl}/admin/users/${username}/progress`
+            const response = await fetch(
+                `${this.apiService.baseUrl}/admin/users/${username}/progress`,
+                {
+                    headers: {
+                        'Authorization': `Bearer ${adminToken}`,
+                        'Content-Type': 'application/json'
+                    }
+                }
             );
 
             if (!response.ok) {
@@ -197,7 +200,6 @@ export class AdminDashboard {
                 });
             }
 
-            this.userScores.set(username, scores);
             return scores;
         } catch (error) {
             console.error(`Error loading progress for ${username}:`, error);
@@ -206,8 +208,60 @@ export class AdminDashboard {
     }
 
     async showAdminDashboard() {
-        // No need to hide/show forms since we're on a different page
-        await this.updateDashboard();
+        try {
+            const adminToken = localStorage.getItem('adminToken');
+            
+            if (!adminToken) {
+                this.handleAdminLogout();
+                return;
+            }
+
+            try {
+                // Use the admin-specific fetch method
+                const response = await fetch(`${this.apiService.baseUrl}/admin/users`, {
+                    headers: {
+                        'Authorization': `Bearer ${adminToken}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                if (!response.ok) {
+                    throw new Error('Failed to fetch users');
+                }
+
+                const data = await response.json();
+                if (data.success && Array.isArray(data.users)) {
+                    this.users = data.users;
+                    console.log('Found users:', this.users);
+
+                    // Update the display first with basic user info
+                    this.updateStatistics();
+                    this.updateUserList();
+
+                    // Then load progress in the background
+                    console.log('Loading user progress...');
+                    for (const user of this.users) {
+                        try {
+                            const scores = await this.loadUserProgress(user.username);
+                            this.userScores.set(user.username, scores);
+                            // Update the display after each user's progress is loaded
+                            this.updateUserList();
+                        } catch (error) {
+                            console.error(`Error loading progress for ${user.username}:`, error);
+                        }
+                    }
+                } else {
+                    console.error('Invalid user data format:', data);
+                    this.showError('Failed to load user data');
+                }
+            } catch (error) {
+                console.error('Error fetching users:', error);
+                this.showError('Failed to fetch user data');
+            }
+        } catch (error) {
+            console.error('Error updating dashboard:', error);
+            this.showError('Failed to update dashboard');
+        }
     }
 
     async updateDashboard() {
@@ -466,69 +520,26 @@ export class AdminDashboard {
 
     async resetUserProgress(username, quizName) {
         try {
+            const adminToken = localStorage.getItem('adminToken');
             // Reset only the specific quiz progress
-            const response = await this.apiService.fetchWithAuth(
+            const response = await fetch(
                 `${this.apiService.baseUrl}/admin/users/${username}/quiz-progress/${quizName}/reset`,
                 { 
                     method: 'POST',
                     headers: {
+                        'Authorization': `Bearer ${adminToken}`,
                         'Content-Type': 'application/json'
                     }
                 }
             );
 
             if (!response.ok) {
-                let errorMessage = 'Failed to reset quiz progress';
-                try {
-                    const errorData = await response.json();
-                    errorMessage = errorData.message || errorMessage;
-                } catch (e) {
-                    // If response isn't JSON, use status text
-                    errorMessage = response.statusText || errorMessage;
-                }
-                throw new Error(errorMessage);
+                throw new Error('Failed to reset quiz progress');
             }
 
-            // Update local state for the specific user and quiz
-            const userIndex = this.users.findIndex(u => u.username === username);
-            if (userIndex !== -1) {
-                const user = this.users[userIndex];
-                
-                // Reset only the specific quiz progress
-                if (!user.quizProgress) {
-                    user.quizProgress = {};
-                }
-                user.quizProgress[quizName] = {
-                    experience: 0,
-                    questionHistory: [],
-                    lastUpdated: new Date().toISOString()
-                };
-
-                // Remove only the specific quiz result
-                if (user.quizResults) {
-                    user.quizResults = user.quizResults.filter(
-                        result => result.quizName !== quizName
-                    );
-                }
-            }
-
-            // Update userScores for the specific quiz only
-            const scores = this.userScores.get(username) || [];
-            const scoreIndex = scores.findIndex(s => s.quizName === quizName);
-            if (scoreIndex !== -1) {
-                scores[scoreIndex] = {
-                    ...scores[scoreIndex],
-                    score: 0,
-                    questionsAnswered: 0,
-                    completedAt: null,
-                    lastActive: new Date().toISOString(),
-                    experience: 0
-                };
-                this.userScores.set(username, scores);
-            }
-
-            // Clear only the specific quiz progress from local storage
-            localStorage.removeItem(`quiz_progress_${username}_${quizName}`);
+            // Update local state
+            const scores = await this.loadUserProgress(username);
+            this.userScores.set(username, scores);
 
             // Update UI
             this.updateUserList();
@@ -540,9 +551,6 @@ export class AdminDashboard {
                 existingOverlay.remove();
                 this.showUserDetails(username);
             }
-
-            // Refresh only the affected user's data
-            await this.updateDashboard();
         } catch (error) {
             console.error('Error resetting progress:', error);
             this.showError(`Failed to reset progress: ${error.message}`);
