@@ -495,58 +495,67 @@ export class AdminDashboard {
     }
 
     async showUserDetails(username) {
+        const user = this.users.find(u => u.username === username);
+        if (!user) return;
+
         const scores = this.userScores.get(username) || [];
         
+        // Create the details overlay
         const overlay = document.createElement('div');
         overlay.className = 'user-details-overlay';
         
         const content = document.createElement('div');
         content.className = 'user-details-content';
         
-        // Sort quizzes by completion percentage
-        const sortedScores = [...scores].sort((a, b) => b.score - a.score);
-        
+        // Header with close button
         content.innerHTML = `
-            <div class="user-details-header">
-                <h2>${username}'s Progress</h2>
-                <button class="close-button" onclick="window.adminDashboard.closeUserDetails()">×</button>
+            <div class="details-header">
+                <h3>${username}'s Progress</h3>
+                <button class="close-btn" onclick="this.closest('.user-details-overlay').remove()">×</button>
             </div>
-            <div class="user-details-body">
-                <div class="quiz-progress-list">
-                    ${sortedScores.map(score => {
-                        // Get questions completed from either questionHistory length or questionsAnswered
-                        const questionsCompleted = score.questionHistory?.length || score.questionsAnswered || 0;
-                        const totalQuestions = 15; // Total questions per quiz
-                        
-                        return `
-                            <div class="quiz-progress-item ${score.score > 0 ? 'started' : 'not-started'}" data-quiz="${score.quizName}">
-                                <div class="quiz-info">
-                                    <h3>${this.getQuizDisplayName(score.quizName)}</h3>
-                                    <div class="progress-details">
-                                        <span class="score">Progress: ${Math.round(score.score)}%</span>
-                                        <span class="questions">Questions Completed: ${questionsCompleted}/${totalQuestions}</span>
-                                        <span class="experience">XP Earned: ${score.experience || 0}/300</span>
-                                        <span class="last-active">Last Active: ${this.formatDate(score.lastActive || score.completedAt)}</span>
-                                    </div>
-                                </div>
-                                <button class="reset-button" onclick="window.adminDashboard.resetUserProgress('${username}', '${score.quizName}')">
-                                    Reset Progress
-                                </button>
-                            </div>
-                        `;
-                    }).join('')}
-                </div>
-            </div>`;
+        `;
+        
+        // Create quiz progress list
+        const quizList = document.createElement('div');
+        quizList.className = 'quiz-progress-list';
+        
+        // Sort quizzes by name
+        this.quizTypes.forEach(quizName => {
+            const quizScore = scores.find(score => score.quizName === quizName);
+            const progress = quizScore?.score || 0;
+            const questionsCompleted = quizScore?.questionsAnswered || 0;
+            const xpEarned = quizScore?.experience || 0;
+            const lastActive = quizScore?.lastActive ? this.formatDate(quizScore.lastActive) : 'Never';
             
+            const quizItem = document.createElement('div');
+            quizItem.className = 'quiz-progress-item';
+            quizItem.innerHTML = `
+                <h4>${this.formatQuizName(quizName)}</h4>
+                <div class="quiz-stats">
+                    <div>Progress: ${progress}%</div>
+                    <div>Questions Completed: ${questionsCompleted}/15</div>
+                    <div>XP Earned: ${xpEarned}/300</div>
+                    <div>Last Active: ${lastActive}</div>
+                    <button class="reset-progress-btn" 
+                            onclick="window.adminDashboard.resetQuizProgress('${username}', '${quizName}')">
+                        Reset Progress
+                    </button>
+                </div>
+            `;
+            quizList.appendChild(quizItem);
+        });
+        
+        content.appendChild(quizList);
         overlay.appendChild(content);
         document.body.appendChild(overlay);
-        
-        // Add click event to close overlay when clicking outside content
-        overlay.addEventListener('click', (e) => {
-            if (e.target === overlay) {
-                this.closeUserDetails();
-            }
-        });
+    }
+
+    // Helper method to format quiz names
+    formatQuizName(name) {
+        return name
+            .split('-')
+            .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+            .join(' ');
     }
 
     closeUserDetails() {

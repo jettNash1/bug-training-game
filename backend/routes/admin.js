@@ -131,20 +131,13 @@ router.get('/users', auth, async (req, res) => {
 
             // Process each quiz result to ensure question completion data
             userData.quizResults = userData.quizResults.map(result => {
-                // If answers array doesn't exist or is empty but we have a score,
-                // calculate questions answered from the progress data
-                if ((!result.answers || !result.answers.length) && result.score > 0) {
-                    const quizProgress = userData.quizProgress?.[result.quizName];
-                    if (quizProgress?.questionHistory) {
-                        result.answers = quizProgress.questionHistory;
-                    } else {
-                        // If no question history, estimate from score (15 total questions)
-                        result.questionsAnswered = Math.ceil((result.score / 100) * 15);
-                    }
-                } else {
-                    result.questionsAnswered = result.answers?.length || 0;
-                }
-                return result;
+                const quizProgress = userData.quizProgress?.[result.quizName];
+                return {
+                    ...result,
+                    questionsAnswered: quizProgress?.questionHistory?.length || 0,
+                    experience: quizProgress?.experience || 0,
+                    lastActive: quizProgress?.lastActive
+                };
             });
 
             // Ensure quizProgress object exists and process it
