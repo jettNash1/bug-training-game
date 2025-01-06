@@ -302,12 +302,13 @@ export class AdminDashboard {
     }
 
     updateStatistics() {
-        const today = new Date().setHours(0, 0, 0, 0); // Start of today
+        const today = new Date().setHours(0, 0, 0, 0);
         let totalCompletion = 0;
         let activeUsers = new Set();
-
+    
         this.users.forEach(user => {
             const scores = this.userScores.get(user.username) || [];
+            
             // Check if user was active today
             if (scores.some(score => {
                 if (!score.lastActive) return false;
@@ -316,21 +317,41 @@ export class AdminDashboard {
             })) {
                 activeUsers.add(user.username);
             }
-
-            const userCompletion = this.calculateUserProgress(user);
+    
+            // Calculate completion based on actual questions answered
+            let userTotalQuestions = 0;
+            let userCompletedQuestions = 0;
+    
+            scores.forEach(score => {
+                const questionsCompleted = score.questionHistory?.length || score.questionsAnswered || 0;
+                const totalQuestions = 15; // Total questions per quiz
+                userTotalQuestions += totalQuestions;
+                userCompletedQuestions += questionsCompleted;
+            });
+    
+            const userCompletion = userTotalQuestions > 0 
+                ? Math.round((userCompletedQuestions / userTotalQuestions) * 100)
+                : 0;
+                
             totalCompletion += userCompletion;
         });
-
+    
         // Update statistics display
         const totalUsersElement = document.getElementById('totalUsers');
         const activeUsersElement = document.getElementById('activeUsers');
         const averageCompletionElement = document.getElementById('averageCompletion');
-
-        if (totalUsersElement) totalUsersElement.textContent = this.users.length;
-        if (activeUsersElement) activeUsersElement.textContent = activeUsers.size;
+    
+        if (totalUsersElement) {
+            totalUsersElement.textContent = this.users.length;
+        }
+        if (activeUsersElement) {
+            activeUsersElement.textContent = activeUsers.size;
+        }
         if (averageCompletionElement) {
-            averageCompletionElement.textContent = 
-                `${this.users.length ? Math.round(totalCompletion / this.users.length) : 0}%`;
+            const averageCompletion = this.users.length > 0 
+                ? Math.round(totalCompletion / this.users.length)
+                : 0;
+            averageCompletionElement.textContent = `${averageCompletion}%`;
         }
     }
 
