@@ -193,18 +193,40 @@ export class QuizUser {
                 throw new Error('API service not initialized');
             }
             
-            const result = await this.api.updateQuizScore(quizName, score);
-            if (result && result.success) {
+            // Get the current quiz progress to include question history
+            const progress = await this.getQuizProgress(quizName);
+            const questionHistory = progress?.questionHistory || [];
+            
+            // Save the complete quiz result
+            const result = await this.saveQuizResult(
+                quizName,
+                score,
+                progress?.experience || score,
+                progress?.tools || [],
+                questionHistory
+            );
+
+            if (result) {
                 // Update local quiz results
                 const existingIndex = this.quizResults.findIndex(r => r.quizName === quizName);
                 if (existingIndex !== -1) {
-                    this.quizResults[existingIndex].score = score;
+                    this.quizResults[existingIndex] = {
+                        ...this.quizResults[existingIndex],
+                        score,
+                        questionHistory,
+                        questionsAnswered: questionHistory.length
+                    };
                 } else {
-                    this.quizResults.push({ quizName, score });
+                    this.quizResults.push({
+                        quizName,
+                        score,
+                        questionHistory,
+                        questionsAnswered: questionHistory.length
+                    });
                 }
                 return true;
             }
-            throw new Error(result?.message || 'Failed to update quiz score');
+            throw new Error('Failed to update quiz score');
         } catch (error) {
             console.error('Failed to update quiz score:', error);
             this.showError(`Failed to update quiz score: ${error.message}`);

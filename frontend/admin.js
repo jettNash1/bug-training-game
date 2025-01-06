@@ -561,9 +561,6 @@ export class AdminDashboard {
     }
 
     async showUserDetails(username) {
-        // Refresh all data before showing details
-        await this.refreshAllData();
-        
         const scores = this.userScores.get(username) || [];
         
         const overlay = document.createElement('div');
@@ -583,13 +580,17 @@ export class AdminDashboard {
             <div class="user-details-body">
                 <div class="quiz-progress-list">
                     ${sortedScores.map(score => {
+                        // Calculate questions completed from either quizResults or quizProgress
+                        const questionsCompleted = score.questionsAnswered || 0;
+                        const totalQuestions = 15; // Total questions per quiz
+                        
                         return `
                             <div class="quiz-progress-item ${score.score > 0 ? 'started' : 'not-started'}" data-quiz="${score.quizName}">
                                 <div class="quiz-info">
                                     <h3>${this.getQuizDisplayName(score.quizName)}</h3>
                                     <div class="progress-details">
                                         <span class="score">Progress: ${Math.round(score.score)}%</span>
-                                        <span class="questions">Questions Completed: ${score.questionsAnswered}/15</span>
+                                        <span class="questions">Questions Completed: ${questionsCompleted}/${totalQuestions}</span>
                                         <span class="experience">XP Earned: ${score.experience}/300</span>
                                         <span class="last-active">Last Active: ${this.formatDate(score.lastActive)}</span>
                                     </div>

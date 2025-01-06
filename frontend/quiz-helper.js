@@ -205,4 +205,114 @@ export class BaseQuiz {
         }
         return 'Basic';
     }
+
+    async handleAnswer() {
+        if (this.isLoading) return;
+        
+        const submitButton = document.querySelector('.submit-button');
+        if (submitButton) {
+            submitButton.disabled = true;
+        }
+        
+        try {
+            this.isLoading = true;
+            const selectedOption = document.querySelector('input[name="option"]:checked');
+            if (!selectedOption) return;
+
+            const currentScenarios = this.getCurrentScenarios();
+            const scenario = currentScenarios[this.player.currentScenario];
+            const originalIndex = parseInt(selectedOption.value);
+            
+            const selectedAnswer = scenario.options[originalIndex];
+
+            // Update player state
+            this.player.experience = Math.max(0, Math.min(this.maxXP, this.player.experience + selectedAnswer.experience));
+            this.player.questionHistory.push({
+                scenario: scenario,
+                selectedAnswer: selectedAnswer,
+                maxPossibleXP: Math.max(...scenario.options.map(o => o.experience))
+            });
+
+            // Save progress with current scenario (before incrementing)
+            await this.saveProgress();
+
+            // Also save quiz result and update display
+            const username = localStorage.getItem('username');
+            if (username) {
+                const quizUser = new QuizUser(username);
+                const score = Math.round((this.player.experience / this.maxXP) * 100);
+                
+                // Save both score and question history
+                await quizUser.saveQuizResult(
+                    this.quizName,
+                    score,
+                    this.player.experience,
+                    this.player.tools,
+                    this.player.questionHistory
+                );
+                
+                // Update progress display on index page
+                const progressElement = document.querySelector(`#${this.quizName}-progress`);
+                if (progressElement) {
+                    const totalQuestions = 15;
+                    const completedQuestions = this.player.questionHistory.length;
+                    const percentComplete = Math.round((completedQuestions / totalQuestions) * 100);
+                    
+                    // Only update if we're on the index page and this is the current user
+                    const onIndexPage = window.location.pathname.endsWith('index.html');
+                    if (onIndexPage) {
+                        progressElement.textContent = `${percentComplete}% Complete`;
+                        progressElement.classList.remove('hidden');
+                        
+                        // Update quiz item styling
+                        const quizItem = document.querySelector(`[data-quiz="${this.quizName}"]`);
+                        if (quizItem) {
+                            quizItem.classList.remove('completed', 'in-progress');
+                            if (percentComplete === 100) {
+                                quizItem.classList.add('completed');
+                                progressElement.classList.add('completed');
+                                progressElement.classList.remove('in-progress');
+                            } else if (percentComplete > 0) {
+                                quizItem.classList.add('in-progress');
+                                progressElement.classList.add('in-progress');
+                                progressElement.classList.remove('completed');
+                            }
+                        }
+                    }
+                }
+            }
+
+            // Show outcome screen
+            if (this.gameScreen && this.outcomeScreen) {
+                this.gameScreen.classList.add('hidden');
+                this.outcomeScreen.classList.remove('hidden');
+            }
+            
+            // Update outcome display
+            document.getElementById('outcome-text').textContent = selectedAnswer.outcome;
+            const xpText = selectedAnswer.experience >= 0 ? 
+                `Experience gained: +${selectedAnswer.experience}` : 
+                `Experience: ${selectedAnswer.experience}`;
+            document.getElementById('xp-gained').textContent = xpText;
+            
+            if (selectedAnswer.tool) {
+                document.getElementById('tool-gained').textContent = `Tool acquired: ${selectedAnswer.tool}`;
+                if (!this.player.tools.includes(selectedAnswer.tool)) {
+                    this.player.tools.push(selectedAnswer.tool);
+                }
+            } else {
+                document.getElementById('tool-gained').textContent = '';
+            }
+
+            this.updateProgress();
+        } catch (error) {
+            console.error('Failed to handle answer:', error);
+            this.showError('Failed to save your answer. Please try again.');
+        } finally {
+            this.isLoading = false;
+            if (submitButton) {
+                submitButton.disabled = false;
+            }
+        }
+    }
 } 
