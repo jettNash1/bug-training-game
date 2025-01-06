@@ -547,11 +547,28 @@ class CommunicationQuiz extends BaseQuiz {
                 return;
             }
             
-            // Use user-specific key for localStorage
-            const storageKey = `quiz_progress_${username}_${this.quizName}`;
-            localStorage.setItem(storageKey, JSON.stringify({ progress }));
+            // Save to server first
+            const serverSaved = await this.apiService.saveQuizProgress(this.quizName, progress);
             
-            await this.apiService.saveQuizProgress(this.quizName, progress);
+            if (serverSaved) {
+                // Only use localStorage as backup if server save was successful
+                const storageKey = `quiz_progress_${username}_${this.quizName}`;
+                localStorage.setItem(storageKey, JSON.stringify({ progress }));
+            } else {
+                console.error('Failed to save progress to server');
+            }
+            
+            // Also update quiz results to keep everything in sync
+            const quizUser = new QuizUser(username);
+            const score = Math.round((this.player.experience / this.maxXP) * 100);
+            await quizUser.saveQuizResult(
+                this.quizName,
+                score,
+                this.player.experience,
+                this.player.tools,
+                this.player.questionHistory,
+                this.player.questionHistory.length
+            );
         } catch (error) {
             console.error('Failed to save progress:', error);
             // Continue without saving - don't interrupt the user experience
@@ -566,20 +583,25 @@ class CommunicationQuiz extends BaseQuiz {
                 return false;
             }
 
-            // Use user-specific key for localStorage
-            const storageKey = `quiz_progress_${username}_${this.quizName}`;
+            // First try to load from server
             const savedProgress = await this.apiService.getQuizProgress(this.quizName);
             let progress = null;
             
             if (savedProgress && savedProgress.data) {
                 progress = savedProgress.data;
+                // Store server data in localStorage as backup
+                const storageKey = `quiz_progress_${username}_${this.quizName}`;
+                localStorage.setItem(storageKey, JSON.stringify({ progress }));
             } else {
-                // Try loading from localStorage
+                // Only try localStorage if server data not found
+                const storageKey = `quiz_progress_${username}_${this.quizName}`;
                 const localData = localStorage.getItem(storageKey);
                 if (localData) {
                     const parsed = JSON.parse(localData);
                     if (parsed.progress) {
                         progress = parsed.progress;
+                        // Push local progress to server
+                        await this.apiService.saveQuizProgress(this.quizName, progress);
                     }
                 }
             }
@@ -590,8 +612,20 @@ class CommunicationQuiz extends BaseQuiz {
                 this.player.tools = progress.tools || [];
                 this.player.questionHistory = progress.questionHistory || [];
                 
-                // Fixed: Set current scenario to the next unanswered question
+                // Set current scenario to the next unanswered question
                 this.player.currentScenario = this.player.questionHistory.length;
+
+                // Also ensure quiz results are up to date
+                const quizUser = new QuizUser(username);
+                const score = Math.round((this.player.experience / this.maxXP) * 100);
+                await quizUser.saveQuizResult(
+                    this.quizName,
+                    score,
+                    this.player.experience,
+                    this.player.tools,
+                    this.player.questionHistory,
+                    this.player.questionHistory.length
+                );
 
                 // Update UI
                 this.updateProgress();

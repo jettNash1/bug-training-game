@@ -11,21 +11,47 @@ export class QuizUser {
 
     async loadUserData() {
         try {
+            // First try to load from server
             const response = await fetch(`${config.apiUrl}/users/${this.username}/quiz-results`);
             if (!response.ok) {
-                throw new Error('Failed to load user data');
+                throw new Error('Failed to load user data from server');
             }
             const data = await response.json();
+            
             if (data.success) {
                 this.quizResults = data.data || [];
+                
+                // Store server data in localStorage as backup
+                localStorage.setItem(`quizResults_${this.username}`, JSON.stringify(this.quizResults));
+                
                 // Clear any stale progress data from localStorage
                 this.clearLocalStorageData();
                 return true;
             }
+            
+            // If server data not found, try loading from localStorage
+            const storedResults = localStorage.getItem(`quizResults_${this.username}`);
+            if (storedResults) {
+                this.quizResults = JSON.parse(storedResults);
+                
+                // Push local data to server
+                for (const result of this.quizResults) {
+                    await this.saveQuizResult(
+                        result.quizName,
+                        result.score,
+                        result.experience,
+                        result.tools,
+                        result.questionHistory,
+                        result.questionsAnswered
+                    );
+                }
+                return true;
+            }
+            
             return false;
         } catch (error) {
             console.error('Failed to load user data:', error);
-            // Try to load from localStorage as fallback
+            // Try to load from localStorage as last resort
             this.loadFromLocalStorage();
             return false;
         }
@@ -97,6 +123,7 @@ export class QuizUser {
         };
 
         try {
+            // Save to server first
             const response = await this.api.fetchWithAuth(`${config.apiUrl}/users/quiz-results`, {
                 method: 'POST',
                 headers: {
@@ -106,13 +133,13 @@ export class QuizUser {
             });
 
             if (!response.ok) {
-                throw new Error('Failed to save quiz result');
+                throw new Error('Failed to save quiz result to server');
             }
 
             const data = await response.json();
             if (data.success) {
                 this.quizResults = data.data;
-                // Update localStorage as backup
+                // Update localStorage as backup only if server save was successful
                 localStorage.setItem(`quizResults_${this.username}`, JSON.stringify(this.quizResults));
                 return true;
             }
