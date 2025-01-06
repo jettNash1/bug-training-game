@@ -579,13 +579,26 @@ class CommunicationQuiz extends BaseQuiz {
                 return false;
             }
 
-            // First try to load from server
+            // First load quiz results to get overall progress
+            const quizUser = new QuizUser(username);
+            await quizUser.loadUserData();
+            const quizResult = quizUser.getQuizResult(this.quizName);
+
+            // Then load detailed progress
             const savedProgress = await this.apiService.getQuizProgress(this.quizName);
             let progress = null;
             
             if (savedProgress && savedProgress.data) {
                 progress = savedProgress.data;
-                console.log('Loaded server progress:', progress);
+                console.log('Loading quiz progress:', progress);
+            } else if (quizResult) {
+                // If no detailed progress but we have quiz results, use that
+                progress = {
+                    experience: quizResult.experience || 0,
+                    tools: quizResult.tools || [],
+                    questionHistory: quizResult.questionHistory || [],
+                    lastUpdated: quizResult.completedAt
+                };
             }
 
             if (progress) {
@@ -596,18 +609,6 @@ class CommunicationQuiz extends BaseQuiz {
                 
                 // Set current scenario to the next unanswered question
                 this.player.currentScenario = this.player.questionHistory.length;
-
-                // Also ensure quiz results are up to date
-                const quizUser = new QuizUser(username);
-                const score = Math.round((this.player.experience / this.maxXP) * 100);
-                await quizUser.saveQuizResult(
-                    this.quizName,
-                    score,
-                    this.player.experience,
-                    this.player.tools,
-                    this.player.questionHistory,
-                    this.player.questionHistory.length
-                );
 
                 // Update UI
                 this.updateProgress();

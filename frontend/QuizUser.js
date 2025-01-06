@@ -21,38 +21,39 @@ export class QuizUser {
             if (data.success) {
                 this.quizResults = data.data || [];
                 
-                // Store server data in localStorage as backup
-                localStorage.setItem(`quizResults_${this.username}`, JSON.stringify(this.quizResults));
+                // Update progress display for each quiz
+                this.quizResults.forEach(result => {
+                    const progressElement = document.querySelector(`#${result.quizName}-progress`);
+                    if (progressElement) {
+                        const totalQuestions = 15;
+                        const completedQuestions = result.questionHistory?.length || result.questionsAnswered || 0;
+                        const percentComplete = Math.round((completedQuestions / totalQuestions) * 100);
+                        
+                        progressElement.textContent = `${percentComplete}% Complete`;
+                        progressElement.classList.remove('hidden');
+                        
+                        // Update quiz item styling
+                        const quizItem = document.querySelector(`[data-quiz="${result.quizName}"]`);
+                        if (quizItem) {
+                            quizItem.classList.remove('completed', 'in-progress');
+                            if (percentComplete === 100) {
+                                quizItem.classList.add('completed');
+                                progressElement.classList.add('completed');
+                                progressElement.classList.remove('in-progress');
+                            } else if (percentComplete > 0) {
+                                quizItem.classList.add('in-progress');
+                                progressElement.classList.add('in-progress');
+                                progressElement.classList.remove('completed');
+                            }
+                        }
+                    }
+                });
                 
-                // Clear any stale progress data from localStorage
-                this.clearLocalStorageData();
                 return true;
             }
-            
-            // If server data not found, try loading from localStorage
-            const storedResults = localStorage.getItem(`quizResults_${this.username}`);
-            if (storedResults) {
-                this.quizResults = JSON.parse(storedResults);
-                
-                // Push local data to server
-                for (const result of this.quizResults) {
-                    await this.saveQuizResult(
-                        result.quizName,
-                        result.score,
-                        result.experience,
-                        result.tools,
-                        result.questionHistory,
-                        result.questionsAnswered
-                    );
-                }
-                return true;
-            }
-            
             return false;
         } catch (error) {
             console.error('Failed to load user data:', error);
-            // Try to load from localStorage as last resort
-            this.loadFromLocalStorage();
             return false;
         }
     }
