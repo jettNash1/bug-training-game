@@ -815,10 +815,10 @@ class InitiativeQuiz extends BaseQuiz {
             if (username) {
                 const quizUser = new QuizUser(username);
                 const score = Math.round((this.player.experience / this.maxXP) * 100);
-                await quizUser.updateQuizScore('communication', score);
+                await quizUser.updateQuizScore(this.quizName, score);
                 
                 // Update progress display on index page
-                const progressElement = document.querySelector('#communication-progress');
+                const progressElement = document.querySelector(`#${this.quizName}-progress`);
                 if (progressElement) {
                     const totalQuestions = 15;
                     const completedQuestions = this.player.questionHistory.length;
@@ -831,7 +831,7 @@ class InitiativeQuiz extends BaseQuiz {
                         progressElement.classList.remove('hidden');
                         
                         // Update quiz item styling
-                        const quizItem = document.querySelector('[data-quiz="communication"]');
+                        const quizItem = document.querySelector(`[data-quiz="${this.quizName}"]`);
                         if (quizItem) {
                             quizItem.classList.remove('completed', 'in-progress');
                             if (percentComplete === 100) {
