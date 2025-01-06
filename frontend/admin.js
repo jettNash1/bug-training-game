@@ -117,145 +117,57 @@ export class AdminDashboard {
     }
 
     async loadUserProgress(username) {
-        // Get all quiz types with correct names matching the quiz files
-        const quizTypes = [
-            'communication',
-            'initiative', 
-            'time-management',
-            'tester-mindset',
-            'risk-analysis',
-            'risk-management',
-            'non-functional',
-            'test-support',
-            'issue-verification',
-            'build-verification',
-            'issue-tracking-tools',
-            'raising-tickets',
-            'reports',
-            'cms-testing'
-        ];
-        
-        // Initialize scores for all quiz types
-        const scores = quizTypes.map(quizId => ({
-            quizName: quizId,
-            score: 0,
-            questionsAnswered: 0,
-            completedAt: null,
-            lastActive: null,
-            experience: 0
-        }));
-
         try {
-            const user = this.users.find(u => u.username === username);
-            if (!user) return scores;
+            // Get user's quiz results from the server
+            const response = await fetch(`${this.apiService.baseUrl}/users/${username}/quiz-results`, {
+                headers: {
+                    'Authorization': `Bearer ${localStorage.getItem('adminToken')}`,
+                    'Content-Type': 'application/json'
+                }
+            });
 
-            // Process quiz results from user data
-            if (user.quizResults && Array.isArray(user.quizResults)) {
-                user.quizResults.forEach(result => {
-                    // Convert API format back to our display format
-                    const displayQuizName = result.quizName
-                        .replace(/([A-Z])/g, '-$1')
-                        .toLowerCase()
-                        .replace(/^-/, '');
-                    
-                    const scoreIndex = scores.findIndex(s => {
-                        const normalizedScoreName = s.quizName.toLowerCase().replace(/\s+/g, '');
-                        const normalizedDisplayName = displayQuizName.toLowerCase().replace(/\s+/g, '');
-                        return normalizedScoreName === normalizedDisplayName ||
-                               normalizedScoreName === result.quizName.toLowerCase();
-                    });
-                    
+            if (!response.ok) {
+                throw new Error('Failed to fetch user progress');
+            }
+
+            const data = await response.json();
+            if (!data.success) {
+                throw new Error(data.message || 'Failed to load user progress');
+            }
+
+            // Initialize scores for all quiz types
+            const scores = this.quizTypes.map(quizName => ({
+                quizName,
+                score: 0,
+                experience: 0,
+                questionsAnswered: 0,
+                questionHistory: [],
+                lastActive: null,
+                completedAt: null
+            }));
+
+            // Update scores with actual results
+            if (Array.isArray(data.data)) {
+                data.data.forEach(result => {
+                    const scoreIndex = scores.findIndex(s => 
+                        s.quizName === result.quizName || 
+                        s.quizName === this.normalizeQuizName(result.quizName)
+                    );
                     if (scoreIndex !== -1) {
-                        // Get questions answered from various sources
-                        let questionsAnswered = 0;
-                        
-                        // First try to get from answers array
-                        if (result.answers && Array.isArray(result.answers)) {
-                            questionsAnswered = result.answers.length;
-                        } 
-                        // Then try questionsAnswered property
-                        else if (result.questionsAnswered) {
-                            questionsAnswered = result.questionsAnswered;
-                        }
-                        // Finally, calculate from score if we have no other data
-                        else if (result.score > 0) {
-                            // If they have a score, they must have answered some questions
-                            // Calculate based on score percentage (minimum 1 question if they have any score)
-                            questionsAnswered = Math.max(1, Math.ceil((result.score / 100) * 15));
-                        }
-
-                        // Calculate experience if not provided
-                        let experience = result.experience;
-                        if (typeof experience !== 'number' && result.score) {
-                            experience = Math.round((result.score / 100) * 300);
-                        }
-
                         scores[scoreIndex] = {
                             ...scores[scoreIndex],
-                            score: result.score || 0,
-                            questionsAnswered,
-                            completedAt: result.completedAt,
-                            lastActive: result.completedAt,
-                            experience: experience || 0
+                            ...result,
+                            // Ensure questionsAnswered is set from either direct value or history length
+                            questionsAnswered: result.questionsAnswered || result.questionHistory?.length || 0
                         };
                     }
                 });
             }
 
-            // Update with quiz progress if available
-            if (user.quizProgress) {
-                Object.entries(user.quizProgress).forEach(([quizName, progress]) => {
-                    // Convert API format back to our display format
-                    const displayQuizName = quizName
-                        .replace(/([A-Z])/g, '-$1')
-                        .toLowerCase()
-                        .replace(/^-/, '');
-                    
-                    const scoreIndex = scores.findIndex(s => {
-                        const normalizedScoreName = s.quizName.toLowerCase().replace(/\s+/g, '');
-                        const normalizedDisplayName = displayQuizName.toLowerCase().replace(/\s+/g, '');
-                        return normalizedScoreName === normalizedDisplayName ||
-                               normalizedScoreName === quizName.toLowerCase();
-                    });
-                    
-                    if (scoreIndex !== -1 && progress) {
-                        // Get questions answered from progress data
-                        let questionsAnswered = scores[scoreIndex].questionsAnswered;
-                        
-                        // Update from question history if available
-                        if (progress.questionHistory && Array.isArray(progress.questionHistory)) {
-                            questionsAnswered = Math.max(questionsAnswered, progress.questionHistory.length);
-                        }
-                        // If we have no questions answered but have a score, calculate from score
-                        else if (questionsAnswered === 0 && scores[scoreIndex].score > 0) {
-                            questionsAnswered = Math.max(1, Math.ceil((scores[scoreIndex].score / 100) * 15));
-                        }
-
-                        scores[scoreIndex] = {
-                            ...scores[scoreIndex],
-                            questionsAnswered,
-                            experience: progress.experience || scores[scoreIndex].experience,
-                            lastActive: progress.lastUpdated || scores[scoreIndex].lastActive
-                        };
-                    }
-                });
-            }
-
-            // Update last active from user's lastLogin if available
-            const lastLogin = user.lastLogin ? new Date(user.lastLogin) : null;
-            if (lastLogin) {
-                scores.forEach(score => {
-                    if (!score.lastActive || new Date(score.lastActive) < lastLogin) {
-                        score.lastActive = lastLogin;
-                    }
-                });
-            }
-
-            console.log('Loaded progress for user:', username, scores);
             return scores;
         } catch (error) {
-            console.error(`Error loading progress for ${username}:`, error);
-            return scores;
+            console.error(`Failed to load progress for user ${username}:`, error);
+            return [];
         }
     }
 
@@ -580,8 +492,8 @@ export class AdminDashboard {
             <div class="user-details-body">
                 <div class="quiz-progress-list">
                     ${sortedScores.map(score => {
-                        // Calculate questions completed from either quizResults or quizProgress
-                        const questionsCompleted = score.questionsAnswered || 0;
+                        // Get questions completed from either questionHistory length or questionsAnswered
+                        const questionsCompleted = score.questionHistory?.length || score.questionsAnswered || 0;
                         const totalQuestions = 15; // Total questions per quiz
                         
                         return `
@@ -591,8 +503,8 @@ export class AdminDashboard {
                                     <div class="progress-details">
                                         <span class="score">Progress: ${Math.round(score.score)}%</span>
                                         <span class="questions">Questions Completed: ${questionsCompleted}/${totalQuestions}</span>
-                                        <span class="experience">XP Earned: ${score.experience}/300</span>
-                                        <span class="last-active">Last Active: ${this.formatDate(score.lastActive)}</span>
+                                        <span class="experience">XP Earned: ${score.experience || 0}/300</span>
+                                        <span class="last-active">Last Active: ${this.formatDate(score.lastActive || score.completedAt)}</span>
                                     </div>
                                 </div>
                                 <button class="reset-button" onclick="window.adminDashboard.resetUserProgress('${username}', '${score.quizName}')">
@@ -602,11 +514,17 @@ export class AdminDashboard {
                         `;
                     }).join('')}
                 </div>
-            </div>
-        `;
-        
+            </div>`;
+            
         overlay.appendChild(content);
         document.body.appendChild(overlay);
+        
+        // Add click event to close overlay when clicking outside content
+        overlay.addEventListener('click', (e) => {
+            if (e.target === overlay) {
+                this.closeUserDetails();
+            }
+        });
     }
 
     closeUserDetails() {
