@@ -122,10 +122,8 @@ export class QuizUser {
             completedAt: new Date().toISOString()
         };
 
-        console.log('Saving quiz result:', quizData);
-
         try {
-            // Save to server first
+            // Save to server
             const response = await this.api.fetchWithAuth(`${config.apiUrl}/users/quiz-results`, {
                 method: 'POST',
                 headers: {
@@ -139,10 +137,18 @@ export class QuizUser {
             }
 
             const data = await response.json();
-            console.log('Server response:', data);
-
             if (data.success) {
                 this.quizResults = data.data;
+                
+                // Also update the quiz progress
+                const progressData = {
+                    experience: quizData.experience,
+                    tools: quizData.tools,
+                    questionHistory: quizData.questionHistory,
+                    lastUpdated: quizData.completedAt
+                };
+                
+                await this.api.saveQuizProgress(quizName, progressData);
                 return true;
             }
             return false;

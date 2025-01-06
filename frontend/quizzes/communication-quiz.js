@@ -826,16 +826,12 @@ class CommunicationQuiz extends BaseQuiz {
                 maxPossibleXP: Math.max(...scenario.options.map(o => o.experience))
             });
 
-            // Save progress with current scenario (before incrementing)
-            await this.saveProgress();
-
-            // Also save quiz result and update display
+            // Save progress and quiz result
             const username = localStorage.getItem('username');
             if (username) {
+                // First save the quiz result
                 const quizUser = new QuizUser(username);
                 const score = Math.round((this.player.experience / this.maxXP) * 100);
-                
-                // Save both score and question history with explicit questionsAnswered count
                 await quizUser.saveQuizResult(
                     this.quizName,
                     score,
@@ -844,7 +840,10 @@ class CommunicationQuiz extends BaseQuiz {
                     this.player.questionHistory,
                     this.player.questionHistory.length
                 );
-                
+
+                // Then save the detailed progress
+                await this.saveProgress();
+
                 // Update progress display on index page
                 const progressElement = document.querySelector(`#${this.quizName}-progress`);
                 if (progressElement) {
@@ -852,25 +851,21 @@ class CommunicationQuiz extends BaseQuiz {
                     const completedQuestions = this.player.questionHistory.length;
                     const percentComplete = Math.round((completedQuestions / totalQuestions) * 100);
                     
-                    // Only update if we're on the index page and this is the current user
-                    const onIndexPage = window.location.pathname.endsWith('index.html');
-                    if (onIndexPage) {
-                        progressElement.textContent = `${percentComplete}% Complete`;
-                        progressElement.classList.remove('hidden');
-                        
-                        // Update quiz item styling
-                        const quizItem = document.querySelector(`[data-quiz="${this.quizName}"]`);
-                        if (quizItem) {
-                            quizItem.classList.remove('completed', 'in-progress');
-                            if (percentComplete === 100) {
-                                quizItem.classList.add('completed');
-                                progressElement.classList.add('completed');
-                                progressElement.classList.remove('in-progress');
-                            } else if (percentComplete > 0) {
-                                quizItem.classList.add('in-progress');
-                                progressElement.classList.add('in-progress');
-                                progressElement.classList.remove('completed');
-                            }
+                    progressElement.textContent = `${percentComplete}% Complete`;
+                    progressElement.classList.remove('hidden');
+                    
+                    // Update quiz item styling
+                    const quizItem = document.querySelector(`[data-quiz="${this.quizName}"]`);
+                    if (quizItem) {
+                        quizItem.classList.remove('completed', 'in-progress');
+                        if (percentComplete === 100) {
+                            quizItem.classList.add('completed');
+                            progressElement.classList.add('completed');
+                            progressElement.classList.remove('in-progress');
+                        } else if (percentComplete > 0) {
+                            quizItem.classList.add('in-progress');
+                            progressElement.classList.add('in-progress');
+                            progressElement.classList.remove('completed');
                         }
                     }
                 }
