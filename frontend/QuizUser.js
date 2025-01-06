@@ -122,6 +122,8 @@ export class QuizUser {
             completedAt: new Date().toISOString()
         };
 
+        console.log('Saving quiz result:', quizData);
+
         try {
             // Save to server first
             const response = await this.api.fetchWithAuth(`${config.apiUrl}/users/quiz-results`, {
@@ -137,17 +139,15 @@ export class QuizUser {
             }
 
             const data = await response.json();
+            console.log('Server response:', data);
+
             if (data.success) {
                 this.quizResults = data.data;
-                // Update localStorage as backup only if server save was successful
-                localStorage.setItem(`quizResults_${this.username}`, JSON.stringify(this.quizResults));
                 return true;
             }
             return false;
         } catch (error) {
             console.error('Failed to save quiz result:', error);
-            // Save to localStorage as fallback
-            this.saveToLocalStorage(quizData);
             return false;
         }
     }
@@ -202,15 +202,16 @@ export class QuizUser {
 
     async getQuizProgress(quizName) {
         try {
-            const result = await this.api.getQuizProgress(quizName);
-            if (result) {
-                return result;
+            const response = await this.api.fetchWithAuth(`${config.apiUrl}/users/quiz-progress/${quizName}`);
+            if (!response.ok) {
+                throw new Error('Failed to get quiz progress');
             }
-            return null;
+            const data = await response.json();
+            console.log('Got quiz progress:', data);
+            return data.success ? data.data : null;
         } catch (error) {
             console.error('Failed to get quiz progress:', error);
-            // Try to get from localStorage
-            return this.quizProgress[quizName] || null;
+            return null;
         }
     }
 

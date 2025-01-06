@@ -549,29 +549,25 @@ class CommunicationQuiz extends BaseQuiz {
             
             // Save to server first
             const serverSaved = await this.apiService.saveQuizProgress(this.quizName, progress);
+            console.log('Saved progress to server:', progress);
             
             if (serverSaved) {
-                // Only use localStorage as backup if server save was successful
-                const storageKey = `quiz_progress_${username}_${this.quizName}`;
-                localStorage.setItem(storageKey, JSON.stringify({ progress }));
+                // Also update quiz results to keep everything in sync
+                const quizUser = new QuizUser(username);
+                const score = Math.round((this.player.experience / this.maxXP) * 100);
+                await quizUser.saveQuizResult(
+                    this.quizName,
+                    score,
+                    this.player.experience,
+                    this.player.tools,
+                    this.player.questionHistory,
+                    this.player.questionHistory.length
+                );
             } else {
                 console.error('Failed to save progress to server');
             }
-            
-            // Also update quiz results to keep everything in sync
-            const quizUser = new QuizUser(username);
-            const score = Math.round((this.player.experience / this.maxXP) * 100);
-            await quizUser.saveQuizResult(
-                this.quizName,
-                score,
-                this.player.experience,
-                this.player.tools,
-                this.player.questionHistory,
-                this.player.questionHistory.length
-            );
         } catch (error) {
             console.error('Failed to save progress:', error);
-            // Continue without saving - don't interrupt the user experience
         }
     }
 
@@ -589,21 +585,7 @@ class CommunicationQuiz extends BaseQuiz {
             
             if (savedProgress && savedProgress.data) {
                 progress = savedProgress.data;
-                // Store server data in localStorage as backup
-                const storageKey = `quiz_progress_${username}_${this.quizName}`;
-                localStorage.setItem(storageKey, JSON.stringify({ progress }));
-            } else {
-                // Only try localStorage if server data not found
-                const storageKey = `quiz_progress_${username}_${this.quizName}`;
-                const localData = localStorage.getItem(storageKey);
-                if (localData) {
-                    const parsed = JSON.parse(localData);
-                    if (parsed.progress) {
-                        progress = parsed.progress;
-                        // Push local progress to server
-                        await this.apiService.saveQuizProgress(this.quizName, progress);
-                    }
-                }
+                console.log('Loaded server progress:', progress);
             }
 
             if (progress) {
