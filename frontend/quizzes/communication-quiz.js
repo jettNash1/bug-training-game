@@ -597,6 +597,7 @@ class CommunicationQuiz extends BaseQuiz {
                     experience: quizResult.experience || 0,
                     tools: quizResult.tools || [],
                     questionHistory: quizResult.questionHistory || [],
+                    currentScenario: (quizResult.questionHistory && quizResult.questionHistory.length) || 0,
                     lastUpdated: quizResult.completedAt
                 };
             }
@@ -608,7 +609,17 @@ class CommunicationQuiz extends BaseQuiz {
                 this.player.questionHistory = progress.questionHistory || [];
                 
                 // Set current scenario to the next unanswered question
-                this.player.currentScenario = this.player.questionHistory.length;
+                // If currentScenario is saved in progress, use that, otherwise use questionHistory length
+                const nextScenario = progress.currentScenario !== undefined ? 
+                    progress.currentScenario : 
+                    this.player.questionHistory.length;
+                    
+                this.player.currentScenario = nextScenario;
+
+                console.log('Setting current scenario to:', this.player.currentScenario, {
+                    progressCurrentScenario: progress.currentScenario,
+                    questionHistoryLength: this.player.questionHistory.length
+                });
 
                 // Update UI
                 this.updateProgress();
