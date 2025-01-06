@@ -152,6 +152,7 @@ export class QuizUser {
                     experience: quizData.experience,
                     tools: quizData.tools,
                     questionHistory: quizData.questionHistory,
+                    currentScenario: quizData.questionsAnswered,
                     lastUpdated: quizData.completedAt
                 };
                 

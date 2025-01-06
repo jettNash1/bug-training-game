@@ -868,11 +868,17 @@ class CommunicationQuiz extends BaseQuiz {
                 maxPossibleXP: Math.max(...scenario.options.map(o => o.experience))
             });
 
-            // Increment current scenario before saving
+            // Save progress before incrementing current scenario
+            await this.saveProgress();
+
+            // Increment current scenario after saving
             this.player.currentScenario = this.player.questionHistory.length;
             console.log('Updated current scenario to:', this.player.currentScenario);
 
-            // Save progress and quiz result
+            // Save progress again with updated scenario
+            await this.saveProgress();
+
+            // Save quiz result and update display
             const username = localStorage.getItem('username');
             if (username) {
                 // First save the quiz result
@@ -886,9 +892,6 @@ class CommunicationQuiz extends BaseQuiz {
                     this.player.questionHistory,
                     this.player.questionHistory.length
                 );
-
-                // Then save the detailed progress with updated currentScenario
-                await this.saveProgress();
 
                 // Update progress display on index page
                 const progressElement = document.querySelector(`#${this.quizName}-progress`);
