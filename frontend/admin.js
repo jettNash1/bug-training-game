@@ -6,6 +6,24 @@ export class AdminDashboard {
         this.apiService = new APIService();
         this.users = [];
         this.userScores = new Map();
+        
+        // Initialize quiz types
+        this.quizTypes = [
+            'communication',
+            'initiative', 
+            'time-management',
+            'tester-mindset',
+            'risk-analysis',
+            'risk-management',
+            'non-functional',
+            'test-support',
+            'issue-verification',
+            'build-verification',
+            'issue-tracking-tools',
+            'raising-tickets',
+            'reports',
+            'cms-testing'
+        ];
         this.init();
     }
 
@@ -432,24 +450,7 @@ export class AdminDashboard {
                 this.userScores.clear();
                 for (const user of this.users) {
                     // Clear any local storage for this user's quizzes
-                    const quizTypes = [
-                        'communication',
-                        'initiative', 
-                        'time-management',
-                        'tester-mindset',
-                        'risk-analysis',
-                        'risk-management',
-                        'non-functional',
-                        'test-support',
-                        'issue-verification',
-                        'build-verification',
-                        'issue-tracking-tools',
-                        'raising-tickets',
-                        'reports',
-                        'cms-testing'
-                    ];
-                    
-                    quizTypes.forEach(quizName => {
+                    this.quizTypes.forEach(quizName => {
                         localStorage.removeItem(`quiz_progress_${user.username}_${quizName}`);
                         localStorage.removeItem(`quiz_progress_${user.username}_${this.normalizeQuizName(quizName)}`);
                     });
