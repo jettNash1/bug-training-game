@@ -646,7 +646,11 @@ class CommunicationQuiz extends BaseQuiz {
                 return;
             }
 
-            // Load existing progress from server
+            // Initialize QuizUser for this player
+            const quizUser = new QuizUser(this.player.name);
+            await quizUser.loadUserData();
+            
+            // First try to load from server
             const savedProgress = await this.apiService.getQuizProgress(this.quizName);
             console.log('Server progress:', savedProgress);
 
@@ -667,10 +671,7 @@ class CommunicationQuiz extends BaseQuiz {
                 });
             } else {
                 // If no server progress, try to get quiz result
-                const quizUser = new QuizUser(this.player.name);
-                await quizUser.loadUserData();
                 const quizResult = quizUser.getQuizResult(this.quizName);
-
                 if (quizResult) {
                     console.log('Found quiz result:', quizResult);
                     this.player.experience = quizResult.experience || 0;
@@ -878,7 +879,24 @@ class CommunicationQuiz extends BaseQuiz {
                 maxPossibleXP: Math.max(...scenario.options.map(o => o.experience))
             });
 
-            // Update current scenario
+            // Save quiz result first
+            const username = localStorage.getItem('username');
+            if (username) {
+                const quizUser = new QuizUser(username);
+                const score = Math.round((this.player.experience / this.maxXP) * 100);
+                
+                // Save both score and question history
+                await quizUser.saveQuizResult(
+                    this.quizName,
+                    score,
+                    this.player.experience,
+                    this.player.tools,
+                    this.player.questionHistory,
+                    this.player.questionHistory.length  // Use length for questionsAnswered
+                );
+            }
+
+            // Update current scenario after saving
             this.player.currentScenario = this.player.questionHistory.length;
             console.log('Updated current scenario to:', this.player.currentScenario);
 
@@ -892,49 +910,8 @@ class CommunicationQuiz extends BaseQuiz {
             };
 
             // Save to server
-            const serverSaved = await this.apiService.saveQuizProgress(this.quizName, progress);
-            console.log('Saved progress to server:', { serverSaved, progress });
-
-            // Save quiz result
-            const username = localStorage.getItem('username');
-            if (username) {
-                const quizUser = new QuizUser(username);
-                const score = Math.round((this.player.experience / this.maxXP) * 100);
-                await quizUser.saveQuizResult(
-                    this.quizName,
-                    score,
-                    this.player.experience,
-                    this.player.tools,
-                    this.player.questionHistory,
-                    this.player.currentScenario
-                );
-
-                // Update progress display on index page
-                const progressElement = document.querySelector(`#${this.quizName}-progress`);
-                if (progressElement) {
-                    const totalQuestions = 15;
-                    const completedQuestions = this.player.questionHistory.length;
-                    const percentComplete = Math.round((completedQuestions / totalQuestions) * 100);
-                    
-                    progressElement.textContent = `${percentComplete}% Complete`;
-                    progressElement.classList.remove('hidden');
-                    
-                    // Update quiz item styling
-                    const quizItem = document.querySelector(`[data-quiz="${this.quizName}"]`);
-                    if (quizItem) {
-                        quizItem.classList.remove('completed', 'in-progress');
-                        if (percentComplete === 100) {
-                            quizItem.classList.add('completed');
-                            progressElement.classList.add('completed');
-                            progressElement.classList.remove('in-progress');
-                        } else if (percentComplete > 0) {
-                            quizItem.classList.add('in-progress');
-                            progressElement.classList.add('in-progress');
-                            progressElement.classList.remove('completed');
-                        }
-                    }
-                }
-            }
+            await this.apiService.saveQuizProgress(this.quizName, progress);
+            console.log('Saved progress to server:', progress);
 
             // Show outcome screen
             if (this.gameScreen && this.outcomeScreen) {
