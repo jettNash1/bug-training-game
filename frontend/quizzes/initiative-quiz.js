@@ -810,11 +810,25 @@ class InitiativeQuiz extends BaseQuiz {
             // Save progress with current scenario (before incrementing)
             await this.saveProgress();
 
+            // Calculate the score and experience
+            const totalQuestions = 15;
+            const completedQuestions = this.player.questionHistory.length;
+            const percentComplete = Math.round((completedQuestions / totalQuestions) * 100);
+            const experience = Math.round((completedQuestions / totalQuestions) * 300); // 300 is max XP
+            
+            const score = {
+                quizName: this.quizName,
+                score: percentComplete,
+                questionHistory: this.player.questionHistory,
+                questionsAnswered: completedQuestions,
+                experience: experience,
+                lastActive: new Date().toISOString()
+            };
+            
             // Also save quiz result and update display
             const username = localStorage.getItem('username');
             if (username) {
                 const quizUser = new QuizUser(username);
-                const score = Math.round((this.player.experience / this.maxXP) * 100);
                 await quizUser.updateQuizScore(this.quizName, score);
                 
                 // Update progress display on index page
