@@ -631,13 +631,20 @@ class CommunicationQuiz extends BaseQuiz {
             if (loadingIndicator) {
                 loadingIndicator.classList.remove('hidden');
             }
+
             // Set player name from localStorage
             this.player.name = localStorage.getItem('username');
             if (!this.player.name) {
                 window.location.href = '/login.html';
                 return;
             }
+
+            // Load existing progress
             const hasProgress = await this.loadProgress();
+            console.log('Loaded progress:', {
+                hasProgress,
+                player: this.player
+            });
             
             if (!hasProgress) {
                 // Reset player state if no valid progress exists
@@ -654,6 +661,10 @@ class CommunicationQuiz extends BaseQuiz {
                 transitionContainer.classList.remove('active');
             }
             
+            // Update progress display
+            this.updateProgress();
+            
+            // Display current scenario
             await this.displayScenario();
         } catch (error) {
             console.error('Failed to start game:', error);

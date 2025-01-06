@@ -20,6 +20,7 @@ export class QuizUser {
             
             if (data.success) {
                 this.quizResults = data.data || [];
+                console.log('Loaded user data:', this.quizResults);
                 
                 // Update progress display for each quiz
                 this.quizResults.forEach(result => {
@@ -28,6 +29,11 @@ export class QuizUser {
                         const totalQuestions = 15;
                         const completedQuestions = result.questionHistory?.length || result.questionsAnswered || 0;
                         const percentComplete = Math.round((completedQuestions / totalQuestions) * 100);
+                        
+                        // Remove "No progress" message if it exists
+                        if (progressElement.textContent.includes('No progress')) {
+                            progressElement.textContent = '';
+                        }
                         
                         progressElement.textContent = `${percentComplete}% Complete`;
                         progressElement.classList.remove('hidden');
@@ -177,7 +183,12 @@ export class QuizUser {
     }
 
     getQuizResult(quizName) {
-        return this.quizResults.find(result => result.quizName === quizName) || null;
+        const result = this.quizResults.find(result => 
+            result.quizName === quizName || 
+            result.quizName === this.normalizeQuizName(quizName)
+        );
+        console.log('Getting quiz result for', quizName, ':', result);
+        return result || null;
     }
 
     async saveQuizProgress(quizName, progress) {
