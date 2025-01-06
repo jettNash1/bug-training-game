@@ -111,11 +111,40 @@ router.get('/users', auth, async (req, res) => {
             });
         }
 
-        const users = await User.find({}, '-__v')
-            .sort({ username: 1 });
-        res.json({ success: true, users });
+        // Get all users with their quiz data
+        const users = await User.find({}, {
+            username: 1,
+            lastLogin: 1,
+            quizResults: 1,
+            quizProgress: 1,
+            _id: 0
+        }).sort({ username: 1 });
+
+        // Ensure all quiz data is properly populated
+        const populatedUsers = users.map(user => {
+            const userData = user.toObject();
+            
+            // Ensure quizResults array exists
+            if (!userData.quizResults) {
+                userData.quizResults = [];
+            }
+
+            // Ensure quizProgress object exists
+            if (!userData.quizProgress) {
+                userData.quizProgress = {};
+            }
+
+            return userData;
+        });
+
+        res.json({ success: true, users: populatedUsers });
     } catch (error) {
-        res.status(500).json({ success: false, error: error.message });
+        console.error('Error fetching users:', error);
+        res.status(500).json({ 
+            success: false, 
+            message: 'Failed to fetch users',
+            error: error.message 
+        });
     }
 });
 
@@ -136,14 +165,20 @@ router.get('/stats', auth, async (req, res) => {
                 $group: {
                     _id: '$quizResults.quizName',
                     avgScore: { $avg: '$quizResults.score' },
-                    totalAttempts: { $sum: 1 }
+                    totalAttempts: { $sum: 1 },
+                    avgExperience: { $avg: '$quizResults.experience' }
                 }
             }
         ]);
         
         res.json({ success: true, stats: { totalUsers, quizStats } });
     } catch (error) {
-        res.status(500).json({ success: false, error: error.message });
+        console.error('Error fetching stats:', error);
+        res.status(500).json({ 
+            success: false, 
+            message: 'Failed to fetch stats',
+            error: error.message 
+        });
     }
 });
 
