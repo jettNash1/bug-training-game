@@ -85,14 +85,14 @@ export class QuizUser {
         }
     }
 
-    async saveQuizResult(quizName, score, experience = 0, tools = [], questionHistory = []) {
+    async saveQuizResult(quizName, score, experience = 0, tools = [], questionHistory = [], questionsAnswered = null) {
         const quizData = {
             quizName,
             score: Math.round(score),
             experience: Math.round(experience || score),
             tools: tools || [],
             questionHistory: questionHistory || [],
-            questionsAnswered: questionHistory ? questionHistory.length : 0,
+            questionsAnswered: questionsAnswered !== null ? questionsAnswered : (questionHistory ? questionHistory.length : 0),
             completedAt: new Date().toISOString()
         };
 
