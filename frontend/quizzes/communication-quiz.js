@@ -646,48 +646,21 @@ class CommunicationQuiz extends BaseQuiz {
                 return;
             }
 
-            // Initialize QuizUser for this player
+            // Initialize QuizUser and load progress
             const quizUser = new QuizUser(this.player.name);
-            await quizUser.loadUserData();
+            await quizUser.loadUserData();  // This loads and displays progress on homepage
             
-            // First try to load from server
-            const savedProgress = await this.apiService.getQuizProgress(this.quizName);
-            console.log('Server progress:', savedProgress);
-
-            if (savedProgress && savedProgress.data) {
-                const progress = savedProgress.data;
-                console.log('Restoring progress:', progress);
-
-                // Restore player state
-                this.player.experience = progress.experience || 0;
-                this.player.tools = progress.tools || [];
-                this.player.questionHistory = progress.questionHistory || [];
-                this.player.currentScenario = progress.currentScenario || 0;
-
-                console.log('Restored state:', {
+            // Load existing progress
+            const hasProgress = await this.loadProgress();
+            console.log('Starting game with progress:', {
+                hasProgress: hasProgress,
+                player: {
                     experience: this.player.experience,
                     currentScenario: this.player.currentScenario,
-                    questionHistory: this.player.questionHistory.length
-                });
-            } else {
-                // If no server progress, try to get quiz result
-                const quizResult = quizUser.getQuizResult(this.quizName);
-                if (quizResult) {
-                    console.log('Found quiz result:', quizResult);
-                    this.player.experience = quizResult.experience || 0;
-                    this.player.tools = quizResult.tools || [];
-                    this.player.questionHistory = quizResult.questionHistory || [];
-                    this.player.currentScenario = quizResult.questionsAnswered || 0;
-                } else {
-                    // Only reset if we have no progress at all
-                    console.log('No progress found, starting new quiz');
-                    this.player.experience = 0;
-                    this.player.tools = [];
-                    this.player.currentScenario = 0;
-                    this.player.questionHistory = [];
+                    questionHistoryLength: this.player.questionHistory.length
                 }
-            }
-            
+            });
+
             // Clear any existing transition messages
             const transitionContainer = document.getElementById('level-transition-container');
             if (transitionContainer) {
@@ -879,10 +852,16 @@ class CommunicationQuiz extends BaseQuiz {
                 maxPossibleXP: Math.max(...scenario.options.map(o => o.experience))
             });
 
-            // Save quiz result first
+            // Update current scenario
+            this.player.currentScenario = this.player.questionHistory.length;
+            console.log('Updated current scenario to:', this.player.currentScenario);
+
+            // Save quiz result and update display
             const username = localStorage.getItem('username');
             if (username) {
                 const quizUser = new QuizUser(username);
+                await quizUser.loadUserData();  // Load existing data first
+                
                 const score = Math.round((this.player.experience / this.maxXP) * 100);
                 
                 // Save both score and question history
@@ -894,24 +873,20 @@ class CommunicationQuiz extends BaseQuiz {
                     this.player.questionHistory,
                     this.player.questionHistory.length  // Use length for questionsAnswered
                 );
+
+                // Save progress with updated state
+                const progress = {
+                    experience: this.player.experience,
+                    tools: this.player.tools,
+                    currentScenario: this.player.currentScenario,
+                    questionHistory: this.player.questionHistory,
+                    lastUpdated: new Date().toISOString()
+                };
+
+                // Save to server and update display
+                await quizUser.saveQuizProgress(this.quizName, progress);
+                await quizUser.loadUserData();  // Reload to update homepage display
             }
-
-            // Update current scenario after saving
-            this.player.currentScenario = this.player.questionHistory.length;
-            console.log('Updated current scenario to:', this.player.currentScenario);
-
-            // Save progress with updated state
-            const progress = {
-                experience: this.player.experience,
-                tools: this.player.tools,
-                currentScenario: this.player.currentScenario,
-                questionHistory: this.player.questionHistory,
-                lastUpdated: new Date().toISOString()
-            };
-
-            // Save to server
-            await this.apiService.saveQuizProgress(this.quizName, progress);
-            console.log('Saved progress to server:', progress);
 
             // Show outcome screen
             if (this.gameScreen && this.outcomeScreen) {
