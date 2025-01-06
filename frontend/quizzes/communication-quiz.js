@@ -579,45 +579,23 @@ class CommunicationQuiz extends BaseQuiz {
                 return false;
             }
 
-            // First load quiz results to get overall progress
-            const quizUser = new QuizUser(username);
-            await quizUser.loadUserData();
-            const quizResult = quizUser.getQuizResult(this.quizName);
-
-            // Then load detailed progress
+            // First try to load from server
             const savedProgress = await this.apiService.getQuizProgress(this.quizName);
-            let progress = null;
-            
-            if (savedProgress && savedProgress.data) {
-                progress = savedProgress.data;
-                console.log('Loading quiz progress:', progress);
-            } else if (quizResult) {
-                // If no detailed progress but we have quiz results, use that
-                progress = {
-                    experience: quizResult.experience || 0,
-                    tools: quizResult.tools || [],
-                    questionHistory: quizResult.questionHistory || [],
-                    currentScenario: (quizResult.questionHistory && quizResult.questionHistory.length) || 0,
-                    lastUpdated: quizResult.completedAt
-                };
-            }
+            console.log('Server progress response:', savedProgress);
 
-            if (progress) {
+            if (savedProgress && savedProgress.data) {
+                const progress = savedProgress.data;
+                console.log('Loaded progress from server:', progress);
+
                 // Set the player state from progress
                 this.player.experience = progress.experience || 0;
                 this.player.tools = progress.tools || [];
                 this.player.questionHistory = progress.questionHistory || [];
-                
-                // Set current scenario to the next unanswered question
-                // If currentScenario is saved in progress, use that, otherwise use questionHistory length
-                const nextScenario = progress.currentScenario !== undefined ? 
-                    progress.currentScenario : 
-                    this.player.questionHistory.length;
-                    
-                this.player.currentScenario = nextScenario;
+                this.player.currentScenario = progress.currentScenario || 0;
 
-                console.log('Setting current scenario to:', this.player.currentScenario, {
-                    progressCurrentScenario: progress.currentScenario,
+                console.log('Restored player state:', {
+                    experience: this.player.experience,
+                    currentScenario: this.player.currentScenario,
                     questionHistoryLength: this.player.questionHistory.length
                 });
 
@@ -625,6 +603,24 @@ class CommunicationQuiz extends BaseQuiz {
                 this.updateProgress();
                 return true;
             }
+
+            // If no server progress, try to get quiz result
+            const quizUser = new QuizUser(username);
+            await quizUser.loadUserData();
+            const quizResult = quizUser.getQuizResult(this.quizName);
+
+            if (quizResult) {
+                console.log('Found quiz result:', quizResult);
+                this.player.experience = quizResult.experience || 0;
+                this.player.tools = quizResult.tools || [];
+                this.player.questionHistory = quizResult.questionHistory || [];
+                this.player.currentScenario = quizResult.questionsAnswered || 0;
+
+                // Update UI
+                this.updateProgress();
+                return true;
+            }
+
             return false;
         } catch (error) {
             console.error('Failed to load progress:', error);

@@ -20,14 +20,30 @@ export class QuizUser {
             
             if (data.success) {
                 this.quizResults = data.data || [];
-                console.log('Loaded user data:', this.quizResults);
+                console.log('Loaded quiz results:', this.quizResults);
+                
+                // Also load quiz progress for each quiz
+                for (const result of this.quizResults) {
+                    try {
+                        const progressResponse = await this.api.getQuizProgress(result.quizName);
+                        if (progressResponse && progressResponse.data) {
+                            this.quizProgress[result.quizName] = progressResponse.data;
+                        }
+                    } catch (error) {
+                        console.error(`Failed to load progress for ${result.quizName}:`, error);
+                    }
+                }
                 
                 // Update progress display for each quiz
                 this.quizResults.forEach(result => {
                     const progressElement = document.querySelector(`#${result.quizName}-progress`);
                     if (progressElement) {
                         const totalQuestions = 15;
-                        const completedQuestions = result.questionHistory?.length || result.questionsAnswered || 0;
+                        const progress = this.quizProgress[result.quizName];
+                        const completedQuestions = progress?.questionHistory?.length || 
+                                                result.questionHistory?.length || 
+                                                result.questionsAnswered || 0;
+                        
                         const percentComplete = Math.round((completedQuestions / totalQuestions) * 100);
                         
                         // Remove "No progress" message if it exists
