@@ -650,19 +650,31 @@ class CommunicationQuiz extends BaseQuiz {
                 return;
             }
 
+            // Initialize QuizUser for this player
+            const quizUser = new QuizUser(this.player.name);
+            await quizUser.loadUserData();
+            
             // Load existing progress
             const hasProgress = await this.loadProgress();
-            console.log('Loaded progress:', {
+            console.log('Starting game with progress:', {
                 hasProgress,
-                player: this.player
+                player: {
+                    experience: this.player.experience,
+                    currentScenario: this.player.currentScenario,
+                    questionHistoryLength: this.player.questionHistory.length
+                }
             });
             
             if (!hasProgress) {
-                // Reset player state if no valid progress exists
-                this.player.experience = 0;
-                this.player.tools = [];
-                this.player.currentScenario = 0;
-                this.player.questionHistory = [];
+                // Only reset if we definitely have no progress
+                const quizResult = quizUser.getQuizResult(this.quizName);
+                if (!quizResult) {
+                    console.log('No progress found, resetting state');
+                    this.player.experience = 0;
+                    this.player.tools = [];
+                    this.player.currentScenario = 0;
+                    this.player.questionHistory = [];
+                }
             }
             
             // Clear any existing transition messages
@@ -677,6 +689,8 @@ class CommunicationQuiz extends BaseQuiz {
             
             // Display current scenario
             await this.displayScenario();
+            
+            console.log('Game started with scenario:', this.player.currentScenario);
         } catch (error) {
             console.error('Failed to start game:', error);
             this.showError('Failed to start the quiz. Please try refreshing the page.');
@@ -718,6 +732,12 @@ class CommunicationQuiz extends BaseQuiz {
             return;
         }
         
+        console.log('Displaying scenario:', {
+            currentScenario: this.player.currentScenario,
+            questionHistoryLength: this.player.questionHistory.length,
+            scenariosLength: currentScenarios.length
+        });
+        
         if (this.player.currentScenario >= currentScenarios.length) {
             const totalQuestionsAnswered = this.player.questionHistory.length;
             
@@ -734,7 +754,6 @@ class CommunicationQuiz extends BaseQuiz {
         const scenario = currentScenarios[this.player.currentScenario];
         if (!scenario) {
             console.error('No scenario found for index:', this.player.currentScenario);
-            console.log('Current scenarios:', currentScenarios);
             console.log('Current state:', {
                 totalAnswered: this.player.questionHistory.length,
                 currentXP: this.player.experience,
