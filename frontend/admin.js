@@ -178,31 +178,15 @@ class AdminDashboard {
             // Process quiz results immediately
             const newScores = new Map();
             
-            for (const user of this.users) {
-                // Fetch detailed quiz progress for each user
-                const progressResponse = await fetch(`${this.apiService.baseUrl}/admin/users/${user.username}/quiz-progress`, {
-                    headers: {
-                        'Authorization': `Bearer ${localStorage.getItem('adminToken')}`,
-                        'Content-Type': 'application/json'
-                    }
-                });
-                
-                if (!progressResponse.ok) {
-                    console.error(`Failed to fetch progress for ${user.username}`);
-                    continue;
-                }
-                
-                const progressData = await progressResponse.json();
-                console.log(`Progress data for ${user.username}:`, progressData);
-                
+            this.users.forEach(user => {
                 const scores = this.quizTypes.map(quizName => {
                     // Find the matching quiz result from user.quizResults
                     const quizResult = user.quizResults?.find(result => 
                         this.normalizeQuizName(result.quizName) === this.normalizeQuizName(quizName)
                     ) || {};
                     
-                    // Find the matching quiz progress
-                    const quizProgress = progressData.data?.find(progress => 
+                    // Find the matching quiz progress from user.quizProgress
+                    const quizProgress = user.quizProgress?.find(progress => 
                         this.normalizeQuizName(progress.quizName) === this.normalizeQuizName(quizName)
                     ) || {};
 
@@ -218,7 +202,7 @@ class AdminDashboard {
                 });
 
                 newScores.set(user.username, scores);
-            }
+            });
 
             // Update the userScores map
             console.log('Setting initial user scores');
