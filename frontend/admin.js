@@ -601,46 +601,5 @@ class AdminDashboard {
     }
 }
 
-// Create a single instance for the entire application
-let dashboardInstance = null;
-
-// Export these functions for direct use in HTML
-const handleAdminLogin = async () => {
-    if (!dashboardInstance) {
-        dashboardInstance = new AdminDashboard();
-    }
-    await dashboardInstance.handleAdminLogin();
-};
-
-const handleAdminLogout = () => {
-    if (dashboardInstance) {
-        dashboardInstance.handleAdminLogout();
-    }
-};
-
-// Export a function to get or create the dashboard instance
-const getDashboard = () => {
-    if (!dashboardInstance) {
-        dashboardInstance = new AdminDashboard();
-        // Make it globally available
-        window.dashboardInstance = dashboardInstance;
-    }
-    return dashboardInstance;
-};
-
-// Initialize the dashboard when the module loads
-if (typeof window !== 'undefined' && window.document) {
-    window.addEventListener('DOMContentLoaded', async () => {
-        const dashboard = getDashboard();
-        if (window.location.pathname.includes('admin.html')) {
-            await dashboard.init();
-        }
-    });
-}
-
-export {
-    AdminDashboard,
-    handleAdminLogin,
-    handleAdminLogout,
-    getDashboard
-}; 
+// Export the AdminDashboard class directly
+export { AdminDashboard }; 
