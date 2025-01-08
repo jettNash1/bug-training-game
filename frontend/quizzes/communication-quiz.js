@@ -534,9 +534,8 @@ export class CommunicationQuiz extends BaseQuiz {
         const progress = {
             experience: this.player.experience,
             tools: this.player.tools,
-            questionHistory: this.player.questionHistory,
-            questionsAnswered: this.player.questionHistory.length,
             currentScenario: this.player.currentScenario,
+            questionHistory: this.player.questionHistory,
             lastUpdated: new Date().toISOString()
         };
 
@@ -552,8 +551,10 @@ export class CommunicationQuiz extends BaseQuiz {
             localStorage.setItem(storageKey, JSON.stringify({ progress }));
             
             await this.apiService.saveQuizProgress(this.quizName, progress);
+            console.log('Progress saved successfully:', progress);
         } catch (error) {
             console.error('Failed to save progress:', error);
+            // Continue without saving - don't interrupt the user experience
         }
     }
 
@@ -565,42 +566,44 @@ export class CommunicationQuiz extends BaseQuiz {
                 return false;
             }
 
-             // Use user-specific key for localStorage
-             const storageKey = `quiz_progress_${username}_${this.quizName}`;
-             const savedProgress = await this.apiService.getQuizProgress(this.quizName);
-             let progress = null;
-             
-             if (savedProgress && savedProgress.data) {
-                 progress = savedProgress.data;
-             } else {
-                 // Try loading from localStorage
-                 const localData = localStorage.getItem(storageKey);
-                 if (localData) {
-                     const parsed = JSON.parse(localData);
-                     if (parsed.progress) {
-                         progress = parsed.progress;
-                     }
-                 }
-             }
- 
-             if (progress) {
-                 // Set the player state from progress
-                 this.player.experience = progress.experience || 0;
-                 this.player.tools = progress.tools || [];
-                 this.player.questionHistory = progress.questionHistory || [];
-                 
-                 // Set the current scenario based on the number of completed questions
-                 this.player.currentScenario = this.player.questionHistory.length;
- 
-                 // Update UI
-                 this.updateProgress();
-                 return true;
-             }
-             return false;
-         } catch (error) {
-             console.error('Failed to load progress:', error);
-             return false;
-         }
+            // Use user-specific key for localStorage
+            const storageKey = `quiz_progress_${username}_${this.quizName}`;
+            const savedProgress = await this.apiService.getQuizProgress(this.quizName);
+            let progress = null;
+            
+            if (savedProgress && savedProgress.data) {
+                progress = savedProgress.data;
+                console.log('Loaded progress from API:', progress);
+            } else {
+                // Try loading from localStorage
+                const localData = localStorage.getItem(storageKey);
+                if (localData) {
+                    const parsed = JSON.parse(localData);
+                    if (parsed.progress) {
+                        progress = parsed.progress;
+                        console.log('Loaded progress from localStorage:', progress);
+                    }
+                }
+            }
+
+            if (progress) {
+                // Set the player state from progress
+                this.player.experience = progress.experience || 0;
+                this.player.tools = progress.tools || [];
+                this.player.questionHistory = progress.questionHistory || [];
+                
+                // Set the current scenario based on the number of completed questions
+                this.player.currentScenario = this.player.questionHistory.length;
+
+                // Update UI
+                this.updateProgress();
+                return true;
+            }
+            return false;
+        } catch (error) {
+            console.error('Failed to load progress:', error);
+            return false;
+        }
     }
 
     async startGame() {
@@ -621,7 +624,12 @@ export class CommunicationQuiz extends BaseQuiz {
                 return;
             }
 
+            // Initialize event listeners
+            this.initializeEventListeners();
+
+            // Load previous progress
             const hasProgress = await this.loadProgress();
+            console.log('Previous progress loaded:', hasProgress);
             
             if (!hasProgress) {
                 // Reset player state if no valid progress exists
