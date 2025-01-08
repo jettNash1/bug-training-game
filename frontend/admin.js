@@ -166,20 +166,11 @@ export class AdminDashboard {
     async loadUserProgress(username) {
         try {
             console.log(`Fetching progress for ${username}...`); // Debug log
-            // Use the admin endpoint to fetch quiz results
-            const response = await fetch(`${this.apiService.baseUrl}/admin/users/${username}/quiz-progress`, {
-                headers: {
-                    'Authorization': `Bearer ${localStorage.getItem('adminToken')}`,
-                    'Content-Type': 'application/json'
-                }
-            });
-
-            console.log(`Response status for ${username}:`, response.status); // Debug log
-
-            if (!response.ok) {
-                console.error(`Failed to fetch progress for ${username}:`, response.status, response.statusText);
-                return [];
-            }
+            
+            // Use the APIService's fetchWithAdminAuth method
+            const response = await this.apiService.fetchWithAdminAuth(
+                `${this.apiService.baseUrl}/admin/users/${username}/quiz-results`
+            );
 
             const data = await response.json();
             console.log(`Raw quiz results for ${username}:`, data); // Debug log
@@ -202,10 +193,7 @@ export class AdminDashboard {
             // Handle quiz results
             if (data.data && typeof data.data === 'object') {
                 // Convert data.data to array if it's not already
-                const quizResults = Object.entries(data.data).map(([quizName, result]) => ({
-                    quizName,
-                    ...result
-                }));
+                const quizResults = Array.isArray(data.data) ? data.data : [data.data];
                 
                 console.log(`Processing quiz results for ${username}:`, quizResults); // Debug log
 
@@ -241,8 +229,6 @@ export class AdminDashboard {
                         };
                     }
                 });
-            } else {
-                console.warn(`No quiz data found for ${username}`);
             }
 
             console.log(`Final processed scores for ${username}:`, scores); // Debug log
