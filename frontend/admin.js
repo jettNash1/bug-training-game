@@ -171,7 +171,7 @@ export class AdminDashboard {
 
                 // Find the matching quiz score
                 const scoreIndex = scores.findIndex(s => 
-                    this.normalizeQuizName(s.quizName) === 'communication'
+                    this.normalizeQuizName(s.quizName) === quizName
                 );
 
                 if (scoreIndex !== -1) {
