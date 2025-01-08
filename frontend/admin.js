@@ -136,7 +136,6 @@ export class AdminDashboard {
 
     async loadUserProgress(username) {
         try {
-            // Get user's quiz results from the server
             const response = await fetch(`${this.apiService.baseUrl}/users/${username}/quiz-results`, {
                 headers: {
                     'Authorization': `Bearer ${localStorage.getItem('adminToken')}`,
@@ -149,7 +148,7 @@ export class AdminDashboard {
             }
 
             const data = await response.json();
-            console.log('Raw server response:', data); // Debug log
+            console.log('Raw quiz results data:', data);
 
             if (!data.success) {
                 throw new Error(data.message || 'Failed to load user progress');
@@ -159,41 +158,34 @@ export class AdminDashboard {
             const scores = this.quizTypes.map(quizName => ({
                 quizName,
                 score: 0,
-                data: {
-                    experience: 0,
-                    questionsAnswered: 0,
-                    questionHistory: [],
-                    lastUpdated: null
-                }
+                experience: 0,
+                questionsAnswered: 0,
+                questionHistory: [],
+                lastActive: null
             }));
 
             // Update scores with actual results
             if (data.data) {
                 const quizData = data.data;
-                console.log('Processing quiz data:', quizData); // Debug log
+                console.log('Processing quiz data:', quizData);
 
-                // Find the matching quiz score and update it
-                const quizName = this.normalizeQuizName(quizData.quizName || 'communication');
+                // Find the matching quiz score
                 const scoreIndex = scores.findIndex(s => 
-                    this.normalizeQuizName(s.quizName) === quizName
+                    this.normalizeQuizName(s.quizName) === 'communication'
                 );
 
                 if (scoreIndex !== -1) {
                     scores[scoreIndex] = {
                         ...scores[scoreIndex],
-                        score: Math.round((quizData.experience / 300) * 100), // Calculate score based on XP
-                        data: {
-                            experience: quizData.experience || 0,
-                            questionsAnswered: quizData.questionsAnswered || 0,
-                            questionHistory: quizData.questionHistory || [],
-                            lastUpdated: quizData.lastUpdated || null
-                        }
+                        score: Math.round((quizData.experience / 300) * 100),
+                        experience: quizData.experience || 0,
+                        questionsAnswered: quizData.questionsAnswered || 0,
+                        questionHistory: quizData.questionHistory || [],
+                        lastActive: quizData.lastUpdated || null
                     };
                 }
             }
 
-            console.log('Processed scores:', scores); // Debug log
-            this.userScores.set(username, scores);
             return scores;
         } catch (error) {
             console.error(`Failed to load progress for user ${username}:`, error);
@@ -511,16 +503,14 @@ export class AdminDashboard {
         if (!user) return;
 
         const scores = await this.loadUserProgress(username);
-        console.log('Displaying scores:', scores); // Debug log
-        
-        // Create the details overlay
+        console.log('User scores for display:', scores);
+
         const overlay = document.createElement('div');
         overlay.className = 'user-details-overlay';
         
         const content = document.createElement('div');
         content.className = 'user-details-content';
         
-        // Header with close button
         content.innerHTML = `
             <div class="details-header">
                 <h3>${username}'s Progress</h3>
@@ -528,29 +518,21 @@ export class AdminDashboard {
             </div>
         `;
         
-        // Create quiz progress list
         const quizList = document.createElement('div');
         quizList.className = 'quiz-progress-list';
         
-        // Sort quizzes by name
         this.quizTypes.forEach(quizName => {
-            // Find the quiz score data
-            const quizScore = scores.find(score => 
-                this.normalizeQuizName(score.quizName) === this.normalizeQuizName(quizName)
+            const quizScore = scores.find(s => 
+                this.normalizeQuizName(s.quizName) === this.normalizeQuizName(quizName)
             );
             
-            console.log('Processing quiz for display:', { quizName, quizScore }); // Debug log
-            
-            if (!quizScore) {
-                console.log('No score found for quiz:', quizName);
-                return;
-            }
-            
-            const progress = quizScore.score || 0;
-            const questionsAnswered = quizScore.data?.questionsAnswered || 0;
-            const experience = quizScore.data?.experience || 0;
-            const lastActive = quizScore.data?.lastUpdated ? 
-                this.formatDate(new Date(quizScore.data.lastUpdated)) : 'Never';
+            console.log('Processing quiz score:', { quizName, quizScore });
+
+            const progress = quizScore?.score || 0;
+            const questionsAnswered = quizScore?.questionsAnswered || 0;
+            const experience = quizScore?.experience || 0;
+            const lastActive = quizScore?.lastActive ? 
+                this.formatDate(new Date(quizScore.lastActive)) : 'Never';
             
             const quizItem = document.createElement('div');
             quizItem.className = 'quiz-progress-item';
