@@ -170,28 +170,57 @@ export class AdminDashboard {
 
     async loadUserProgress(username) {
         try {
-            console.log(`Fetching progress for ${username}...`); // Debug log
+            console.log(`Fetching progress for ${username}...`);
             
-            // Use quiz-progress endpoint
             const response = await this.apiService.fetchWithAdminAuth(
                 `${this.apiService.baseUrl}/admin/users/${username}/quiz-progress`
             );
 
             if (!response.ok) {
-                console.error(`Failed to fetch progress for ${username}:`, response.status, response.statusText);
-                return [];
+                throw new Error(`Failed to fetch progress: ${response.status} ${response.statusText}`);
             }
 
             const data = await response.json();
-            console.log(`Raw quiz progress for ${username}:`, data); // Debug log
+            console.log(`Raw quiz progress for ${username}:`, data);
 
-            if (!data.success) {
-                console.warn(`No success flag in response for ${username}`);
-                return [];
+            if (!data.success || !data.data) {
+                console.warn(`No quiz data found for ${username}`);
+                return this.quizTypes.map(quizName => ({
+                    quizName,
+                    score: 0,
+                    experience: 0,
+                    questionsAnswered: 0,
+                    questionHistory: [],
+                    lastActive: null
+                }));
             }
 
-            // Initialize scores for all quiz types
-            const scores = this.quizTypes.map(quizName => ({
+            // Convert the quiz progress data into our expected format
+            return this.quizTypes.map(quizName => {
+                const progressData = data.data[quizName] || {};
+                const experience = progressData.experience || 0;
+                const questionsAnswered = progressData.questionsAnswered || progressData.questionHistory?.length || 0;
+                const score = Math.round((experience / 300) * 100);
+
+                console.log(`Processing ${quizName} for ${username}:`, {
+                    experience,
+                    questionsAnswered,
+                    score
+                });
+
+                return {
+                    quizName,
+                    score,
+                    experience,
+                    questionsAnswered,
+                    questionHistory: progressData.questionHistory || [],
+                    lastActive: progressData.lastUpdated || null
+                };
+            });
+        } catch (error) {
+            console.error(`Failed to load progress for ${username}:`, error);
+            // Return default scores for all quiz types on error
+            return this.quizTypes.map(quizName => ({
                 quizName,
                 score: 0,
                 experience: 0,
@@ -199,50 +228,6 @@ export class AdminDashboard {
                 questionHistory: [],
                 lastActive: null
             }));
-
-            // Handle quiz progress data
-            if (data.data && typeof data.data === 'object') {
-                // Data should be an object with quiz names as keys
-                Object.entries(data.data).forEach(([quizName, progressData]) => {
-                    if (!progressData) {
-                        console.warn(`No progress data for quiz ${quizName}`);
-                        return;
-                    }
-
-                    const normalizedQuizName = this.normalizeQuizName(quizName);
-                    const scoreIndex = scores.findIndex(s => 
-                        this.normalizeQuizName(s.quizName) === normalizedQuizName
-                    );
-
-                    if (scoreIndex !== -1) {
-                        const experience = progressData.experience || 0;
-                        const questionsAnswered = progressData.questionsAnswered || progressData.questionHistory?.length || 0;
-                        const score = Math.round((experience / 300) * 100);
-
-                        console.log(`Updating score for ${username}'s ${scores[scoreIndex].quizName}:`, {
-                            experience,
-                            questionsAnswered,
-                            score,
-                            progressData
-                        });
-
-                        scores[scoreIndex] = {
-                            ...scores[scoreIndex],
-                            score,
-                            experience,
-                            questionsAnswered,
-                            questionHistory: progressData.questionHistory || [],
-                            lastActive: progressData.lastUpdated || null
-                        };
-                    }
-                });
-            }
-
-            console.log(`Final processed scores for ${username}:`, scores); // Debug log
-            return scores;
-        } catch (error) {
-            console.error(`Failed to load progress for ${username}:`, error);
-            return [];
         }
     }
 
@@ -310,29 +295,16 @@ export class AdminDashboard {
     updateUserList() {
         const container = document.getElementById('usersList');
         if (!container) {
-            console.error('User list container not found (usersList)');
-            return;
-        }
-
-        console.log('Updating user list with users:', this.users); // Debug log
-
-        if (!Array.isArray(this.users)) {
-            console.error('Users is not an array:', this.users);
+            console.error('User list container not found');
             return;
         }
 
         const searchTerm = document.getElementById('userSearch')?.value.toLowerCase() || '';
         const sortBy = document.getElementById('sortBy')?.value || 'username-asc';
 
-        let filteredUsers = this.users.filter(user => {
-            if (!user || !user.username) {
-                console.warn('Invalid user object:', user);
-                return false;
-            }
-            return user.username.toLowerCase().includes(searchTerm);
-        });
-
-        console.log('Filtered users:', filteredUsers); // Debug log
+        let filteredUsers = this.users.filter(user => 
+            user.username.toLowerCase().includes(searchTerm)
+        );
 
         filteredUsers.sort((a, b) => {
             const scoresA = this.userScores.get(a.username) || [];
@@ -369,7 +341,7 @@ export class AdminDashboard {
                 <div class="user-header">
                     <h4>${user.username}</h4>
                     <div class="user-stats">
-                        <div class="total-score">Overall Progress: ${progress ? progress.toFixed(1) : '0.0'}%</div>
+                        <div class="total-score">Overall Progress: ${progress.toFixed(1)}%</div>
                         <div class="last-active">Last Active: ${this.formatDate(lastActive)}</div>
                     </div>
                 </div>
@@ -379,68 +351,70 @@ export class AdminDashboard {
             `;
             container.appendChild(card);
         });
-
-        console.log(`Displayed ${filteredUsers.length} users in usersList container`); // Debug log
     }
 
     async showUserDetails(username) {
-        const user = this.users.find(u => u.username === username);
-        if (!user) return;
-
-        const scores = this.userScores.get(username) || [];
-        console.log('Showing details for user scores:', scores); // Debug log
-
-        const overlay = document.createElement('div');
-        overlay.className = 'user-details-overlay';
-        
-        const content = document.createElement('div');
-        content.className = 'user-details-content';
-        
-        content.innerHTML = `
-            <div class="details-header">
-                <h3>${username}'s Progress</h3>
-                <button class="close-btn" onclick="this.closest('.user-details-overlay').remove()">×</button>
-            </div>
-        `;
-        
-        const quizList = document.createElement('div');
-        quizList.className = 'quiz-progress-list';
-        
-        this.quizTypes.forEach(quizName => {
-            // Find matching quiz score using normalized names
-            const quizScore = scores.find(s => 
-                this.normalizeQuizName(s.quizName) === this.normalizeQuizName(quizName)
-            );
+        try {
+            // Fetch fresh progress data for this user
+            const scores = await this.loadUserProgress(username);
+            this.userScores.set(username, scores); // Update stored scores
             
-            console.log(`Processing quiz ${quizName}:`, quizScore); // Debug log
+            console.log(`Showing details for ${username}, scores:`, scores);
 
-            const progress = quizScore?.score || 0;
-            const questionsAnswered = quizScore?.questionsAnswered || 0;
-            const experience = quizScore?.experience || 0;
-            const lastActive = quizScore?.lastActive ? 
-                this.formatDate(new Date(quizScore.lastActive)) : 'Never';
+            const overlay = document.createElement('div');
+            overlay.className = 'user-details-overlay';
             
-            const quizItem = document.createElement('div');
-            quizItem.className = 'quiz-progress-item';
-            quizItem.innerHTML = `
-                <h4>${this.formatQuizName(quizName)}</h4>
-                <div class="quiz-stats">
-                    <div class="stat-item">Progress: <span class="stat-value">${progress}%</span></div>
-                    <div class="stat-item">Questions Completed: <span class="stat-value">${questionsAnswered}/15</span></div>
-                    <div class="stat-item">XP Earned: <span class="stat-value">${experience}/300</span></div>
-                    <div class="stat-item">Last Active: <span class="stat-value">${lastActive}</span></div>
-                    <button class="reset-progress-btn" 
-                            onclick="window.adminDashboard.resetQuizProgress('${username}', '${quizName}')">
-                        Reset Progress
-                    </button>
+            const content = document.createElement('div');
+            content.className = 'user-details-content';
+            
+            const overallProgress = this.calculateProgress(scores);
+            
+            content.innerHTML = `
+                <div class="details-header">
+                    <h3>${username}'s Progress</h3>
+                    <div class="overall-stats">
+                        <span>Overall Progress: ${overallProgress.toFixed(1)}%</span>
+                    </div>
+                    <button class="close-btn" onclick="this.closest('.user-details-overlay').remove()">×</button>
                 </div>
             `;
-            quizList.appendChild(quizItem);
-        });
-        
-        content.appendChild(quizList);
-        overlay.appendChild(content);
-        document.body.appendChild(overlay);
+            
+            const quizList = document.createElement('div');
+            quizList.className = 'quiz-progress-list';
+            
+            scores.forEach(quizScore => {
+                const progress = Math.round((quizScore.experience / 300) * 100);
+                const lastActive = quizScore.lastActive ? 
+                    this.formatDate(new Date(quizScore.lastActive)) : 'Never';
+                
+                console.log(`Creating quiz item for ${quizScore.quizName}:`, {
+                    progress,
+                    experience: quizScore.experience,
+                    questionsAnswered: quizScore.questionsAnswered,
+                    lastActive
+                });
+                
+                const quizItem = document.createElement('div');
+                quizItem.className = 'quiz-progress-item';
+                quizItem.innerHTML = `
+                    <h4>${this.formatQuizName(quizScore.quizName)}</h4>
+                    <div class="quiz-stats">
+                        <div class="stat-item">Progress: <span class="stat-value">${progress}%</span></div>
+                        <div class="stat-item">Questions Completed: <span class="stat-value">${quizScore.questionsAnswered}/15</span></div>
+                        <div class="stat-item">XP Earned: <span class="stat-value">${quizScore.experience}/300</span></div>
+                        <div class="stat-item">Last Active: <span class="stat-value">${lastActive}</span></div>
+                    </div>
+                `;
+                quizList.appendChild(quizItem);
+            });
+            
+            content.appendChild(quizList);
+            overlay.appendChild(content);
+            document.body.appendChild(overlay);
+        } catch (error) {
+            console.error('Error showing user details:', error);
+            this.showError('Failed to load user details');
+        }
     }
 
     async resetQuizProgress(username, quizName) {
@@ -481,30 +455,15 @@ export class AdminDashboard {
     calculateProgress(scores) {
         if (!scores || !scores.length) return 0;
         
-        // Only count quizzes that have actual progress
-        const activeQuizzes = scores.filter(score => 
-            score.experience > 0 || score.questionsAnswered > 0
-        );
-        
-        if (!activeQuizzes.length) return 0;
-        
-        // Calculate total progress based on experience
-        const totalProgress = activeQuizzes.reduce((sum, score) => {
-            // Each quiz is worth 300 XP total
-            const maxXP = 300;
-            const progress = (score.experience / maxXP) * 100;
-            return sum + progress;
-        }, 0);
-        
-        // Return average progress across all active quizzes
-        const averageProgress = totalProgress / activeQuizzes.length;
-        
-        console.log('Progress calculation:', {
-            totalQuizzes: scores.length,
-            activeQuizzes: activeQuizzes.length,
-            totalProgress,
-            averageProgress
+        // Calculate progress for each quiz (as a percentage)
+        const quizProgresses = scores.map(score => {
+            const progress = (score.experience / 300) * 100;
+            return progress || 0;
         });
+        
+        // Calculate mean average of all quiz progresses
+        const totalProgress = quizProgresses.reduce((sum, progress) => sum + progress, 0);
+        const averageProgress = totalProgress / scores.length;
         
         return averageProgress;
     }
