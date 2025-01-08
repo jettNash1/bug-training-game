@@ -820,7 +820,10 @@ export class CommunicationQuiz extends BaseQuiz {
                 maxPossibleXP: Math.max(...scenario.options.map(o => o.experience))
             });
 
-            // Save progress with current scenario (before incrementing)
+            // Increment current scenario
+            this.player.currentScenario++;
+
+            // Save progress
             await this.saveProgress();
 
             // Calculate the score and experience
@@ -843,33 +846,10 @@ export class CommunicationQuiz extends BaseQuiz {
                 completedAt: new Date().toISOString()
             };
             
-            // Also save quiz result and update display
+            // Save quiz result
             const username = localStorage.getItem('username');
             if (username) {
-                const quizUser = new QuizUser(username);
-                await quizUser.updateQuizScore(this.quizName, score);
-                
-                // Update progress display on index page
-                const progressElement = document.querySelector(`#${this.quizName}-progress`);
-                if (progressElement) {
-                    progressElement.textContent = `${percentComplete}% Complete`;
-                    progressElement.classList.remove('hidden');
-                    
-                    // Update quiz item styling
-                    const quizItem = document.querySelector(`[data-quiz="${this.quizName}"]`);
-                    if (quizItem) {
-                        quizItem.classList.remove('completed', 'in-progress');
-                        if (percentComplete === 100) {
-                            quizItem.classList.add('completed');
-                            progressElement.classList.add('completed');
-                            progressElement.classList.remove('in-progress');
-                        } else if (percentComplete > 0) {
-                            quizItem.classList.add('in-progress');
-                            progressElement.classList.add('in-progress');
-                            progressElement.classList.remove('completed');
-                        }
-                    }
-                }
+                await this.apiService.saveQuizScore(this.quizName, score);
             }
 
             // Show outcome screen
@@ -897,7 +877,7 @@ export class CommunicationQuiz extends BaseQuiz {
             this.updateProgress();
         } catch (error) {
             console.error('Failed to handle answer:', error);
-            this.showError('Failed to save your answer. Please try again.');
+            this.showError('Failed to submit answer. Please try again.');
         } finally {
             this.isLoading = false;
             if (submitButton) {
