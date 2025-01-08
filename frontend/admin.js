@@ -104,9 +104,11 @@ export class AdminDashboard {
 
     async loadDashboard() {
         try {
+            console.log('Loading dashboard...'); // Debug log
             await this.loadUsers();
             this.setupEventListeners();
             this.updateDashboard();
+            console.log('Dashboard loaded with', this.users.length, 'users'); // Debug log
         } catch (error) {
             console.error('Failed to load dashboard:', error);
             this.showError('Failed to load dashboard');
@@ -115,6 +117,7 @@ export class AdminDashboard {
 
     async loadUsers() {
         try {
+            console.log('Fetching users...'); // Debug log
             const response = await fetch(`${this.apiService.baseUrl}/users`, {
                 headers: {
                     'Authorization': `Bearer ${localStorage.getItem('adminToken')}`,
@@ -127,14 +130,18 @@ export class AdminDashboard {
             }
 
             const data = await response.json();
+            console.log('User data received:', data); // Debug log
+
             if (!data.success) {
                 throw new Error(data.message || 'Failed to load users');
             }
 
             this.users = data.data;
+            console.log('Users loaded:', this.users.length); // Debug log
             
             // Load progress for each user
             for (const user of this.users) {
+                console.log('Loading progress for user:', user.username); // Debug log
                 const scores = await this.loadUserProgress(user.username);
                 this.userScores.set(user.username, scores);
             }
@@ -266,8 +273,11 @@ export class AdminDashboard {
     }
 
     updateUserList() {
-        const usersList = document.getElementById('usersList');
-        if (!usersList) return;
+        const container = document.getElementById('user-list');
+        if (!container) {
+            console.error('User list container not found');
+            return;
+        }
 
         const searchTerm = document.getElementById('userSearch')?.value.toLowerCase() || '';
         const sortBy = document.getElementById('sortBy')?.value || 'username-asc';
@@ -296,26 +306,33 @@ export class AdminDashboard {
             }
         });
 
-        usersList.innerHTML = '';
-        filteredUsers.forEach(user => this.createUserCard(user, usersList));
-    }
+        // Clear existing content
+        container.innerHTML = '';
 
-    createUserCard(user, container) {
-        const scores = this.userScores.get(user.username) || [];
-        const progress = this.calculateProgress(scores);
-        const lastActive = this.getLastActive(scores);
+        // Create and append user cards
+        filteredUsers.forEach(user => {
+            const scores = this.userScores.get(user.username) || [];
+            const progress = this.calculateProgress(scores);
+            const lastActive = this.getLastActive(scores);
 
-        const card = document.createElement('div');
-        card.className = 'user-card';
-        card.innerHTML = `
-            <h3>${user.username}</h3>
-            <p>Overall Progress: ${progress.toFixed(1)}%</p>
-            <p>Last Active: ${this.formatDate(lastActive)}</p>
-            <button class="view-details-btn" onclick="window.adminDashboard.showUserDetails('${user.username}')">
-                View Details
-            </button>
-        `;
-        container.appendChild(card);
+            const card = document.createElement('div');
+            card.className = 'user-card';
+            card.innerHTML = `
+                <div class="user-header">
+                    <h4>${user.username}</h4>
+                    <div class="user-stats">
+                        <div class="total-score">Overall Progress: ${progress.toFixed(1)}%</div>
+                        <div class="last-active">Last Active: ${this.formatDate(lastActive)}</div>
+                    </div>
+                </div>
+                <button class="view-details-btn" onclick="window.adminDashboard.showUserDetails('${user.username}')">
+                    View Details
+                </button>
+            `;
+            container.appendChild(card);
+        });
+
+        console.log(`Displayed ${filteredUsers.length} users`); // Debug log
     }
 
     async showUserDetails(username) {
