@@ -826,7 +826,7 @@ class CommunicationQuiz extends BaseQuiz {
                     this.player.experience,  // Pass the actual experience earned
                     this.player.tools,       // Pass the tools acquired
                     this.player.questionHistory,  // Pass the question history
-                    this.player.currentScenario   // Pass the current scenario/questions answered
+                    this.player.questionHistory.length   // Pass the questions answered
                 );
                 
                 // Update progress display on index page
@@ -843,7 +843,7 @@ class CommunicationQuiz extends BaseQuiz {
                         progressElement.classList.remove('hidden');
                         
                         // Update quiz item styling
-                        const quizItem = document.querySelector('[data-quiz="communication"]');
+                        const quizItem = document.querySelector(`[data-quiz="${this.quizName}"]`);
                         if (quizItem) {
                             quizItem.classList.remove('completed', 'in-progress');
                             if (percentComplete === 100) {

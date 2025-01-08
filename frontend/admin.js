@@ -111,7 +111,7 @@ export class AdminDashboard {
             if (data.success && data.token && data.isAdmin) {
                 // Store admin token
                 localStorage.setItem('adminToken', data.token);
-                window.location.href = '/pages/admin2.html';
+                window.location.href = '/pages/admin.html';
             } else {
                 this.showError(data.message || 'Invalid admin credentials');
             }
@@ -185,10 +185,11 @@ export class AdminDashboard {
                             ...result,
                             // Keep the original quiz name from our types list
                             quizName: scores[scoreIndex].quizName,
-                            // Use the actual values from the server response
-                            questionsAnswered: result.currentQuestion || result.questionsAnswered || 0,
-                            experience: result.xp || result.experience || 0,
-                            score: result.progress || result.score || 0
+                            // Use consistent property names
+                            questionsAnswered: result.questionsAnswered || result.questionHistory?.length || 0,
+                            experience: result.experience || 0,
+                            score: result.score || 0,
+                            questionHistory: result.questionHistory || []
                         };
                         
                         console.log('Updated score object:', updatedScore); // Debug log

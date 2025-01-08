@@ -260,7 +260,7 @@ export class QuizUser {
         }
     }
 
-    async updateQuizScore(quizName, score) {
+    async updateQuizScore(quizName, score, experience = 0, tools = [], questionHistory = [], questionsAnswered = null) {
         try {
             if (!this.api) {
                 throw new Error('API service not initialized');
@@ -268,41 +268,51 @@ export class QuizUser {
             
             // Get the current quiz progress to include question history
             const progress = await this.getQuizProgress(quizName);
-            const questionHistory = progress?.questionHistory || [];
             
-            // Save the complete quiz result
-            const result = await this.saveQuizResult(
+            // Create the quiz data with all necessary fields
+            const quizData = {
                 quizName,
-                score,
-                progress?.experience || score,
-                progress?.tools || [],
-                questionHistory
-            );
+                score: Math.round(score),
+                experience: Math.round(experience || score),
+                tools: tools || [],
+                questionHistory: questionHistory || [],
+                questionsAnswered: questionsAnswered !== null ? questionsAnswered : (questionHistory ? questionHistory.length : 0),
+                completedAt: new Date().toISOString()
+            };
 
-            if (result) {
-                // Update local quiz results
-                const existingIndex = this.quizResults.findIndex(r => r.quizName === quizName);
-                if (existingIndex !== -1) {
-                    this.quizResults[existingIndex] = {
-                        ...this.quizResults[existingIndex],
-                        score,
-                        questionHistory,
-                        questionsAnswered: questionHistory.length
-                    };
-                } else {
-                    this.quizResults.push({
-                        quizName,
-                        score,
-                        questionHistory,
-                        questionsAnswered: questionHistory.length
-                    });
-                }
+            // Save to server
+            const response = await this.api.fetchWithAuth(`${config.apiUrl}/users/quiz-results`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(quizData)
+            });
+
+            if (!response.ok) {
+                throw new Error('Failed to save quiz result to server');
+            }
+
+            const data = await response.json();
+            if (data.success) {
+                this.quizResults = data.data;
+                
+                // Also update the quiz progress
+                const progressData = {
+                    experience: quizData.experience,
+                    tools: quizData.tools,
+                    questionHistory: quizData.questionHistory,
+                    questionsAnswered: quizData.questionsAnswered,
+                    currentScenario: quizData.questionsAnswered % 5, // Keep track of position within current level
+                    lastUpdated: quizData.completedAt
+                };
+                
+                await this.api.saveQuizProgress(quizName, progressData);
                 return true;
             }
-            throw new Error('Failed to update quiz score');
+            return false;
         } catch (error) {
-            console.error('Failed to update quiz score:', error);
-            this.showError(`Failed to update quiz score: ${error.message}`);
+            console.error('Failed to save quiz result:', error);
             return false;
         }
     }
