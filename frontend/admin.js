@@ -179,18 +179,18 @@ export class AdminDashboard {
                     );
                     
                     if (scoreIndex !== -1) {
-                        // Ensure we have all the required fields with proper fallbacks
+                        // Use the values directly from the server response
                         const updatedScore = {
                             ...scores[scoreIndex],
                             ...result,
                             // Keep the original quiz name from our types list
                             quizName: scores[scoreIndex].quizName,
-                            // Ensure questionsAnswered is set from either direct value or history length
-                            questionsAnswered: result.questionsAnswered || result.questionHistory?.length || 0,
-                            // Ensure experience is properly set
-                            experience: result.experience || result.score || 0,
-                            // Ensure we have a question history array
-                            questionHistory: result.questionHistory || []
+                            // Use the actual question number from the server
+                            questionsAnswered: result.currentQuestion || 0,
+                            // Use the actual XP earned from the server
+                            experience: result.xpEarned || 0,
+                            // Keep track of progress percentage
+                            score: result.progress || 0
                         };
                         
                         console.log('Updated score object:', updatedScore); // Debug log
@@ -517,7 +517,6 @@ export class AdminDashboard {
         if (!user) return;
 
         const scores = this.userScores.get(username) || [];
-        console.log('Scores for user details:', scores); // Debug log
         
         // Create the details overlay
         const overlay = document.createElement('div');
@@ -547,31 +546,21 @@ export class AdminDashboard {
                 this.normalizeQuizName(score.quizName) === this.normalizeQuizName(quizName)
             );
             
-            console.log(`Quiz ${quizName} score:`, quizScore); // Debug log
-            
-            // Get values with proper fallbacks
-            const progress = quizScore?.score || 0;
-            const questionsCompleted = quizScore?.questionsAnswered || quizScore?.questionHistory?.length || 0;
-            const xpEarned = quizScore?.experience || 0;
+            // Get values directly from the server response
+            const progress = quizScore?.progress || 0;
+            const questionsCompleted = quizScore?.currentQuestion || 0;
+            const xpEarned = quizScore?.xpEarned || 0;
             const lastActive = quizScore?.lastActive ? this.formatDate(quizScore.lastActive) : 'Never';
-            
-            console.log(`Quiz ${quizName} processed values:`, { // Debug log
-                progress,
-                questionsCompleted,
-                xpEarned,
-                lastActive,
-                rawQuizScore: quizScore
-            });
             
             const quizItem = document.createElement('div');
             quizItem.className = 'quiz-progress-item';
             quizItem.innerHTML = `
                 <h4>${this.formatQuizName(quizName)}</h4>
                 <div class="quiz-stats">
-                    <div>Progress: ${progress}%</div>
-                    <div>Questions Completed: ${questionsCompleted}/15</div>
-                    <div>XP Earned: ${xpEarned}/300</div>
-                    <div>Last Active: ${lastActive}</div>
+                    <div class="stat-item">Progress: <span class="stat-value">${progress}%</span></div>
+                    <div class="stat-item">Questions Completed: <span class="stat-value">${questionsCompleted}/15</span></div>
+                    <div class="stat-item">XP Earned: <span class="stat-value">${xpEarned}/300</span></div>
+                    <div class="stat-item">Last Active: <span class="stat-value">${lastActive}</span></div>
                     <button class="reset-progress-btn" 
                             onclick="window.adminDashboard.resetQuizProgress('${username}', '${quizName}')">
                         Reset Progress
