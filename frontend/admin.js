@@ -558,4 +558,7 @@ export const handleAdminLogout = () => {
     if (window.adminDashboard) {
         window.adminDashboard.handleAdminLogout();
     }
-}; 
+};
+
+// Export the AdminDashboard class
+export { AdminDashboard }; 
