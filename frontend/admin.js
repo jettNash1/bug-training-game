@@ -450,20 +450,30 @@ class AdminDashboard {
                 
             const scores = this.userScores.get(user.username) || [];
             const progress = this.calculateProgress(scores);
-                const lastActive = user.lastLogin ? new Date(user.lastLogin).getTime() : 0;
+            const lastActive = user.lastLogin ? new Date(user.lastLogin).getTime() : 0;
+
+            // Get communication quiz data
+            const communicationQuiz = scores.find(score => score.quizName === 'communication') || {
+                questionsAnswered: 0,
+                experience: 0
+            };
 
             const card = document.createElement('div');
             card.className = 'user-card';
                 
-                const cardContent = document.createElement('div');
-                cardContent.className = 'user-header';
-                cardContent.innerHTML = `
-                    <h4>${user.username}</h4>
-                    <div class="user-stats">
-                        <div class="total-score">Overall Progress: ${progress.toFixed(1)}%</div>
-                        <div class="last-active">Last Active: ${this.formatDate(lastActive)}</div>
+            const cardContent = document.createElement('div');
+            cardContent.className = 'user-header';
+            cardContent.innerHTML = `
+                <h4>${user.username}</h4>
+                <div class="user-stats">
+                    <div class="total-score">Overall Progress: ${progress.toFixed(1)}%</div>
+                    <div class="quiz-stats">
+                        <div class="questions-completed">Questions: ${communicationQuiz.questionsAnswered}/15</div>
+                        <div class="experience-earned">XP: ${communicationQuiz.experience}</div>
                     </div>
-                `;
+                    <div class="last-active">Last Active: ${this.formatDate(lastActive)}</div>
+                </div>
+            `;
                 
                 const viewDetailsBtn = document.createElement('button');
                 viewDetailsBtn.className = 'view-details-btn';
