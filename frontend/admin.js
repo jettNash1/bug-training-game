@@ -186,11 +186,21 @@ class AdminDashboard {
         const newScores = new Map();
         
         try {
-            // Load progress for all users in parallel
+            // Load progress for all users in parallel with timeout
             const progressPromises = this.users.map(async user => {
                 try {
                     console.log(`Loading progress for user: ${user.username}`);
-                    const scores = await this.loadUserProgress(user.username);
+                    // Create a promise that rejects after 10 seconds
+                    const timeoutPromise = new Promise((_, reject) => {
+                        setTimeout(() => reject(new Error('Timeout')), 10000);
+                    });
+                    
+                    // Race between the actual request and the timeout
+                    const scores = await Promise.race([
+                        this.loadUserProgress(user.username),
+                        timeoutPromise
+                    ]);
+                    
                     console.log(`Progress loaded for ${user.username}:`, scores);
                     return { username: user.username, scores };
                 } catch (error) {
@@ -202,13 +212,16 @@ class AdminDashboard {
             // Wait for all progress to be loaded
             console.log('Waiting for all progress to be loaded...');
             const results = await Promise.all(progressPromises);
+            console.log('All progress promises resolved');
             
             // Update the scores map with all results
             results.forEach(({ username, scores }) => {
+                console.log(`Setting scores for ${username}`);
                 newScores.set(username, scores);
             });
             
             // Update the userScores map
+            console.log('Updating userScores map');
             this.userScores = newScores;
             console.log('All user progress loaded. Scores map:', Object.fromEntries(this.userScores));
             
@@ -218,43 +231,66 @@ class AdminDashboard {
             console.log('Dashboard update completed after loading progress');
         } catch (error) {
             console.error('Error in loadAllUserProgress:', error);
+            // Even if there's an error, try to update with what we have
+            this.userScores = newScores;
+            this.updateDashboard();
             throw error;
         }
     }
 
     async loadUserProgress(username) {
         try {
+            console.log(`Fetching progress for ${username} from API...`);
             const response = await this.apiService.fetchWithAdminAuth(
                 `${this.apiService.baseUrl}/admin/users/${username}/quiz-results`
             );
 
             if (!response.ok) {
-                throw new Error(`Failed to fetch progress: ${response.status}`);
-            }
-
-            const data = await response.json();
-            
-            if (!data.success || !data.data) {
+                console.error(`Failed to fetch progress for ${username}: ${response.status}`);
                 return this.getDefaultScores();
             }
 
+            const text = await response.text();
+            console.log(`Raw response for ${username}:`, text);
+
+            let data;
+            try {
+                data = JSON.parse(text);
+            } catch (e) {
+                console.error(`Failed to parse JSON for ${username}:`, e);
+                return this.getDefaultScores();
+            }
+            
+            if (!data.success || !data.data) {
+                console.log(`No progress data for ${username}, returning defaults`);
+                return this.getDefaultScores();
+            }
+
+            console.log(`Processing quiz results for ${username}:`, data.data);
+
             // Convert the quiz progress data into our expected format
-            return this.quizTypes.map(quizName => {
+            const scores = this.quizTypes.map(quizName => {
                 // Find the matching quiz result
                 const quizData = data.data.find(result => 
                     this.normalizeQuizName(result.quizName) === this.normalizeQuizName(quizName)
                 ) || {};
 
-                return {
+                const score = {
                     quizName,
                     score: quizData.score || 0,
                     experience: quizData.experience || 0,
                     questionsAnswered: quizData.questionsAnswered || 0,
-                    currentScenario: quizData.questionsAnswered || 0, // Map questionsAnswered to currentScenario
+                    currentScenario: quizData.questionsAnswered || 0,
                     lastActive: quizData.completedAt || null,
                     answers: quizData.answers || []
                 };
+
+                console.log(`Processed ${quizName} for ${username}:`, score);
+                return score;
             });
+
+            console.log(`Completed processing progress for ${username}`);
+            return scores;
         } catch (error) {
             console.error(`Failed to load progress for ${username}:`, error);
             return this.getDefaultScores();
