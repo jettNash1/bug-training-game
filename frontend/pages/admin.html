@@ -77,8 +77,8 @@
         // Initialize dashboard when DOM is loaded
         document.addEventListener('DOMContentLoaded', async () => {
             console.log('Initializing dashboard from admin.html');
-            const dashboard = getDashboard();
-            await dashboard.init();
+            window.dashboardInstance = getDashboard();
+            await window.dashboardInstance.init();
             
             // Set up logout button handler
             document.getElementById('logoutBtn').addEventListener('click', handleAdminLogout);

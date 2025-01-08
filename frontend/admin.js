@@ -263,8 +263,16 @@ class AdminDashboard {
             console.log('Updated total users:', this.users.length);
         }
 
-        this.updateStatistics();
-        this.updateUserList();
+        try {
+            console.log('Starting statistics update...'); // Debug log
+            this.updateStatistics();
+            console.log('Statistics updated, updating user list...'); // Debug log
+            this.updateUserList();
+            console.log('Dashboard update complete'); // Debug log
+        } catch (error) {
+            console.error('Error during dashboard update:', error);
+            this.showError('Failed to update dashboard');
+        }
     }
 
     updateStatistics() {
@@ -348,6 +356,29 @@ class AdminDashboard {
 
         console.log('Filtered users:', filteredUsers.length); // Debug log
 
+        // Sort users
+        filteredUsers.sort((a, b) => {
+            const scoresA = this.userScores.get(a.username) || [];
+            const scoresB = this.userScores.get(b.username) || [];
+            
+            switch (sortBy) {
+                case 'username-asc':
+                    return a.username.localeCompare(b.username);
+                case 'username-desc':
+                    return b.username.localeCompare(a.username);
+                case 'progress-high':
+                    return this.calculateProgress(scoresB) - this.calculateProgress(scoresA);
+                case 'progress-low':
+                    return this.calculateProgress(scoresA) - this.calculateProgress(scoresB);
+                case 'last-active':
+                    const lastActiveA = a.lastLogin ? new Date(a.lastLogin).getTime() : 0;
+                    const lastActiveB = b.lastLogin ? new Date(b.lastLogin).getTime() : 0;
+                    return lastActiveB - lastActiveA;
+                default:
+                    return 0;
+            }
+        });
+
         // Clear existing content
         container.innerHTML = '';
 
@@ -355,24 +386,32 @@ class AdminDashboard {
         filteredUsers.forEach(user => {
             const scores = this.userScores.get(user.username) || [];
             const progress = this.calculateProgress(scores);
-            const lastActive = this.getLastActive(scores);
+            const lastActive = user.lastLogin ? new Date(user.lastLogin).getTime() : 0;
 
             const card = document.createElement('div');
             card.className = 'user-card';
-            card.innerHTML = `
-                <div class="user-header">
-                    <h4>${user.username}</h4>
-                    <div class="user-stats">
-                        <div class="total-score">Overall Progress: ${progress.toFixed(1)}%</div>
-                        <div class="last-active">Last Active: ${this.formatDate(lastActive)}</div>
-                    </div>
+            
+            const cardContent = document.createElement('div');
+            cardContent.className = 'user-header';
+            cardContent.innerHTML = `
+                <h4>${user.username}</h4>
+                <div class="user-stats">
+                    <div class="total-score">Overall Progress: ${progress.toFixed(1)}%</div>
+                    <div class="last-active">Last Active: ${this.formatDate(lastActive)}</div>
                 </div>
-                <button class="view-details-btn" onclick="dashboardInstance.showUserDetails('${user.username}')">
-                    View Details
-                </button>
             `;
             
+            const viewDetailsBtn = document.createElement('button');
+            viewDetailsBtn.className = 'view-details-btn';
+            viewDetailsBtn.textContent = 'View Details';
+            viewDetailsBtn.addEventListener('click', () => {
+                this.showUserDetails(user.username);
+            });
+            
+            card.appendChild(cardContent);
+            card.appendChild(viewDetailsBtn);
             container.appendChild(card);
+
             console.log('Added card for user:', user.username); // Debug log
         });
 
