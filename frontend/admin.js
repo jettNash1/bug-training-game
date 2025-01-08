@@ -274,9 +274,9 @@ export class AdminDashboard {
             });
             if (wasActiveToday) activeUsers++;
 
-            // Calculate completion
+            // Calculate user's overall progress
             const userProgress = this.calculateProgress(scores);
-            if (userProgress > 0) {
+            if (scores.some(score => score.score > 0)) {
                 totalProgress += userProgress;
                 usersWithProgress++;
             }
@@ -285,8 +285,8 @@ export class AdminDashboard {
         if (totalUsersElement) totalUsersElement.textContent = this.users.length;
         if (activeUsersElement) activeUsersElement.textContent = activeUsers;
         if (averageCompletionElement) {
-            const average = usersWithProgress > 0 ? Math.round(totalProgress / usersWithProgress) : 0;
-            averageCompletionElement.textContent = `${average}%`;
+            const averageProgress = usersWithProgress > 0 ? Math.round(totalProgress / usersWithProgress) : 0;
+            averageCompletionElement.textContent = `${averageProgress}%`;
         }
     }
 
@@ -359,43 +359,69 @@ export class AdminDashboard {
             
             console.log(`Showing details for ${username}, scores:`, scores);
 
+            // Remove any existing overlay
+            const existingOverlay = document.querySelector('.user-details-overlay');
+            if (existingOverlay) {
+                existingOverlay.remove();
+            }
+
             const overlay = document.createElement('div');
             overlay.className = 'user-details-overlay';
+            overlay.style.position = 'fixed';
+            overlay.style.top = '0';
+            overlay.style.left = '0';
+            overlay.style.width = '100%';
+            overlay.style.height = '100%';
+            overlay.style.backgroundColor = 'rgba(0, 0, 0, 0.5)';
+            overlay.style.display = 'flex';
+            overlay.style.justifyContent = 'center';
+            overlay.style.alignItems = 'center';
+            overlay.style.zIndex = '1000';
             
             const content = document.createElement('div');
             content.className = 'user-details-content';
+            content.style.backgroundColor = 'white';
+            content.style.padding = '20px';
+            content.style.borderRadius = '8px';
+            content.style.maxWidth = '80%';
+            content.style.maxHeight = '80%';
+            content.style.overflow = 'auto';
             
             const overallProgress = this.calculateProgress(scores);
-            const totalQuestionsAnswered = scores.reduce((sum, score) => sum + (score.questionsAnswered || 0), 0);
-            const totalPossibleQuestions = scores.length * 15;
             
             content.innerHTML = `
                 <div class="details-header">
                     <h3>${username}'s Progress</h3>
                     <div class="overall-stats">
                         <span>Overall Progress: ${overallProgress.toFixed(1)}%</span>
-                        <span>Total Questions Completed: ${totalQuestionsAnswered}/${totalPossibleQuestions}</span>
+                        <span>Total Quizzes: ${this.quizTypes.length}</span>
                     </div>
-                    <button class="close-btn" onclick="this.closest('.user-details-overlay').remove()">×</button>
+                    <button class="close-btn" onclick="this.closest('.user-details-overlay').remove()" 
+                            style="position: absolute; right: 20px; top: 20px; 
+                                   padding: 5px 10px; cursor: pointer;">×</button>
                 </div>
             `;
             
             const quizList = document.createElement('div');
             quizList.className = 'quiz-progress-list';
+            quizList.style.marginTop = '20px';
             
             scores.forEach(quizScore => {
-                const progress = (quizScore.questionsAnswered / 15) * 100;
                 const lastActive = quizScore.lastActive ? 
                     this.formatDate(new Date(quizScore.lastActive)) : 'Never';
                 
                 const quizItem = document.createElement('div');
                 quizItem.className = 'quiz-progress-item';
+                quizItem.style.marginBottom = '15px';
+                quizItem.style.padding = '10px';
+                quizItem.style.border = '1px solid #ddd';
+                quizItem.style.borderRadius = '4px';
+                
                 quizItem.innerHTML = `
-                    <h4>${this.formatQuizName(quizScore.quizName)}</h4>
-                    <div class="quiz-stats">
-                        <div class="stat-item">Progress: <span class="stat-value">${progress.toFixed(1)}%</span></div>
-                        <div class="stat-item">Questions Completed: <span class="stat-value">${quizScore.questionsAnswered}/15</span></div>
+                    <h4 style="margin: 0 0 10px 0">${this.formatQuizName(quizScore.quizName)}</h4>
+                    <div class="quiz-stats" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px;">
                         <div class="stat-item">Score: <span class="stat-value">${quizScore.score}%</span></div>
+                        <div class="stat-item">Questions Completed: <span class="stat-value">${quizScore.questionsAnswered}/15</span></div>
                         <div class="stat-item">XP Earned: <span class="stat-value">${quizScore.experience}</span></div>
                         <div class="stat-item">Last Updated: <span class="stat-value">${lastActive}</span></div>
                     </div>
@@ -450,13 +476,10 @@ export class AdminDashboard {
     calculateProgress(scores) {
         if (!scores || !scores.length) return 0;
         
-        // Calculate total completed questions across all quizzes
-        const totalQuestionsAnswered = scores.reduce((sum, score) => sum + (score.questionsAnswered || 0), 0);
-        // Total possible questions (15 per quiz)
-        const totalPossibleQuestions = scores.length * 15;
-        
-        // Calculate overall progress percentage
-        return (totalQuestionsAnswered / totalPossibleQuestions) * 100;
+        // Sum up all quiz scores (defaulting to 0 for unstarted quizzes)
+        const totalScore = scores.reduce((sum, score) => sum + (score.score || 0), 0);
+        // Calculate average score across all quizzes (14 total)
+        return totalScore / 14;
     }
 
     getLastActive(scores) {
