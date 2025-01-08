@@ -149,6 +149,8 @@ export class AdminDashboard {
             }
 
             const data = await response.json();
+            console.log('Raw quiz results data:', data); // Debug log
+
             if (!data.success) {
                 throw new Error(data.message || 'Failed to load user progress');
             }
@@ -167,21 +169,37 @@ export class AdminDashboard {
             // Update scores with actual results
             if (Array.isArray(data.data)) {
                 data.data.forEach(result => {
+                    console.log('Processing quiz result:', result); // Debug log
+                    
+                    // Try to find matching quiz by both original and normalized names
                     const scoreIndex = scores.findIndex(s => 
                         s.quizName === result.quizName || 
-                        s.quizName === this.normalizeQuizName(result.quizName)
+                        s.quizName === this.normalizeQuizName(result.quizName) ||
+                        this.normalizeQuizName(s.quizName) === this.normalizeQuizName(result.quizName)
                     );
+                    
                     if (scoreIndex !== -1) {
-                        scores[scoreIndex] = {
+                        // Ensure we have all the required fields with proper fallbacks
+                        const updatedScore = {
                             ...scores[scoreIndex],
                             ...result,
+                            // Keep the original quiz name from our types list
+                            quizName: scores[scoreIndex].quizName,
                             // Ensure questionsAnswered is set from either direct value or history length
-                            questionsAnswered: result.questionsAnswered || result.questionHistory?.length || 0
+                            questionsAnswered: result.questionsAnswered || result.questionHistory?.length || 0,
+                            // Ensure experience is properly set
+                            experience: result.experience || result.score || 0,
+                            // Ensure we have a question history array
+                            questionHistory: result.questionHistory || []
                         };
+                        
+                        console.log('Updated score object:', updatedScore); // Debug log
+                        scores[scoreIndex] = updatedScore;
                     }
                 });
             }
 
+            console.log('Final scores array:', scores); // Debug log
             return scores;
         } catch (error) {
             console.error(`Failed to load progress for user ${username}:`, error);
@@ -499,6 +517,7 @@ export class AdminDashboard {
         if (!user) return;
 
         const scores = this.userScores.get(username) || [];
+        console.log('Scores for user details:', scores); // Debug log
         
         // Create the details overlay
         const overlay = document.createElement('div');
@@ -521,11 +540,28 @@ export class AdminDashboard {
         
         // Sort quizzes by name
         this.quizTypes.forEach(quizName => {
-            const quizScore = scores.find(score => score.quizName === quizName);
+            // Try to find the quiz score by both original and normalized name
+            const quizScore = scores.find(score => 
+                score.quizName === quizName || 
+                score.quizName === this.normalizeQuizName(quizName) ||
+                this.normalizeQuizName(score.quizName) === this.normalizeQuizName(quizName)
+            );
+            
+            console.log(`Quiz ${quizName} score:`, quizScore); // Debug log
+            
+            // Get values with proper fallbacks
             const progress = quizScore?.score || 0;
-            const questionsCompleted = quizScore?.questionsAnswered || 0;
+            const questionsCompleted = quizScore?.questionsAnswered || quizScore?.questionHistory?.length || 0;
             const xpEarned = quizScore?.experience || 0;
             const lastActive = quizScore?.lastActive ? this.formatDate(quizScore.lastActive) : 'Never';
+            
+            console.log(`Quiz ${quizName} processed values:`, { // Debug log
+                progress,
+                questionsCompleted,
+                xpEarned,
+                lastActive,
+                rawQuizScore: quizScore
+            });
             
             const quizItem = document.createElement('div');
             quizItem.className = 'quiz-progress-item';

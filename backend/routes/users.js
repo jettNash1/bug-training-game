@@ -280,20 +280,61 @@ router.post('/quiz-progress', auth, async (req, res) => {
             return res.status(404).json({ success: false, message: 'User not found' });
         }
 
-        // Add or update quiz progress
+        // Initialize quizProgress if it doesn't exist
         if (!user.quizProgress) {
-            user.quizProgress = {};
+            user.quizProgress = new Map();
         }
-        user.quizProgress[quizName] = {
-            ...progress,
-            lastUpdated: new Date()
+
+        // Parse dates if they're strings
+        const lastUpdated = progress.lastUpdated ? new Date(progress.lastUpdated) : new Date();
+
+        // Ensure all required fields are present with consistent types
+        const updatedProgress = {
+            experience: parseInt(progress.experience || 0, 10),
+            tools: Array.isArray(progress.tools) ? progress.tools : [],
+            questionHistory: Array.isArray(progress.questionHistory) ? progress.questionHistory : [],
+            questionsAnswered: parseInt(progress.questionsAnswered || progress.questionHistory?.length || 0, 10),
+            currentScenario: progress.currentScenario !== undefined ? 
+                           parseInt(progress.currentScenario, 10) : 
+                           (parseInt(progress.questionsAnswered || progress.questionHistory?.length || 0, 10) % 5),
+            lastUpdated: lastUpdated.toISOString() // Store as ISO string for consistency
         };
 
+        // Update quiz progress
+        user.quizProgress.set(quizName, updatedProgress);
+
+        // Also update corresponding quiz result if it exists
+        const existingResultIndex = user.quizResults.findIndex(r => r.quizName === quizName);
+        if (existingResultIndex !== -1) {
+            // Create a new quiz result object with only the fields we want
+            user.quizResults[existingResultIndex] = {
+                quizName,
+                score: Math.round((updatedProgress.experience / 300) * 100), // Calculate score based on max XP of 300
+                experience: updatedProgress.experience,
+                tools: updatedProgress.tools,
+                questionHistory: updatedProgress.questionHistory,
+                questionsAnswered: updatedProgress.questionsAnswered,
+                currentScenario: updatedProgress.currentScenario,
+                completedAt: lastUpdated.toISOString(),
+                updatedAt: lastUpdated.toISOString()
+            };
+        }
+
         await user.save();
-        res.json({ success: true });
+        res.json({ 
+            success: true, 
+            data: {
+                progress: updatedProgress,
+                quizResults: user.quizResults
+            }
+        });
     } catch (error) {
         console.error('Failed to save progress:', error);
-        res.status(500).json({ error: 'Failed to save progress' });
+        res.status(500).json({ 
+            success: false, 
+            message: 'Failed to save progress',
+            error: error.message 
+        });
     }
 });
 
@@ -306,11 +347,34 @@ router.get('/quiz-progress/:quizName', auth, async (req, res) => {
             return res.status(404).json({ success: false, message: 'User not found' });
         }
 
-        const progress = user.quizProgress ? user.quizProgress[quizName] : null;
-        res.json({ success: true, data: progress });
+        const progress = user.quizProgress ? user.quizProgress.get(quizName) : null;
+        
+        // If no progress exists, return a default structure
+        const responseData = progress ? {
+            // Ensure consistent types and data structure with POST route
+            experience: parseInt(progress.experience || 0, 10),
+            tools: Array.isArray(progress.tools) ? progress.tools : [],
+            questionHistory: Array.isArray(progress.questionHistory) ? progress.questionHistory : [],
+            questionsAnswered: parseInt(progress.questionsAnswered || progress.questionHistory?.length || 0, 10),
+            currentScenario: parseInt(progress.currentScenario || 0, 10),
+            lastUpdated: progress.lastUpdated || new Date().toISOString()
+        } : {
+            experience: 0,
+            tools: [],
+            questionHistory: [],
+            questionsAnswered: 0,
+            currentScenario: 0,
+            lastUpdated: new Date().toISOString()
+        };
+
+        res.json({ success: true, data: responseData });
     } catch (error) {
         console.error('Failed to get progress:', error);
-        res.status(500).json({ success: false, error: 'Failed to get progress' });
+        res.status(500).json({ 
+            success: false, 
+            message: 'Failed to get progress',
+            error: error.message 
+        });
     }
 });
 

@@ -177,7 +177,8 @@ export class QuizUser {
                     experience: quizData.experience,
                     tools: quizData.tools,
                     questionHistory: quizData.questionHistory,
-                    currentScenario: quizData.questionsAnswered,
+                    questionsAnswered: quizData.questionsAnswered,
+                    currentScenario: quizData.questionsAnswered % 5, // Keep track of position within current level
                     lastUpdated: quizData.completedAt
                 };
                 

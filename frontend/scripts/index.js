@@ -33,157 +33,135 @@ class IndexPage {
     async loadUserProgress() {
         try {
             const username = localStorage.getItem('username');
-            if (!username) {
-                console.error('No username found in localStorage');
-                return;
-            }
+            if (!username) return;
 
-            console.log('Loading progress for user:', username);
-            
-            // Get progress for each quiz
-            this.quizScores = [];
-            for (const item of this.quizItems) {
+            // Batch all quiz progress requests
+            const progressPromises = Array.from(this.quizItems).map(async item => {
                 const quizId = item.dataset.quiz;
                 try {
-                    console.log(`Fetching progress for quiz: ${quizId}`);
-                    
-                    // Try getting progress from server first
-                    const serverProgress = await this.apiService.getQuizProgress(quizId);
-                    console.log(`Server progress for ${quizId}:`, serverProgress);
-                    
-                    // Try getting progress from localStorage as backup
-                    const storageKey = `quiz_progress_${username}_${quizId}`;
-                    const localData = localStorage.getItem(storageKey);
+                    // Parallel requests for server and local data
+                    const [serverProgress, localData] = await Promise.all([
+                        this.apiService.getQuizProgress(quizId),
+                        localStorage.getItem(`quiz_progress_${username}_${quizId}`)
+                    ]);
+
                     let localProgress = null;
                     if (localData) {
                         try {
                             const parsed = JSON.parse(localData);
                             localProgress = parsed.progress;
-                            console.log(`Local progress for ${quizId}:`, localProgress);
-                        } catch (e) {
-                            console.error(`Error parsing local progress for ${quizId}:`, e);
-                        }
+                        } catch (e) {} // Ignore parse errors
                     }
-                    
-                    // Use server progress if available, otherwise use local progress
+
                     const progress = serverProgress?.data || localProgress;
                     
-                    if (progress) {
-                        // Calculate score based on completed questions
-                        const questionsAnswered = progress.questionHistory ? progress.questionHistory.length : 0;
-                        const score = Math.round((questionsAnswered / 15) * 100); // 15 questions per quiz
-                        console.log(`${quizId} questions answered: ${questionsAnswered}, calculated score: ${score}%`);
-                        
-                        this.quizScores.push({
-                            quizName: quizId,
-                            score: score,
-                            questionsAnswered: questionsAnswered
-                        });
-                    } else {
-                        console.log(`No progress data found for ${quizId}`);
-                        this.quizScores.push({
-                            quizName: quizId,
-                            score: 0,
-                            questionsAnswered: 0
-                        });
-                    }
-                } catch (error) {
-                    console.error(`Error loading progress for quiz ${quizId}:`, error);
-                    // Add a zero score entry if we fail to load progress
-                    this.quizScores.push({
+                    return {
                         quizName: quizId,
-                        score: 0,
-                        questionsAnswered: 0
-                    });
+                        score: progress ? Math.round(((progress.questionHistory?.length || 0) / 15) * 100) : 0,
+                        questionsAnswered: progress?.questionHistory?.length || 0
+                    };
+                } catch (error) {
+                    return { quizName: quizId, score: 0, questionsAnswered: 0 };
                 }
-            }
-            
-            console.log('Final quiz scores:', this.quizScores);
+            });
+
+            // Wait for all progress data to load
+            this.quizScores = await Promise.all(progressPromises);
         } catch (error) {
             console.error('Error loading user progress:', error);
+            this.quizScores = [];
         }
     }
 
     updateQuizProgress() {
         if (!this.quizScores) return;
 
+        // Create a document fragment to batch DOM updates
+        const fragment = document.createDocumentFragment();
+        const updates = new Map();
+
         this.quizItems.forEach(item => {
             const quizId = item.dataset.quiz;
             const progressElement = document.getElementById(`${quizId}-progress`);
-            
-            if (progressElement) {
-                // Find the score for this quiz
-                const quizScore = this.quizScores.find(score => score.quizName === quizId);
-                const percentage = quizScore ? quizScore.score : 0;
+            if (!progressElement) return;
 
-                console.log(`Updating UI for ${quizId}:`, {
-                    score: percentage,
-                    element: progressElement,
-                    quizScore
-                });
+            const quizScore = this.quizScores.find(score => score.quizName === quizId);
+            const percentage = quizScore ? quizScore.score : 0;
+
+            // Store updates to apply in batch
+            updates.set(item, {
+                progress: percentage,
+                element: progressElement
+            });
+        });
+
+        // Apply all updates in one batch
+        requestAnimationFrame(() => {
+            updates.forEach(({ progress, element }, item) => {
+                item.setAttribute('data-progress', progress);
                 
-                // Update the quiz item's data-progress attribute
-                item.setAttribute('data-progress', percentage);
-                
-                // Update the progress element text and visibility
-                if (percentage > 0) {
-                    progressElement.textContent = `${percentage}%`;
-                    progressElement.style.display = 'block';
+                if (progress > 0) {
+                    element.textContent = `${progress}%`;
+                    element.style.display = 'block';
                     
-                    // Update background color based on progress
-                    if (percentage === 100) {
+                    if (progress === 100) {
                         item.style.background = 'linear-gradient(to right, rgba(46, 204, 113, 0.1), rgba(46, 204, 113, 0.2))';
-                        progressElement.style.background = 'var(--success-color)';
-                        progressElement.style.color = 'white';
+                        element.style.background = 'var(--success-color)';
+                        element.style.color = 'white';
                     } else {
                         item.style.background = 'linear-gradient(to right, rgba(241, 196, 15, 0.1), rgba(241, 196, 15, 0.2))';
-                        progressElement.style.background = 'var(--warning-color)';
-                        progressElement.style.color = 'var(--text-primary)';
+                        element.style.background = 'var(--warning-color)';
+                        element.style.color = 'var(--text-primary)';
                     }
                 } else {
-                    progressElement.textContent = '';
-                    progressElement.style.display = 'none';
+                    element.textContent = '';
+                    element.style.display = 'none';
                     item.style.background = 'var(--card-background)';
                 }
-            }
+            });
         });
     }
 
     updateCategoryProgress() {
         if (!this.quizScores) return;
 
-        const categories = document.querySelectorAll('.category-card');
+        // Prepare all category updates
+        const updates = new Map();
         
-        categories.forEach(category => {
+        document.querySelectorAll('.category-card').forEach(category => {
             const quizItems = category.querySelectorAll('.quiz-item:not(.locked-quiz)');
             const progressBar = category.querySelector('.progress-fill');
             const progressText = category.querySelector('.category-progress');
             
-            if (quizItems.length && progressBar && progressText) {
-                let completedQuizzes = 0;
-                let totalProgress = 0;
+            if (!quizItems.length || !progressBar || !progressText) return;
+
+            const categoryStats = Array.from(quizItems).reduce((stats, item) => {
+                const quizId = item.dataset.quiz;
+                const quizScore = this.quizScores.find(score => score.quizName === quizId);
+                const progress = quizScore ? quizScore.score : 0;
                 
-                quizItems.forEach(item => {
-                    const quizId = item.dataset.quiz;
-                    const quizScore = this.quizScores.find(score => score.quizName === quizId);
-                    const progress = quizScore ? quizScore.score : 0;
-                    
-                    if (progress === 100) {
-                        completedQuizzes++;
-                    }
-                    totalProgress += progress;
-                });
-                
-                const totalQuizzes = quizItems.length;
-                const categoryPercentage = Math.round(totalProgress / totalQuizzes);
-                
-                console.log('Category progress:', {
-                    category: category.querySelector('.category-header').textContent.trim(),
-                    completedQuizzes,
-                    totalQuizzes,
-                    categoryPercentage
-                });
-                
+                return {
+                    completedQuizzes: stats.completedQuizzes + (progress === 100 ? 1 : 0),
+                    totalProgress: stats.totalProgress + progress
+                };
+            }, { completedQuizzes: 0, totalProgress: 0 });
+
+            const totalQuizzes = quizItems.length;
+            const categoryPercentage = Math.round(categoryStats.totalProgress / totalQuizzes);
+
+            // Store updates to apply in batch
+            updates.set(category, {
+                completedQuizzes: categoryStats.completedQuizzes,
+                totalQuizzes,
+                categoryPercentage,
+                progressBar,
+                progressText
+            });
+        });
+
+        // Apply all updates in one batch
+        requestAnimationFrame(() => {
+            updates.forEach(({ completedQuizzes, totalQuizzes, categoryPercentage, progressBar, progressText }) => {
                 progressBar.style.width = `${categoryPercentage}%`;
                 progressText.innerHTML = `
                     <div class="progress-text">Progress: ${completedQuizzes}/${totalQuizzes} Complete</div>
@@ -191,7 +169,7 @@ class IndexPage {
                         <div class="progress-fill" style="width: ${categoryPercentage}%"></div>
                     </div>
                 `;
-            }
+            });
         });
     }
 }
