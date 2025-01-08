@@ -120,17 +120,34 @@ class AdminDashboard {
     async loadDashboard() {
         try {
             console.log('Loading dashboard...'); // Debug log
+            
+            // Load users first
             await this.loadUsers();
-            console.log('Users loaded, loading progress...'); // Debug log
-            await this.loadAllUserProgress();
-            console.log('Progress loaded, setting up event listeners...'); // Debug log
+            if (!this.users || !this.users.length) {
+                console.log('No users loaded, stopping dashboard load');
+                this.updateDashboard(); // Update to show no users
+                return;
+            }
+            console.log('Users loaded successfully:', this.users.length, 'users');
+
+            // Set up event listeners
+            console.log('Setting up event listeners...'); // Debug log
             this.setupEventListeners();
-            console.log('Event listeners set up, updating dashboard...'); // Debug log
+            console.log('Event listeners set up');
+
+            // Load progress for all users
+            console.log('Loading user progress...'); // Debug log
+            await this.loadAllUserProgress();
+            console.log('User progress loaded');
+
+            // Final dashboard update
+            console.log('Performing final dashboard update...'); // Debug log
             this.updateDashboard();
-            console.log('Dashboard update complete'); // Debug log
+            console.log('Dashboard load complete'); // Debug log
         } catch (error) {
             console.error('Failed to load dashboard:', error);
             this.showError('Failed to load dashboard');
+            throw error;
         }
     }
 
@@ -168,19 +185,29 @@ class AdminDashboard {
         // Create a new Map for all user scores
         const newScores = new Map();
         
-        for (const user of this.users) {
-            try {
-                const scores = await this.loadUserProgress(user.username);
-                newScores.set(user.username, scores);
-            } catch (error) {
-                console.error(`Failed to load progress for ${user.username}:`, error);
-                newScores.set(user.username, this.getDefaultScores());
+        try {
+            for (const user of this.users) {
+                try {
+                    console.log(`Loading progress for user: ${user.username}`);
+                    const scores = await this.loadUserProgress(user.username);
+                    console.log(`Progress loaded for ${user.username}:`, scores);
+                    newScores.set(user.username, scores);
+                } catch (error) {
+                    console.error(`Failed to load progress for ${user.username}:`, error);
+                    newScores.set(user.username, this.getDefaultScores());
+                }
             }
+            
+            // Update the userScores map
+            this.userScores = newScores;
+            console.log('All user progress loaded. Scores map:', Object.fromEntries(this.userScores));
+            
+            // Force an update of the dashboard
+            this.updateDashboard();
+        } catch (error) {
+            console.error('Error in loadAllUserProgress:', error);
+            throw error;
         }
-        
-        // Update the userScores map
-        this.userScores = newScores;
-        console.log('All user progress loaded:', Object.fromEntries(this.userScores)); // Debug log
     }
 
     async loadUserProgress(username) {
