@@ -178,7 +178,7 @@ export class AdminDashboard {
             }
 
             const data = await response.json();
-            console.log('Raw quiz results:', data); // Debug log
+            console.log(`Raw quiz results for ${username}:`, data); // Debug log
 
             if (!data.success) {
                 return [];
@@ -196,24 +196,38 @@ export class AdminDashboard {
 
             // Handle both single quiz result and array of results
             if (data.data) {
-                // Ensure we have an array of results
+                // If it's a single quiz result, wrap it in an array
                 const quizResults = Array.isArray(data.data) ? data.data : [data.data];
-                console.log('Processing quiz results:', quizResults); // Debug log
+                console.log(`Processing ${quizResults.length} quiz results for ${username}:`, quizResults); // Debug log
 
                 // Process each quiz result
                 quizResults.forEach(quizData => {
+                    if (!quizData) return;
+
                     // Find the matching quiz type
                     const normalizedQuizName = this.normalizeQuizName(quizData.quizName || '');
+                    console.log(`Looking for quiz match: ${normalizedQuizName}`); // Debug log
+
                     const scoreIndex = scores.findIndex(s => 
                         this.normalizeQuizName(s.quizName) === normalizedQuizName
                     );
 
                     if (scoreIndex !== -1) {
+                        const experience = quizData.experience || 0;
+                        const questionsAnswered = quizData.questionsAnswered || quizData.questionHistory?.length || 0;
+                        const score = Math.round((experience / 300) * 100);
+
+                        console.log(`Updating score for ${scores[scoreIndex].quizName}:`, {
+                            experience,
+                            questionsAnswered,
+                            score
+                        }); // Debug log
+
                         scores[scoreIndex] = {
                             ...scores[scoreIndex],
-                            score: Math.round((quizData.experience / 300) * 100),
-                            experience: quizData.experience || 0,
-                            questionsAnswered: quizData.questionsAnswered || 0,
+                            score,
+                            experience,
+                            questionsAnswered,
                             questionHistory: quizData.questionHistory || [],
                             lastActive: quizData.lastUpdated || null
                         };
@@ -221,7 +235,7 @@ export class AdminDashboard {
                 });
             }
 
-            console.log('Processed scores:', scores); // Debug log
+            console.log(`Final processed scores for ${username}:`, scores); // Debug log
             return scores;
         } catch (error) {
             console.error(`Failed to load progress for user ${username}:`, error);
@@ -473,12 +487,23 @@ export class AdminDashboard {
         
         // Calculate total progress based on experience
         const totalProgress = activeQuizzes.reduce((sum, score) => {
-            const quizProgress = Math.round((score.experience / 300) * 100);
-            return sum + quizProgress;
+            // Each quiz is worth 300 XP total
+            const maxXP = 300;
+            const progress = (score.experience / maxXP) * 100;
+            return sum + progress;
         }, 0);
         
-        // Return average progress of active quizzes
-        return totalProgress / activeQuizzes.length;
+        // Return average progress across all active quizzes
+        const averageProgress = totalProgress / activeQuizzes.length;
+        
+        console.log('Progress calculation:', {
+            totalQuizzes: scores.length,
+            activeQuizzes: activeQuizzes.length,
+            totalProgress,
+            averageProgress
+        });
+        
+        return averageProgress;
     }
 
     getLastActive(scores) {
