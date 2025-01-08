@@ -185,12 +185,10 @@ export class AdminDashboard {
                             ...result,
                             // Keep the original quiz name from our types list
                             quizName: scores[scoreIndex].quizName,
-                            // Use the actual question number from the server
-                            questionsAnswered: result.currentQuestion || 0,
-                            // Use the actual XP earned from the server
-                            experience: result.xpEarned || 0,
-                            // Keep track of progress percentage
-                            score: result.progress || 0
+                            // Use the actual values from the server response
+                            questionsAnswered: result.questionsAnswered || 0,
+                            experience: result.experience || 0,
+                            score: result.score || 0
                         };
                         
                         console.log('Updated score object:', updatedScore); // Debug log
@@ -547,9 +545,9 @@ export class AdminDashboard {
             );
             
             // Get values directly from the server response
-            const progress = quizScore?.progress || 0;
-            const questionsCompleted = quizScore?.currentQuestion || 0;
-            const xpEarned = quizScore?.xpEarned || 0;
+            const progress = quizScore?.score || 0;
+            const questionsCompleted = quizScore?.questionsAnswered || 0;
+            const xpEarned = quizScore?.experience || 0;
             const lastActive = quizScore?.lastActive ? this.formatDate(quizScore.lastActive) : 'Never';
             
             const quizItem = document.createElement('div');
