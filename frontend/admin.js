@@ -29,22 +29,31 @@ export class AdminDashboard {
         const adminToken = localStorage.getItem('adminToken');
         const currentPath = window.location.pathname;
         
+        console.log('Current path:', currentPath); // Debug log
+        
         // Only verify token if we're on admin pages
         if (currentPath.includes('admin')) {
+            console.log('On admin page, verifying token...'); // Debug log
             const isTokenValid = await this.verifyAdminToken(adminToken);
+            console.log('Token valid:', isTokenValid); // Debug log
             
             if (currentPath.includes('admin-login.html')) {
                 if (isTokenValid) {
+                    console.log('Valid token on login page, redirecting to admin panel'); // Debug log
                     window.location.href = '/pages/admin.html';
                     return;
                 }
             } else if (currentPath.includes('admin.html')) {
                 if (!isTokenValid) {
+                    console.log('Invalid token on admin panel, redirecting to login'); // Debug log
                     window.location.href = '/pages/admin-login.html';
                     return;
                 }
+                console.log('Valid token on admin panel, loading dashboard...'); // Debug log
                 await this.loadDashboard();
             }
+        } else {
+            console.log('Not on admin page, skipping initialization'); // Debug log
         }
     }
 
@@ -137,7 +146,7 @@ export class AdminDashboard {
             }
 
             this.users = data.data;
-            console.log('Users loaded:', this.users.length); // Debug log
+            console.log('Users loaded:', this.users); // Changed to log actual users array
             
             // Load progress for each user
             for (const user of this.users) {
@@ -145,6 +154,8 @@ export class AdminDashboard {
                 const scores = await this.loadUserProgress(user.username);
                 this.userScores.set(user.username, scores);
             }
+
+            console.log('Final user scores map:', Object.fromEntries(this.userScores)); // Debug log
         } catch (error) {
             console.error('Failed to load users:', error);
             this.users = [];
@@ -235,6 +246,8 @@ export class AdminDashboard {
     }
 
     updateDashboard() {
+        console.log('Updating dashboard with users:', this.users); // Debug log
+        console.log('User scores:', Object.fromEntries(this.userScores)); // Debug log
         this.updateStatistics();
         this.updateUserList();
     }
@@ -273,9 +286,9 @@ export class AdminDashboard {
     }
 
     updateUserList() {
-        const container = document.getElementById('user-list');
+        const container = document.getElementById('usersList');
         if (!container) {
-            console.error('User list container not found');
+            console.error('User list container not found (usersList)');
             return;
         }
 
@@ -332,7 +345,7 @@ export class AdminDashboard {
             container.appendChild(card);
         });
 
-        console.log(`Displayed ${filteredUsers.length} users`); // Debug log
+        console.log(`Displayed ${filteredUsers.length} users in usersList container`); // Debug log
     }
 
     async showUserDetails(username) {
@@ -464,8 +477,11 @@ export class AdminDashboard {
     }
 }
 
-// Initialize the admin dashboard
-window.adminDashboard = new AdminDashboard();
+// Initialize the admin dashboard when the DOM is loaded
+document.addEventListener('DOMContentLoaded', () => {
+    console.log('DOM loaded, initializing AdminDashboard');
+    window.adminDashboard = new AdminDashboard();
+});
 
 // Export these functions for direct use in HTML
 export const handleAdminLogin = async () => {
