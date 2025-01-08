@@ -165,8 +165,8 @@ export class AdminDashboard {
 
     async loadUserProgress(username) {
         try {
-            // Fetch all quiz results for the user
-            const response = await fetch(`${this.apiService.baseUrl}/users/${username}/quiz-results`, {
+            // Use the admin endpoint to fetch quiz results
+            const response = await fetch(`${this.apiService.baseUrl}/admin/users/${username}/quiz-results`, {
                 headers: {
                     'Authorization': `Bearer ${localStorage.getItem('adminToken')}`,
                     'Content-Type': 'application/json'
@@ -220,7 +220,8 @@ export class AdminDashboard {
                         console.log(`Updating score for ${scores[scoreIndex].quizName}:`, {
                             experience,
                             questionsAnswered,
-                            score
+                            score,
+                            quizData
                         }); // Debug log
 
                         scores[scoreIndex] = {
