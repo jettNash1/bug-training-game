@@ -394,21 +394,37 @@ export class AdminDashboard {
             content.style.maxWidth = '80%';
             content.style.maxHeight = '80%';
             content.style.overflow = 'auto';
+            content.style.position = 'relative';  // Added for absolute positioning of close button
             
             const overallProgress = this.calculateProgress(scores);
             
-            content.innerHTML = `
-                <div class="details-header">
-                    <h3>${username}'s Progress</h3>
-                    <div class="overall-stats">
-                        <span>Overall Progress: ${overallProgress.toFixed(1)}%</span>
-                        <span>Total Quizzes: ${this.quizTypes.length}</span>
-                    </div>
-                    <button class="close-btn" onclick="this.closest('.user-details-overlay').remove()" 
-                            style="position: absolute; right: 20px; top: 20px; 
-                                   padding: 5px 10px; cursor: pointer;">×</button>
+            const header = document.createElement('div');
+            header.className = 'details-header';
+            header.innerHTML = `
+                <h3>${username}'s Progress</h3>
+                <div class="overall-stats">
+                    <span>Overall Progress: ${overallProgress.toFixed(1)}%</span>
+                    <span>Total Quizzes: ${this.quizTypes.length}</span>
                 </div>
             `;
+
+            const closeButton = document.createElement('button');
+            closeButton.className = 'close-btn';
+            closeButton.textContent = '×';
+            closeButton.style.position = 'absolute';
+            closeButton.style.right = '20px';
+            closeButton.style.top = '20px';
+            closeButton.style.padding = '5px 10px';
+            closeButton.style.cursor = 'pointer';
+            closeButton.style.border = 'none';
+            closeButton.style.background = 'none';
+            closeButton.style.fontSize = '20px';
+            closeButton.addEventListener('click', () => {
+                overlay.remove();
+            });
+            
+            content.appendChild(header);
+            content.appendChild(closeButton);
             
             const quizList = document.createElement('div');
             quizList.className = 'quiz-progress-list';
@@ -440,6 +456,13 @@ export class AdminDashboard {
             content.appendChild(quizList);
             overlay.appendChild(content);
             document.body.appendChild(overlay);
+
+            // Add click event to close overlay when clicking outside content
+            overlay.addEventListener('click', (e) => {
+                if (e.target === overlay) {
+                    overlay.remove();
+                }
+            });
         } catch (error) {
             console.error('Error showing user details:', error);
             this.showError('Failed to load user details');
