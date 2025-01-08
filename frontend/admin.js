@@ -255,6 +255,14 @@ class AdminDashboard {
     updateDashboard() {
         console.log('Updating dashboard with users:', this.users); // Debug log
         console.log('User scores:', Object.fromEntries(this.userScores)); // Debug log
+        
+        // Update total users count immediately
+        const totalUsersElement = document.getElementById('totalUsers');
+        if (totalUsersElement) {
+            totalUsersElement.textContent = this.users.length;
+            console.log('Updated total users:', this.users.length);
+        }
+
         this.updateStatistics();
         this.updateUserList();
     }
@@ -264,10 +272,20 @@ class AdminDashboard {
         const activeUsersElement = document.getElementById('activeUsers');
         const averageCompletionElement = document.getElementById('averageCompletion');
 
+        if (!this.users || !this.users.length) {
+            console.log('No users to update statistics for');
+            if (totalUsersElement) totalUsersElement.textContent = '0';
+            if (activeUsersElement) activeUsersElement.textContent = '0';
+            if (averageCompletionElement) averageCompletionElement.textContent = '0%';
+            return;
+        }
+
         const today = new Date().setHours(0, 0, 0, 0);
         let activeUsers = 0;
         let totalProgress = 0;
         let usersWithProgress = 0;
+
+        console.log('Calculating statistics for', this.users.length, 'users');
 
         this.users.forEach(user => {
             const scores = this.userScores.get(user.username) || [];
@@ -278,14 +296,24 @@ class AdminDashboard {
                 const activeDate = new Date(score.lastActive).setHours(0, 0, 0, 0);
                 return activeDate === today;
             });
-            if (wasActiveToday) activeUsers++;
+            if (wasActiveToday) {
+                activeUsers++;
+                console.log(`${user.username} was active today`);
+            }
 
             // Calculate user's overall progress
             const userProgress = this.calculateProgress(scores);
             if (scores.some(score => score.score > 0)) {
                 totalProgress += userProgress;
                 usersWithProgress++;
+                console.log(`${user.username} has progress:`, userProgress);
             }
+        });
+
+        console.log('Statistics calculated:', {
+            totalUsers: this.users.length,
+            activeUsers,
+            averageProgress: usersWithProgress > 0 ? Math.round(totalProgress / usersWithProgress) : 0
         });
 
         if (totalUsersElement) totalUsersElement.textContent = this.users.length;
@@ -303,6 +331,12 @@ class AdminDashboard {
             return;
         }
 
+        if (!this.users || !this.users.length) {
+            console.log('No users to display');
+            container.innerHTML = '<div class="no-users">No users found</div>';
+            return;
+        }
+
         console.log('Updating user list with:', this.users.length, 'users'); // Debug log
 
         const searchTerm = document.getElementById('userSearch')?.value.toLowerCase() || '';
@@ -313,26 +347,6 @@ class AdminDashboard {
         );
 
         console.log('Filtered users:', filteredUsers.length); // Debug log
-
-        filteredUsers.sort((a, b) => {
-            const scoresA = this.userScores.get(a.username) || [];
-            const scoresB = this.userScores.get(b.username) || [];
-            
-            switch (sortBy) {
-                case 'username-asc':
-                    return a.username.localeCompare(b.username);
-                case 'username-desc':
-                    return b.username.localeCompare(a.username);
-                case 'progress-high':
-                    return this.calculateProgress(scoresB) - this.calculateProgress(scoresA);
-                case 'progress-low':
-                    return this.calculateProgress(scoresA) - this.calculateProgress(scoresB);
-                case 'last-active':
-                    return this.getLastActive(scoresB) - this.getLastActive(scoresA);
-                default:
-                    return 0;
-            }
-        });
 
         // Clear existing content
         container.innerHTML = '';
@@ -345,28 +359,20 @@ class AdminDashboard {
 
             const card = document.createElement('div');
             card.className = 'user-card';
-            
-            const cardContent = document.createElement('div');
-            cardContent.className = 'user-header';
-            cardContent.innerHTML = `
-                <h4>${user.username}</h4>
-                <div class="user-stats">
-                    <div class="total-score">Overall Progress: ${progress.toFixed(1)}%</div>
-                    <div class="last-active">Last Active: ${this.formatDate(lastActive)}</div>
+            card.innerHTML = `
+                <div class="user-header">
+                    <h4>${user.username}</h4>
+                    <div class="user-stats">
+                        <div class="total-score">Overall Progress: ${progress.toFixed(1)}%</div>
+                        <div class="last-active">Last Active: ${this.formatDate(lastActive)}</div>
+                    </div>
                 </div>
+                <button class="view-details-btn" onclick="dashboardInstance.showUserDetails('${user.username}')">
+                    View Details
+                </button>
             `;
             
-            const viewDetailsBtn = document.createElement('button');
-            viewDetailsBtn.className = 'view-details-btn';
-            viewDetailsBtn.textContent = 'View Details';
-            viewDetailsBtn.addEventListener('click', () => {
-                this.showUserDetails(user.username);
-            });
-            
-            card.appendChild(cardContent);
-            card.appendChild(viewDetailsBtn);
             container.appendChild(card);
-
             console.log('Added card for user:', user.username); // Debug log
         });
 
