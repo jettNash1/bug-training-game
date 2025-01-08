@@ -149,7 +149,7 @@ export class AdminDashboard {
             }
 
             const data = await response.json();
-            console.log('Raw quiz results data:', data); // Debug log
+            console.log('Raw server response:', data); // Debug log
 
             if (!data.success) {
                 throw new Error(data.message || 'Failed to load user progress');
@@ -159,48 +159,41 @@ export class AdminDashboard {
             const scores = this.quizTypes.map(quizName => ({
                 quizName,
                 score: 0,
-                experience: 0,
-                questionsAnswered: 0,
-                questionHistory: [],
-                lastActive: null,
-                completedAt: null
+                data: {
+                    experience: 0,
+                    questionsAnswered: 0,
+                    questionHistory: [],
+                    lastUpdated: null
+                }
             }));
 
             // Update scores with actual results
-            if (Array.isArray(data.data)) {
-                data.data.forEach(result => {
-                    console.log('Processing quiz result:', result); // Debug log
-                    
-                    // Try to find matching quiz by both original and normalized names
-                    const scoreIndex = scores.findIndex(s => 
-                        s.quizName === result.quizName || 
-                        s.quizName === this.normalizeQuizName(result.quizName) ||
-                        this.normalizeQuizName(s.quizName) === this.normalizeQuizName(result.quizName)
-                    );
-                    
-                    if (scoreIndex !== -1) {
-                        // Ensure we have all required fields with proper fallbacks
-                        const updatedScore = {
-                            ...scores[scoreIndex],
-                            ...result,
-                            // Keep the original quiz name from our types list
-                            quizName: scores[scoreIndex].quizName,
-                            // Ensure consistent property names and values
-                            score: result.score || 0,
-                            experience: result.experience || 0,
-                            questionsAnswered: result.questionsAnswered || result.questionHistory?.length || 0,
-                            questionHistory: result.questionHistory || [],
-                            lastActive: result.lastActive || result.completedAt || null,
-                            completedAt: result.completedAt || null
-                        };
-                        
-                        console.log('Updated score object:', updatedScore); // Debug log
-                        scores[scoreIndex] = updatedScore;
-                    }
-                });
+            if (data.data) {
+                const quizData = data.data;
+                console.log('Processing quiz data:', quizData); // Debug log
+
+                // Find the matching quiz score and update it
+                const quizName = this.normalizeQuizName(quizData.quizName || 'communication');
+                const scoreIndex = scores.findIndex(s => 
+                    this.normalizeQuizName(s.quizName) === quizName
+                );
+
+                if (scoreIndex !== -1) {
+                    scores[scoreIndex] = {
+                        ...scores[scoreIndex],
+                        score: Math.round((quizData.experience / 300) * 100), // Calculate score based on XP
+                        data: {
+                            experience: quizData.experience || 0,
+                            questionsAnswered: quizData.questionsAnswered || 0,
+                            questionHistory: quizData.questionHistory || [],
+                            lastUpdated: quizData.lastUpdated || null
+                        }
+                    };
+                }
             }
 
-            console.log('Final scores array:', scores); // Debug log
+            console.log('Processed scores:', scores); // Debug log
+            this.userScores.set(username, scores);
             return scores;
         } catch (error) {
             console.error(`Failed to load progress for user ${username}:`, error);
@@ -518,7 +511,7 @@ export class AdminDashboard {
         if (!user) return;
 
         const scores = await this.loadUserProgress(username);
-        console.log('Loaded scores for display:', scores); // Debug log
+        console.log('Displaying scores:', scores); // Debug log
         
         // Create the details overlay
         const overlay = document.createElement('div');
@@ -543,18 +536,20 @@ export class AdminDashboard {
         this.quizTypes.forEach(quizName => {
             // Find the quiz score data
             const quizScore = scores.find(score => 
-                score.quizName === quizName || 
-                score.quizName === this.normalizeQuizName(quizName) ||
                 this.normalizeQuizName(score.quizName) === this.normalizeQuizName(quizName)
             );
             
-            console.log('Processing quiz data:', { quizName, quizScore }); // Debug log
+            console.log('Processing quiz for display:', { quizName, quizScore }); // Debug log
             
-            // Get values from the server response with proper fallbacks
-            const progress = quizScore?.score || 0;
-            const questionsAnswered = quizScore?.data?.questionsAnswered || quizScore?.data?.questionHistory?.length || 0;
-            const experience = quizScore?.data?.experience || 0;
-            const lastActive = quizScore?.data?.lastUpdated ? 
+            if (!quizScore) {
+                console.log('No score found for quiz:', quizName);
+                return;
+            }
+            
+            const progress = quizScore.score || 0;
+            const questionsAnswered = quizScore.data?.questionsAnswered || 0;
+            const experience = quizScore.data?.experience || 0;
+            const lastActive = quizScore.data?.lastUpdated ? 
                 this.formatDate(new Date(quizScore.data.lastUpdated)) : 'Never';
             
             const quizItem = document.createElement('div');
