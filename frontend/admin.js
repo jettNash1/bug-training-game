@@ -172,12 +172,9 @@ export class AdminDashboard {
         try {
             console.log(`Fetching progress for ${username}...`); // Debug log
             
-            // Use the APIService's fetchWithAdminAuth method with credentials
+            // Use quiz-progress endpoint
             const response = await this.apiService.fetchWithAdminAuth(
-                `${this.apiService.baseUrl}/admin/users/${username}/quiz-results`,
-                {
-                    credentials: 'include'
-                }
+                `${this.apiService.baseUrl}/admin/users/${username}/quiz-progress`
             );
 
             if (!response.ok) {
@@ -186,7 +183,7 @@ export class AdminDashboard {
             }
 
             const data = await response.json();
-            console.log(`Raw quiz results for ${username}:`, data); // Debug log
+            console.log(`Raw quiz progress for ${username}:`, data); // Debug log
 
             if (!data.success) {
                 console.warn(`No success flag in response for ${username}`);
@@ -203,33 +200,30 @@ export class AdminDashboard {
                 lastActive: null
             }));
 
-            // Handle quiz results
+            // Handle quiz progress data
             if (data.data && typeof data.data === 'object') {
-                // Convert data.data to array if it's not already
-                const quizResults = Array.isArray(data.data) ? data.data : [data.data];
-                
-                console.log(`Processing quiz results for ${username}:`, quizResults); // Debug log
-
-                quizResults.forEach(quizData => {
-                    if (!quizData || !quizData.quizName) {
-                        console.warn('Invalid quiz data:', quizData);
+                // Data should be an object with quiz names as keys
+                Object.entries(data.data).forEach(([quizName, progressData]) => {
+                    if (!progressData) {
+                        console.warn(`No progress data for quiz ${quizName}`);
                         return;
                     }
 
-                    const normalizedQuizName = this.normalizeQuizName(quizData.quizName);
+                    const normalizedQuizName = this.normalizeQuizName(quizName);
                     const scoreIndex = scores.findIndex(s => 
                         this.normalizeQuizName(s.quizName) === normalizedQuizName
                     );
 
                     if (scoreIndex !== -1) {
-                        const experience = quizData.experience || 0;
-                        const questionsAnswered = quizData.questionsAnswered || quizData.questionHistory?.length || 0;
+                        const experience = progressData.experience || 0;
+                        const questionsAnswered = progressData.questionsAnswered || progressData.questionHistory?.length || 0;
                         const score = Math.round((experience / 300) * 100);
 
                         console.log(`Updating score for ${username}'s ${scores[scoreIndex].quizName}:`, {
                             experience,
                             questionsAnswered,
-                            score
+                            score,
+                            progressData
                         });
 
                         scores[scoreIndex] = {
@@ -237,8 +231,8 @@ export class AdminDashboard {
                             score,
                             experience,
                             questionsAnswered,
-                            questionHistory: quizData.questionHistory || [],
-                            lastActive: quizData.lastUpdated || null
+                            questionHistory: progressData.questionHistory || [],
+                            lastActive: progressData.lastUpdated || null
                         };
                     }
                 });
