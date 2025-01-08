@@ -169,7 +169,7 @@ export class AdminDashboard {
             // Update scores with actual results
             if (Array.isArray(data.data)) {
                 data.data.forEach(result => {
-                    console.log('Processing quiz result:', result); // Debug log
+                    console.log('Raw quiz result from server:', result); // Debug log
                     
                     // Try to find matching quiz by both original and normalized names
                     const scoreIndex = scores.findIndex(s => 
@@ -186,9 +186,9 @@ export class AdminDashboard {
                             // Keep the original quiz name from our types list
                             quizName: scores[scoreIndex].quizName,
                             // Use the actual values from the server response
-                            questionsAnswered: result.questionsAnswered || 0,
-                            experience: result.experience || 0,
-                            score: result.score || 0
+                            questionsAnswered: result.currentQuestion || result.questionsAnswered || 0,
+                            experience: result.xp || result.experience || 0,
+                            score: result.progress || result.score || 0
                         };
                         
                         console.log('Updated score object:', updatedScore); // Debug log
@@ -544,7 +544,7 @@ export class AdminDashboard {
                 this.normalizeQuizName(score.quizName) === this.normalizeQuizName(quizName)
             );
             
-            // Get values directly from the server response
+            // Get values directly from the server response with fallbacks
             const progress = quizScore?.score || 0;
             const questionsCompleted = quizScore?.questionsAnswered || 0;
             const xpEarned = quizScore?.experience || 0;
