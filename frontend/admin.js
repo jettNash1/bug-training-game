@@ -1,6 +1,6 @@
 import { APIService } from './api-service.js';
 
-export class AdminDashboard {
+class AdminDashboard {
     constructor() {
         this.apiService = new APIService();
         this.users = [];
