@@ -111,7 +111,7 @@ export class AdminDashboard {
             if (data.success && data.token && data.isAdmin) {
                 // Store admin token
                 localStorage.setItem('adminToken', data.token);
-                window.location.href = '/pages/admin.html';
+                window.location.href = '/pages/admin2.html';
             } else {
                 this.showError(data.message || 'Invalid admin credentials');
             }
