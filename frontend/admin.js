@@ -511,111 +511,121 @@ class AdminDashboard {
 
     async showUserDetails(username) {
         try {
-            // Fetch fresh progress data for this user
-            const scores = await this.loadUserProgress(username);
-            this.userScores.set(username, scores); // Update stored scores
+            console.log(`Opening details for ${username}`);
             
-            console.log(`Showing details for ${username}, scores:`, scores);
-
-            // Remove any existing overlay
+            // Remove any existing overlay first
             const existingOverlay = document.querySelector('.user-details-overlay');
             if (existingOverlay) {
                 existingOverlay.remove();
             }
 
+            // Create and show a loading indicator
+            const loadingOverlay = document.createElement('div');
+            loadingOverlay.className = 'user-details-overlay';
+            loadingOverlay.innerHTML = `
+                <div class="user-details-content" style="text-align: center;">
+                    <h3>Loading progress for ${username}...</h3>
+                </div>
+            `;
+            document.body.appendChild(loadingOverlay);
+
+            // Fetch fresh progress data for this user
+            console.log(`Fetching fresh progress for ${username}`);
+            const response = await this.apiService.fetchWithAdminAuth(
+                `${this.apiService.baseUrl}/admin/users/${username}/quiz-results`
+            );
+
+            if (!response.ok) {
+                throw new Error(`Failed to fetch progress: ${response.status}`);
+            }
+
+            const data = await response.json();
+            console.log(`Received progress data for ${username}:`, data);
+
+            if (!data.success || !data.data) {
+                throw new Error('Invalid progress data received');
+            }
+
+            // Process the quiz results
+            const scores = this.quizTypes.map(quizName => {
+                const quizData = data.data.find(result => 
+                    this.normalizeQuizName(result.quizName) === this.normalizeQuizName(quizName)
+                ) || {};
+
+                return {
+                    quizName,
+                    score: quizData.score || 0,
+                    experience: quizData.experience || 0,
+                    questionsAnswered: quizData.questionsAnswered || 0,
+                    currentScenario: quizData.questionsAnswered || 0,
+                    lastActive: quizData.completedAt || null,
+                    answers: quizData.answers || []
+                };
+            });
+
+            // Update stored scores
+            this.userScores.set(username, scores);
+            
+            // Remove loading overlay
+            loadingOverlay.remove();
+
+            // Create the actual details overlay
             const overlay = document.createElement('div');
             overlay.className = 'user-details-overlay';
-            overlay.style.position = 'fixed';
-            overlay.style.top = '0';
-            overlay.style.left = '0';
-            overlay.style.width = '100%';
-            overlay.style.height = '100%';
-            overlay.style.backgroundColor = 'rgba(0, 0, 0, 0.5)';
-            overlay.style.display = 'flex';
-            overlay.style.justifyContent = 'center';
-            overlay.style.alignItems = 'center';
-            overlay.style.zIndex = '1000';
             
             const content = document.createElement('div');
             content.className = 'user-details-content';
-            content.style.backgroundColor = 'white';
-            content.style.padding = '20px';
-            content.style.borderRadius = '8px';
-            content.style.maxWidth = '80%';
-            content.style.maxHeight = '80%';
-            content.style.overflow = 'auto';
-            content.style.position = 'relative';  // Added for absolute positioning of close button
             
             const overallProgress = this.calculateProgress(scores);
             
-            const header = document.createElement('div');
-            header.className = 'details-header';
-            header.innerHTML = `
-                <h3>${username}'s Progress</h3>
-                <div class="overall-stats">
-                    <span>Overall Progress: ${overallProgress.toFixed(1)}%</span>
-                    <span>Total Quizzes: ${this.quizTypes.length}</span>
+            content.innerHTML = `
+                <div class="details-header">
+                    <h3>${username}'s Progress</h3>
+                    <div class="overall-stats">
+                        <span>Overall Progress: ${overallProgress.toFixed(1)}%</span>
+                        <span>Total Quizzes: ${this.quizTypes.length}</span>
+                    </div>
+                    <button class="close-btn" style="position: absolute; right: 20px; top: 20px; 
+                            padding: 5px 10px; cursor: pointer; background: none; border: none; font-size: 20px;">×</button>
+                </div>
+                <div class="quiz-progress-list" style="margin-top: 20px;">
+                    ${scores.map(quizScore => `
+                        <div class="quiz-progress-item" style="margin-bottom: 15px; padding: 10px; border: 1px solid #ddd; border-radius: 4px;">
+                            <h4 style="margin: 0 0 10px 0">${this.formatQuizName(quizScore.quizName)}</h4>
+                            <div class="quiz-stats" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px;">
+                                <div class="stat-item">Score: <span class="stat-value">${quizScore.score}%</span></div>
+                                <div class="stat-item">Questions Completed: <span class="stat-value">${quizScore.questionsAnswered}/15</span></div>
+                                <div class="stat-item">XP Earned: <span class="stat-value">${quizScore.experience}</span></div>
+                                <div class="stat-item">Last Updated: <span class="stat-value">${this.formatDate(quizScore.lastActive)}</span></div>
+                            </div>
+                        </div>
+                    `).join('')}
                 </div>
             `;
 
-            const closeButton = document.createElement('button');
-            closeButton.className = 'close-btn';
-            closeButton.textContent = '×';
-            closeButton.style.position = 'absolute';
-            closeButton.style.right = '20px';
-            closeButton.style.top = '20px';
-            closeButton.style.padding = '5px 10px';
-            closeButton.style.cursor = 'pointer';
-            closeButton.style.border = 'none';
-            closeButton.style.background = 'none';
-            closeButton.style.fontSize = '20px';
-            closeButton.addEventListener('click', () => {
-                overlay.remove();
-            });
-            
-            content.appendChild(header);
-            content.appendChild(closeButton);
-            
-            const quizList = document.createElement('div');
-            quizList.className = 'quiz-progress-list';
-            quizList.style.marginTop = '20px';
-            
-            scores.forEach(quizScore => {
-                const lastActive = quizScore.lastActive ? 
-                    this.formatDate(new Date(quizScore.lastActive)) : 'Never';
-                
-                const quizItem = document.createElement('div');
-                quizItem.className = 'quiz-progress-item';
-                quizItem.style.marginBottom = '15px';
-                quizItem.style.padding = '10px';
-                quizItem.style.border = '1px solid #ddd';
-                quizItem.style.borderRadius = '4px';
-                
-                quizItem.innerHTML = `
-                    <h4 style="margin: 0 0 10px 0">${this.formatQuizName(quizScore.quizName)}</h4>
-                    <div class="quiz-stats" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px;">
-                        <div class="stat-item">Score: <span class="stat-value">${quizScore.score}%</span></div>
-                        <div class="stat-item">Questions Completed: <span class="stat-value">${quizScore.questionsAnswered}/15</span></div>
-                        <div class="stat-item">XP Earned: <span class="stat-value">${quizScore.experience}</span></div>
-                        <div class="stat-item">Last Updated: <span class="stat-value">${lastActive}</span></div>
-                    </div>
-                `;
-                quizList.appendChild(quizItem);
-            });
-            
-            content.appendChild(quizList);
             overlay.appendChild(content);
             document.body.appendChild(overlay);
 
-            // Add click event to close overlay when clicking outside content
+            // Add close button functionality
+            const closeBtn = content.querySelector('.close-btn');
+            closeBtn.addEventListener('click', () => overlay.remove());
+
+            // Add click outside to close
             overlay.addEventListener('click', (e) => {
                 if (e.target === overlay) {
                     overlay.remove();
                 }
             });
+
+            console.log(`Details overlay created and shown for ${username}`);
         } catch (error) {
             console.error('Error showing user details:', error);
-            this.showError('Failed to load user details');
+            // Remove loading overlay if it exists
+            const loadingOverlay = document.querySelector('.user-details-overlay');
+            if (loadingOverlay) {
+                loadingOverlay.remove();
+            }
+            this.showError(`Failed to load details for ${username}: ${error.message}`);
         }
     }
 
