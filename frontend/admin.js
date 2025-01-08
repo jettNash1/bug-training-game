@@ -185,10 +185,9 @@ class AdminDashboard {
                         this.normalizeQuizName(result.quizName) === this.normalizeQuizName(quizName)
                     ) || {};
                     
-                    // Find the matching quiz progress from user.quizProgress
-                    const quizProgress = user.quizProgress?.find(progress => 
-                        this.normalizeQuizName(progress.quizName) === this.normalizeQuizName(quizName)
-                    ) || {};
+                    // Get quiz progress from user.quizProgress object
+                    const quizProgress = user.quizProgress?.[quizName] || {};
+                    console.log(`Quiz progress for ${user.username} - ${quizName}:`, quizProgress);
 
                     return {
                         quizName,
