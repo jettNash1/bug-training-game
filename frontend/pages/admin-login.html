@@ -51,13 +51,17 @@
 
     <!-- Load only required scripts -->
     <script type="module">
-        import { handleAdminLogin } from '../admin.js';
+        import { AdminDashboard } from '../admin.js';
         
         document.addEventListener('DOMContentLoaded', () => {
+            const dashboard = new AdminDashboard();
+            
             // Add form submit handler
             document.getElementById('adminLoginForm').addEventListener('submit', async (event) => {
                 event.preventDefault();
-                await handleAdminLogin();
+                const username = document.getElementById('adminUsername').value;
+                const password = document.getElementById('adminPassword').value;
+                await dashboard.handleAdminLogin();
             });
         });
     </script>
