@@ -517,7 +517,8 @@ export class AdminDashboard {
         const user = this.users.find(u => u.username === username);
         if (!user) return;
 
-        const scores = this.userScores.get(username) || [];
+        const scores = await this.loadUserProgress(username);
+        console.log('Loaded scores for display:', scores); // Debug log
         
         // Create the details overlay
         const overlay = document.createElement('div');
@@ -540,20 +541,21 @@ export class AdminDashboard {
         
         // Sort quizzes by name
         this.quizTypes.forEach(quizName => {
-            // Try to find the quiz score by both original and normalized name
+            // Find the quiz score data
             const quizScore = scores.find(score => 
                 score.quizName === quizName || 
                 score.quizName === this.normalizeQuizName(quizName) ||
                 this.normalizeQuizName(score.quizName) === this.normalizeQuizName(quizName)
             );
             
-            console.log('Quiz score data for display:', { quizName, quizScore }); // Debug log
+            console.log('Processing quiz data:', { quizName, quizScore }); // Debug log
             
-            // Get values with proper fallbacks
+            // Get values from the server response with proper fallbacks
             const progress = quizScore?.score || 0;
-            const questionsAnswered = quizScore?.questionsAnswered || quizScore?.questionHistory?.length || 0;
-            const xpEarned = quizScore?.experience || 0;
-            const lastActive = quizScore?.lastActive ? this.formatDate(new Date(quizScore.lastActive)) : 'Never';
+            const questionsAnswered = quizScore?.data?.questionsAnswered || quizScore?.data?.questionHistory?.length || 0;
+            const experience = quizScore?.data?.experience || 0;
+            const lastActive = quizScore?.data?.lastUpdated ? 
+                this.formatDate(new Date(quizScore.data.lastUpdated)) : 'Never';
             
             const quizItem = document.createElement('div');
             quizItem.className = 'quiz-progress-item';
@@ -562,7 +564,7 @@ export class AdminDashboard {
                 <div class="quiz-stats">
                     <div class="stat-item">Progress: <span class="stat-value">${progress}%</span></div>
                     <div class="stat-item">Questions Completed: <span class="stat-value">${questionsAnswered}/15</span></div>
-                    <div class="stat-item">XP Earned: <span class="stat-value">${xpEarned}/300</span></div>
+                    <div class="stat-item">XP Earned: <span class="stat-value">${experience}/300</span></div>
                     <div class="stat-item">Last Active: <span class="stat-value">${lastActive}</span></div>
                     <button class="reset-progress-btn" 
                             onclick="window.adminDashboard.resetQuizProgress('${username}', '${quizName}')">
