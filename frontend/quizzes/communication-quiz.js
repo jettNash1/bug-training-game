@@ -534,8 +534,9 @@ class CommunicationQuiz extends BaseQuiz {
         const progress = {
             experience: this.player.experience,
             tools: this.player.tools,
-            currentScenario: this.player.currentScenario,
             questionHistory: this.player.questionHistory,
+            questionsAnswered: this.player.questionHistory.length,
+            currentScenario: this.player.currentScenario,
             lastUpdated: new Date().toISOString()
         };
 
@@ -819,10 +820,17 @@ class CommunicationQuiz extends BaseQuiz {
             if (username) {
                 const quizUser = new QuizUser(username);
                 const score = Math.round((this.player.experience / this.maxXP) * 100);
-                await quizUser.updateQuizScore('communication', score);
+                await quizUser.updateQuizScore(
+                    this.quizName,
+                    score,
+                    this.player.experience,  // Pass the actual experience earned
+                    this.player.tools,       // Pass the tools acquired
+                    this.player.questionHistory,  // Pass the question history
+                    this.player.currentScenario   // Pass the current scenario/questions answered
+                );
                 
                 // Update progress display on index page
-                const progressElement = document.querySelector('#communication-progress');
+                const progressElement = document.querySelector(`#${this.quizName}-progress`);
                 if (progressElement) {
                     const totalQuestions = 15;
                     const completedQuestions = this.player.questionHistory.length;
