@@ -165,22 +165,27 @@ export class AdminDashboard {
 
     async loadUserProgress(username) {
         try {
+            console.log(`Fetching progress for ${username}...`); // Debug log
             // Use the admin endpoint to fetch quiz results
-            const response = await fetch(`${this.apiService.baseUrl}/admin/users/${username}/quiz-results`, {
+            const response = await fetch(`${this.apiService.baseUrl}/admin/users/${username}/quiz-progress`, {
                 headers: {
                     'Authorization': `Bearer ${localStorage.getItem('adminToken')}`,
                     'Content-Type': 'application/json'
                 }
             });
 
+            console.log(`Response status for ${username}:`, response.status); // Debug log
+
             if (!response.ok) {
-                throw new Error('Failed to fetch user progress');
+                console.error(`Failed to fetch progress for ${username}:`, response.status, response.statusText);
+                return [];
             }
 
             const data = await response.json();
             console.log(`Raw quiz results for ${username}:`, data); // Debug log
 
             if (!data.success) {
+                console.warn(`No success flag in response for ${username}`);
                 return [];
             }
 
@@ -194,20 +199,23 @@ export class AdminDashboard {
                 lastActive: null
             }));
 
-            // Handle both single quiz result and array of results
-            if (data.data) {
-                // If it's a single quiz result, wrap it in an array
-                const quizResults = Array.isArray(data.data) ? data.data : [data.data];
-                console.log(`Processing ${quizResults.length} quiz results for ${username}:`, quizResults); // Debug log
+            // Handle quiz results
+            if (data.data && typeof data.data === 'object') {
+                // Convert data.data to array if it's not already
+                const quizResults = Object.entries(data.data).map(([quizName, result]) => ({
+                    quizName,
+                    ...result
+                }));
+                
+                console.log(`Processing quiz results for ${username}:`, quizResults); // Debug log
 
-                // Process each quiz result
                 quizResults.forEach(quizData => {
-                    if (!quizData) return;
+                    if (!quizData || !quizData.quizName) {
+                        console.warn('Invalid quiz data:', quizData);
+                        return;
+                    }
 
-                    // Find the matching quiz type
-                    const normalizedQuizName = this.normalizeQuizName(quizData.quizName || '');
-                    console.log(`Looking for quiz match: ${normalizedQuizName}`); // Debug log
-
+                    const normalizedQuizName = this.normalizeQuizName(quizData.quizName);
                     const scoreIndex = scores.findIndex(s => 
                         this.normalizeQuizName(s.quizName) === normalizedQuizName
                     );
@@ -217,12 +225,11 @@ export class AdminDashboard {
                         const questionsAnswered = quizData.questionsAnswered || quizData.questionHistory?.length || 0;
                         const score = Math.round((experience / 300) * 100);
 
-                        console.log(`Updating score for ${scores[scoreIndex].quizName}:`, {
+                        console.log(`Updating score for ${username}'s ${scores[scoreIndex].quizName}:`, {
                             experience,
                             questionsAnswered,
-                            score,
-                            quizData
-                        }); // Debug log
+                            score
+                        });
 
                         scores[scoreIndex] = {
                             ...scores[scoreIndex],
@@ -234,12 +241,14 @@ export class AdminDashboard {
                         };
                     }
                 });
+            } else {
+                console.warn(`No quiz data found for ${username}`);
             }
 
             console.log(`Final processed scores for ${username}:`, scores); // Debug log
             return scores;
         } catch (error) {
-            console.error(`Failed to load progress for user ${username}:`, error);
+            console.error(`Failed to load progress for ${username}:`, error);
             return [];
         }
     }
