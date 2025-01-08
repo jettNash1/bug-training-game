@@ -51,7 +51,7 @@ class AdminDashboard {
                 }
                 console.log('Valid token on admin panel, loading dashboard...'); // Debug log
                 try {
-                    await this.loadDashboard();
+                await this.loadDashboard();
                     console.log('Dashboard loaded successfully'); // Debug log
                 } catch (error) {
                     console.error('Error loading dashboard:', error);
@@ -174,45 +174,14 @@ class AdminDashboard {
 
             this.users = data.users || [];
             console.log('Users loaded:', this.users); // Debug log
-        } catch (error) {
-            console.error('Failed to load users:', error);
-            this.users = [];
-        }
-    }
 
-    async loadAllUserProgress(retryCount = 0) {
-        console.log('Loading progress for all users...'); // Debug log
-        try {
-            console.log('Fetching all user progress in bulk');
-            const controller = new AbortController();
-            const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
-
-            const response = await this.apiService.fetchWithAdminAuth(
-                `${this.apiService.baseUrl}/admin/users/quiz-results/all`,
-                { signal: controller.signal }
-            );
-            clearTimeout(timeoutId);
-
-            if (!response.ok) {
-                throw new Error(`Failed to fetch progress: ${response.status}`);
-            }
-
-            const data = await response.json();
-            console.log('Received bulk progress data:', data);
-
-            if (!data.success || !data.data) {
-                throw new Error('Invalid progress data received');
-            }
-
-            // Create a new Map for all user scores
+            // Process quiz results immediately
             const newScores = new Map();
             
-            // Process each user's quiz results
-            Object.entries(data.data).forEach(([username, userResults]) => {
-                console.log(`Processing results for ${username}`);
-                
+            this.users.forEach(user => {
                 const scores = this.quizTypes.map(quizName => {
-                    const quizData = userResults.find(result => 
+                    // Find the matching quiz result, normalizing the quiz name for comparison
+                    const quizData = user.quizResults?.find(result => 
                         this.normalizeQuizName(result.quizName) === this.normalizeQuizName(quizName)
                     ) || {};
 
@@ -227,46 +196,26 @@ class AdminDashboard {
                     };
                 });
 
-                newScores.set(username, scores);
+                newScores.set(user.username, scores);
             });
-            
-            // Update the userScores map
-            console.log('Updating userScores map');
-            this.userScores = newScores;
-            console.log('All user progress loaded. Scores map:', Object.fromEntries(this.userScores));
-            
-            // Force an update of the dashboard
-            console.log('Forcing dashboard update after loading all progress');
-            this.updateDashboard();
-            console.log('Dashboard update completed after loading progress');
-        } catch (error) {
-            console.error('Error in loadAllUserProgress:', error);
-            
-            // If we haven't retried too many times and it's not a 404, retry
-            if (retryCount < 3 && error.name !== 'AbortError') {
-                console.log(`Retrying progress load (attempt ${retryCount + 1})`);
-                await new Promise(resolve => setTimeout(resolve, 1000)); // Wait 1 second before retry
-                return this.loadAllUserProgress(retryCount + 1);
-            }
 
-            // If we've exhausted retries or got a 404, fall back to individual loading
-            console.log('Falling back to individual progress loading');
-            const newScores = new Map();
-            
-            for (const user of this.users) {
-                try {
-                    console.log(`Loading individual progress for ${user.username}`);
-                    const scores = await this.loadUserProgress(user.username);
-                    newScores.set(user.username, scores);
-                } catch (e) {
-                    console.error(`Failed to load progress for ${user.username}:`, e);
-                    newScores.set(user.username, this.getDefaultScores());
-                }
-            }
-            
+            // Update the userScores map
+            console.log('Setting initial user scores');
             this.userScores = newScores;
-            this.updateDashboard();
+            console.log('User scores initialized:', Object.fromEntries(this.userScores));
+
+        } catch (error) {
+            console.error('Failed to load users:', error);
+            this.users = [];
+            this.userScores = new Map();
         }
+    }
+
+    async loadAllUserProgress() {
+        // Since we already have all the progress data from the initial user load,
+        // we just need to update the dashboard
+        console.log('Using existing progress data from user load');
+        this.updateDashboard();
     }
 
     async loadUserProgress(username) {
@@ -371,9 +320,9 @@ class AdminDashboard {
 
         try {
             console.log('Starting statistics update...'); // Debug log
-            this.updateStatistics();
+        this.updateStatistics();
             console.log('Statistics updated, updating user list...'); // Debug log
-            this.updateUserList();
+        this.updateUserList();
             console.log('Dashboard update complete'); // Debug log
         } catch (error) {
             console.error('Error during dashboard update:', error);
@@ -490,21 +439,21 @@ class AdminDashboard {
         console.log('Sorted users:', filteredUsers);
 
         try {
-            // Clear existing content
+        // Clear existing content
             console.log('Clearing container');
-            container.innerHTML = '';
+        container.innerHTML = '';
 
-            // Create and append user cards
+        // Create and append user cards
             console.log('Creating user cards');
             filteredUsers.forEach((user, index) => {
                 console.log(`Creating card ${index + 1} for user:`, user.username);
                 
-                const scores = this.userScores.get(user.username) || [];
-                const progress = this.calculateProgress(scores);
+            const scores = this.userScores.get(user.username) || [];
+            const progress = this.calculateProgress(scores);
                 const lastActive = user.lastLogin ? new Date(user.lastLogin).getTime() : 0;
 
-                const card = document.createElement('div');
-                card.className = 'user-card';
+            const card = document.createElement('div');
+            card.className = 'user-card';
                 
                 const cardContent = document.createElement('div');
                 cardContent.className = 'user-header';
@@ -525,7 +474,7 @@ class AdminDashboard {
                 
                 card.appendChild(cardContent);
                 card.appendChild(viewDetailsBtn);
-                container.appendChild(card);
+            container.appendChild(card);
 
                 console.log(`Card ${index + 1} created and appended for ${user.username}`);
             });
@@ -600,7 +549,7 @@ class AdminDashboard {
                     `).join('')}
                 </div>
             `;
-
+            
             overlay.appendChild(content);
             document.body.appendChild(overlay);
 

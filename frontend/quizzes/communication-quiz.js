@@ -822,12 +822,29 @@ class CommunicationQuiz extends BaseQuiz {
                 const score = Math.round((this.player.experience / this.maxXP) * 100);
                 const currentTime = new Date().toISOString();
                 
+                // Create a detailed quiz result object
+                const quizResult = {
+                    quizName: this.quizName,
+                    score: score,
+                    experience: this.player.experience,
+                    tools: this.player.tools,
+                    answers: this.player.questionHistory.map(record => ({
+                        questionId: record.scenario.id,
+                        selectedAnswer: record.selectedAnswer.text,
+                        experienceGained: record.selectedAnswer.experience,
+                        maxPossibleXP: record.maxPossibleXP,
+                        isCorrect: record.selectedAnswer.experience === record.maxPossibleXP
+                    })),
+                    questionsAnswered: this.player.questionHistory.length,
+                    completedAt: currentTime
+                };
+                
                 await quizUser.updateQuizScore(
                     this.quizName,
                     score,
                     this.player.experience,
                     this.player.tools,
-                    this.player.questionHistory,
+                    quizResult.answers,
                     this.player.questionHistory.length,
                     currentTime
                 );
