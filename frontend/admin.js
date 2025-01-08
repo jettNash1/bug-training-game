@@ -228,17 +228,22 @@ export class AdminDashboard {
                 const progressData = data.data[quizName] || {};
                 console.log(`Processing ${quizName}:`, progressData);
 
+                // Extract data from the progress object
                 const experience = parseInt(progressData.experience) || 0;
-                const questionsAnswered = parseInt(progressData.questionsAnswered) || progressData.questionHistory?.length || 0;
+                const questionsAnswered = progressData.questionHistory?.length || 0;
                 const score = Math.round((experience / 300) * 100);
+                const tools = progressData.tools || [];
+                const lastActive = progressData.lastUpdated || null;
 
                 return {
                     quizName,
                     score,
                     experience,
                     questionsAnswered,
+                    tools,
                     questionHistory: progressData.questionHistory || [],
-                    lastActive: progressData.lastUpdated || null
+                    lastActive,
+                    currentScenario: progressData.currentScenario || questionsAnswered
                 };
             });
 
@@ -257,8 +262,10 @@ export class AdminDashboard {
             score: 0,
             experience: 0,
             questionsAnswered: 0,
+            tools: [],
             questionHistory: [],
-            lastActive: null
+            lastActive: null,
+            currentScenario: 0
         }));
     }
 
@@ -414,6 +421,7 @@ export class AdminDashboard {
             quizList.className = 'quiz-progress-list';
             
             scores.forEach(quizScore => {
+                // Calculate progress as percentage of max XP (300)
                 const progress = Math.round((quizScore.experience / 300) * 100);
                 const lastActive = quizScore.lastActive ? 
                     this.formatDate(new Date(quizScore.lastActive)) : 'Never';
@@ -421,7 +429,7 @@ export class AdminDashboard {
                 console.log(`Creating quiz item for ${quizScore.quizName}:`, {
                     progress,
                     experience: quizScore.experience,
-                    questionsAnswered: quizScore.questionsAnswered,
+                    currentScenario: quizScore.currentScenario,
                     lastActive
                 });
                 
@@ -431,9 +439,9 @@ export class AdminDashboard {
                     <h4>${this.formatQuizName(quizScore.quizName)}</h4>
                     <div class="quiz-stats">
                         <div class="stat-item">Progress: <span class="stat-value">${progress}%</span></div>
-                        <div class="stat-item">Questions Completed: <span class="stat-value">${quizScore.questionsAnswered}/15</span></div>
-                        <div class="stat-item">XP Earned: <span class="stat-value">${quizScore.experience}/300</span></div>
-                        <div class="stat-item">Last Active: <span class="stat-value">${lastActive}</span></div>
+                        <div class="stat-item">Questions Completed: <span class="stat-value">${quizScore.currentScenario}/15</span></div>
+                        <div class="stat-item">XP Earned: <span class="stat-value">${quizScore.experience}</span></div>
+                        <div class="stat-item">Last Updated: <span class="stat-value">${lastActive}</span></div>
                     </div>
                 `;
                 quizList.appendChild(quizItem);
@@ -486,7 +494,7 @@ export class AdminDashboard {
     calculateProgress(scores) {
         if (!scores || !scores.length) return 0;
         
-        // Calculate progress for each quiz (as a percentage)
+        // Calculate progress for each quiz (as a percentage of 300 XP)
         const quizProgresses = scores.map(score => {
             const progress = (score.experience / 300) * 100;
             return progress || 0;
@@ -494,7 +502,7 @@ export class AdminDashboard {
         
         // Calculate mean average of all quiz progresses
         const totalProgress = quizProgresses.reduce((sum, progress) => sum + progress, 0);
-        const averageProgress = totalProgress / scores.length;
+        const averageProgress = totalProgress / this.quizTypes.length; // Divide by total number of quizzes
         
         return averageProgress;
     }
