@@ -116,9 +116,9 @@ export class AdminDashboard {
         try {
             console.log('Loading dashboard...'); // Debug log
             await this.loadUsers();
+            await this.loadAllUserProgress(); // Load progress for all users
             this.setupEventListeners();
-            this.updateDashboard(); // Display users first
-            await this.loadAllUserProgress(); // Then load progress
+            this.updateDashboard(); // Display users and statistics
         } catch (error) {
             console.error('Failed to load dashboard:', error);
             this.showError('Failed to load dashboard');
@@ -155,6 +155,7 @@ export class AdminDashboard {
     }
 
     async loadAllUserProgress() {
+        console.log('Loading progress for all users...'); // Debug log
         // Create a new Map for all user scores
         const newScores = new Map();
         
@@ -162,19 +163,15 @@ export class AdminDashboard {
             try {
                 const scores = await this.loadUserProgress(user.username);
                 newScores.set(user.username, scores);
-                
-                // Update the display after each user's progress is loaded
-                this.userScores = new Map(newScores);
-                this.updateDashboard();
             } catch (error) {
                 console.error(`Failed to load progress for ${user.username}:`, error);
                 newScores.set(user.username, this.getDefaultScores());
             }
         }
         
-        // Final update
-        this.userScores = new Map(newScores);
-        this.updateDashboard();
+        // Update the userScores map
+        this.userScores = newScores;
+        console.log('All user progress loaded:', Object.fromEntries(this.userScores)); // Debug log
     }
 
     async loadUserProgress(username) {
@@ -543,16 +540,22 @@ export class AdminDashboard {
 }
 
 // Initialize the admin dashboard when the DOM is loaded
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
     console.log('DOM loaded, initializing AdminDashboard');
     window.adminDashboard = new AdminDashboard();
+    await window.adminDashboard.init();
 });
 
 // Export these functions for direct use in HTML
 export const handleAdminLogin = async () => {
+    if (!window.adminDashboard) {
+        window.adminDashboard = new AdminDashboard();
+    }
     await window.adminDashboard.handleAdminLogin();
 };
 
 export const handleAdminLogout = () => {
-    window.adminDashboard.handleAdminLogout();
+    if (window.adminDashboard) {
+        window.adminDashboard.handleAdminLogout();
+    }
 }; 

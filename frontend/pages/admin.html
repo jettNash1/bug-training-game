@@ -17,7 +17,7 @@
             </div>
             <nav class="admin-nav" role="navigation">
                 <a href="../index.html" class="nav-link">Return to Learning Hub</a>
-                <button onclick="window.adminDashboard.handleAdminLogout()" class="logout-btn">Logout</button>
+                <button id="logoutBtn" class="logout-btn">Logout</button>
             </nav>
         </header>
 
@@ -71,11 +71,16 @@
     </div>
 
     <!-- Load scripts as modules -->
-    <script type="module" src="../config.js"></script>
-    <script type="module" src="../api-service.js"></script>
-    <script type="module" src="../QuizUser.js"></script>
-    <script type="module" src="../quiz-helper.js"></script>
-    <script type="module" src="../admin.js"></script>
+    <script type="module">
+        import { AdminDashboard, handleAdminLogin, handleAdminLogout } from '../admin.js';
+        
+        // Set up logout button handler
+        document.getElementById('logoutBtn').addEventListener('click', handleAdminLogout);
+        
+        // Make functions available globally
+        window.handleAdminLogin = handleAdminLogin;
+        window.handleAdminLogout = handleAdminLogout;
+    </script>
 
     <style>
         .user-details-overlay {
