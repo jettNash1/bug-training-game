@@ -539,26 +539,22 @@ export class AdminDashboard {
     }
 }
 
-// Initialize the admin dashboard when the DOM is loaded
-document.addEventListener('DOMContentLoaded', async () => {
-    console.log('DOM loaded, initializing AdminDashboard');
-    window.adminDashboard = new AdminDashboard();
-    await window.adminDashboard.init();
-});
-
 // Export these functions for direct use in HTML
-export const handleAdminLogin = async () => {
+const handleAdminLogin = async () => {
     if (!window.adminDashboard) {
         window.adminDashboard = new AdminDashboard();
     }
     await window.adminDashboard.handleAdminLogin();
 };
 
-export const handleAdminLogout = () => {
+const handleAdminLogout = () => {
     if (window.adminDashboard) {
         window.adminDashboard.handleAdminLogout();
     }
 };
 
-// Export the AdminDashboard class
-export { AdminDashboard }; 
+export {
+    AdminDashboard,
+    handleAdminLogin,
+    handleAdminLogout
+}; 
