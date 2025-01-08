@@ -693,7 +693,6 @@ export class CommunicationQuiz extends BaseQuiz {
             return;
         }
 
-
         const scenario = currentScenarios[this.player.currentScenario];
         if (!scenario) {
             console.error('No scenario found for index:', this.player.currentScenario);
@@ -706,11 +705,12 @@ export class CommunicationQuiz extends BaseQuiz {
             return;
         }
         
-        // Show level transition message at the start of each level
+        // Show level transition message at the start of each level or when level changes
+        const currentLevel = this.getCurrentLevel();
         const previousLevel = this.player.questionHistory.length > 0 ? 
-            this.player.questionHistory[this.player.questionHistory.length - 1].scenario.level : null;
+            this.getCurrentLevel() : null;
             
-        if (this.player.currentScenario === 0 || previousLevel !== scenario.level) {
+        if (this.player.currentScenario === 0 || previousLevel !== currentLevel) {
             const transitionContainer = document.getElementById('level-transition-container');
             if (transitionContainer) {
                 transitionContainer.innerHTML = ''; // Clear any existing messages
@@ -718,7 +718,7 @@ export class CommunicationQuiz extends BaseQuiz {
                 const levelMessage = document.createElement('div');
                 levelMessage.className = 'level-transition';
                 levelMessage.setAttribute('role', 'alert');
-                levelMessage.textContent = `Starting ${scenario.level} Questions`;
+                levelMessage.textContent = `Starting ${currentLevel} Questions`;
                 
                 transitionContainer.appendChild(levelMessage);
                 transitionContainer.classList.add('active');
@@ -726,7 +726,7 @@ export class CommunicationQuiz extends BaseQuiz {
                 // Update the level indicator
                 const levelIndicator = document.getElementById('level-indicator');
                 if (levelIndicator) {
-                    levelIndicator.textContent = `Level: ${scenario.level}`;
+                    levelIndicator.textContent = `Level: ${currentLevel}`;
                 }
                 
                 // Remove the message and container height after animation
@@ -815,66 +815,44 @@ export class CommunicationQuiz extends BaseQuiz {
             // Save progress with current scenario (before incrementing)
             await this.saveProgress();
 
+            // Calculate the score and experience
+            const totalQuestions = 15;
+            const completedQuestions = this.player.questionHistory.length;
+            const percentComplete = Math.round((completedQuestions / totalQuestions) * 100);
+            
+            const score = {
+                quizName: this.quizName,
+                score: percentComplete,
+                experience: this.player.experience,
+                questionHistory: this.player.questionHistory,
+                questionsAnswered: completedQuestions,
+                lastActive: new Date().toISOString()
+            };
+            
             // Also save quiz result and update display
             const username = localStorage.getItem('username');
             if (username) {
                 const quizUser = new QuizUser(username);
-                const score = Math.round((this.player.experience / this.maxXP) * 100);
-                const currentTime = new Date().toISOString();
-                
-                // Create a detailed quiz result object
-                const quizResult = {
-                    quizName: this.quizName,
-                    score: score,
-                    experience: this.player.experience,
-                    tools: this.player.tools,
-                    answers: this.player.questionHistory.map(record => ({
-                        questionId: record.scenario.id,
-                        selectedAnswer: record.selectedAnswer.text,
-                        experienceGained: record.selectedAnswer.experience,
-                        maxPossibleXP: record.maxPossibleXP,
-                        isCorrect: record.selectedAnswer.experience === record.maxPossibleXP
-                    })),
-                    questionsAnswered: this.player.questionHistory.length,
-                    completedAt: currentTime
-                };
-                
-                await quizUser.updateQuizScore(
-                    this.quizName,
-                    score,
-                    this.player.experience,
-                    this.player.tools,
-                    quizResult.answers,
-                    this.player.questionHistory.length,
-                    currentTime
-                );
+                await quizUser.updateQuizScore(this.quizName, score);
                 
                 // Update progress display on index page
                 const progressElement = document.querySelector(`#${this.quizName}-progress`);
                 if (progressElement) {
-                    const totalQuestions = 15;
-                    const completedQuestions = this.player.questionHistory.length;
-                    const percentComplete = Math.round((completedQuestions / totalQuestions) * 100);
+                    progressElement.textContent = `${percentComplete}% Complete`;
+                    progressElement.classList.remove('hidden');
                     
-                    // Only update if we're on the index page and this is the current user
-                    const onIndexPage = window.location.pathname.endsWith('index.html');
-                    if (onIndexPage) {
-                        progressElement.textContent = `${percentComplete}% Complete`;
-                        progressElement.classList.remove('hidden');
-                        
-                        // Update quiz item styling
-                        const quizItem = document.querySelector(`[data-quiz="${this.quizName}"]`);
-                        if (quizItem) {
-                            quizItem.classList.remove('completed', 'in-progress');
-                            if (percentComplete === 100) {
-                                quizItem.classList.add('completed');
-                                progressElement.classList.add('completed');
-                                progressElement.classList.remove('in-progress');
-                            } else if (percentComplete > 0) {
-                                quizItem.classList.add('in-progress');
-                                progressElement.classList.add('in-progress');
-                                progressElement.classList.remove('completed');
-                            }
+                    // Update quiz item styling
+                    const quizItem = document.querySelector(`[data-quiz="${this.quizName}"]`);
+                    if (quizItem) {
+                        quizItem.classList.remove('completed', 'in-progress');
+                        if (percentComplete === 100) {
+                            quizItem.classList.add('completed');
+                            progressElement.classList.add('completed');
+                            progressElement.classList.remove('in-progress');
+                        } else if (percentComplete > 0) {
+                            quizItem.classList.add('in-progress');
+                            progressElement.classList.add('in-progress');
+                            progressElement.classList.remove('completed');
                         }
                     }
                 }
