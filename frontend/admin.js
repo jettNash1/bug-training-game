@@ -186,24 +186,36 @@ class AdminDashboard {
         const newScores = new Map();
         
         try {
-            for (const user of this.users) {
+            // Load progress for all users in parallel
+            const progressPromises = this.users.map(async user => {
                 try {
                     console.log(`Loading progress for user: ${user.username}`);
                     const scores = await this.loadUserProgress(user.username);
                     console.log(`Progress loaded for ${user.username}:`, scores);
-                    newScores.set(user.username, scores);
+                    return { username: user.username, scores };
                 } catch (error) {
                     console.error(`Failed to load progress for ${user.username}:`, error);
-                    newScores.set(user.username, this.getDefaultScores());
+                    return { username: user.username, scores: this.getDefaultScores() };
                 }
-            }
+            });
+
+            // Wait for all progress to be loaded
+            console.log('Waiting for all progress to be loaded...');
+            const results = await Promise.all(progressPromises);
+            
+            // Update the scores map with all results
+            results.forEach(({ username, scores }) => {
+                newScores.set(username, scores);
+            });
             
             // Update the userScores map
             this.userScores = newScores;
             console.log('All user progress loaded. Scores map:', Object.fromEntries(this.userScores));
             
             // Force an update of the dashboard
+            console.log('Forcing dashboard update after loading all progress');
             this.updateDashboard();
+            console.log('Dashboard update completed after loading progress');
         } catch (error) {
             console.error('Error in loadAllUserProgress:', error);
             throw error;
@@ -366,13 +378,15 @@ class AdminDashboard {
             return;
         }
 
+        console.log('Starting updateUserList with container:', container);
+
         if (!this.users || !this.users.length) {
             console.log('No users to display');
             container.innerHTML = '<div class="no-users">No users found</div>';
             return;
         }
 
-        console.log('Updating user list with:', this.users.length, 'users'); // Debug log
+        console.log('Updating user list with:', this.users.length, 'users');
 
         const searchTerm = document.getElementById('userSearch')?.value.toLowerCase() || '';
         const sortBy = document.getElementById('sortBy')?.value || 'username-asc';
@@ -381,7 +395,7 @@ class AdminDashboard {
             user.username.toLowerCase().includes(searchTerm)
         );
 
-        console.log('Filtered users:', filteredUsers.length); // Debug log
+        console.log('Filtered users:', filteredUsers);
 
         // Sort users
         filteredUsers.sort((a, b) => {
@@ -406,43 +420,57 @@ class AdminDashboard {
             }
         });
 
-        // Clear existing content
-        container.innerHTML = '';
+        console.log('Sorted users:', filteredUsers);
 
-        // Create and append user cards
-        filteredUsers.forEach(user => {
-            const scores = this.userScores.get(user.username) || [];
-            const progress = this.calculateProgress(scores);
-            const lastActive = user.lastLogin ? new Date(user.lastLogin).getTime() : 0;
+        try {
+            // Clear existing content
+            console.log('Clearing container');
+            container.innerHTML = '';
 
-            const card = document.createElement('div');
-            card.className = 'user-card';
-            
-            const cardContent = document.createElement('div');
-            cardContent.className = 'user-header';
-            cardContent.innerHTML = `
-                <h4>${user.username}</h4>
-                <div class="user-stats">
-                    <div class="total-score">Overall Progress: ${progress.toFixed(1)}%</div>
-                    <div class="last-active">Last Active: ${this.formatDate(lastActive)}</div>
-                </div>
-            `;
-            
-            const viewDetailsBtn = document.createElement('button');
-            viewDetailsBtn.className = 'view-details-btn';
-            viewDetailsBtn.textContent = 'View Details';
-            viewDetailsBtn.addEventListener('click', () => {
-                this.showUserDetails(user.username);
+            // Create and append user cards
+            console.log('Creating user cards');
+            filteredUsers.forEach((user, index) => {
+                console.log(`Creating card ${index + 1} for user:`, user.username);
+                
+                const scores = this.userScores.get(user.username) || [];
+                const progress = this.calculateProgress(scores);
+                const lastActive = user.lastLogin ? new Date(user.lastLogin).getTime() : 0;
+
+                const card = document.createElement('div');
+                card.className = 'user-card';
+                
+                const cardContent = document.createElement('div');
+                cardContent.className = 'user-header';
+                cardContent.innerHTML = `
+                    <h4>${user.username}</h4>
+                    <div class="user-stats">
+                        <div class="total-score">Overall Progress: ${progress.toFixed(1)}%</div>
+                        <div class="last-active">Last Active: ${this.formatDate(lastActive)}</div>
+                    </div>
+                `;
+                
+                const viewDetailsBtn = document.createElement('button');
+                viewDetailsBtn.className = 'view-details-btn';
+                viewDetailsBtn.textContent = 'View Details';
+                viewDetailsBtn.addEventListener('click', () => {
+                    this.showUserDetails(user.username);
+                });
+                
+                card.appendChild(cardContent);
+                card.appendChild(viewDetailsBtn);
+                container.appendChild(card);
+
+                console.log(`Card ${index + 1} created and appended for ${user.username}`);
             });
-            
-            card.appendChild(cardContent);
-            card.appendChild(viewDetailsBtn);
-            container.appendChild(card);
 
-            console.log('Added card for user:', user.username); // Debug log
-        });
+            console.log('All cards created and appended');
+            console.log('Container contents:', container.innerHTML);
+        } catch (error) {
+            console.error('Error creating user cards:', error);
+            this.showError('Failed to display user list');
+        }
 
-        console.log('User list update complete'); // Debug log
+        console.log('User list update complete');
     }
 
     async showUserDetails(username) {
