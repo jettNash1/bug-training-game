@@ -1,5 +1,6 @@
 import { APIService } from '../api-service.js';
 import { BaseQuiz } from '../quiz-helper.js';
+import { QuizUser } from '../quiz-user.js';
 
 export class CommunicationQuiz extends BaseQuiz {
     constructor() {
@@ -820,36 +821,59 @@ export class CommunicationQuiz extends BaseQuiz {
                 maxPossibleXP: Math.max(...scenario.options.map(o => o.experience))
             });
 
-            // Increment current scenario
-            this.player.currentScenario++;
-
-            // Save progress
+            // Save progress with current scenario (before incrementing)
             await this.saveProgress();
 
             // Calculate the score and experience
             const totalQuestions = 15;
             const completedQuestions = this.player.questionHistory.length;
             const percentComplete = Math.round((completedQuestions / totalQuestions) * 100);
+            const experience = Math.round((completedQuestions / totalQuestions) * 300); // 300 is max XP
             
             const score = {
                 quizName: this.quizName,
                 score: percentComplete,
-                experience: this.player.experience,
+                questionHistory: this.player.questionHistory,
                 questionsAnswered: completedQuestions,
-                answers: this.player.questionHistory.map(record => ({
-                    questionId: record.scenario.id,
-                    selectedAnswer: record.selectedAnswer.text,
-                    experienceGained: record.selectedAnswer.experience,
-                    maxPossibleXP: record.maxPossibleXP,
-                    isCorrect: record.selectedAnswer.experience === record.maxPossibleXP
-                })),
-                completedAt: new Date().toISOString()
+                experience: experience,
+                lastActive: new Date().toISOString()
             };
             
-            // Save quiz result
+            // Also save quiz result and update display
             const username = localStorage.getItem('username');
             if (username) {
-                await this.apiService.saveQuizScore(this.quizName, score);
+                const quizUser = new QuizUser(username);
+                await quizUser.updateQuizScore(this.quizName, score);
+                
+                // Update progress display on index page
+                const progressElement = document.querySelector(`#${this.quizName}-progress`);
+                if (progressElement) {
+                    const totalQuestions = 15;
+                    const completedQuestions = this.player.questionHistory.length;
+                    const percentComplete = Math.round((completedQuestions / totalQuestions) * 100);
+                    
+                    // Only update if we're on the index page and this is the current user
+                    const onIndexPage = window.location.pathname.endsWith('index.html');
+                    if (onIndexPage) {
+                        progressElement.textContent = `${percentComplete}% Complete`;
+                        progressElement.classList.remove('hidden');
+                        
+                        // Update quiz item styling
+                        const quizItem = document.querySelector(`[data-quiz="${this.quizName}"]`);
+                        if (quizItem) {
+                            quizItem.classList.remove('completed', 'in-progress');
+                            if (percentComplete === 100) {
+                                quizItem.classList.add('completed');
+                                progressElement.classList.add('completed');
+                                progressElement.classList.remove('in-progress');
+                            } else if (percentComplete > 0) {
+                                quizItem.classList.add('in-progress');
+                                progressElement.classList.add('in-progress');
+                                progressElement.classList.remove('completed');
+                            }
+                        }
+                    }
+                }
             }
 
             // Show outcome screen
@@ -877,7 +901,7 @@ export class CommunicationQuiz extends BaseQuiz {
             this.updateProgress();
         } catch (error) {
             console.error('Failed to handle answer:', error);
-            this.showError('Failed to submit answer. Please try again.');
+            this.showError('Failed to save your answer. Please try again.');
         } finally {
             this.isLoading = false;
             if (submitButton) {
