@@ -821,59 +821,38 @@ export class CommunicationQuiz extends BaseQuiz {
                 maxPossibleXP: Math.max(...scenario.options.map(o => o.experience))
             });
 
-            // Save progress with current scenario (before incrementing)
+            // Increment current scenario
+            this.player.currentScenario++;
+
+            // Save progress
             await this.saveProgress();
 
             // Calculate the score and experience
             const totalQuestions = 15;
             const completedQuestions = this.player.questionHistory.length;
             const percentComplete = Math.round((completedQuestions / totalQuestions) * 100);
-            const experience = Math.round((completedQuestions / totalQuestions) * 300); // 300 is max XP
             
             const score = {
                 quizName: this.quizName,
                 score: percentComplete,
+                experience: this.player.experience,
                 questionHistory: this.player.questionHistory,
                 questionsAnswered: completedQuestions,
-                experience: experience,
                 lastActive: new Date().toISOString()
             };
             
-            // Also save quiz result and update display
+            // Save quiz result
             const username = localStorage.getItem('username');
             if (username) {
                 const quizUser = new QuizUser(username);
-                await quizUser.updateQuizScore(this.quizName, score);
-                
-                // Update progress display on index page
-                const progressElement = document.querySelector(`#${this.quizName}-progress`);
-                if (progressElement) {
-                    const totalQuestions = 15;
-                    const completedQuestions = this.player.questionHistory.length;
-                    const percentComplete = Math.round((completedQuestions / totalQuestions) * 100);
-                    
-                    // Only update if we're on the index page and this is the current user
-                    const onIndexPage = window.location.pathname.endsWith('index.html');
-                    if (onIndexPage) {
-                        progressElement.textContent = `${percentComplete}% Complete`;
-                        progressElement.classList.remove('hidden');
-                        
-                        // Update quiz item styling
-                        const quizItem = document.querySelector(`[data-quiz="${this.quizName}"]`);
-                        if (quizItem) {
-                            quizItem.classList.remove('completed', 'in-progress');
-                            if (percentComplete === 100) {
-                                quizItem.classList.add('completed');
-                                progressElement.classList.add('completed');
-                                progressElement.classList.remove('in-progress');
-                            } else if (percentComplete > 0) {
-                                quizItem.classList.add('in-progress');
-                                progressElement.classList.add('in-progress');
-                                progressElement.classList.remove('completed');
-                            }
-                        }
-                    }
-                }
+                await quizUser.updateQuizScore(
+                    this.quizName,
+                    score.score,
+                    score.experience,
+                    this.player.tools,
+                    score.questionHistory,
+                    score.questionsAnswered
+                );
             }
 
             // Show outcome screen
