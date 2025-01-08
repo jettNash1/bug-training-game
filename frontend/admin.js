@@ -622,9 +622,21 @@ const handleAdminLogout = () => {
 const getDashboard = () => {
     if (!dashboardInstance) {
         dashboardInstance = new AdminDashboard();
+        // Make it globally available
+        window.dashboardInstance = dashboardInstance;
     }
     return dashboardInstance;
 };
+
+// Initialize the dashboard when the module loads
+if (typeof window !== 'undefined' && window.document) {
+    window.addEventListener('DOMContentLoaded', async () => {
+        const dashboard = getDashboard();
+        if (window.location.pathname.includes('admin.html')) {
+            await dashboard.init();
+        }
+    });
+}
 
 export {
     AdminDashboard,

@@ -72,17 +72,10 @@
 
     <!-- Load scripts as modules -->
     <script type="module">
-        import { getDashboard, handleAdminLogout } from '../admin.js';
+        import { handleAdminLogout } from '../admin.js';
         
-        // Initialize dashboard when DOM is loaded
-        document.addEventListener('DOMContentLoaded', async () => {
-            console.log('Initializing dashboard from admin.html');
-            window.dashboardInstance = getDashboard();
-            await window.dashboardInstance.init();
-            
-            // Set up logout button handler
-            document.getElementById('logoutBtn').addEventListener('click', handleAdminLogout);
-        });
+        // Set up logout button handler
+        document.getElementById('logoutBtn').addEventListener('click', handleAdminLogout);
     </script>
 
     <style>
