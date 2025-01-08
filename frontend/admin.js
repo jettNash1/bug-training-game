@@ -178,26 +178,47 @@ class AdminDashboard {
             // Process quiz results immediately
             const newScores = new Map();
             
-            this.users.forEach(user => {
+            for (const user of this.users) {
+                // Fetch detailed quiz progress for each user
+                const progressResponse = await fetch(`${this.apiService.baseUrl}/admin/users/${user.username}/quiz-progress`, {
+                    headers: {
+                        'Authorization': `Bearer ${localStorage.getItem('adminToken')}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                if (!progressResponse.ok) {
+                    console.error(`Failed to fetch progress for ${user.username}`);
+                    continue;
+                }
+                
+                const progressData = await progressResponse.json();
+                console.log(`Progress data for ${user.username}:`, progressData);
+                
                 const scores = this.quizTypes.map(quizName => {
-                    // Find the matching quiz result, normalizing the quiz name for comparison
-                    const quizData = user.quizResults?.find(result => 
+                    // Find the matching quiz result from user.quizResults
+                    const quizResult = user.quizResults?.find(result => 
                         this.normalizeQuizName(result.quizName) === this.normalizeQuizName(quizName)
+                    ) || {};
+                    
+                    // Find the matching quiz progress
+                    const quizProgress = progressData.data?.find(progress => 
+                        this.normalizeQuizName(progress.quizName) === this.normalizeQuizName(quizName)
                     ) || {};
 
                     return {
                         quizName,
-                        score: quizData.score || 0,
-                        experience: quizData.experience || 0,
-                        questionsAnswered: quizData.questionsAnswered || 0,
-                        currentScenario: quizData.questionsAnswered || 0,
-                        lastActive: quizData.completedAt || null,
-                        answers: quizData.answers || []
+                        score: quizResult.score || 0,
+                        experience: quizProgress.experience || 0,
+                        questionsAnswered: quizProgress.questionHistory?.length || 0,
+                        currentScenario: quizProgress.currentScenario || 0,
+                        lastActive: quizResult.completedAt || null,
+                        answers: quizProgress.questionHistory || []
                     };
                 });
 
                 newScores.set(user.username, scores);
-            });
+            }
 
             // Update the userScores map
             console.log('Setting initial user scores');
