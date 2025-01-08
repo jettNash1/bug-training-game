@@ -116,8 +116,8 @@ export class AdminDashboard {
             console.log('Loading dashboard...'); // Debug log
             await this.loadUsers();
             this.setupEventListeners();
-            this.updateDashboard();
-            console.log('Dashboard loaded with', this.users.length, 'users'); // Debug log
+            this.updateDashboard(); // Display users first
+            await this.loadAllUserProgress(); // Then load progress
         } catch (error) {
             console.error('Failed to load dashboard:', error);
             this.showError('Failed to load dashboard');
@@ -145,32 +145,45 @@ export class AdminDashboard {
                 throw new Error(data.message || 'Failed to load users');
             }
 
-            // Ensure we're using the correct property from the response
             this.users = data.users || [];
             console.log('Users loaded:', this.users); // Debug log
-            
-            // Load progress for each user
-            for (const user of this.users) {
-                console.log('Loading progress for user:', user.username); // Debug log
-                const scores = await this.loadUserProgress(user.username);
-                this.userScores.set(user.username, scores);
-            }
-
-            console.log('Final user scores map:', Object.fromEntries(this.userScores)); // Debug log
         } catch (error) {
             console.error('Failed to load users:', error);
             this.users = [];
         }
     }
 
+    async loadAllUserProgress() {
+        console.log('Loading progress for all users...'); // Debug log
+        for (const user of this.users) {
+            try {
+                console.log('Loading progress for user:', user.username); // Debug log
+                const scores = await this.loadUserProgress(user.username);
+                this.userScores.set(user.username, scores);
+                this.updateDashboard(); // Update display after each user's progress is loaded
+            } catch (error) {
+                console.error(`Failed to load progress for ${user.username}:`, error);
+            }
+        }
+        console.log('All user progress loaded'); // Debug log
+    }
+
     async loadUserProgress(username) {
         try {
             console.log(`Fetching progress for ${username}...`); // Debug log
             
-            // Use the APIService's fetchWithAdminAuth method
+            // Use the APIService's fetchWithAdminAuth method with credentials
             const response = await this.apiService.fetchWithAdminAuth(
-                `${this.apiService.baseUrl}/admin/users/${username}/quiz-results`
+                `${this.apiService.baseUrl}/admin/users/${username}/quiz-results`,
+                {
+                    credentials: 'include'
+                }
             );
+
+            if (!response.ok) {
+                console.error(`Failed to fetch progress for ${username}:`, response.status, response.statusText);
+                return [];
+            }
 
             const data = await response.json();
             console.log(`Raw quiz results for ${username}:`, data); // Debug log
