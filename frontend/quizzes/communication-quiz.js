@@ -1,7 +1,7 @@
 import { APIService } from '../api-service.js';
 import { BaseQuiz } from '../quiz-helper.js';
 
-class CommunicationQuiz extends BaseQuiz {
+export class CommunicationQuiz extends BaseQuiz {
     constructor() {
         const config = {
             maxXP: 300,

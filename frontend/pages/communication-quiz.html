@@ -14,14 +14,7 @@
     <script type="module" src="../quiz-helper.js"></script>
     <script type="module">
         import { handleLogout } from '../auth.js';
-        import { CommunicationQuiz } from '../quizzes/communication-quiz.js';
-        
         window.handleLogout = handleLogout;
-        
-        document.addEventListener('DOMContentLoaded', () => {
-            const quiz = new CommunicationQuiz();
-            quiz.startGame();
-        });
     </script>
     <script type="module" src="../quizzes/communication-quiz.js"></script>
 </head>
