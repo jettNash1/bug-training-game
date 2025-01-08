@@ -260,7 +260,8 @@ export class AdminDashboard {
 
         const today = new Date().setHours(0, 0, 0, 0);
         let activeUsers = 0;
-        let totalCompletion = 0;
+        let totalProgress = 0;
+        let usersWithProgress = 0;
 
         this.users.forEach(user => {
             const scores = this.userScores.get(user.username) || [];
@@ -274,14 +275,17 @@ export class AdminDashboard {
             if (wasActiveToday) activeUsers++;
 
             // Calculate completion
-            const userCompletion = scores.reduce((sum, score) => sum + score.score, 0) / this.quizTypes.length;
-            totalCompletion += userCompletion;
+            const userProgress = this.calculateProgress(scores);
+            if (userProgress > 0) {
+                totalProgress += userProgress;
+                usersWithProgress++;
+            }
         });
 
         if (totalUsersElement) totalUsersElement.textContent = this.users.length;
         if (activeUsersElement) activeUsersElement.textContent = activeUsers;
         if (averageCompletionElement) {
-            const average = this.users.length ? Math.round(totalCompletion / this.users.length) : 0;
+            const average = usersWithProgress > 0 ? Math.round(totalProgress / usersWithProgress) : 0;
             averageCompletionElement.textContent = `${average}%`;
         }
     }
@@ -348,7 +352,7 @@ export class AdminDashboard {
                 <div class="user-header">
                     <h4>${user.username}</h4>
                     <div class="user-stats">
-                        <div class="total-score">Overall Progress: ${progress.toFixed(1)}%</div>
+                        <div class="total-score">Overall Progress: ${progress ? progress.toFixed(1) : '0.0'}%</div>
                         <div class="last-active">Last Active: ${this.formatDate(lastActive)}</div>
                     </div>
                 </div>
@@ -458,8 +462,23 @@ export class AdminDashboard {
     }
 
     calculateProgress(scores) {
-        if (!scores.length) return 0;
-        return scores.reduce((sum, score) => sum + score.score, 0) / scores.length;
+        if (!scores || !scores.length) return 0;
+        
+        // Only count quizzes that have actual progress
+        const activeQuizzes = scores.filter(score => 
+            score.experience > 0 || score.questionsAnswered > 0
+        );
+        
+        if (!activeQuizzes.length) return 0;
+        
+        // Calculate total progress based on experience
+        const totalProgress = activeQuizzes.reduce((sum, score) => {
+            const quizProgress = Math.round((score.experience / 300) * 100);
+            return sum + quizProgress;
+        }, 0);
+        
+        // Return average progress of active quizzes
+        return totalProgress / activeQuizzes.length;
     }
 
     getLastActive(scores) {
