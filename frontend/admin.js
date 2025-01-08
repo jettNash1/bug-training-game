@@ -1,13 +1,10 @@
 import { APIService } from './api-service.js';
 
-// Export the AdminDashboard class
 export class AdminDashboard {
     constructor() {
         this.apiService = new APIService();
         this.users = [];
         this.userScores = new Map();
-        
-        // Initialize quiz types
         this.quizTypes = [
             'communication',
             'initiative', 
@@ -38,34 +35,16 @@ export class AdminDashboard {
             
             if (currentPath.includes('admin-login.html')) {
                 if (isTokenValid) {
-                    // If on login page with valid token, redirect to admin panel
                     window.location.href = '/pages/admin.html';
                     return;
                 }
             } else if (currentPath.includes('admin.html')) {
                 if (!isTokenValid) {
-                    // If on admin panel without valid token, redirect to login
                     window.location.href = '/pages/admin-login.html';
                     return;
                 }
-                // Setup dashboard only if we're on the admin panel with valid token
-                await this.setupDashboard();
+                await this.loadDashboard();
             }
-        }
-    }
-
-    async setupDashboard() {
-        await this.showAdminDashboard();
-        
-        // Add event listeners for dashboard
-        const userSearch = document.getElementById('userSearch');
-        const sortBy = document.getElementById('sortBy');
-        
-        if (userSearch) {
-            userSearch.addEventListener('input', this.debounce(this.updateDashboard.bind(this), 300));
-        }
-        if (sortBy) {
-            sortBy.addEventListener('change', this.updateDashboard.bind(this));
         }
     }
 
@@ -81,9 +60,7 @@ export class AdminDashboard {
                 }
             });
 
-            if (!response.ok) {
-                return false;
-            }
+            if (!response.ok) return false;
 
             const data = await response.json();
             return data.success && data.valid && data.isAdmin;
@@ -109,7 +86,6 @@ export class AdminDashboard {
             const data = await response.json();
             
             if (data.success && data.token && data.isAdmin) {
-                // Store admin token
                 localStorage.setItem('adminToken', data.token);
                 window.location.href = '/pages/admin.html';
             } else {
@@ -126,16 +102,51 @@ export class AdminDashboard {
         window.location.href = '/pages/admin-login.html';
     }
 
-    showError(message) {
-        const errorDiv = document.createElement('div');
-        errorDiv.className = 'error-notification';
-        errorDiv.textContent = message;
-        document.body.appendChild(errorDiv);
-        setTimeout(() => errorDiv.remove(), 5000);
+    async loadDashboard() {
+        try {
+            await this.loadUsers();
+            this.setupEventListeners();
+            this.updateDashboard();
+        } catch (error) {
+            console.error('Failed to load dashboard:', error);
+            this.showError('Failed to load dashboard');
+        }
+    }
+
+    async loadUsers() {
+        try {
+            const response = await fetch(`${this.apiService.baseUrl}/users`, {
+                headers: {
+                    'Authorization': `Bearer ${localStorage.getItem('adminToken')}`,
+                    'Content-Type': 'application/json'
+                }
+            });
+
+            if (!response.ok) {
+                throw new Error('Failed to fetch users');
+            }
+
+            const data = await response.json();
+            if (!data.success) {
+                throw new Error(data.message || 'Failed to load users');
+            }
+
+            this.users = data.data;
+            
+            // Load progress for each user
+            for (const user of this.users) {
+                const scores = await this.loadUserProgress(user.username);
+                this.userScores.set(user.username, scores);
+            }
+        } catch (error) {
+            console.error('Failed to load users:', error);
+            this.users = [];
+        }
     }
 
     async loadUserProgress(username) {
         try {
+            // Fetch all quiz results for the user
             const response = await fetch(`${this.apiService.baseUrl}/users/${username}/quiz-results`, {
                 headers: {
                     'Authorization': `Bearer ${localStorage.getItem('adminToken')}`,
@@ -148,10 +159,10 @@ export class AdminDashboard {
             }
 
             const data = await response.json();
-            console.log('Raw quiz results data:', data);
+            console.log('Raw quiz results:', data); // Debug log
 
             if (!data.success) {
-                throw new Error(data.message || 'Failed to load user progress');
+                return [];
             }
 
             // Initialize scores for all quiz types
@@ -164,28 +175,34 @@ export class AdminDashboard {
                 lastActive: null
             }));
 
-            // Update scores with actual results
+            // Handle both single quiz result and array of results
             if (data.data) {
-                const quizData = data.data;
-                console.log('Processing quiz data:', quizData);
+                // Ensure we have an array of results
+                const quizResults = Array.isArray(data.data) ? data.data : [data.data];
+                console.log('Processing quiz results:', quizResults); // Debug log
 
-                // Find the matching quiz score
-                const scoreIndex = scores.findIndex(s => 
-                    this.normalizeQuizName(s.quizName) === quizName
-                );
+                // Process each quiz result
+                quizResults.forEach(quizData => {
+                    // Find the matching quiz type
+                    const normalizedQuizName = this.normalizeQuizName(quizData.quizName || '');
+                    const scoreIndex = scores.findIndex(s => 
+                        this.normalizeQuizName(s.quizName) === normalizedQuizName
+                    );
 
-                if (scoreIndex !== -1) {
-                    scores[scoreIndex] = {
-                        ...scores[scoreIndex],
-                        score: Math.round((quizData.experience / 300) * 100),
-                        experience: quizData.experience || 0,
-                        questionsAnswered: quizData.questionsAnswered || 0,
-                        questionHistory: quizData.questionHistory || [],
-                        lastActive: quizData.lastUpdated || null
-                    };
-                }
+                    if (scoreIndex !== -1) {
+                        scores[scoreIndex] = {
+                            ...scores[scoreIndex],
+                            score: Math.round((quizData.experience / 300) * 100),
+                            experience: quizData.experience || 0,
+                            questionsAnswered: quizData.questionsAnswered || 0,
+                            questionHistory: quizData.questionHistory || [],
+                            lastActive: quizData.lastUpdated || null
+                        };
+                    }
+                });
             }
 
+            console.log('Processed scores:', scores); // Debug log
             return scores;
         } catch (error) {
             console.error(`Failed to load progress for user ${username}:`, error);
@@ -193,169 +210,58 @@ export class AdminDashboard {
         }
     }
 
-    async showAdminDashboard() {
-        try {
-            const adminToken = localStorage.getItem('adminToken');
-            
-            if (!adminToken) {
-                this.handleAdminLogout();
-                return;
-            }
+    normalizeQuizName(quizName) {
+        // Convert to lowercase and remove any spaces or special characters
+        return quizName.toLowerCase().replace(/[^a-z0-9-]/g, '');
+    }
 
-            try {
-                // Use the admin-specific fetch method
-                const response = await fetch(`${this.apiService.baseUrl}/admin/users`, {
-                    headers: {
-                        'Authorization': `Bearer ${adminToken}`,
-                        'Content-Type': 'application/json'
-                    }
-                });
+    setupEventListeners() {
+        const searchInput = document.getElementById('userSearch');
+        const sortSelect = document.getElementById('sortBy');
 
-                if (!response.ok) {
-                    throw new Error('Failed to fetch users');
-                }
-
-                const data = await response.json();
-                if (data.success && Array.isArray(data.users)) {
-                    this.users = data.users;
-                    console.log('Found users:', this.users);
-
-                    // Update the display first with basic user info
-                    this.updateStatistics();
-                    this.updateUserList();
-
-                    // Then load progress in the background
-                    console.log('Loading user progress...');
-                    for (const user of this.users) {
-                        try {
-                            const scores = await this.loadUserProgress(user.username);
-                            this.userScores.set(user.username, scores);
-                            // Update the display after each user's progress is loaded
-                            this.updateUserList();
-                        } catch (error) {
-                            console.error(`Error loading progress for ${user.username}:`, error);
-                        }
-                    }
-                } else {
-                    console.error('Invalid user data format:', data);
-                    this.showError('Failed to load user data');
-                }
-            } catch (error) {
-                console.error('Error fetching users:', error);
-                this.showError('Failed to fetch user data');
-            }
-        } catch (error) {
-            console.error('Error updating dashboard:', error);
-            this.showError('Failed to update dashboard');
+        if (searchInput) {
+            searchInput.addEventListener('input', () => this.updateDashboard());
+        }
+        if (sortSelect) {
+            sortSelect.addEventListener('change', () => this.updateDashboard());
         }
     }
 
-    async updateDashboard() {
-        try {
-            const adminToken = localStorage.getItem('adminToken');
-            
-            if (!adminToken) {
-                this.handleAdminLogout();
-                return;
-            }
-
-            try {
-                // Use the admin-specific fetch method
-                const response = await this.apiService.fetchWithAdminAuth(
-                    `${this.apiService.baseUrl}/admin/users`
-                );
-
-                if (!response.ok) {
-                    throw new Error('Failed to fetch users');
-                }
-
-                const data = await response.json();
-                if (data.success && Array.isArray(data.users)) {
-                    this.users = data.users;
-                    console.log('Found users:', this.users);
-
-                    // Update the display first with basic user info
-                    this.updateStatistics();
-                    this.updateUserList();
-
-                    // Then load progress in the background
-                    console.log('Loading user progress...');
-                    for (const user of this.users) {
-                        try {
-                            const scores = await this.loadUserProgress(user.username);
-                            this.userScores.set(user.username, scores);
-                            // Update the display after each user's progress is loaded
-                            this.updateUserList();
-                        } catch (error) {
-                            console.error(`Error loading progress for ${user.username}:`, error);
-                            // Continue with other users even if one fails
-                        }
-                    }
-                } else {
-                    console.error('Invalid user data format:', data);
-                    this.showError('Failed to load user data');
-                }
-            } catch (error) {
-                console.error('Error fetching users:', error);
-                this.showError('Failed to fetch user data');
-            }
-        } catch (error) {
-            console.error('Error updating dashboard:', error);
-            this.showError('Failed to update dashboard');
-        }
+    updateDashboard() {
+        this.updateStatistics();
+        this.updateUserList();
     }
 
     updateStatistics() {
+        const totalUsersElement = document.getElementById('totalUsers');
+        const activeUsersElement = document.getElementById('activeUsers');
+        const averageCompletionElement = document.getElementById('averageCompletion');
+
         const today = new Date().setHours(0, 0, 0, 0);
+        let activeUsers = 0;
         let totalCompletion = 0;
-        let activeUsers = new Set();
-    
+
         this.users.forEach(user => {
             const scores = this.userScores.get(user.username) || [];
             
             // Check if user was active today
-            if (scores.some(score => {
+            const wasActiveToday = scores.some(score => {
                 if (!score.lastActive) return false;
                 const activeDate = new Date(score.lastActive).setHours(0, 0, 0, 0);
                 return activeDate === today;
-            })) {
-                activeUsers.add(user.username);
-            }
-    
-            // Calculate completion based on actual questions answered
-            let userTotalQuestions = 0;
-            let userCompletedQuestions = 0;
-    
-            scores.forEach(score => {
-                const questionsCompleted = score.questionHistory?.length || score.questionsAnswered || 0;
-                const totalQuestions = 15; // Total questions per quiz
-                userTotalQuestions += totalQuestions;
-                userCompletedQuestions += questionsCompleted;
             });
-    
-            const userCompletion = userTotalQuestions > 0 
-                ? Math.round((userCompletedQuestions / userTotalQuestions) * 100)
-                : 0;
-                
+            if (wasActiveToday) activeUsers++;
+
+            // Calculate completion
+            const userCompletion = scores.reduce((sum, score) => sum + score.score, 0) / this.quizTypes.length;
             totalCompletion += userCompletion;
         });
-    
-        // Update statistics display
-        const totalUsersElement = document.getElementById('totalUsers');
-        const activeUsersElement = document.getElementById('activeUsers');
-        const averageCompletionElement = document.getElementById('averageCompletion');
-    
-        if (totalUsersElement) {
-            totalUsersElement.textContent = this.users.length;
-        }
-        if (activeUsersElement) {
-            activeUsersElement.textContent = activeUsers.size;
-        }
+
+        if (totalUsersElement) totalUsersElement.textContent = this.users.length;
+        if (activeUsersElement) activeUsersElement.textContent = activeUsers;
         if (averageCompletionElement) {
-            const averageCompletion = this.users.length > 0 
-                ? Math.round(totalCompletion / this.users.length)
-                : 0;
-            averageCompletionElement.textContent = `${averageCompletion}%`;
+            const average = this.users.length ? Math.round(totalCompletion / this.users.length) : 0;
+            averageCompletionElement.textContent = `${average}%`;
         }
     }
 
@@ -363,147 +269,61 @@ export class AdminDashboard {
         const usersList = document.getElementById('usersList');
         if (!usersList) return;
 
-        const searchInput = document.getElementById('userSearch')?.value.toLowerCase() || '';
+        const searchTerm = document.getElementById('userSearch')?.value.toLowerCase() || '';
         const sortBy = document.getElementById('sortBy')?.value || 'username-asc';
-        
+
         let filteredUsers = this.users.filter(user => 
-            user.username.toLowerCase().includes(searchInput)
+            user.username.toLowerCase().includes(searchTerm)
         );
 
         filteredUsers.sort((a, b) => {
+            const scoresA = this.userScores.get(a.username) || [];
+            const scoresB = this.userScores.get(b.username) || [];
+            
             switch (sortBy) {
                 case 'username-asc':
                     return a.username.localeCompare(b.username);
                 case 'username-desc':
                     return b.username.localeCompare(a.username);
                 case 'progress-high':
-                    return this.calculateUserProgress(b) - this.calculateUserProgress(a);
+                    return this.calculateProgress(scoresB) - this.calculateProgress(scoresA);
                 case 'progress-low':
-                    return this.calculateUserProgress(a) - this.calculateUserProgress(b);
+                    return this.calculateProgress(scoresA) - this.calculateProgress(scoresB);
                 case 'last-active':
-                    return this.getLastActiveDate(b) - this.getLastActiveDate(a);
+                    return this.getLastActive(scoresB) - this.getLastActive(scoresA);
                 default:
                     return 0;
             }
         });
 
         usersList.innerHTML = '';
-
-        filteredUsers.forEach(user => {
-            const scores = this.userScores.get(user.username) || [];
-            const card = document.createElement('div');
-            card.className = 'user-card';
-
-            const progress = this.calculateUserProgress(user);
-            const lastActive = this.getLastActiveDate(user);
-            const completedQuizzes = scores.filter(score => score.score > 0).length;
-            const totalQuizzes = scores.length;
-
-            card.innerHTML = `
-                <div class="user-header">
-                    <h4>${user.username}</h4>
-                    <div class="user-stats">
-                        <div class="total-score">Overall Progress: ${progress.toFixed(1)}%</div>
-                        <div class="quiz-completion">Completed Quizzes: ${completedQuizzes}/${totalQuizzes}</div>
-                        <div class="last-active">Last Active: ${this.formatDate(lastActive)}</div>
-                    </div>
-                </div>
-                <button class="view-details-btn" onclick="window.adminDashboard.showUserDetails('${user.username}')">
-                    View Details
-                </button>
-            `;
-
-            usersList.appendChild(card);
-        });
+        filteredUsers.forEach(user => this.createUserCard(user, usersList));
     }
 
-    calculateUserProgress(user) {
+    createUserCard(user, container) {
         const scores = this.userScores.get(user.username) || [];
-        if (!scores.length) return 0;
-        
-        // Only count quizzes that have been attempted
-        const completedScores = scores.filter(score => score.score > 0);
-        if (!completedScores.length) return 0;
-        
-        const totalProgress = completedScores.reduce((sum, score) => sum + score.score, 0);
-        return totalProgress / scores.length; // Divide by total number of quizzes for overall progress
-    }
+        const progress = this.calculateProgress(scores);
+        const lastActive = this.getLastActive(scores);
 
-    getLastActiveDate(user) {
-        if (!user) return 0;
-        
-        // First check user's last login
-        const lastLogin = user.lastLogin ? new Date(user.lastLogin).getTime() : 0;
-        
-        // Then check quiz results and progress
-        const scores = this.userScores.get(user.username) || [];
-        const quizDates = scores
-            .map(score => score.lastActive)
-            .filter(date => date)
-            .map(date => new Date(date).getTime());
-            
-        // Return the most recent date
-        return Math.max(lastLogin, ...quizDates) || 0;
-    }
-
-    async refreshAllData() {
-        try {
-            const adminToken = localStorage.getItem('adminToken');
-            if (!adminToken) {
-                this.handleAdminLogout();
-                return false;
-            }
-
-            // Fetch fresh users data
-            const response = await fetch(`${this.apiService.baseUrl}/admin/users`, {
-                headers: {
-                    'Authorization': `Bearer ${adminToken}`,
-                    'Content-Type': 'application/json'
-                }
-            });
-
-            if (!response.ok) {
-                throw new Error('Failed to fetch updated users data');
-            }
-
-            const data = await response.json();
-            if (data.success && Array.isArray(data.users)) {
-                // Update users array
-                this.users = data.users;
-                
-                // Clear and reload all user scores
-                this.userScores.clear();
-                for (const user of this.users) {
-                    // Clear any local storage for this user's quizzes
-                    this.quizTypes.forEach(quizName => {
-                        localStorage.removeItem(`quiz_progress_${user.username}_${quizName}`);
-                        localStorage.removeItem(`quiz_progress_${user.username}_${this.normalizeQuizName(quizName)}`);
-                    });
-
-                    const scores = await this.loadUserProgress(user.username);
-                    this.userScores.set(user.username, scores);
-                }
-
-                // Update UI
-                this.updateStatistics();
-                this.updateUserList();
-                return true;
-            } else {
-                throw new Error('Invalid users data format received');
-            }
-        } catch (error) {
-            console.error('Error refreshing data:', error);
-            this.showError('Failed to refresh data');
-            return false;
-        }
+        const card = document.createElement('div');
+        card.className = 'user-card';
+        card.innerHTML = `
+            <h3>${user.username}</h3>
+            <p>Overall Progress: ${progress.toFixed(1)}%</p>
+            <p>Last Active: ${this.formatDate(lastActive)}</p>
+            <button class="view-details-btn" onclick="window.adminDashboard.showUserDetails('${user.username}')">
+                View Details
+            </button>
+        `;
+        container.appendChild(card);
     }
 
     async showUserDetails(username) {
         const user = this.users.find(u => u.username === username);
         if (!user) return;
 
-        const scores = await this.loadUserProgress(username);
-        console.log('User scores for display:', scores);
+        const scores = this.userScores.get(username) || [];
+        console.log('Showing details for user scores:', scores); // Debug log
 
         const overlay = document.createElement('div');
         overlay.className = 'user-details-overlay';
@@ -522,11 +342,12 @@ export class AdminDashboard {
         quizList.className = 'quiz-progress-list';
         
         this.quizTypes.forEach(quizName => {
+            // Find matching quiz score using normalized names
             const quizScore = scores.find(s => 
                 this.normalizeQuizName(s.quizName) === this.normalizeQuizName(quizName)
             );
             
-            console.log('Processing quiz score:', { quizName, quizScore });
+            console.log(`Processing quiz ${quizName}:`, quizScore); // Debug log
 
             const progress = quizScore?.score || 0;
             const questionsAnswered = quizScore?.questionsAnswered || 0;
@@ -557,7 +378,53 @@ export class AdminDashboard {
         document.body.appendChild(overlay);
     }
 
-    // Helper method to format quiz names
+    async resetQuizProgress(username, quizName) {
+        try {
+            const response = await fetch(
+                `${this.apiService.baseUrl}/users/${username}/quiz-progress/${quizName}/reset`,
+                {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${localStorage.getItem('adminToken')}`,
+                        'Content-Type': 'application/json'
+                    }
+                }
+            );
+
+            if (!response.ok) {
+                throw new Error('Failed to reset quiz progress');
+            }
+
+            // Reload the user's progress
+            const scores = await this.loadUserProgress(username);
+            this.userScores.set(username, scores);
+
+            // Refresh the details view
+            const existingOverlay = document.querySelector('.user-details-overlay');
+            if (existingOverlay) {
+                existingOverlay.remove();
+                await this.showUserDetails(username);
+            }
+
+            this.updateDashboard();
+        } catch (error) {
+            console.error('Error resetting progress:', error);
+            this.showError('Failed to reset progress');
+        }
+    }
+
+    calculateProgress(scores) {
+        if (!scores.length) return 0;
+        return scores.reduce((sum, score) => sum + score.score, 0) / scores.length;
+    }
+
+    getLastActive(scores) {
+        if (!scores.length) return 0;
+        return Math.max(...scores
+            .map(score => score.lastActive ? new Date(score.lastActive).getTime() : 0)
+            .filter(time => time > 0)) || 0;
+    }
+
     formatQuizName(name) {
         return name
             .split('-')
@@ -565,194 +432,20 @@ export class AdminDashboard {
             .join(' ');
     }
 
-    closeUserDetails() {
-        const overlay = document.querySelector('.user-details-overlay');
-        if (overlay) {
-            overlay.remove();
-        }
-        // Refresh all data when closing details view
-        this.refreshAllData();
+    formatDate(timestamp) {
+        if (!timestamp) return 'Never';
+        const date = new Date(timestamp);
+        return isNaN(date.getTime()) ? 'Never' : date.toLocaleDateString();
     }
 
-    getQuizDisplayName(quizId) {
-        const displayNames = {
-            'communication': 'Communication',
-            'initiative': 'Initiative',
-            'time-management': 'Time Management',
-            'tester-mindset': 'Tester Mindset',
-            'risk-analysis': 'Risk Analysis',
-            'risk-management': 'Risk Management',
-            'non-functional': 'Non-functional Testing',
-            'test-support': 'Test Support',
-            'issue-verification': 'Issue Verification',
-            'build-verification': 'Build Verification',
-            'issue-tracking-tools': 'Issue Tracking Tools',
-            'raising-tickets': 'Raising Tickets',
-            'reports': 'Reports',
-            'cms-testing': 'CMS Testing'
-        };
-        
-        return displayNames[quizId] || quizId;
-    }
-
-    normalizeQuizName(quizName) {
-        // First, convert the input to lowercase and remove any spaces
-        const normalizedInput = quizName.toLowerCase().replace(/\s+/g, '');
-
-        // Map of special cases where the API name differs from our standard format
-        const specialCases = {
-            'communication': 'communication',  // Keep as is
-            'initiative': 'initiative',        // Keep as is
-            'tester-mindset': 'testerMindset',
-            'risk-analysis': 'riskAnalysis',
-            'risk-management': 'riskManagement',
-            'time-management': 'timeManagement',
-            'non-functional': 'nonFunctional',
-            'test-support': 'testSupport',
-            'issue-verification': 'issueVerification',
-            'build-verification': 'buildVerification',
-            'issue-tracking-tools': 'issueTrackingTools',
-            'raising-tickets': 'raisingTickets',
-            'reports': 'reports',              // Keep as is
-            'cms-testing': 'cmsTesting'
-        };
-
-        console.log('Normalizing quiz name:', {
-            input: quizName,
-            normalizedInput,
-            specialCase: specialCases[normalizedInput],
-            hasMapping: !!specialCases[normalizedInput]
-        });
-
-        // If we have a special case mapping, use it
-        if (specialCases[normalizedInput]) {
-            return specialCases[normalizedInput];
-        }
-
-        // Otherwise, convert from hyphenated to camelCase
-        return normalizedInput.replace(/-([a-z])/g, g => g[1].toUpperCase());
-    }
-
-    async resetUserProgress(username, quizName) {
-        try {
-            const adminToken = localStorage.getItem('adminToken');
-            
-            // Convert quiz name to API format
-            const apiQuizName = this.normalizeQuizName(quizName);
-            
-            console.log('Resetting progress for quiz:', { 
-                original: quizName, 
-                apiFormat: apiQuizName,
-                username: username
-            });
-
-            // Reset the quiz progress
-            const progressResponse = await fetch(
-                `${this.apiService.baseUrl}/admin/users/${username}/quiz-progress/${apiQuizName}/reset`,
-                { 
-                    method: 'POST',
-                    headers: {
-                        'Authorization': `Bearer ${adminToken}`,
-                        'Content-Type': 'application/json'
-                    }
-                }
-            );
-
-            const progressData = await progressResponse.json();
-            console.log('Progress reset response:', progressData);
-
-            if (!progressResponse.ok) {
-                throw new Error(progressData.message || 'Failed to reset quiz progress');
-            }
-
-            // Reset the quiz score
-            const scoreResponse = await fetch(
-                `${this.apiService.baseUrl}/admin/users/${username}/quiz-scores/reset`,
-                {
-                    method: 'POST',
-                    headers: {
-                        'Authorization': `Bearer ${adminToken}`,
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({ quizName: apiQuizName })
-                }
-            );
-
-            const scoreData = await scoreResponse.json();
-            console.log('Score reset response:', scoreData);
-
-            if (!scoreResponse.ok) {
-                throw new Error(scoreData.message || 'Failed to reset quiz score');
-            }
-
-            // Clear local storage for this quiz
-            localStorage.removeItem(`quiz_progress_${username}_${quizName}`);
-            localStorage.removeItem(`quiz_progress_${username}_${apiQuizName}`);
-
-            // Update the user in our local data
-            if (progressData.user) {
-                const userIndex = this.users.findIndex(u => u.username === username);
-                if (userIndex !== -1) {
-                    this.users[userIndex] = progressData.user;
-                }
-            }
-
-            // Clear and reload the user's scores
-            const scores = await this.loadUserProgress(username);
-            this.userScores.set(username, scores);
-
-            // Update UI
-            this.updateStatistics();
-            this.updateUserList();
-
-            // Show success message
-            this.showError(`Successfully reset ${this.getQuizDisplayName(quizName)} for ${username}`);
-
-            // Refresh the details view if it's open
-            const existingOverlay = document.querySelector('.user-details-overlay');
-            if (existingOverlay) {
-                existingOverlay.remove();
-                await this.showUserDetails(username);
-            }
-
-            // Do a final refresh of all data to ensure consistency
-            await this.refreshAllData();
-
-        } catch (error) {
-            console.error('Error resetting progress:', error);
-            this.showError(`Failed to reset progress: ${error.message}`);
-        }
-    }
-
-    debounce(func, wait) {
-        let timeout;
-        return function executedFunction(...args) {
-            const later = () => {
-                clearTimeout(timeout);
-                func(...args);
-            };
-            clearTimeout(timeout);
-            timeout = setTimeout(later, wait);
-        };
-    }
-
-    formatDate(date) {
-        if (!date) return 'Never';
-        const d = new Date(date);
-        if (isNaN(d.getTime())) return 'Never';
-        return d.toLocaleDateString();
+    showError(message) {
+        const errorDiv = document.createElement('div');
+        errorDiv.className = 'error-notification';
+        errorDiv.textContent = message;
+        document.body.appendChild(errorDiv);
+        setTimeout(() => errorDiv.remove(), 5000);
     }
 }
 
-// Initialize the dashboard
-const adminDashboard = new AdminDashboard();
-window.adminDashboard = adminDashboard;
-
-// Export these functions for direct use in HTML
-export const handleAdminLogin = async () => {
-    await window.adminDashboard.handleAdminLogin();
-};
-
-export const handleAdminLogout = () => {
-    window.adminDashboard.handleAdminLogout();
-}; 
+// Initialize the admin dashboard
+window.adminDashboard = new AdminDashboard(); 
