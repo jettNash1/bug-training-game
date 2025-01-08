@@ -180,13 +180,18 @@ class AdminDashboard {
         }
     }
 
-    async loadAllUserProgress() {
+    async loadAllUserProgress(retryCount = 0) {
         console.log('Loading progress for all users...'); // Debug log
         try {
             console.log('Fetching all user progress in bulk');
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
+
             const response = await this.apiService.fetchWithAdminAuth(
-                `${this.apiService.baseUrl}/admin/users/quiz-results/all`
+                `${this.apiService.baseUrl}/admin/users/quiz-results/all`,
+                { signal: controller.signal }
             );
+            clearTimeout(timeoutId);
 
             if (!response.ok) {
                 throw new Error(`Failed to fetch progress: ${response.status}`);
@@ -236,13 +241,31 @@ class AdminDashboard {
             console.log('Dashboard update completed after loading progress');
         } catch (error) {
             console.error('Error in loadAllUserProgress:', error);
-            // Initialize empty scores for all users
-            const newScores = new Map(
-                this.users.map(user => [user.username, this.getDefaultScores()])
-            );
+            
+            // If we haven't retried too many times and it's not a 404, retry
+            if (retryCount < 3 && error.name !== 'AbortError') {
+                console.log(`Retrying progress load (attempt ${retryCount + 1})`);
+                await new Promise(resolve => setTimeout(resolve, 1000)); // Wait 1 second before retry
+                return this.loadAllUserProgress(retryCount + 1);
+            }
+
+            // If we've exhausted retries or got a 404, fall back to individual loading
+            console.log('Falling back to individual progress loading');
+            const newScores = new Map();
+            
+            for (const user of this.users) {
+                try {
+                    console.log(`Loading individual progress for ${user.username}`);
+                    const scores = await this.loadUserProgress(user.username);
+                    newScores.set(user.username, scores);
+                } catch (e) {
+                    console.error(`Failed to load progress for ${user.username}:`, e);
+                    newScores.set(user.username, this.getDefaultScores());
+                }
+            }
+            
             this.userScores = newScores;
             this.updateDashboard();
-            throw error;
         }
     }
 
