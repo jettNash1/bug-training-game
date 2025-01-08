@@ -202,10 +202,12 @@ export class AdminDashboard {
 
                 return {
                     quizName,
-                    score: Math.round((quizData.experience || 0) / 300 * 100),
+                    score: quizData.score || 0,
                     experience: quizData.experience || 0,
-                    currentScenario: quizData.currentScenario || 0,
-                    lastActive: quizData.lastUpdated || null
+                    questionsAnswered: quizData.questionsAnswered || 0,
+                    currentScenario: quizData.questionsAnswered || 0, // Map questionsAnswered to currentScenario
+                    lastActive: quizData.completedAt || null,
+                    answers: quizData.answers || []
                 };
             });
         } catch (error) {
@@ -216,15 +218,15 @@ export class AdminDashboard {
 
     // Helper method to get default scores
     getDefaultScores() {
-        const scores = this.quizTypes.map(quizName => ({
+        return this.quizTypes.map(quizName => ({
             quizName,
             score: 0,
             experience: 0,
+            questionsAnswered: 0,
             currentScenario: 0,
-            lastActive: null
+            lastActive: null,
+            answers: []
         }));
-        console.log('Returning default scores:', scores);
-        return scores;
     }
 
     normalizeQuizName(quizName) {
@@ -364,12 +366,15 @@ export class AdminDashboard {
             content.className = 'user-details-content';
             
             const overallProgress = this.calculateProgress(scores);
+            const totalQuestionsAnswered = scores.reduce((sum, score) => sum + (score.questionsAnswered || 0), 0);
+            const totalPossibleQuestions = scores.length * 15;
             
             content.innerHTML = `
                 <div class="details-header">
                     <h3>${username}'s Progress</h3>
                     <div class="overall-stats">
                         <span>Overall Progress: ${overallProgress.toFixed(1)}%</span>
+                        <span>Total Questions Completed: ${totalQuestionsAnswered}/${totalPossibleQuestions}</span>
                     </div>
                     <button class="close-btn" onclick="this.closest('.user-details-overlay').remove()">×</button>
                 </div>
@@ -379,25 +384,18 @@ export class AdminDashboard {
             quizList.className = 'quiz-progress-list';
             
             scores.forEach(quizScore => {
-                // Calculate progress as percentage of max XP (300)
-                const progress = Math.round((quizScore.experience / 300) * 100);
+                const progress = (quizScore.questionsAnswered / 15) * 100;
                 const lastActive = quizScore.lastActive ? 
                     this.formatDate(new Date(quizScore.lastActive)) : 'Never';
-                
-                console.log(`Creating quiz item for ${quizScore.quizName}:`, {
-                    progress,
-                    experience: quizScore.experience,
-                    currentScenario: quizScore.currentScenario,
-                    lastActive
-                });
                 
                 const quizItem = document.createElement('div');
                 quizItem.className = 'quiz-progress-item';
                 quizItem.innerHTML = `
                     <h4>${this.formatQuizName(quizScore.quizName)}</h4>
                     <div class="quiz-stats">
-                        <div class="stat-item">Progress: <span class="stat-value">${progress}%</span></div>
-                        <div class="stat-item">Questions Completed: <span class="stat-value">${quizScore.currentScenario}/15</span></div>
+                        <div class="stat-item">Progress: <span class="stat-value">${progress.toFixed(1)}%</span></div>
+                        <div class="stat-item">Questions Completed: <span class="stat-value">${quizScore.questionsAnswered}/15</span></div>
+                        <div class="stat-item">Score: <span class="stat-value">${quizScore.score}%</span></div>
                         <div class="stat-item">XP Earned: <span class="stat-value">${quizScore.experience}</span></div>
                         <div class="stat-item">Last Updated: <span class="stat-value">${lastActive}</span></div>
                     </div>
@@ -452,15 +450,13 @@ export class AdminDashboard {
     calculateProgress(scores) {
         if (!scores || !scores.length) return 0;
         
-        // Only count quizzes that have progress
-        const activeQuizzes = scores.filter(score => score.experience > 0);
-        if (!activeQuizzes.length) return 0;
+        // Calculate total completed questions across all quizzes
+        const totalQuestionsAnswered = scores.reduce((sum, score) => sum + (score.questionsAnswered || 0), 0);
+        // Total possible questions (15 per quiz)
+        const totalPossibleQuestions = scores.length * 15;
         
-        // Calculate average progress of active quizzes
-        const totalProgress = activeQuizzes.reduce((sum, score) => 
-            sum + (score.experience / 300 * 100), 0);
-            
-        return Math.min(totalProgress / activeQuizzes.length, 100);
+        // Calculate overall progress percentage
+        return (totalQuestionsAnswered / totalPossibleQuestions) * 100;
     }
 
     getLastActive(scores) {
