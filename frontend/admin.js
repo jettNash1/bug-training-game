@@ -22,7 +22,6 @@ class AdminDashboard {
             'cms-testing'
         ];
         console.log('AdminDashboard initialized with empty userScores map'); // Debug log
-        this.init();
     }
 
     async init() {
@@ -539,22 +538,34 @@ class AdminDashboard {
     }
 }
 
+// Create a single instance for the entire application
+let dashboardInstance = null;
+
 // Export these functions for direct use in HTML
 const handleAdminLogin = async () => {
-    if (!window.adminDashboard) {
-        window.adminDashboard = new AdminDashboard();
+    if (!dashboardInstance) {
+        dashboardInstance = new AdminDashboard();
     }
-    await window.adminDashboard.handleAdminLogin();
+    await dashboardInstance.handleAdminLogin();
 };
 
 const handleAdminLogout = () => {
-    if (window.adminDashboard) {
-        window.adminDashboard.handleAdminLogout();
+    if (dashboardInstance) {
+        dashboardInstance.handleAdminLogout();
     }
+};
+
+// Export a function to get or create the dashboard instance
+const getDashboard = () => {
+    if (!dashboardInstance) {
+        dashboardInstance = new AdminDashboard();
+    }
+    return dashboardInstance;
 };
 
 export {
     AdminDashboard,
     handleAdminLogin,
-    handleAdminLogout
+    handleAdminLogout,
+    getDashboard
 }; 
