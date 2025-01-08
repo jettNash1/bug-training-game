@@ -182,41 +182,46 @@ class AdminDashboard {
 
     async loadAllUserProgress() {
         console.log('Loading progress for all users...'); // Debug log
-        // Create a new Map for all user scores
-        const newScores = new Map();
-        
         try {
-            // Load progress for all users in parallel with timeout
-            const progressPromises = this.users.map(async user => {
-                try {
-                    console.log(`Loading progress for user: ${user.username}`);
-                    // Create a promise that rejects after 10 seconds
-                    const timeoutPromise = new Promise((_, reject) => {
-                        setTimeout(() => reject(new Error('Timeout')), 10000);
-                    });
-                    
-                    // Race between the actual request and the timeout
-                    const scores = await Promise.race([
-                        this.loadUserProgress(user.username),
-                        timeoutPromise
-                    ]);
-                    
-                    console.log(`Progress loaded for ${user.username}:`, scores);
-                    return { username: user.username, scores };
-                } catch (error) {
-                    console.error(`Failed to load progress for ${user.username}:`, error);
-                    return { username: user.username, scores: this.getDefaultScores() };
-                }
-            });
+            console.log('Fetching all user progress in bulk');
+            const response = await this.apiService.fetchWithAdminAuth(
+                `${this.apiService.baseUrl}/admin/users/quiz-results/all`
+            );
 
-            // Wait for all progress to be loaded
-            console.log('Waiting for all progress to be loaded...');
-            const results = await Promise.all(progressPromises);
-            console.log('All progress promises resolved');
+            if (!response.ok) {
+                throw new Error(`Failed to fetch progress: ${response.status}`);
+            }
+
+            const data = await response.json();
+            console.log('Received bulk progress data:', data);
+
+            if (!data.success || !data.data) {
+                throw new Error('Invalid progress data received');
+            }
+
+            // Create a new Map for all user scores
+            const newScores = new Map();
             
-            // Update the scores map with all results
-            results.forEach(({ username, scores }) => {
-                console.log(`Setting scores for ${username}`);
+            // Process each user's quiz results
+            Object.entries(data.data).forEach(([username, userResults]) => {
+                console.log(`Processing results for ${username}`);
+                
+                const scores = this.quizTypes.map(quizName => {
+                    const quizData = userResults.find(result => 
+                        this.normalizeQuizName(result.quizName) === this.normalizeQuizName(quizName)
+                    ) || {};
+
+                    return {
+                        quizName,
+                        score: quizData.score || 0,
+                        experience: quizData.experience || 0,
+                        questionsAnswered: quizData.questionsAnswered || 0,
+                        currentScenario: quizData.questionsAnswered || 0,
+                        lastActive: quizData.completedAt || null,
+                        answers: quizData.answers || []
+                    };
+                });
+
                 newScores.set(username, scores);
             });
             
@@ -231,7 +236,10 @@ class AdminDashboard {
             console.log('Dashboard update completed after loading progress');
         } catch (error) {
             console.error('Error in loadAllUserProgress:', error);
-            // Even if there's an error, try to update with what we have
+            // Initialize empty scores for all users
+            const newScores = new Map(
+                this.users.map(user => [user.username, this.getDefaultScores()])
+            );
             this.userScores = newScores;
             this.updateDashboard();
             throw error;
@@ -529,42 +537,9 @@ class AdminDashboard {
             `;
             document.body.appendChild(loadingOverlay);
 
-            // Fetch fresh progress data for this user
-            console.log(`Fetching fresh progress for ${username}`);
-            const response = await this.apiService.fetchWithAdminAuth(
-                `${this.apiService.baseUrl}/admin/users/${username}/quiz-results`
-            );
-
-            if (!response.ok) {
-                throw new Error(`Failed to fetch progress: ${response.status}`);
-            }
-
-            const data = await response.json();
-            console.log(`Received progress data for ${username}:`, data);
-
-            if (!data.success || !data.data) {
-                throw new Error('Invalid progress data received');
-            }
-
-            // Process the quiz results
-            const scores = this.quizTypes.map(quizName => {
-                const quizData = data.data.find(result => 
-                    this.normalizeQuizName(result.quizName) === this.normalizeQuizName(quizName)
-                ) || {};
-
-                return {
-                    quizName,
-                    score: quizData.score || 0,
-                    experience: quizData.experience || 0,
-                    questionsAnswered: quizData.questionsAnswered || 0,
-                    currentScenario: quizData.questionsAnswered || 0,
-                    lastActive: quizData.completedAt || null,
-                    answers: quizData.answers || []
-                };
-            });
-
-            // Update stored scores
-            this.userScores.set(username, scores);
+            // Use the already loaded progress data instead of fetching again
+            const scores = this.userScores.get(username) || this.getDefaultScores();
+            console.log(`Using cached progress data for ${username}:`, scores);
             
             // Remove loading overlay
             loadingOverlay.remove();
