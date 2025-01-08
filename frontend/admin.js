@@ -448,4 +448,13 @@ export class AdminDashboard {
 }
 
 // Initialize the admin dashboard
-window.adminDashboard = new AdminDashboard(); 
+window.adminDashboard = new AdminDashboard();
+
+// Export these functions for direct use in HTML
+export const handleAdminLogin = async () => {
+    await window.adminDashboard.handleAdminLogin();
+};
+
+export const handleAdminLogout = () => {
+    window.adminDashboard.handleAdminLogout();
+}; 
