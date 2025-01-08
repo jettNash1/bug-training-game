@@ -50,7 +50,13 @@ class AdminDashboard {
                     return;
                 }
                 console.log('Valid token on admin panel, loading dashboard...'); // Debug log
-                await this.loadDashboard();
+                try {
+                    await this.loadDashboard();
+                    console.log('Dashboard loaded successfully'); // Debug log
+                } catch (error) {
+                    console.error('Error loading dashboard:', error);
+                    this.showError('Failed to load dashboard');
+                }
             }
         } else {
             console.log('Not on admin page, skipping initialization'); // Debug log
@@ -115,9 +121,13 @@ class AdminDashboard {
         try {
             console.log('Loading dashboard...'); // Debug log
             await this.loadUsers();
-            await this.loadAllUserProgress(); // Load progress for all users
+            console.log('Users loaded, loading progress...'); // Debug log
+            await this.loadAllUserProgress();
+            console.log('Progress loaded, setting up event listeners...'); // Debug log
             this.setupEventListeners();
-            this.updateDashboard(); // Display users and statistics
+            console.log('Event listeners set up, updating dashboard...'); // Debug log
+            this.updateDashboard();
+            console.log('Dashboard update complete'); // Debug log
         } catch (error) {
             console.error('Failed to load dashboard:', error);
             this.showError('Failed to load dashboard');
@@ -293,12 +303,16 @@ class AdminDashboard {
             return;
         }
 
+        console.log('Updating user list with:', this.users.length, 'users'); // Debug log
+
         const searchTerm = document.getElementById('userSearch')?.value.toLowerCase() || '';
         const sortBy = document.getElementById('sortBy')?.value || 'username-asc';
 
         let filteredUsers = this.users.filter(user => 
             user.username.toLowerCase().includes(searchTerm)
         );
+
+        console.log('Filtered users:', filteredUsers.length); // Debug log
 
         filteredUsers.sort((a, b) => {
             const scoresA = this.userScores.get(a.username) || [];
@@ -352,7 +366,11 @@ class AdminDashboard {
             card.appendChild(cardContent);
             card.appendChild(viewDetailsBtn);
             container.appendChild(card);
+
+            console.log('Added card for user:', user.username); // Debug log
         });
+
+        console.log('User list update complete'); // Debug log
     }
 
     async showUserDetails(username) {
