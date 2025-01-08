@@ -203,14 +203,15 @@ export class AdminDashboard {
         try {
             console.log(`Fetching progress for ${username}...`);
             
-            // Log the full URL being used
-            const url = `${this.apiService.baseUrl}/admin/users/${username}/quiz-progress`;
+            // Use quiz-results endpoint instead of quiz-progress
+            const url = `${this.apiService.baseUrl}/admin/users/${username}/quiz-results`;
             console.log(`Requesting URL: ${url}`);
             
             const response = await this.apiService.fetchWithAdminAuth(url);
             console.log(`Response received for ${username}:`, {
                 status: response.status,
-                statusText: response.statusText
+                statusText: response.statusText,
+                headers: Object.fromEntries(response.headers.entries())
             });
 
             if (!response.ok) {
@@ -238,17 +239,22 @@ export class AdminDashboard {
                 return this.getDefaultScores();
             }
 
-            if (!data.data || typeof data.data !== 'object') {
-                console.warn(`Invalid data structure in API response for ${username}:`, data);
-                return this.getDefaultScores();
+            // Handle both array and object response formats
+            let quizResults = data.data;
+            if (Array.isArray(data.data)) {
+                // Convert array to object with quizName as key
+                quizResults = data.data.reduce((acc, result) => {
+                    acc[result.quizName] = result;
+                    return acc;
+                }, {});
             }
 
             // Log the quiz data we're processing
-            console.log(`Processing quiz data for ${username}:`, data.data);
+            console.log(`Processing quiz data for ${username}:`, quizResults);
 
             // Convert the quiz progress data into our expected format
             const scores = this.quizTypes.map(quizName => {
-                const progressData = data.data[quizName] || {};
+                const progressData = quizResults[quizName] || {};
                 console.log(`Processing ${quizName} for ${username}:`, progressData);
 
                 // Extract data from the progress object
@@ -518,14 +524,21 @@ export class AdminDashboard {
         // Calculate progress for each quiz (as a percentage of 300 XP)
         const quizProgresses = scores.map(score => {
             const progress = (score.experience / 300) * 100;
-            return progress || 0;
+            return Math.min(progress || 0, 100); // Cap at 100%
         });
         
         // Calculate mean average of all quiz progresses
         const totalProgress = quizProgresses.reduce((sum, progress) => sum + progress, 0);
         const averageProgress = totalProgress / this.quizTypes.length; // Divide by total number of quizzes
         
-        return averageProgress;
+        console.log('Progress calculation:', {
+            scores,
+            quizProgresses,
+            totalProgress,
+            averageProgress
+        });
+        
+        return Math.min(averageProgress, 100); // Cap at 100%
     }
 
     getLastActive(scores) {
