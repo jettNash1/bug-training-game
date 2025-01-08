@@ -136,27 +136,34 @@ router.get('/users', auth, async (req, res) => {
                     ...result,
                     questionsAnswered: quizProgress?.questionHistory?.length || 0,
                     experience: quizProgress?.experience || 0,
-                    lastActive: quizProgress?.lastActive
+                    lastActive: quizProgress?.lastUpdated || result.completedAt,
                 };
             });
 
-            // Ensure quizProgress object exists and process it
-            if (!userData.quizProgress) {
-                userData.quizProgress = {};
+            // Add missing quiz results from quizProgress
+            if (userData.quizProgress) {
+                Object.entries(userData.quizProgress).forEach(([quizName, progress]) => {
+                    const existingResult = userData.quizResults.find(r => r.quizName === quizName);
+                    if (!existingResult && progress) {
+                        userData.quizResults.push({
+                            quizName,
+                            score: Math.round((progress.experience / 300) * 100), // Calculate score based on max XP of 300
+                            experience: progress.experience || 0,
+                            questionsAnswered: progress.questionHistory?.length || 0,
+                            lastActive: progress.lastUpdated,
+                            completedAt: progress.lastUpdated
+                        });
+                    }
+                });
             }
-
-            // For each quiz in progress, ensure question completion data
-            Object.keys(userData.quizProgress).forEach(quizName => {
-                const progress = userData.quizProgress[quizName];
-                if (progress) {
-                    progress.questionsAnswered = progress.questionHistory?.length || 0;
-                }
-            });
 
             return userData;
         });
 
-        res.json({ success: true, users: populatedUsers });
+        res.json({
+            success: true,
+            users: populatedUsers
+        });
     } catch (error) {
         console.error('Error fetching users:', error);
         res.status(500).json({ 
