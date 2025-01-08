@@ -467,10 +467,6 @@ class AdminDashboard {
                 <h4>${user.username}</h4>
                 <div class="user-stats">
                     <div class="total-score">Overall Progress: ${progress.toFixed(1)}%</div>
-                    <div class="quiz-stats">
-                        <div class="questions-completed">Questions: ${communicationQuiz.questionsAnswered}/15</div>
-                        <div class="experience-earned">XP: ${communicationQuiz.experience}</div>
-                    </div>
                     <div class="last-active">Last Active: ${this.formatDate(lastActive)}</div>
                 </div>
             `;
@@ -546,17 +542,23 @@ class AdminDashboard {
                             padding: 5px 10px; cursor: pointer; background: none; border: none; font-size: 20px;">×</button>
                 </div>
                 <div class="quiz-progress-list" style="margin-top: 20px;">
-                    ${scores.map(quizScore => `
-                        <div class="quiz-progress-item" style="margin-bottom: 15px; padding: 10px; border: 1px solid #ddd; border-radius: 4px;">
-                            <h4 style="margin: 0 0 10px 0">${this.formatQuizName(quizScore.quizName)}</h4>
-                            <div class="quiz-stats" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px;">
-                                <div class="stat-item">Score: <span class="stat-value">${quizScore.score}%</span></div>
-                                <div class="stat-item">Questions Completed: <span class="stat-value">${quizScore.questionsAnswered}/15</span></div>
-                                <div class="stat-item">XP Earned: <span class="stat-value">${quizScore.experience}</span></div>
-                                <div class="stat-item">Last Updated: <span class="stat-value">${this.formatDate(quizScore.lastActive)}</span></div>
+                    ${scores.map(quizScore => {
+                        const isCompleted = quizScore.questionsAnswered > 0;
+                        return `
+                            <div class="quiz-progress-item ${isCompleted ? 'completed' : ''}" 
+                                 style="margin-bottom: 15px; padding: 10px; border: 1px solid #ddd; border-radius: 4px;">
+                                <h4 style="margin: 0 0 10px 0">${this.formatQuizName(quizScore.quizName)}</h4>
+                                <div class="quiz-stats" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px;">
+                                    <div class="stat-item">Progress: <span class="stat-value">${quizScore.score}%</span></div>
+                                    <div class="stat-item">Questions: <span class="stat-value">${quizScore.questionsAnswered}/15</span></div>
+                                    <div class="stat-item">XP: <span class="stat-value">${quizScore.experience}</span></div>
+                                    ${quizScore.lastActive ? 
+                                        `<div class="stat-item">Last Active: <span class="stat-value">${this.formatDate(quizScore.lastActive)}</span></div>` 
+                                        : ''}
+                                </div>
                             </div>
-                        </div>
-                    `).join('')}
+                        `;
+                    }).join('')}
                 </div>
             `;
             

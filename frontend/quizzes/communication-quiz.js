@@ -824,9 +824,15 @@ export class CommunicationQuiz extends BaseQuiz {
                 quizName: this.quizName,
                 score: percentComplete,
                 experience: this.player.experience,
-                questionHistory: this.player.questionHistory,
                 questionsAnswered: completedQuestions,
-                lastActive: new Date().toISOString()
+                answers: this.player.questionHistory.map(record => ({
+                    questionId: record.scenario.id,
+                    selectedAnswer: record.selectedAnswer.text,
+                    experienceGained: record.selectedAnswer.experience,
+                    maxPossibleXP: record.maxPossibleXP,
+                    isCorrect: record.selectedAnswer.experience === record.maxPossibleXP
+                })),
+                completedAt: new Date().toISOString()
             };
             
             // Also save quiz result and update display
