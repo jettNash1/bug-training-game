@@ -158,38 +158,40 @@ export class AdminDashboard {
         console.log('Loading progress for all users...'); // Debug log
         console.log('Current userScores map:', this.userScores); // Debug log
         
+        // Create a new Map for atomic updates
+        const newScores = new Map();
+        
         for (const user of this.users) {
             try {
                 console.log(`Loading progress for user: ${user.username}`); // Debug log
                 const scores = await this.loadUserProgress(user.username);
-                console.log(`Received scores for ${user.username}:`, scores); // Debug log
                 
-                if (Array.isArray(scores)) {
-                    this.userScores.set(user.username, scores);
-                    console.log(`Set scores for ${user.username} in userScores map`); // Debug log
-                    console.log(`Current userScores map after setting:`, 
-                        Object.fromEntries(this.userScores)); // Debug log
-                } else {
+                if (!Array.isArray(scores)) {
                     console.error(`Invalid scores format for ${user.username}:`, scores);
+                    newScores.set(user.username, this.getDefaultScores());
+                    continue;
                 }
+
+                console.log(`Setting scores for ${user.username}:`, scores);
+                newScores.set(user.username, scores);
+                
+                // Update the main userScores map
+                this.userScores = new Map(newScores);
+                
+                console.log(`Updated userScores map:`, Object.fromEntries(this.userScores));
                 
                 // Update display after each user's progress is loaded
                 this.updateDashboard();
             } catch (error) {
                 console.error(`Failed to load progress for ${user.username}:`, error);
-                // Initialize with empty scores for this user
-                this.userScores.set(user.username, this.quizTypes.map(quizName => ({
-                    quizName,
-                    score: 0,
-                    experience: 0,
-                    questionsAnswered: 0,
-                    questionHistory: [],
-                    lastActive: null
-                })));
+                newScores.set(user.username, this.getDefaultScores());
             }
         }
+        
+        // Final update of the userScores map
+        this.userScores = new Map(newScores);
         console.log('All user progress loaded. Final userScores map:', 
-            Object.fromEntries(this.userScores)); // Debug log
+            Object.fromEntries(this.userScores));
     }
 
     async loadUserProgress(username) {
@@ -205,32 +207,30 @@ export class AdminDashboard {
             }
 
             const data = await response.json();
-            console.log(`Raw quiz progress for ${username}:`, data);
+            console.log(`Raw API response for ${username}:`, data);
 
-            if (!data.success || !data.data) {
-                console.warn(`No quiz data found for ${username}`);
-                return this.quizTypes.map(quizName => ({
-                    quizName,
-                    score: 0,
-                    experience: 0,
-                    questionsAnswered: 0,
-                    questionHistory: [],
-                    lastActive: null
-                }));
+            // Check the structure of the response
+            if (!data.success) {
+                console.warn(`API response indicates failure for ${username}`);
+                return this.getDefaultScores();
             }
+
+            if (!data.data || typeof data.data !== 'object') {
+                console.warn(`Invalid data structure in API response for ${username}:`, data);
+                return this.getDefaultScores();
+            }
+
+            // Log the quiz data we're processing
+            console.log(`Processing quiz data for ${username}:`, data.data);
 
             // Convert the quiz progress data into our expected format
             const scores = this.quizTypes.map(quizName => {
                 const progressData = data.data[quizName] || {};
-                const experience = progressData.experience || 0;
-                const questionsAnswered = progressData.questionsAnswered || progressData.questionHistory?.length || 0;
-                const score = Math.round((experience / 300) * 100);
+                console.log(`Processing ${quizName}:`, progressData);
 
-                console.log(`Processing ${quizName} for ${username}:`, {
-                    experience,
-                    questionsAnswered,
-                    score
-                });
+                const experience = parseInt(progressData.experience) || 0;
+                const questionsAnswered = parseInt(progressData.questionsAnswered) || progressData.questionHistory?.length || 0;
+                const score = Math.round((experience / 300) * 100);
 
                 return {
                     quizName,
@@ -246,16 +246,20 @@ export class AdminDashboard {
             return scores;
         } catch (error) {
             console.error(`Failed to load progress for ${username}:`, error);
-            // Return default scores for all quiz types on error
-            return this.quizTypes.map(quizName => ({
-                quizName,
-                score: 0,
-                experience: 0,
-                questionsAnswered: 0,
-                questionHistory: [],
-                lastActive: null
-            }));
+            return this.getDefaultScores();
         }
+    }
+
+    // Helper method to get default scores
+    getDefaultScores() {
+        return this.quizTypes.map(quizName => ({
+            quizName,
+            score: 0,
+            experience: 0,
+            questionsAnswered: 0,
+            questionHistory: [],
+            lastActive: null
+        }));
     }
 
     normalizeQuizName(quizName) {
