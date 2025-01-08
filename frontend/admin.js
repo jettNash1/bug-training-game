@@ -127,7 +127,7 @@ export class AdminDashboard {
     async loadUsers() {
         try {
             console.log('Fetching users...'); // Debug log
-            const response = await fetch(`${this.apiService.baseUrl}/users`, {
+            const response = await fetch(`${this.apiService.baseUrl}/admin/users`, {
                 headers: {
                     'Authorization': `Bearer ${localStorage.getItem('adminToken')}`,
                     'Content-Type': 'application/json'
@@ -145,8 +145,9 @@ export class AdminDashboard {
                 throw new Error(data.message || 'Failed to load users');
             }
 
-            this.users = data.data;
-            console.log('Users loaded:', this.users); // Changed to log actual users array
+            // Ensure we're using the correct property from the response
+            this.users = data.users || [];
+            console.log('Users loaded:', this.users); // Debug log
             
             // Load progress for each user
             for (const user of this.users) {
@@ -292,12 +293,25 @@ export class AdminDashboard {
             return;
         }
 
+        console.log('Updating user list with users:', this.users); // Debug log
+
+        if (!Array.isArray(this.users)) {
+            console.error('Users is not an array:', this.users);
+            return;
+        }
+
         const searchTerm = document.getElementById('userSearch')?.value.toLowerCase() || '';
         const sortBy = document.getElementById('sortBy')?.value || 'username-asc';
 
-        let filteredUsers = this.users.filter(user => 
-            user.username.toLowerCase().includes(searchTerm)
-        );
+        let filteredUsers = this.users.filter(user => {
+            if (!user || !user.username) {
+                console.warn('Invalid user object:', user);
+                return false;
+            }
+            return user.username.toLowerCase().includes(searchTerm);
+        });
+
+        console.log('Filtered users:', filteredUsers); // Debug log
 
         filteredUsers.sort((a, b) => {
             const scoresA = this.userScores.get(a.username) || [];
