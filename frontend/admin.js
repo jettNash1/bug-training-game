@@ -335,18 +335,26 @@ export class AdminDashboard {
 
             const card = document.createElement('div');
             card.className = 'user-card';
-            card.innerHTML = `
-                <div class="user-header">
-                    <h4>${user.username}</h4>
-                    <div class="user-stats">
-                        <div class="total-score">Overall Progress: ${progress.toFixed(1)}%</div>
-                        <div class="last-active">Last Active: ${this.formatDate(lastActive)}</div>
-                    </div>
+            
+            const cardContent = document.createElement('div');
+            cardContent.className = 'user-header';
+            cardContent.innerHTML = `
+                <h4>${user.username}</h4>
+                <div class="user-stats">
+                    <div class="total-score">Overall Progress: ${progress.toFixed(1)}%</div>
+                    <div class="last-active">Last Active: ${this.formatDate(lastActive)}</div>
                 </div>
-                <button class="view-details-btn" onclick="window.adminDashboard.showUserDetails('${user.username}')">
-                    View Details
-                </button>
             `;
+            
+            const viewDetailsBtn = document.createElement('button');
+            viewDetailsBtn.className = 'view-details-btn';
+            viewDetailsBtn.textContent = 'View Details';
+            viewDetailsBtn.addEventListener('click', () => {
+                this.showUserDetails(user.username);
+            });
+            
+            card.appendChild(cardContent);
+            card.appendChild(viewDetailsBtn);
             container.appendChild(card);
         });
     }
