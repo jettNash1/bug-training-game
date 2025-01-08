@@ -544,9 +544,11 @@ export class AdminDashboard {
                 this.normalizeQuizName(score.quizName) === this.normalizeQuizName(quizName)
             );
             
+            console.log('Quiz score data:', { quizName, quizScore }); // Debug log
+            
             // Get values directly from the server response with fallbacks
             const progress = quizScore?.score || 0;
-            const questionsCompleted = quizScore?.questionsAnswered || 0;
+            const questionsCompleted = quizScore?.questionHistory?.length || quizScore?.questionsAnswered || 0;
             const xpEarned = quizScore?.experience || 0;
             const lastActive = quizScore?.lastActive ? this.formatDate(quizScore.lastActive) : 'Never';
             
