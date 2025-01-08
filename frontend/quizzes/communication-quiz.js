@@ -820,13 +820,16 @@ class CommunicationQuiz extends BaseQuiz {
             if (username) {
                 const quizUser = new QuizUser(username);
                 const score = Math.round((this.player.experience / this.maxXP) * 100);
+                const currentTime = new Date().toISOString();
+                
                 await quizUser.updateQuizScore(
                     this.quizName,
                     score,
-                    this.player.experience,  // Pass the actual experience earned
-                    this.player.tools,       // Pass the tools acquired
-                    this.player.questionHistory,  // Pass the question history
-                    this.player.questionHistory.length   // Pass the questions answered
+                    this.player.experience,
+                    this.player.tools,
+                    this.player.questionHistory,
+                    this.player.questionHistory.length,
+                    currentTime
                 );
                 
                 // Update progress display on index page

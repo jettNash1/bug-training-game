@@ -169,7 +169,7 @@ export class AdminDashboard {
             // Update scores with actual results
             if (Array.isArray(data.data)) {
                 data.data.forEach(result => {
-                    console.log('Raw quiz result from server:', result); // Debug log
+                    console.log('Processing quiz result:', result); // Debug log
                     
                     // Try to find matching quiz by both original and normalized names
                     const scoreIndex = scores.findIndex(s => 
@@ -179,17 +179,19 @@ export class AdminDashboard {
                     );
                     
                     if (scoreIndex !== -1) {
-                        // Use the values directly from the server response
+                        // Ensure we have all required fields with proper fallbacks
                         const updatedScore = {
                             ...scores[scoreIndex],
                             ...result,
                             // Keep the original quiz name from our types list
                             quizName: scores[scoreIndex].quizName,
-                            // Use consistent property names
-                            questionsAnswered: result.questionsAnswered || result.questionHistory?.length || 0,
-                            experience: result.experience || 0,
+                            // Ensure consistent property names and values
                             score: result.score || 0,
-                            questionHistory: result.questionHistory || []
+                            experience: result.experience || 0,
+                            questionsAnswered: result.questionsAnswered || result.questionHistory?.length || 0,
+                            questionHistory: result.questionHistory || [],
+                            lastActive: result.lastActive || result.completedAt || null,
+                            completedAt: result.completedAt || null
                         };
                         
                         console.log('Updated score object:', updatedScore); // Debug log
@@ -545,13 +547,13 @@ export class AdminDashboard {
                 this.normalizeQuizName(score.quizName) === this.normalizeQuizName(quizName)
             );
             
-            console.log('Quiz score data:', { quizName, quizScore }); // Debug log
+            console.log('Quiz score data for display:', { quizName, quizScore }); // Debug log
             
-            // Get values directly from the server response with fallbacks
+            // Get values with proper fallbacks
             const progress = quizScore?.score || 0;
-            const questionsCompleted = quizScore?.questionHistory?.length || quizScore?.questionsAnswered || 0;
+            const questionsAnswered = quizScore?.questionsAnswered || quizScore?.questionHistory?.length || 0;
             const xpEarned = quizScore?.experience || 0;
-            const lastActive = quizScore?.lastActive ? this.formatDate(quizScore.lastActive) : 'Never';
+            const lastActive = quizScore?.lastActive ? this.formatDate(new Date(quizScore.lastActive)) : 'Never';
             
             const quizItem = document.createElement('div');
             quizItem.className = 'quiz-progress-item';
@@ -559,7 +561,7 @@ export class AdminDashboard {
                 <h4>${this.formatQuizName(quizName)}</h4>
                 <div class="quiz-stats">
                     <div class="stat-item">Progress: <span class="stat-value">${progress}%</span></div>
-                    <div class="stat-item">Questions Completed: <span class="stat-value">${questionsCompleted}/15</span></div>
+                    <div class="stat-item">Questions Completed: <span class="stat-value">${questionsAnswered}/15</span></div>
                     <div class="stat-item">XP Earned: <span class="stat-value">${xpEarned}/300</span></div>
                     <div class="stat-item">Last Active: <span class="stat-value">${lastActive}</span></div>
                     <button class="reset-progress-btn" 
