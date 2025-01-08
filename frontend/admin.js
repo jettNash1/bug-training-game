@@ -498,76 +498,53 @@ class AdminDashboard {
     async showUserDetails(username) {
         try {
             console.log(`Opening details for ${username}`);
+            const scores = this.userScores.get(username) || [];
+            const user = this.users.find(u => u.username === username);
             
-            // Remove any existing overlay first
-            const existingOverlay = document.querySelector('.user-details-overlay');
-            if (existingOverlay) {
-                existingOverlay.remove();
+            if (!user) {
+                console.error(`User ${username} not found`);
+                return;
             }
 
-            // Create and show a loading indicator
-            const loadingOverlay = document.createElement('div');
-            loadingOverlay.className = 'user-details-overlay';
-            loadingOverlay.innerHTML = `
-                <div class="user-details-content" style="text-align: center;">
-                    <h3>Loading progress for ${username}...</h3>
-                </div>
-            `;
-            document.body.appendChild(loadingOverlay);
-
-            // Use the already loaded progress data instead of fetching again
-            const scores = this.userScores.get(username) || this.getDefaultScores();
-            console.log(`Using cached progress data for ${username}:`, scores);
-            
-            // Remove loading overlay
-            loadingOverlay.remove();
-
-            // Create the actual details overlay
             const overlay = document.createElement('div');
-            overlay.className = 'user-details-overlay';
-            
-            const content = document.createElement('div');
-            content.className = 'user-details-content';
-            
-            const overallProgress = this.calculateProgress(scores);
-            
-            content.innerHTML = `
-                <div class="details-header">
-                    <h3>${username}'s Progress</h3>
-                    <div class="overall-stats">
-                        <span>Overall Progress: ${overallProgress.toFixed(1)}%</span>
-                        <span>Total Quizzes: ${this.quizTypes.length}</span>
-                    </div>
-                    <button class="close-btn" style="position: absolute; right: 20px; top: 20px; 
-                            padding: 5px 10px; cursor: pointer; background: none; border: none; font-size: 20px;">×</button>
-                </div>
-                <div class="quiz-progress-list" style="margin-top: 20px;">
-                    ${scores.map(quizScore => {
-                        const isCompleted = quizScore.questionsAnswered > 0;
-                        return `
-                            <div class="quiz-progress-item ${isCompleted ? 'completed' : ''}" 
-                                 style="margin-bottom: 15px; padding: 10px; border: 1px solid #ddd; border-radius: 4px;">
-                                <h4 style="margin: 0 0 10px 0">${this.formatQuizName(quizScore.quizName)}</h4>
-                                <div class="quiz-stats" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px;">
-                                    <div class="stat-item">Progress: <span class="stat-value">${quizScore.score}%</span></div>
-                                    <div class="stat-item">Questions: <span class="stat-value">${quizScore.questionsAnswered}/15</span></div>
-                                    <div class="stat-item">XP: <span class="stat-value">${quizScore.experience}</span></div>
-                                    ${quizScore.lastActive ? 
-                                        `<div class="stat-item">Last Active: <span class="stat-value">${this.formatDate(quizScore.lastActive)}</span></div>` 
-                                        : ''}
+            overlay.className = 'details-overlay';
+            overlay.innerHTML = `
+                <div class="details-content">
+                    <button class="close-btn">&times;</button>
+                    <h3>${username}'s Progress Details</h3>
+                    <div class="quiz-details">
+                        ${this.quizTypes.map(quizName => {
+                            const quizData = scores.find(score => 
+                                this.normalizeQuizName(score.quizName) === this.normalizeQuizName(quizName)
+                            ) || {
+                                score: 0,
+                                experience: 0,
+                                questionsAnswered: 0,
+                                currentScenario: 0,
+                                lastActive: null
+                            };
+
+                            return `
+                                <div class="quiz-item">
+                                    <h4>${this.formatQuizName(quizName)}</h4>
+                                    <div class="quiz-stats">
+                                        <div>Progress: ${quizData.score || 0}%</div>
+                                        <div>Questions: ${quizData.currentScenario || 0}/15</div>
+                                        <div>XP: ${quizData.experience || 0}</div>
+                                        <div>Last Active: ${quizData.lastActive ? this.formatDate(new Date(quizData.lastActive).getTime()) : 'Never'}</div>
+                                    </div>
                                 </div>
-                            </div>
-                        `;
-                    }).join('')}
+                            `;
+                        }).join('')}
+                    </div>
                 </div>
             `;
-            
-            overlay.appendChild(content);
-            document.body.appendChild(overlay);
 
             // Add close button functionality
-            const closeBtn = content.querySelector('.close-btn');
-            closeBtn.addEventListener('click', () => overlay.remove());
+            const closeBtn = overlay.querySelector('.close-btn');
+            closeBtn.addEventListener('click', () => {
+                overlay.remove();
+            });
 
             // Add click outside to close
             overlay.addEventListener('click', (e) => {
@@ -576,15 +553,10 @@ class AdminDashboard {
                 }
             });
 
-            console.log(`Details overlay created and shown for ${username}`);
+            document.body.appendChild(overlay);
         } catch (error) {
-            console.error('Error showing user details:', error);
-            // Remove loading overlay if it exists
-            const loadingOverlay = document.querySelector('.user-details-overlay');
-            if (loadingOverlay) {
-                loadingOverlay.remove();
-            }
-            this.showError(`Failed to load details for ${username}: ${error.message}`);
+            console.error('Failed to show user details:', error);
+            this.showError('Failed to load user details');
         }
     }
 
