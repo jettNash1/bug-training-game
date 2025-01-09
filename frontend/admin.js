@@ -1,10 +1,10 @@
 import { APIService } from './api-service.js';
 
 class AdminDashboard {
-    constructor() {
-        this.apiService = new APIService();
-        this.users = [];
+    constructor(apiService) {
+        this.apiService = apiService;
         this.userScores = new Map();
+        this.users = [];
         this.quizTypes = [
             'communication',
             'initiative', 
@@ -235,15 +235,17 @@ class AdminDashboard {
                         user.quizProgress = data.data;
                         
                         // Log the complete progress data for debugging
-                        if (user.quizProgress.communication) {
-                            const progress = user.quizProgress.communication;
-                            console.log(`Loaded progress for ${user.username}:`, {
-                                experience: progress.experience,
-                                questionsAnswered: progress.questionHistory?.length || 0,
-                                lastUpdated: progress.lastUpdated,
-                                progress: Math.round((progress.experience / 300) * 100) + '%'
-                            });
-                        }
+                        this.quizTypes.forEach(quizType => {
+                            if (user.quizProgress[quizType]) {
+                                const progress = user.quizProgress[quizType];
+                                console.log(`Loaded progress for ${user.username} - ${quizType}:`, {
+                                    experience: progress.experience || 0,
+                                    questionsAnswered: progress.questionHistory?.length || 0,
+                                    lastUpdated: progress.lastUpdated,
+                                    progress: Math.round(((progress.questionHistory?.length || 0) / 15) * 100) + '%'
+                                });
+                            }
+                        });
                     }
                 } catch (error) {
                     console.error(`Error fetching progress for ${user.username}:`, error);
@@ -264,60 +266,27 @@ class AdminDashboard {
 
     async loadUserProgress(username) {
         try {
-            console.log(`Fetching progress for ${username} from API...`);
-            const response = await this.apiService.fetchWithAdminAuth(
-                `${this.apiService.baseUrl}/admin/users/${username}/quiz-results`
-            );
-
-            if (!response.ok) {
-                console.error(`Failed to fetch progress for ${username}: ${response.status}`);
-                return this.getDefaultScores();
-            }
-
-            const text = await response.text();
-            console.log(`Raw response for ${username}:`, text);
-
-            let data;
-            try {
-                data = JSON.parse(text);
-            } catch (e) {
-                console.error(`Failed to parse JSON for ${username}:`, e);
-                return this.getDefaultScores();
-            }
-            
-            if (!data.success || !data.data) {
-                console.log(`No progress data for ${username}, returning defaults`);
-                return this.getDefaultScores();
-            }
-
-            console.log(`Processing quiz results for ${username}:`, data.data);
-
-            // Convert the quiz progress data into our expected format
-            const scores = this.quizTypes.map(quizName => {
-                // Find the matching quiz result
-                const quizData = data.data.find(result => 
-                    this.normalizeQuizName(result.quizName) === this.normalizeQuizName(quizName)
-                ) || {};
-
-                const score = {
-                    quizName,
-                    score: quizData.score || 0,
-                    experience: quizData.experience || 0,
-                    questionsAnswered: quizData.questionsAnswered || 0,
-                    currentScenario: quizData.questionsAnswered || 0,
-                    lastActive: quizData.completedAt || null,
-                    answers: quizData.answers || []
-                };
-
-                console.log(`Processed ${quizName} for ${username}:`, score);
-                return score;
+            const response = await fetch(`${this.apiService.baseUrl}/users/${username}/progress`, {
+                headers: {
+                    'Authorization': `Bearer ${localStorage.getItem('adminToken')}`
+                }
             });
 
-            console.log(`Completed processing progress for ${username}`);
-            return scores;
+            if (!response.ok) {
+                throw new Error('Failed to load user progress');
+            }
+
+            const data = await response.json();
+            console.log(`Raw progress data for ${username}:`, data);
+            
+            // Verify and initialize quiz progress data
+            const verifiedData = this.verifyQuizProgress(data);
+            console.log(`Verified progress data for ${username}:`, verifiedData);
+            
+            return verifiedData;
         } catch (error) {
-            console.error(`Failed to load progress for ${username}:`, error);
-            return this.getDefaultScores();
+            console.error(`Error loading progress for ${username}:`, error);
+            return null;
         }
     }
 
@@ -351,25 +320,30 @@ class AdminDashboard {
         }
     }
 
-    updateDashboard() {
-        console.log('Updating dashboard with users:', this.users); // Debug log
-        console.log('User scores:', Object.fromEntries(this.userScores)); // Debug log
-        
-        // Update total users count immediately
-        const totalUsersElement = document.getElementById('totalUsers');
-        if (totalUsersElement) {
-            totalUsersElement.textContent = this.users.length;
-            console.log('Updated total users:', this.users.length);
-        }
-
+    async updateDashboard() {
         try {
-            console.log('Starting statistics update...'); // Debug log
-        this.updateStatistics();
-            console.log('Statistics updated, updating user list...'); // Debug log
-        this.updateUserList();
-            console.log('Dashboard update complete'); // Debug log
+            const response = await fetch(`${this.apiService.baseUrl}/users`, {
+                headers: {
+                    'Authorization': `Bearer ${localStorage.getItem('adminToken')}`
+                }
+            });
+
+            if (!response.ok) {
+                throw new Error('Failed to fetch users');
+            }
+
+            const data = await response.json();
+            this.users = data.users.map(user => this.initializeQuizData(user));
+            
+            // Update statistics
+            const stats = this.calculateStatistics();
+            this.updateStatisticsDisplay(stats);
+            
+            // Update user list
+            await this.updateUserList();
+            
         } catch (error) {
-            console.error('Error during dashboard update:', error);
+            console.error('Error updating dashboard:', error);
             this.showError('Failed to update dashboard');
         }
     }
@@ -512,22 +486,26 @@ class AdminDashboard {
     calculateUserProgress(user) {
         if (!user.quizProgress) return 0;
         
-        // Calculate progress across all quizzes
+        let completedQuizzes = 0;
         const totalProgress = this.quizTypes.reduce((sum, quizName) => {
             const quizProgress = user.quizProgress[quizName];
             if (!quizProgress?.questionHistory) return sum;
             
             const questionsAnswered = quizProgress.questionHistory.length;
+            if (questionsAnswered > 0) completedQuizzes++;
+            
             const quizPercentage = (questionsAnswered / 15) * 100;
             return sum + quizPercentage;
         }, 0);
         
-        // Average progress across all quizzes
-        const averageProgress = totalProgress / this.quizTypes.length;
+        // Only average across quizzes that have been started
+        const averageProgress = completedQuizzes > 0 ? totalProgress / completedQuizzes : 0;
         
         console.log(`Calculating total progress for ${user.username}:`, {
             totalProgress,
-            averageProgress
+            completedQuizzes,
+            averageProgress,
+            quizTypes: this.quizTypes.length
         });
         
         return Math.round(averageProgress);
@@ -535,9 +513,14 @@ class AdminDashboard {
 
     // Helper method to get last active date
     getLastActiveDate(user) {
-        const communicationProgress = user.quizProgress?.communication;
-        if (!communicationProgress?.lastUpdated) return 0;
-        return new Date(communicationProgress.lastUpdated).getTime();
+        if (!user.quizProgress) return 0;
+        
+        const lastActiveDates = this.quizTypes
+            .map(quizType => user.quizProgress[quizType]?.lastUpdated)
+            .filter(date => date)
+            .map(date => new Date(date).getTime());
+        
+        return lastActiveDates.length > 0 ? Math.max(...lastActiveDates) : 0;
     }
 
     async showUserDetails(username) {
@@ -596,8 +579,8 @@ class AdminDashboard {
                         }
 
                         // Get values from quiz progress data
-                        const questionsAnswered = quizProgress.questionHistory.length;
-                        const earnedXP = quizProgress.experience || Math.round((questionsAnswered / 15) * 300); // Fallback calculation if experience is missing
+                        const questionsAnswered = quizProgress?.questionHistory?.length || 0;
+                        const earnedXP = quizProgress?.experience || Math.round((questionsAnswered / 15) * 300);
                         const percentComplete = Math.round((questionsAnswered / 15) * 100);
 
                         console.log(`Processed quiz data for ${quizName}:`, {
@@ -635,6 +618,9 @@ class AdminDashboard {
                     overlay.remove();
                 }
             });
+
+            console.log('Available quiz types:', this.quizTypes);
+            console.log('User progress data:', user.quizProgress);
         } catch (error) {
             console.error('Failed to show user details:', error);
             this.showError('Failed to load user details');
@@ -679,20 +665,32 @@ class AdminDashboard {
     calculateProgress(scores) {
         if (!scores || !scores.length) return 0;
         
-        // Get the communication quiz progress
-        const communicationQuiz = scores.find(score => score.quizName === 'communication');
-        if (!communicationQuiz) return 0;
+        let totalProgress = 0;
+        let completedQuizzes = 0;
         
-        // Calculate progress based on questions answered (out of 15)
-        const questionsAnswered = communicationQuiz.questionsAnswered || 0;
-        return Math.round((questionsAnswered / 15) * 100);
+        this.quizTypes.forEach(quizType => {
+            const quizScore = scores.find(score => score.quizName === quizType);
+            if (quizScore) {
+                const questionsAnswered = quizScore.questionHistory?.length || quizScore.questionsAnswered || 0;
+                if (questionsAnswered > 0) {
+                    totalProgress += (questionsAnswered / 15) * 100;
+                    completedQuizzes++;
+                }
+            }
+        });
+        
+        return completedQuizzes > 0 ? Math.round(totalProgress / completedQuizzes) : 0;
     }
 
     getLastActive(scores) {
-        if (!scores.length) return 0;
-        return Math.max(...scores
-            .map(score => score.lastActive ? new Date(score.lastActive).getTime() : 0)
-            .filter(time => time > 0)) || 0;
+        if (!scores || !scores.length) return 0;
+        
+        const lastActiveDates = scores
+            .map(score => score.lastActive || score.lastUpdated)
+            .filter(date => date)
+            .map(date => new Date(date).getTime());
+        
+        return lastActiveDates.length > 0 ? Math.max(...lastActiveDates) : 0;
     }
 
     formatQuizName(name) {
@@ -714,6 +712,45 @@ class AdminDashboard {
         errorDiv.textContent = message;
         document.body.appendChild(errorDiv);
         setTimeout(() => errorDiv.remove(), 5000);
+    }
+
+    verifyQuizProgress(user) {
+        if (!user.quizProgress) {
+            console.warn(`Initializing empty quiz progress for user ${user.username}`);
+            user.quizProgress = {};
+        }
+
+        this.quizTypes.forEach(quizName => {
+            if (!user.quizProgress[quizName]) {
+                console.warn(`Initializing empty progress for quiz ${quizName} for user ${user.username}`);
+                user.quizProgress[quizName] = {
+                    questionHistory: [],
+                    experience: 0,
+                    lastUpdated: null,
+                    questionsAnswered: 0
+                };
+            }
+        });
+        
+        return user;
+    }
+
+    initializeQuizData(user) {
+        if (!user.quizProgress) user.quizProgress = {};
+        if (!user.quizResults) user.quizResults = [];
+        
+        this.quizTypes.forEach(quizName => {
+            if (!user.quizProgress[quizName]) {
+                user.quizProgress[quizName] = {
+                    questionHistory: [],
+                    experience: 0,
+                    lastUpdated: null,
+                    questionsAnswered: 0
+                };
+            }
+        });
+        
+        return user;
     }
 }
 
