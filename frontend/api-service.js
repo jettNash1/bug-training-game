@@ -19,7 +19,8 @@ export class APIService {
             console.log('Fetching with admin auth:', { 
                 url, 
                 hasToken: !!adminToken,
-                method: options.method || 'GET'
+                method: options.method || 'GET',
+                isMockAdmin: adminToken?.startsWith('admin:')
             });
 
             if (!adminToken) {
@@ -36,11 +37,22 @@ export class APIService {
                     throw new Error('Mock token expired');
                 }
                 
-                // For mock admin, return mock data
-                if (url.endsWith('/admin/users')) {
+                // For mock admin, return mock data only for mock admin token
+                if (url.endsWith('/admin/users') || url.endsWith('/users')) {
                     return {
                         success: true,
-                        users: []  // Mock empty users list
+                        users: [
+                            {
+                                username: 'testuser1',
+                                quizProgress: {},
+                                quizResults: []
+                            },
+                            {
+                                username: 'testuser2',
+                                quizProgress: {},
+                                quizResults: []
+                            }
+                        ]
                     };
                 }
             }
@@ -534,10 +546,10 @@ export class APIService {
                 };
             }
 
-            // Try the /users endpoint first
+            // For real admin token, try the /admin/users endpoint first
             try {
-                const response = await this.fetchWithAdminAuth(`${this.baseUrl}/users`);
-                console.log('Users response:', response);
+                const response = await this.fetchWithAdminAuth(`${this.baseUrl}/admin/users`);
+                console.log('Users response from admin endpoint:', response);
                 
                 // Handle different response formats
                 if (Array.isArray(response)) {
@@ -556,10 +568,15 @@ export class APIService {
                         data: Array.isArray(response.data) ? response.data : [response.data]
                     };
                 }
+
+                // If we get here and no data format matches, try the fallback
+                throw new Error('Invalid response format from admin endpoint');
             } catch (error) {
-                console.log('First endpoint failed, trying fallback:', error);
-                // If first endpoint fails, try the admin/users endpoint
-                const fallbackResponse = await this.fetchWithAdminAuth(`${this.baseUrl}/admin/users`);
+                console.log('Admin endpoint failed, trying fallback:', error);
+                // If admin endpoint fails, try the /users endpoint
+                const fallbackResponse = await this.fetchWithAdminAuth(`${this.baseUrl}/users`);
+                console.log('Fallback response:', fallbackResponse);
+                
                 return {
                     success: true,
                     data: Array.isArray(fallbackResponse) ? fallbackResponse : 
