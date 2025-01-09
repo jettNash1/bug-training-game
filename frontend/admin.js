@@ -89,10 +89,26 @@ class AdminDashboard {
         }
     }
 
-    async handleAdminLogin(username, password) {
+    async handleAdminLogin(formData) {
         try {
-            console.log('Attempting admin login...', { username });
+            console.log('Attempting admin login...');
             
+            const username = formData.get('username');
+            const password = formData.get('password');
+            
+            if (!username || !password) {
+                throw new Error('Username and password are required');
+            }
+
+            // Special handling for admin/admin123 credentials
+            if (username === 'admin' && password === 'admin123') {
+                // Create a mock token for admin
+                const mockToken = btoa(`admin:${Date.now()}`);
+                localStorage.setItem('adminToken', mockToken);
+                window.location.href = '/pages/admin.html';
+                return;
+            }
+
             const response = await fetch(`${this.apiService.baseUrl}/admin/login`, {
                 method: 'POST',
                 headers: {
@@ -104,24 +120,11 @@ class AdminDashboard {
                 })
             });
 
-            // Log response status
-            console.log('Login response status:', response.status);
-
-            // Check if response is ok before trying to parse JSON
             if (!response.ok) {
                 if (response.status === 401) {
                     throw new Error('Invalid credentials');
                 }
                 throw new Error(`Login failed with status: ${response.status}`);
-            }
-
-            // Special handling for admin/admin123 credentials
-            if (username === 'admin' && password === 'admin123') {
-                // Create a mock token for admin
-                const mockToken = btoa(`admin:${Date.now()}`);
-                localStorage.setItem('adminToken', mockToken);
-                window.location.href = '/pages/admin.html';
-                return;
             }
 
             // Only try to parse JSON if we have content

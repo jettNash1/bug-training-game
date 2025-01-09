@@ -57,11 +57,20 @@
             const dashboard = new AdminDashboard();
             
             // Add form submit handler
-            document.getElementById('adminLoginForm').addEventListener('submit', async (event) => {
-                event.preventDefault();
-                const username = document.getElementById('adminUsername').value;
-                const password = document.getElementById('adminPassword').value;
-                await dashboard.handleAdminLogin();
+            document.getElementById('adminLoginForm').addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const formData = new FormData(e.target);
+                
+                try {
+                    await dashboard.handleAdminLogin(formData);
+                } catch (error) {
+                    console.error('Login failed:', error);
+                    // Show error to user
+                    const errorDiv = document.querySelector('.error-message') || document.createElement('div');
+                    errorDiv.className = 'error-message';
+                    errorDiv.textContent = error.message;
+                    e.target.appendChild(errorDiv);
+                }
             });
         });
     </script>
