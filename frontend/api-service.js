@@ -546,84 +546,93 @@ export class APIService {
                 };
             }
 
-            // For real admin token, try the /users endpoint first
-            try {
-                const response = await this.fetchWithAdminAuth(`${this.baseUrl}/users`);
-                console.log('Users response from users endpoint:', response);
-                
-                // Handle different response formats
-                if (Array.isArray(response)) {
-                    console.log('Response is an array:', response);
-                    return {
-                        success: true,
-                        data: response
-                    };
-                } else if (response.users) {
-                    console.log('Response has users property:', response.users);
-                    return {
-                        success: true,
-                        data: response.users
-                    };
-                } else if (response.data) {
-                    console.log('Response has data property:', response.data);
-                    const userData = Array.isArray(response.data) ? response.data : [response.data];
-                    console.log('Processed user data:', userData);
-                    return {
-                        success: true,
-                        data: userData
-                    };
-                } else {
-                    console.log('Response has no recognized format:', response);
-                    // If response is an object but doesn't match expected formats,
-                    // try to extract any array we find
-                    const possibleArrays = Object.values(response).filter(val => Array.isArray(val));
-                    if (possibleArrays.length > 0) {
-                        // Use the largest array found
-                        const largestArray = possibleArrays.reduce((a, b) => a.length > b.length ? a : b);
-                        console.log('Found array in response:', largestArray);
-                        return {
-                            success: true,
-                            data: largestArray
-                        };
-                    }
-                }
+            // For real admin token, try the /users endpoint
+            const response = await this.fetchWithAdminAuth(`${this.baseUrl}/users`);
+            console.log('Raw users response:', response);
 
-                // If we get here and no data format matches, try the fallback
-                throw new Error('Invalid response format from users endpoint');
-            } catch (error) {
-                console.log('Users endpoint failed, trying admin fallback:', error);
-                // If users endpoint fails, try the /admin/users endpoint
-                const fallbackResponse = await this.fetchWithAdminAuth(`${this.baseUrl}/admin/users`);
-                console.log('Admin fallback response:', fallbackResponse);
-                
-                // Apply the same parsing logic to the fallback response
-                if (Array.isArray(fallbackResponse)) {
-                    return {
-                        success: true,
-                        data: fallbackResponse
-                    };
-                } else if (fallbackResponse.users || fallbackResponse.data) {
-                    return {
-                        success: true,
-                        data: fallbackResponse.users || fallbackResponse.data
-                    };
-                } else {
-                    const possibleArrays = Object.values(fallbackResponse).filter(val => Array.isArray(val));
-                    if (possibleArrays.length > 0) {
-                        const largestArray = possibleArrays.reduce((a, b) => a.length > b.length ? a : b);
-                        return {
-                            success: true,
-                            data: largestArray
-                        };
-                    }
-                }
-                
-                // If all else fails, return an empty array
+            // If response is directly an array, use it
+            if (Array.isArray(response)) {
+                console.log('Response is an array:', response);
                 return {
                     success: true,
-                    data: []
+                    data: response
                 };
             }
+
+            // If response has a data property that's an array, use it
+            if (response.data && Array.isArray(response.data)) {
+                console.log('Response has data array:', response.data);
+                return {
+                    success: true,
+                    data: response.data
+                };
+            }
+
+            // If response has a data property that's an object with array values, find the largest array
+            if (response.data && typeof response.data === 'object') {
+                console.log('Response has data object:', response.data);
+                const arrays = Object.values(response.data).filter(Array.isArray);
+                if (arrays.length > 0) {
+                    const largestArray = arrays.reduce((a, b) => a.length > b.length ? a : b);
+                    console.log('Found array in data:', largestArray);
+                    return {
+                        success: true,
+                        data: largestArray
+                    };
+                }
+            }
+
+            // If response is an object with array values, find the largest array
+            if (typeof response === 'object') {
+                console.log('Response is an object:', response);
+                const arrays = Object.values(response).filter(Array.isArray);
+                if (arrays.length > 0) {
+                    const largestArray = arrays.reduce((a, b) => a.length > b.length ? a : b);
+                    console.log('Found array in response:', largestArray);
+                    return {
+                        success: true,
+                        data: largestArray
+                    };
+                }
+            }
+
+            // If we get here and haven't found any users, try the admin endpoint
+            console.log('No users found in response, trying admin endpoint');
+            const adminResponse = await this.fetchWithAdminAuth(`${this.baseUrl}/admin/users`);
+            console.log('Admin endpoint response:', adminResponse);
+
+            // Apply the same parsing logic to the admin response
+            if (Array.isArray(adminResponse)) {
+                return {
+                    success: true,
+                    data: adminResponse
+                };
+            }
+
+            if (adminResponse.data && Array.isArray(adminResponse.data)) {
+                return {
+                    success: true,
+                    data: adminResponse.data
+                };
+            }
+
+            if (typeof adminResponse === 'object') {
+                const arrays = Object.values(adminResponse).filter(Array.isArray);
+                if (arrays.length > 0) {
+                    const largestArray = arrays.reduce((a, b) => a.length > b.length ? a : b);
+                    return {
+                        success: true,
+                        data: largestArray
+                    };
+                }
+            }
+
+            // If we still haven't found any users, log the issue and return an empty array
+            console.warn('No users found in any response format');
+            return {
+                success: true,
+                data: []
+            };
         } catch (error) {
             console.error('Failed to fetch users:', error);
             return {

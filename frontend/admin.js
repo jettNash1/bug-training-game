@@ -154,21 +154,24 @@ class AdminDashboard {
             console.log('Fetching users...'); // Debug log
             
             const response = await this.apiService.getAllUsers();
-            console.log('User data received:', response); // Debug log
+            console.log('User data received:', JSON.stringify(response, null, 2)); // Pretty print the response
 
             if (!response.success) {
                 throw new Error('Invalid response format: missing success flag');
             }
 
             const userData = response.data || [];
+            console.log('Raw user data:', JSON.stringify(userData, null, 2)); // Pretty print the user data
+
             if (!Array.isArray(userData)) {
                 throw new Error('Invalid response format: expected array of users');
             }
 
-            console.log('Raw user data array:', userData); // Debug log
-
             // Map the users and ensure each has the required properties
             this.users = userData.map(user => {
+                // Log each user's data
+                console.log('Processing user:', JSON.stringify(user, null, 2));
+
                 // Ensure user has a username
                 if (!user.username) {
                     console.warn('User missing username:', user);
@@ -182,21 +185,26 @@ class AdminDashboard {
                     quizResults: user.quizResults || []
                 };
 
-                console.log(`Initialized user data for ${user.username}:`, initializedUser);
+                console.log(`Initialized user data for ${user.username}:`, JSON.stringify(initializedUser, null, 2));
                 return this.initializeQuizData(initializedUser);
             }).filter(user => user !== null); // Remove any invalid users
 
-            console.log('Users loaded:', this.users.length, 'users'); // Debug log
+            console.log(`Users loaded: ${this.users.length} users`);
+            console.log('Final processed users:', JSON.stringify(this.users, null, 2));
 
             // Process quiz results and progress for each user
             this.users.forEach(user => {
+                console.log(`Processing quiz data for user ${user.username}`);
+                
                 // Ensure quizProgress exists
                 if (!user.quizProgress) {
+                    console.log(`Initializing empty quiz progress for ${user.username}`);
                     user.quizProgress = {};
                 }
 
                 // If we have quiz results, process them into the progress format
                 if (user.quizResults && Array.isArray(user.quizResults)) {
+                    console.log(`Processing ${user.quizResults.length} quiz results for ${user.username}`);
                     user.quizResults.forEach(result => {
                         const quizName = result.quizName.toLowerCase();
                         if (!user.quizProgress[quizName]) {
@@ -206,6 +214,7 @@ class AdminDashboard {
                                 lastUpdated: result.completedAt,
                                 questionsAnswered: result.questionsAnswered || 0
                             };
+                            console.log(`Initialized progress for quiz ${quizName} for ${user.username}`);
                         }
                     });
                 }
@@ -219,11 +228,12 @@ class AdminDashboard {
                             lastUpdated: null,
                             questionsAnswered: 0
                         };
+                        console.log(`Initialized missing quiz type ${quizType} for ${user.username}`);
                     }
                 });
             });
 
-            console.log('Final processed users:', this.users); // Debug log
+            console.log('Final processed users with quiz data:', JSON.stringify(this.users, null, 2));
             return true;
         } catch (error) {
             console.error('Failed to load users:', error);
