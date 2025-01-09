@@ -165,7 +165,27 @@ class AdminDashboard {
                 throw new Error('Invalid response format: expected array of users');
             }
 
-            this.users = userData.map(user => this.initializeQuizData(user));
+            console.log('Raw user data array:', userData); // Debug log
+
+            // Map the users and ensure each has the required properties
+            this.users = userData.map(user => {
+                // Ensure user has a username
+                if (!user.username) {
+                    console.warn('User missing username:', user);
+                    return null;
+                }
+
+                // Initialize the user with required properties
+                const initializedUser = {
+                    username: user.username,
+                    quizProgress: user.quizProgress || {},
+                    quizResults: user.quizResults || []
+                };
+
+                console.log(`Initialized user data for ${user.username}:`, initializedUser);
+                return this.initializeQuizData(initializedUser);
+            }).filter(user => user !== null); // Remove any invalid users
+
             console.log('Users loaded:', this.users.length, 'users'); // Debug log
 
             // Process quiz results and progress for each user
@@ -189,8 +209,21 @@ class AdminDashboard {
                         }
                     });
                 }
+
+                // Initialize any missing quiz types
+                this.quizTypes.forEach(quizType => {
+                    if (!user.quizProgress[quizType]) {
+                        user.quizProgress[quizType] = {
+                            questionHistory: [],
+                            experience: 0,
+                            lastUpdated: null,
+                            questionsAnswered: 0
+                        };
+                    }
+                });
             });
-            
+
+            console.log('Final processed users:', this.users); // Debug log
             return true;
         } catch (error) {
             console.error('Failed to load users:', error);

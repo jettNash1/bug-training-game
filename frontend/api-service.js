@@ -546,41 +546,82 @@ export class APIService {
                 };
             }
 
-            // For real admin token, try the /admin/users endpoint first
+            // For real admin token, try the /users endpoint first
             try {
-                const response = await this.fetchWithAdminAuth(`${this.baseUrl}/admin/users`);
-                console.log('Users response from admin endpoint:', response);
+                const response = await this.fetchWithAdminAuth(`${this.baseUrl}/users`);
+                console.log('Users response from users endpoint:', response);
                 
                 // Handle different response formats
                 if (Array.isArray(response)) {
+                    console.log('Response is an array:', response);
                     return {
                         success: true,
                         data: response
                     };
                 } else if (response.users) {
+                    console.log('Response has users property:', response.users);
                     return {
                         success: true,
                         data: response.users
                     };
                 } else if (response.data) {
+                    console.log('Response has data property:', response.data);
+                    const userData = Array.isArray(response.data) ? response.data : [response.data];
+                    console.log('Processed user data:', userData);
                     return {
                         success: true,
-                        data: Array.isArray(response.data) ? response.data : [response.data]
+                        data: userData
                     };
+                } else {
+                    console.log('Response has no recognized format:', response);
+                    // If response is an object but doesn't match expected formats,
+                    // try to extract any array we find
+                    const possibleArrays = Object.values(response).filter(val => Array.isArray(val));
+                    if (possibleArrays.length > 0) {
+                        // Use the largest array found
+                        const largestArray = possibleArrays.reduce((a, b) => a.length > b.length ? a : b);
+                        console.log('Found array in response:', largestArray);
+                        return {
+                            success: true,
+                            data: largestArray
+                        };
+                    }
                 }
 
                 // If we get here and no data format matches, try the fallback
-                throw new Error('Invalid response format from admin endpoint');
+                throw new Error('Invalid response format from users endpoint');
             } catch (error) {
-                console.log('Admin endpoint failed, trying fallback:', error);
-                // If admin endpoint fails, try the /users endpoint
-                const fallbackResponse = await this.fetchWithAdminAuth(`${this.baseUrl}/users`);
-                console.log('Fallback response:', fallbackResponse);
+                console.log('Users endpoint failed, trying admin fallback:', error);
+                // If users endpoint fails, try the /admin/users endpoint
+                const fallbackResponse = await this.fetchWithAdminAuth(`${this.baseUrl}/admin/users`);
+                console.log('Admin fallback response:', fallbackResponse);
                 
+                // Apply the same parsing logic to the fallback response
+                if (Array.isArray(fallbackResponse)) {
+                    return {
+                        success: true,
+                        data: fallbackResponse
+                    };
+                } else if (fallbackResponse.users || fallbackResponse.data) {
+                    return {
+                        success: true,
+                        data: fallbackResponse.users || fallbackResponse.data
+                    };
+                } else {
+                    const possibleArrays = Object.values(fallbackResponse).filter(val => Array.isArray(val));
+                    if (possibleArrays.length > 0) {
+                        const largestArray = possibleArrays.reduce((a, b) => a.length > b.length ? a : b);
+                        return {
+                            success: true,
+                            data: largestArray
+                        };
+                    }
+                }
+                
+                // If all else fails, return an empty array
                 return {
                     success: true,
-                    data: Array.isArray(fallbackResponse) ? fallbackResponse : 
-                          fallbackResponse.users || fallbackResponse.data || []
+                    data: []
                 };
             }
         } catch (error) {
