@@ -3,7 +3,7 @@ import { APIService } from './api-service.js';
 class AdminDashboard {
     constructor() {
         this.apiService = {
-            baseUrl: 'https://bug-training-game-api.onrender.com/api',
+            baseUrl: 'https://bug-training-game.onrender.com/api',
             fetchWithAdminAuth: async (url, options = {}) => {
                 const adminToken = localStorage.getItem('adminToken');
                 if (!adminToken) {
@@ -15,7 +15,8 @@ class AdminDashboard {
                         ...options.headers,
                         'Authorization': `Bearer ${adminToken}`,
                         'Content-Type': 'application/json'
-                    }
+                    },
+                    credentials: 'include'
                 });
             }
         };
@@ -136,17 +137,20 @@ class AdminDashboard {
                 headers: {
                     'Content-Type': 'application/json'
                 },
+                credentials: 'include',
                 body: JSON.stringify({
                     username: username.trim(),
                     password: password.trim()
                 })
             });
 
-            const data = await response.json();
-
             if (!response.ok) {
-                throw new Error(data.message || 'Invalid credentials');
+                const errorData = await response.json().catch(() => ({}));
+                throw new Error(errorData.message || 'Invalid credentials');
             }
+
+            const data = await response.json();
+            console.log('Login response:', data);
 
             if (!data.token) {
                 throw new Error('No token received from server');
@@ -158,6 +162,7 @@ class AdminDashboard {
             // Verify the token immediately
             const isValid = await this.verifyAdminToken(data.token);
             if (!isValid) {
+                localStorage.removeItem('adminToken');
                 throw new Error('Token verification failed');
             }
 
@@ -221,14 +226,18 @@ class AdminDashboard {
                 headers: {
                     'Authorization': `Bearer ${adminToken}`,
                     'Content-Type': 'application/json'
-                }
+                },
+                credentials: 'include'
             });
 
             if (!response.ok) {
                 if (response.status === 401) {
+                    localStorage.removeItem('adminToken');
+                    window.location.href = '/pages/admin-login.html';
                     throw new Error('Invalid authentication token');
                 }
-                throw new Error(`Failed to fetch users (${response.status})`);
+                const errorData = await response.json().catch(() => ({}));
+                throw new Error(errorData.message || `Failed to fetch users (${response.status})`);
             }
 
             const data = await response.json();
