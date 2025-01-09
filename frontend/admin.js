@@ -233,7 +233,17 @@ class AdminDashboard {
                     if (data.success && data.data) {
                         // Update the user's progress data
                         user.quizProgress = data.data;
-                        console.log(`Updated progress for ${user.username}:`, data.data);
+                        
+                        // Log the complete progress data for debugging
+                        if (user.quizProgress.communication) {
+                            const progress = user.quizProgress.communication;
+                            console.log(`Loaded progress for ${user.username}:`, {
+                                experience: progress.experience,
+                                questionsAnswered: progress.questionHistory?.length || 0,
+                                lastUpdated: progress.lastUpdated,
+                                progress: Math.round((progress.experience / 300) * 100) + '%'
+                            });
+                        }
                     }
                 } catch (error) {
                     console.error(`Error fetching progress for ${user.username}:`, error);
@@ -524,15 +534,16 @@ class AdminDashboard {
         const communicationProgress = user.quizProgress?.communication;
         if (!communicationProgress) return 0;
         
-        const questionHistory = communicationProgress.questionHistory || [];
-        const questionsAnswered = questionHistory.length;
+        const earnedXP = communicationProgress.experience || 0;
+        const maxXP = 300;
         
         console.log(`Calculating progress for ${user.username}:`, {
-            questionHistory,
-            questionsAnswered
+            experience: earnedXP,
+            maxXP,
+            progress: Math.round((earnedXP / maxXP) * 100)
         });
         
-        return Math.round((questionsAnswered / 15) * 100);
+        return Math.round((earnedXP / maxXP) * 100);
     }
 
     // Helper method to get last active date
@@ -583,18 +594,29 @@ class AdminDashboard {
                         const quizProgress = user.quizProgress?.[quizName];
                         console.log(`Raw quiz progress for ${quizName}:`, quizProgress);
 
-                        // Calculate values from question history if it exists
-                        const questionHistory = quizProgress?.questionHistory || [];
-                        const totalPossibleXP = questionHistory.reduce((sum, q) => sum + (q.maxPossibleXP || 0), 0);
-                        const earnedXP = questionHistory.reduce((sum, q) => sum + (q.selectedAnswer?.experience || 0), 0);
-                        const questionsAnswered = questionHistory.length;
-                        const percentComplete = Math.round((questionsAnswered / 15) * 100);
+                        if (!quizProgress) {
+                            return `
+                                <div class="quiz-progress-item" style="margin-bottom: 15px; padding: 10px; border: 1px solid #ddd; border-radius: 4px;">
+                                    <h4 style="margin: 0 0 10px 0">${this.formatQuizName(quizName)}</h4>
+                                    <div class="quiz-stats" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px;">
+                                        <div class="stat-item">Progress: <span class="stat-value">0%</span></div>
+                                        <div class="stat-item">Questions: <span class="stat-value">0/15</span></div>
+                                        <div class="stat-item">XP: <span class="stat-value">0/300</span></div>
+                                        <div class="stat-item">Last Active: <span class="stat-value">Never</span></div>
+                                    </div>
+                                </div>
+                            `;
+                        }
+
+                        // Use direct values from quiz progress
+                        const earnedXP = quizProgress.experience || 0;
+                        const questionsAnswered = quizProgress.questionHistory?.length || 0;
+                        const percentComplete = Math.round((earnedXP / 300) * 100);
 
                         console.log(`Processed quiz data for ${quizName}:`, {
-                            questionHistory,
-                            totalPossibleXP,
-                            earnedXP,
+                            experience: earnedXP,
                             questionsAnswered,
+                            lastUpdated: quizProgress.lastUpdated,
                             percentComplete
                         });
 
@@ -604,8 +626,8 @@ class AdminDashboard {
                                 <div class="quiz-stats" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px;">
                                     <div class="stat-item">Progress: <span class="stat-value">${percentComplete}%</span></div>
                                     <div class="stat-item">Questions: <span class="stat-value">${questionsAnswered}/15</span></div>
-                                    <div class="stat-item">XP: <span class="stat-value">${earnedXP}</span></div>
-                                    <div class="stat-item">Last Active: <span class="stat-value">${quizProgress?.lastUpdated ? this.formatDate(new Date(quizProgress.lastUpdated).getTime()) : 'Never'}</span></div>
+                                    <div class="stat-item">XP: <span class="stat-value">${earnedXP}/300</span></div>
+                                    <div class="stat-item">Last Active: <span class="stat-value">${quizProgress.lastUpdated ? this.formatDate(new Date(quizProgress.lastUpdated).getTime()) : 'Never'}</span></div>
                                 </div>
                             </div>
                         `;
