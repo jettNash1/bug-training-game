@@ -534,12 +534,67 @@ export class APIService {
                     data: [
                         {
                             username: 'testuser1',
-                            quizProgress: {},
+                            quizProgress: {
+                                'communication': {
+                                    questionHistory: Array(8).fill({ correct: true }),
+                                    experience: 120,
+                                    lastUpdated: new Date(Date.now() - 1000 * 60 * 60).toISOString()
+                                },
+                                'initiative': {
+                                    questionHistory: Array(15).fill({ correct: true }),
+                                    experience: 300,
+                                    lastUpdated: new Date(Date.now() - 1000 * 60 * 30).toISOString()
+                                }
+                            },
                             quizResults: []
                         },
                         {
                             username: 'testuser2',
-                            quizProgress: {},
+                            quizProgress: {
+                                'time-management': {
+                                    questionHistory: Array(12).fill({ correct: true }),
+                                    experience: 240,
+                                    lastUpdated: new Date(Date.now() - 1000 * 60 * 120).toISOString()
+                                }
+                            },
+                            quizResults: []
+                        },
+                        {
+                            username: 'student1',
+                            quizProgress: {
+                                'communication': {
+                                    questionHistory: Array(15).fill({ correct: true }),
+                                    experience: 300,
+                                    lastUpdated: new Date(Date.now() - 1000 * 60 * 15).toISOString()
+                                },
+                                'tester-mindset': {
+                                    questionHistory: Array(10).fill({ correct: true }),
+                                    experience: 200,
+                                    lastUpdated: new Date(Date.now() - 1000 * 60 * 45).toISOString()
+                                }
+                            },
+                            quizResults: []
+                        },
+                        {
+                            username: 'student2',
+                            quizProgress: {
+                                'risk-analysis': {
+                                    questionHistory: Array(6).fill({ correct: true }),
+                                    experience: 120,
+                                    lastUpdated: new Date(Date.now() - 1000 * 60 * 180).toISOString()
+                                }
+                            },
+                            quizResults: []
+                        },
+                        {
+                            username: 'learner1',
+                            quizProgress: {
+                                'communication': {
+                                    questionHistory: Array(4).fill({ correct: true }),
+                                    experience: 80,
+                                    lastUpdated: new Date(Date.now() - 1000 * 60 * 240).toISOString()
+                                }
+                            },
                             quizResults: []
                         }
                     ]
