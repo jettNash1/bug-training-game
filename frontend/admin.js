@@ -243,11 +243,11 @@ class AdminDashboard {
             const isValid = await this.verifyAdminToken(adminToken);
             if (!isValid) {
                 localStorage.removeItem('adminToken');
-                window.location.href = '/pages/admin-login.html';
+                window.location.replace('/pages/admin-login.html');
                 throw new Error('Invalid admin token');
             }
 
-            const response = await fetch(`${this.apiService.baseUrl}/users`, {
+            const response = await fetch(`${this.apiService.baseUrl}/admin/all-users`, {
                 method: 'GET',
                 headers: {
                     'Authorization': `Bearer ${adminToken}`,
@@ -259,7 +259,7 @@ class AdminDashboard {
             if (!response.ok) {
                 if (response.status === 401) {
                     localStorage.removeItem('adminToken');
-                    window.location.href = '/pages/admin-login.html';
+                    window.location.replace('/pages/admin-login.html');
                     throw new Error('Invalid authentication token');
                 }
                 const errorData = await response.json().catch(() => ({}));
@@ -359,13 +359,26 @@ class AdminDashboard {
 
     async loadUserProgress(username) {
         try {
-            const response = await fetch(`${this.apiService.baseUrl}/users/${username}/progress`, {
+            const adminToken = localStorage.getItem('adminToken');
+            if (!adminToken) {
+                throw new Error('No admin token found');
+            }
+
+            const response = await fetch(`${this.apiService.baseUrl}/admin/users/${username}/progress`, {
+                method: 'GET',
                 headers: {
-                    'Authorization': `Bearer ${localStorage.getItem('adminToken')}`
-                }
+                    'Authorization': `Bearer ${adminToken}`,
+                    'Content-Type': 'application/json'
+                },
+                credentials: 'include'
             });
 
             if (!response.ok) {
+                if (response.status === 401) {
+                    localStorage.removeItem('adminToken');
+                    window.location.replace('/pages/admin-login.html');
+                    throw new Error('Invalid authentication token');
+                }
                 throw new Error('Failed to load user progress');
             }
 
