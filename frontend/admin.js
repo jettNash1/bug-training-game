@@ -428,9 +428,7 @@ class AdminDashboard {
             user.username.toLowerCase().includes(searchTerm)
         );
 
-        console.log('Filtered users:', filteredUsers);
-
-        // Sort users
+        // Sort users based on selected criteria
         filteredUsers.sort((a, b) => {
             switch (sortBy) {
                 case 'username-asc':
@@ -438,17 +436,11 @@ class AdminDashboard {
                 case 'username-desc':
                     return b.username.localeCompare(a.username);
                 case 'progress-high':
-                    const progressA = this.calculateUserProgress(a);
-                    const progressB = this.calculateUserProgress(b);
-                    return progressB - progressA;
+                    return this.calculateUserProgress(b) - this.calculateUserProgress(a);
                 case 'progress-low':
-                    const progressLowA = this.calculateUserProgress(a);
-                    const progressLowB = this.calculateUserProgress(b);
-                    return progressLowA - progressLowB;
+                    return this.calculateUserProgress(a) - this.calculateUserProgress(b);
                 case 'last-active':
-                    const lastActiveA = this.getLastActiveDate(a);
-                    const lastActiveB = this.getLastActiveDate(b);
-                    return lastActiveB - lastActiveA;
+                    return this.getLastActiveDate(b) - this.getLastActiveDate(a);
                 default:
                     return 0;
             }
@@ -457,21 +449,47 @@ class AdminDashboard {
         // Clear existing content
         container.innerHTML = '';
 
-        // Create and append user cards
+        // Create and append user cards with more detailed information
         filteredUsers.forEach(user => {
             const progress = this.calculateUserProgress(user);
             const lastActive = this.getLastActiveDate(user);
+            const quizzesTaken = Object.keys(user.quizProgress || {}).length;
 
             const card = document.createElement('div');
             card.className = 'user-card';
             
             const cardContent = document.createElement('div');
-            cardContent.className = 'user-header';
+            cardContent.className = 'user-card-content';
             cardContent.innerHTML = `
-                <h4>${user.username}</h4>
-                <div class="user-stats">
-                    <div class="total-score">Overall Progress: ${progress.toFixed(1)}%</div>
-                    <div class="last-active">Last Active: ${this.formatDate(lastActive)}</div>
+                <div class="user-header">
+                    <h4>${user.username}</h4>
+                    <div class="user-stats">
+                        <div class="stat">
+                            <span class="stat-label">Overall Progress:</span>
+                            <span class="stat-value">${progress.toFixed(1)}%</span>
+                        </div>
+                        <div class="stat">
+                            <span class="stat-label">Quizzes Started:</span>
+                            <span class="stat-value">${quizzesTaken}</span>
+                        </div>
+                        <div class="stat">
+                            <span class="stat-label">Last Active:</span>
+                            <span class="stat-value">${this.formatDate(lastActive)}</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="quiz-summary">
+                    ${this.quizTypes.map(quizName => {
+                        const quizProgress = user.quizProgress?.[quizName];
+                        const questionsAnswered = quizProgress?.questionHistory?.length || 0;
+                        const quizPercentage = Math.round((questionsAnswered / 15) * 100);
+                        return `
+                            <div class="quiz-progress-item">
+                                <span class="quiz-name">${this.formatQuizName(quizName)}:</span>
+                                <span class="quiz-progress">${quizPercentage}%</span>
+                            </div>
+                        `;
+                    }).join('')}
                 </div>
             `;
             
