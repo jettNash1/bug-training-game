@@ -248,12 +248,9 @@ class AdminDashboard {
             // Fetch fresh progress data for each user
             const progressPromises = this.users.map(async user => {
                 try {
-                    const response = await fetch(`${this.apiService.baseUrl}/admin/users/${user.username}/quiz-progress`, {
-                        headers: {
-                            'Authorization': `Bearer ${localStorage.getItem('adminToken')}`,
-                            'Content-Type': 'application/json'
-                        }
-                    });
+                    const response = await this.apiService.fetchWithAdminAuth(
+                        `${this.apiService.baseUrl}/admin/users/${user.username}/quiz-progress`
+                    );
 
                     if (!response.ok) {
                         console.error(`Failed to fetch progress for ${user.username}`);
@@ -275,9 +272,9 @@ class AdminDashboard {
             await Promise.all(progressPromises);
 
             // Now update the dashboard with fresh data
-                this.updateDashboard();
+            this.updateDashboard();
             console.log('All user progress loaded and dashboard updated');
-            } catch (error) {
+        } catch (error) {
             console.error('Failed to load all user progress:', error);
             this.showError('Failed to load user progress');
         }
@@ -559,7 +556,14 @@ class AdminDashboard {
         const communicationProgress = user.quizProgress?.communication;
         if (!communicationProgress) return 0;
         
-        const questionsAnswered = communicationProgress.questionHistory?.length || 0;
+        const questionHistory = communicationProgress.questionHistory || [];
+        const questionsAnswered = questionHistory.length;
+        
+        console.log(`Calculating progress for ${user.username}:`, {
+            questionHistory,
+            questionsAnswered
+        });
+        
         return Math.round((questionsAnswered / 15) * 100);
     }
 
@@ -580,7 +584,6 @@ class AdminDashboard {
                 existingOverlay.remove();
             }
             
-            const scores = this.userScores.get(username) || [];
             const user = this.users.find(u => u.username === username);
             
             if (!user) {
@@ -589,8 +592,8 @@ class AdminDashboard {
             }
 
             console.log(`Showing details for ${username}:`, {
-                scores,
                 user,
+                quizResults: user.quizResults,
                 quizProgress: user.quizProgress
             });
 
@@ -608,21 +611,19 @@ class AdminDashboard {
                 </div>
                 <div class="quiz-progress-list" style="margin-top: 20px;">
                     ${this.quizTypes.map(quizName => {
-                        // Get the raw progress data for this quiz
+                        // Get the quiz progress data
                         const quizProgress = user.quizProgress?.[quizName];
-                        
-                        // Calculate total possible XP from question history
-                        const totalPossibleXP = quizProgress?.questionHistory?.reduce((sum, q) => sum + q.maxPossibleXP, 0) || 0;
-                        
-                        // Calculate earned XP from question history
-                        const earnedXP = quizProgress?.questionHistory?.reduce((sum, q) => sum + q.selectedAnswer.experience, 0) || 0;
-                        
-                        // Calculate score as a percentage of completed questions (15 total questions)
-                        const questionsAnswered = quizProgress?.questionHistory?.length || 0;
+                        console.log(`Raw quiz progress for ${quizName}:`, quizProgress);
+
+                        // Calculate values from question history if it exists
+                        const questionHistory = quizProgress?.questionHistory || [];
+                        const totalPossibleXP = questionHistory.reduce((sum, q) => sum + (q.maxPossibleXP || 0), 0);
+                        const earnedXP = questionHistory.reduce((sum, q) => sum + (q.selectedAnswer?.experience || 0), 0);
+                        const questionsAnswered = questionHistory.length;
                         const percentComplete = Math.round((questionsAnswered / 15) * 100);
 
-                        console.log(`Quiz data for ${quizName}:`, {
-                            quizProgress,
+                        console.log(`Processed quiz data for ${quizName}:`, {
+                            questionHistory,
                             totalPossibleXP,
                             earnedXP,
                             questionsAnswered,
