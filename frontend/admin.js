@@ -25,7 +25,11 @@ class AdminDashboard {
             'issue-verification', 'build-verification', 'issue-tracking-tools',
             'raising-tickets', 'reports', 'cms-testing'
         ];
-        console.log('AdminDashboard initialized with empty userScores map'); // Debug log
+        
+        // Initialize immediately if we're on an admin page
+        if (window.location.pathname.includes('admin')) {
+            this.init().catch(console.error);
+        }
     }
 
     async init() {
@@ -33,37 +37,32 @@ class AdminDashboard {
         const adminToken = localStorage.getItem('adminToken');
         const currentPath = window.location.pathname;
         
-        console.log('Current path:', currentPath); // Debug log
-        
-        // Only verify token if we're on admin pages
-        if (currentPath.includes('admin')) {
-            console.log('On admin page, verifying token...'); // Debug log
-            const isTokenValid = await this.verifyAdminToken(adminToken);
-            console.log('Token valid:', isTokenValid); // Debug log
-            
-            if (currentPath.includes('admin-login.html')) {
-                if (isTokenValid) {
-                    console.log('Valid token on login page, redirecting to admin panel'); // Debug log
-                    window.location.href = '/pages/admin.html';
-                    return;
-                }
-            } else if (currentPath.includes('admin.html')) {
-                if (!isTokenValid) {
-                    console.log('Invalid token on admin panel, redirecting to login'); // Debug log
-                    window.location.href = '/pages/admin-login.html';
-                    return;
-                }
-                console.log('Valid token on admin panel, loading dashboard...'); // Debug log
-                try {
-                await this.loadDashboard();
-                    console.log('Dashboard loaded successfully'); // Debug log
-                } catch (error) {
-                    console.error('Error loading dashboard:', error);
-                    this.showError('Failed to load dashboard');
-                }
+        if (!adminToken) {
+            console.log('No admin token found, redirecting to login');
+            if (!currentPath.includes('admin-login.html')) {
+                window.location.href = '/pages/admin-login.html';
             }
-        } else {
-            console.log('Not on admin page, skipping initialization'); // Debug log
+            return;
+        }
+
+        const isTokenValid = await this.verifyAdminToken(adminToken);
+        console.log('Token validation result:', isTokenValid);
+
+        if (!isTokenValid && !currentPath.includes('admin-login.html')) {
+            console.log('Invalid token, redirecting to login');
+            window.location.href = '/pages/admin-login.html';
+            return;
+        }
+
+        if (isTokenValid && currentPath.includes('admin-login.html')) {
+            console.log('Valid token on login page, redirecting to admin panel');
+            window.location.href = '/pages/admin.html';
+            return;
+        }
+
+        if (isTokenValid && currentPath.includes('admin.html')) {
+            console.log('Valid token on admin panel, loading dashboard');
+            await this.loadDashboard();
         }
     }
 

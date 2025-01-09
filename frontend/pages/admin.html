@@ -74,23 +74,9 @@
     <script type="module">
         import { AdminDashboard } from '../admin.js';
         
-        // Initialize dashboard when DOM is loaded
         document.addEventListener('DOMContentLoaded', async () => {
-            try {
-                console.log('Creating new AdminDashboard instance');
-                const dashboard = new AdminDashboard();
-                // Make it globally available
-                window.dashboardInstance = dashboard;
-                console.log('Initializing dashboard');
-                await dashboard.init();
-                
-                // Set up logout button handler
-                document.getElementById('logoutBtn').addEventListener('click', () => {
-                    dashboard.handleAdminLogout();
-                });
-            } catch (error) {
-                console.error('Error initializing dashboard:', error);
-            }
+            const dashboard = new AdminDashboard();
+            // Init is called automatically in constructor
         });
     </script>
 
