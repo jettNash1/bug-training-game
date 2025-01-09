@@ -411,15 +411,11 @@ class AdminDashboard {
             return;
         }
 
-        console.log('Starting updateUserList with container:', container);
-
         if (!this.users || !this.users.length) {
             console.log('No users to display');
             container.innerHTML = '<div class="no-users">No users found</div>';
             return;
         }
-
-        console.log('Updating user list with:', this.users.length, 'users');
 
         const searchTerm = document.getElementById('userSearch')?.value.toLowerCase() || '';
         const sortBy = document.getElementById('sortBy')?.value || 'username-asc';
@@ -449,7 +445,7 @@ class AdminDashboard {
         // Clear existing content
         container.innerHTML = '';
 
-        // Create and append user cards with more detailed information
+        // Create and append user cards
         filteredUsers.forEach(user => {
             const progress = this.calculateUserProgress(user);
             const lastActive = this.getLastActiveDate(user);
@@ -458,56 +454,58 @@ class AdminDashboard {
             const card = document.createElement('div');
             card.className = 'user-card';
             
-            const cardContent = document.createElement('div');
-            cardContent.className = 'user-card-content';
-            cardContent.innerHTML = `
-                <div class="user-header">
-                    <h4>${user.username}</h4>
-                    <div class="user-stats">
-                        <div class="stat">
-                            <span class="stat-label">Overall Progress:</span>
-                            <span class="stat-value">${progress.toFixed(1)}%</span>
-                        </div>
-                        <div class="stat">
-                            <span class="stat-label">Quizzes Started:</span>
-                            <span class="stat-value">${quizzesTaken}</span>
-                        </div>
-                        <div class="stat">
-                            <span class="stat-label">Last Active:</span>
-                            <span class="stat-value">${this.formatDate(lastActive)}</span>
+            card.innerHTML = `
+                <div class="user-card-content">
+                    <div class="user-header">
+                        <h4>${user.username}</h4>
+                        <div class="user-stats">
+                            <div class="stat">
+                                <span class="stat-label">Overall Progress:</span>
+                                <span class="stat-value">${progress.toFixed(1)}%</span>
+                            </div>
+                            <div class="stat">
+                                <span class="stat-label">Quizzes Started:</span>
+                                <span class="stat-value">${quizzesTaken}</span>
+                            </div>
+                            <div class="stat">
+                                <span class="stat-label">Last Active:</span>
+                                <span class="stat-value">${this.formatDate(lastActive)}</span>
+                            </div>
                         </div>
                     </div>
+                    <div class="quiz-summary">
+                        ${this.quizTypes.map(quizName => {
+                            const quizProgress = user.quizProgress?.[quizName];
+                            const questionsAnswered = quizProgress?.questionHistory?.length || 0;
+                            const quizPercentage = Math.round((questionsAnswered / 15) * 100);
+                            return `
+                                <div class="quiz-progress-item">
+                                    <span class="quiz-name">${this.formatQuizName(quizName)}:</span>
+                                    <span class="quiz-progress">${quizPercentage}%</span>
+                                </div>
+                            `;
+                        }).join('')}
+                    </div>
                 </div>
-                <div class="quiz-summary">
-                    ${this.quizTypes.map(quizName => {
-                        const quizProgress = user.quizProgress?.[quizName];
-                        const questionsAnswered = quizProgress?.questionHistory?.length || 0;
-                        const quizPercentage = Math.round((questionsAnswered / 15) * 100);
-                        return `
-                            <div class="quiz-progress-item">
-                                <span class="quiz-name">${this.formatQuizName(quizName)}:</span>
-                                <span class="quiz-progress">${quizPercentage}%</span>
-                            </div>
-                        `;
-                    }).join('')}
-                </div>
+                <button class="view-details-btn" onclick="this.closest('.user-card').dispatchEvent(new CustomEvent('viewDetails'))">
+                    View Details
+                </button>
             `;
             
-            const viewDetailsBtn = document.createElement('button');
-            viewDetailsBtn.className = 'view-details-btn';
-            viewDetailsBtn.textContent = 'View Details';
-            viewDetailsBtn.addEventListener('click', () => {
+            // Add event listener for view details button
+            card.addEventListener('viewDetails', () => {
                 this.showUserDetails(user.username);
             });
-            
-            card.appendChild(cardContent);
-            card.appendChild(viewDetailsBtn);
+
             container.appendChild(card);
         });
 
         if (filteredUsers.length === 0) {
             container.innerHTML = '<div class="no-users">No users match your search</div>';
         }
+
+        // Update statistics display
+        this.updateStatistics();
     }
 
     // Helper method to calculate user progress
