@@ -195,28 +195,35 @@ class AdminDashboard {
                     
                     // For communication quiz, get the actual values
                     if (quizName === 'communication') {
-                        // If we have a quiz result but no progress, use the quiz result data
+                        // Log the raw data we're working with
+                        console.log(`Raw communication quiz data for ${user.username}:`, {
+                            quizResult,
+                            quizProgress
+                        });
+
                         const progress = {
                             quizName,
                             score: quizResult.score || 0,
-                            experience: quizResult.experience || quizProgress.experience || 0,
-                            questionsAnswered: quizResult.questionsAnswered || quizProgress.questionHistory?.length || 0,
-                            currentScenario: quizResult.questionsAnswered || quizProgress.currentScenario || 0,
-                            lastActive: quizResult.completedAt || quizProgress.lastUpdated || null,
-                            answers: quizProgress.questionHistory || quizResult.answers || []
+                            experience: quizProgress.experience || 0,
+                            questionsAnswered: quizProgress.questionHistory?.length || 0,
+                            currentScenario: quizProgress.currentScenario || 0,
+                            lastActive: quizProgress.lastUpdated || quizResult.completedAt || null,
+                            answers: quizProgress.questionHistory || []
                         };
-                        console.log(`Communication quiz progress for ${user.username}:`, progress);
+
+                        // Log the processed progress
+                        console.log(`Processed communication quiz progress for ${user.username}:`, progress);
                         return progress;
                     }
 
                     return {
                         quizName,
                         score: quizResult.score || 0,
-                        experience: quizResult.experience || quizProgress.experience || 0,
-                        questionsAnswered: quizResult.questionsAnswered || quizProgress.questionHistory?.length || 0,
-                        currentScenario: quizResult.questionsAnswered || quizProgress.currentScenario || 0,
-                        lastActive: quizResult.completedAt || quizProgress.lastUpdated || null,
-                        answers: quizProgress.questionHistory || quizResult.answers || []
+                        experience: quizProgress.experience || 0,
+                        questionsAnswered: quizProgress.questionHistory?.length || 0,
+                        currentScenario: quizProgress.currentScenario || 0,
+                        lastActive: quizProgress.lastUpdated || quizResult.completedAt || null,
+                        answers: quizProgress.questionHistory || []
                     };
                 });
 
