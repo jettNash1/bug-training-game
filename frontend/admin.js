@@ -424,19 +424,6 @@ class AdminDashboard {
                             </div>
                         </div>
                     </div>
-                    <div class="quiz-summary">
-                        ${this.quizTypes.map(quizName => {
-                            const quizProgress = user.quizProgress?.[quizName];
-                            const questionsAnswered = quizProgress?.questionHistory?.length || 0;
-                            const quizPercentage = Math.round((questionsAnswered / 15) * 100);
-                            return `
-                                <div class="quiz-progress-item">
-                                    <span class="quiz-name">${this.formatQuizName(quizName)}:</span>
-                                    <span class="quiz-progress">${quizPercentage}%</span>
-                                </div>
-                            `;
-                        }).join('')}
-                    </div>
                 </div>
                 <button class="view-details-btn" onclick="this.closest('.user-card').dispatchEvent(new CustomEvent('viewDetails'))">
                     View Details
