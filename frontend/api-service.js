@@ -14,56 +14,67 @@ export class APIService {
 
     // Admin-specific fetch method
     async fetchWithAdminAuth(url, options = {}) {
-        const adminToken = localStorage.getItem('adminToken');
-        if (!adminToken) {
-            window.location.replace('/pages/admin-login.html');
-            throw new Error('No admin token found');
-        }
-
-        // Verify token before making request
-        const tokenVerification = await this.verifyAdminToken();
-        if (!tokenVerification.valid) {
-            localStorage.removeItem('adminToken');
-            window.location.replace('/pages/admin-login.html');
-            throw new Error('Invalid admin token');
-        }
-
-        const headers = {
-            'Authorization': `Bearer ${adminToken}`,
-            'Content-Type': 'application/json',
-            ...options.headers
-        };
-
-        const response = await fetch(url, {
-            ...options,
-            credentials: 'include',
-            headers
-        });
-
-        if (response.status === 401) {
-            localStorage.removeItem('adminToken');
-            window.location.replace('/pages/admin-login.html');
-            throw new Error('Admin authentication required');
-        }
-
-        // Try to parse response as JSON
         try {
-            const text = await response.text();
-            let data;
+            const adminToken = localStorage.getItem('adminToken');
+            if (!adminToken) {
+                console.log('No admin token found, redirecting to login');
+                window.location.replace('/pages/admin-login.html');
+                throw new Error('No admin token found');
+            }
+
+            // Verify token before making request
+            console.log('Verifying admin token before request...');
+            const tokenVerification = await this.verifyAdminToken();
+            if (!tokenVerification.valid) {
+                console.log('Token verification failed, redirecting to login');
+                window.location.replace('/pages/admin-login.html');
+                throw new Error('Invalid admin token');
+            }
+
+            console.log('Token verified, making request...');
+            const headers = {
+                'Authorization': `Bearer ${adminToken}`,
+                'Content-Type': 'application/json',
+                ...options.headers
+            };
+
+            const response = await fetch(url, {
+                ...options,
+                credentials: 'include',
+                headers
+            });
+
+            if (response.status === 401) {
+                console.log('Unauthorized response, redirecting to login');
+                localStorage.removeItem('adminToken');
+                window.location.replace('/pages/admin-login.html');
+                throw new Error('Admin authentication required');
+            }
+
+            // Try to parse response as JSON
             try {
-                data = JSON.parse(text);
-            } catch (e) {
-                console.error('Failed to parse response as JSON:', text);
-                throw new Error('Invalid response from server');
-            }
+                const text = await response.text();
+                console.log('Response text:', text);
+                
+                let data;
+                try {
+                    data = JSON.parse(text);
+                } catch (e) {
+                    console.error('Failed to parse response as JSON:', text);
+                    throw new Error('Invalid response from server');
+                }
 
-            if (!response.ok) {
-                throw new Error(data.message || `Request failed with status ${response.status}`);
-            }
+                if (!response.ok) {
+                    throw new Error(data.message || `Request failed with status ${response.status}`);
+                }
 
-            return data;
+                return data;
+            } catch (error) {
+                console.error('Request failed:', error);
+                throw error;
+            }
         } catch (error) {
-            console.error('Request failed:', error);
+            console.error('Admin request failed:', error);
             throw error;
         }
     }
@@ -334,19 +345,42 @@ export class APIService {
                 body: JSON.stringify({ username, password })
             });
 
-            const data = await response.json();
+            // Try to read the response text first
+            const text = await response.text();
+            console.log('Admin login response text:', text);
+
+            // Then parse it as JSON if possible
+            let data;
+            try {
+                data = JSON.parse(text);
+            } catch (e) {
+                console.error('Failed to parse response as JSON:', e);
+                throw new Error('Invalid response from server');
+            }
             
             if (!response.ok) {
                 throw new Error(data.message || 'Admin login failed');
             }
 
-            if (data.token) {
-                localStorage.setItem('adminToken', data.token);
+            if (!data.token) {
+                throw new Error('No token received from server');
+            }
+
+            // Store the token
+            localStorage.setItem('adminToken', data.token);
+            console.log('Admin token stored successfully');
+
+            // Verify the token immediately
+            const verificationResult = await this.verifyAdminToken();
+            if (!verificationResult.valid) {
+                localStorage.removeItem('adminToken');
+                throw new Error('Token verification failed after login');
             }
 
             return data;
         } catch (error) {
             console.error('Admin login error:', error);
+            localStorage.removeItem('adminToken');
             throw error;
         }
     }
@@ -355,6 +389,7 @@ export class APIService {
         try {
             const adminToken = localStorage.getItem('adminToken');
             if (!adminToken) {
+                console.log('No admin token found in localStorage');
                 return { valid: false };
             }
 
@@ -362,9 +397,12 @@ export class APIService {
             if (adminToken.startsWith('admin:')) {
                 const timestamp = parseInt(adminToken.split(':')[1]);
                 const now = Date.now();
-                return { valid: (now - timestamp) < 24 * 60 * 60 * 1000 };
+                const isValid = (now - timestamp) < 24 * 60 * 60 * 1000;
+                console.log('Mock token validation result:', isValid);
+                return { valid: isValid };
             }
 
+            console.log('Verifying admin token with server...');
             const response = await fetch(`${this.baseUrl}/admin/verify`, {
                 method: 'GET',
                 headers: {
@@ -374,13 +412,33 @@ export class APIService {
                 credentials: 'include'
             });
 
-            const data = await response.json();
+            // Try to read the response text first
+            const text = await response.text();
+            console.log('Token verification response:', text);
+
+            // Then parse it as JSON if possible
+            let data;
+            try {
+                data = JSON.parse(text);
+            } catch (e) {
+                console.error('Failed to parse verification response as JSON:', e);
+                return { valid: false };
+            }
+
+            const isValid = response.ok && data.success && data.isAdmin;
+            console.log('Token verification result:', { isValid, data });
+
+            if (!isValid) {
+                localStorage.removeItem('adminToken');
+            }
+
             return { 
-                valid: response.ok && data.success && data.isAdmin,
+                valid: isValid,
                 ...data 
             };
         } catch (error) {
             console.error('Admin token verification error:', error);
+            localStorage.removeItem('adminToken');
             return { valid: false };
         }
     }
