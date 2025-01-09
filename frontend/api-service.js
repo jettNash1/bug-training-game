@@ -35,18 +35,17 @@ export class APIService {
                     console.log('Mock token expired');
                     throw new Error('Mock token expired');
                 }
-            } else {
-                // Verify real token before making request
-                console.log('Verifying admin token before request...');
-                const tokenVerification = await this.verifyAdminToken();
-                console.log('Token verification result:', tokenVerification);
                 
-                if (!tokenVerification.valid) {
-                    throw new Error(`Invalid admin token: ${tokenVerification.reason}`);
+                // For mock admin, return mock data
+                if (url.endsWith('/admin/users')) {
+                    return {
+                        success: true,
+                        users: []  // Mock empty users list
+                    };
                 }
             }
 
-            console.log('Token verified, making request...');
+            console.log('Making request with token:', { token: adminToken });
             const headers = {
                 'Authorization': `Bearer ${adminToken}`,
                 'Content-Type': 'application/json',
@@ -76,7 +75,13 @@ export class APIService {
                     if (response.status === 404) {
                         throw new Error(`API endpoint not found: ${url}`);
                     } else if (response.status === 401) {
-                        throw new Error('Admin authentication required');
+                        // Check if we need to refresh the token or re-verify
+                        const verificationResult = await this.verifyAdminToken();
+                        if (!verificationResult.valid) {
+                            throw new Error('Admin authentication required');
+                        }
+                        // If verification succeeded but we still got 401, throw error
+                        throw new Error('Admin authentication failed: ' + (data.message || 'Unauthorized'));
                     } else {
                         throw new Error(data.message || `Request failed with status ${response.status}`);
                     }
@@ -90,10 +95,9 @@ export class APIService {
         } catch (error) {
             console.error('Admin request failed:', error);
             
-            // Handle different error types
-            if (error.message.includes('No admin token found') || 
-                error.message.includes('Invalid admin token') ||
-                error.message.includes('Admin authentication required')) {
+            // Only redirect on authentication errors
+            if (error.message.includes('Admin authentication required') || 
+                error.message.includes('Admin authentication failed')) {
                 localStorage.removeItem('adminToken');
                 // Add a small delay to see the error in console
                 await new Promise(resolve => setTimeout(resolve, 1000));
@@ -509,6 +513,16 @@ export class APIService {
 
     async getAllUsers() {
         try {
+            const adminToken = localStorage.getItem('adminToken');
+            
+            // For mock admin, return mock data
+            if (adminToken?.startsWith('admin:')) {
+                return {
+                    success: true,
+                    data: []  // Mock empty users list
+                };
+            }
+
             const response = await this.fetchWithAdminAuth(`${this.baseUrl}/admin/users`);
             return {
                 success: true,
@@ -516,6 +530,7 @@ export class APIService {
             };
         } catch (error) {
             console.error('Failed to fetch users:', error);
+            // Don't throw the error, just return empty data
             return {
                 success: false,
                 data: [],
