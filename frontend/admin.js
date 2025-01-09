@@ -534,16 +534,17 @@ class AdminDashboard {
         const communicationProgress = user.quizProgress?.communication;
         if (!communicationProgress) return 0;
         
-        const earnedXP = communicationProgress.experience || 0;
-        const maxXP = 300;
+        // Use questionHistory length for progress calculation
+        const questionsAnswered = communicationProgress.questionHistory?.length || 0;
+        const totalQuestions = 15;
         
         console.log(`Calculating progress for ${user.username}:`, {
-            experience: earnedXP,
-            maxXP,
-            progress: Math.round((earnedXP / maxXP) * 100)
+            questionsAnswered,
+            totalQuestions,
+            progress: Math.round((questionsAnswered / totalQuestions) * 100)
         });
         
-        return Math.round((earnedXP / maxXP) * 100);
+        return Math.round((questionsAnswered / totalQuestions) * 100);
     }
 
     // Helper method to get last active date
@@ -590,16 +591,16 @@ class AdminDashboard {
                 </div>
                 <div class="quiz-progress-list" style="margin-top: 20px;">
                     ${this.quizTypes.map(quizName => {
-                        // Get the quiz progress data
+                        // Inside showUserDetails method, update the template literal for quiz progress display
                         const quizProgress = user.quizProgress?.[quizName];
                         console.log(`Raw quiz progress for ${quizName}:`, quizProgress);
 
-                        if (!quizProgress) {
+                        if (!quizProgress || !quizProgress.questionHistory) {
                             return `
                                 <div class="quiz-progress-item" style="margin-bottom: 15px; padding: 10px; border: 1px solid #ddd; border-radius: 4px;">
                                     <h4 style="margin: 0 0 10px 0">${this.formatQuizName(quizName)}</h4>
                                     <div class="quiz-stats" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px;">
-                                        <div class="stat-item">Progress: <span class="stat-value">0%</span></div>
+                                        <div class="stat-item">Progress: <span class="stat-value">Not Started</span></div>
                                         <div class="stat-item">Questions: <span class="stat-value">0/15</span></div>
                                         <div class="stat-item">XP: <span class="stat-value">0/300</span></div>
                                         <div class="stat-item">Last Active: <span class="stat-value">Never</span></div>
@@ -608,14 +609,14 @@ class AdminDashboard {
                             `;
                         }
 
-                        // Use direct values from quiz progress
-                        const earnedXP = quizProgress.experience || 0;
+                        // Get values from quiz progress data
                         const questionsAnswered = quizProgress.questionHistory?.length || 0;
-                        const percentComplete = Math.round((earnedXP / 300) * 100);
+                        const earnedXP = quizProgress.experience || 0;
+                        const percentComplete = Math.round((questionsAnswered / 15) * 100);
 
                         console.log(`Processed quiz data for ${quizName}:`, {
-                            experience: earnedXP,
                             questionsAnswered,
+                            earnedXP,
                             lastUpdated: quizProgress.lastUpdated,
                             percentComplete
                         });
