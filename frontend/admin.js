@@ -175,69 +175,41 @@ class AdminDashboard {
             this.users = data.users || [];
             console.log('Users loaded:', this.users); // Debug log
 
-            // Process quiz results immediately
-            const newScores = new Map();
-            
+            // Process quiz results and progress for each user
             this.users.forEach(user => {
-                console.log(`Processing user ${user.username}:`, {
-                    quizResults: user.quizResults,
-                    quizProgress: user.quizProgress
-                });
+                // Ensure quizProgress exists
+                if (!user.quizProgress) {
+                    user.quizProgress = {};
+                }
 
-                const scores = this.quizTypes.map(quizName => {
-                    // Find the matching quiz result from user.quizResults
-                    const quizResult = user.quizResults?.find(result => 
-                        this.normalizeQuizName(result.quizName) === this.normalizeQuizName(quizName)
-                    ) || {};
-                    
-                    // Get quiz progress from user.quizProgress object
-                    const quizProgress = user.quizProgress?.[quizName];
-                    
-                    // Log raw data for debugging
-                    console.log(`Raw data for ${quizName}:`, {
-                        quizResult,
-                        quizProgress,
-                        username: user.username
+                // If we have quiz results, process them into the progress format
+                if (user.quizResults && Array.isArray(user.quizResults)) {
+                    user.quizResults.forEach(result => {
+                        const quizName = result.quizName.toLowerCase();
+                        if (!user.quizProgress[quizName]) {
+                            user.quizProgress[quizName] = {
+                                questionHistory: [],
+                                lastUpdated: result.completedAt
+                            };
+                        }
                     });
+                }
 
-                    // For communication quiz, get the actual values
-                    if (quizName === 'communication') {
-                        const progress = {
-                            quizName,
-                            score: quizResult.score || 0,
-                            experience: quizProgress?.experience || 0,
-                            questionsAnswered: quizProgress?.questionHistory?.length || 0,
-                            lastActive: quizProgress?.lastUpdated || quizResult?.completedAt || null,
-                            answers: quizProgress?.questionHistory || []
-                        };
-
-                        console.log(`Processed communication quiz progress for ${user.username}:`, progress);
-                        return progress;
-                    }
-
-                    return {
-                        quizName,
-                        score: quizResult.score || 0,
-                        experience: quizProgress?.experience || 0,
-                        questionsAnswered: quizProgress?.questionHistory?.length || 0,
-                        lastActive: quizProgress?.lastUpdated || quizResult?.completedAt || null,
-                        answers: quizProgress?.questionHistory || []
-                    };
-                });
-
-                newScores.set(user.username, scores);
-                console.log(`Final scores for ${user.username}:`, scores);
+                // Process communication quiz specifically if it exists
+                if (user.quizProgress.communication?.questionHistory) {
+                    console.log(`Found communication progress for ${user.username}:`, 
+                        user.quizProgress.communication);
+                }
             });
 
-            // Update the userScores map
-            console.log('Setting initial user scores');
-            this.userScores = newScores;
-            console.log('User scores initialized:', Object.fromEntries(this.userScores));
-
+            // Update the dashboard immediately after loading users
+            this.updateDashboard();
+            
+            return true;
         } catch (error) {
             console.error('Failed to load users:', error);
             this.users = [];
-            this.userScores = new Map();
+            return false;
         }
     }
 
@@ -413,40 +385,36 @@ class AdminDashboard {
         console.log('Calculating statistics for', this.users.length, 'users');
 
         this.users.forEach(user => {
-            const scores = this.userScores.get(user.username) || [];
-            
             // Check if user was active today
-            const wasActiveToday = scores.some(score => {
-                if (!score.lastActive) return false;
-                const activeDate = new Date(score.lastActive).setHours(0, 0, 0, 0);
-                return activeDate === today;
-            });
-            if (wasActiveToday) {
-                activeUsers++;
-                console.log(`${user.username} was active today`);
+            const communicationProgress = user.quizProgress?.communication;
+            if (communicationProgress?.lastUpdated) {
+                const activeDate = new Date(communicationProgress.lastUpdated).setHours(0, 0, 0, 0);
+                if (activeDate === today) {
+                    activeUsers++;
+                    console.log(`${user.username} was active today`);
+                }
             }
 
-            // Calculate user's overall progress
-            const userProgress = this.calculateProgress(scores);
-            if (scores.some(score => score.score > 0)) {
-                totalProgress += userProgress;
+            // Calculate user's progress
+            const progress = this.calculateUserProgress(user);
+            if (progress > 0) {
+                totalProgress += progress;
                 usersWithProgress++;
-                console.log(`${user.username} has progress:`, userProgress);
+                console.log(`${user.username} has progress:`, progress);
             }
         });
+
+        const averageProgress = usersWithProgress > 0 ? Math.round(totalProgress / usersWithProgress) : 0;
 
         console.log('Statistics calculated:', {
             totalUsers: this.users.length,
             activeUsers,
-            averageProgress: usersWithProgress > 0 ? Math.round(totalProgress / usersWithProgress) : 0
+            averageProgress
         });
 
         if (totalUsersElement) totalUsersElement.textContent = this.users.length;
         if (activeUsersElement) activeUsersElement.textContent = activeUsers;
-        if (averageCompletionElement) {
-            const averageProgress = usersWithProgress > 0 ? Math.round(totalProgress / usersWithProgress) : 0;
-            averageCompletionElement.textContent = `${averageProgress}%`;
-        }
+        if (averageCompletionElement) averageCompletionElement.textContent = `${averageProgress}%`;
     }
 
     updateUserList() {
