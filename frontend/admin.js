@@ -480,21 +480,22 @@ class AdminDashboard {
 
         // Sort users
         filteredUsers.sort((a, b) => {
-            const scoresA = this.userScores.get(a.username) || [];
-            const scoresB = this.userScores.get(b.username) || [];
-            
             switch (sortBy) {
                 case 'username-asc':
                     return a.username.localeCompare(b.username);
                 case 'username-desc':
                     return b.username.localeCompare(a.username);
                 case 'progress-high':
-                    return this.calculateProgress(scoresB) - this.calculateProgress(scoresA);
+                    const progressA = this.calculateUserProgress(a);
+                    const progressB = this.calculateUserProgress(b);
+                    return progressB - progressA;
                 case 'progress-low':
-                    return this.calculateProgress(scoresA) - this.calculateProgress(scoresB);
+                    const progressLowA = this.calculateUserProgress(a);
+                    const progressLowB = this.calculateUserProgress(b);
+                    return progressLowA - progressLowB;
                 case 'last-active':
-                    const lastActiveA = a.lastLogin ? new Date(a.lastLogin).getTime() : 0;
-                    const lastActiveB = b.lastLogin ? new Date(b.lastLogin).getTime() : 0;
+                    const lastActiveA = this.getLastActiveDate(a);
+                    const lastActiveB = this.getLastActiveDate(b);
                     return lastActiveB - lastActiveA;
                 default:
                     return 0;
@@ -504,37 +505,30 @@ class AdminDashboard {
         console.log('Sorted users:', filteredUsers);
 
         try {
-        // Clear existing content
+            // Clear existing content
             console.log('Clearing container');
-        container.innerHTML = '';
+            container.innerHTML = '';
 
-        // Create and append user cards
+            // Create and append user cards
             console.log('Creating user cards');
             filteredUsers.forEach((user, index) => {
                 console.log(`Creating card ${index + 1} for user:`, user.username);
                 
-            const scores = this.userScores.get(user.username) || [];
-            const progress = this.calculateProgress(scores);
-            const lastActive = user.lastLogin ? new Date(user.lastLogin).getTime() : 0;
+                const progress = this.calculateUserProgress(user);
+                const lastActive = this.getLastActiveDate(user);
 
-            // Get communication quiz data
-            const communicationQuiz = scores.find(score => score.quizName === 'communication') || {
-                questionsAnswered: 0,
-                experience: 0
-            };
-
-            const card = document.createElement('div');
-            card.className = 'user-card';
+                const card = document.createElement('div');
+                card.className = 'user-card';
                 
-            const cardContent = document.createElement('div');
-            cardContent.className = 'user-header';
-            cardContent.innerHTML = `
+                const cardContent = document.createElement('div');
+                cardContent.className = 'user-header';
+                cardContent.innerHTML = `
                     <h4>${user.username}</h4>
                     <div class="user-stats">
                         <div class="total-score">Overall Progress: ${progress.toFixed(1)}%</div>
                         <div class="last-active">Last Active: ${this.formatDate(lastActive)}</div>
                     </div>
-            `;
+                `;
                 
                 const viewDetailsBtn = document.createElement('button');
                 viewDetailsBtn.className = 'view-details-btn';
@@ -545,7 +539,7 @@ class AdminDashboard {
                 
                 card.appendChild(cardContent);
                 card.appendChild(viewDetailsBtn);
-            container.appendChild(card);
+                container.appendChild(card);
 
                 console.log(`Card ${index + 1} created and appended for ${user.username}`);
             });
@@ -558,6 +552,22 @@ class AdminDashboard {
         }
 
         console.log('User list update complete');
+    }
+
+    // Helper method to calculate user progress
+    calculateUserProgress(user) {
+        const communicationProgress = user.quizProgress?.communication;
+        if (!communicationProgress) return 0;
+        
+        const questionsAnswered = communicationProgress.questionHistory?.length || 0;
+        return Math.round((questionsAnswered / 15) * 100);
+    }
+
+    // Helper method to get last active date
+    getLastActiveDate(user) {
+        const communicationProgress = user.quizProgress?.communication;
+        if (!communicationProgress?.lastUpdated) return 0;
+        return new Date(communicationProgress.lastUpdated).getTime();
     }
 
     async showUserDetails(username) {
