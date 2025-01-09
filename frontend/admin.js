@@ -375,56 +375,35 @@ class AdminDashboard {
     }
 
     updateStatistics() {
-        const totalUsersElement = document.getElementById('totalUsers');
-        const activeUsersElement = document.getElementById('activeUsers');
-        const averageCompletionElement = document.getElementById('averageCompletion');
-
-        if (!this.users || !this.users.length) {
-            console.log('No users to update statistics for');
-            if (totalUsersElement) totalUsersElement.textContent = '0';
-            if (activeUsersElement) activeUsersElement.textContent = '0';
-            if (averageCompletionElement) averageCompletionElement.textContent = '0%';
-            return;
-        }
-
         const today = new Date().setHours(0, 0, 0, 0);
-        let activeUsers = 0;
-        let totalProgress = 0;
-        let usersWithProgress = 0;
-
-        console.log('Calculating statistics for', this.users.length, 'users');
-
-        this.users.forEach(user => {
+        
+        const stats = this.users.reduce((acc, user) => {
             // Check if user was active today
-            const communicationProgress = user.quizProgress?.communication;
-            if (communicationProgress?.lastUpdated) {
-                const activeDate = new Date(communicationProgress.lastUpdated).setHours(0, 0, 0, 0);
-                if (activeDate === today) {
-                    activeUsers++;
-                    console.log(`${user.username} was active today`);
-                }
+            const lastActive = this.getLastActiveDate(user);
+            if (lastActive >= today) {
+                acc.activeUsers++;
             }
 
-            // Calculate user's progress
-            const progress = this.calculateUserProgress(user);
-            if (progress > 0) {
-                totalProgress += progress;
-                usersWithProgress++;
-                console.log(`${user.username} has progress:`, progress);
-            }
-        });
+            // Calculate progress for average
+            const userProgress = this.calculateUserProgress(user);
+            acc.totalProgress += userProgress;
+            
+            console.log(`User ${user.username} stats:`, {
+                lastActive: new Date(lastActive),
+                progress: userProgress
+            });
 
-        const averageProgress = usersWithProgress > 0 ? Math.round(totalProgress / usersWithProgress) : 0;
-
-        console.log('Statistics calculated:', {
+            return acc;
+        }, {
             totalUsers: this.users.length,
-            activeUsers,
-            averageProgress
+            activeUsers: 0,
+            totalProgress: 0
         });
 
-        if (totalUsersElement) totalUsersElement.textContent = this.users.length;
-        if (activeUsersElement) activeUsersElement.textContent = activeUsers;
-        if (averageCompletionElement) averageCompletionElement.textContent = `${averageProgress}%`;
+        stats.averageProgress = Math.round(stats.totalProgress / stats.totalUsers);
+        
+        console.log('Final statistics:', stats);
+        return stats;
     }
 
     updateUserList() {
@@ -531,20 +510,27 @@ class AdminDashboard {
 
     // Helper method to calculate user progress
     calculateUserProgress(user) {
-        const communicationProgress = user.quizProgress?.communication;
-        if (!communicationProgress) return 0;
+        if (!user.quizProgress) return 0;
         
-        // Use questionHistory length for progress calculation
-        const questionsAnswered = communicationProgress.questionHistory?.length || 0;
-        const totalQuestions = 15;
+        // Calculate progress across all quizzes
+        const totalProgress = this.quizTypes.reduce((sum, quizName) => {
+            const quizProgress = user.quizProgress[quizName];
+            if (!quizProgress?.questionHistory) return sum;
+            
+            const questionsAnswered = quizProgress.questionHistory.length;
+            const quizPercentage = (questionsAnswered / 15) * 100;
+            return sum + quizPercentage;
+        }, 0);
         
-        console.log(`Calculating progress for ${user.username}:`, {
-            questionsAnswered,
-            totalQuestions,
-            progress: Math.round((questionsAnswered / totalQuestions) * 100)
+        // Average progress across all quizzes
+        const averageProgress = totalProgress / this.quizTypes.length;
+        
+        console.log(`Calculating total progress for ${user.username}:`, {
+            totalProgress,
+            averageProgress
         });
         
-        return Math.round((questionsAnswered / totalQuestions) * 100);
+        return Math.round(averageProgress);
     }
 
     // Helper method to get last active date
@@ -593,9 +579,9 @@ class AdminDashboard {
                     ${this.quizTypes.map(quizName => {
                         // Inside showUserDetails method, update the template literal for quiz progress display
                         const quizProgress = user.quizProgress?.[quizName];
-                        console.log(`Raw quiz progress for ${quizName}:`, quizProgress);
+                        console.log(`Processing quiz progress for ${quizName}:`, quizProgress);
 
-                        if (!quizProgress || !quizProgress.questionHistory) {
+                        if (!quizProgress?.questionHistory) {
                             return `
                                 <div class="quiz-progress-item" style="margin-bottom: 15px; padding: 10px; border: 1px solid #ddd; border-radius: 4px;">
                                     <h4 style="margin: 0 0 10px 0">${this.formatQuizName(quizName)}</h4>
@@ -610,8 +596,8 @@ class AdminDashboard {
                         }
 
                         // Get values from quiz progress data
-                        const questionsAnswered = quizProgress.questionHistory?.length || 0;
-                        const earnedXP = quizProgress.experience || 0;
+                        const questionsAnswered = quizProgress.questionHistory.length;
+                        const earnedXP = quizProgress.experience || Math.round((questionsAnswered / 15) * 300); // Fallback calculation if experience is missing
                         const percentComplete = Math.round((questionsAnswered / 15) * 100);
 
                         console.log(`Processed quiz data for ${quizName}:`, {
