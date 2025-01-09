@@ -600,39 +600,33 @@ class AdminDashboard {
                     ${this.quizTypes.map(quizName => {
                         // Get the raw progress data for this quiz
                         const quizProgress = user.quizProgress?.[quizName];
-                        const quizResult = user.quizResults?.find(result => 
-                            this.normalizeQuizName(result.quizName) === this.normalizeQuizName(quizName)
-                        );
                         
-                        // Get the score data from userScores
-                        const scoreData = scores.find(score => 
-                            this.normalizeQuizName(score.quizName) === this.normalizeQuizName(quizName)
-                        );
+                        // Calculate total possible XP from question history
+                        const totalPossibleXP = quizProgress?.questionHistory?.reduce((sum, q) => sum + q.maxPossibleXP, 0) || 0;
+                        
+                        // Calculate earned XP from question history
+                        const earnedXP = quizProgress?.questionHistory?.reduce((sum, q) => sum + q.selectedAnswer.experience, 0) || 0;
+                        
+                        // Calculate score as a percentage of completed questions (15 total questions)
+                        const questionsAnswered = quizProgress?.questionHistory?.length || 0;
+                        const percentComplete = Math.round((questionsAnswered / 15) * 100);
 
                         console.log(`Quiz data for ${quizName}:`, {
                             quizProgress,
-                            quizResult,
-                            scoreData
+                            totalPossibleXP,
+                            earnedXP,
+                            questionsAnswered,
+                            percentComplete
                         });
-
-                        // Combine all data sources, prioritizing quizProgress
-                        const displayData = {
-                            score: quizResult?.score || scoreData?.score || 0,
-                            experience: quizProgress?.experience || scoreData?.experience || 0,
-                            questionsAnswered: quizProgress?.questionHistory?.length || scoreData?.questionsAnswered || 0,
-                            lastActive: quizProgress?.lastUpdated || quizResult?.completedAt || scoreData?.lastActive || null
-                        };
-
-                        console.log(`Display data for ${quizName}:`, displayData);
 
                         return `
                             <div class="quiz-progress-item" style="margin-bottom: 15px; padding: 10px; border: 1px solid #ddd; border-radius: 4px;">
                                 <h4 style="margin: 0 0 10px 0">${this.formatQuizName(quizName)}</h4>
                                 <div class="quiz-stats" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px;">
-                                    <div class="stat-item">Progress: <span class="stat-value">${displayData.score}%</span></div>
-                                    <div class="stat-item">Questions: <span class="stat-value">${displayData.questionsAnswered}/15</span></div>
-                                    <div class="stat-item">XP: <span class="stat-value">${displayData.experience}</span></div>
-                                    <div class="stat-item">Last Active: <span class="stat-value">${displayData.lastActive ? this.formatDate(new Date(displayData.lastActive).getTime()) : 'Never'}</span></div>
+                                    <div class="stat-item">Progress: <span class="stat-value">${percentComplete}%</span></div>
+                                    <div class="stat-item">Questions: <span class="stat-value">${questionsAnswered}/15</span></div>
+                                    <div class="stat-item">XP: <span class="stat-value">${earnedXP}</span></div>
+                                    <div class="stat-item">Last Active: <span class="stat-value">${quizProgress?.lastUpdated ? this.formatDate(new Date(quizProgress.lastUpdated).getTime()) : 'Never'}</span></div>
                                 </div>
                             </div>
                         `;
@@ -697,10 +691,13 @@ class AdminDashboard {
     calculateProgress(scores) {
         if (!scores || !scores.length) return 0;
         
-        // Sum up all quiz scores (defaulting to 0 for unstarted quizzes)
-        const totalScore = scores.reduce((sum, score) => sum + (score.score || 0), 0);
-        // Calculate average score across all quizzes (14 total)
-        return totalScore / 14;
+        // Get the communication quiz progress
+        const communicationQuiz = scores.find(score => score.quizName === 'communication');
+        if (!communicationQuiz) return 0;
+        
+        // Calculate progress based on questions answered (out of 15)
+        const questionsAnswered = communicationQuiz.questionsAnswered || 0;
+        return Math.round((questionsAnswered / 15) * 100);
     }
 
     getLastActive(scores) {
