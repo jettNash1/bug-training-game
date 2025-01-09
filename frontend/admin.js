@@ -192,22 +192,18 @@ class AdminDashboard {
                     
                     // Get quiz progress from user.quizProgress object
                     const quizProgress = user.quizProgress?.[quizName] || {};
-                    console.log(`Quiz progress for ${user.username} - ${quizName}:`, {
-                        quizResult,
-                        quizProgress,
-                        normalizedName: this.normalizeQuizName(quizName)
-                    });
-
+                    
                     // For communication quiz, get the actual values
                     if (quizName === 'communication') {
+                        // If we have a quiz result but no progress, use the quiz result data
                         const progress = {
                             quizName,
                             score: quizResult.score || 0,
-                            experience: quizProgress.experience || 0,
-                            questionsAnswered: quizProgress.questionHistory?.length || 0,
-                            currentScenario: quizProgress.currentScenario || 0,
+                            experience: quizResult.experience || quizProgress.experience || 0,
+                            questionsAnswered: quizResult.questionsAnswered || quizProgress.questionHistory?.length || 0,
+                            currentScenario: quizResult.questionsAnswered || quizProgress.currentScenario || 0,
                             lastActive: quizResult.completedAt || quizProgress.lastUpdated || null,
-                            answers: quizProgress.questionHistory || []
+                            answers: quizProgress.questionHistory || quizResult.answers || []
                         };
                         console.log(`Communication quiz progress for ${user.username}:`, progress);
                         return progress;
@@ -216,11 +212,11 @@ class AdminDashboard {
                     return {
                         quizName,
                         score: quizResult.score || 0,
-                        experience: quizProgress.experience || 0,
-                        questionsAnswered: quizProgress.questionHistory?.length || 0,
-                        currentScenario: quizProgress.currentScenario || 0,
+                        experience: quizResult.experience || quizProgress.experience || 0,
+                        questionsAnswered: quizResult.questionsAnswered || quizProgress.questionHistory?.length || 0,
+                        currentScenario: quizResult.questionsAnswered || quizProgress.currentScenario || 0,
                         lastActive: quizResult.completedAt || quizProgress.lastUpdated || null,
-                        answers: quizProgress.questionHistory || []
+                        answers: quizProgress.questionHistory || quizResult.answers || []
                     };
                 });
 
@@ -568,14 +564,22 @@ class AdminDashboard {
                         console.log(`Quiz data for ${quizName}:`, quizData);
 
                         // Get the raw progress data for this quiz
+                        const quizResult = user.quizResults?.find(result => 
+                            this.normalizeQuizName(result.quizName) === this.normalizeQuizName(quizName)
+                        );
                         const rawProgress = user.quizProgress?.[quizName];
-                        console.log(`Raw progress for ${quizName}:`, rawProgress);
+                        
+                        console.log(`Quiz result and progress for ${quizName}:`, {
+                            quizResult,
+                            rawProgress
+                        });
 
                         const displayData = {
-                            score: quizData?.score || 0,
-                            experience: rawProgress?.experience || 0,
-                            currentScenario: rawProgress?.currentScenario || 0,
-                            lastActive: quizData?.lastActive || rawProgress?.lastUpdated || null
+                            score: quizResult?.score || 0,
+                            experience: quizResult?.experience || rawProgress?.experience || 0,
+                            questionsAnswered: quizResult?.questionsAnswered || rawProgress?.questionHistory?.length || 0,
+                            currentScenario: quizResult?.questionsAnswered || rawProgress?.currentScenario || 0,
+                            lastActive: quizResult?.completedAt || rawProgress?.lastUpdated || null
                         };
 
                         console.log(`Display data for ${quizName}:`, displayData);
