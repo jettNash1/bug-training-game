@@ -29,8 +29,37 @@ export async function checkAuth() {
         
         // If on admin login page and has valid token, redirect to admin panel
         if (currentPath.includes('admin-login.html') && adminToken) {
-            window.location.replace('/pages/admin.html');
-            return true;
+            // Special handling for mock admin token
+            if (adminToken.includes('admin:')) {
+                window.location.replace('/pages/admin.html');
+                return true;
+            }
+            
+            try {
+                const response = await fetch(`${config.apiUrl}/admin/verify`, {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': `Bearer ${adminToken}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    if (data.success && data.isAdmin) {
+                        window.location.replace('/pages/admin.html');
+                        return true;
+                    }
+                }
+                
+                // If verification fails, clear token and stay on login page
+                clearAdminToken();
+                return false;
+            } catch (error) {
+                console.error('Admin token verification failed:', error);
+                clearAdminToken();
+                return false;
+            }
         }
         
         // If on admin panel and no token, redirect to admin login
@@ -39,33 +68,7 @@ export async function checkAuth() {
             return false;
         }
         
-        // If has admin token, verify it
-        if (adminToken) {
-            try {
-                const response = await fetch(`${config.apiUrl}/admin/verify-token`, {
-                    method: 'GET',
-                    headers: {
-                        'Authorization': `Bearer ${adminToken}`,
-                        'Content-Type': 'application/json'
-                    }
-                });
-
-                if (!response.ok) {
-                    clearAdminToken();
-                    window.location.replace('/pages/admin-login.html');
-                    return false;
-                }
-
-                const data = await response.json();
-                return data.success && data.valid && data.isAdmin;
-            } catch (error) {
-                console.error('Admin auth check failed:', error);
-                clearAdminToken();
-                window.location.replace('/pages/admin-login.html');
-                return false;
-            }
-        }
-        
+        // Allow access to admin login page without token
         return currentPath.includes('admin-login.html');
     }
 

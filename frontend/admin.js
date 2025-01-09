@@ -75,7 +75,7 @@ class AdminDashboard {
         }
         
         try {
-            const response = await fetch(`${this.apiService.baseUrl}/admin/verify-token`, {
+            const response = await fetch(`${this.apiService.baseUrl}/admin/verify`, {
                 method: 'GET',
                 headers: {
                     'Authorization': `Bearer ${token}`,
@@ -86,9 +86,9 @@ class AdminDashboard {
             if (!response.ok) return false;
 
             const data = await response.json();
-            return data.success && data.valid && data.isAdmin;
+            return data.success && data.isAdmin;
         } catch (error) {
-            console.error('Admin token verification failed:', error);
+            console.error('Token verification failed:', error);
             return false;
         }
     }
