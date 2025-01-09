@@ -2,7 +2,23 @@ import { APIService } from './api-service.js';
 
 class AdminDashboard {
     constructor() {
-        this.apiService = new APIService();
+        this.apiService = {
+            baseUrl: 'https://bug-training-game-api.onrender.com/api',
+            fetchWithAdminAuth: async (url, options = {}) => {
+                const adminToken = localStorage.getItem('adminToken');
+                if (!adminToken) {
+                    throw new Error('No admin token found');
+                }
+                return fetch(url, {
+                    ...options,
+                    headers: {
+                        ...options.headers,
+                        'Authorization': `Bearer ${adminToken}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+            }
+        };
         
         this.userScores = new Map();
         this.users = [];
@@ -74,12 +90,21 @@ class AdminDashboard {
             });
 
             if (!response.ok) {
+                if (response.status === 401) {
+                    console.error('Token verification failed: Invalid token');
+                    return false;
+                }
                 console.error('Token verification failed with status:', response.status);
                 return false;
             }
 
             const data = await response.json();
-            return data.success && data.isAdmin;
+            if (!data.success || !data.isAdmin) {
+                console.error('Token verification failed: Not an admin token');
+                return false;
+            }
+            
+            return true;
         } catch (error) {
             console.error('Token verification failed:', error);
             return false;
@@ -185,16 +210,25 @@ class AdminDashboard {
     async loadUsers() {
         try {
             console.log('Fetching users...'); // Debug log
+            const adminToken = localStorage.getItem('adminToken');
+            
+            if (!adminToken) {
+                throw new Error('No admin token found');
+            }
+
             const response = await fetch(`${this.apiService.baseUrl}/admin/users`, {
+                method: 'GET',
                 headers: {
-                    'Authorization': `Bearer ${localStorage.getItem('adminToken')}`,
+                    'Authorization': `Bearer ${adminToken}`,
                     'Content-Type': 'application/json'
                 }
             });
 
             if (!response.ok) {
-                const errorData = await response.json().catch(() => ({}));
-                throw new Error(errorData.message || `Failed to fetch users (${response.status})`);
+                if (response.status === 401) {
+                    throw new Error('Invalid authentication token');
+                }
+                throw new Error(`Failed to fetch users (${response.status})`);
             }
 
             const data = await response.json();
