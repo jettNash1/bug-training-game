@@ -30,9 +30,16 @@ export async function checkAuth() {
         // If on admin login page and has valid token, redirect to admin panel
         if (currentPath.includes('admin-login.html') && adminToken) {
             // Special handling for mock admin token
-            if (adminToken.includes('admin:')) {
-                window.location.replace('/pages/admin.html');
-                return true;
+            if (adminToken.startsWith('admin:')) {
+                const timestamp = parseInt(adminToken.split(':')[1]);
+                const now = Date.now();
+                // Token is valid for 24 hours
+                if ((now - timestamp) < 24 * 60 * 60 * 1000) {
+                    window.location.replace('/pages/admin.html');
+                    return true;
+                }
+                clearAdminToken();
+                return false;
             }
             
             try {
@@ -41,7 +48,8 @@ export async function checkAuth() {
                     headers: {
                         'Authorization': `Bearer ${adminToken}`,
                         'Content-Type': 'application/json'
-                    }
+                    },
+                    credentials: 'include'
                 });
 
                 if (response.ok) {
@@ -66,6 +74,31 @@ export async function checkAuth() {
         if (currentPath.includes('admin.html') && !adminToken) {
             window.location.replace('/pages/admin-login.html');
             return false;
+        }
+        
+        // If on admin panel, verify token
+        if (currentPath.includes('admin.html') && adminToken) {
+            try {
+                const response = await fetch(`${config.apiUrl}/admin/verify`, {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': `Bearer ${adminToken}`,
+                        'Content-Type': 'application/json'
+                    },
+                    credentials: 'include'
+                });
+
+                if (!response.ok || !(await response.json()).isAdmin) {
+                    clearAdminToken();
+                    window.location.replace('/pages/admin-login.html');
+                    return false;
+                }
+            } catch (error) {
+                console.error('Admin token verification failed:', error);
+                clearAdminToken();
+                window.location.replace('/pages/admin-login.html');
+                return false;
+            }
         }
         
         // Allow access to admin login page without token
