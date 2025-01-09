@@ -496,11 +496,11 @@ class AdminDashboard {
             const cardContent = document.createElement('div');
             cardContent.className = 'user-header';
             cardContent.innerHTML = `
-                <h4>${user.username}</h4>
-                <div class="user-stats">
-                    <div class="total-score">Overall Progress: ${progress.toFixed(1)}%</div>
-                    <div class="last-active">Last Active: ${this.formatDate(lastActive)}</div>
-                </div>
+                    <h4>${user.username}</h4>
+                    <div class="user-stats">
+                        <div class="total-score">Overall Progress: ${progress.toFixed(1)}%</div>
+                        <div class="last-active">Last Active: ${this.formatDate(lastActive)}</div>
+                    </div>
             `;
                 
                 const viewDetailsBtn = document.createElement('button');
@@ -547,7 +547,8 @@ class AdminDashboard {
 
             console.log(`Showing details for ${username}:`, {
                 scores,
-                user
+                user,
+                quizProgress: user.quizProgress
             });
 
             const overlay = document.createElement('div');
@@ -564,29 +565,23 @@ class AdminDashboard {
                 </div>
                 <div class="quiz-progress-list" style="margin-top: 20px;">
                     ${this.quizTypes.map(quizName => {
-                        const quizData = scores.find(score => 
-                            this.normalizeQuizName(score.quizName) === this.normalizeQuizName(quizName)
-                        );
-                        
-                        console.log(`Quiz data for ${quizName}:`, quizData);
-
                         // Get the raw progress data for this quiz
+                        const quizProgress = user.quizProgress?.[quizName];
                         const quizResult = user.quizResults?.find(result => 
                             this.normalizeQuizName(result.quizName) === this.normalizeQuizName(quizName)
                         );
-                        const rawProgress = user.quizProgress?.[quizName];
                         
-                        console.log(`Quiz result and progress for ${quizName}:`, {
-                            quizResult,
-                            rawProgress
+                        console.log(`Quiz data for ${quizName}:`, {
+                            quizProgress,
+                            quizResult
                         });
 
                         const displayData = {
                             score: quizResult?.score || 0,
-                            experience: quizResult?.experience || rawProgress?.experience || 0,
-                            questionsAnswered: quizResult?.questionsAnswered || rawProgress?.questionHistory?.length || 0,
-                            currentScenario: quizResult?.questionsAnswered || rawProgress?.currentScenario || 0,
-                            lastActive: quizResult?.completedAt || rawProgress?.lastUpdated || null
+                            experience: quizProgress?.experience || 0,
+                            questionsAnswered: quizProgress?.questionHistory?.length || 0,
+                            currentScenario: quizProgress?.currentScenario || 0,
+                            lastActive: quizProgress?.lastUpdated || quizResult?.completedAt || null
                         };
 
                         console.log(`Display data for ${quizName}:`, displayData);
@@ -596,7 +591,7 @@ class AdminDashboard {
                                 <h4 style="margin: 0 0 10px 0">${this.formatQuizName(quizName)}</h4>
                                 <div class="quiz-stats" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px;">
                                     <div class="stat-item">Progress: <span class="stat-value">${displayData.score}%</span></div>
-                                    <div class="stat-item">Questions: <span class="stat-value">${displayData.currentScenario}/15</span></div>
+                                    <div class="stat-item">Questions: <span class="stat-value">${displayData.questionsAnswered}/15</span></div>
                                     <div class="stat-item">XP: <span class="stat-value">${displayData.experience}</span></div>
                                     <div class="stat-item">Last Active: <span class="stat-value">${displayData.lastActive ? this.formatDate(new Date(displayData.lastActive).getTime()) : 'Never'}</span></div>
                                 </div>

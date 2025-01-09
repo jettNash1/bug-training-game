@@ -593,11 +593,24 @@ export class CommunicationQuiz extends BaseQuiz {
                 this.player.tools = progress.tools || [];
                 this.player.questionHistory = progress.questionHistory || [];
                 
-                // Set the current scenario based on the number of completed questions
-                this.player.currentScenario = this.player.questionHistory.length;
+                // Set the current scenario to the actual value from progress
+                this.player.currentScenario = progress.currentScenario || 0;
 
                 // Update UI
                 this.updateProgress();
+
+                // Update the questions progress display
+                const questionsProgress = document.getElementById('questions-progress');
+                if (questionsProgress) {
+                    questionsProgress.textContent = `${this.player.questionHistory.length}/15`;
+                }
+
+                // Update the current scenario display
+                const currentScenarioDisplay = document.getElementById('current-scenario');
+                if (currentScenarioDisplay) {
+                    currentScenarioDisplay.textContent = `${this.player.currentScenario}`;
+                }
+
                 return true;
             }
             return false;
