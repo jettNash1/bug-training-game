@@ -1,25 +1,29 @@
 import { APIService } from './api-service.js';
 
 class AdminDashboard {
-    constructor(apiService) {
-        this.apiService = apiService;
+    constructor() {
+        this.apiService = {
+            baseUrl: 'https://bug-training-game.onrender.com/api',
+            fetchWithAdminAuth: async (url, options = {}) => {
+                const adminToken = localStorage.getItem('adminToken');
+                return fetch(url, {
+                    ...options,
+                    headers: {
+                        ...options.headers,
+                        'Authorization': `Bearer ${adminToken}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+            }
+        };
+        
         this.userScores = new Map();
         this.users = [];
         this.quizTypes = [
-            'communication',
-            'initiative', 
-            'time-management',
-            'tester-mindset',
-            'risk-analysis',
-            'risk-management',
-            'non-functional',
-            'test-support',
-            'issue-verification',
-            'build-verification',
-            'issue-tracking-tools',
-            'raising-tickets',
-            'reports',
-            'cms-testing'
+            'communication', 'initiative', 'time-management', 'tester-mindset',
+            'risk-analysis', 'risk-management', 'non-functional', 'test-support',
+            'issue-verification', 'build-verification', 'issue-tracking-tools',
+            'raising-tickets', 'reports', 'cms-testing'
         ];
         console.log('AdminDashboard initialized with empty userScores map'); // Debug log
     }
@@ -85,10 +89,7 @@ class AdminDashboard {
         }
     }
 
-    async handleAdminLogin() {
-        const username = document.getElementById('adminUsername').value;
-        const password = document.getElementById('adminPassword').value;
-
+    async handleAdminLogin(username, password) {
         try {
             const response = await fetch(`${this.apiService.baseUrl}/admin/login`, {
                 method: 'POST',
@@ -99,16 +100,16 @@ class AdminDashboard {
             });
 
             const data = await response.json();
-            
-            if (data.success && data.token && data.isAdmin) {
-                localStorage.setItem('adminToken', data.token);
-                window.location.href = '/pages/admin.html';
-            } else {
-                this.showError(data.message || 'Invalid admin credentials');
+
+            if (!response.ok) {
+                throw new Error(data.message || 'Login failed');
             }
+
+            localStorage.setItem('adminToken', data.token);
+            window.location.href = '/pages/admin.html';
         } catch (error) {
             console.error('Login error:', error);
-            this.showError('Login failed. Please try again.');
+            throw error;
         }
     }
 
