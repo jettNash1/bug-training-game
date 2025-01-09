@@ -2,20 +2,7 @@ import { APIService } from './api-service.js';
 
 class AdminDashboard {
     constructor() {
-        this.apiService = {
-            baseUrl: 'https://bug-training-game.onrender.com/api',
-            fetchWithAdminAuth: async (url, options = {}) => {
-                const adminToken = localStorage.getItem('adminToken');
-                return fetch(url, {
-                    ...options,
-                    headers: {
-                        ...options.headers,
-                        'Authorization': `Bearer ${adminToken}`,
-                        'Content-Type': 'application/json'
-                    }
-                });
-            }
-        };
+        this.apiService = new APIService();
         
         this.userScores = new Map();
         this.users = [];
@@ -198,26 +185,24 @@ class AdminDashboard {
     async loadUsers() {
         try {
             console.log('Fetching users...'); // Debug log
-            const response = await fetch(`${this.apiService.baseUrl}/admin/users`, {
-                headers: {
-                    'Authorization': `Bearer ${localStorage.getItem('adminToken')}`,
-                    'Content-Type': 'application/json'
-                }
-            });
+            const response = await this.apiService.fetchWithAdminAuth(
+                `${this.apiService.baseUrl}/users/all`
+            );
 
             if (!response.ok) {
-                throw new Error('Failed to fetch users');
+                const errorData = await response.json().catch(() => ({}));
+                throw new Error(errorData.message || `Failed to fetch users (${response.status})`);
             }
 
             const data = await response.json();
             console.log('User data received:', data); // Debug log
 
-            if (!data.success) {
-                throw new Error(data.message || 'Failed to load users');
+            if (!data.users) {
+                throw new Error('Invalid response format: missing users data');
             }
 
-            this.users = data.users || [];
-            console.log('Users loaded:', this.users); // Debug log
+            this.users = data.users.map(user => this.initializeQuizData(user));
+            console.log('Users loaded:', this.users.length, 'users'); // Debug log
 
             // Process quiz results and progress for each user
             this.users.forEach(user => {
@@ -238,12 +223,6 @@ class AdminDashboard {
                         }
                     });
                 }
-
-                // Process communication quiz specifically if it exists
-                if (user.quizProgress.communication?.questionHistory) {
-                    console.log(`Found communication progress for ${user.username}:`, 
-                        user.quizProgress.communication);
-                }
             });
 
             // Update the dashboard immediately after loading users
@@ -252,7 +231,7 @@ class AdminDashboard {
             return true;
         } catch (error) {
             console.error('Failed to load users:', error);
-            this.users = [];
+            this.showError(`Failed to load users: ${error.message}`);
             return false;
         }
     }
@@ -366,18 +345,13 @@ class AdminDashboard {
 
     async updateDashboard() {
         try {
-            const response = await fetch(`${this.apiService.baseUrl}/users`, {
-                headers: {
-                    'Authorization': `Bearer ${localStorage.getItem('adminToken')}`
+            // No need to fetch users again if we already have them
+            if (!this.users || this.users.length === 0) {
+                const success = await this.loadUsers();
+                if (!success) {
+                    throw new Error('Failed to load users data');
                 }
-            });
-
-            if (!response.ok) {
-                throw new Error('Failed to fetch users');
             }
-
-            const data = await response.json();
-            this.users = data.users.map(user => this.initializeQuizData(user));
             
             // Update statistics
             const stats = this.calculateStatistics();
@@ -388,7 +362,7 @@ class AdminDashboard {
             
         } catch (error) {
             console.error('Error updating dashboard:', error);
-            this.showError('Failed to update dashboard');
+            this.showError(`Failed to update dashboard: ${error.message}`);
         }
     }
 
