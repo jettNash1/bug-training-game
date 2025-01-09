@@ -275,9 +275,9 @@ class AdminDashboard {
             await Promise.all(progressPromises);
 
             // Now update the dashboard with fresh data
-            this.updateDashboard();
+                this.updateDashboard();
             console.log('All user progress loaded and dashboard updated');
-        } catch (error) {
+            } catch (error) {
             console.error('Failed to load all user progress:', error);
             this.showError('Failed to load user progress');
         }
@@ -637,8 +637,8 @@ class AdminDashboard {
                             </div>
                         `;
                     }).join('')}
-                </div>
-            `;
+                    </div>
+                `;
             
             overlay.appendChild(content);
             document.body.appendChild(overlay);
