@@ -2,34 +2,7 @@ import { APIService } from './api-service.js';
 
 class AdminDashboard {
     constructor() {
-        this.apiService = {
-            baseUrl: 'https://bug-training-game.onrender.com/api',
-            fetchWithAdminAuth: async (url, options = {}) => {
-                const adminToken = localStorage.getItem('adminToken');
-                if (!adminToken) {
-                    window.location.replace('/pages/admin-login.html');
-                    throw new Error('No admin token found');
-                }
-
-                // Verify token before making request
-                const isValid = await this.verifyAdminToken(adminToken);
-                if (!isValid) {
-                    localStorage.removeItem('adminToken');
-                    window.location.replace('/pages/admin-login.html');
-                    throw new Error('Invalid admin token');
-                }
-
-                return fetch(url, {
-                    ...options,
-                    headers: {
-                        ...options.headers,
-                        'Authorization': `Bearer ${adminToken}`,
-                        'Content-Type': 'application/json'
-                    },
-                    credentials: 'include'
-                });
-            }
-        };
+        this.apiService = new APIService();
         
         this.userScores = new Map();
         this.users = [];
@@ -92,22 +65,8 @@ class AdminDashboard {
         }
         
         try {
-            const response = await fetch(`${this.apiService.baseUrl}/admin/verify`, {
-                method: 'GET',
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                    'Content-Type': 'application/json'
-                },
-                credentials: 'include'
-            });
-
-            if (!response.ok) {
-                console.error('Token verification failed with status:', response.status);
-                return false;
-            }
-
-            const data = await response.json();
-            return data.success && data.isAdmin;
+            const result = await this.apiService.verifyAdminToken();
+            return result.valid;
         } catch (error) {
             console.error('Token verification failed:', error);
             return false;
@@ -134,40 +93,13 @@ class AdminDashboard {
                 return;
             }
 
-            const response = await fetch(`${this.apiService.baseUrl}/admin/login`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                credentials: 'include',
-                body: JSON.stringify({
-                    username: username.trim(),
-                    password: password.trim()
-                })
-            });
-
-            if (!response.ok) {
-                const errorData = await response.json().catch(() => ({}));
-                throw new Error(errorData.message || 'Invalid credentials');
-            }
-
-            const data = await response.json();
-            console.log('Login response:', data);
+            const data = await this.apiService.adminLogin(username, password);
 
             if (!data.token) {
                 throw new Error('No token received from server');
             }
 
-            // Store the admin token
-            localStorage.setItem('adminToken', data.token);
-            
-            // Verify the token immediately
-            const isValid = await this.verifyAdminToken(data.token);
-            if (!isValid) {
-                localStorage.removeItem('adminToken');
-                throw new Error('Token verification failed');
-            }
-
+            // Token is already stored by adminLogin method
             window.location.replace('/pages/admin.html');
         } catch (error) {
             console.error('Login error:', error);
@@ -177,21 +109,8 @@ class AdminDashboard {
 
     async handleAdminLogout() {
         try {
-            const adminToken = localStorage.getItem('adminToken');
-            if (adminToken) {
-                // Try to logout from server
-                await fetch(`${this.apiService.baseUrl}/admin/logout`, {
-                    method: 'POST',
-                    headers: {
-                        'Authorization': `Bearer ${adminToken}`,
-                        'Content-Type': 'application/json'
-                    },
-                    credentials: 'include'
-                }).catch(console.error); // Don't throw if server logout fails
-            }
+            await this.apiService.adminLogout();
         } finally {
-            // Always clear local token and redirect
-            localStorage.removeItem('adminToken');
             window.location.replace('/pages/admin-login.html');
         }
     }
@@ -233,48 +152,20 @@ class AdminDashboard {
     async loadUsers() {
         try {
             console.log('Fetching users...'); // Debug log
-            const adminToken = localStorage.getItem('adminToken');
             
-            if (!adminToken) {
-                throw new Error('No admin token found');
+            const response = await this.apiService.getAllUsers();
+            console.log('User data received:', response); // Debug log
+
+            if (!response.success) {
+                throw new Error('Invalid response format: missing success flag');
             }
 
-            // First try to verify the token
-            const isValid = await this.verifyAdminToken(adminToken);
-            if (!isValid) {
-                localStorage.removeItem('adminToken');
-                window.location.replace('/pages/admin-login.html');
-                throw new Error('Invalid admin token');
-            }
-
-            const response = await fetch(`${this.apiService.baseUrl}/admin/all-users`, {
-                method: 'GET',
-                headers: {
-                    'Authorization': `Bearer ${adminToken}`,
-                    'Content-Type': 'application/json'
-                },
-                credentials: 'include'
-            });
-
-            if (!response.ok) {
-                if (response.status === 401) {
-                    localStorage.removeItem('adminToken');
-                    window.location.replace('/pages/admin-login.html');
-                    throw new Error('Invalid authentication token');
-                }
-                const errorData = await response.json().catch(() => ({}));
-                throw new Error(errorData.message || `Failed to fetch users (${response.status})`);
-            }
-
-            const data = await response.json();
-            console.log('User data received:', data); // Debug log
-
-            // Check if data is in the expected format
-            if (!data.users || !Array.isArray(data.users)) {
+            const userData = response.data || [];
+            if (!Array.isArray(userData)) {
                 throw new Error('Invalid response format: expected array of users');
             }
 
-            this.users = data.users.map(user => this.initializeQuizData(user));
+            this.users = userData.map(user => this.initializeQuizData(user));
             console.log('Users loaded:', this.users.length, 'users'); // Debug log
 
             // Process quiz results and progress for each user
@@ -290,8 +181,10 @@ class AdminDashboard {
                         const quizName = result.quizName.toLowerCase();
                         if (!user.quizProgress[quizName]) {
                             user.quizProgress[quizName] = {
-                                questionHistory: [],
-                                lastUpdated: result.completedAt
+                                questionHistory: result.questionHistory || [],
+                                experience: result.experience || 0,
+                                lastUpdated: result.completedAt,
+                                questionsAnswered: result.questionsAnswered || 0
                             };
                         }
                     });
@@ -359,34 +252,21 @@ class AdminDashboard {
 
     async loadUserProgress(username) {
         try {
-            const adminToken = localStorage.getItem('adminToken');
-            if (!adminToken) {
-                throw new Error('No admin token found');
+            const response = await this.apiService.getUserProgress(username);
+            console.log(`Raw progress data for ${username}:`, response);
+            
+            if (!response.success) {
+                throw new Error('Invalid response format: missing success flag');
             }
 
-            const response = await fetch(`${this.apiService.baseUrl}/admin/users/${username}/progress`, {
-                method: 'GET',
-                headers: {
-                    'Authorization': `Bearer ${adminToken}`,
-                    'Content-Type': 'application/json'
-                },
-                credentials: 'include'
-            });
-
-            if (!response.ok) {
-                if (response.status === 401) {
-                    localStorage.removeItem('adminToken');
-                    window.location.replace('/pages/admin-login.html');
-                    throw new Error('Invalid authentication token');
-                }
-                throw new Error('Failed to load user progress');
-            }
-
-            const data = await response.json();
-            console.log(`Raw progress data for ${username}:`, data);
+            const progressData = response.data || {};
             
             // Verify and initialize quiz progress data
-            const verifiedData = this.verifyQuizProgress(data);
+            const verifiedData = this.verifyQuizProgress({
+                username,
+                quizProgress: progressData
+            });
+            
             console.log(`Verified progress data for ${username}:`, verifiedData);
             
             return verifiedData;

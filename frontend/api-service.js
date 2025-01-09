@@ -14,8 +14,22 @@ export class APIService {
 
     // Admin-specific fetch method
     async fetchWithAdminAuth(url, options = {}) {
+        const adminToken = localStorage.getItem('adminToken');
+        if (!adminToken) {
+            window.location.replace('/pages/admin-login.html');
+            throw new Error('No admin token found');
+        }
+
+        // Verify token before making request
+        const tokenVerification = await this.verifyAdminToken();
+        if (!tokenVerification.valid) {
+            localStorage.removeItem('adminToken');
+            window.location.replace('/pages/admin-login.html');
+            throw new Error('Invalid admin token');
+        }
+
         const headers = {
-            ...this.getAdminAuthHeader(),
+            'Authorization': `Bearer ${adminToken}`,
             'Content-Type': 'application/json',
             ...options.headers
         };
@@ -27,14 +41,31 @@ export class APIService {
         });
 
         if (response.status === 401) {
-            // If unauthorized, redirect to admin login
             localStorage.removeItem('adminToken');
-            // Use consistent path for admin login
-            window.location.href = '/pages/admin-login.html';
+            window.location.replace('/pages/admin-login.html');
             throw new Error('Admin authentication required');
         }
 
-        return response;
+        // Try to parse response as JSON
+        try {
+            const text = await response.text();
+            let data;
+            try {
+                data = JSON.parse(text);
+            } catch (e) {
+                console.error('Failed to parse response as JSON:', text);
+                throw new Error('Invalid response from server');
+            }
+
+            if (!response.ok) {
+                throw new Error(data.message || `Request failed with status ${response.status}`);
+            }
+
+            return data;
+        } catch (error) {
+            console.error('Request failed:', error);
+            throw error;
+        }
     }
 
     // Regular user authentication methods
@@ -286,6 +317,115 @@ export class APIService {
         } catch (error) {
             console.error('Failed to update quiz score:', error);
             throw error;
+        }
+    }
+
+    // Admin-specific methods
+    async adminLogin(username, password) {
+        try {
+            console.log('Attempting admin login:', { username });
+            
+            const response = await fetch(`${this.baseUrl}/admin/login`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                credentials: 'include',
+                body: JSON.stringify({ username, password })
+            });
+
+            const data = await response.json();
+            
+            if (!response.ok) {
+                throw new Error(data.message || 'Admin login failed');
+            }
+
+            if (data.token) {
+                localStorage.setItem('adminToken', data.token);
+            }
+
+            return data;
+        } catch (error) {
+            console.error('Admin login error:', error);
+            throw error;
+        }
+    }
+
+    async verifyAdminToken() {
+        try {
+            const adminToken = localStorage.getItem('adminToken');
+            if (!adminToken) {
+                return { valid: false };
+            }
+
+            // Handle mock admin token
+            if (adminToken.startsWith('admin:')) {
+                const timestamp = parseInt(adminToken.split(':')[1]);
+                const now = Date.now();
+                return { valid: (now - timestamp) < 24 * 60 * 60 * 1000 };
+            }
+
+            const response = await fetch(`${this.baseUrl}/admin/verify`, {
+                method: 'GET',
+                headers: {
+                    'Authorization': `Bearer ${adminToken}`,
+                    'Content-Type': 'application/json'
+                },
+                credentials: 'include'
+            });
+
+            const data = await response.json();
+            return { 
+                valid: response.ok && data.success && data.isAdmin,
+                ...data 
+            };
+        } catch (error) {
+            console.error('Admin token verification error:', error);
+            return { valid: false };
+        }
+    }
+
+    async getAllUsers() {
+        try {
+            const response = await this.fetchWithAdminAuth(`${this.baseUrl}/admin/users`);
+            return {
+                success: true,
+                data: response.users || []
+            };
+        } catch (error) {
+            console.error('Failed to fetch users:', error);
+            throw error;
+        }
+    }
+
+    async getUserProgress(username) {
+        try {
+            const response = await this.fetchWithAdminAuth(`${this.baseUrl}/admin/users/${username}/progress`);
+            return {
+                success: true,
+                data: response.progress || {}
+            };
+        } catch (error) {
+            console.error(`Failed to fetch progress for user ${username}:`, error);
+            throw error;
+        }
+    }
+
+    async adminLogout() {
+        try {
+            const adminToken = localStorage.getItem('adminToken');
+            if (adminToken) {
+                await fetch(`${this.baseUrl}/admin/logout`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${adminToken}`,
+                        'Content-Type': 'application/json'
+                    },
+                    credentials: 'include'
+                }).catch(console.error); // Don't throw if server logout fails
+            }
+        } finally {
+            localStorage.removeItem('adminToken');
         }
     }
 } 
