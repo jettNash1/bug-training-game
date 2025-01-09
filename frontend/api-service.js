@@ -23,9 +23,7 @@ export class APIService {
             });
 
             if (!adminToken) {
-                console.log('No admin token found, redirecting to login');
-                localStorage.removeItem('adminToken');
-                window.location.replace('/pages/admin-login.html');
+                console.log('No admin token found');
                 throw new Error('No admin token found');
             }
 
@@ -34,9 +32,7 @@ export class APIService {
                 const timestamp = parseInt(adminToken.split(':')[1]);
                 const now = Date.now();
                 if ((now - timestamp) >= 24 * 60 * 60 * 1000) {
-                    console.log('Mock token expired, redirecting to login');
-                    localStorage.removeItem('adminToken');
-                    window.location.replace('/pages/admin-login.html');
+                    console.log('Mock token expired');
                     throw new Error('Mock token expired');
                 }
             } else {
@@ -46,16 +42,7 @@ export class APIService {
                 console.log('Token verification result:', tokenVerification);
                 
                 if (!tokenVerification.valid) {
-                    // Only redirect on clear invalid token, not temporary errors
-                    if (tokenVerification.reason === 'invalid' || tokenVerification.reason === 'no_token') {
-                        console.log('Token verification failed, redirecting to login');
-                        localStorage.removeItem('adminToken');
-                        window.location.replace('/pages/admin-login.html');
-                        throw new Error(`Invalid admin token: ${tokenVerification.reason}`);
-                    } else {
-                        // For temporary errors, just throw without redirect
-                        throw new Error(`Token verification failed: ${tokenVerification.reason}`);
-                    }
+                    throw new Error(`Invalid admin token: ${tokenVerification.reason}`);
                 }
             }
 
@@ -72,14 +59,6 @@ export class APIService {
                 headers
             });
 
-            // Only redirect on clear authentication failures
-            if (response.status === 401) {
-                console.log('Unauthorized response, redirecting to login');
-                localStorage.removeItem('adminToken');
-                window.location.replace('/pages/admin-login.html');
-                throw new Error('Admin authentication required');
-            }
-
             // Try to parse response as JSON
             try {
                 const text = await response.text();
@@ -94,7 +73,13 @@ export class APIService {
                 }
 
                 if (!response.ok) {
-                    throw new Error(data.message || `Request failed with status ${response.status}`);
+                    if (response.status === 404) {
+                        throw new Error(`API endpoint not found: ${url}`);
+                    } else if (response.status === 401) {
+                        throw new Error('Admin authentication required');
+                    } else {
+                        throw new Error(data.message || `Request failed with status ${response.status}`);
+                    }
                 }
 
                 return data;
@@ -104,6 +89,17 @@ export class APIService {
             }
         } catch (error) {
             console.error('Admin request failed:', error);
+            
+            // Handle different error types
+            if (error.message.includes('No admin token found') || 
+                error.message.includes('Invalid admin token') ||
+                error.message.includes('Admin authentication required')) {
+                localStorage.removeItem('adminToken');
+                // Add a small delay to see the error in console
+                await new Promise(resolve => setTimeout(resolve, 1000));
+                window.location.replace('/pages/admin-login.html');
+            }
+            
             throw error;
         }
     }
@@ -513,7 +509,7 @@ export class APIService {
 
     async getAllUsers() {
         try {
-            const response = await this.fetchWithAdminAuth(`${this.baseUrl}/admin/users`);
+            const response = await this.fetchWithAdminAuth(`${this.baseUrl}/users/all`);
             return {
                 success: true,
                 data: response.users || []
