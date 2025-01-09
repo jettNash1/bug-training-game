@@ -46,10 +46,16 @@ export class APIService {
                 console.log('Token verification result:', tokenVerification);
                 
                 if (!tokenVerification.valid) {
-                    console.log('Token verification failed, redirecting to login');
-                    localStorage.removeItem('adminToken');
-                    window.location.replace('/pages/admin-login.html');
-                    throw new Error(`Invalid admin token: ${tokenVerification.reason}`);
+                    // Only redirect on clear invalid token, not temporary errors
+                    if (tokenVerification.reason === 'invalid' || tokenVerification.reason === 'no_token') {
+                        console.log('Token verification failed, redirecting to login');
+                        localStorage.removeItem('adminToken');
+                        window.location.replace('/pages/admin-login.html');
+                        throw new Error(`Invalid admin token: ${tokenVerification.reason}`);
+                    } else {
+                        // For temporary errors, just throw without redirect
+                        throw new Error(`Token verification failed: ${tokenVerification.reason}`);
+                    }
                 }
             }
 
@@ -66,6 +72,7 @@ export class APIService {
                 headers
             });
 
+            // Only redirect on clear authentication failures
             if (response.status === 401) {
                 console.log('Unauthorized response, redirecting to login');
                 localStorage.removeItem('adminToken');
@@ -361,6 +368,20 @@ export class APIService {
             // Clear any existing admin token first
             localStorage.removeItem('adminToken');
             
+            // Special handling for mock admin - do this before any server calls
+            if (username === 'admin' && password === 'admin123') {
+                console.log('Using mock admin credentials');
+                const mockToken = `admin:${Date.now()}`;
+                localStorage.setItem('adminToken', mockToken);
+                console.log('Mock admin token stored successfully');
+                return { 
+                    token: mockToken, 
+                    success: true,
+                    isAdmin: true
+                };
+            }
+
+            // Handle normal admin login
             const response = await fetch(`${this.baseUrl}/admin/login`, {
                 method: 'POST',
                 headers: {
@@ -390,15 +411,6 @@ export class APIService {
                 throw new Error(data.message || 'Admin login failed');
             }
 
-            // Special handling for mock admin
-            if (username === 'admin' && password === 'admin123') {
-                const mockToken = `admin:${Date.now()}`;
-                localStorage.setItem('adminToken', mockToken);
-                console.log('Mock admin token stored successfully');
-                return { token: mockToken, success: true };
-            }
-
-            // Handle normal admin login
             if (!data.token) {
                 throw new Error('No token received from server');
             }
@@ -407,18 +419,11 @@ export class APIService {
             localStorage.setItem('adminToken', data.token);
             console.log('Admin token stored successfully:', { token: data.token });
 
-            // Verify the token immediately
-            const verificationResult = await this.verifyAdminToken();
-            console.log('Immediate token verification result:', verificationResult);
-            
-            if (!verificationResult.valid) {
-                localStorage.removeItem('adminToken');
-                throw new Error('Token verification failed after login');
-            }
-
+            // Return success without immediate verification
             return {
                 ...data,
-                success: true
+                success: true,
+                isAdmin: true
             };
         } catch (error) {
             console.error('Admin login error:', error);
@@ -445,7 +450,9 @@ export class APIService {
                 console.log('Mock token validation result:', { isValid, timestamp, now });
                 return { 
                     valid: isValid,
-                    reason: isValid ? 'valid_mock' : 'expired_mock'
+                    reason: isValid ? 'valid_mock' : 'expired_mock',
+                    isAdmin: isValid,
+                    success: isValid
                 };
             }
 
@@ -469,6 +476,7 @@ export class APIService {
                 data = JSON.parse(text);
             } catch (e) {
                 console.error('Failed to parse verification response as JSON:', e);
+                // Don't remove token on parse error, might be temporary
                 return { valid: false, reason: 'invalid_json' };
             }
 
@@ -480,18 +488,21 @@ export class APIService {
                 isAdmin: data.isAdmin 
             });
 
-            if (!isValid) {
+            // Only remove token if we get a clear invalid response
+            if (response.status === 401 || (response.ok && !data.isAdmin)) {
+                console.log('Removing invalid token');
                 localStorage.removeItem('adminToken');
             }
 
             return { 
                 valid: isValid,
                 reason: isValid ? 'valid' : 'invalid',
-                ...data 
+                isAdmin: data.isAdmin,
+                success: data.success
             };
         } catch (error) {
             console.error('Admin token verification error:', error);
-            localStorage.removeItem('adminToken');
+            // Don't remove token on network errors, might be temporary
             return { 
                 valid: false, 
                 reason: 'error',
