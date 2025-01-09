@@ -179,6 +179,11 @@ class AdminDashboard {
             const newScores = new Map();
             
             this.users.forEach(user => {
+                console.log(`Processing user ${user.username}:`, {
+                    quizResults: user.quizResults,
+                    quizProgress: user.quizProgress
+                });
+
                 const scores = this.quizTypes.map(quizName => {
                     // Find the matching quiz result from user.quizResults
                     const quizResult = user.quizResults?.find(result => 
@@ -187,7 +192,26 @@ class AdminDashboard {
                     
                     // Get quiz progress from user.quizProgress object
                     const quizProgress = user.quizProgress?.[quizName] || {};
-                    console.log(`Quiz progress for ${user.username} - ${quizName}:`, quizProgress);
+                    console.log(`Quiz progress for ${user.username} - ${quizName}:`, {
+                        quizResult,
+                        quizProgress,
+                        normalizedName: this.normalizeQuizName(quizName)
+                    });
+
+                    // For communication quiz, get the actual values
+                    if (quizName === 'communication') {
+                        const progress = {
+                            quizName,
+                            score: quizResult.score || 0,
+                            experience: quizProgress.experience || 0,
+                            questionsAnswered: quizProgress.questionHistory?.length || 0,
+                            currentScenario: quizProgress.currentScenario || 0,
+                            lastActive: quizResult.completedAt || quizProgress.lastUpdated || null,
+                            answers: quizProgress.questionHistory || []
+                        };
+                        console.log(`Communication quiz progress for ${user.username}:`, progress);
+                        return progress;
+                    }
 
                     return {
                         quizName,
@@ -195,12 +219,13 @@ class AdminDashboard {
                         experience: quizProgress.experience || 0,
                         questionsAnswered: quizProgress.questionHistory?.length || 0,
                         currentScenario: quizProgress.currentScenario || 0,
-                        lastActive: quizResult.completedAt || null,
+                        lastActive: quizResult.completedAt || quizProgress.lastUpdated || null,
                         answers: quizProgress.questionHistory || []
                     };
                 });
 
                 newScores.set(user.username, scores);
+                console.log(`Final scores for ${user.username}:`, scores);
             });
 
             // Update the userScores map
@@ -517,6 +542,11 @@ class AdminDashboard {
                 return;
             }
 
+            console.log(`Showing details for ${username}:`, {
+                scores,
+                user
+            });
+
             const overlay = document.createElement('div');
             overlay.className = 'user-details-overlay';
             
@@ -533,22 +563,31 @@ class AdminDashboard {
                     ${this.quizTypes.map(quizName => {
                         const quizData = scores.find(score => 
                             this.normalizeQuizName(score.quizName) === this.normalizeQuizName(quizName)
-                        ) || {
-                            score: 0,
-                            experience: 0,
-                            questionsAnswered: 0,
-                            currentScenario: 0,
-                            lastActive: null
+                        );
+                        
+                        console.log(`Quiz data for ${quizName}:`, quizData);
+
+                        // Get the raw progress data for this quiz
+                        const rawProgress = user.quizProgress?.[quizName];
+                        console.log(`Raw progress for ${quizName}:`, rawProgress);
+
+                        const displayData = {
+                            score: quizData?.score || 0,
+                            experience: rawProgress?.experience || 0,
+                            currentScenario: rawProgress?.currentScenario || 0,
+                            lastActive: quizData?.lastActive || rawProgress?.lastUpdated || null
                         };
+
+                        console.log(`Display data for ${quizName}:`, displayData);
 
                         return `
                             <div class="quiz-progress-item" style="margin-bottom: 15px; padding: 10px; border: 1px solid #ddd; border-radius: 4px;">
                                 <h4 style="margin: 0 0 10px 0">${this.formatQuizName(quizName)}</h4>
                                 <div class="quiz-stats" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px;">
-                                    <div class="stat-item">Progress: <span class="stat-value">${quizData.score || 0}%</span></div>
-                                    <div class="stat-item">Questions: <span class="stat-value">${quizData.currentScenario || 0}/15</span></div>
-                                    <div class="stat-item">XP: <span class="stat-value">${quizData.experience || 0}</span></div>
-                                    <div class="stat-item">Last Active: <span class="stat-value">${quizData.lastActive ? this.formatDate(new Date(quizData.lastActive).getTime()) : 'Never'}</span></div>
+                                    <div class="stat-item">Progress: <span class="stat-value">${displayData.score}%</span></div>
+                                    <div class="stat-item">Questions: <span class="stat-value">${displayData.currentScenario}/15</span></div>
+                                    <div class="stat-item">XP: <span class="stat-value">${displayData.experience}</span></div>
+                                    <div class="stat-item">Last Active: <span class="stat-value">${displayData.lastActive ? this.formatDate(new Date(displayData.lastActive).getTime()) : 'Never'}</span></div>
                                 </div>
                             </div>
                         `;
