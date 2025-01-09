@@ -59,17 +59,38 @@
             // Add form submit handler
             document.getElementById('adminLoginForm').addEventListener('submit', async (e) => {
                 e.preventDefault();
-                const formData = new FormData(e.target);
                 
+                // Clear any existing error messages
+                const existingError = document.querySelector('.error-message');
+                if (existingError) {
+                    existingError.remove();
+                }
+
+                // Show loading state
+                const submitButton = e.target.querySelector('button[type="submit"]');
+                const originalButtonText = submitButton.textContent;
+                submitButton.disabled = true;
+                submitButton.textContent = 'Logging in...';
+
                 try {
+                    const formData = new FormData(e.target);
                     await dashboard.handleAdminLogin(formData);
                 } catch (error) {
                     console.error('Login failed:', error);
+                    
                     // Show error to user
-                    const errorDiv = document.querySelector('.error-message') || document.createElement('div');
+                    const errorDiv = document.createElement('div');
                     errorDiv.className = 'error-message';
-                    errorDiv.textContent = error.message;
-                    e.target.appendChild(errorDiv);
+                    errorDiv.setAttribute('role', 'alert');
+                    errorDiv.textContent = error.message || 'Login failed. Please try again.';
+                    e.target.insertBefore(errorDiv, e.target.firstChild);
+                    
+                    // Reset form fields
+                    document.getElementById('adminPassword').value = '';
+                } finally {
+                    // Reset button state
+                    submitButton.disabled = false;
+                    submitButton.textContent = originalButtonText;
                 }
             });
         });

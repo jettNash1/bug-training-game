@@ -70,8 +70,11 @@ class AdminDashboard {
         if (!token) return false;
         
         // Check for mock admin token
-        if (token.includes('admin:')) {
-            return true;
+        if (token.startsWith('admin:')) {
+            const timestamp = parseInt(token.split(':')[1]);
+            const now = Date.now();
+            // Token is valid for 24 hours
+            return (now - timestamp) < 24 * 60 * 60 * 1000;
         }
         
         try {
@@ -83,7 +86,10 @@ class AdminDashboard {
                 }
             });
 
-            if (!response.ok) return false;
+            if (!response.ok) {
+                console.error('Token verification failed with status:', response.status);
+                return false;
+            }
 
             const data = await response.json();
             return data.success && data.isAdmin;
@@ -107,7 +113,7 @@ class AdminDashboard {
             // Special handling for admin/admin123 credentials
             if (username === 'admin' && password === 'admin123') {
                 // Create a mock token for admin
-                const mockToken = btoa(`admin:${Date.now()}`);
+                const mockToken = `admin:${Date.now()}`;
                 localStorage.setItem('adminToken', mockToken);
                 window.location.href = '/pages/admin.html';
                 return;
@@ -124,28 +130,29 @@ class AdminDashboard {
                 })
             });
 
+            const data = await response.json();
+
             if (!response.ok) {
-                if (response.status === 401) {
-                    throw new Error('Invalid credentials');
-                }
-                throw new Error(`Login failed with status: ${response.status}`);
+                throw new Error(data.message || 'Invalid credentials');
             }
 
-            // Only try to parse JSON if we have content
-            const contentType = response.headers.get('content-type');
-            if (contentType && contentType.includes('application/json')) {
-                const data = await response.json();
-                localStorage.setItem('adminToken', data.token);
-            } else {
-                console.warn('Response was not JSON, using default token');
-                const defaultToken = btoa(`${username}:${Date.now()}`);
-                localStorage.setItem('adminToken', defaultToken);
+            if (!data.token) {
+                throw new Error('No token received from server');
+            }
+
+            // Store the admin token
+            localStorage.setItem('adminToken', data.token);
+            
+            // Verify the token immediately
+            const isValid = await this.verifyAdminToken(data.token);
+            if (!isValid) {
+                throw new Error('Token verification failed');
             }
 
             window.location.href = '/pages/admin.html';
         } catch (error) {
             console.error('Login error:', error);
-            throw new Error('Login failed: ' + error.message);
+            throw new Error(error.message || 'Login failed. Please try again.');
         }
     }
 
