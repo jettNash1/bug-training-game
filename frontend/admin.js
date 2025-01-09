@@ -361,7 +361,7 @@ class AdminDashboard {
         return stats;
     }
 
-    updateUserList() {
+    async updateUserList() {
         const container = document.getElementById('usersList');
         if (!container) {
             console.error('User list container not found');
@@ -411,56 +411,42 @@ class AdminDashboard {
             }
         });
 
-        console.log('Sorted users:', filteredUsers);
+        // Clear existing content
+        container.innerHTML = '';
 
-        try {
-            // Clear existing content
-            console.log('Clearing container');
-            container.innerHTML = '';
+        // Create and append user cards
+        filteredUsers.forEach(user => {
+            const progress = this.calculateUserProgress(user);
+            const lastActive = this.getLastActiveDate(user);
 
-            // Create and append user cards
-            console.log('Creating user cards');
-            filteredUsers.forEach((user, index) => {
-                console.log(`Creating card ${index + 1} for user:`, user.username);
-                
-                const progress = this.calculateUserProgress(user);
-                const lastActive = this.getLastActiveDate(user);
-
-                const card = document.createElement('div');
-                card.className = 'user-card';
-                
-                const cardContent = document.createElement('div');
-                cardContent.className = 'user-header';
-                cardContent.innerHTML = `
-                    <h4>${user.username}</h4>
-                    <div class="user-stats">
-                        <div class="total-score">Overall Progress: ${progress.toFixed(1)}%</div>
-                        <div class="last-active">Last Active: ${this.formatDate(lastActive)}</div>
-                    </div>
-                `;
-                
-                const viewDetailsBtn = document.createElement('button');
-                viewDetailsBtn.className = 'view-details-btn';
-                viewDetailsBtn.textContent = 'View Details';
-                viewDetailsBtn.addEventListener('click', () => {
-                    this.showUserDetails(user.username);
-                });
-                
-                card.appendChild(cardContent);
-                card.appendChild(viewDetailsBtn);
-                container.appendChild(card);
-
-                console.log(`Card ${index + 1} created and appended for ${user.username}`);
+            const card = document.createElement('div');
+            card.className = 'user-card';
+            
+            const cardContent = document.createElement('div');
+            cardContent.className = 'user-header';
+            cardContent.innerHTML = `
+                <h4>${user.username}</h4>
+                <div class="user-stats">
+                    <div class="total-score">Overall Progress: ${progress.toFixed(1)}%</div>
+                    <div class="last-active">Last Active: ${this.formatDate(lastActive)}</div>
+                </div>
+            `;
+            
+            const viewDetailsBtn = document.createElement('button');
+            viewDetailsBtn.className = 'view-details-btn';
+            viewDetailsBtn.textContent = 'View Details';
+            viewDetailsBtn.addEventListener('click', () => {
+                this.showUserDetails(user.username);
             });
+            
+            card.appendChild(cardContent);
+            card.appendChild(viewDetailsBtn);
+            container.appendChild(card);
+        });
 
-            console.log('All cards created and appended');
-            console.log('Container contents:', container.innerHTML);
-        } catch (error) {
-            console.error('Error creating user cards:', error);
-            this.showError('Failed to display user list');
+        if (filteredUsers.length === 0) {
+            container.innerHTML = '<div class="no-users">No users match your search</div>';
         }
-
-        console.log('User list update complete');
     }
 
     // Helper method to calculate user progress

@@ -515,22 +515,59 @@ export class APIService {
         try {
             const adminToken = localStorage.getItem('adminToken');
             
-            // For mock admin, return mock data
+            // For mock admin, return mock data with test users
             if (adminToken?.startsWith('admin:')) {
                 return {
                     success: true,
-                    data: []  // Mock empty users list
+                    data: [
+                        {
+                            username: 'testuser1',
+                            quizProgress: {},
+                            quizResults: []
+                        },
+                        {
+                            username: 'testuser2',
+                            quizProgress: {},
+                            quizResults: []
+                        }
+                    ]
                 };
             }
 
-            const response = await this.fetchWithAdminAuth(`${this.baseUrl}/admin/users`);
-            return {
-                success: true,
-                data: Array.isArray(response) ? response : response.users || []
-            };
+            // Try the /users endpoint first
+            try {
+                const response = await this.fetchWithAdminAuth(`${this.baseUrl}/users`);
+                console.log('Users response:', response);
+                
+                // Handle different response formats
+                if (Array.isArray(response)) {
+                    return {
+                        success: true,
+                        data: response
+                    };
+                } else if (response.users) {
+                    return {
+                        success: true,
+                        data: response.users
+                    };
+                } else if (response.data) {
+                    return {
+                        success: true,
+                        data: Array.isArray(response.data) ? response.data : [response.data]
+                    };
+                }
+            } catch (error) {
+                console.log('First endpoint failed, trying fallback:', error);
+                // If first endpoint fails, try the admin/users endpoint
+                const fallbackResponse = await this.fetchWithAdminAuth(`${this.baseUrl}/admin/users`);
+                return {
+                    success: true,
+                    data: Array.isArray(fallbackResponse) ? fallbackResponse : 
+                          fallbackResponse.users || fallbackResponse.data || []
+                };
+            }
         } catch (error) {
             console.error('Failed to fetch users:', error);
-            // Don't throw the error, just return empty data
             return {
                 success: false,
                 data: [],
