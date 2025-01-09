@@ -185,9 +185,12 @@ class AdminDashboard {
     async loadUsers() {
         try {
             console.log('Fetching users...'); // Debug log
-            const response = await this.apiService.fetchWithAdminAuth(
-                `${this.apiService.baseUrl}/users/all`
-            );
+            const response = await fetch(`${this.apiService.baseUrl}/admin/users`, {
+                headers: {
+                    'Authorization': `Bearer ${localStorage.getItem('adminToken')}`,
+                    'Content-Type': 'application/json'
+                }
+            });
 
             if (!response.ok) {
                 const errorData = await response.json().catch(() => ({}));
@@ -197,11 +200,11 @@ class AdminDashboard {
             const data = await response.json();
             console.log('User data received:', data); // Debug log
 
-            if (!data.users) {
-                throw new Error('Invalid response format: missing users data');
+            if (!Array.isArray(data)) {
+                throw new Error('Invalid response format: expected array of users');
             }
 
-            this.users = data.users.map(user => this.initializeQuizData(user));
+            this.users = data.map(user => this.initializeQuizData(user));
             console.log('Users loaded:', this.users.length, 'users'); // Debug log
 
             // Process quiz results and progress for each user
@@ -224,9 +227,6 @@ class AdminDashboard {
                     });
                 }
             });
-
-            // Update the dashboard immediately after loading users
-            this.updateDashboard();
             
             return true;
         } catch (error) {
@@ -354,7 +354,7 @@ class AdminDashboard {
             }
             
             // Update statistics
-            const stats = this.calculateStatistics();
+            const stats = this.updateStatistics();
             this.updateStatisticsDisplay(stats);
             
             // Update user list
@@ -769,6 +769,23 @@ class AdminDashboard {
         });
         
         return user;
+    }
+
+    updateStatisticsDisplay(stats) {
+        // Update the statistics in the UI
+        const totalUsersElement = document.getElementById('totalUsers');
+        const activeUsersElement = document.getElementById('activeUsers');
+        const averageCompletionElement = document.getElementById('averageCompletion');
+
+        if (totalUsersElement) {
+            totalUsersElement.textContent = stats.totalUsers || 0;
+        }
+        if (activeUsersElement) {
+            activeUsersElement.textContent = stats.activeUsers || 0;
+        }
+        if (averageCompletionElement) {
+            averageCompletionElement.textContent = `${stats.averageProgress || 0}%`;
+        }
     }
 }
 

@@ -77,6 +77,14 @@
         document.addEventListener('DOMContentLoaded', async () => {
             const dashboard = new AdminDashboard();
             // Init is called automatically in constructor
+
+            // Set up logout button
+            const logoutBtn = document.getElementById('logoutBtn');
+            if (logoutBtn) {
+                logoutBtn.addEventListener('click', () => {
+                    dashboard.handleAdminLogout();
+                });
+            }
         });
     </script>
 
