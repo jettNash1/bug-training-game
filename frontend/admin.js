@@ -191,27 +191,26 @@ class AdminDashboard {
                     ) || {};
                     
                     // Get quiz progress from user.quizProgress object
-                    const quizProgress = user.quizProgress?.[quizName] || {};
+                    const quizProgress = user.quizProgress?.[quizName];
                     
+                    // Log raw data for debugging
+                    console.log(`Raw data for ${quizName}:`, {
+                        quizResult,
+                        quizProgress,
+                        username: user.username
+                    });
+
                     // For communication quiz, get the actual values
                     if (quizName === 'communication') {
-                        // Log the raw data we're working with
-                        console.log(`Raw communication quiz data for ${user.username}:`, {
-                            quizResult,
-                            quizProgress
-                        });
-
                         const progress = {
                             quizName,
                             score: quizResult.score || 0,
-                            experience: quizProgress.experience || 0,
-                            questionsAnswered: quizProgress.questionHistory?.length || 0,
-                            currentScenario: quizProgress.currentScenario || 0,
-                            lastActive: quizProgress.lastUpdated || quizResult.completedAt || null,
-                            answers: quizProgress.questionHistory || []
+                            experience: quizProgress?.experience || 0,
+                            questionsAnswered: quizProgress?.questionHistory?.length || 0,
+                            lastActive: quizProgress?.lastUpdated || quizResult?.completedAt || null,
+                            answers: quizProgress?.questionHistory || []
                         };
 
-                        // Log the processed progress
                         console.log(`Processed communication quiz progress for ${user.username}:`, progress);
                         return progress;
                     }
@@ -219,11 +218,10 @@ class AdminDashboard {
                     return {
                         quizName,
                         score: quizResult.score || 0,
-                        experience: quizProgress.experience || 0,
-                        questionsAnswered: quizProgress.questionHistory?.length || 0,
-                        currentScenario: quizProgress.currentScenario || 0,
-                        lastActive: quizProgress.lastUpdated || quizResult.completedAt || null,
-                        answers: quizProgress.questionHistory || []
+                        experience: quizProgress?.experience || 0,
+                        questionsAnswered: quizProgress?.questionHistory?.length || 0,
+                        lastActive: quizProgress?.lastUpdated || quizResult?.completedAt || null,
+                        answers: quizProgress?.questionHistory || []
                     };
                 });
 
@@ -244,10 +242,45 @@ class AdminDashboard {
     }
 
     async loadAllUserProgress() {
-        // Since we already have all the progress data from the initial user load,
-        // we just need to update the dashboard
-        console.log('Using existing progress data from user load');
-        this.updateDashboard();
+        try {
+            console.log('Loading progress for all users...');
+            
+            // Fetch fresh progress data for each user
+            const progressPromises = this.users.map(async user => {
+                try {
+                    const response = await fetch(`${this.apiService.baseUrl}/admin/users/${user.username}/quiz-progress`, {
+                        headers: {
+                            'Authorization': `Bearer ${localStorage.getItem('adminToken')}`,
+                            'Content-Type': 'application/json'
+                        }
+                    });
+
+                    if (!response.ok) {
+                        console.error(`Failed to fetch progress for ${user.username}`);
+                        return;
+                    }
+
+                    const data = await response.json();
+                    if (data.success && data.data) {
+                        // Update the user's progress data
+                        user.quizProgress = data.data;
+                        console.log(`Updated progress for ${user.username}:`, data.data);
+                    }
+                } catch (error) {
+                    console.error(`Error fetching progress for ${user.username}:`, error);
+                }
+            });
+
+            // Wait for all progress updates to complete
+            await Promise.all(progressPromises);
+
+            // Now update the dashboard with fresh data
+            this.updateDashboard();
+            console.log('All user progress loaded and dashboard updated');
+        } catch (error) {
+            console.error('Failed to load all user progress:', error);
+            this.showError('Failed to load user progress');
+        }
     }
 
     async loadUserProgress(username) {
@@ -571,17 +604,23 @@ class AdminDashboard {
                             this.normalizeQuizName(result.quizName) === this.normalizeQuizName(quizName)
                         );
                         
+                        // Get the score data from userScores
+                        const scoreData = scores.find(score => 
+                            this.normalizeQuizName(score.quizName) === this.normalizeQuizName(quizName)
+                        );
+
                         console.log(`Quiz data for ${quizName}:`, {
                             quizProgress,
-                            quizResult
+                            quizResult,
+                            scoreData
                         });
 
+                        // Combine all data sources, prioritizing quizProgress
                         const displayData = {
-                            score: quizResult?.score || 0,
-                            experience: quizProgress?.experience || 0,
-                            questionsAnswered: quizProgress?.questionHistory?.length || 0,
-                            currentScenario: quizProgress?.currentScenario || 0,
-                            lastActive: quizProgress?.lastUpdated || quizResult?.completedAt || null
+                            score: quizResult?.score || scoreData?.score || 0,
+                            experience: quizProgress?.experience || scoreData?.experience || 0,
+                            questionsAnswered: quizProgress?.questionHistory?.length || scoreData?.questionsAnswered || 0,
+                            lastActive: quizProgress?.lastUpdated || quizResult?.completedAt || scoreData?.lastActive || null
                         };
 
                         console.log(`Display data for ${quizName}:`, displayData);
