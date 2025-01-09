@@ -509,14 +509,18 @@ export class APIService {
 
     async getAllUsers() {
         try {
-            const response = await this.fetchWithAdminAuth(`${this.baseUrl}/users/all`);
+            const response = await this.fetchWithAdminAuth(`${this.baseUrl}/admin/users`);
             return {
                 success: true,
-                data: response.users || []
+                data: Array.isArray(response) ? response : response.users || []
             };
         } catch (error) {
             console.error('Failed to fetch users:', error);
-            throw error;
+            return {
+                success: false,
+                data: [],
+                error: error.message
+            };
         }
     }
 
