@@ -168,26 +168,27 @@ class AdminDashboard {
                     return null;
                 }
 
-                // Ensure quiz data is properly structured
-                const quizProgress = user.quizProgress || {};
-                const quizResults = Array.isArray(user.quizResults) ? user.quizResults : [];
+                // Map quiz results, preserving all data from MongoDB
+                const quizResults = Array.isArray(user.quizResults) ? user.quizResults.map(result => ({
+                    quizName: result.quizName,
+                    score: result.score || 0,
+                    experience: result.experience || 0,
+                    questionsAnswered: result.questionsAnswered || 0,
+                    lastActive: result.lastActive || result.completedAt || null,
+                    completedAt: result.completedAt || null,
+                    questionHistory: result.questionHistory || []
+                })) : [];
 
                 return {
                     username: user.username,
                     lastLogin: user.lastLogin || null,
-                    quizProgress: quizProgress,
-                    quizResults: quizResults.map(result => ({
-                        quizName: result.quizName,
-                        score: result.score || 0,
-                        experience: result.experience || 0,
-                        questionsAnswered: result.questionsAnswered || 0,
-                        lastActive: result.lastActive || result.completedAt || null,
-                        completedAt: result.completedAt || null
-                    }))
+                    quizProgress: user.quizProgress || {},
+                    quizResults: quizResults
                 };
             }).filter(user => user !== null);
 
             console.log(`Users loaded from MongoDB: ${this.users.length} users`);
+            console.log('Mapped user data:', this.users);
             return true;
         } catch (error) {
             console.error('Failed to load users:', error);
@@ -534,10 +535,18 @@ class AdminDashboard {
                 <div class="quiz-progress-list" style="margin-top: 20px;">
                     ${this.quizTypes.map(quizName => {
                         const result = quizResultsMap.get(quizName.toLowerCase());
-                        const status = result ? (result.questionsAnswered === 15 ? 'Completed' : 'In Progress') : 'Not Started';
-                        const score = result ? result.score || 0 : 0;
-                        const questionsAnswered = result ? result.questionsAnswered || 0 : 0;
-                        const experience = result ? result.experience || 0 : 0;
+                        
+                        // Get the question history length for actual progress
+                        const questionHistory = result?.questionHistory || [];
+                        const questionsAnswered = questionHistory.length;
+                        
+                        // Calculate status based on actual questions answered
+                        const status = questionsAnswered === 15 ? 'Completed' : 
+                                     questionsAnswered > 0 ? 'In Progress' : 'Not Started';
+                        
+                        // Get score and experience from the result
+                        const score = result?.score || 0;
+                        const experience = result?.experience || 0;
                         const lastActive = result ? this.formatDate(result.lastActive || result.completedAt) : 'Never';
 
                             return `
@@ -571,8 +580,8 @@ class AdminDashboard {
                                     <button 
                                         class="view-answers-btn" 
                                         onclick="event.stopPropagation(); this.closest('.quiz-progress-item').dispatchEvent(new CustomEvent('viewAnswers', {detail: {quizName: '${quizName}'}}))"
-                                        style="padding: 5px 10px; background-color: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; ${!result ? 'opacity: 0.5; cursor: not-allowed;' : ''}"
-                                        ${!result ? 'disabled' : ''}>
+                                        style="padding: 5px 10px; background-color: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; ${!questionHistory.length ? 'opacity: 0.5; cursor: not-allowed;' : ''}"
+                                        ${!questionHistory.length ? 'disabled' : ''}>
                                         View Answers
                                     </button>
                                     <button 
