@@ -128,29 +128,29 @@ router.get('/users', auth, async (req, res) => {
             // Update each quiz result with its corresponding progress data
             userData.quizResults = userData.quizResults.map(result => {
                 const progress = userData.quizProgress?.[result.quizName.toLowerCase()];
-                console.log(`Progress for ${result.quizName}:`, progress);
                 
+                // Calculate questions answered and experience
+                let questionsAnswered = 0;
+                let experience = 0;
+
+                // First try to get data from progress (new format)
                 if (progress) {
-                    // Check if questionHistory is an array and use its length
-                    const questionHistoryLength = Array.isArray(progress.questionHistory) ? 
-                        progress.questionHistory.length : 0;
-                    
-                    console.log('Question History:', progress.questionHistory);
-                    console.log('Question History Length:', questionHistoryLength);
-                    console.log('Questions Answered:', progress.questionsAnswered);
-
-                    // Use questionHistory length if it exists, otherwise fall back to questionsAnswered
-                    const questionsAnswered = questionHistoryLength || progress.questionsAnswered || 0;
-
-                    return {
-                        ...result,
-                        experience: progress.experience ?? result.experience ?? 0,
-                        questionsAnswered: questionsAnswered
-                    };
+                    questionsAnswered = progress.questionsAnswered || 
+                        (Array.isArray(progress.questionHistory) ? progress.questionHistory.length : 0);
+                    experience = progress.experience || 0;
                 }
+
+                // If no progress data, try to get from result (old format)
+                if (!questionsAnswered && result.score) {
+                    // For old data, if there's a score, calculate questions based on it
+                    questionsAnswered = Math.ceil((result.score / 100) * 15); // 15 is total questions
+                    experience = Math.ceil((result.score / 100) * 300); // 300 is max XP
+                }
+
                 return {
                     ...result,
-                    questionsAnswered: result.questionsAnswered ?? 0
+                    questionsAnswered,
+                    experience
                 };
             });
 
