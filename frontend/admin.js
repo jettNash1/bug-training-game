@@ -534,9 +534,10 @@ class AdminDashboard {
                 <div class="quiz-progress-list" style="margin-top: 20px;">
                     ${this.quizTypes.map(quizName => {
                         const result = quizResultsMap.get(quizName.toLowerCase());
-                        const status = result ? (result.questionsAnswered === 15 ? 'Completed' : 'In Progress') : 'Not Started';
-                        const score = result ? result.score || 0 : 0;
-                        const questionsAnswered = result ? result.questionsAnswered || 0 : 0;
+                        const questionHistory = result?.questionHistory || [];
+                        const questionsAnswered = questionHistory.length;
+                        const status = questionsAnswered === 15 ? 'Completed' : questionsAnswered > 0 ? 'In Progress' : 'Not Started';
+                        const score = result ? result.score : 0;
                         const experience = result ? result.experience || 0 : 0;
                         const lastActive = result ? this.formatDate(result.lastActive || result.completedAt) : 'Never';
 
@@ -567,12 +568,12 @@ class AdminDashboard {
                                         </div>
                                     ` : ''}
                                 </div>
-                                <div class="quiz-actions" style="margin-top: 10px; display: flex; flex-direction: column; gap: 10px;">
+                                <div class="quiz-actions" style="margin-top: 10px; display: flex; justify-content: flex-end; gap: 10px;">
                                     <button 
                                         class="view-answers-btn" 
                                         onclick="event.stopPropagation(); this.closest('.quiz-progress-item').dispatchEvent(new CustomEvent('viewAnswers', {detail: {quizName: '${quizName}'}}))"
-                                        style="padding: 5px 10px; background-color: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; ${!result ? 'opacity: 0.5; cursor: not-allowed;' : ''}"
-                                        ${!result ? 'disabled' : ''}>
+                                        style="padding: 5px 10px; background-color: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; ${questionsAnswered === 0 ? 'opacity: 0.5; cursor: not-allowed;' : ''}"
+                                        ${questionsAnswered === 0 ? 'disabled' : ''}>
                                         View Answers
                                     </button>
                                     <button 
