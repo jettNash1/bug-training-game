@@ -147,7 +147,7 @@ class AdminDashboard {
 
     async loadUsers() {
         try {
-            console.log('Fetching users from MongoDB...'); 
+            console.log('Fetching users from MongoDB...');
             
             const response = await this.apiService.getAllUsers();
             console.log('Raw API response:', response);
@@ -172,28 +172,22 @@ class AdminDashboard {
                     return null;
                 }
 
-                // Ensure quiz data is properly structured
-                const quizProgress = user.quizProgress || {};
-                const quizResults = Array.isArray(user.quizResults) ? user.quizResults : [];
-
-                console.log('Quiz data for user:', {
-                    username: user.username,
-                    quizProgress,
-                    quizResults
-                });
-
                 // Process quiz results to include question count and experience
-                const processedResults = quizResults.map(result => {
-                    const progress = quizProgress[result.quizName.toLowerCase()];
-                    console.log('Processing quiz result:', {
-                        quizName: result.quizName,
-                        progress,
-                        result
-                    });
+                const processedResults = (user.quizResults || []).map(result => {
+                    // Get the quiz name in lowercase for consistency
+                    const quizName = result.quizName.toLowerCase();
+                    
+                    // Get progress data from quizProgress if it exists
+                    const progress = user.quizProgress?.[quizName];
+                    
                     return {
                         ...result,
-                        questionsAnswered: progress?.questionHistory?.length || result.questionsAnswered || 0,
-                        experience: progress?.experience || result.experience || 0,
+                        questionsAnswered: progress?.questionHistory?.length || 
+                                         result.questionsAnswered || 
+                                         (result.answers?.length || 0),
+                        experience: progress?.experience || 
+                                  result.experience || 
+                                  (result.score ? Math.round(result.score * 3) : 0), // Calculate experience from score if needed
                         score: result.score || 0,
                         lastActive: result.lastActive || result.completedAt || null,
                         completedAt: result.completedAt || null
@@ -203,7 +197,7 @@ class AdminDashboard {
                 const processedUser = {
                     username: user.username,
                     lastLogin: user.lastLogin || null,
-                    quizProgress: quizProgress,
+                    quizProgress: user.quizProgress || {},
                     quizResults: processedResults
                 };
 
@@ -212,11 +206,10 @@ class AdminDashboard {
             }).filter(user => user !== null);
 
             console.log('Final processed users:', this.users);
-
-            // After loading users, load their progress
-            await this.loadAllUserProgress();
-
-            console.log(`Users loaded from MongoDB: ${this.users.length} users`);
+            
+            // Update the dashboard with the loaded users
+            this.updateDashboard();
+            
             return true;
         } catch (error) {
             console.error('Failed to load users:', error);
@@ -229,59 +222,7 @@ class AdminDashboard {
         try {
             console.log('Loading progress for all users...');
             
-            // Fetch fresh progress data for each user
-            const progressPromises = this.users.map(async user => {
-                try {
-                    const response = await this.apiService.fetchWithAdminAuth(
-                        `${this.apiService.baseUrl}/admin/users/${user.username}/quiz-progress`
-                    );
-
-                    if (!response.ok) {
-                        console.error(`Failed to fetch progress for ${user.username}`);
-                        return;
-                    }
-
-                    const data = await response.json();
-                    console.log(`Progress data for ${user.username}:`, data);
-
-                    if (data.success && data.data) {
-                        // Update the user's progress data
-                        user.quizProgress = {};
-                        
-                        // Process each quiz's progress data
-                        Object.entries(data.data).forEach(([quizName, quizData]) => {
-                            // Convert quiz name to lowercase for consistency
-                            const normalizedQuizName = quizName.toLowerCase();
-                            
-                            // Ensure we have valid progress data
-                            if (quizData) {
-                                user.quizProgress[normalizedQuizName] = {
-                                    experience: quizData.experience || 0,
-                                    questionHistory: quizData.questionHistory || [],
-                                    lastUpdated: quizData.lastUpdated,
-                                    questionsAnswered: quizData.questionHistory?.length || 0
-                                };
-                        
-                        // Log the complete progress data for debugging
-                                console.log(`Loaded progress for ${user.username} - ${normalizedQuizName}:`, {
-                                    experience: user.quizProgress[normalizedQuizName].experience,
-                                    questionsAnswered: user.quizProgress[normalizedQuizName].questionsAnswered,
-                                    lastUpdated: user.quizProgress[normalizedQuizName].lastUpdated
-                                });
-                            }
-                        });
-                    } else {
-                        console.warn(`No progress data found for ${user.username}`);
-                    }
-                } catch (error) {
-                    console.error(`Error fetching progress for ${user.username}:`, error);
-                }
-            });
-
-            // Wait for all progress updates to complete
-            await Promise.all(progressPromises);
-
-            // Now update the dashboard with fresh data
+            // Update the dashboard with fresh data
             this.updateDashboard();
             console.log('All user progress loaded and dashboard updated');
         } catch (error) {
