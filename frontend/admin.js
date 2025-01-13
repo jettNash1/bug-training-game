@@ -147,13 +147,13 @@ class AdminDashboard {
 
     async loadUsers() {
         try {
-            console.log('Fetching users...'); 
+            console.log('Fetching users from MongoDB...'); 
             
             const response = await this.apiService.getAllUsers();
             console.log('User data received:', response);
 
             if (!response.success) {
-                throw new Error('Invalid response format: missing success flag');
+                throw new Error(response.error || 'Failed to fetch users');
             }
 
             const userData = response.data || [];
@@ -161,21 +161,33 @@ class AdminDashboard {
                 throw new Error('Invalid response format: expected array of users');
             }
 
-            // Initialize users with required properties
+            // Map MongoDB user data to our format
             this.users = userData.map(user => {
                 if (!user.username) {
                     console.warn('User missing username:', user);
                     return null;
                 }
 
+                // Ensure quiz data is properly structured
+                const quizProgress = user.quizProgress || {};
+                const quizResults = Array.isArray(user.quizResults) ? user.quizResults : [];
+
                 return {
                     username: user.username,
-                    quizProgress: user.quizProgress || {},
-                    quizResults: user.quizResults || []
+                    lastLogin: user.lastLogin || null,
+                    quizProgress: quizProgress,
+                    quizResults: quizResults.map(result => ({
+                        quizName: result.quizName,
+                        score: result.score || 0,
+                        experience: result.experience || 0,
+                        questionsAnswered: result.questionsAnswered || 0,
+                        lastActive: result.lastActive || result.completedAt || null,
+                        completedAt: result.completedAt || null
+                    }))
                 };
             }).filter(user => user !== null);
 
-            console.log(`Users loaded: ${this.users.length} users`);
+            console.log(`Users loaded from MongoDB: ${this.users.length} users`);
             return true;
         } catch (error) {
             console.error('Failed to load users:', error);

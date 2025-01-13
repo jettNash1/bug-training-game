@@ -411,22 +411,8 @@ export class APIService {
                 return { valid: false, reason: 'no_token' };
             }
 
-            // Handle mock admin token
-            if (adminToken.startsWith('admin:')) {
-                const timestamp = parseInt(adminToken.split(':')[1]);
-                const now = Date.now();
-                const isValid = (now - timestamp) < 24 * 60 * 60 * 1000;
-                console.log('Mock token validation result:', { isValid, timestamp, now });
-                return { 
-                    valid: isValid,
-                    reason: isValid ? 'valid_mock' : 'expired_mock',
-                    isAdmin: isValid,
-                    success: isValid
-                };
-            }
-
             console.log('Verifying admin token with server...');
-            const response = await fetch(`${this.baseUrl}/admin/verify`, {
+            const response = await fetch(`${this.baseUrl}/admin/verify-token`, {
                 method: 'GET',
                 headers: {
                     'Authorization': `Bearer ${adminToken}`,
@@ -449,16 +435,16 @@ export class APIService {
                 return { valid: false, reason: 'invalid_json' };
             }
 
-            const isValid = response.ok && data.success && data.isAdmin;
+            const isValid = response.ok && data.success && data.valid;
             console.log('Token verification result:', { 
                 isValid, 
                 status: response.status,
                 success: data.success,
-                isAdmin: data.isAdmin 
+                valid: data.valid 
             });
 
             // Only remove token if we get a clear invalid response
-            if (response.status === 401 || (response.ok && !data.isAdmin)) {
+            if (response.status === 401 || (response.ok && !data.valid)) {
                 console.log('Removing invalid token');
                 localStorage.removeItem('adminToken');
             }
@@ -466,7 +452,6 @@ export class APIService {
             return { 
                 valid: isValid,
                 reason: isValid ? 'valid' : 'invalid',
-                isAdmin: data.isAdmin,
                 success: data.success
             };
         } catch (error) {
@@ -482,42 +467,24 @@ export class APIService {
 
     async getAllUsers() {
         try {
-            // Always try to fetch real data from the server
+            // Fetch real data from MongoDB through the API
             const response = await this.fetchWithAdminAuth(`${this.baseUrl}/admin/users`);
             console.log('Raw users response:', response);
 
-            // If response has a users property that's an array, use it
-            if (response.users && Array.isArray(response.users)) {
-                console.log('Response has users array:', response.users);
+            // The backend returns { success: true, users: [...] }
+            if (response.success && Array.isArray(response.users)) {
+                console.log('Found users array:', response.users.length);
                 return {
                     success: true,
                     data: response.users
                 };
             }
 
-            // If response is directly an array, use it
-            if (Array.isArray(response)) {
-                console.log('Response is an array:', response);
-                return {
-                    success: true,
-                    data: response
-                };
-            }
-
-            // If response has a data property that's an array, use it
-            if (response.data && Array.isArray(response.data)) {
-                console.log('Response has data array:', response.data);
-                return {
-                    success: true,
-                    data: response.data
-                };
-            }
-
-            console.warn('No valid user data found in response');
+            console.warn('Invalid response format from server');
             return {
                 success: false,
                 data: [],
-                error: 'Invalid response format'
+                error: 'Invalid response format from server'
             };
         } catch (error) {
             console.error('Failed to fetch users:', error);
