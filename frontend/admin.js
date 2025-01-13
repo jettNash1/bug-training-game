@@ -215,17 +215,27 @@ class AdminDashboard {
                     const data = await response.json();
                     if (data.success && data.data) {
                         // Update the user's progress data
-                        user.quizProgress = data.data;
+                        user.quizProgress = {};
+                        
+                        // Process each quiz's progress data
+                        Object.entries(data.data).forEach(([quizName, quizData]) => {
+                            // Convert quiz name to lowercase for consistency
+                            const normalizedQuizName = quizName.toLowerCase();
+                            
+                            // Ensure we have valid progress data
+                            if (quizData) {
+                                user.quizProgress[normalizedQuizName] = {
+                                    experience: quizData.experience || 0,
+                                    questionHistory: quizData.questionHistory || [],
+                                    lastUpdated: quizData.lastUpdated,
+                                    questionsAnswered: quizData.questionHistory?.length || 0
+                                };
                         
                         // Log the complete progress data for debugging
-                        this.quizTypes.forEach(quizType => {
-                            if (user.quizProgress[quizType]) {
-                                const progress = user.quizProgress[quizType];
-                                console.log(`Loaded progress for ${user.username} - ${quizType}:`, {
-                                    experience: progress.experience || 0,
-                                    questionsAnswered: progress.questionHistory?.length || 0,
-                                    lastUpdated: progress.lastUpdated,
-                                    progress: Math.round(((progress.questionHistory?.length || 0) / 15) * 100) + '%'
+                                console.log(`Loaded progress for ${user.username} - ${normalizedQuizName}:`, {
+                                    experience: user.quizProgress[normalizedQuizName].experience,
+                                    questionsAnswered: user.quizProgress[normalizedQuizName].questionsAnswered,
+                                    lastUpdated: user.quizProgress[normalizedQuizName].lastUpdated
                                 });
                             }
                         });
@@ -533,11 +543,22 @@ class AdminDashboard {
                 </div>
                 <div class="quiz-progress-list" style="margin-top: 20px;">
                     ${this.quizTypes.map(quizName => {
+                        // Get both quiz result and progress data
                         const result = quizResultsMap.get(quizName.toLowerCase());
-                        const status = result ? (result.questionsAnswered >= 15 ? 'Completed' : 'In Progress') : 'Not Started';
-                        const score = result ? result.score : 0;
-                        const questionsAnswered = result ? (result.questionsAnswered || 0) : 0;
-                        const experience = result ? (result.experience || 0) : 0;
+                        const progress = user.quizProgress?.[quizName.toLowerCase()];
+                        
+                        // Determine questions answered from progress data first, then fall back to result data
+                        const questionsAnswered = progress?.questionHistory?.length || 
+                                                result?.questionsAnswered || 0;
+                        
+                        // Get experience from progress data first, then fall back to result data
+                        const experience = progress?.experience || 
+                                         result?.experience || 0;
+                        
+                        const status = questionsAnswered >= 15 ? 'Completed' : 
+                                     questionsAnswered > 0 ? 'In Progress' : 'Not Started';
+                        
+                        const score = result?.score || 0;
                         const lastActive = result ? this.formatDate(result.lastActive || result.completedAt) : 'Never';
 
                             return `
@@ -560,7 +581,7 @@ class AdminDashboard {
                                         <strong>Last Active:</strong> 
                                         <span>${lastActive}</span>
                                     </div>
-                                    ${result ? `
+                                    ${score ? `
                                         <div>
                                             <strong>Score:</strong> 
                                             <span>${score}%</span>
