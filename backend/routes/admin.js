@@ -137,10 +137,10 @@ router.get('/users', auth, async (req, res) => {
             console.log('Initial quiz results:', JSON.stringify(userData.quizResults, null, 2));
             console.log('Initial quiz progress:', JSON.stringify(userData.quizProgress, null, 2));
 
-            // Process each quiz result to ensure question completion data
+            // First, process existing quiz results
             userData.quizResults = userData.quizResults.map(result => {
                 const quizProgress = userData.quizProgress?.[result.quizName.toLowerCase()];
-                console.log(`\nProcessing quiz: ${result.quizName}`);
+                console.log(`\nProcessing quiz result: ${result.quizName}`);
                 console.log('Quiz progress data:', quizProgress);
                 console.log('Original result data:', result);
                 
@@ -155,21 +155,26 @@ router.get('/users', auth, async (req, res) => {
                 return updatedResult;
             });
 
-            // Add missing quiz results from quizProgress
+            // Then, add any quizzes that have progress but no results
             if (userData.quizProgress) {
-                console.log('\nChecking for missing quiz results from progress...');
+                console.log('\nChecking for quizzes with progress but no results...');
                 Object.entries(userData.quizProgress).forEach(([quizName, progress]) => {
                     console.log(`Checking ${quizName}:`, progress);
-                    const existingResult = userData.quizResults.find(r => r.quizName.toLowerCase() === quizName.toLowerCase());
+                    const existingResult = userData.quizResults.find(r => 
+                        r.quizName.toLowerCase() === quizName.toLowerCase()
+                    );
+                    
                     if (!existingResult && progress) {
-                        console.log(`Adding missing quiz result for ${quizName}`);
+                        console.log(`Adding progress data for ${quizName}`);
                         userData.quizResults.push({
-                            quizName,
-                            score: Math.round((progress.experience / 300) * 100),
+                            quizName: quizName.charAt(0).toUpperCase() + quizName.slice(1),
+                            score: progress.questionsAnswered > 0 ? 
+                                Math.round((progress.experience / (progress.questionsAnswered * 20)) * 100) : 0,
                             experience: progress.experience || 0,
-                            questionsAnswered: progress.questionsAnswered || progress.questionHistory?.length || 0,
+                            questionsAnswered: progress.questionsAnswered || 0,
                             lastActive: progress.lastUpdated,
-                            completedAt: progress.lastUpdated
+                            completedAt: null,
+                            status: 'In Progress'
                         });
                     }
                 });
