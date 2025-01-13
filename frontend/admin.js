@@ -69,14 +69,6 @@ class AdminDashboard {
     async verifyAdminToken(token) {
         if (!token) return false;
         
-        // Check for mock admin token
-        if (token.startsWith('admin:')) {
-            const timestamp = parseInt(token.split(':')[1]);
-            const now = Date.now();
-            // Token is valid for 24 hours
-            return (now - timestamp) < 24 * 60 * 60 * 1000;
-        }
-        
         try {
             const result = await this.apiService.verifyAdminToken();
             return result.valid;
@@ -95,15 +87,6 @@ class AdminDashboard {
             
             if (!username || !password) {
                 throw new Error('Username and password are required');
-            }
-
-            // Special handling for admin/admin123 credentials
-            if (username === 'admin' && password === 'admin123') {
-                // Create a mock token for admin
-                const mockToken = `admin:${Date.now()}`;
-                localStorage.setItem('adminToken', mockToken);
-                window.location.replace('/pages/admin.html');
-                return;
             }
 
             const data = await this.apiService.adminLogin(username, password);
