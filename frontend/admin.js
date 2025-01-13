@@ -623,36 +623,31 @@ class AdminDashboard {
 
     async resetQuizProgress(username, quizName) {
         try {
-            const response = await fetch(
-                `${this.apiService.baseUrl}/users/${username}/quiz-progress/${quizName}/reset`,
+            const response = await this.apiService.fetchWithAdminAuth(
+                `${this.apiService.baseUrl}/admin/users/${username}/quiz-progress/${quizName}/reset`,
                 {
                     method: 'POST',
                     headers: {
-                        'Authorization': `Bearer ${localStorage.getItem('adminToken')}`,
                         'Content-Type': 'application/json'
                     }
                 }
             );
 
-            if (!response.ok) {
-                throw new Error('Failed to reset quiz progress');
+            if (!response.success) {
+                throw new Error(response.error || 'Failed to reset quiz progress');
             }
 
-            // Reload the user's progress
-            const scores = await this.loadUserProgress(username);
-            this.userScores.set(username, scores);
+            // Reload users to get fresh data
+            await this.loadUsers();
+            
+            // Update the dashboard with new data
+            await this.updateDashboard();
 
-            // Refresh the details view
-            const existingOverlay = document.querySelector('.user-details-overlay');
-            if (existingOverlay) {
-                existingOverlay.remove();
-                await this.showUserDetails(username);
-            }
-
-            this.updateDashboard();
+            return true;
         } catch (error) {
             console.error('Error resetting progress:', error);
             this.showError('Failed to reset progress');
+            throw error;
         }
     }
 
