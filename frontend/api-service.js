@@ -483,17 +483,8 @@ export class APIService {
     async getAllUsers() {
         try {
             // Always try to fetch real data from the server
-            const response = await this.fetchWithAdminAuth(`${this.baseUrl}/users`);
+            const response = await this.fetchWithAdminAuth(`${this.baseUrl}/admin/users`);
             console.log('Raw users response:', response);
-
-            // If response is directly an array, use it
-            if (Array.isArray(response)) {
-                console.log('Response is an array:', response);
-                return {
-                    success: true,
-                    data: response
-                };
-            }
 
             // If response has a users property that's an array, use it
             if (response.users && Array.isArray(response.users)) {
@@ -501,6 +492,15 @@ export class APIService {
                 return {
                     success: true,
                     data: response.users
+                };
+            }
+
+            // If response is directly an array, use it
+            if (Array.isArray(response)) {
+                console.log('Response is an array:', response);
+                return {
+                    success: true,
+                    data: response
                 };
             }
 
