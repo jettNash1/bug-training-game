@@ -111,8 +111,6 @@ router.get('/users', auth, async (req, res) => {
             });
         }
 
-        console.log('Fetching users from database...');
-
         // Get all users with their quiz data
         const users = await User.find({}, {
             username: 1,
@@ -120,71 +118,31 @@ router.get('/users', auth, async (req, res) => {
             quizResults: 1,
             quizProgress: 1,
             _id: 0
-        }).sort({ username: 1 });
+        }).lean().sort({ username: 1 });
 
-        console.log('Found users:', users.length);
-
-        // Ensure all quiz data is properly populated
+        // Update quiz results with progress data
         const populatedUsers = users.map(user => {
-            console.log(`\nProcessing user: ${user.username}`);
-            const userData = user.toObject();
-            
-            // Ensure quizResults array exists
-            if (!userData.quizResults) {
-                userData.quizResults = [];
-            }
+            const userData = { ...user };
+            userData.quizResults = userData.quizResults || [];
 
-            console.log('Initial quiz results:', JSON.stringify(userData.quizResults, null, 2));
-            console.log('Initial quiz progress:', JSON.stringify(userData.quizProgress, null, 2));
-
-            // First, process existing quiz results
+            // Update each quiz result with its corresponding progress data
             userData.quizResults = userData.quizResults.map(result => {
-                const quizProgress = userData.quizProgress?.[result.quizName.toLowerCase()];
-                console.log(`\nProcessing quiz result: ${result.quizName}`);
-                console.log('Quiz progress data:', quizProgress);
-                console.log('Original result data:', result);
-                
-                const updatedResult = {
-                    ...result,
-                    questionsAnswered: quizProgress?.questionsAnswered || result.questionsAnswered || 0,
-                    experience: quizProgress?.experience || result.experience || 0,
-                    lastActive: quizProgress?.lastUpdated || result.lastActive || result.completedAt,
-                };
-                
-                console.log('Updated result:', updatedResult);
-                return updatedResult;
+                const progress = userData.quizProgress?.[result.quizName.toLowerCase()];
+                if (progress) {
+                    return {
+                        ...result,
+                        experience: progress.experience,
+                        questionsAnswered: progress.questionsAnswered
+                    };
+                }
+                return result;
             });
 
-            // Then, add any quizzes that have progress but no results
-            if (userData.quizProgress) {
-                console.log('\nChecking for quizzes with progress but no results...');
-                Object.entries(userData.quizProgress).forEach(([quizName, progress]) => {
-                    console.log(`Checking ${quizName}:`, progress);
-                    const existingResult = userData.quizResults.find(r => 
-                        r.quizName.toLowerCase() === quizName.toLowerCase()
-                    );
-                    
-                    if (!existingResult && progress) {
-                        console.log(`Adding progress data for ${quizName}`);
-                        userData.quizResults.push({
-                            quizName: quizName.charAt(0).toUpperCase() + quizName.slice(1),
-                            score: progress.questionsAnswered > 0 ? 
-                                Math.round((progress.experience / (progress.questionsAnswered * 20)) * 100) : 0,
-                            experience: progress.experience || 0,
-                            questionsAnswered: progress.questionsAnswered || 0,
-                            lastActive: progress.lastUpdated,
-                            completedAt: null,
-                            status: 'In Progress'
-                        });
-                    }
-                });
-            }
-
-            console.log('\nFinal user data:', JSON.stringify(userData, null, 2));
+            // Remove quizProgress from response since it's not needed
+            delete userData.quizProgress;
             return userData;
         });
 
-        console.log('\nSending response to client...');
         res.json({
             success: true,
             users: populatedUsers
