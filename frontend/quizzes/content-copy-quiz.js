@@ -64,7 +64,7 @@ class ContentCopyQuiz extends BaseQuiz {
             return;
         }
 
-        // Basic Scenarios (IDs 1-5, 75 XP total)
+        // Basic Scenarios (IDs 1-5, 75 XP total, 15 XP each)
         this.basicScenarios = [
             {
                 id: 1,
@@ -95,10 +95,10 @@ class ContentCopyQuiz extends BaseQuiz {
                 ]
             },
             {
-            id: 2,
+                id: 2,
                 level: 'Basic',
                 title: 'Content proofing scope',
-                description: ' When conducting content proofing, what is considered out of scope?',
+                description: 'When conducting content proofing, what is considered out of scope?',
                 options: [
                     {
                         text: 'Spelling errors',
@@ -113,7 +113,7 @@ class ContentCopyQuiz extends BaseQuiz {
                     {
                         text: 'Software functionality issues',
                         outcome: 'functionality is out of scope.',
-                        experience: 10
+                        experience: 15
                     },
                     {
                         text: 'Content consistency',
@@ -123,15 +123,15 @@ class ContentCopyQuiz extends BaseQuiz {
                 ]
             },
             {
-            id: 3,
+                id: 3,
                 level: 'Basic',
                 title: 'Main objectives',
-                description: ' When conducting content proofing, what is considered out of scope?',
+                description: 'When conducting content proofing, what is considered out of scope?',
                 options: [
                     {
                         text: 'Ensuring quality of the product',
                         outcome: 'This is a primary objective of content proofing.',
-                        experience: 10
+                        experience: 15
                     },
                     {
                         text: 'Improving website loading speed',
@@ -151,7 +151,7 @@ class ContentCopyQuiz extends BaseQuiz {
                 ]
             },
             {
-            id: 4,
+                id: 4,
                 level: 'Basic',
                 title: 'Attention to detail',
                 description: 'Why is attention to detail important in content proofing',
@@ -164,7 +164,7 @@ class ContentCopyQuiz extends BaseQuiz {
                     {
                         text: 'To maintain client confidence in quality work',
                         outcome: 'This is within the main characteristics of content testing.',
-                        experience: 10
+                        experience: 15
                     },
                     {
                         text: 'To improve server performance',
@@ -179,7 +179,7 @@ class ContentCopyQuiz extends BaseQuiz {
                 ]
             },
             {
-            id: 5,
+                id: 5,
                 level: 'Basic',
                 title: 'Changes to content requirements',
                 description: 'What can happen if content changes occur after testing?',
@@ -197,7 +197,7 @@ class ContentCopyQuiz extends BaseQuiz {
                     {
                         text: 'Previous testing may be partially voided',
                         outcome: 'This is a risk to content changes during the testing cycle',
-                        experience: 10
+                        experience: 15
                     },
                     {
                         text: 'The client must restart the project',
@@ -205,10 +205,10 @@ class ContentCopyQuiz extends BaseQuiz {
                         experience: 5
                     }
                 ]
-            },
+            }
         ];
 
-        // Intermediate Scenarios (IDs 6-10, 125 XP total)
+        // Intermediate Scenarios (IDs 6-10, 100 XP total, 20 XP each)
         this.intermediateScenarios = [
             {
                 id: 6,
@@ -224,7 +224,7 @@ class ContentCopyQuiz extends BaseQuiz {
                     {
                         text: 'Consistent user experience across platforms',
                         outcome: 'Content testing should specifically addresses platform consistency.',
-                        experience: 10
+                        experience: 20
                     },
                     {
                         text: 'Different screen sizes',
@@ -239,7 +239,7 @@ class ContentCopyQuiz extends BaseQuiz {
                 ]
             },
             {
-            id: 7,
+                id: 7,
                 level: 'Intermediate',
                 title: 'Volume of raised content issues',
                 description: 'What is a recommended approach when dealing with a high volume of small issues?',
@@ -252,7 +252,7 @@ class ContentCopyQuiz extends BaseQuiz {
                     {
                         text: 'Group issues by content section',
                         outcome: 'This is the recommended way of reporting issues for ease of identification.',
-                        experience: 10
+                        experience: 20
                     },
                     {
                         text: 'Only report critical issues',
@@ -267,7 +267,7 @@ class ContentCopyQuiz extends BaseQuiz {
                 ]
             },
             {
-            id: 8,
+                id: 8,
                 level: 'Intermediate',
                 title: 'Reviewing images',
                 description: 'What should testers consider when reviewing images across environments?',
@@ -285,7 +285,7 @@ class ContentCopyQuiz extends BaseQuiz {
                     {
                         text: 'Image quality and resolution across all environments',
                         outcome: 'This is a primary factor in reviewing image content',
-                        experience: 10
+                        experience: 20
                     },
                     {
                         text: 'Number of images used',
@@ -295,7 +295,7 @@ class ContentCopyQuiz extends BaseQuiz {
                 ]
             },
             {
-            id: 9,
+                id: 9,
                 level: 'Intermediate',
                 title: 'Provided requirements',
                 description: 'How does the absence of a copy deck affect testing?',
@@ -308,7 +308,7 @@ class ContentCopyQuiz extends BaseQuiz {
                     {
                         text: 'Testing becomes limited to grammar and punctuation',
                         outcome: 'This is a risk of documentation not being provided by the client.',
-                        experience: 10
+                        experience: 20
                     },
                     {
                         text: 'Testing requires more time',
@@ -323,7 +323,7 @@ class ContentCopyQuiz extends BaseQuiz {
                 ]
             },
             {
-            id: 10,
+                id: 10,
                 level: 'Intermediate',
                 title: 'Localisation',
                 description: 'What role does localization play in content proofing?',
@@ -341,7 +341,7 @@ class ContentCopyQuiz extends BaseQuiz {
                     {
                         text: 'Reviewing content appropriateness for target market',
                         outcome: 'Market considerations should be considered',
-                        experience: 10
+                        experience: 20
                     },
                     {
                         text: 'Checking page load times',
@@ -349,11 +349,10 @@ class ContentCopyQuiz extends BaseQuiz {
                         experience: -10
                     }
                 ]
-            },
+            }
         ];
 
-
-        // Advanced Scenarios (IDs 11-15, 100 XP total)
+        // Advanced Scenarios (IDs 11-15, 125 XP total, 25 XP each)
         this.advancedScenarios = [
             {
                 id: 11,
@@ -374,7 +373,7 @@ class ContentCopyQuiz extends BaseQuiz {
                     {
                         text: 'Report all differences unless variation is specified',
                         outcome: 'This is considered the correct approach',
-                        experience: 10
+                        experience: 25
                     },
                     {
                         text: 'Focus only on iOS issues',
@@ -384,7 +383,7 @@ class ContentCopyQuiz extends BaseQuiz {
                 ]
             },
             {
-            id: 12,
+                id: 12,
                 level: 'Advanced',
                 title: 'Functional & Content testing relationship',
                 description: 'What is the relationship between content proofing and functional testing in a project?',
@@ -397,7 +396,7 @@ class ContentCopyQuiz extends BaseQuiz {
                     {
                         text: 'They can be combined or separate based on project needs',
                         outcome: 'This technique can be used on most projects dependent on client needs.',
-                        experience: 10
+                        experience: 25
                     },
                     {
                         text: 'They must always be combined',
@@ -412,7 +411,7 @@ class ContentCopyQuiz extends BaseQuiz {
                 ]
             },
             {
-            id: 13,
+                id: 13,
                 level: 'Advanced',
                 title: 'Content discrepancies within documentation',
                 description: 'How should testers handle content that differs from provided design documentation?',
@@ -430,7 +429,7 @@ class ContentCopyQuiz extends BaseQuiz {
                     {
                         text: 'Raise as a query to verify if designs are current',
                         outcome: 'This approach gives the client visibility and prompts confirmation for moving forward',
-                        experience: 10
+                        experience: 25
                     },
                     {
                         text: 'Only check current content',
@@ -440,7 +439,7 @@ class ContentCopyQuiz extends BaseQuiz {
                 ]
             },
             {
-            id: 14,
+                id: 14,
                 level: 'Advanced',
                 title: 'Tester documentation',
                 description: 'What impact does the quality of tester documentation have on content proofing?',
@@ -453,7 +452,7 @@ class ContentCopyQuiz extends BaseQuiz {
                     {
                         text: 'Affects client confidence in testing quality',
                         outcome: 'It creates a professional impression that reinforces the value of the testing service.',
-                        experience: 10
+                        experience: 25
                     },
                     {
                         text: 'Only impacts internal processes',
@@ -468,7 +467,7 @@ class ContentCopyQuiz extends BaseQuiz {
                 ]
             },
             {
-            id: 15,
+                id: 15,
                 level: 'Advanced',
                 title: 'Content Prioritisation',
                 description: 'How should testers prioritise different types of content issues?',
@@ -486,7 +485,7 @@ class ContentCopyQuiz extends BaseQuiz {
                     {
                         text: 'Evaluate impact on user experience and brand consistency',
                         outcome: 'This is the correct approach for prioritisation of issues',
-                        experience: 10
+                        experience: 25
                     },
                     {
                         text: 'Prioritise based on page location',
@@ -494,9 +493,8 @@ class ContentCopyQuiz extends BaseQuiz {
                         experience: 5
                     }
                 ]
-            },
+            }
         ];
-
 
         // Initialize UI and add event listeners
         this.initializeEventListeners();

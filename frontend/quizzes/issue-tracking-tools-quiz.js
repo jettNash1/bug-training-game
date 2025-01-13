@@ -224,7 +224,7 @@ class IssueTrackingToolsQuiz extends BaseQuiz {
                     {
                         text: 'Use bulk edit feature, select issues with checkboxes, and change fixer for all selected',
                         outcome: 'Perfect! This is the most efficient way to edit multiple issues.',
-                        experience: 25,
+                        experience: 20,
                         tool: 'Bulk Editing'
                     },
                     {
@@ -253,7 +253,7 @@ class IssueTrackingToolsQuiz extends BaseQuiz {
                     {
                         text: 'Use the Reports feature to generate pie charts showing Status, Priority, Fixer, and Tester',
                         outcome: 'Excellent! This provides comprehensive issue status visualization.',
-                        experience: 25,
+                        experience: 20,
                         tool: 'Reporting'
                     },
                     {
@@ -282,7 +282,7 @@ class IssueTrackingToolsQuiz extends BaseQuiz {
                     {
                         text: 'Apply relevant tags consistently and link to appropriate epics/parent tickets',
                         outcome: 'Perfect! This ensures proper issue organization and hierarchy.',
-                        experience: 25,
+                        experience: 20,
                         tool: 'Issue Organization'
                     },
                     {
@@ -311,7 +311,7 @@ class IssueTrackingToolsQuiz extends BaseQuiz {
                     {
                         text: 'Use the Activity feature to view time-stamped logs of all project changes',
                         outcome: 'Excellent! This shows complete activity history.',
-                        experience: 25,
+                        experience: 20,
                         tool: 'Activity Monitoring'
                     },
                     {
@@ -340,7 +340,7 @@ class IssueTrackingToolsQuiz extends BaseQuiz {
                     {
                         text: 'Export data from DoneDone and ensure proper formatting for Jira import',
                         outcome: 'Perfect! This ensures proper data migration.',
-                        experience: 25,
+                        experience: 20,
                         tool: 'Data Migration'
                     },
                     {
@@ -373,7 +373,7 @@ class IssueTrackingToolsQuiz extends BaseQuiz {
                     {
                         text: 'Document tool-specific processes while maintaining consistent issue format and tracking principles',
                         outcome: 'Excellent! This ensures consistency across different tools.',
-                        experience: 20,
+                        experience: 25,
                         tool: 'Tool Integration'
                     },
                     {
@@ -402,7 +402,7 @@ class IssueTrackingToolsQuiz extends BaseQuiz {
                     {
                         text: 'Create parent-child relationships, use epics, and maintain clear linking between related issues',
                         outcome: 'Perfect! This creates clear issue relationships.',
-                        experience: 20,
+                        experience: 25,
                         tool: 'Issue Hierarchy'
                     },
                     {
@@ -431,7 +431,7 @@ class IssueTrackingToolsQuiz extends BaseQuiz {
                     {
                         text: 'Analyze current process, propose improvements, and implement streamlined workflow with team agreement',
                         outcome: 'Excellent! This ensures systematic improvement.',
-                        experience: 20,
+                        experience: 25,
                         tool: 'Workflow Management'
                     },
                     {
@@ -460,7 +460,7 @@ class IssueTrackingToolsQuiz extends BaseQuiz {
                     {
                         text: 'Create comprehensive documentation for each tool with examples and best practices',
                         outcome: 'Perfect! This ensures effective knowledge transfer.',
-                        experience: 20,
+                        experience: 25,
                         tool: 'Training'
                     },
                     {
@@ -489,7 +489,7 @@ class IssueTrackingToolsQuiz extends BaseQuiz {
                     {
                         text: 'Analyze their needs, compare tools\' features, and recommend based on specific requirements',
                         outcome: 'Excellent! This provides tailored recommendations.',
-                        experience: 20,
+                        experience: 25,
                         tool: 'Tool Selection'
                     },
                     {

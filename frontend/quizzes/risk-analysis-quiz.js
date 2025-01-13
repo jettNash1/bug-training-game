@@ -224,7 +224,7 @@ class RiskAnalysisQuiz extends BaseQuiz {
                     {
                         text: 'Evaluate resource availability, information gathering time, fix windows, and timeline flexibility',
                         outcome: 'Excellent! Comprehensive timeline risk assessment.',
-                        experience: 25,
+                        experience: 20,
                         tool: 'Timeline Risk Assessment'
                     },
                     {
@@ -253,7 +253,7 @@ class RiskAnalysisQuiz extends BaseQuiz {
                     {
                         text: 'Check documentation availability, detail level, business rules, and acceptance criteria',
                         outcome: 'Perfect! Documentation completeness is crucial.',
-                        experience: 25,
+                        experience: 20,
                         tool: 'Documentation Review'
                     },
                     {
@@ -282,7 +282,7 @@ class RiskAnalysisQuiz extends BaseQuiz {
                     {
                         text: 'Verify access methods, specific requirements, user permissions, and environment stability',
                         outcome: 'Excellent! Complete access risk assessment.',
-                        experience: 25,
+                        experience: 20,
                         tool: 'Access Risk Checklist'
                     },
                     {
@@ -311,7 +311,7 @@ class RiskAnalysisQuiz extends BaseQuiz {
                     {
                         text: 'Evaluate platform performance impact, potential conflicts, and workflow interruptions',
                         outcome: 'Perfect! Multi-user impact needs thorough assessment.',
-                        experience: 25,
+                        experience: 20,
                         tool: 'Concurrent Testing Assessment'
                     },
                     {
@@ -340,7 +340,7 @@ class RiskAnalysisQuiz extends BaseQuiz {
                     {
                         text: 'Establish urgent contact methods, verify response times, and ensure clear escalation paths',
                         outcome: 'Excellent! Communication channel assessment.',
-                        experience: 25,
+                        experience: 20,
                         tool: 'Communication Risk Assessment'
                     },
                     {
@@ -373,7 +373,7 @@ class RiskAnalysisQuiz extends BaseQuiz {
                     {
                         text: 'Evaluate impact on testing time, triage requirements, and need for additional verification',
                         outcome: 'Perfect! Comprehensive bug impact assessment.',
-                        experience: 20,
+                        experience: 25,
                         tool: 'Bug Impact Analysis'
                     },
                     {
@@ -402,7 +402,7 @@ class RiskAnalysisQuiz extends BaseQuiz {
                     {
                         text: 'Assess impact on timeline, coverage, and team capability, then adjust plans accordingly',
                         outcome: 'Excellent! Resource change impact analysis.',
-                        experience: 20,
+                        experience: 25,
                         tool: 'Resource Risk Management'
                     },
                     {
@@ -431,7 +431,7 @@ class RiskAnalysisQuiz extends BaseQuiz {
                     {
                         text: 'Evaluate fix timeline, regression impact, and remaining test time, then reprioritize',
                         outcome: 'Perfect! Late-stage issue impact assessment.',
-                        experience: 20,
+                        experience: 25,
                         tool: 'Late-Stage Risk Analysis'
                     },
                     {
@@ -460,7 +460,7 @@ class RiskAnalysisQuiz extends BaseQuiz {
                     {
                         text: 'Analyze impact on timeline, coverage, and existing tests, then adjust strategy',
                         outcome: 'Excellent! Change impact analysis.',
-                        experience: 20,
+                        experience: 25,
                         tool: 'Change Impact Assessment'
                     },
                     {
@@ -489,7 +489,7 @@ class RiskAnalysisQuiz extends BaseQuiz {
                     {
                         text: 'Review project challenges, identify process improvements, and document lessons learned',
                         outcome: 'Perfect! Comprehensive project review.',
-                        experience: 20,
+                        experience: 25,
                         tool: 'Project Review Framework'
                     },
                     {

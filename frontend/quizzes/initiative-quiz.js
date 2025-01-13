@@ -223,7 +223,7 @@ class InitiativeQuiz extends BaseQuiz {
                     {
                         text: 'Create comprehensive handover notes and context documentation',
                         outcome: 'Perfect! Proactive knowledge transfer shows excellent initiative.',
-                        experience: 25,
+                        experience: 20,
                         tool: 'Knowledge Transfer'
                     },
                     {
@@ -252,7 +252,7 @@ class InitiativeQuiz extends BaseQuiz {
                     {
                         text: 'Proactively identify who has access and arrange coverage early',
                         outcome: 'Excellent! Taking early action to solve access issues shows great initiative.',
-                        experience: 25,
+                        experience: 20,
                         tool: 'Resource Management'
                     },
                     {
@@ -281,7 +281,7 @@ class InitiativeQuiz extends BaseQuiz {
                     {
                         text: 'Contact the client directly with clear, professional questions',
                         outcome: 'Perfect! Taking initiative to gather needed information directly.',
-                        experience: 25,
+                        experience: 20,
                         tool: 'Client Communication'
                     },
                     {
@@ -310,7 +310,7 @@ class InitiativeQuiz extends BaseQuiz {
                     {
                         text: 'Review less-tested areas and enhance documentation',
                         outcome: 'Excellent! Using extra time to improve coverage shows great initiative.',
-                        experience: 25,
+                        experience: 20,
                         tool: 'Quality Assurance'
                     },
                     {
@@ -339,7 +339,7 @@ class InitiativeQuiz extends BaseQuiz {
                     {
                         text: 'Review available project materials and prepare testing environment',
                         outcome: 'Perfect! Preparing ahead shows excellent initiative.',
-                        experience: 25,
+                        experience: 20,
                         tool: 'Project Preparation'
                     },
                     {
@@ -371,7 +371,7 @@ class InitiativeQuiz extends BaseQuiz {
                     {
                         text: 'Investigate root cause, document findings, and propose prevention measures',
                         outcome: 'Excellent! Comprehensive problem-solving shows advanced initiative.',
-                        experience: 20,
+                        experience: 25,
                         tool: 'Issue Resolution'
                     },
                     {
@@ -400,7 +400,7 @@ class InitiativeQuiz extends BaseQuiz {
                     {
                         text: 'Document issues, research solutions, and present improvement proposals',
                         outcome: 'Perfect! Taking leadership in process improvement shows advanced initiative.',
-                        experience: 20,
+                        experience: 25,
                         tool: 'Process Improvement'
                     },
                     {
@@ -429,7 +429,7 @@ class InitiativeQuiz extends BaseQuiz {
                     {
                         text: 'Coordinate with all affected teams and lead resolution efforts',
                         outcome: 'Excellent! Taking leadership in cross-team issues shows advanced initiative.',
-                        experience: 20,
+                        experience: 25,
                         tool: 'Collaboration Management'
                     },
                     {
@@ -458,7 +458,7 @@ class InitiativeQuiz extends BaseQuiz {
                     {
                         text: 'Create comprehensive guides and organize training sessions',
                         outcome: 'Perfect! Proactively sharing knowledge shows advanced initiative.',
-                        experience: 20,
+                        experience: 25,
                         tool: 'Knowledge Management'
                     },
                     {
@@ -487,7 +487,7 @@ class InitiativeQuiz extends BaseQuiz {
                     {
                         text: 'Develop and present a strategic plan to address future challenges',
                         outcome: 'Excellent! Strategic thinking and planning shows advanced initiative.',
-                        experience: 20,
+                        experience: 25,
                         tool: 'Strategic Planning'
                     },
                     {

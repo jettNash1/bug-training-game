@@ -64,7 +64,7 @@ class CMS_Testing_Quiz extends BaseQuiz {
             return;
         }
 
-        // Basic Scenarios (IDs 1-5, 75 XP total)
+        // Basic Scenarios (IDs 1-5)
         this.basicScenarios = [
             {
                 id: 1,
@@ -213,7 +213,7 @@ class CMS_Testing_Quiz extends BaseQuiz {
             }
         ];
 
-        // Intermediate Scenarios (IDs 6-10, 125 XP total)
+        // Intermediate Scenarios (IDs 6-10)
         this.intermediateScenarios = [
             {
                 id: 6,
@@ -224,7 +224,7 @@ class CMS_Testing_Quiz extends BaseQuiz {
                     {
                         text: 'Test upload, edit, delete functions with various file types and sizes',
                         outcome: 'Excellent! Comprehensive media testing is essential.',
-                        experience: 25,
+                        experience: 20,
                         tool: 'Media Testing'
                     },
                     {
@@ -253,7 +253,7 @@ class CMS_Testing_Quiz extends BaseQuiz {
                     {
                         text: 'Verify customization options, layout consistency, and content rendering',
                         outcome: 'Perfect! Template functionality is key.',
-                        experience: 25,
+                        experience: 20,
                         tool: 'Template Validation'
                     },
                     {
@@ -282,7 +282,7 @@ class CMS_Testing_Quiz extends BaseQuiz {
                     {
                         text: 'Meta tags, URLs, sitemaps, and other SEO tools provided by the CMS',
                         outcome: 'Excellent! SEO functionality is crucial.',
-                        experience: 25,
+                        experience: 20,
                         tool: 'SEO Testing'
                     },
                     {
@@ -311,7 +311,7 @@ class CMS_Testing_Quiz extends BaseQuiz {
                     {
                         text: 'Test save, revert, compare, and restore functionality for content changes',
                         outcome: 'Perfect! Version control ensures content safety.',
-                        experience: 25,
+                        experience: 20,
                         tool: 'Version Testing'
                     },
                     {
@@ -340,7 +340,7 @@ class CMS_Testing_Quiz extends BaseQuiz {
                     {
                         text: 'Verify installation, functionality, compatibility, and interaction with core features',
                         outcome: 'Excellent! Plugin testing ensures stability.',
-                        experience: 25,
+                        experience: 20,
                         tool: 'Plugin Testing'
                     },
                     {
@@ -362,7 +362,7 @@ class CMS_Testing_Quiz extends BaseQuiz {
             }
         ];
 
-        // Advanced Scenarios (IDs 11-15, 100 XP total)
+        // Advanced Scenarios (IDs 11-15)
         this.advancedScenarios = [
             {
                 id: 11,
@@ -373,7 +373,7 @@ class CMS_Testing_Quiz extends BaseQuiz {
                     {
                         text: 'Test load times, multiple users, heavy content, and system responsiveness',
                         outcome: 'Perfect! Performance impacts user experience.',
-                        experience: 20,
+                        experience: 25,
                         tool: 'Performance Testing'
                     },
                     {
@@ -402,7 +402,7 @@ class CMS_Testing_Quiz extends BaseQuiz {
                     {
                         text: 'Test authentication, permissions, vulnerabilities, and data protection',
                         outcome: 'Excellent! Security is critical for CMS.',
-                        experience: 20,
+                        experience: 25,
                         tool: 'Security Testing'
                     },
                     {
@@ -431,7 +431,7 @@ class CMS_Testing_Quiz extends BaseQuiz {
                     {
                         text: 'Verify backup creation, storage, restoration, and data integrity',
                         outcome: 'Perfect! Data recovery is essential.',
-                        experience: 20,
+                        experience: 25,
                         tool: 'Backup Testing'
                     },
                     {
@@ -460,7 +460,7 @@ class CMS_Testing_Quiz extends BaseQuiz {
                     {
                         text: 'Test functionality across browsers, devices, and operating systems',
                         outcome: 'Excellent! Cross-environment testing ensures compatibility.',
-                        experience: 20,
+                        experience: 25,
                         tool: 'Environment Testing'
                     },
                     {
@@ -489,7 +489,7 @@ class CMS_Testing_Quiz extends BaseQuiz {
                     {
                         text: 'Test data flow, API connections, third-party services, and system interactions',
                         outcome: 'Perfect! Integration ensures system cohesion.',
-                        experience: 20,
+                        experience: 25,
                         tool: 'Integration Testing'
                     },
                     {

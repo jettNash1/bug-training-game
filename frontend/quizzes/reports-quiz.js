@@ -224,7 +224,7 @@ class ReportsQuiz extends BaseQuiz {
                     {
                         text: 'Review all comments, address each point, resolve comments after fixing, discuss if clarification needed',
                         outcome: 'Perfect! This ensures thorough review process.',
-                        experience: 25,
+                        experience: 20,
                         tool: 'Peer Review'
                     },
                     {
@@ -253,7 +253,7 @@ class ReportsQuiz extends BaseQuiz {
                     {
                         text: 'Include matrix with accurate versions, consistent formatting, and relevant environment details',
                         outcome: 'Excellent! This provides clear environment context.',
-                        experience: 25,
+                        experience: 20,
                         tool: 'Environment Documentation'
                     },
                     {
@@ -282,7 +282,7 @@ class ReportsQuiz extends BaseQuiz {
                     {
                         text: 'List most functionally impactive issues, include blocking issues separately, hyperlink all references',
                         outcome: 'Perfect! This provides organized issue overview.',
-                        experience: 25,
+                        experience: 20,
                         tool: 'Issue Documentation'
                     },
                     {
@@ -311,7 +311,7 @@ class ReportsQuiz extends BaseQuiz {
                     {
                         text: 'Set up template first day, add draft notes daily, compile and refine at week end',
                         outcome: 'Excellent! This ensures comprehensive coverage.',
-                        experience: 25,
+                        experience: 20,
                         tool: 'Report Management'
                     },
                     {
@@ -340,7 +340,7 @@ class ReportsQuiz extends BaseQuiz {
                     {
                         text: 'Use clear language, avoid jargon, focus on business impact, maintain professional tone',
                         outcome: 'Perfect! This ensures wide accessibility.',
-                        experience: 25,
+                        experience: 20,
                         tool: 'Stakeholder Management'
                     },
                     {
@@ -373,7 +373,7 @@ class ReportsQuiz extends BaseQuiz {
                     {
                         text: 'Discuss with PM, adapt template while maintaining key information, ensure consistent transition',
                         outcome: 'Perfect! This ensures proper format adaptation.',
-                        experience: 20,
+                        experience: 25,
                         tool: 'Format Management'
                     },
                     {
@@ -402,7 +402,7 @@ class ReportsQuiz extends BaseQuiz {
                     {
                         text: 'Verify source data, cross-reference scripts, document discrepancies, consult PM if needed',
                         outcome: 'Excellent! This ensures accurate reporting.',
-                        experience: 20,
+                        experience: 25,
                         tool: 'Data Analysis'
                     },
                     {
@@ -431,7 +431,7 @@ class ReportsQuiz extends BaseQuiz {
                     {
                         text: 'Create clear environment matrix, document specific behaviors, highlight key differences',
                         outcome: 'Perfect! This provides comprehensive environment coverage.',
-                        experience: 20,
+                        experience: 25,
                         tool: 'Environment Analysis'
                     },
                     {
@@ -460,7 +460,7 @@ class ReportsQuiz extends BaseQuiz {
                     {
                         text: 'Immediately notify PM, document thoroughly in report, highlight business impact',
                         outcome: 'Excellent! This ensures proper critical issue handling.',
-                        experience: 20,
+                        experience: 25,
                         tool: 'Critical Issue Management'
                     },
                     {
@@ -489,7 +489,7 @@ class ReportsQuiz extends BaseQuiz {
                     {
                         text: 'Review content, verify metrics, check formatting, validate links, run spell check, read aloud',
                         outcome: 'Perfect! This ensures comprehensive quality check.',
-                        experience: 20,
+                        experience: 25,
                         tool: 'Quality Assurance'
                     },
                     {

@@ -225,7 +225,7 @@ export class CommunicationQuiz extends BaseQuiz {
                     {
                         text: 'Use clear analogies and visual aids, avoid jargon, and focus on business impact',
                         outcome: 'Excellent! This makes technical concepts accessible.',
-                        experience: 25,
+                        experience: 20,
                         tool: 'Stakeholder Communication'
                     },
                     {
@@ -254,7 +254,7 @@ export class CommunicationQuiz extends BaseQuiz {
                     {
                         text: 'Facilitate a discussion, document different viewpoints, and work toward consensus',
                         outcome: 'Perfect! This promotes constructive resolution.',
-                        experience: 25,
+                        experience: 20,
                         tool: 'Conflict Resolution'
                     },
                     {
@@ -283,7 +283,7 @@ export class CommunicationQuiz extends BaseQuiz {
                     {
                         text: 'Provide specific, constructive feedback with examples and suggestions for improvement',
                         outcome: 'Excellent! This helps learning and improvement.',
-                        experience: 25,
+                        experience: 20,
                         tool: 'Code Review'
                     },
                     {
@@ -312,7 +312,7 @@ export class CommunicationQuiz extends BaseQuiz {
                     {
                         text: 'Set up regular video calls, use screen sharing, and maintain detailed documentation',
                         outcome: 'Perfect! This maintains clear communication channels.',
-                        experience: 25,
+                        experience: 20,
                         tool: 'Remote Collaboration'
                     },
                     {
@@ -341,7 +341,7 @@ export class CommunicationQuiz extends BaseQuiz {
                     {
                         text: 'Create a structured report with key metrics, milestones, and risks, and schedule a presentation',
                         outcome: 'Excellent! This provides comprehensive project visibility.',
-                        experience: 25,
+                        experience: 20,
                         tool: 'Project Communication'
                     },
                     {
@@ -374,7 +374,7 @@ export class CommunicationQuiz extends BaseQuiz {
                     {
                         text: 'Establish a clear communication channel, provide regular updates, and document the resolution process',
                         outcome: 'Perfect! This ensures effective crisis management.',
-                        experience: 35,
+                        experience: 25,
                         tool: 'Crisis Management'
                     },
                     {
@@ -403,7 +403,7 @@ export class CommunicationQuiz extends BaseQuiz {
                     {
                         text: 'Use clear, inclusive language, provide written follow-ups, and be mindful of cultural differences',
                         outcome: 'Excellent! This promotes inclusive global collaboration.',
-                        experience: 35,
+                        experience: 25,
                         tool: 'Global Communication'
                     },
                     {
@@ -432,7 +432,7 @@ export class CommunicationQuiz extends BaseQuiz {
                     {
                         text: 'Create multiple versions of the presentation with appropriate technical depth for different audiences',
                         outcome: 'Perfect! This ensures understanding at all levels.',
-                        experience: 35,
+                        experience: 25,
                         tool: 'Technical Presentation'
                     },
                     {
@@ -461,7 +461,7 @@ export class CommunicationQuiz extends BaseQuiz {
                     {
                         text: 'Create comprehensive documentation, conduct training sessions, and have overlap period with new team',
                         outcome: 'Excellent! This ensures smooth transition.',
-                        experience: 35,
+                        experience: 25,
                         tool: 'Knowledge Management'
                     },
                     {
@@ -490,7 +490,7 @@ export class CommunicationQuiz extends BaseQuiz {
                     {
                         text: 'Prepare a detailed proposal with impact analysis, gather feedback from stakeholders, and present a phased implementation plan',
                         outcome: 'Perfect! This demonstrates strategic thinking and stakeholder management.',
-                        experience: 35,
+                        experience: 25,
                         tool: 'Change Management'
                     },
                     {

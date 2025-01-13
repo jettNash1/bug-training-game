@@ -224,7 +224,7 @@ class TimeManagementQuiz extends BaseQuiz {
                     {
                         text: 'Review SoW timings, environment count, software size, and core user journeys',
                         outcome: 'Excellent! Comprehensive review ensures accurate timing.',
-                        experience: 25,
+                        experience: 20,
                         tool: 'Time Estimation'
                     },
                     {
@@ -253,7 +253,7 @@ class TimeManagementQuiz extends BaseQuiz {
                     {
                         text: 'Consider experience levels, individual paces, and project familiarity',
                         outcome: 'Perfect! Fair distribution considers individual capabilities.',
-                        experience: 25,
+                        experience: 20,
                         tool: 'Workload Management'
                     },
                     {
@@ -282,7 +282,7 @@ class TimeManagementQuiz extends BaseQuiz {
                     {
                         text: 'Analyze client priorities, core functions, and user patterns',
                         outcome: 'Excellent! Strategic prioritization maximizes value.',
-                        experience: 25,
+                        experience: 20,
                         tool: 'Priority Management'
                     },
                     {
@@ -311,7 +311,7 @@ class TimeManagementQuiz extends BaseQuiz {
                     {
                         text: 'Regularly assess coverage, adjust timings, and communicate any concerns',
                         outcome: 'Perfect! Active monitoring enables timely adjustments.',
-                        experience: 25,
+                        experience: 20,
                         tool: 'Progress Tracking'
                     },
                     {
@@ -340,7 +340,7 @@ class TimeManagementQuiz extends BaseQuiz {
                     {
                         text: 'Start with primary environment, then adjust timing for others based on global issues',
                         outcome: 'Excellent! Efficient environment coverage strategy.',
-                        experience: 25,
+                        experience: 20,
                         tool: 'Environment Management'
                     },
                     {
@@ -373,7 +373,7 @@ class TimeManagementQuiz extends BaseQuiz {
                     {
                         text: 'Review all project requirements, create daily schedules, maintain clear separation',
                         outcome: 'Perfect! Structured approach to multiple projects.',
-                        experience: 20,
+                        experience: 25,
                         tool: 'Multi-Project Management'
                     },
                     {
@@ -402,7 +402,7 @@ class TimeManagementQuiz extends BaseQuiz {
                     {
                         text: 'Identify risks early, implement mitigation steps, communicate with PM',
                         outcome: 'Excellent! Proactive risk management saves time.',
-                        experience: 20,
+                        experience: 25,
                         tool: 'Risk Management'
                     },
                     {
@@ -431,7 +431,7 @@ class TimeManagementQuiz extends BaseQuiz {
                     {
                         text: 'Immediately notify PM, document thoroughly, reprioritize remaining time',
                         outcome: 'Perfect! Quick response and clear communication.',
-                        experience: 20,
+                        experience: 25,
                         tool: 'Issue Management'
                     },
                     {
@@ -460,7 +460,7 @@ class TimeManagementQuiz extends BaseQuiz {
                     {
                         text: 'Review changes immediately, adjust plans, ensure smooth transitions',
                         outcome: 'Excellent! Adaptable planning maintains efficiency.',
-                        experience: 20,
+                        experience: 25,
                         tool: 'Change Management'
                     },
                     {
@@ -489,7 +489,7 @@ class TimeManagementQuiz extends BaseQuiz {
                     {
                         text: 'Establish sustainable routines, regularly review efficiency, adapt processes as needed',
                         outcome: 'Perfect! Sustainable approach to long-term projects.',
-                        experience: 20,
+                        experience: 25,
                         tool: 'Long-term Planning'
                     },
                     {

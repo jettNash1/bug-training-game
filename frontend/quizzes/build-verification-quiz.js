@@ -224,7 +224,7 @@ class BuildVerificationQuiz extends BaseQuiz {
                     {
                         text: 'Regularly update test cases to include new core features and maintain accuracy',
                         outcome: 'Excellent! Test case maintenance ensures continued effectiveness.',
-                        experience: 25,
+                        experience: 20,
                         tool: 'Test Case Manager'
                     },
                     {
@@ -253,7 +253,7 @@ class BuildVerificationQuiz extends BaseQuiz {
                     {
                         text: 'Verify critical functionality in each build to catch issues before they affect other modules',
                         outcome: 'Perfect! Early detection prevents regression spread.',
-                        experience: 25,
+                        experience: 20,
                         tool: 'Regression Checker'
                     },
                     {
@@ -282,7 +282,7 @@ class BuildVerificationQuiz extends BaseQuiz {
                     {
                         text: 'Allocate appropriate time and testers based on build scope and complexity',
                         outcome: 'Excellent! Proper resource allocation ensures thorough verification.',
-                        experience: 25,
+                        experience: 20,
                         tool: 'Resource Planner'
                     },
                     {
@@ -311,7 +311,7 @@ class BuildVerificationQuiz extends BaseQuiz {
                     {
                         text: 'When all critical functionality passes and no blocking issues are found',
                         outcome: 'Perfect! Build stability is crucial for further testing.',
-                        experience: 25,
+                        experience: 20,
                         tool: 'Acceptance Criteria'
                     },
                     {
@@ -340,7 +340,7 @@ class BuildVerificationQuiz extends BaseQuiz {
                     {
                         text: 'Maintain clear test cases, expected results, and execution records for each build',
                         outcome: 'Excellent! Documentation ensures consistency and traceability.',
-                        experience: 25,
+                        experience: 20,
                         tool: 'Documentation Template'
                     },
                     {
@@ -373,7 +373,7 @@ class BuildVerificationQuiz extends BaseQuiz {
                     {
                         text: 'Analyze effectiveness, gather feedback, and update processes based on project needs',
                         outcome: 'Perfect! Continuous improvement enhances BVT effectiveness.',
-                        experience: 20,
+                        experience: 25,
                         tool: 'Process Analyzer'
                     },
                     {
@@ -402,7 +402,7 @@ class BuildVerificationQuiz extends BaseQuiz {
                     {
                         text: 'Verify individual modules and their interactions with comprehensive integration tests',
                         outcome: 'Excellent! Integration testing ensures module compatibility.',
-                        experience: 20,
+                        experience: 25,
                         tool: 'Integration Planner'
                     },
                     {
@@ -431,7 +431,7 @@ class BuildVerificationQuiz extends BaseQuiz {
                     {
                         text: 'Maintain clear channels with development team and stakeholders for quick issue resolution',
                         outcome: 'Perfect! Effective communication ensures quick resolution.',
-                        experience: 20,
+                        experience: 25,
                         tool: 'Communication Plan'
                     },
                     {
@@ -460,7 +460,7 @@ class BuildVerificationQuiz extends BaseQuiz {
                     {
                         text: 'Identify potential risks, prioritize critical areas, and maintain contingency plans',
                         outcome: 'Excellent! Risk management ensures BVT effectiveness.',
-                        experience: 20,
+                        experience: 25,
                         tool: 'Risk Assessment'
                     },
                     {
@@ -489,7 +489,7 @@ class BuildVerificationQuiz extends BaseQuiz {
                     {
                         text: 'Track pass rates, issue detection, and prevention of critical defects in later testing',
                         outcome: 'Perfect! Metrics help evaluate and improve BVT.',
-                        experience: 20,
+                        experience: 25,
                         tool: 'Quality Dashboard'
                     },
                     {

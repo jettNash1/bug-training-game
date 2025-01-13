@@ -223,7 +223,7 @@ class RaisingTicketsQuiz extends BaseQuiz {
                     {
                         text: 'Test multiple times and calculate percentage based on successful reproductions',
                         outcome: 'Excellent! This provides accurate reproduction statistics.',
-                        experience: 25,
+                        experience: 20,
                         tool: 'Reproduction Calculator'
                     },
                     {
@@ -252,7 +252,7 @@ class RaisingTicketsQuiz extends BaseQuiz {
                     {
                         text: 'Clear videos/images showing the issue, crash logs, and highlighted problem areas',
                         outcome: 'Perfect! Visual evidence helps understand issues.',
-                        experience: 25,
+                        experience: 20,
                         tool: 'Evidence Collection'
                     },
                     {
@@ -281,7 +281,7 @@ class RaisingTicketsQuiz extends BaseQuiz {
                     {
                         text: 'Include environment URL/build version and date for accurate tracking',
                         outcome: 'Excellent! Version info helps track issue timeline.',
-                        experience: 25,
+                        experience: 20,
                         tool: 'Version Tracker'
                     },
                     {
@@ -310,7 +310,7 @@ class RaisingTicketsQuiz extends BaseQuiz {
                     {
                         text: 'Assess impact on functionality, user experience, and business requirements',
                         outcome: 'Perfect! This ensures appropriate prioritization.',
-                        experience: 25,
+                        experience: 20,
                         tool: 'Severity Matrix'
                     },
                     {
@@ -339,7 +339,7 @@ class RaisingTicketsQuiz extends BaseQuiz {
                     {
                         text: 'Follow client instructions from Operational Project Details and maintain clear communication',
                         outcome: 'Excellent! Client preferences are important.',
-                        experience: 25,
+                        experience: 20,
                         tool: 'Client Requirements'
                     },
                     {
@@ -372,7 +372,7 @@ class RaisingTicketsQuiz extends BaseQuiz {
                     {
                         text: 'Provide clear, factual information about business impact and user experience effects',
                         outcome: 'Perfect! This helps stakeholders make informed decisions.',
-                        experience: 20,
+                        experience: 25,
                         tool: 'Impact Assessment'
                     },
                     {
@@ -401,7 +401,7 @@ class RaisingTicketsQuiz extends BaseQuiz {
                     {
                         text: 'Double-check all information, verify steps, and ensure clear documentation',
                         outcome: 'Excellent! Quality checks prevent confusion.',
-                        experience: 20,
+                        experience: 25,
                         tool: 'Quality Checklist'
                     },
                     {
@@ -430,7 +430,7 @@ class RaisingTicketsQuiz extends BaseQuiz {
                     {
                         text: 'Raise tickets immediately when issues are observed to maintain accuracy',
                         outcome: 'Perfect! Immediate reporting ensures accuracy.',
-                        experience: 20,
+                        experience: 25,
                         tool: 'Issue Tracker'
                     },
                     {
@@ -459,7 +459,7 @@ class RaisingTicketsQuiz extends BaseQuiz {
                     {
                         text: 'Capture clear videos/images, repeat issues in recordings, and highlight key areas',
                         outcome: 'Excellent! Quality evidence aids understanding.',
-                        experience: 20,
+                        experience: 25,
                         tool: 'Evidence Tools'
                     },
                     {
@@ -488,7 +488,7 @@ class RaisingTicketsQuiz extends BaseQuiz {
                     {
                         text: 'Use templates, follow standards, and maintain consistent formatting across all tickets',
                         outcome: 'Perfect! Consistency helps track and resolve issues.',
-                        experience: 20,
+                        experience: 25,
                         tool: 'Template System'
                     },
                     {

@@ -224,7 +224,7 @@ class NonFunctionalQuiz extends BaseQuiz {
                     {
                         text: 'Test against WCAG guidelines, check screen readers, and verify keyboard navigation',
                         outcome: 'Excellent! Comprehensive accessibility testing approach.',
-                        experience: 25,
+                        experience: 20,
                         tool: 'Accessibility Validator'
                     },
                     {
@@ -253,7 +253,7 @@ class NonFunctionalQuiz extends BaseQuiz {
                     {
                         text: 'Identify vulnerabilities, check data protection, and verify security measures',
                         outcome: 'Perfect! Comprehensive security testing approach.',
-                        experience: 25,
+                        experience: 20,
                         tool: 'Security Scanner'
                     },
                     {
@@ -282,7 +282,7 @@ class NonFunctionalQuiz extends BaseQuiz {
                     {
                         text: 'Push system beyond normal capacity with resource-intensive processes until breaking point',
                         outcome: 'Excellent! This identifies system limits effectively.',
-                        experience: 25,
+                        experience: 20,
                         tool: 'Stress Test Suite'
                     },
                     {
@@ -311,7 +311,7 @@ class NonFunctionalQuiz extends BaseQuiz {
                     {
                         text: 'Test system with large amounts of data to check efficiency and data handling',
                         outcome: 'Perfect! Volume testing verifies data handling capabilities.',
-                        experience: 25,
+                        experience: 20,
                         tool: 'Volume Test Framework'
                     },
                     {
@@ -340,7 +340,7 @@ class NonFunctionalQuiz extends BaseQuiz {
                     {
                         text: 'Force system failures and verify data recovery and system rebound capabilities',
                         outcome: 'Excellent! This verifies system recovery effectively.',
-                        experience: 25,
+                        experience: 20,
                         tool: 'Recovery Test Suite'
                     },
                     {
@@ -373,7 +373,7 @@ class NonFunctionalQuiz extends BaseQuiz {
                     {
                         text: 'Installation process, requirements, configurations, and user experience',
                         outcome: 'Perfect! Comprehensive installation testing approach.',
-                        experience: 20,
+                        experience: 25,
                         tool: 'Installation Validator'
                     },
                     {
@@ -402,7 +402,7 @@ class NonFunctionalQuiz extends BaseQuiz {
                     {
                         text: 'Verify all technical documents exist, are consistent, and accurately reflect the system',
                         outcome: 'Excellent! Documentation testing ensures complete and accurate resources.',
-                        experience: 20,
+                        experience: 25,
                         tool: 'Documentation Checker'
                     },
                     {
@@ -431,7 +431,7 @@ class NonFunctionalQuiz extends BaseQuiz {
                     {
                         text: 'Interface elements, design consistency, responsiveness, and user interaction flows',
                         outcome: 'Perfect! Comprehensive UI testing approach.',
-                        experience: 20,
+                        experience: 25,
                         tool: 'UI Test Suite'
                     },
                     {
@@ -460,7 +460,7 @@ class NonFunctionalQuiz extends BaseQuiz {
                     {
                         text: 'Complete removal of components, no errors post-uninstall, and system cleanup',
                         outcome: 'Excellent! This ensures clean system state after removal.',
-                        experience: 20,
+                        experience: 25,
                         tool: 'Uninstall Validator'
                     },
                     {
@@ -489,7 +489,7 @@ class NonFunctionalQuiz extends BaseQuiz {
                     {
                         text: 'Verify data handling, user consent, privacy controls, and data protection measures',
                         outcome: 'Perfect! Comprehensive GDPR compliance testing.',
-                        experience: 20,
+                        experience: 25,
                         tool: 'Compliance Checker'
                     },
                     {

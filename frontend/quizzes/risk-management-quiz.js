@@ -223,7 +223,7 @@ class RiskManagementQuiz extends BaseQuiz {
                     {
                         text: 'Flag in team chat, raise highest severity ticket, tag PM, and actively monitor for changes',
                         outcome: 'Perfect! This follows proper risk management protocol for blocking issues.',
-                        experience: 25,
+                        experience: 20,
                         tool: 'Issue Escalation'
                     },
                     {
@@ -252,7 +252,7 @@ class RiskManagementQuiz extends BaseQuiz {
                     {
                         text: 'Calculate new timeline needs, communicate to PM, highlight resource constraints',
                         outcome: 'Excellent! This provides data-driven risk assessment and communication.',
-                        experience: 25,
+                        experience: 20,
                         tool: 'Resource Planning'
                     },
                     {
@@ -281,7 +281,7 @@ class RiskManagementQuiz extends BaseQuiz {
                     {
                         text: 'Check all devices, raise highest severity issue, coordinate with team for coverage',
                         outcome: 'Perfect! This addresses both technical and project risks comprehensively.',
-                        experience: 25,
+                        experience: 20,
                         tool: 'Build Management'
                     },
                     {
@@ -310,7 +310,7 @@ class RiskManagementQuiz extends BaseQuiz {
                     {
                         text: 'Confirm with PM, document missing coverage, suggest alternative testing approaches',
                         outcome: 'Excellent! This provides clear risk documentation and mitigation options.',
-                        experience: 25,
+                        experience: 20,
                         tool: 'Coverage Management'
                     },
                     {
@@ -339,7 +339,7 @@ class RiskManagementQuiz extends BaseQuiz {
                     {
                         text: 'Quick site assessment, estimate total bugs, inform PM, prioritize by severity',
                         outcome: 'Perfect! This provides structured risk assessment and prioritization.',
-                        experience: 25,
+                        experience: 20,
                         tool: 'Bug Management'
                     },
                     {
@@ -372,7 +372,7 @@ class RiskManagementQuiz extends BaseQuiz {
                     {
                         text: 'Analyze critical paths, propose coverage priorities, document risks of reduced testing',
                         outcome: 'Excellent! This provides structured risk management for scope reduction.',
-                        experience: 20,
+                        experience: 25,
                         tool: 'Scope Management'
                     },
                     {
@@ -401,7 +401,7 @@ class RiskManagementQuiz extends BaseQuiz {
                     {
                         text: 'Immediately inform manager with impact assessment and timeline if possible',
                         outcome: 'Perfect! This allows proper resource risk management and support.',
-                        experience: 20,
+                        experience: 25,
                         tool: 'Resource Management'
                     },
                     {
@@ -430,7 +430,7 @@ class RiskManagementQuiz extends BaseQuiz {
                     {
                         text: 'Include clear caveats, specific conditions, and potential impacts',
                         outcome: 'Excellent! This provides comprehensive risk documentation.',
-                        experience: 20,
+                        experience: 25,
                         tool: 'Risk Documentation'
                     },
                     {
@@ -459,7 +459,7 @@ class RiskManagementQuiz extends BaseQuiz {
                     {
                         text: 'Prioritize risks by impact score, create mitigation plan for each, communicate clearly',
                         outcome: 'Perfect! This provides structured management of multiple risks.',
-                        experience: 20,
+                        experience: 25,
                         tool: 'Risk Prioritization'
                     },
                     {
@@ -488,7 +488,7 @@ class RiskManagementQuiz extends BaseQuiz {
                     {
                         text: 'Document clear caveats, potential impacts, and maintain detailed risk records',
                         outcome: 'Excellent! This ensures proper risk documentation despite client decisions.',
-                        experience: 20,
+                        experience: 25,
                         tool: 'Risk Documentation'
                     },
                     {

@@ -63,7 +63,7 @@ class IssueVerificationQuiz extends BaseQuiz {
             return;
         }
 
-        // Basic Scenarios (IDs 1-5, 75 XP total)
+        // Basic Scenarios (IDs 1-5)
         this.basicScenarios = [
             {
                 id: 1,
@@ -212,7 +212,7 @@ class IssueVerificationQuiz extends BaseQuiz {
             }
         ];
 
-        // Intermediate Scenarios (IDs 6-10, 125 XP total)
+        // Intermediate Scenarios (IDs 6-10)
         this.intermediateScenarios = [
             {
                 id: 6,
@@ -223,7 +223,7 @@ class IssueVerificationQuiz extends BaseQuiz {
                     {
                         text: 'Focus on areas where fixes were implemented, while also checking surrounding functionality',
                         outcome: 'Perfect! This ensures thorough regression coverage.',
-                        experience: 25,
+                        experience: 20,
                         tool: 'Regression Testing'
                     },
                     {
@@ -252,7 +252,7 @@ class IssueVerificationQuiz extends BaseQuiz {
                     {
                         text: 'Set goals for ticket verification numbers and allocate specific time for regression',
                         outcome: 'Excellent! This ensures balanced coverage.',
-                        experience: 25,
+                        experience: 20,
                         tool: 'Time Management'
                     },
                     {
@@ -281,7 +281,7 @@ class IssueVerificationQuiz extends BaseQuiz {
                     {
                         text: 'Raise new tickets and note if they\'re related to recent fixes',
                         outcome: 'Perfect! This tracks new issues properly.',
-                        experience: 25,
+                        experience: 20,
                         tool: 'Issue Management'
                     },
                     {
@@ -310,7 +310,7 @@ class IssueVerificationQuiz extends BaseQuiz {
                     {
                         text: 'Contact device owner early, check device lists, consider BrowserStack with PM approval',
                         outcome: 'Excellent! This shows proper device management.',
-                        experience: 25,
+                        experience: 20,
                         tool: 'Resource Management'
                     },
                     {
@@ -339,7 +339,7 @@ class IssueVerificationQuiz extends BaseQuiz {
                     {
                         text: 'Contact PM to confirm which issues have been worked on, prioritize known fixed issues',
                         outcome: 'Perfect! This ensures efficient verification.',
-                        experience: 25,
+                        experience: 20,
                         tool: 'Communication'
                     },
                     {
@@ -361,7 +361,7 @@ class IssueVerificationQuiz extends BaseQuiz {
             }
         ];
 
-        // Advanced Scenarios (IDs 11-15, 100 XP total)
+        // Advanced Scenarios (IDs 11-15)
         this.advancedScenarios = [
             {
                 id: 11,
@@ -372,7 +372,7 @@ class IssueVerificationQuiz extends BaseQuiz {
                     {
                         text: 'Test all connected features, document dependencies, verify full workflow',
                         outcome: 'Perfect! This ensures thorough verification.',
-                        experience: 20,
+                        experience: 25,
                         tool: 'Complex Testing'
                     },
                     {
@@ -401,7 +401,7 @@ class IssueVerificationQuiz extends BaseQuiz {
                     {
                         text: 'Test each environment, document specific behaviors, note any variations',
                         outcome: 'Excellent! This provides complete environment coverage.',
-                        experience: 20,
+                        experience: 25,
                         tool: 'Environment Testing'
                     },
                     {
@@ -430,7 +430,7 @@ class IssueVerificationQuiz extends BaseQuiz {
                     {
                         text: 'Map fix relationships, test impacted areas, document any cascading effects',
                         outcome: 'Perfect! This ensures comprehensive regression analysis.',
-                        experience: 20,
+                        experience: 25,
                         tool: 'Impact Analysis'
                     },
                     {
@@ -459,7 +459,7 @@ class IssueVerificationQuiz extends BaseQuiz {
                     {
                         text: 'Document verified issues, regression findings, new issues, and quality assessment',
                         outcome: 'Excellent! This provides complete verification coverage.',
-                        experience: 20,
+                        experience: 25,
                         tool: 'Reporting'
                     },
                     {
@@ -488,7 +488,7 @@ class IssueVerificationQuiz extends BaseQuiz {
                     {
                         text: 'Analyze fix impact, regression findings, and new issues to recommend next steps',
                         outcome: 'Perfect! This provides informed testing recommendations.',
-                        experience: 20,
+                        experience: 25,
                         tool: 'Quality Assessment'
                     },
                     {

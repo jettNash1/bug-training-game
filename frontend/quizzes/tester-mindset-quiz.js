@@ -224,7 +224,7 @@ class TesterMindsetQuiz extends BaseQuiz {
                     {
                         text: 'Be curious, investigative, and think outside the box',
                         outcome: 'Perfect! Exploratory testing requires creative thinking.',
-                        experience: 25,
+                        experience: 20,
                         tool: 'Exploratory Testing Guide'
                     },
                     {
@@ -253,7 +253,7 @@ class TesterMindsetQuiz extends BaseQuiz {
                     {
                         text: 'Document the issue and continue with test cases',
                         outcome: 'Excellent! Balance following scripts while noting other issues.',
-                        experience: 25,
+                        experience: 20,
                         tool: 'Test Case Management'
                     },
                     {
@@ -282,7 +282,7 @@ class TesterMindsetQuiz extends BaseQuiz {
                     {
                         text: 'Stay adaptable and maintain clear communication with the team',
                         outcome: 'Perfect! Flexibility and communication are key for support.',
-                        experience: 25,
+                        experience: 20,
                         tool: 'Support Communication Template'
                     },
                     {
@@ -311,7 +311,7 @@ class TesterMindsetQuiz extends BaseQuiz {
                     {
                         text: 'Document the risk and communicate it to stakeholders promptly',
                         outcome: 'Excellent! Early risk communication allows better mitigation.',
-                        experience: 25,
+                        experience: 20,
                         tool: 'Risk Assessment Matrix'
                     },
                     {
@@ -340,7 +340,7 @@ class TesterMindsetQuiz extends BaseQuiz {
                     {
                         text: 'Create coverage matrix mapping requirements to test cases',
                         outcome: 'Perfect! Systematic approach ensures comprehensive coverage.',
-                        experience: 25,
+                        experience: 20,
                         tool: 'Coverage Mapping Tool'
                     },
                     {
@@ -373,7 +373,7 @@ class TesterMindsetQuiz extends BaseQuiz {
                     {
                         text: 'Alert incident team with evidence and begin systematic investigation',
                         outcome: 'Excellent! Quick escalation and systematic approach is crucial.',
-                        experience: 20,
+                        experience: 25,
                         tool: 'Incident Response Protocol'
                     },
                     {
@@ -402,7 +402,7 @@ class TesterMindsetQuiz extends BaseQuiz {
                     {
                         text: 'Review changes, update strategy, and communicate impacts',
                         outcome: 'Perfect! Systematic adaptation ensures continued effectiveness.',
-                        experience: 20,
+                        experience: 25,
                         tool: 'Strategy Adaptation Framework'
                     },
                     {
@@ -431,7 +431,7 @@ class TesterMindsetQuiz extends BaseQuiz {
                     {
                         text: 'Prioritize critical functionality and communicate constraints',
                         outcome: 'Excellent! Risk-based prioritization maximizes value.',
-                        experience: 20,
+                        experience: 25,
                         tool: 'Test Prioritization Matrix'
                     },
                     {
@@ -460,7 +460,7 @@ class TesterMindsetQuiz extends BaseQuiz {
                     {
                         text: 'Facilitate discussion to align on best practices and document agreement',
                         outcome: 'Perfect! Collaborative alignment improves team effectiveness.',
-                        experience: 20,
+                        experience: 25,
                         tool: 'Test Approach Alignment Guide'
                     },
                     {
@@ -489,7 +489,7 @@ class TesterMindsetQuiz extends BaseQuiz {
                     {
                         text: 'Present data-driven analysis of risks and quality impacts',
                         outcome: 'Excellent! Data-driven advocacy helps maintain quality.',
-                        experience: 20,
+                        experience: 25,
                         tool: 'Quality Impact Analysis'
                     },
                     {

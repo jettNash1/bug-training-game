@@ -223,7 +223,7 @@ class TestSupportQuiz extends BaseQuiz {
                     {
                         text: 'Adapt to client terminology and processes while maintaining Zoonou standards',
                         outcome: 'Excellent! This shows flexibility and professionalism.',
-                        experience: 25,
+                        experience: 20,
                         tool: 'Process Adaptation'
                     },
                     {
@@ -252,7 +252,7 @@ class TestSupportQuiz extends BaseQuiz {
                     {
                         text: 'Inform PM and explore additional ways to add value to the project',
                         outcome: 'Excellent! This ensures productive use of time and adds value.',
-                        experience: 25,
+                        experience: 20,
                         tool: 'Time Management'
                     },
                     {
@@ -281,7 +281,7 @@ class TestSupportQuiz extends BaseQuiz {
                     {
                         text: 'Maintain open communication, update PM, and suggest raising the issue in regular catch-ups',
                         outcome: 'Excellent! This ensures issues are addressed and communication remains open.',
-                        experience: 25,
+                        experience: 20,
                         tool: 'Communication Management'
                     },
                     {
@@ -310,7 +310,7 @@ class TestSupportQuiz extends BaseQuiz {
                     {
                         text: 'Prioritize tasks based on deadlines and importance, communicate availability to PMs',
                         outcome: 'Excellent! This ensures effective workload management.',
-                        experience: 25,
+                        experience: 20,
                         tool: 'Workload Management'
                     },
                     {
@@ -339,7 +339,7 @@ class TestSupportQuiz extends BaseQuiz {
                     {
                         text: 'Communicate regularly, provide valuable feedback, and demonstrate understanding of their needs',
                         outcome: 'Excellent! This builds trust and rapport with the client.',
-                        experience: 25,
+                        experience: 20,
                         tool: 'Relationship Building'
                     },
                     {
@@ -372,7 +372,7 @@ class TestSupportQuiz extends BaseQuiz {
                     {
                         text: 'Communicate the approach to PM and client, providing rationale and expected benefits',
                         outcome: 'Excellent! This demonstrates initiative and effective communication.',
-                        experience: 20,
+                        experience: 25,
                         tool: 'Decision Making'
                     },
                     {
@@ -401,7 +401,7 @@ class TestSupportQuiz extends BaseQuiz {
                     {
                         text: 'Discuss the request with your line manager for approval before responding to the client',
                         outcome: 'Excellent! This ensures proper alignment and authority.',
-                        experience: 20,
+                        experience: 25,
                         tool: 'Request Management'
                     },
                     {
@@ -430,7 +430,7 @@ class TestSupportQuiz extends BaseQuiz {
                     {
                         text: 'Create a comprehensive handover guide documenting processes and key information',
                         outcome: 'Excellent! This ensures smooth transition and knowledge retention.',
-                        experience: 20,
+                        experience: 25,
                         tool: 'Knowledge Management'
                     },
                     {
@@ -459,7 +459,7 @@ class TestSupportQuiz extends BaseQuiz {
                     {
                         text: 'Communicate scope limitations clearly and discuss potential adjustments with PM',
                         outcome: 'Excellent! This ensures clear expectations and potential solutions.',
-                        experience: 20,
+                        experience: 25,
                         tool: 'Expectation Management'
                     },
                     {
@@ -488,7 +488,7 @@ class TestSupportQuiz extends BaseQuiz {
                     {
                         text: 'Maintain regular communication, adapt to client needs, and continuously improve processes',
                         outcome: 'Excellent! This ensures long-term success and client satisfaction.',
-                        experience: 20,
+                        experience: 25,
                         tool: 'Project Leadership'
                     },
                     {
