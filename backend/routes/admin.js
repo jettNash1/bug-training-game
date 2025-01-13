@@ -128,14 +128,30 @@ router.get('/users', auth, async (req, res) => {
             // Update each quiz result with its corresponding progress data
             userData.quizResults = userData.quizResults.map(result => {
                 const progress = userData.quizProgress?.[result.quizName.toLowerCase()];
+                console.log(`Progress for ${result.quizName}:`, progress);
+                
                 if (progress) {
+                    // Check if questionHistory is an array and use its length
+                    const questionHistoryLength = Array.isArray(progress.questionHistory) ? 
+                        progress.questionHistory.length : 0;
+                    
+                    console.log('Question History:', progress.questionHistory);
+                    console.log('Question History Length:', questionHistoryLength);
+                    console.log('Questions Answered:', progress.questionsAnswered);
+
+                    // Use questionHistory length if it exists, otherwise fall back to questionsAnswered
+                    const questionsAnswered = questionHistoryLength || progress.questionsAnswered || 0;
+
                     return {
                         ...result,
-                        experience: progress.experience,
-                        questionsAnswered: progress.questionsAnswered
+                        experience: progress.experience ?? result.experience ?? 0,
+                        questionsAnswered: questionsAnswered
                     };
                 }
-                return result;
+                return {
+                    ...result,
+                    questionsAnswered: result.questionsAnswered ?? 0
+                };
             });
 
             // Remove quizProgress from response since it's not needed
