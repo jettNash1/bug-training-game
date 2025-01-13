@@ -181,11 +181,13 @@ class AdminDashboard {
                     const progress = user.quizProgress?.[quizName];
                     
                     // Get questions answered from questionHistory length
-                    const questionsAnswered = progress?.questionHistory?.length || 
-                                            result.questionHistory?.length || 0;
+                    const questionsAnswered = result.questionsAnswered || 
+                                            result.questionHistory?.length || 
+                                            progress?.questionsAnswered || 
+                                            progress?.questionHistory?.length || 0;
                     
-                    // Get experience directly from progress or result
-                    const experience = progress?.experience || result.experience || 0;
+                    // Get experience from result or progress
+                    const experience = result.experience || progress?.experience || 0;
 
                     return {
                         ...result,
