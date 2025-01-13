@@ -150,19 +150,23 @@ class AdminDashboard {
             console.log('Fetching users from MongoDB...'); 
             
             const response = await this.apiService.getAllUsers();
-            console.log('User data received:', response);
+            console.log('Raw API response:', response);
 
             if (!response.success) {
                 throw new Error(response.error || 'Failed to fetch users');
             }
 
             const userData = response.data || [];
+            console.log('User data array:', userData);
+
             if (!Array.isArray(userData)) {
                 throw new Error('Invalid response format: expected array of users');
             }
 
             // Map MongoDB user data to our format
             this.users = userData.map(user => {
+                console.log('Processing user:', user);
+
                 if (!user.username) {
                     console.warn('User missing username:', user);
                     return null;
@@ -172,9 +176,20 @@ class AdminDashboard {
                 const quizProgress = user.quizProgress || {};
                 const quizResults = Array.isArray(user.quizResults) ? user.quizResults : [];
 
+                console.log('Quiz data for user:', {
+                    username: user.username,
+                    quizProgress,
+                    quizResults
+                });
+
                 // Process quiz results to include question count and experience
                 const processedResults = quizResults.map(result => {
                     const progress = quizProgress[result.quizName.toLowerCase()];
+                    console.log('Processing quiz result:', {
+                        quizName: result.quizName,
+                        progress,
+                        result
+                    });
                     return {
                         ...result,
                         questionsAnswered: progress?.questionHistory?.length || result.questionsAnswered || 0,
@@ -185,13 +200,18 @@ class AdminDashboard {
                     };
                 });
 
-                return {
+                const processedUser = {
                     username: user.username,
                     lastLogin: user.lastLogin || null,
                     quizProgress: quizProgress,
                     quizResults: processedResults
                 };
+
+                console.log('Processed user data:', processedUser);
+                return processedUser;
             }).filter(user => user !== null);
+
+            console.log('Final processed users:', this.users);
 
             // After loading users, load their progress
             await this.loadAllUserProgress();
@@ -222,6 +242,8 @@ class AdminDashboard {
                     }
 
                     const data = await response.json();
+                    console.log(`Progress data for ${user.username}:`, data);
+
                     if (data.success && data.data) {
                         // Update the user's progress data
                         user.quizProgress = {};
@@ -248,6 +270,8 @@ class AdminDashboard {
                                 });
                             }
                         });
+                    } else {
+                        console.warn(`No progress data found for ${user.username}`);
                     }
                 } catch (error) {
                     console.error(`Error fetching progress for ${user.username}:`, error);

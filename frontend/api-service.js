@@ -471,12 +471,20 @@ export class APIService {
             const response = await this.fetchWithAdminAuth(`${this.baseUrl}/admin/users`);
             console.log('Raw users response:', response);
 
+            if (!response.ok) {
+                throw new Error('Failed to fetch users');
+            }
+
+            // Parse the JSON response
+            const data = await response.json();
+            console.log('Parsed users response:', data);
+
             // The backend returns { success: true, users: [...] }
-            if (response.success && Array.isArray(response.users)) {
-                console.log('Found users array:', response.users.length);
+            if (data.success && Array.isArray(data.users)) {
+                console.log('Found users array:', data.users.length);
                 return {
                     success: true,
-                    data: response.users
+                    data: data.users
                 };
             }
 
