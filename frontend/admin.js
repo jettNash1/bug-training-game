@@ -172,20 +172,29 @@ class AdminDashboard {
                 const quizProgress = user.quizProgress || {};
                 const quizResults = Array.isArray(user.quizResults) ? user.quizResults : [];
 
+                // Process quiz results to include question count and experience
+                const processedResults = quizResults.map(result => {
+                    const progress = quizProgress[result.quizName.toLowerCase()];
+                    return {
+                        ...result,
+                        questionsAnswered: progress?.questionHistory?.length || result.questionsAnswered || 0,
+                        experience: progress?.experience || result.experience || 0,
+                        score: result.score || 0,
+                        lastActive: result.lastActive || result.completedAt || null,
+                        completedAt: result.completedAt || null
+                    };
+                });
+
                 return {
                     username: user.username,
                     lastLogin: user.lastLogin || null,
                     quizProgress: quizProgress,
-                    quizResults: quizResults.map(result => ({
-                        quizName: result.quizName,
-                        score: result.score || 0,
-                        experience: result.experience || 0,
-                        questionsAnswered: result.questionsAnswered || 0,
-                        lastActive: result.lastActive || result.completedAt || null,
-                        completedAt: result.completedAt || null
-                    }))
+                    quizResults: processedResults
                 };
             }).filter(user => user !== null);
+
+            // After loading users, load their progress
+            await this.loadAllUserProgress();
 
             console.log(`Users loaded from MongoDB: ${this.users.length} users`);
             return true;
@@ -406,9 +415,21 @@ class AdminDashboard {
         filteredUsers.forEach(user => {
             const progress = this.calculateUserProgress(user);
             const lastActive = this.getLastActiveDate(user);
-            const quizzesTaken = user.quizResults ? user.quizResults.filter(result => 
-                (result.experience || (result.score * 3)) > 0
-            ).length : 0;
+            
+            // Calculate total questions answered and XP across all quizzes
+            let totalQuestionsAnswered = 0;
+            let totalXP = 0;
+            
+            this.quizTypes.forEach(quizType => {
+                const progress = user.quizProgress?.[quizType.toLowerCase()];
+                const result = user.quizResults?.find(r => r.quizName.toLowerCase() === quizType.toLowerCase());
+                
+                totalQuestionsAnswered += progress?.questionHistory?.length || 
+                                        result?.questionsAnswered || 0;
+                                        
+                totalXP += progress?.experience || 
+                          result?.experience || 0;
+            });
 
             const card = document.createElement('div');
             card.className = 'user-card';
@@ -423,8 +444,12 @@ class AdminDashboard {
                                 <span class="stat-value">${progress.toFixed(1)}%</span>
                             </div>
                             <div class="stat">
-                                <span class="stat-label">Quizzes Started:</span>
-                                <span class="stat-value">${quizzesTaken}</span>
+                                <span class="stat-label">Questions Answered:</span>
+                                <span class="stat-value">${totalQuestionsAnswered}</span>
+                            </div>
+                            <div class="stat">
+                                <span class="stat-label">Total XP:</span>
+                                <span class="stat-value">${totalXP}</span>
                             </div>
                             <div class="stat">
                                 <span class="stat-label">Last Active:</span>
