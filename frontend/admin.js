@@ -537,15 +537,15 @@ class AdminDashboard {
                         const result = quizResultsMap.get(quizName.toLowerCase());
                         const progress = user.quizProgress?.[quizName.toLowerCase()];
                         
-                        // Determine questions answered from progress data first, then fall back to result data
-                        const questionsAnswered = progress?.questionHistory?.length || 
-                                                result?.questionsAnswered || 0;
+                        // For completed quizzes, we know they answered all 15 questions
+                        const questionsAnswered = result?.score ? 15 : 0;
                         
-                        // Get experience from progress data first, then fall back to result data
+                        // Get experience from progress data first, then fall back to result data or calculate from score
                         const experience = progress?.experience || 
-                                         result?.experience || 0;
+                                         result?.experience || 
+                                         (result?.score ? Math.round(result.score * 3) : 0);
                         
-                        const status = questionsAnswered >= 15 ? 'Completed' : 
+                        const status = result?.score ? 'Completed' : 
                                      questionsAnswered > 0 ? 'In Progress' : 'Not Started';
                         
                         const score = result?.score || 0;
