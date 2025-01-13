@@ -73,23 +73,23 @@ class EmailTestingQuiz extends BaseQuiz {
                 description: "What is the primary purpose of email testing?",
                 options: [
                     {
-                        text: 'To increase email open rates',
-                        outcome: "This relates to marketing metrics, not testing",
+                        text: 'To analyze and optimize email marketing metrics including open rates, click-through rates, and conversion tracking across different segments',
+                        outcome: "This relates to marketing analytics, not functional testing",
                         experience: -10
                     },
                     {
-                        text: "To preview, validate and evaluate an email's coding, content, formatting, readability and visual appeal before sending",
-                        outcome: 'This is the purpose of email testing.',
+                        text: "Verify email functionality and appearance",
+                        outcome: 'This is the core purpose of email testing.',
                         experience: 15
                     },
                     {
-                        text: "To check if emails reach spam folders",
-                        outcome: "While spam prevention is a benefit, it's not the primary purpose.",
+                        text: "To implement comprehensive spam prevention strategies and ensure deliverability across various email service providers",
+                        outcome: "While spam prevention is important, it's not the primary testing focus.",
                         experience: 5
                     },
                     {
-                        text: "To test different subject lines for marketing effectiveness",
-                        outcome: "The subject line is just one small component of an email.",
+                        text: "To test subject line effectiveness",
+                        outcome: "The subject line is just one component of email testing.",
                         experience: -5
                     }
                 ]
@@ -101,22 +101,22 @@ class EmailTestingQuiz extends BaseQuiz {
                 description: 'Which email clients are typically included in testing scope?',
                 options: [
                     {
-                        text: 'Only Gmail and Outlook',
+                        text: 'Conduct thorough testing exclusively on market-leading platforms like Gmail and Outlook to ensure maximum coverage',
                         outcome: 'While these are important clients, the scope should be broader.',
                         experience: 5
                     },
                     {
-                        text: 'Gmail, Outlook, Yahoo Mail, and Apple Mail',
-                        outcome: 'These are the main email clients, however, the client may request additional email clients.',
+                        text: 'Major email clients per requirements',
+                        outcome: 'Testing should focus on the main clients specified by the client.',
                         experience: 15
                     },
                     {
-                        text: 'All possible email clients globally',
-                        outcome: 'Testing all global email clients would be impractical.',
+                        text: 'Every available email client to ensure complete compatibility across all possible platforms and versions',
+                        outcome: 'Testing all email clients would be impractical.',
                         experience: -5
                     },
                     {
-                        text: 'Only mobile email clients',
+                        text: 'Mobile clients only',
                         outcome: 'Testing should not be limited to mobile clients.',
                         experience: -10
                     }
@@ -129,8 +129,8 @@ class EmailTestingQuiz extends BaseQuiz {
                 description: 'What does UTM stand for in email testing?',
                 options: [
                     {
-                        text: 'Universal Testing Module',
-                        outcome: 'While it is a module for testing, "Universal" is incorrect',
+                        text: 'A comprehensive tracking system designed for universal application across multiple marketing channels',
+                        outcome: 'While it is a tracking system, this is not what UTM stands for',
                         experience: 5
                     },
                     {
@@ -144,8 +144,8 @@ class EmailTestingQuiz extends BaseQuiz {
                         experience: -5
                     },
                     {
-                        text: 'UTM stands for Urchin Tracking Module',
-                        outcome: 'This is the correct statement',
+                        text: 'Urchin Tracking Module',
+                        outcome: 'This is the correct definition',
                         experience: 15
                     }
                 ]

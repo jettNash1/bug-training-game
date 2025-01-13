@@ -73,23 +73,23 @@ class TesterMindsetQuiz extends BaseQuiz {
                 description: "You're starting a new testing project. What's your first priority?",
                 options: [
                     {
-                        text: 'Review project context and requirements documentation',
+                        text: 'Review requirements',
                         outcome: 'Excellent! Understanding context is crucial for effective testing.',
                         experience: 15,
                         tool: 'Context Analysis Framework'
                     },
                     {
-                        text: 'Start testing immediately to find bugs quickly',
+                        text: 'Begin extensive exploratory testing sessions to identify potential issues and document findings for immediate stakeholder review',
                         outcome: 'Without understanding context, testing may miss critical issues.',
                         experience: -5
                     },
                     {
-                        text: 'Create test cases without reviewing documentation',
+                        text: 'Create comprehensive test cases based on industry best practices and previous project experience',
                         outcome: 'Test cases should be based on project context and requirements.',
                         experience: -5
                     },
                     {
-                        text: 'Ask for previous test results only',
+                        text: 'Analyze historical test results',
                         outcome: 'While helpful, previous results don\'t replace understanding current context.',
                         experience: 5
                     }
@@ -102,23 +102,23 @@ class TesterMindsetQuiz extends BaseQuiz {
                 description: 'How do you approach understanding the target audience for a new project?',
                 options: [
                     {
-                        text: 'Consider user characteristics, needs, and potential barriers',
+                        text: 'Research user needs',
                         outcome: 'Perfect! User-centric thinking is essential for effective testing.',
                         experience: 15,
                         tool: 'User Persona Template'
                     },
                     {
-                        text: 'Assume all users are like you',
+                        text: 'Apply personal usage patterns and preferences to determine the most likely user behaviors and testing scenarios',
                         outcome: 'Users have diverse needs and characteristics that must be considered.',
                         experience: -5
                     },
                     {
-                        text: 'Focus only on technical requirements',
+                        text: 'Conduct detailed technical analysis of system architecture and performance metrics to establish testing priorities',
                         outcome: 'Technical aspects are important but user needs are crucial.',
                         experience: -5
                     },
                     {
-                        text: 'Wait for user feedback after release',
+                        text: 'Wait for post-release feedback',
                         outcome: 'Understanding users before testing helps prevent issues.',
                         experience: 0
                     }
@@ -131,23 +131,23 @@ class TesterMindsetQuiz extends BaseQuiz {
                 description: "The test environment is different from production. What's your approach?",
                 options: [
                     {
-                        text: 'Compare environment configurations and document differences',
+                        text: 'Document environment differences',
                         outcome: 'Excellent! Understanding environment differences is crucial for testing.',
                         experience: 15,
                         tool: 'Environment Comparison Tool'
                     },
                     {
-                        text: 'Ignore the differences and continue testing',
+                        text: 'Proceed with testing while monitoring for any potential environmental impact on test results',
                         outcome: 'Environment differences can affect test results and miss issues.',
                         experience: -5
                     },
                     {
-                        text: 'Test only in production',
+                        text: 'Execute test cases in the production environment to ensure accurate results',
                         outcome: 'Testing in production without proper controls is risky.',
                         experience: -10
                     },
                     {
-                        text: 'Request a production clone',
+                        text: 'Request environment replication',
                         outcome: 'Good thinking, but first document current differences.',
                         experience: 10
                     }
@@ -160,18 +160,18 @@ class TesterMindsetQuiz extends BaseQuiz {
                 description: "You've found several issues. How do you document them?",
                 options: [
                     {
-                        text: 'Create detailed reports with steps, expected vs actual results',
+                        text: 'Document with steps and results',
                         outcome: 'Perfect! Clear documentation helps developers fix issues efficiently.',
                         experience: 15,
                         tool: 'Issue Documentation Template'
                     },
                     {
-                        text: 'Send quick chat messages about each issue',
+                        text: 'Initiate multiple communication channels including chat messages, emails, and verbal discussions for each discovered issue',
                         outcome: 'Informal communication isn\'t sufficient for tracking issues.',
                         experience: -5
                     },
                     {
-                        text: 'Take screenshots without explanation',
+                        text: 'Capture and archive comprehensive visual documentation through multiple screenshot angles and screen recordings',
                         outcome: 'Screenshots alone don\'t provide enough context.',
                         experience: -10
                     },
@@ -338,24 +338,24 @@ class TesterMindsetQuiz extends BaseQuiz {
                 description: 'How do you ensure adequate test coverage for a feature?',
                 options: [
                     {
-                        text: 'Create coverage matrix mapping requirements to test cases',
-                        outcome: 'Perfect! Systematic approach ensures comprehensive coverage.',
-                        experience: 20,
-                        tool: 'Coverage Mapping Tool'
-                    },
-                    {
-                        text: 'Test until no more bugs are found',
-                        outcome: 'Coverage should be requirement-based, not time-based.',
-                        experience: -10
-                    },
-                    {
-                        text: 'Focus only on main functionality',
-                        outcome: 'Complete coverage includes edge cases and alternatives.',
+                        text: 'Implement comprehensive testing methodologies across all possible test scenarios and edge cases with detailed documentation',
+                        outcome: 'Too broad an approach can be inefficient.',
                         experience: -5
                     },
                     {
-                        text: 'Follow previous test patterns',
-                        outcome: 'Each feature needs its own coverage analysis.',
+                        text: 'Use risk-based testing',
+                        outcome: 'Perfect! Prioritizing based on risk is efficient.',
+                        experience: 20,
+                        tool: 'Risk Assessment Matrix'
+                    },
+                    {
+                        text: 'Execute extensive regression testing protocols while maintaining detailed coverage metrics and trend analysis',
+                        outcome: 'Regression testing alone doesn\'t ensure complete coverage.',
+                        experience: -10
+                    },
+                    {
+                        text: 'Conduct thorough analysis of all system components and their interconnected dependencies',
+                        outcome: 'System analysis should be guided by risk assessment.',
                         experience: 5
                     }
                 ]

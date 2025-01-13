@@ -98,28 +98,28 @@ class RiskManagementQuiz extends BaseQuiz {
             {
                 id: 2,
                 level: 'Basic',
-                title: 'Test Environment Access',
-                description: 'The test environment link hasn\'t been provided yet, and testing is scheduled to start today. What\'s the best risk management approach?',
+                title: 'Risk Identification',
+                description: 'What is the most effective way to identify potential risks?',
                 options: [
                     {
-                        text: 'Proactively prepare alternative tasks and inform PM immediately',
-                        outcome: 'Excellent! This shows proper risk management and proactive planning.',
-                        experience: 15,
-                        tool: 'Risk Mitigation'
-                    },
-                    {
-                        text: 'Wait for someone to notice the missing link',
-                        outcome: 'Proactive communication is essential in risk management.',
-                        experience: -10
-                    },
-                    {
-                        text: 'Start testing something else without telling anyone',
-                        outcome: 'Changes in work should be communicated to relevant parties.',
+                        text: 'Conduct comprehensive analysis of historical project data and previous risk assessments to establish patterns',
+                        outcome: 'Historical data alone may miss new risks.',
                         experience: -5
                     },
                     {
-                        text: 'Report the issue and do nothing else',
-                        outcome: 'Risk management includes preparing alternatives.',
+                        text: 'Review documentation',
+                        outcome: 'Perfect! Documentation review is key to identifying risks.',
+                        experience: 15,
+                        tool: 'Risk Assessment Template'
+                    },
+                    {
+                        text: 'Implement extensive monitoring systems to track all possible system behaviors and performance metrics',
+                        outcome: 'Monitoring comes after risk identification.',
+                        experience: -10
+                    },
+                    {
+                        text: 'Establish detailed risk tracking protocols across multiple project phases',
+                        outcome: 'Tracking comes after identification.',
                         experience: 5
                     }
                 ]
@@ -131,7 +131,7 @@ class RiskManagementQuiz extends BaseQuiz {
                 description: 'You\'re testing an ecommerce site\'s payment system. What\'s the best risk management approach?',
                 options: [
                     {
-                        text: 'Test payments throughout the day and immediately report any outages',
+                        text: 'Monitor payments hourly',
                         outcome: 'Perfect! Regular testing and prompt reporting helps manage payment risks.',
                         experience: 15,
                         tool: 'Payment Testing'
@@ -142,12 +142,12 @@ class RiskManagementQuiz extends BaseQuiz {
                         experience: -5
                     },
                     {
-                        text: 'Wait for customers to report payment issues',
+                        text: 'Establish extensive customer feedback collection mechanisms for payment-related issues',
                         outcome: 'Proactive testing is essential for risk management.',
                         experience: -10
                     },
                     {
-                        text: 'Only test payments if specifically requested',
+                        text: 'Conduct payment verification only upon explicit client request or reported issues',
                         outcome: 'Regular payment testing is part of proper risk management.',
                         experience: 0
                     }
@@ -250,7 +250,7 @@ class RiskManagementQuiz extends BaseQuiz {
                 description: 'The client adds 10 more pages to test on day 2, with Zoonou at 97% resource usage. How do you manage this risk?',
                 options: [
                     {
-                        text: 'Calculate new timeline needs, communicate to PM, highlight resource constraints',
+                        text: 'Assess impact and notify PM',
                         outcome: 'Excellent! This provides data-driven risk assessment and communication.',
                         experience: 20,
                         tool: 'Resource Planning'

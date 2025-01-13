@@ -73,22 +73,22 @@ class ContentCopyQuiz extends BaseQuiz {
                 description: 'What is the primary focus of copy proofing?',
                 options: [
                     {
-                        text: 'Testing the functionality of the software',
+                        text: 'Conduct comprehensive software functionality testing to ensure all features work as intended across different platforms and environments',
                         outcome: 'Functionality testing is explicitly out of scope for copy proofing.',
                         experience: -10
                     },
                     {
-                        text: 'Checking grammar, spelling, and typos in content',
+                        text: 'Review content accuracy',
                         outcome: 'This is the core purpose of copy proofing.',
                         experience: 15
                     },
                     {
-                        text: 'Verifying user interface design',
+                        text: 'Evaluate and optimize the user interface design elements including layout, color schemes, and interactive components',
                         outcome: 'While content proofing includes some UI elements, copy proofing specifically focuses on text content.',
                         experience: 5
                     },
                     {
-                        text: 'Testing cross-browser compatibility',
+                        text: 'Verify browser compatibility',
                         outcome: 'This is a functional testing concern, not related to copy proofing.',
                         experience: -5
                     }
@@ -101,12 +101,12 @@ class ContentCopyQuiz extends BaseQuiz {
                 description: 'When conducting content proofing, what is considered out of scope?',
                 options: [
                     {
-                        text: 'Spelling errors',
+                        text: 'Detailed analysis of spelling and typographical errors throughout the content',
                         outcome: 'Spelling errors are a key focus of content proofing.',
                         experience: -10
                     },
                     {
-                        text: 'Grammatical mistakes',
+                        text: 'Comprehensive grammar and syntax verification',
                         outcome: 'Grammar checking is a fundamental part of content proofing.',
                         experience: -5
                     },
@@ -116,7 +116,7 @@ class ContentCopyQuiz extends BaseQuiz {
                         experience: 15
                     },
                     {
-                        text: 'Content consistency',
+                        text: 'Review of content alignment with brand guidelines and messaging consistency',
                         outcome: 'While consistency is important, some aspects might be out of scope depending on the project.',
                         experience: 5
                     }
@@ -126,25 +126,25 @@ class ContentCopyQuiz extends BaseQuiz {
                 id: 3,
                 level: 'Basic',
                 title: 'Main Objectives',
-                description: 'When conducting content proofing, what is considered out of scope?',
+                description: 'What is the primary objective of content proofing?',
                 options: [
                     {
-                        text: 'Ensuring quality of the product',
+                        text: 'Improving Content quality',
                         outcome: 'This is a primary objective of content proofing.',
                         experience: 15
                     },
                     {
-                        text: 'Improving website loading speed',
+                        text: 'Implementing and optimizing website performance metrics including page load times, server response, and resource utilization',
                         outcome: 'This is a technical performance concern, not related to content.',
                         experience: -10
                     },
                     {
-                        text: 'Testing payment systems',
+                        text: 'Validating payment processing systems and transaction workflows',
                         outcome: 'This is a functional testing concern.',
                         experience: -5
                     },
                     {
-                        text: 'Optimizing database performance',
+                        text: 'Database optimization',
                         outcome: 'While quality-related, this is not a content proofing objective',
                         experience: 5
                     }
@@ -162,7 +162,7 @@ class ContentCopyQuiz extends BaseQuiz {
                         experience: -10
                     },
                     {
-                        text: 'To maintain client confidence in quality work',
+                        text: 'Helps the client maintain quality',
                         outcome: 'This is within the main characteristics of content testing.',
                         experience: 15
                     },
@@ -450,7 +450,7 @@ class ContentCopyQuiz extends BaseQuiz {
                         experience: -10
                     },
                     {
-                        text: 'Affects client confidence in testing quality',
+                        text: 'Builds trust',
                         outcome: 'It creates a professional impression that reinforces the value of the testing service.',
                         experience: 25
                     },
