@@ -184,7 +184,7 @@ class AdminDashboard {
                     const questionsAnswered = result.questionsAnswered;
                     const experience = result.experience;
 
-                    return {
+                return {
                         ...result,
                         questionsAnswered,
                         experience,
@@ -544,12 +544,11 @@ class AdminDashboard {
                         const result = quizResultsMap.get(quizName.toLowerCase());
                         const progress = user.quizProgress?.[quizName.toLowerCase()];
                         
-                        // Get questions answered directly from the result
-                        const questionsAnswered = result?.questionsAnswered || 0;
+                        // Get questions answered and experience from quiz progress first, then fall back to quiz result
+                        const questionsAnswered = progress?.questionsAnswered || result?.questionsAnswered || 0;
+                        const experience = progress?.experience || result?.experience || 0;
                         
-                        // Get experience directly from the result
-                        const experience = result?.experience || 0;
-                        
+                        // Calculate status based on quiz result and progress
                         const status = result?.score ? 'Completed' : 
                                      questionsAnswered > 0 ? 'In Progress' : 'Not Started';
                         

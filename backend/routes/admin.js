@@ -111,6 +111,8 @@ router.get('/users', auth, async (req, res) => {
             });
         }
 
+        console.log('Fetching users from database...');
+
         // Get all users with their quiz data
         const users = await User.find({}, {
             username: 1,
@@ -120,8 +122,11 @@ router.get('/users', auth, async (req, res) => {
             _id: 0
         }).sort({ username: 1 });
 
+        console.log('Found users:', users.length);
+
         // Ensure all quiz data is properly populated
         const populatedUsers = users.map(user => {
+            console.log(`\nProcessing user: ${user.username}`);
             const userData = user.toObject();
             
             // Ensure quizResults array exists
@@ -129,27 +134,40 @@ router.get('/users', auth, async (req, res) => {
                 userData.quizResults = [];
             }
 
+            console.log('Initial quiz results:', JSON.stringify(userData.quizResults, null, 2));
+            console.log('Initial quiz progress:', JSON.stringify(userData.quizProgress, null, 2));
+
             // Process each quiz result to ensure question completion data
             userData.quizResults = userData.quizResults.map(result => {
-                const quizProgress = userData.quizProgress?.[result.quizName];
-                return {
+                const quizProgress = userData.quizProgress?.[result.quizName.toLowerCase()];
+                console.log(`\nProcessing quiz: ${result.quizName}`);
+                console.log('Quiz progress data:', quizProgress);
+                console.log('Original result data:', result);
+                
+                const updatedResult = {
                     ...result,
-                    questionsAnswered: quizProgress?.questionHistory?.length || 0,
-                    experience: quizProgress?.experience || 0,
-                    lastActive: quizProgress?.lastUpdated || result.completedAt,
+                    questionsAnswered: quizProgress?.questionsAnswered || result.questionsAnswered || 0,
+                    experience: quizProgress?.experience || result.experience || 0,
+                    lastActive: quizProgress?.lastUpdated || result.lastActive || result.completedAt,
                 };
+                
+                console.log('Updated result:', updatedResult);
+                return updatedResult;
             });
 
             // Add missing quiz results from quizProgress
             if (userData.quizProgress) {
+                console.log('\nChecking for missing quiz results from progress...');
                 Object.entries(userData.quizProgress).forEach(([quizName, progress]) => {
-                    const existingResult = userData.quizResults.find(r => r.quizName === quizName);
+                    console.log(`Checking ${quizName}:`, progress);
+                    const existingResult = userData.quizResults.find(r => r.quizName.toLowerCase() === quizName.toLowerCase());
                     if (!existingResult && progress) {
+                        console.log(`Adding missing quiz result for ${quizName}`);
                         userData.quizResults.push({
                             quizName,
-                            score: Math.round((progress.experience / 300) * 100), // Calculate score based on max XP of 300
+                            score: Math.round((progress.experience / 300) * 100),
                             experience: progress.experience || 0,
-                            questionsAnswered: progress.questionHistory?.length || 0,
+                            questionsAnswered: progress.questionsAnswered || progress.questionHistory?.length || 0,
                             lastActive: progress.lastUpdated,
                             completedAt: progress.lastUpdated
                         });
@@ -157,9 +175,11 @@ router.get('/users', auth, async (req, res) => {
                 });
             }
 
+            console.log('\nFinal user data:', JSON.stringify(userData, null, 2));
             return userData;
         });
 
+        console.log('\nSending response to client...');
         res.json({
             success: true,
             users: populatedUsers
