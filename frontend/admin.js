@@ -395,14 +395,16 @@ class AdminDashboard {
                 const progress = user.quizProgress?.[quizType.toLowerCase()];
                 const result = user.quizResults?.find(r => r.quizName.toLowerCase() === quizType.toLowerCase());
                 
-                // For questions answered, prioritize the questionHistory length as it's the most accurate
-                const questionsAnsweredFromHistory = progress?.questionHistory?.length || 0;
-                const questionsAnsweredFromResult = result?.questionsAnswered || 0;
-                totalQuestionsAnswered += Math.max(questionsAnsweredFromHistory, questionsAnsweredFromResult);
+                // Get questions answered from progress first, then fall back to result
+                const questionsAnswered = progress?.questionsAnswered || 
+                                        progress?.questionHistory?.length || 
+                                        result?.questionsAnswered || 
+                                        result?.questionHistory?.length || 0;
                 
-                // For XP, ensure it's in increments of 5
+                totalQuestionsAnswered += questionsAnswered;
+                
+                // Get experience and ensure it's a multiple of 5
                 let xp = progress?.experience || result?.experience || 0;
-                // Round to nearest 5
                 xp = Math.round(xp / 5) * 5;
                 totalXP += xp;
             });
