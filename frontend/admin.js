@@ -180,14 +180,20 @@ class AdminDashboard {
                     // Get progress data from quizProgress if it exists
                     const progress = user.quizProgress?.[quizName];
                     
+                    // Get questions answered from progress first, then fall back to result
+                    const questionsAnswered = progress?.questionsAnswered || 
+                                            progress?.questionHistory?.length || 
+                                            result.questionsAnswered || 
+                                            result.questionHistory?.length || 0;
+                    
+                    // Get experience and ensure it's a multiple of 5
+                    let experience = progress?.experience || result.experience || 0;
+                    experience = Math.round(experience / 5) * 5;
+                    
                     return {
                         ...result,
-                        questionsAnswered: progress?.questionHistory?.length || 
-                                         result.questionsAnswered || 
-                                         (result.answers?.length || 0),
-                        experience: progress?.experience || 
-                                  result.experience || 
-                                  (result.score ? Math.round(result.score * 3) : 0), // Calculate experience from score if needed
+                        questionsAnswered,
+                        experience,
                         score: result.score || 0,
                         lastActive: result.lastActive || result.completedAt || null,
                         completedAt: result.completedAt || null
