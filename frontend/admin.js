@@ -389,11 +389,16 @@ class AdminDashboard {
                 const progress = user.quizProgress?.[quizType.toLowerCase()];
                 const result = user.quizResults?.find(r => r.quizName.toLowerCase() === quizType.toLowerCase());
                 
-                totalQuestionsAnswered += progress?.questionHistory?.length || 
-                                        result?.questionsAnswered || 0;
-                                        
-                totalXP += progress?.experience || 
-                          result?.experience || 0;
+                // For questions answered, prioritize the questionHistory length as it's the most accurate
+                const questionsAnsweredFromHistory = progress?.questionHistory?.length || 0;
+                const questionsAnsweredFromResult = result?.questionsAnswered || 0;
+                totalQuestionsAnswered += Math.max(questionsAnsweredFromHistory, questionsAnsweredFromResult);
+                
+                // For XP, ensure it's in increments of 5
+                let xp = progress?.experience || result?.experience || 0;
+                // Round to nearest 5
+                xp = Math.round(xp / 5) * 5;
+                totalXP += xp;
             });
 
             const card = document.createElement('div');
@@ -538,14 +543,14 @@ class AdminDashboard {
                         const progress = user.quizProgress?.[quizName.toLowerCase()];
                         
                         // Get questions answered from the result or progress data
-                        const questionsAnswered = result?.questionsAnswered || 
-                                                result?.answers?.length || 
-                                                progress?.questionHistory?.length || 0;
+                        const questionsAnsweredFromHistory = progress?.questionHistory?.length || 0;
+                        const questionsAnsweredFromResult = result?.questionsAnswered || 0;
+                        const questionsAnswered = Math.max(questionsAnsweredFromHistory, questionsAnsweredFromResult);
                         
                         // Get experience from progress data first, then fall back to result data or calculate from score
-                        const experience = progress?.experience || 
-                                         result?.experience || 
-                                         (result?.score ? Math.round(result.score * 3) : 0);
+                        let experience = progress?.experience || result?.experience || 0;
+                        // Round to nearest 5
+                        experience = Math.round(experience / 5) * 5;
                         
                         const status = result?.score ? 'Completed' : 
                                      questionsAnswered > 0 ? 'In Progress' : 'Not Started';
