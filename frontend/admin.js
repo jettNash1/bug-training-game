@@ -334,7 +334,8 @@ class AdminDashboard {
             
             console.log(`User ${user.username} stats:`, {
                 lastActive: new Date(lastActive),
-                progress: userProgress
+                progress: userProgress,
+                completedQuizzes: user.quizResults?.length || 0
             });
 
             return acc;
@@ -443,43 +444,49 @@ class AdminDashboard {
 
     // Helper method to calculate user progress
     calculateUserProgress(user) {
-        if (!user.quizProgress) return 0;
+        if (!user) return 0;
+
+        // Count completed quizzes from quizResults
+        const completedQuizzes = new Set(user.quizResults.map(result => result.quizName.toLowerCase()));
         
-        let completedQuizzes = 0;
-        const totalProgress = this.quizTypes.reduce((sum, quizName) => {
-            const quizProgress = user.quizProgress[quizName];
-            if (!quizProgress?.questionHistory) return sum;
-            
-            const questionsAnswered = quizProgress.questionHistory.length;
-            if (questionsAnswered > 0) completedQuizzes++;
-            
-            const quizPercentage = (questionsAnswered / 15) * 100;
-            return sum + quizPercentage;
-        }, 0);
-        
-        // Only average across quizzes that have been started
-        const averageProgress = completedQuizzes > 0 ? totalProgress / completedQuizzes : 0;
-        
-        console.log(`Calculating total progress for ${user.username}:`, {
-            totalProgress,
-            completedQuizzes,
-            averageProgress,
-            quizTypes: this.quizTypes.length
+        // Calculate total progress
+        const totalQuizzes = this.quizTypes.length;
+        const progress = (completedQuizzes.size / totalQuizzes) * 100;
+
+        console.log(`Progress calculation for ${user.username}:`, {
+            completedQuizzes: Array.from(completedQuizzes),
+            totalQuizzes,
+            progress
         });
-        
-        return Math.round(averageProgress);
+
+        return progress;
     }
 
     // Helper method to get last active date
     getLastActiveDate(user) {
-        if (!user.quizProgress) return 0;
-        
-        const lastActiveDates = this.quizTypes
-            .map(quizType => user.quizProgress[quizType]?.lastUpdated)
-            .filter(date => date)
-            .map(date => new Date(date).getTime());
-        
-        return lastActiveDates.length > 0 ? Math.max(...lastActiveDates) : 0;
+        if (!user) return 0;
+
+        const dates = [];
+
+        // Add lastLogin if exists
+        if (user.lastLogin) {
+            dates.push(new Date(user.lastLogin).getTime());
+        }
+
+        // Add quiz completion dates
+        if (user.quizResults && user.quizResults.length > 0) {
+            user.quizResults.forEach(result => {
+                if (result.completedAt) {
+                    dates.push(new Date(result.completedAt).getTime());
+                }
+                if (result.lastActive) {
+                    dates.push(new Date(result.lastActive).getTime());
+                }
+            });
+        }
+
+        // Return most recent date or 0 if no dates found
+        return dates.length > 0 ? Math.max(...dates) : 0;
     }
 
     async showUserDetails(username) {
@@ -661,8 +668,21 @@ class AdminDashboard {
 
     formatDate(timestamp) {
         if (!timestamp) return 'Never';
+        
         const date = new Date(timestamp);
-        return isNaN(date.getTime()) ? 'Never' : date.toLocaleDateString();
+        if (isNaN(date.getTime())) return 'Never';
+
+        const today = new Date();
+        const yesterday = new Date(today);
+        yesterday.setDate(yesterday.getDate() - 1);
+
+        if (date.toDateString() === today.toDateString()) {
+            return `Today at ${date.toLocaleTimeString()}`;
+        } else if (date.toDateString() === yesterday.toDateString()) {
+            return `Yesterday at ${date.toLocaleTimeString()}`;
+        } else {
+            return date.toLocaleString();
+        }
     }
 
     showError(message) {
