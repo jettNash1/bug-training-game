@@ -564,8 +564,16 @@ class AdminDashboard {
                                         <div>
                                             <strong>Score:</strong> 
                                             <span>${score}%</span>
-                                </div>
+                                        </div>
                                     ` : ''}
+                                </div>
+                                <div style="margin-top: 10px; text-align: right;">
+                                    <button 
+                                        class="reset-quiz-btn" 
+                                        onclick="event.stopPropagation(); this.closest('.quiz-progress-item').dispatchEvent(new CustomEvent('resetQuiz', {detail: {quizName: '${quizName}'}}))"
+                                        style="padding: 5px 10px; background-color: #ff4444; color: white; border: none; border-radius: 4px; cursor: pointer;">
+                                        Reset Progress
+                                    </button>
                                 </div>
                             </div>
                         `;
@@ -575,6 +583,26 @@ class AdminDashboard {
             
             overlay.appendChild(content);
             document.body.appendChild(overlay);
+
+            // Add event listeners for reset buttons
+            const quizItems = content.querySelectorAll('.quiz-progress-item');
+            quizItems.forEach(item => {
+                item.addEventListener('resetQuiz', async (e) => {
+                    const quizName = e.detail.quizName;
+                    if (confirm(`Are you sure you want to reset progress for ${this.formatQuizName(quizName)}?`)) {
+                        try {
+                            await this.resetQuizProgress(username, quizName);
+                            // Refresh the user list and details view
+                            await this.loadUsers();
+                            await this.updateDashboard();
+                            this.showUserDetails(username);
+                        } catch (error) {
+                            console.error('Failed to reset quiz:', error);
+                            this.showError(`Failed to reset ${this.formatQuizName(quizName)}`);
+                        }
+                    }
+                });
+            });
 
             // Add close button functionality
             const closeBtn = content.querySelector('.close-btn');
