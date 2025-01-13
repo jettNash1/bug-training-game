@@ -396,7 +396,9 @@ class AdminDashboard {
         filteredUsers.forEach(user => {
             const progress = this.calculateUserProgress(user);
             const lastActive = this.getLastActiveDate(user);
-            const quizzesTaken = Object.keys(user.quizProgress || {}).length;
+            const quizzesTaken = user.quizResults ? user.quizResults.filter(result => 
+                (result.experience || (result.score * 3)) > 0
+            ).length : 0;
 
             const card = document.createElement('div');
             card.className = 'user-card';
@@ -538,7 +540,7 @@ class AdminDashboard {
                         const experience = result ? result.experience || (score * 3) : 0;
                         const lastActive = result ? this.formatDate(result.lastActive || result.completedAt) : 'Never';
 
-                        return `
+                            return `
                             <div class="quiz-progress-item" style="margin-bottom: 20px; padding: 15px; background: #f5f5f5; border-radius: 8px;">
                                 <h4 style="margin: 0 0 10px 0;">${this.formatQuizName(quizName)}</h4>
                                 <div class="progress-details" style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px;">
@@ -562,15 +564,15 @@ class AdminDashboard {
                                         <div>
                                             <strong>Score:</strong> 
                                             <span>${score}%</span>
-                                        </div>
+                                </div>
                                     ` : ''}
                                 </div>
                             </div>
                         `;
                     }).join('')}
-                </div>
-            `;
-
+                    </div>
+                `;
+            
             overlay.appendChild(content);
             document.body.appendChild(overlay);
 

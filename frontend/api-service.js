@@ -349,7 +349,7 @@ export class APIService {
             
             // Clear any existing admin token first
             localStorage.removeItem('adminToken');
-
+            
             // Handle admin login
             const response = await fetch(`${this.baseUrl}/admin/login`, {
                 method: 'POST',
