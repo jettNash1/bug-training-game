@@ -73,8 +73,8 @@ class TimeManagementQuiz extends BaseQuiz {
                 description: 'What\'s the first step in planning your week ahead effectively?',
                 options: [
                     {
-                        text: 'Review your calendar for meetings and prepare for any necessary preparation or wrap-up activities',
-                        outcome: 'Perfect! Starting with calendar review helps structure your week.',
+                        text: 'Review your calendar for meetings and prepare for any necessary preparation and wrap-up activities',
+                        outcome: 'Perfect! Starting with a calendar review helps structure your week.',
                         experience: 15,
                         tool: 'Calendar Management'
                     },
@@ -102,7 +102,7 @@ class TimeManagementQuiz extends BaseQuiz {
                 description: 'How should you prepare your workspace for efficient testing?',
                 options: [
                     {
-                        text: 'Clean workspace, organized email inbox, pinned relevant channels, charged devices',
+                        text: 'Clean workspace, organized email inbox, pinned relevant channels, and charged devices',
                         outcome: 'Excellent! An organized workspace increases efficiency.',
                         experience: 15,
                         tool: 'Workspace Management'
@@ -222,8 +222,8 @@ class TimeManagementQuiz extends BaseQuiz {
                 description: 'How do you determine appropriate time allocation for test activities?',
                 options: [
                     {
-                        text: 'Review SoW timings, environment count, software size, and core user journeys',
-                        outcome: 'Excellent! Comprehensive review ensures accurate timing.',
+                        text: 'Review SOW timings, environment count, software size, and core user journeys',
+                        outcome: 'Excellent! A comprehensive review ensures accurate timing.',
                         experience: 20,
                         tool: 'Time Estimation'
                     },
@@ -233,7 +233,7 @@ class TimeManagementQuiz extends BaseQuiz {
                         experience: -15
                     },
                     {
-                        text: 'Base on previous similar projects only',
+                        text: 'Base estimates on previous similar projects only',
                         outcome: 'Current project specifics need consideration.',
                         experience: -10
                     },

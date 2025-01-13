@@ -133,12 +133,12 @@ export class CommunicationQuiz extends BaseQuiz {
                 options: [
                     {
                         text: 'Provide a clear answer with relevant documentation links',
-                        outcome: 'Perfect! This helps now and in the future.',
+                        outcome: 'Perfect! This helps both now and in the future.',
                         experience: 15,
                         tool: 'Documentation Reference'
                     },
                     {
-                        text: 'Tell them to Google it',
+                        text: 'Tell them to search online',
                         outcome: 'This isn\'t helpful or collaborative.',
                         experience: -15
                     },
@@ -162,7 +162,7 @@ export class CommunicationQuiz extends BaseQuiz {
                 options: [
                     {
                         text: 'Promptly inform stakeholders, explain the cause, and provide an updated timeline',
-                        outcome: 'Excellent! This maintains transparency and trust.',
+                        outcome: 'Excellent! This maintains transparency and builds trust.',
                         experience: 15,
                         tool: 'Status Reporting'
                     },

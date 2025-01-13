@@ -69,7 +69,7 @@ class EmailTestingQuiz extends BaseQuiz {
             {
                 id: 1,
                 level: 'Basic',
-                title: 'Primary objective',
+                title: 'Primary Objective',
                 description: "What is the primary purpose of email testing?",
                 options: [
                     {
@@ -97,7 +97,7 @@ class EmailTestingQuiz extends BaseQuiz {
             {
                 id: 2,
                 level: 'Basic',
-                title: 'Email clients',
+                title: 'Email Clients',
                 description: 'Which email clients are typically included in testing scope?',
                 options: [
                     {
@@ -125,7 +125,7 @@ class EmailTestingQuiz extends BaseQuiz {
             {
                 id: 3,
                 level: 'Basic',
-                title: 'UTM understanding',
+                title: 'UTM Understanding',
                 description: 'What does UTM stand for in email testing?',
                 options: [
                     {
@@ -181,7 +181,7 @@ class EmailTestingQuiz extends BaseQuiz {
             {
                 id: 5,
                 level: 'Basic',
-                title: 'Email testing process',
+                title: 'Email Testing Process',
                 description: 'What is the first step in email testing?',
                 options: [
                     {
@@ -214,7 +214,7 @@ class EmailTestingQuiz extends BaseQuiz {
             {
                 id: 6,
                 level: 'Intermediate',
-                title: 'Bug reporting',
+                title: 'Bug Reporting',
                 description: 'What should you do when you discover a bug in one environment?',
                 options: [
                     {
@@ -242,7 +242,7 @@ class EmailTestingQuiz extends BaseQuiz {
             {
                 id: 7,
                 level: 'Intermediate',
-                title: 'Test script reporting',
+                title: 'Test Script Reporting',
                 description: 'How should test results be marked in the test script?',
                 options: [
                     {

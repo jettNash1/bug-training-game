@@ -11,10 +11,10 @@ class ContentCopyQuiz extends BaseQuiz {
                 advanced: { questions: 15, minXP: 300 }
             },
             performanceThresholds: [
-                { threshold: 250, message: '🏆 Outstanding! You\'re a email testing expert!' },
-                { threshold: 200, message: '👏 Great job! You\'ve shown strong email testing skills!' },
+                { threshold: 250, message: '🏆 Outstanding! You\'re a content copy expert!' },
+                { threshold: 200, message: '👏 Great job! You\'ve shown strong content writing skills!' },
                 { threshold: 150, message: '👍 Good work! Keep practicing to improve further.' },
-                { threshold: 0, message: '📚 Consider reviewing email testing best practices and try again!' }
+                { threshold: 0, message: '📚 Consider reviewing content writing best practices and try again!' }
             ]
         };
         
@@ -69,7 +69,7 @@ class ContentCopyQuiz extends BaseQuiz {
             {
                 id: 1,
                 level: 'Basic',
-                title: 'Primary objective',
+                title: 'Primary Objective',
                 description: 'What is the primary focus of copy proofing?',
                 options: [
                     {
@@ -97,7 +97,7 @@ class ContentCopyQuiz extends BaseQuiz {
             {
                 id: 2,
                 level: 'Basic',
-                title: 'Content proofing scope',
+                title: 'Content Proofing Scope',
                 description: 'When conducting content proofing, what is considered out of scope?',
                 options: [
                     {
@@ -112,7 +112,7 @@ class ContentCopyQuiz extends BaseQuiz {
                     },
                     {
                         text: 'Software functionality issues',
-                        outcome: 'functionality is out of scope.',
+                        outcome: 'Functionality is out of scope.',
                         experience: 15
                     },
                     {
@@ -125,7 +125,7 @@ class ContentCopyQuiz extends BaseQuiz {
             {
                 id: 3,
                 level: 'Basic',
-                title: 'Main objectives',
+                title: 'Main Objectives',
                 description: 'When conducting content proofing, what is considered out of scope?',
                 options: [
                     {
@@ -153,8 +153,8 @@ class ContentCopyQuiz extends BaseQuiz {
             {
                 id: 4,
                 level: 'Basic',
-                title: 'Attention to detail',
-                description: 'Why is attention to detail important in content proofing',
+                title: 'Attention to Detail',
+                description: 'Why is attention to detail important in content proofing?',
                 options: [
                     {
                         text: 'To find security vulnerabilities',
@@ -181,7 +181,7 @@ class ContentCopyQuiz extends BaseQuiz {
             {
                 id: 5,
                 level: 'Basic',
-                title: 'Changes to content requirements',
+                title: 'Changes to Content Requirements',
                 description: 'What can happen if content changes occur after testing?',
                 options: [
                     {
@@ -213,7 +213,7 @@ class ContentCopyQuiz extends BaseQuiz {
             {
                 id: 6,
                 level: 'Intermediate',
-                title: 'Operating system content consistency',
+                title: 'Operating System Content Consistency',
                 description: 'When comparing Android and iOS versions of an application, what should testers look for?',
                 options: [
                     {
@@ -223,7 +223,7 @@ class ContentCopyQuiz extends BaseQuiz {
                     },
                     {
                         text: 'Consistent user experience across platforms',
-                        outcome: 'Content testing should specifically addresses platform consistency.',
+                        outcome: 'Content testing should specifically address platform consistency.',
                         experience: 20
                     },
                     {
@@ -241,7 +241,7 @@ class ContentCopyQuiz extends BaseQuiz {
             {
                 id: 7,
                 level: 'Intermediate',
-                title: 'Volume of raised content issues',
+                title: 'Volume of Raised Content Issues',
                 description: 'What is a recommended approach when dealing with a high volume of small issues?',
                 options: [
                     {
@@ -269,7 +269,7 @@ class ContentCopyQuiz extends BaseQuiz {
             {
                 id: 8,
                 level: 'Intermediate',
-                title: 'Reviewing images',
+                title: 'Reviewing Images',
                 description: 'What should testers consider when reviewing images across environments?',
                 options: [
                     {
@@ -297,7 +297,7 @@ class ContentCopyQuiz extends BaseQuiz {
             {
                 id: 9,
                 level: 'Intermediate',
-                title: 'Provided requirements',
+                title: 'Provided Requirements',
                 description: 'How does the absence of a copy deck affect testing?',
                 options: [
                     {
@@ -357,7 +357,7 @@ class ContentCopyQuiz extends BaseQuiz {
             {
                 id: 11,
                 level: 'Advanced',
-                title: 'Platform content inconsistencies',
+                title: 'Platform Content Inconsistencies',
                 description: 'How should testers approach platform inconsistencies between mobile versions?',
                 options: [
                     {
@@ -385,7 +385,7 @@ class ContentCopyQuiz extends BaseQuiz {
             {
                 id: 12,
                 level: 'Advanced',
-                title: 'Functional & Content testing relationship',
+                title: 'Functional & Content Testing Relationship',
                 description: 'What is the relationship between content proofing and functional testing in a project?',
                 options: [
                     {
@@ -413,7 +413,7 @@ class ContentCopyQuiz extends BaseQuiz {
             {
                 id: 13,
                 level: 'Advanced',
-                title: 'Content discrepancies within documentation',
+                title: 'Content Discrepancies Within Documentation',
                 description: 'How should testers handle content that differs from provided design documentation?',
                 options: [
                     {
@@ -441,7 +441,7 @@ class ContentCopyQuiz extends BaseQuiz {
             {
                 id: 14,
                 level: 'Advanced',
-                title: 'Tester documentation',
+                title: 'Tester Documentation',
                 description: 'What impact does the quality of tester documentation have on content proofing?',
                 options: [
                     {

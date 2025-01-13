@@ -64,13 +64,13 @@ class TesterMindsetQuiz extends BaseQuiz {
             return;
         }
 
-        // Basic Scenarios (Focus on fundamental mindset concepts)
+        // Basic Scenarios (Focus on Fundamental Mindset Concepts)
         this.basicScenarios = [
             {
                 id: 1,
                 level: 'Basic',
                 title: 'Project Context',
-                description: 'You\'re starting a new testing project. What\'s your first priority?',
+                description: "You're starting a new testing project. What's your first priority?",
                 options: [
                     {
                         text: 'Review project context and requirements documentation',
@@ -98,7 +98,7 @@ class TesterMindsetQuiz extends BaseQuiz {
             {
                 id: 2,
                 level: 'Basic',
-                title: 'Understanding Audience',
+                title: 'Understanding the Audience',
                 description: 'How do you approach understanding the target audience for a new project?',
                 options: [
                     {
@@ -127,8 +127,8 @@ class TesterMindsetQuiz extends BaseQuiz {
             {
                 id: 3,
                 level: 'Basic',
-                title: 'Test Environment',
-                description: 'The test environment is different from production. What\'s your approach?',
+                title: 'Test Environment Setup',
+                description: "The test environment is different from production. What's your approach?",
                 options: [
                     {
                         text: 'Compare environment configurations and document differences',
@@ -157,7 +157,7 @@ class TesterMindsetQuiz extends BaseQuiz {
                 id: 4,
                 level: 'Basic',
                 title: 'Test Documentation',
-                description: 'You\'ve found several issues. How do you document them?',
+                description: "You've found several issues. How do you document them?",
                 options: [
                     {
                         text: 'Create detailed reports with steps, expected vs actual results',
@@ -213,13 +213,13 @@ class TesterMindsetQuiz extends BaseQuiz {
             }
         ];
 
-        // Intermediate Scenarios (Different testing approaches)
+        // Intermediate Scenarios (Different Testing Approaches)
         this.intermediateScenarios = [
             {
                 id: 6,
                 level: 'Intermediate',
                 title: 'Exploratory Testing',
-                description: 'You\'re conducting exploratory testing. What\'s your mindset?',
+                description: "You're conducting exploratory testing. What's your mindset?",
                 options: [
                     {
                         text: 'Be curious, investigative, and think outside the box',
