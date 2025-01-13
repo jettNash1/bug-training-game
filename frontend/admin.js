@@ -539,6 +539,9 @@ class AdminDashboard {
                         const questionsAnswered = result ? result.questionsAnswered || 15 : 0;
                         const experience = result ? result.experience || (score * 3) : 0;
                         const lastActive = result ? this.formatDate(result.lastActive || result.completedAt) : 'Never';
+                        
+                        // Check if there are any non-perfect answers in the question history
+                        const hasIncorrectAnswers = result?.questionHistory?.some(q => q.experience < 25);
 
                             return `
                             <div class="quiz-progress-item" style="margin-bottom: 20px; padding: 15px; background: #f5f5f5; border-radius: 8px;">
@@ -567,7 +570,15 @@ class AdminDashboard {
                                         </div>
                                     ` : ''}
                                 </div>
-                                <div style="margin-top: 10px; text-align: right;">
+                                <div style="margin-top: 10px; text-align: right; display: flex; justify-content: flex-end; gap: 10px;">
+                                    ${hasIncorrectAnswers ? `
+                                        <button 
+                                            class="view-incorrect-btn" 
+                                            onclick="event.stopPropagation(); this.closest('.quiz-progress-item').dispatchEvent(new CustomEvent('viewIncorrect', {detail: {quizName: '${quizName}'}}))"
+                                            style="padding: 5px 10px; background-color: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer;">
+                                            View Incorrect Answers
+                                        </button>
+                                    ` : ''}
                                     <button 
                                         class="reset-quiz-btn" 
                                         onclick="event.stopPropagation(); this.closest('.quiz-progress-item').dispatchEvent(new CustomEvent('resetQuiz', {detail: {quizName: '${quizName}'}}))"
@@ -602,6 +613,11 @@ class AdminDashboard {
                         }
                     }
                 });
+
+                item.addEventListener('viewIncorrect', async (e) => {
+                    const quizName = e.detail.quizName;
+                    this.showIncorrectAnswers(username, quizName);
+                });
             });
 
             // Add close button functionality
@@ -618,6 +634,72 @@ class AdminDashboard {
         } catch (error) {
             console.error(`Error showing user details for ${username}:`, error);
             this.showError('Failed to load user details');
+        }
+    }
+
+    async showIncorrectAnswers(username, quizName) {
+        try {
+            const user = this.users.find(u => u.username === username);
+            if (!user) {
+                throw new Error(`User ${username} not found`);
+            }
+
+            const result = user.quizResults.find(r => r.quizName.toLowerCase() === quizName.toLowerCase());
+            if (!result || !result.questionHistory) {
+                throw new Error('No question history found');
+            }
+
+            // Filter for questions that didn't get full experience points
+            const incorrectAnswers = result.questionHistory.filter(q => q.experience < 25);
+            if (!incorrectAnswers.length) {
+                return;
+            }
+
+            // Create overlay for incorrect answers
+            const overlay = document.createElement('div');
+            overlay.className = 'user-details-overlay';
+            
+            const content = document.createElement('div');
+            content.className = 'user-details-content';
+            
+            content.innerHTML = `
+                <div class="details-header">
+                    <h3>Incorrect Answers - ${this.formatQuizName(quizName)}</h3>
+                    <button class="close-btn" style="position: absolute; right: 20px; top: 20px; 
+                            padding: 5px 10px; cursor: pointer; background: none; border: none; font-size: 20px;">×</button>
+                </div>
+                <div class="incorrect-answers-list" style="margin-top: 20px;">
+                    ${incorrectAnswers.map((answer, index) => `
+                        <div class="incorrect-answer-item" style="margin-bottom: 20px; padding: 15px; background: #f5f5f5; border-radius: 8px;">
+                            <h4 style="margin: 0 0 10px 0;">Question ${index + 1}</h4>
+                            <div class="answer-details">
+                                <p><strong>Question:</strong> ${answer.question || 'N/A'}</p>
+                                <p><strong>Selected Answer:</strong> ${answer.selectedAnswer || 'N/A'}</p>
+                                <p><strong>Experience Gained:</strong> ${answer.experience}/25</p>
+                                <p><strong>Outcome:</strong> ${answer.outcome || 'N/A'}</p>
+                            </div>
+                        </div>
+                    `).join('')}
+                </div>
+            `;
+            
+            overlay.appendChild(content);
+            document.body.appendChild(overlay);
+
+            // Add close button functionality
+            const closeBtn = content.querySelector('.close-btn');
+            closeBtn.addEventListener('click', () => overlay.remove());
+
+            // Close on click outside
+            overlay.addEventListener('click', (e) => {
+                if (e.target === overlay) {
+                    overlay.remove();
+                }
+            });
+
+        } catch (error) {
+            console.error(`Error showing incorrect answers for ${username}:`, error);
+            this.showError('Failed to load incorrect answers');
         }
     }
 
