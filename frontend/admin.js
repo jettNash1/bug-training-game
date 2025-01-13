@@ -534,17 +534,17 @@ class AdminDashboard {
                 <div class="quiz-progress-list" style="margin-top: 20px;">
                     ${this.quizTypes.map(quizName => {
                         const result = quizResultsMap.get(quizName.toLowerCase());
-<<<<<<< HEAD
                         const status = result ? 'Completed' : 'Not Started';
                         const score = result ? result.score : 0;
                         const questionsAnswered = result ? result.questionsAnswered || 15 : 0;
                         const experience = result ? result.experience || (score * 3) : 0;
-=======
+
+                        /*
                         const status = result ? (result.questionsAnswered === 15 ? 'Completed' : 'In Progress') : 'Not Started';
                         const score = result ? result.score || 0 : 0;
-                        const questionsAnswered = result ? result.questionsAnswered || 0 : 0;
+                        const questionsAnswered = result ? result.questionsAnswered || 15 : 0;
                         const experience = result ? result.experience || 0 : 0;
->>>>>>> parent of c2c3c4e (Update admin.js)
+*/
                         const lastActive = result ? this.formatDate(result.lastActive || result.completedAt) : 'Never';
 
                             return `
