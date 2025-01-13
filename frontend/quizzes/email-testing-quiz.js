@@ -515,7 +515,6 @@ class EmailTestingQuiz extends BaseQuiz {
     }
 
     shouldEndGame(totalQuestionsAnswered, currentXP) {
-        // End game if we've answered all questions or reached max XP
         return totalQuestionsAnswered >= 15 || currentXP >= this.maxXP;
     }
 
@@ -540,6 +539,7 @@ class EmailTestingQuiz extends BaseQuiz {
             localStorage.setItem(storageKey, JSON.stringify({ progress }));
             
             await this.apiService.saveQuizProgress(this.quizName, progress);
+            console.log('Progress saved successfully:', progress);
         } catch (error) {
             console.error('Failed to save progress:', error);
             // Continue without saving - don't interrupt the user experience
@@ -561,6 +561,7 @@ class EmailTestingQuiz extends BaseQuiz {
             
             if (savedProgress && savedProgress.data) {
                 progress = savedProgress.data;
+                console.log('Loaded progress from API:', progress);
             } else {
                 // Try loading from localStorage
                 const localData = localStorage.getItem(storageKey);
@@ -568,6 +569,7 @@ class EmailTestingQuiz extends BaseQuiz {
                     const parsed = JSON.parse(localData);
                     if (parsed.progress) {
                         progress = parsed.progress;
+                        console.log('Loaded progress from localStorage:', progress);
                     }
                 }
             }
@@ -578,11 +580,24 @@ class EmailTestingQuiz extends BaseQuiz {
                 this.player.tools = progress.tools || [];
                 this.player.questionHistory = progress.questionHistory || [];
                 
-                // Fixed: Set current scenario to the next unanswered question
-                this.player.currentScenario = this.player.questionHistory.length;
+                // Set the current scenario to the actual value from progress
+                this.player.currentScenario = progress.currentScenario || 0;
 
                 // Update UI
                 this.updateProgress();
+
+                // Update the questions progress display
+                const questionsProgress = document.getElementById('questions-progress');
+                if (questionsProgress) {
+                    questionsProgress.textContent = `${this.player.questionHistory.length}/15`;
+                }
+
+                // Update the current scenario display
+                const currentScenarioDisplay = document.getElementById('current-scenario');
+                if (currentScenarioDisplay) {
+                    currentScenarioDisplay.textContent = `${this.player.currentScenario}`;
+                }
+
                 return true;
             }
             return false;
@@ -602,13 +617,20 @@ class EmailTestingQuiz extends BaseQuiz {
             if (loadingIndicator) {
                 loadingIndicator.classList.remove('hidden');
             }
+
             // Set player name from localStorage
             this.player.name = localStorage.getItem('username');
             if (!this.player.name) {
                 window.location.href = '/login.html';
                 return;
             }
+
+            // Initialize event listeners
+            this.initializeEventListeners();
+
+            // Load previous progress
             const hasProgress = await this.loadProgress();
+            console.log('Previous progress loaded:', hasProgress);
             
             if (!hasProgress) {
                 // Reset player state if no valid progress exists
@@ -666,7 +688,7 @@ class EmailTestingQuiz extends BaseQuiz {
             this.endGame();
             return;
         }
-        
+         
         if (this.player.currentScenario >= currentScenarios.length) {
             const totalQuestionsAnswered = this.player.questionHistory.length;
             
@@ -692,11 +714,12 @@ class EmailTestingQuiz extends BaseQuiz {
             return;
         }
         
-        // Show level transition message at the start of each level
+        // Show level transition message at the start of each level or when level changes
+        const currentLevel = this.getCurrentLevel();
         const previousLevel = this.player.questionHistory.length > 0 ? 
-            this.player.questionHistory[this.player.questionHistory.length - 1].scenario.level : null;
+            this.getCurrentLevel() : null;
             
-        if (this.player.currentScenario === 0 || previousLevel !== scenario.level) {
+        if (this.player.currentScenario === 0 || previousLevel !== currentLevel) {
             const transitionContainer = document.getElementById('level-transition-container');
             if (transitionContainer) {
                 transitionContainer.innerHTML = ''; // Clear any existing messages
@@ -704,7 +727,7 @@ class EmailTestingQuiz extends BaseQuiz {
                 const levelMessage = document.createElement('div');
                 levelMessage.className = 'level-transition';
                 levelMessage.setAttribute('role', 'alert');
-                levelMessage.textContent = `Starting ${scenario.level} Questions`;
+                levelMessage.textContent = `Starting ${currentLevel} Questions`;
                 
                 transitionContainer.appendChild(levelMessage);
                 transitionContainer.classList.add('active');
@@ -712,7 +735,7 @@ class EmailTestingQuiz extends BaseQuiz {
                 // Update the level indicator
                 const levelIndicator = document.getElementById('level-indicator');
                 if (levelIndicator) {
-                    levelIndicator.textContent = `Level: ${scenario.level}`;
+                    levelIndicator.textContent = `Level: ${currentLevel}`;
                 }
                 
                 // Remove the message and container height after animation
@@ -737,13 +760,13 @@ class EmailTestingQuiz extends BaseQuiz {
 
         titleElement.textContent = scenario.title;
         descriptionElement.textContent = scenario.description;
-        
+
         // Create a copy of options with their original indices
         const shuffledOptions = scenario.options.map((option, index) => ({
             ...option,
             originalIndex: index
         }));
-        
+
         // Shuffle the options
         for (let i = shuffledOptions.length - 1; i > 0; i--) {
             const j = Math.floor(Math.random() * (i + 1));
@@ -751,7 +774,7 @@ class EmailTestingQuiz extends BaseQuiz {
         }
 
         optionsContainer.innerHTML = '';
-        
+
         shuffledOptions.forEach((option, index) => {
             const optionElement = document.createElement('div');
             optionElement.className = 'option';
@@ -798,45 +821,38 @@ class EmailTestingQuiz extends BaseQuiz {
                 maxPossibleXP: Math.max(...scenario.options.map(o => o.experience))
             });
 
-            // Save progress with current scenario (before incrementing)
+            // Increment current scenario
+            this.player.currentScenario++;
+
+            // Save progress
             await this.saveProgress();
 
-            // Also save quiz result and update display
+            // Calculate the score and experience
+            const totalQuestions = 15;
+            const completedQuestions = this.player.questionHistory.length;
+            const percentComplete = Math.round((completedQuestions / totalQuestions) * 100);
+            
+            const score = {
+                quizName: this.quizName,
+                score: percentComplete,
+                experience: this.player.experience,
+                questionHistory: this.player.questionHistory,
+                questionsAnswered: completedQuestions,
+                lastActive: new Date().toISOString()
+            };
+            
+            // Save quiz result
             const username = localStorage.getItem('username');
             if (username) {
                 const quizUser = new QuizUser(username);
-                const score = Math.round((this.player.experience / this.maxXP) * 100);
-                await quizUser.updateQuizScore(this.quizName, score);
-                
-                // Update progress display on index page
-                const progressElement = document.querySelector(`#${this.quizName}-progress`);
-                if (progressElement) {
-                    const totalQuestions = 15;
-                    const completedQuestions = this.player.questionHistory.length;
-                    const percentComplete = Math.round((completedQuestions / totalQuestions) * 100);
-                    
-                    // Only update if we're on the index page and this is the current user
-                    const onIndexPage = window.location.pathname.endsWith('index.html');
-                    if (onIndexPage) {
-                        progressElement.textContent = `${percentComplete}% Complete`;
-                        progressElement.classList.remove('hidden');
-                        
-                        // Update quiz item styling
-                        const quizItem = document.querySelector(`[data-quiz="${this.quizName}"]`);
-                        if (quizItem) {
-                            quizItem.classList.remove('completed', 'in-progress');
-                            if (percentComplete === 100) {
-                                quizItem.classList.add('completed');
-                                progressElement.classList.add('completed');
-                                progressElement.classList.remove('in-progress');
-                            } else if (percentComplete > 0) {
-                                quizItem.classList.add('in-progress');
-                                progressElement.classList.add('in-progress');
-                                progressElement.classList.remove('completed');
-                            }
-                        }
-                    }
-                }
+                await quizUser.updateQuizScore(
+                    this.quizName,
+                    score.score,
+                    score.experience,
+                    this.player.tools,
+                    score.questionHistory,
+                    score.questionsAnswered
+                );
             }
 
             // Show outcome screen
