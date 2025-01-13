@@ -468,16 +468,8 @@ export class APIService {
     async getAllUsers() {
         try {
             // Fetch real data from MongoDB through the API
-            const response = await this.fetchWithAdminAuth(`${this.baseUrl}/admin/users`);
-            console.log('Raw users response:', response);
-
-            if (!response.ok) {
-                throw new Error('Failed to fetch users');
-            }
-
-            // Parse the JSON response
-            const data = await response.json();
-            console.log('Parsed users response:', data);
+            const data = await this.fetchWithAdminAuth(`${this.baseUrl}/admin/users`);
+            console.log('Raw users response:', data);
 
             // The backend returns { success: true, users: [...] }
             if (data.success && Array.isArray(data.users)) {
