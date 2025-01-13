@@ -512,6 +512,11 @@ class AdminDashboard {
                 quizProgress: user.quizProgress
             });
 
+            // Create a map of quiz results for easy lookup
+            const quizResultsMap = new Map(
+                user.quizResults.map(result => [result.quizName.toLowerCase(), result])
+            );
+
             const overlay = document.createElement('div');
             overlay.className = 'user-details-overlay';
             
@@ -526,51 +531,46 @@ class AdminDashboard {
                 </div>
                 <div class="quiz-progress-list" style="margin-top: 20px;">
                     ${this.quizTypes.map(quizName => {
-                        // Inside showUserDetails method, update the template literal for quiz progress display
-                        const quizProgress = user.quizProgress?.[quizName];
-                        console.log(`Processing quiz progress for ${quizName}:`, quizProgress);
-
-                        if (!quizProgress?.questionHistory) {
-                            return `
-                                <div class="quiz-progress-item" style="margin-bottom: 15px; padding: 10px; border: 1px solid #ddd; border-radius: 4px;">
-                                    <h4 style="margin: 0 0 10px 0">${this.formatQuizName(quizName)}</h4>
-                                    <div class="quiz-stats" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px;">
-                                        <div class="stat-item">Progress: <span class="stat-value">Not Started</span></div>
-                                        <div class="stat-item">Questions: <span class="stat-value">0/15</span></div>
-                                        <div class="stat-item">XP: <span class="stat-value">0/300</span></div>
-                                        <div class="stat-item">Last Active: <span class="stat-value">Never</span></div>
-                                    </div>
-                                </div>
-                            `;
-                        }
-
-                        // Get values from quiz progress data
-                        const questionsAnswered = quizProgress?.questionHistory?.length || 0;
-                        const earnedXP = quizProgress?.experience || Math.round((questionsAnswered / 15) * 300);
-                        const percentComplete = Math.round((questionsAnswered / 15) * 100);
-
-                        console.log(`Processed quiz data for ${quizName}:`, {
-                            questionsAnswered,
-                            earnedXP,
-                            lastUpdated: quizProgress.lastUpdated,
-                            percentComplete
-                        });
+                        const result = quizResultsMap.get(quizName.toLowerCase());
+                        const status = result ? 'Completed' : 'Not Started';
+                        const score = result ? result.score : 0;
+                        const questionsAnswered = result ? result.questionsAnswered || 15 : 0;
+                        const experience = result ? result.experience || (score * 3) : 0;
+                        const lastActive = result ? this.formatDate(result.lastActive || result.completedAt) : 'Never';
 
                         return `
-                            <div class="quiz-progress-item" style="margin-bottom: 15px; padding: 10px; border: 1px solid #ddd; border-radius: 4px;">
-                                <h4 style="margin: 0 0 10px 0">${this.formatQuizName(quizName)}</h4>
-                                <div class="quiz-stats" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px;">
-                                    <div class="stat-item">Progress: <span class="stat-value">${percentComplete}%</span></div>
-                                    <div class="stat-item">Questions: <span class="stat-value">${questionsAnswered}/15</span></div>
-                                    <div class="stat-item">XP: <span class="stat-value">${earnedXP}/300</span></div>
-                                    <div class="stat-item">Last Active: <span class="stat-value">${quizProgress.lastUpdated ? this.formatDate(new Date(quizProgress.lastUpdated).getTime()) : 'Never'}</span></div>
+                            <div class="quiz-progress-item" style="margin-bottom: 20px; padding: 15px; background: #f5f5f5; border-radius: 8px;">
+                                <h4 style="margin: 0 0 10px 0;">${this.formatQuizName(quizName)}</h4>
+                                <div class="progress-details" style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px;">
+                                    <div>
+                                        <strong>Progress:</strong> 
+                                        <span class="${status === 'Completed' ? 'completed' : ''}">${status}</span>
+                                    </div>
+                                    <div>
+                                        <strong>Questions:</strong> 
+                                        <span>${questionsAnswered}/15</span>
+                                    </div>
+                                    <div>
+                                        <strong>XP:</strong> 
+                                        <span>${experience}/300</span>
+                                    </div>
+                                    <div>
+                                        <strong>Last Active:</strong> 
+                                        <span>${lastActive}</span>
+                                    </div>
+                                    ${result ? `
+                                        <div>
+                                            <strong>Score:</strong> 
+                                            <span>${score}%</span>
+                                        </div>
+                                    ` : ''}
                                 </div>
                             </div>
                         `;
                     }).join('')}
-                    </div>
-                `;
-            
+                </div>
+            `;
+
             overlay.appendChild(content);
             document.body.appendChild(overlay);
 
@@ -578,17 +578,15 @@ class AdminDashboard {
             const closeBtn = content.querySelector('.close-btn');
             closeBtn.addEventListener('click', () => overlay.remove());
 
-            // Add click outside to close
+            // Close on click outside
             overlay.addEventListener('click', (e) => {
                 if (e.target === overlay) {
                     overlay.remove();
                 }
             });
 
-            console.log('Available quiz types:', this.quizTypes);
-            console.log('User progress data:', user.quizProgress);
         } catch (error) {
-            console.error('Failed to show user details:', error);
+            console.error(`Error showing user details for ${username}:`, error);
             this.showError('Failed to load user details');
         }
     }
