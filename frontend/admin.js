@@ -534,10 +534,10 @@ class AdminDashboard {
                 <div class="quiz-progress-list" style="margin-top: 20px;">
                     ${this.quizTypes.map(quizName => {
                         const result = quizResultsMap.get(quizName.toLowerCase());
-                        const status = result ? 'Completed' : 'Not Started';
+                        const status = result ? (result.questionsAnswered >= 15 ? 'Completed' : 'In Progress') : 'Not Started';
                         const score = result ? result.score : 0;
-                        const questionsAnswered = result ? result.questionsAnswered || 15 : 0;
-                        const experience = result ? result.experience || (score * 3) : 0;
+                        const questionsAnswered = result ? (result.questionsAnswered || 0) : 0;
+                        const experience = result ? (result.experience || 0) : 0;
                         const lastActive = result ? this.formatDate(result.lastActive || result.completedAt) : 'Never';
 
                             return `
@@ -546,7 +546,7 @@ class AdminDashboard {
                                 <div class="progress-details" style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px;">
                                     <div>
                                         <strong>Progress:</strong> 
-                                        <span class="${status === 'Completed' ? 'completed' : ''}">${status}</span>
+                                        <span class="${status.toLowerCase().replace(' ', '-')}">${status}</span>
                                     </div>
                                     <div>
                                         <strong>Questions:</strong> 
