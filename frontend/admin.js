@@ -147,7 +147,7 @@ class AdminDashboard {
 
     async loadUsers() {
         try {
-            console.log('Fetching users from MongoDB...');
+            console.log('Fetching users from MongoDB...'); 
             
             const response = await this.apiService.getAllUsers();
             console.log('Raw API response:', response);
@@ -180,16 +180,13 @@ class AdminDashboard {
                     // Get progress data from quizProgress if it exists
                     const progress = user.quizProgress?.[quizName];
                     
-                    // Get questions answered from progress first, then fall back to result
-                    const questionsAnswered = progress?.questionsAnswered || 
-                                            progress?.questionHistory?.length || 
-                                            result.questionsAnswered || 
+                    // Get questions answered from questionHistory length
+                    const questionsAnswered = progress?.questionHistory?.length || 
                                             result.questionHistory?.length || 0;
                     
-                    // Get experience and ensure it's a multiple of 5
-                    let experience = progress?.experience || result.experience || 0;
-                    experience = Math.round(experience / 5) * 5;
-                    
+                    // Get experience directly from progress or result
+                    const experience = progress?.experience || result.experience || 0;
+
                     return {
                         ...result,
                         questionsAnswered,
