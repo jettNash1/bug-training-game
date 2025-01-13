@@ -19,42 +19,12 @@ export class APIService {
             console.log('Fetching with admin auth:', { 
                 url, 
                 hasToken: !!adminToken,
-                method: options.method || 'GET',
-                isMockAdmin: adminToken?.startsWith('admin:')
+                method: options.method || 'GET'
             });
 
             if (!adminToken) {
                 console.log('No admin token found');
                 throw new Error('No admin token found');
-            }
-
-            // Handle mock admin token
-            if (adminToken.startsWith('admin:')) {
-                const timestamp = parseInt(adminToken.split(':')[1]);
-                const now = Date.now();
-                if ((now - timestamp) >= 24 * 60 * 60 * 1000) {
-                    console.log('Mock token expired');
-                    throw new Error('Mock token expired');
-                }
-                
-                // For mock admin, return mock data only for mock admin token
-                if (url.endsWith('/admin/users') || url.endsWith('/users')) {
-                    return {
-                        success: true,
-                        users: [
-                            {
-                                username: 'testuser1',
-                                quizProgress: {},
-                                quizResults: []
-                            },
-                            {
-                                username: 'testuser2',
-                                quizProgress: {},
-                                quizResults: []
-                            }
-                        ]
-                    };
-                }
             }
 
             console.log('Making request with token:', { token: adminToken });
@@ -379,21 +349,8 @@ export class APIService {
             
             // Clear any existing admin token first
             localStorage.removeItem('adminToken');
-            
-            // Special handling for mock admin - do this before any server calls
-            if (username === 'admin' && password === 'admin123') {
-                console.log('Using mock admin credentials');
-                const mockToken = `admin:${Date.now()}`;
-                localStorage.setItem('adminToken', mockToken);
-                console.log('Mock admin token stored successfully');
-                return { 
-                    token: mockToken, 
-                    success: true,
-                    isAdmin: true
-                };
-            }
 
-            // Handle normal admin login
+            // Handle admin login
             const response = await fetch(`${this.baseUrl}/admin/login`, {
                 method: 'POST',
                 headers: {
@@ -525,83 +482,7 @@ export class APIService {
 
     async getAllUsers() {
         try {
-            const adminToken = localStorage.getItem('adminToken');
-            
-            // For mock admin, return mock data with test users
-            if (adminToken?.startsWith('admin:')) {
-                return {
-                    success: true,
-                    data: [
-                        {
-                            username: 'testuser1',
-                            quizProgress: {
-                                'communication': {
-                                    questionHistory: Array(8).fill({ correct: true }),
-                                    experience: 120,
-                                    lastUpdated: new Date(Date.now() - 1000 * 60 * 60).toISOString()
-                                },
-                                'initiative': {
-                                    questionHistory: Array(15).fill({ correct: true }),
-                                    experience: 300,
-                                    lastUpdated: new Date(Date.now() - 1000 * 60 * 30).toISOString()
-                                }
-                            },
-                            quizResults: []
-                        },
-                        {
-                            username: 'testuser2',
-                            quizProgress: {
-                                'time-management': {
-                                    questionHistory: Array(12).fill({ correct: true }),
-                                    experience: 240,
-                                    lastUpdated: new Date(Date.now() - 1000 * 60 * 120).toISOString()
-                                }
-                            },
-                            quizResults: []
-                        },
-                        {
-                            username: 'student1',
-                            quizProgress: {
-                                'communication': {
-                                    questionHistory: Array(15).fill({ correct: true }),
-                                    experience: 300,
-                                    lastUpdated: new Date(Date.now() - 1000 * 60 * 15).toISOString()
-                                },
-                                'tester-mindset': {
-                                    questionHistory: Array(10).fill({ correct: true }),
-                                    experience: 200,
-                                    lastUpdated: new Date(Date.now() - 1000 * 60 * 45).toISOString()
-                                }
-                            },
-                            quizResults: []
-                        },
-                        {
-                            username: 'student2',
-                            quizProgress: {
-                                'risk-analysis': {
-                                    questionHistory: Array(6).fill({ correct: true }),
-                                    experience: 120,
-                                    lastUpdated: new Date(Date.now() - 1000 * 60 * 180).toISOString()
-                                }
-                            },
-                            quizResults: []
-                        },
-                        {
-                            username: 'learner1',
-                            quizProgress: {
-                                'communication': {
-                                    questionHistory: Array(4).fill({ correct: true }),
-                                    experience: 80,
-                                    lastUpdated: new Date(Date.now() - 1000 * 60 * 240).toISOString()
-                                }
-                            },
-                            quizResults: []
-                        }
-                    ]
-                };
-            }
-
-            // For real admin token, try the /users endpoint
+            // Always try to fetch real data from the server
             const response = await this.fetchWithAdminAuth(`${this.baseUrl}/users`);
             console.log('Raw users response:', response);
 
@@ -614,6 +495,15 @@ export class APIService {
                 };
             }
 
+            // If response has a users property that's an array, use it
+            if (response.users && Array.isArray(response.users)) {
+                console.log('Response has users array:', response.users);
+                return {
+                    success: true,
+                    data: response.users
+                };
+            }
+
             // If response has a data property that's an array, use it
             if (response.data && Array.isArray(response.data)) {
                 console.log('Response has data array:', response.data);
@@ -623,70 +513,11 @@ export class APIService {
                 };
             }
 
-            // If response has a data property that's an object with array values, find the largest array
-            if (response.data && typeof response.data === 'object') {
-                console.log('Response has data object:', response.data);
-                const arrays = Object.values(response.data).filter(Array.isArray);
-                if (arrays.length > 0) {
-                    const largestArray = arrays.reduce((a, b) => a.length > b.length ? a : b);
-                    console.log('Found array in data:', largestArray);
-                    return {
-                        success: true,
-                        data: largestArray
-                    };
-                }
-            }
-
-            // If response is an object with array values, find the largest array
-            if (typeof response === 'object') {
-                console.log('Response is an object:', response);
-                const arrays = Object.values(response).filter(Array.isArray);
-                if (arrays.length > 0) {
-                    const largestArray = arrays.reduce((a, b) => a.length > b.length ? a : b);
-                    console.log('Found array in response:', largestArray);
-                    return {
-                        success: true,
-                        data: largestArray
-                    };
-                }
-            }
-
-            // If we get here and haven't found any users, try the admin endpoint
-            console.log('No users found in response, trying admin endpoint');
-            const adminResponse = await this.fetchWithAdminAuth(`${this.baseUrl}/admin/users`);
-            console.log('Admin endpoint response:', adminResponse);
-
-            // Apply the same parsing logic to the admin response
-            if (Array.isArray(adminResponse)) {
-                return {
-                    success: true,
-                    data: adminResponse
-                };
-            }
-
-            if (adminResponse.data && Array.isArray(adminResponse.data)) {
-                return {
-                    success: true,
-                    data: adminResponse.data
-                };
-            }
-
-            if (typeof adminResponse === 'object') {
-                const arrays = Object.values(adminResponse).filter(Array.isArray);
-                if (arrays.length > 0) {
-                    const largestArray = arrays.reduce((a, b) => a.length > b.length ? a : b);
-                    return {
-                        success: true,
-                        data: largestArray
-                    };
-                }
-            }
-
-            // If we still haven't found any users, log the issue and return an empty array
-            console.warn('No users found in any response format');
+            console.warn('No valid user data found in response');
             return {
-                success: true,
-                data: []
+                success: false,
+                data: [],
+                error: 'Invalid response format'
             };
         } catch (error) {
             console.error('Failed to fetch users:', error);
