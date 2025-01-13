@@ -534,11 +534,10 @@ class AdminDashboard {
                 <div class="quiz-progress-list" style="margin-top: 20px;">
                     ${this.quizTypes.map(quizName => {
                         const result = quizResultsMap.get(quizName.toLowerCase());
-                        const questionHistory = result?.questionHistory || [];
-                        const questionsAnswered = questionHistory.length;
-                        const status = questionsAnswered === 15 ? 'Completed' : questionsAnswered > 0 ? 'In Progress' : 'Not Started';
+                        const status = result ? 'Completed' : 'Not Started';
                         const score = result ? result.score : 0;
-                        const experience = result ? result.experience || 0 : 0;
+                        const questionsAnswered = result ? result.questionsAnswered || 15 : 0;
+                        const experience = result ? result.experience || (score * 3) : 0;
                         const lastActive = result ? this.formatDate(result.lastActive || result.completedAt) : 'Never';
 
                             return `
@@ -547,7 +546,7 @@ class AdminDashboard {
                                 <div class="progress-details" style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px;">
                                     <div>
                                         <strong>Progress:</strong> 
-                                        <span class="${status.toLowerCase().replace(' ', '-')}">${status}</span>
+                                        <span class="${status === 'Completed' ? 'completed' : ''}">${status}</span>
                                     </div>
                                     <div>
                                         <strong>Questions:</strong> 
@@ -568,14 +567,15 @@ class AdminDashboard {
                                         </div>
                                     ` : ''}
                                 </div>
-                                <div class="quiz-actions" style="margin-top: 10px; display: flex; justify-content: flex-end; gap: 10px;">
-                                    <button 
-                                        class="view-answers-btn" 
-                                        onclick="event.stopPropagation(); this.closest('.quiz-progress-item').dispatchEvent(new CustomEvent('viewAnswers', {detail: {quizName: '${quizName}'}}))"
-                                        style="padding: 5px 10px; background-color: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; ${questionsAnswered === 0 ? 'opacity: 0.5; cursor: not-allowed;' : ''}"
-                                        ${questionsAnswered === 0 ? 'disabled' : ''}>
-                                        View Answers
-                                    </button>
+                                <div style="margin-top: 10px; text-align: right; display: flex; justify-content: flex-end; gap: 10px;">
+                                    ${result ? `
+                                        <button 
+                                            class="view-answers-btn" 
+                                            onclick="event.stopPropagation(); this.closest('.quiz-progress-item').dispatchEvent(new CustomEvent('viewAnswers', {detail: {quizName: '${quizName}'}}))"
+                                            style="padding: 5px 10px; background-color: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer;">
+                                            View Answers
+                                        </button>
+                                    ` : ''}
                                     <button 
                                         class="reset-quiz-btn" 
                                         onclick="event.stopPropagation(); this.closest('.quiz-progress-item').dispatchEvent(new CustomEvent('resetQuiz', {detail: {quizName: '${quizName}'}}))"
@@ -642,14 +642,8 @@ class AdminDashboard {
             }
 
             const result = user.quizResults.find(r => r.quizName.toLowerCase() === quizName.toLowerCase());
-            if (!result) {
-                throw new Error('No quiz results found');
-            }
-
-            const questionHistory = result.questionHistory || [];
-            if (questionHistory.length === 0) {
-                this.showError('No question history available');
-                return;
+            if (!result || !result.questionHistory) {
+                throw new Error('No question history found');
             }
 
             // Create overlay for answers
@@ -666,7 +660,7 @@ class AdminDashboard {
                             padding: 5px 10px; cursor: pointer; background: none; border: none; font-size: 20px;">×</button>
                 </div>
                 <div class="answers-list" style="margin-top: 20px;">
-                    ${questionHistory.map((answer, index) => {
+                    ${result.questionHistory.map((answer, index) => {
                         // Determine max experience points based on level
                         const maxExperience = answer.level ? 
                             (answer.level.toLowerCase() === 'advanced' ? 25 : 
