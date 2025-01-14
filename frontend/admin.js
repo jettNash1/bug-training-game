@@ -276,15 +276,32 @@ class AdminDashboard {
     }
 
     setupEventListeners() {
+        // Set up search and sort functionality
         const searchInput = document.getElementById('userSearch');
         const sortSelect = document.getElementById('sortBy');
-
+        
         if (searchInput) {
-            searchInput.addEventListener('input', () => this.updateDashboard());
+            searchInput.addEventListener('input', () => this.updateUserList());
         }
         if (sortSelect) {
-            sortSelect.addEventListener('change', () => this.updateDashboard());
+            sortSelect.addEventListener('change', () => this.updateUserList());
         }
+
+        // Set up quiz reset event delegation
+        document.addEventListener('resetQuiz', async (event) => {
+            const { username, quizName } = event.detail;
+            if (confirm(`Are you sure you want to reset progress for ${username}'s ${this.formatQuizName(quizName)} quiz?`)) {
+                await this.resetQuizProgress(username, quizName);
+                // Refresh the user details view
+                await this.showUserDetails(username);
+            }
+        });
+
+        // Set up view questions event delegation
+        document.addEventListener('viewQuestions', async (event) => {
+            const { quizName } = event.detail;
+            await this.showQuizQuestions(quizName);
+        });
     }
 
     async updateDashboard() {
@@ -561,7 +578,11 @@ class AdminDashboard {
                                 <div class="progress-details" style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px;">
                                     <div>
                                         <strong>Progress:</strong> 
-                                        <span class="${status.toLowerCase().replace(' ', '-')}">${status}</span>
+                                        <span class="${status === 'Completed' ? 'text-success' : status === 'In Progress' ? 'text-warning' : 'text-muted'}">${status}</span>
+                                    </div>
+                                    <div>
+                                        <strong>Score:</strong> 
+                                        <span>${score}%</span>
                                     </div>
                                     <div>
                                         <strong>Questions:</strong> 
@@ -575,19 +596,17 @@ class AdminDashboard {
                                         <strong>Last Active:</strong> 
                                         <span>${lastActive}</span>
                                     </div>
-                                    ${score ? `
-                                        <div>
-                                            <strong>Score:</strong> 
-                                            <span>${score}%</span>
-                                        </div>
-                                    ` : ''}
                                 </div>
-                                <div style="margin-top: 10px; text-align: right;">
+                                <div style="display: flex; flex-direction: column; gap: 10px; margin-top: 15px;">
                                     <button 
-                                        class="reset-quiz-btn" 
                                         onclick="event.stopPropagation(); this.closest('.quiz-progress-item').dispatchEvent(new CustomEvent('resetQuiz', {detail: {quizName: '${quizName}'}}))"
                                         style="padding: 5px 10px; background-color: #ff4444; color: white; border: none; border-radius: 4px; cursor: pointer;">
                                         Reset Progress
+                                    </button>
+                                    <button 
+                                        onclick="event.stopPropagation(); this.closest('.quiz-progress-item').dispatchEvent(new CustomEvent('viewQuestions', {detail: {quizName: '${quizName}'}}))"
+                                        style="padding: 5px 10px; background-color: #4444ff; color: white; border: none; border-radius: 4px; cursor: pointer;">
+                                        View Questions
                                     </button>
                                 </div>
                             </div>
@@ -785,6 +804,36 @@ class AdminDashboard {
         if (averageCompletionElement) {
             averageCompletionElement.textContent = `${stats.averageProgress || 0}%`;
         }
+    }
+
+    async showQuizQuestions(quizName) {
+        // Create overlay container
+        const overlay = document.createElement('div');
+        overlay.className = 'user-details-overlay';
+        overlay.style.zIndex = '1002'; // Ensure it's above other overlays
+
+        // Create content container
+        const content = document.createElement('div');
+        content.className = 'user-details-content';
+        content.innerHTML = `
+            <div class="details-header">
+                <h3>Questions for ${this.formatQuizName(quizName)}</h3>
+                <button class="close-btn" aria-label="Close questions overlay">&times;</button>
+            </div>
+            <div class="questions-list">
+                <p>Questions will be displayed here.</p>
+            </div>
+        `;
+
+        // Add close button functionality
+        const closeBtn = content.querySelector('.close-btn');
+        closeBtn.addEventListener('click', () => {
+            document.body.removeChild(overlay);
+        });
+
+        // Add content to overlay and overlay to body
+        overlay.appendChild(content);
+        document.body.appendChild(overlay);
     }
 }
 
