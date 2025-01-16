@@ -10,7 +10,8 @@ class AdminDashboard {
             'communication', 'initiative', 'time-management', 'tester-mindset',
             'risk-analysis', 'risk-management', 'non-functional', 'test-support',
             'issue-verification', 'build-verification', 'issue-tracking-tools',
-            'raising-tickets', 'reports', 'cms-testing', 'email-testing', 'content-copy'
+            'raising-tickets', 'reports', 'cms-testing', 'email-testing', 'content-copy',
+            'locale-testing', 'script-metrics-troubleshooting'
         ];
         
         // Initialize immediately if we're on an admin page

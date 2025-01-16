@@ -624,7 +624,7 @@ class IssueTrackingToolsQuiz extends BaseQuiz {
         
         try {
             this.isLoading = true;
-            // Show loading state
+            // Show loading indicator
             const loadingIndicator = document.getElementById('loading-indicator');
             if (loadingIndicator) {
                 loadingIndicator.classList.remove('hidden');
@@ -695,43 +695,63 @@ class IssueTrackingToolsQuiz extends BaseQuiz {
     displayScenario() {
         const currentScenarios = this.getCurrentScenarios();
         
-        // Check if quiz should end
-        if (this.player.questionHistory.length >= 15) {
-            this.endGame();
-            return;
-        }
-         
-        if (this.player.currentScenario >= currentScenarios.length) {
-            const totalQuestionsAnswered = this.player.questionHistory.length;
-            
-            if (this.shouldEndGame(totalQuestionsAnswered, this.player.experience)) {
-                this.endGame();
+        // Check basic level completion
+        if (this.player.questionHistory.length >= 5) {
+            if (this.player.experience < this.levelThresholds.basic.minXP) {
+                this.endGame(true); // End with failure state
                 return;
             }
-            
-            this.player.currentScenario = 0;
-            this.displayScenario();
+        }
+
+        // Check intermediate level completion
+        if (this.player.questionHistory.length >= 10) {
+            if (this.player.experience < this.levelThresholds.intermediate.minXP) {
+                this.endGame(true); // End with failure state
+                return;
+            }
+        }
+
+        // Check Advanced level completion
+        if (this.player.questionHistory.length >= 15) {
+            if (this.player.experience < this.levelThresholds.advanced.minXP) {
+                this.endGame(true); // End with failure state
+                return;
+            } else {
+                this.endGame(false); // Completed successfully
+                return;
+            }
+        }
+
+        // Get the next scenario based on current progress
+        let scenario;
+        const questionCount = this.player.questionHistory.length;
+        
+        if (questionCount < 5) {
+            // Basic questions (0-4)
+            scenario = this.basicScenarios[questionCount];
+        } else if (questionCount < 10) {
+            // Intermediate questions (5-9)
+            scenario = this.intermediateScenarios[questionCount - 5];
+        } else if (questionCount < 15) {
+            // Advanced questions (10-14)
+            scenario = this.advancedScenarios[questionCount - 10];
+        }
+
+        if (!scenario) {
+            console.error('No scenario found for current progress. Question count:', questionCount);
+            this.endGame(true);
             return;
         }
 
-        const scenario = currentScenarios[this.player.currentScenario];
-        if (!scenario) {
-            console.error('No scenario found for index:', this.player.currentScenario);
-            console.log('Current scenarios:', currentScenarios);
-            console.log('Current state:', {
-                totalAnswered: this.player.questionHistory.length,
-                currentXP: this.player.experience,
-                currentScenario: this.player.currentScenario
-            });
-            return;
-        }
+        // Store current question number for consistency
+        this.currentQuestionNumber = questionCount + 1;
         
         // Show level transition message at the start of each level or when level changes
         const currentLevel = this.getCurrentLevel();
         const previousLevel = this.player.questionHistory.length > 0 ? 
             this.getCurrentLevel() : null;
             
-        if (this.player.currentScenario === 0 || previousLevel !== currentLevel) {
+        if (this.player.questionHistory.length === 0 || previousLevel !== currentLevel) {
             const transitionContainer = document.getElementById('level-transition-container');
             if (transitionContainer) {
                 transitionContainer.innerHTML = ''; // Clear any existing messages
@@ -772,6 +792,12 @@ class IssueTrackingToolsQuiz extends BaseQuiz {
 
         titleElement.textContent = scenario.title;
         descriptionElement.textContent = scenario.description;
+
+        // Update question counter immediately
+        const questionProgress = document.getElementById('question-progress');
+        if (questionProgress) {
+            questionProgress.textContent = `Question: ${this.currentQuestionNumber}/15`;
+        }
 
         // Create a copy of options with their original indices
         const shuffledOptions = scenario.options.map((option, index) => ({
@@ -902,9 +928,6 @@ class IssueTrackingToolsQuiz extends BaseQuiz {
     }
 
     nextScenario() {
-        // Increment scenario counter
-        this.player.currentScenario++;
-        
         // Hide outcome screen and show game screen
         if (this.outcomeScreen && this.gameScreen) {
             this.outcomeScreen.classList.add('hidden');
@@ -927,11 +950,10 @@ class IssueTrackingToolsQuiz extends BaseQuiz {
         const progressFill = document.getElementById('progress-fill');
         if (questionProgress && progressFill) {
             const totalQuestions = 15;
-            const completedQuestions = this.player.questionHistory.length;
-            const currentQuestion = completedQuestions + 1;
+            const completedQuestions = Math.min(this.player.questionHistory.length, totalQuestions);
             
-            // Update question counter
-            questionProgress.textContent = `Question: ${currentQuestion}/${totalQuestions}`;
+            // Use stored question number for consistency
+            questionProgress.textContent = `Question: ${this.currentQuestionNumber || completedQuestions}/15`;
             
             // Update progress bar
             const progressPercentage = (completedQuestions / totalQuestions) * 100;
@@ -1031,37 +1053,33 @@ class IssueTrackingToolsQuiz extends BaseQuiz {
         // Generate recommendations HTML
         let recommendationsHTML = '';
 
-        if (score >= 80) {
-            recommendationsHTML += '<p>🌟 Excellent performance! Here are some ways to further enhance your skills:</p>';
+        if (score >= 95 && weakAreas.length === 0) {
+            recommendationsHTML = '<p>🌟 Outstanding! You have demonstrated mastery in all aspects of issue tracking tools. You clearly understand the nuances of issue tracking tools and are well-equipped to handle any issue tracking tools challenges!</p>';
+        } else if (score >= 80) {
+            recommendationsHTML = '<p>🌟 Excellent performance! Your issue tracking tools skills are very strong. To achieve complete mastery, consider focusing on:</p>';
+            recommendationsHTML += '<ul>';
+            if (weakAreas.length > 0) {
+                weakAreas.forEach(area => {
+                    recommendationsHTML += `<li>${this.getRecommendation(area)}</li>`;
+                });
+            }
+            recommendationsHTML += '</ul>';
         } else if (score >= 60) {
-            recommendationsHTML += '<p>👍 Good effort! Here are some areas to focus on:</p>';
+            recommendationsHTML = '<p>👍 Good effort! Here are some areas to focus on:</p>';
+            recommendationsHTML += '<ul>';
+            weakAreas.forEach(area => {
+                recommendationsHTML += `<li>${this.getRecommendation(area)}</li>`;
+            });
+            recommendationsHTML += '</ul>';
         } else {
-            recommendationsHTML += '<p>📚 Here are key areas for improvement:</p>';
+            recommendationsHTML = '<p>📚 Here are key areas for improvement:</p>';
+            recommendationsHTML += '<ul>';
+            weakAreas.forEach(area => {
+                recommendationsHTML += `<li>${this.getRecommendation(area)}</li>`;
+            });
+            recommendationsHTML += '</ul>';
         }
 
-        recommendationsHTML += '<ul>';
-
-        // Add recommendations for weak areas
-        weakAreas.forEach(area => {
-            recommendationsHTML += `<li>${this.getRecommendation(area)}</li>`;
-        });
-
-        // If there are strong areas but still room for improvement
-        if (strongAreas.length > 0 && score < 100) {
-            recommendationsHTML += '<li>Continue practicing your strengths in: ' + 
-                strongAreas.join(', ') + '</li>';
-        }
-
-        // Add general recommendations based on score
-        if (score < 70) {
-            recommendationsHTML += `
-                <li>Review the communication best practices documentation</li>
-                <li>Practice active listening techniques</li>
-                <li>Focus on clear and concise messaging</li>
-            `;
-        }
-
-        recommendationsHTML += '</ul>';
         recommendationsContainer.innerHTML = recommendationsHTML;
     }
 
@@ -1070,41 +1088,41 @@ class IssueTrackingToolsQuiz extends BaseQuiz {
         const title = scenario.title.toLowerCase();
         const description = scenario.description.toLowerCase();
 
-        if (title.includes('daily') || description.includes('daily')) {
-            return 'Daily Communication';
-        } else if (title.includes('team') || description.includes('team')) {
-            return 'Team Collaboration';
-        } else if (title.includes('stakeholder') || description.includes('stakeholder')) {
-            return 'Stakeholder Management';
-        } else if (title.includes('conflict') || description.includes('conflict')) {
-            return 'Conflict Resolution';
-        } else if (title.includes('remote') || description.includes('remote')) {
-            return 'Remote Communication';
-        } else if (title.includes('documentation') || description.includes('documentation')) {
-            return 'Documentation';
-        } else if (title.includes('presentation') || description.includes('presentation')) {
-            return 'Presentation Skills';
+        if (title.includes('creating') || description.includes('create')) {
+            return 'Issue Creation';
+        } else if (title.includes('editing') || description.includes('edit')) {
+            return 'Issue Editing';
+        } else if (title.includes('bulk') || description.includes('multiple')) {
+            return 'Bulk Operations';
+        } else if (title.includes('tag') || description.includes('tag')) {
+            return 'Tag Management';
+        } else if (title.includes('migration') || description.includes('switch')) {
+            return 'Tool Migration';
+        } else if (title.includes('integration') || description.includes('multiple tool')) {
+            return 'Tool Integration';
+        } else if (title.includes('workflow') || description.includes('workflow')) {
+            return 'Workflow Management';
         } else {
-            return 'General Communication';
+            return 'General Tool Usage';
         }
     }
 
     getRecommendation(area) {
         const recommendations = {
-            'Daily Communication': 'Practice maintaining clear status updates and regular check-ins with team members.',
-            'Team Collaboration': 'Focus on active listening and providing constructive feedback in team settings.',
-            'Stakeholder Management': 'Work on presenting information clearly and managing expectations effectively.',
-            'Conflict Resolution': 'Study conflict resolution techniques and practice diplomatic communication.',
-            'Remote Communication': 'Improve virtual communication skills and use of collaboration tools.',
-            'Documentation': 'Enhance documentation skills with clear, concise, and well-structured content.',
-            'Presentation Skills': 'Practice presenting technical information in a clear and engaging manner.',
-            'General Communication': 'Focus on fundamental communication principles and professional etiquette.'
+            'Issue Creation': 'Focus on efficient issue creation with complete and accurate information entry.',
+            'Issue Editing': 'Improve proficiency in issue modification while maintaining data integrity.',
+            'Bulk Operations': 'Develop skills in efficient bulk editing and management of multiple issues.',
+            'Tag Management': 'Strengthen consistent tagging practices and hierarchical organization.',
+            'Tool Migration': 'Enhance understanding of data export/import processes between different tools.',
+            'Tool Integration': 'Work on maintaining consistency across multiple tracking tools.',
+            'Workflow Management': 'Focus on proper workflow transitions and status management.',
+            'General Tool Usage': 'Continue developing fundamental issue tracking tool skills.'
         };
 
-        return recommendations[area] || 'Continue practicing general communication skills.';
+        return recommendations[area] || 'Continue practicing core issue tracking principles.';
     }
 
-    endGame() {
+    endGame(failed = false) {
         this.gameScreen.classList.add('hidden');
         this.outcomeScreen.classList.add('hidden');
         this.endScreen.classList.remove('hidden');
@@ -1112,13 +1130,21 @@ class IssueTrackingToolsQuiz extends BaseQuiz {
         const finalScore = Math.min(this.player.experience, this.maxXP);
         const scorePercentage = Math.round((finalScore / this.maxXP) * 100);
         
-        // Save the final quiz result
+        // Save the final quiz result with pass/fail status
         const username = localStorage.getItem('username');
         if (username) {
             try {
                 const user = new QuizUser(username);
-                user.updateQuizScore(this.quizName, scorePercentage);
-                console.log('Final quiz score saved:', scorePercentage);
+                const result = {
+                    score: scorePercentage,
+                    status: failed ? 'failed' : 'passed',
+                    experience: this.player.experience,
+                    questionHistory: this.player.questionHistory,
+                    questionsAnswered: this.player.questionHistory.length,
+                    lastActive: new Date().toISOString()
+                };
+                user.updateQuizScore(this.quizName, result);
+                console.log('Final quiz score saved:', result);
             } catch (error) {
                 console.error('Error saving final quiz score:', error);
             }
@@ -1127,8 +1153,17 @@ class IssueTrackingToolsQuiz extends BaseQuiz {
         document.getElementById('final-score').textContent = `Final Score: ${finalScore}/${this.maxXP}`;
 
         const performanceSummary = document.getElementById('performance-summary');
-        const threshold = this.performanceThresholds.find(t => finalScore >= t.threshold);
-        performanceSummary.textContent = threshold.message;
+        if (failed) {
+            performanceSummary.textContent = 'Quiz failed. You did not meet the minimum XP requirement to progress. Please reset your progress to try again.';
+            // Hide restart button if failed
+            const restartBtn = document.getElementById('restart-btn');
+            if (restartBtn) {
+                restartBtn.style.display = 'none';
+            }
+        } else {
+            const threshold = this.performanceThresholds.find(t => finalScore >= t.threshold);
+            performanceSummary.textContent = threshold.message;
+        }
 
         // Display question review
         const reviewList = document.getElementById('question-review');
