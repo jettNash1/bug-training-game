@@ -642,8 +642,8 @@ class AdminDashboard {
             content.querySelectorAll('.view-questions-btn').forEach(button => {
                 button.addEventListener('click', async (e) => {
                     const quizName = e.target.dataset.quizName;
-                    console.log('View questions clicked for:', quizName);
-                    await this.showQuizQuestions(quizName);
+                    console.log('View questions clicked for:', { quizName, username });
+                    await this.showQuizQuestions(quizName, username);
                 });
             });
 
@@ -815,11 +815,8 @@ class AdminDashboard {
         }
     }
 
-    async showQuizQuestions(quizName) {
+    async showQuizQuestions(quizName, username) {
         try {
-            // Get the current user's username from the parent element
-            const username = document.querySelector('.details-header h3').textContent.split("'")[0];
-            
             // Create overlay container
             const overlay = document.createElement('div');
             overlay.className = 'user-details-overlay';
@@ -838,18 +835,21 @@ class AdminDashboard {
                 </div>
             `;
 
+            // Add content to overlay and overlay to body
+            overlay.appendChild(content);
+            document.body.appendChild(overlay);
+
             // Add close button functionality
             const closeBtn = content.querySelector('.close-btn');
             closeBtn.addEventListener('click', () => {
                 document.body.removeChild(overlay);
             });
 
-            // Add content to overlay and overlay to body
-            overlay.appendChild(content);
-            document.body.appendChild(overlay);
-
             // Fetch questions data
+            console.log('Fetching questions for:', { username, quizName });
             const response = await this.apiService.getQuizQuestions(username, quizName);
+            console.log('Questions response:', response);
+            
             const questionsList = content.querySelector('.questions-list');
 
             if (!response.success || !response.data) {
@@ -858,6 +858,7 @@ class AdminDashboard {
             }
 
             const { questionHistory = [] } = response.data;
+            console.log('Question history:', questionHistory);
 
             if (questionHistory.length === 0) {
                 questionsList.innerHTML = '<p>No questions have been answered in this quiz yet.</p>';
@@ -901,8 +902,10 @@ class AdminDashboard {
 
         } catch (error) {
             console.error('Error showing quiz questions:', error);
-            const questionsList = content.querySelector('.questions-list');
-            questionsList.innerHTML = '<p class="error">An error occurred while loading questions.</p>';
+            const questionsList = content?.querySelector('.questions-list');
+            if (questionsList) {
+                questionsList.innerHTML = '<p class="error">An error occurred while loading questions.</p>';
+            }
         }
     }
 }
