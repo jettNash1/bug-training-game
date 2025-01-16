@@ -366,7 +366,9 @@ router.get('/users/:username/quiz-questions/:quizName', auth, async (req, res) =
             result.quizName.toLowerCase() === quizName.toLowerCase()
         );
 
-        if (!quizResult || !quizResult.questionHistory) {
+        console.log('Found quiz result:', quizResult);
+
+        if (!quizResult) {
             console.log(`No quiz results found for ${username}/${quizName}`);
             return res.json({
                 success: true,
@@ -376,29 +378,29 @@ router.get('/users/:username/quiz-questions/:quizName', auth, async (req, res) =
             });
         }
 
-        // Map the question history to include all necessary data
-        const questionHistory = quizResult.questionHistory.map(question => ({
-            scenario: {
-                title: question.scenario.title,
-                description: question.scenario.description,
-                level: question.scenario.level
-            },
-            selectedAnswer: {
-                text: question.selectedAnswer.text,
-                outcome: question.selectedAnswer.outcome,
-                experience: question.selectedAnswer.experience,
-                tool: question.selectedAnswer.tool
-            },
-            status: question.status || (question.selectedAnswer.experience > 0 ? 'passed' : 'failed')
-        }));
+        // Get question history from the quiz result
+        const questionHistory = quizResult.questionHistory || [];
+        console.log(`Found ${questionHistory.length} questions for ${username}/${quizName}`);
+        console.log('Question history sample:', questionHistory[0]);
 
-        console.log(`Successfully fetched ${questionHistory.length} questions for ${username}/${quizName}`);
-
-        // Return the question history
+        // Return the question history with all necessary data
         res.json({
             success: true,
             data: {
-                questionHistory,
+                questionHistory: questionHistory.map(question => ({
+                    scenario: {
+                        title: question.scenario.title,
+                        description: question.scenario.description,
+                        level: question.scenario.level
+                    },
+                    selectedAnswer: {
+                        text: question.selectedAnswer.text,
+                        outcome: question.selectedAnswer.outcome,
+                        experience: question.selectedAnswer.experience,
+                        tool: question.selectedAnswer.tool
+                    },
+                    status: question.status || (question.selectedAnswer.experience > 0 ? 'passed' : 'failed')
+                })),
                 totalQuestions: questionHistory.length,
                 quizName: quizResult.quizName,
                 score: quizResult.score,

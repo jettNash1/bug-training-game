@@ -529,7 +529,25 @@ export class APIService {
 
     async getQuizQuestions(username, quizName) {
         try {
+            console.log(`Fetching quiz questions for ${username}/${quizName}`);
             const response = await this.fetchWithAdminAuth(`${this.baseUrl}/admin/users/${username}/quiz-questions/${quizName}`);
+            console.log('Raw quiz questions response:', response);
+            
+            if (!response.success) {
+                console.error('Failed to fetch quiz questions:', response);
+                throw new Error(response.message || 'Failed to fetch quiz questions');
+            }
+
+            if (!response.data?.questionHistory) {
+                console.warn('No question history found in response:', response);
+                return {
+                    success: true,
+                    data: {
+                        questionHistory: []
+                    }
+                };
+            }
+
             return response;
         } catch (error) {
             console.error(`Failed to fetch quiz questions for ${username}/${quizName}:`, error);
