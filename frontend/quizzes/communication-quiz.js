@@ -733,16 +733,19 @@ export class CommunicationQuiz extends BaseQuiz {
         } else if (questionCount < 10) {
             // Intermediate questions (5-9)
             scenario = this.intermediateScenarios[questionCount - 5];
-        } else {
+        } else if (questionCount < 15) {
             // Advanced questions (10-14)
             scenario = this.advancedScenarios[questionCount - 10];
         }
 
         if (!scenario) {
-            console.error('No scenario found for current progress');
+            console.error('No scenario found for current progress. Question count:', questionCount);
             this.endGame(true);
             return;
         }
+
+        // Store current question number for consistency
+        this.currentQuestionNumber = questionCount + 1;
         
         // Show level transition message at the start of each level or when level changes
         const currentLevel = this.getCurrentLevel();
@@ -790,6 +793,12 @@ export class CommunicationQuiz extends BaseQuiz {
 
         titleElement.textContent = scenario.title;
         descriptionElement.textContent = scenario.description;
+
+        // Update question counter immediately
+        const questionProgress = document.getElementById('question-progress');
+        if (questionProgress) {
+            questionProgress.textContent = `Question: ${this.currentQuestionNumber}/15`;
+        }
 
         // Create a copy of options with their original indices
         const shuffledOptions = scenario.options.map((option, index) => ({
@@ -943,10 +952,9 @@ export class CommunicationQuiz extends BaseQuiz {
         if (questionProgress && progressFill) {
             const totalQuestions = 15;
             const completedQuestions = Math.min(this.player.questionHistory.length, totalQuestions);
-            const currentQuestion = Math.min(completedQuestions + 1, totalQuestions);
             
-            // Update question counter
-            questionProgress.textContent = `Question: ${currentQuestion}/${totalQuestions}`;
+            // Use stored question number for consistency
+            questionProgress.textContent = `Question: ${this.currentQuestionNumber || completedQuestions}/15`;
             
             // Update progress bar
             const progressPercentage = (completedQuestions / totalQuestions) * 100;
