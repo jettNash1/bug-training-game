@@ -573,7 +573,7 @@ class AdminDashboard {
                         const score = result?.score || 0;
                         const lastActive = result ? this.formatDate(result.lastActive || result.completedAt) : 'Never';
 
-                            return `
+                        return `
                             <div class="quiz-progress-item" style="margin-bottom: 20px; padding: 15px; background: #f5f5f5; border-radius: 8px;">
                                 <h4 style="margin: 0 0 10px 0;">${this.formatQuizName(quizName)}</h4>
                                 <div class="progress-details" style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px;">
@@ -599,13 +599,13 @@ class AdminDashboard {
                                     </div>
                                 </div>
                                 <div style="display: flex; flex-direction: column; gap: 10px; margin-top: 15px;">
-                                    <button 
-                                        onclick="event.stopPropagation(); this.closest('.quiz-progress-item').dispatchEvent(new CustomEvent('resetQuiz', {detail: {quizName: '${quizName}'}}))"
+                                    <button class="reset-quiz-btn"
+                                        data-quiz-name="${quizName}"
                                         style="padding: 5px 10px; background-color: #ff4444; color: white; border: none; border-radius: 4px; cursor: pointer;">
                                         Reset Progress
                                     </button>
-                                    <button 
-                                        onclick="event.stopPropagation(); this.closest('.quiz-progress-item').dispatchEvent(new CustomEvent('viewQuestions', {detail: {quizName: '${quizName}'}}))"
+                                    <button class="view-questions-btn"
+                                        data-quiz-name="${quizName}"
                                         style="padding: 5px 10px; background-color: #4444ff; color: white; border: none; border-radius: 4px; cursor: pointer;">
                                         View Questions
                                     </button>
@@ -613,17 +613,16 @@ class AdminDashboard {
                             </div>
                         `;
                     }).join('')}
-                    </div>
-                `;
+                </div>
+            `;
             
             overlay.appendChild(content);
             document.body.appendChild(overlay);
 
-            // Add event listeners for reset buttons
-            const quizItems = content.querySelectorAll('.quiz-progress-item');
-            quizItems.forEach(item => {
-                item.addEventListener('resetQuiz', async (e) => {
-                    const quizName = e.detail.quizName;
+            // Add event listeners for buttons
+            content.querySelectorAll('.reset-quiz-btn').forEach(button => {
+                button.addEventListener('click', async (e) => {
+                    const quizName = e.target.dataset.quizName;
                     if (confirm(`Are you sure you want to reset progress for ${this.formatQuizName(quizName)}?`)) {
                         try {
                             await this.resetQuizProgress(username, quizName);
@@ -636,6 +635,15 @@ class AdminDashboard {
                             this.showError(`Failed to reset ${this.formatQuizName(quizName)}`);
                         }
                     }
+                });
+            });
+
+            // Add event listeners for view questions buttons
+            content.querySelectorAll('.view-questions-btn').forEach(button => {
+                button.addEventListener('click', async (e) => {
+                    const quizName = e.target.dataset.quizName;
+                    console.log('View questions clicked for:', quizName);
+                    await this.showQuizQuestions(quizName);
                 });
             });
 
