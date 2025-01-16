@@ -8,111 +8,164 @@ An interactive learning platform where users progress through various QA testing
 
 ### Core Features ✨
 
-- **User Authentication**: Secure login system for both users and administrators
+- **User Authentication**: 
+  - Secure login system with JWT
+  - Local storage persistence
+  - Admin and user role separation
+  - Session management
+
 - **Multiple Testing Domains**:
-  - Risk Management & Analysis
-  - Non-functional Testing
+  - Standard Script Testing
+  - Communication Skills
+  - Content Copy Testing
+  - Locale Testing
   - Time Management
-  - Issue Tracking & Verification
-  - Reports & Documentation
-  - Test Support
   - Tester Mindset
-- **Admin Dashboard**:
-  - User progress monitoring
+  - Test Support
+  - Risk Management
+  - Risk Analysis
+  - Reports
+  - Raising Tickets
+  - Non-functional Testing
+
+- **Progressive Learning System**:
+  - Basic, Intermediate, and Advanced levels
+  - Experience (XP) based progression
+  - Level-specific thresholds
+  - Adaptive difficulty
+
+- **Quiz Features**:
+  - Interactive scenarios
+  - Multiple choice questions
+  - Real-time feedback
+  - Progress tracking
   - Performance analytics
-  - Sorting by username, scores, and completion dates
-  - Filtering by quiz types
-- **Progress Tracking**: 
-  - Individual quiz scores
-  - Overall performance metrics
-  - Completion timestamps
-- **Accessibility**: ARIA labels and keyboard navigation
+  - Detailed recommendations
+  - Question history review
 
-## Installation & Setup 💾
-
-### Required Dependencies
-
-1. **Core Dependencies**:
-```bash
-npm install express mongoose dotenv bcryptjs jsonwebtoken cors
-```
-
-2. **Development Dependencies**:
-```bash
-npm install --save-dev nodemon jest supertest
-```
-
-### Setup Steps
-
-1. **Initialize Project**:
-```bash
-mkdir qa-quiz-platform
-cd qa-quiz-platform
-npm init -y
-```
-
-2. **Create package.json Scripts**:
-```json
-{
-  "scripts": {
-    "start": "node server.js",
-    "dev": "nodemon server.js",
-    "test": "jest --watchAll --verbose"
-  }
-}
-```
-
-3. **Install All Dependencies at Once**:
-```bash
-npm install express mongoose dotenv bcryptjs jsonwebtoken cors && npm install --save-dev nodemon jest supertest
-```
-
-4. **Directory Structure Setup**:
-```bash
-mkdir backend frontend
-cd backend
-mkdir models routes controllers middleware config tests
-```
-
-5. **Environment Setup**:
-Create `.env` file in root directory:
-```env
-NODE_ENV=development
-PORT=8080
-MONGODB_URI=mongodb://localhost:27017/qa_quiz
-JWT_SECRET=your_secret_key
-JWT_EXPIRE=30d
-```
+- **Admin Dashboard**:
+  - User management
+  - Quiz analytics
+  - Performance tracking
+  - Content management
+  - User progress monitoring
 
 ## Technical Implementation 🛠
 
 ### Prerequisites
 - Node.js (v14+)
-- MongoDB
 - Modern web browser
+- MongoDB database
+- Render account for deployment
 
-### MongoDB Implementation
+### Adding New Quizzes
 
-1. **MongoDB Schema**:
+The platform is designed to be easily extensible with new quizzes. Follow these steps to add a new quiz:
+
+1. **Create Quiz JavaScript File**
+   - Copy an existing quiz file from `frontend/quizzes/`
+   - Rename appropriately (e.g., `new-domain-quiz.js`)
+   - Update the class name and quiz configuration:
+
 ```javascript
-// models/User.js
-const userSchema = new mongoose.Schema({
-    username: { type: String, unique: true },
-    password: String,
-    quizResults: [{
-        quizName: String,
-        score: Number,
-        completedAt: Date,
-        answers: [mongoose.Schema.Types.Mixed]
-    }]
-});
+export class NewDomainQuiz extends BaseQuiz {
+    constructor() {
+        const config = {
+            maxXP: 300,
+            levelThresholds: {
+                basic: { questions: 5, minXP: 50 },
+                intermediate: { questions: 10, minXP: 150 },
+                advanced: { questions: 15, minXP: 300 }
+            },
+            performanceThresholds: [
+                { threshold: 250, message: '🏆 Outstanding!' },
+                { threshold: 200, message: '👏 Great job!' },
+                { threshold: 150, message: '👍 Good work!' },
+                { threshold: 0, message: '📚 Keep practicing!' }
+            ]
+        };
+        super(config);
+        
+        Object.defineProperty(this, 'quizName', {
+            value: 'new-domain-quiz',
+            writable: false,
+            configurable: false,
+            enumerable: true
+        });
+        // ... rest of constructor
+    }
+}
+```
 
-// models/Admin.js
-const adminSchema = new mongoose.Schema({
-    username: { type: String, unique: true },
-    password: String,
-    role: { type: String, default: 'admin' }
-});
+2. **Define Quiz Scenarios**
+   - Structure scenarios in difficulty levels (Basic, Intermediate, Advanced)
+   - Each scenario should follow this format:
+
+```javascript
+this.basicScenarios = [
+    {
+        id: 1,
+        level: 'Basic',
+        title: 'Scenario Title',
+        description: 'Scenario Question',
+        options: [
+            {
+                text: 'Option 1',
+                outcome: 'Feedback for this choice',
+                experience: 15  // XP points (positive for correct, negative for wrong)
+            },
+            // ... more options
+        ]
+    }
+    // ... more scenarios
+];
+```
+
+3. **Create HTML Page**
+   - Copy an existing quiz HTML file from `frontend/pages/`
+   - Update the title, imports, and quiz initialization:
+
+```html
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>New Domain Quiz</title>
+    <!-- ... existing head content ... -->
+</head>
+<body>
+    <div id="game-container">
+        <!-- ... game screens ... -->
+    </div>
+    <script type="module">
+        import { NewDomainQuiz } from '../quizzes/new-domain-quiz.js';
+        const quiz = new NewDomainQuiz();
+        quiz.startGame();
+    </script>
+</body>
+</html>
+```
+
+4. **Update Navigation**
+   - Add the new quiz to `index.html`:
+
+```html
+<div class="quiz-card">
+    <h3>New Domain Quiz</h3>
+    <p>Test your knowledge of the new domain</p>
+    <a href="pages/new-domain-quiz.html" class="btn">Start Quiz</a>
+</div>
+```
+
+5. **Update Admin Dashboard**
+   - Add the quiz to `admin.js` for analytics tracking:
+
+```javascript
+const quizTypes = [
+    // ... existing quizzes ...
+    {
+        id: 'new-domain-quiz',
+    }
+];
 ```
 
 ### File Structure
@@ -120,91 +173,88 @@ const adminSchema = new mongoose.Schema({
 ├── backend/
 │   ├── models/
 │   ├── routes/
-│   ├── controllers/
-│   └── server.js
+│   ├── middleware/
+│   ├── config/
+│   ├── server.js
+│   ├── game.js
+│   └── login-ui.js
 ├── frontend/
-│   ├── index.html
-│   ├── admin.html
-│   ├── styles.css
 │   ├── pages/
-│   └── quizzes/
-└── README.md
+│   ├── quizzes/
+│   ├── components/
+│   ├── scripts/
+│   ├── styles/
+│   ├── assets/
+│   ├── index.html
+│   ├── login.html
+│   ├── admin.js
+│   ├── api-service.js
+│   ├── auth.js
+│   ├── QuizUser.js
+│   ├── quiz-helper.js
+│   ├── login.js
+│   ├── config.js
+│   └── styles.css
+├── docs/
+├── .env
+├── .env.example
+└── package.json
 ```
 
-### Running the Application
+### API Endpoints
 
-1. **Development Mode**:
+#### Authentication
+- POST `/api/auth/login` - User login
+- POST `/api/auth/admin/login` - Admin login
+- POST `/api/auth/logout` - Logout user
+
+#### Quiz Operations
+- GET `/api/quiz/all` - Fetch all quizzes
+- POST `/api/quiz/submit` - Submit quiz answers
+- GET `/api/quiz/results/:userId` - Get user results
+
+#### Admin Operations
+- GET `/api/admin/users` - Get all users
+- GET `/api/admin/analytics` - Get quiz analytics
+- PUT `/api/admin/quiz/:quizId` - Update quiz content
+
+### Security Features
+- JWT authentication
+- Password hashing (bcrypt)
+- Rate limiting
+- CORS protection
+- XSS prevention
+- Environment variable protection
+- Secure session management
+
+## Development Setup
+
+1. Clone the repository and install dependencies:
 ```bash
+npm install
+```
+
+2. Set up environment variables:
+```bash
+cp .env.example .env
+# Edit .env with your configuration
+```
+
+3. Start the backend server:
+```bash
+cd backend
 npm run dev
 ```
 
-2. **Production Mode**:
+4. Start the frontend development server:
 ```bash
-npm start
+cd frontend
+npm run dev
 ```
 
-3. **Run Tests**:
-```bash
-npm test
-```
-
-### Troubleshooting Common Issues
-
-1. **MongoDB Connection**:
-If MongoDB fails to connect:
-```bash
-# Start MongoDB service
-sudo service mongod start  # Linux
-brew services start mongodb  # macOS
-```
-
-2. **Port Already in Use**:
-```bash
-# Find process using port 8080
-lsof -i :8080
-# Kill process
-kill -9 <PID>
-```
-
-3. **Node Version Compatibility**:
-```bash
-# Check Node version
-node -v  # Should be v14.0.0 or higher
-```
-
-## API Documentation 📚
-
-### Authentication
-- POST `/api/auth/login`
-- POST `/api/auth/admin/login`
-- POST `/api/auth/logout`
-
-### Quiz Operations
-- GET `/api/quiz/all`
-- POST `/api/quiz/submit`
-- GET `/api/quiz/results/:userId`
-
-### Admin Operations
-- GET `/api/admin/users`
-- GET `/api/admin/analytics`
-- PUT `/api/admin/quiz/:quizId`
-
-## Security Implementation
-- JWT for authentication
-- Password hashing using bcrypt
-- Rate limiting for API endpoints
-- CORS configuration
-- XSS protection
-
-## Future Enhancements 🚀
-
-- Real-time analytics dashboard
-- User performance graphs
-- Quiz content management system
-- API documentation using Swagger
-- Docker containerization
-- CI/CD pipeline setup
-- Enhanced security features
+5. Access the application:
+- Main application: http://localhost:8080
+- Admin dashboard: http://localhost:8080/admin.html
 
 ## Contributing 🤝
 
@@ -218,21 +268,3 @@ node -v  # Should be v14.0.0 or higher
 
 [MIT License](LICENSE)
 
-## Development Setup
-
-1. Start the backend server:
-
-```bash
-cd backend
-npm install
-npm run dev
-```
-
-2. In a new terminal, start the frontend server:
-```bash
-cd frontend
-npm install
-npm run dev
-```
-
-3. Access the application at http://localhost:8080
