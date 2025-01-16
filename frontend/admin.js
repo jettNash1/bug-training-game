@@ -865,40 +865,50 @@ class AdminDashboard {
                 return;
             }
 
-            // Display questions
-            questionsList.innerHTML = questionHistory.map((record, index) => {
-                const scenario = record.scenario;
-                const answer = record.selectedAnswer;
-                const status = record.status || 
-                    (!answer ? 'not-complete' : answer.experience > 0 ? 'passed' : 'failed');
+            // Display questions in table format
+            questionsList.innerHTML = `
+                <table class="questions-table">
+                    <thead>
+                        <tr>
+                            <th>Question</th>
+                            <th>Selected Answer</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${questionHistory.map((record, index) => {
+                            const scenario = record.scenario;
+                            const answer = record.selectedAnswer;
+                            const status = record.status || 
+                                (!answer ? 'not-complete' : answer.experience > 0 ? 'passed' : 'failed');
 
-                return `
-                    <div class="question-item ${status === 'passed' ? 'correct' : 
-                                               status === 'failed' ? 'incorrect' : 'not-complete'}">
-                        <div class="question-header">
-                            <h4>Question ${index + 1}</h4>
-                            <span class="status-badge ${status === 'passed' ? 'pass' : 
-                                                      status === 'failed' ? 'fail' : 'pending'}">
-                                ${status.toUpperCase().replace('-', ' ')}
-                            </span>
-                        </div>
-                        <div class="question-content">
-                            <p class="scenario-title"><strong>${scenario.title}</strong></p>
-                            <p class="scenario-description">${scenario.description}</p>
-                            ${answer ? `
-                                <div class="answer-section">
-                                    <p><strong>Selected Answer:</strong></p>
-                                    <p class="selected-answer">${answer.text}</p>
-                                    <p><strong>Outcome:</strong></p>
-                                    <p class="answer-outcome">${answer.outcome}</p>
-                                    <p><strong>Experience:</strong> ${answer.experience}</p>
-                                    ${answer.tool ? `<p><strong>Tool Gained:</strong> ${answer.tool}</p>` : ''}
-                                </div>
-                            ` : '<p class="not-attempted">Question not yet attempted</p>'}
-                        </div>
-                    </div>
-                `;
-            }).join('');
+                            return `
+                                <tr class="${status === 'passed' ? 'correct' : 
+                                           status === 'failed' ? 'incorrect' : 'not-complete'}">
+                                    <td>
+                                        <strong>${scenario.title}</strong>
+                                        <p>${scenario.description}</p>
+                                    </td>
+                                    <td>
+                                        ${answer ? `
+                                            <div class="answer-content">
+                                                <p>${answer.text}</p>
+                                                <small class="outcome">${answer.outcome}</small>
+                                            </div>
+                                        ` : 'Not attempted'}
+                                    </td>
+                                    <td>
+                                        <span class="status-badge ${status === 'passed' ? 'pass' : 
+                                                                   status === 'failed' ? 'fail' : 'pending'}">
+                                            ${status.toUpperCase().replace('-', ' ')}
+                                        </span>
+                                    </td>
+                                </tr>
+                            `;
+                        }).join('')}
+                    </tbody>
+                </table>
+            `;
 
         } catch (error) {
             console.error('Error showing quiz questions:', error);

@@ -854,9 +854,12 @@ export class CommunicationQuiz extends BaseQuiz {
 
             // Update player state
             this.player.experience = Math.max(0, Math.min(this.maxXP, this.player.experience + selectedAnswer.experience));
+            
+            // Add status to question history
             this.player.questionHistory.push({
                 scenario: scenario,
                 selectedAnswer: selectedAnswer,
+                status: selectedAnswer.experience > 0 ? 'passed' : 'failed',
                 maxPossibleXP: Math.max(...scenario.options.map(o => o.experience))
             });
 
