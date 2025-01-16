@@ -724,8 +724,19 @@ export class CommunicationQuiz extends BaseQuiz {
         }
 
         // Get the next scenario based on current progress
-        const currentQuestionIndex = this.player.questionHistory.length;
-        const scenario = currentScenarios[currentQuestionIndex % currentScenarios.length];
+        let scenario;
+        const questionCount = this.player.questionHistory.length;
+        
+        if (questionCount < 5) {
+            // Basic questions (0-4)
+            scenario = this.basicScenarios[questionCount];
+        } else if (questionCount < 10) {
+            // Intermediate questions (5-9)
+            scenario = this.intermediateScenarios[questionCount - 5];
+        } else {
+            // Advanced questions (10-14)
+            scenario = this.advancedScenarios[questionCount - 10];
+        }
 
         if (!scenario) {
             console.error('No scenario found for current progress');
