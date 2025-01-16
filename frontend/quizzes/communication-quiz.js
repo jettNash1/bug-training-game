@@ -715,20 +715,21 @@ export class CommunicationQuiz extends BaseQuiz {
         // Check Advanced level completion
         if (this.player.questionHistory.length >= 15) {
             if (this.player.experience < this.levelThresholds.advanced.minXP) {
-                this.endGame(false); // End with failure state
+                this.endGame(true); // End with failure state
                 return;
-            } 
+            } else {
+                this.endGame(false); // Completed successfully
+                return;
+            }
         }
 
-        const scenario = currentScenarios[this.player.currentScenario];
+        // Get the next scenario based on current progress
+        const currentQuestionIndex = this.player.questionHistory.length;
+        const scenario = currentScenarios[currentQuestionIndex % currentScenarios.length];
+
         if (!scenario) {
-            console.error('No scenario found for index:', this.player.currentScenario);
-            console.log('Current scenarios:', currentScenarios);
-            console.log('Current state:', {
-                totalAnswered: this.player.questionHistory.length,
-                currentXP: this.player.experience,
-                currentScenario: this.player.currentScenario
-            });
+            console.error('No scenario found for current progress');
+            this.endGame(true);
             return;
         }
         
@@ -737,7 +738,7 @@ export class CommunicationQuiz extends BaseQuiz {
         const previousLevel = this.player.questionHistory.length > 0 ? 
             this.getCurrentLevel() : null;
             
-        if (this.player.currentScenario === 0 || previousLevel !== currentLevel) {
+        if (this.player.questionHistory.length === 0 || previousLevel !== currentLevel) {
             const transitionContainer = document.getElementById('level-transition-container');
             if (transitionContainer) {
                 transitionContainer.innerHTML = ''; // Clear any existing messages
@@ -908,9 +909,6 @@ export class CommunicationQuiz extends BaseQuiz {
     }
 
     nextScenario() {
-        // Increment scenario counter
-        this.player.currentScenario++;
-        
         // Hide outcome screen and show game screen
         if (this.outcomeScreen && this.gameScreen) {
             this.outcomeScreen.classList.add('hidden');
