@@ -625,7 +625,7 @@ export class CommunicationQuiz extends BaseQuiz {
         
         try {
             this.isLoading = true;
-            // Show loading state
+            // Show loading indicator
             const loadingIndicator = document.getElementById('loading-indicator');
             if (loadingIndicator) {
                 loadingIndicator.classList.remove('hidden');
@@ -696,23 +696,28 @@ export class CommunicationQuiz extends BaseQuiz {
     displayScenario() {
         const currentScenarios = this.getCurrentScenarios();
         
-        // Check if quiz should end
-        if (this.player.questionHistory.length >= 15) {
-            this.endGame();
-            return;
-        }
-         
-        if (this.player.currentScenario >= currentScenarios.length) {
-            const totalQuestionsAnswered = this.player.questionHistory.length;
-            
-            if (this.shouldEndGame(totalQuestionsAnswered, this.player.experience)) {
-                this.endGame();
+        // Check basic level completion
+        if (this.player.questionHistory.length >= 5) {
+            if (this.player.experience < this.levelThresholds.basic.minXP) {
+                this.endGame(true); // End with failure state
                 return;
             }
-            
-            this.player.currentScenario = 0;
-            this.displayScenario();
-            return;
+        }
+
+        // Check intermediate level completion
+        if (this.player.questionHistory.length >= 10) {
+            if (this.player.experience < this.levelThresholds.intermediate.minXP) {
+                this.endGame(true); // End with failure state
+                return;
+            }
+        }
+
+        // Check Advanced level completion
+        if (this.player.questionHistory.length >= 15) {
+            if (this.player.experience < this.levelThresholds.advanced.minXP) {
+                this.endGame(false); // End with failure state
+                return;
+            } 
         }
 
         const scenario = currentScenarios[this.player.currentScenario];
@@ -928,8 +933,8 @@ export class CommunicationQuiz extends BaseQuiz {
         const progressFill = document.getElementById('progress-fill');
         if (questionProgress && progressFill) {
             const totalQuestions = 15;
-            const completedQuestions = this.player.questionHistory.length;
-            const currentQuestion = completedQuestions + 1;
+            const completedQuestions = Math.min(this.player.questionHistory.length, totalQuestions);
+            const currentQuestion = Math.min(completedQuestions + 1, totalQuestions);
             
             // Update question counter
             questionProgress.textContent = `Question: ${currentQuestion}/${totalQuestions}`;
@@ -1105,7 +1110,7 @@ export class CommunicationQuiz extends BaseQuiz {
         return recommendations[area] || 'Continue practicing general communication skills.';
     }
 
-    endGame() {
+    endGame(failed = false) {
         this.gameScreen.classList.add('hidden');
         this.outcomeScreen.classList.add('hidden');
         this.endScreen.classList.remove('hidden');
@@ -1113,13 +1118,21 @@ export class CommunicationQuiz extends BaseQuiz {
         const finalScore = Math.min(this.player.experience, this.maxXP);
         const scorePercentage = Math.round((finalScore / this.maxXP) * 100);
         
-        // Save the final quiz result
+        // Save the final quiz result with pass/fail status
         const username = localStorage.getItem('username');
         if (username) {
             try {
                 const user = new QuizUser(username);
-                user.updateQuizScore(this.quizName, scorePercentage);
-                console.log('Final quiz score saved:', scorePercentage);
+                const result = {
+                    score: scorePercentage,
+                    status: failed ? 'failed' : 'passed',
+                    experience: this.player.experience,
+                    questionHistory: this.player.questionHistory,
+                    questionsAnswered: this.player.questionHistory.length,
+                    lastActive: new Date().toISOString()
+                };
+                user.updateQuizScore(this.quizName, result);
+                console.log('Final quiz score saved:', result);
             } catch (error) {
                 console.error('Error saving final quiz score:', error);
             }
@@ -1128,8 +1141,17 @@ export class CommunicationQuiz extends BaseQuiz {
         document.getElementById('final-score').textContent = `Final Score: ${finalScore}/${this.maxXP}`;
 
         const performanceSummary = document.getElementById('performance-summary');
-        const threshold = this.performanceThresholds.find(t => finalScore >= t.threshold);
-        performanceSummary.textContent = threshold.message;
+        if (failed) {
+            performanceSummary.textContent = 'Quiz failed. You did not meet the minimum XP requirement to progress. Please reset your progress to try again.';
+            // Hide restart button if failed
+            const restartBtn = document.getElementById('restart-btn');
+            if (restartBtn) {
+                restartBtn.style.display = 'none';
+            }
+        } else {
+            const threshold = this.performanceThresholds.find(t => finalScore >= t.threshold);
+            performanceSummary.textContent = threshold.message;
+        }
 
         // Display question review
         const reviewList = document.getElementById('question-review');
