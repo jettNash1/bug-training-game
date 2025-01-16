@@ -1054,37 +1054,33 @@ export class CommunicationQuiz extends BaseQuiz {
         // Generate recommendations HTML
         let recommendationsHTML = '';
 
-        if (score >= 80) {
-            recommendationsHTML += '<p>🌟 Excellent performance! Here are some ways to further enhance your skills:</p>';
+        if (score >= 95 && weakAreas.length === 0) {
+            recommendationsHTML = '<p>🌟 Outstanding! You have demonstrated mastery in all aspects of communication. You clearly understand the nuances of professional communication and are well-equipped to handle any communication challenges!</p>';
+        } else if (score >= 80) {
+            recommendationsHTML = '<p>🌟 Excellent performance! Your communication skills are very strong. To achieve complete mastery, consider focusing on:</p>';
+            recommendationsHTML += '<ul>';
+            if (weakAreas.length > 0) {
+                weakAreas.forEach(area => {
+                    recommendationsHTML += `<li>${this.getRecommendation(area)}</li>`;
+                });
+            }
+            recommendationsHTML += '</ul>';
         } else if (score >= 60) {
-            recommendationsHTML += '<p>👍 Good effort! Here are some areas to focus on:</p>';
+            recommendationsHTML = '<p>👍 Good effort! Here are some areas to focus on:</p>';
+            recommendationsHTML += '<ul>';
+            weakAreas.forEach(area => {
+                recommendationsHTML += `<li>${this.getRecommendation(area)}</li>`;
+            });
+            recommendationsHTML += '</ul>';
         } else {
-            recommendationsHTML += '<p>📚 Here are key areas for improvement:</p>';
+            recommendationsHTML = '<p>📚 Here are key areas for improvement:</p>';
+            recommendationsHTML += '<ul>';
+            weakAreas.forEach(area => {
+                recommendationsHTML += `<li>${this.getRecommendation(area)}</li>`;
+            });
+            recommendationsHTML += '</ul>';
         }
 
-        recommendationsHTML += '<ul>';
-
-        // Add recommendations for weak areas
-        weakAreas.forEach(area => {
-            recommendationsHTML += `<li>${this.getRecommendation(area)}</li>`;
-        });
-
-        // If there are strong areas but still room for improvement
-        if (strongAreas.length > 0 && score < 100) {
-            recommendationsHTML += '<li>Continue practicing your strengths in: ' + 
-                strongAreas.join(', ') + '</li>';
-        }
-
-        // Add general recommendations based on score
-        if (score < 70) {
-            recommendationsHTML += `
-                <li>Review the communication best practices documentation</li>
-                <li>Practice active listening techniques</li>
-                <li>Focus on clear and concise messaging</li>
-            `;
-        }
-
-        recommendationsHTML += '</ul>';
         recommendationsContainer.innerHTML = recommendationsHTML;
     }
 
