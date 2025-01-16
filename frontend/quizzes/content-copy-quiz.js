@@ -609,7 +609,7 @@ class ContentCopyQuiz extends BaseQuiz {
         
         try {
             this.isLoading = true;
-            // Show loading state
+            // Show loading indicator
             const loadingIndicator = document.getElementById('loading-indicator');
             if (loadingIndicator) {
                 loadingIndicator.classList.remove('hidden');
@@ -680,43 +680,63 @@ class ContentCopyQuiz extends BaseQuiz {
     displayScenario() {
         const currentScenarios = this.getCurrentScenarios();
         
-        // Check if quiz should end
-        if (this.player.questionHistory.length >= 15) {
-            this.endGame();
-            return;
-        }
-         
-        if (this.player.currentScenario >= currentScenarios.length) {
-            const totalQuestionsAnswered = this.player.questionHistory.length;
-            
-            if (this.shouldEndGame(totalQuestionsAnswered, this.player.experience)) {
-                this.endGame();
+        // Check basic level completion
+        if (this.player.questionHistory.length >= 5) {
+            if (this.player.experience < this.levelThresholds.basic.minXP) {
+                this.endGame(true); // End with failure state
                 return;
             }
-            
-            this.player.currentScenario = 0;
-            this.displayScenario();
+        }
+
+        // Check intermediate level completion
+        if (this.player.questionHistory.length >= 10) {
+            if (this.player.experience < this.levelThresholds.intermediate.minXP) {
+                this.endGame(true); // End with failure state
+                return;
+            }
+        }
+
+        // Check Advanced level completion
+        if (this.player.questionHistory.length >= 15) {
+            if (this.player.experience < this.levelThresholds.advanced.minXP) {
+                this.endGame(true); // End with failure state
+                return;
+            } else {
+                this.endGame(false); // Completed successfully
+                return;
+            }
+        }
+
+        // Get the next scenario based on current progress
+        let scenario;
+        const questionCount = this.player.questionHistory.length;
+        
+        if (questionCount < 5) {
+            // Basic questions (0-4)
+            scenario = this.basicScenarios[questionCount];
+        } else if (questionCount < 10) {
+            // Intermediate questions (5-9)
+            scenario = this.intermediateScenarios[questionCount - 5];
+        } else if (questionCount < 15) {
+            // Advanced questions (10-14)
+            scenario = this.advancedScenarios[questionCount - 10];
+        }
+
+        if (!scenario) {
+            console.error('No scenario found for current progress. Question count:', questionCount);
+            this.endGame(true);
             return;
         }
 
-        const scenario = currentScenarios[this.player.currentScenario];
-        if (!scenario) {
-            console.error('No scenario found for index:', this.player.currentScenario);
-            console.log('Current scenarios:', currentScenarios);
-            console.log('Current state:', {
-                totalAnswered: this.player.questionHistory.length,
-                currentXP: this.player.experience,
-                currentScenario: this.player.currentScenario
-            });
-            return;
-        }
+        // Store current question number for consistency
+        this.currentQuestionNumber = questionCount + 1;
         
         // Show level transition message at the start of each level or when level changes
         const currentLevel = this.getCurrentLevel();
         const previousLevel = this.player.questionHistory.length > 0 ? 
             this.getCurrentLevel() : null;
             
-        if (this.player.currentScenario === 0 || previousLevel !== currentLevel) {
+        if (this.player.questionHistory.length === 0 || previousLevel !== currentLevel) {
             const transitionContainer = document.getElementById('level-transition-container');
             if (transitionContainer) {
                 transitionContainer.innerHTML = ''; // Clear any existing messages
@@ -757,6 +777,12 @@ class ContentCopyQuiz extends BaseQuiz {
 
         titleElement.textContent = scenario.title;
         descriptionElement.textContent = scenario.description;
+
+        // Update question counter immediately
+        const questionProgress = document.getElementById('question-progress');
+        if (questionProgress) {
+            questionProgress.textContent = `Question: ${this.currentQuestionNumber}/15`;
+        }
 
         // Create a copy of options with their original indices
         const shuffledOptions = scenario.options.map((option, index) => ({
@@ -887,9 +913,6 @@ class ContentCopyQuiz extends BaseQuiz {
     }
 
     nextScenario() {
-        // Increment scenario counter
-        this.player.currentScenario++;
-        
         // Hide outcome screen and show game screen
         if (this.outcomeScreen && this.gameScreen) {
             this.outcomeScreen.classList.add('hidden');
@@ -912,11 +935,10 @@ class ContentCopyQuiz extends BaseQuiz {
         const progressFill = document.getElementById('progress-fill');
         if (questionProgress && progressFill) {
             const totalQuestions = 15;
-            const completedQuestions = this.player.questionHistory.length;
-            const currentQuestion = completedQuestions + 1;
+            const completedQuestions = Math.min(this.player.questionHistory.length, totalQuestions);
             
-            // Update question counter
-            questionProgress.textContent = `Question: ${currentQuestion}/${totalQuestions}`;
+            // Use stored question number for consistency
+            questionProgress.textContent = `Question: ${this.currentQuestionNumber || completedQuestions}/15`;
             
             // Update progress bar
             const progressPercentage = (completedQuestions / totalQuestions) * 100;
@@ -1016,37 +1038,33 @@ class ContentCopyQuiz extends BaseQuiz {
         // Generate recommendations HTML
         let recommendationsHTML = '';
 
-        if (score >= 80) {
-            recommendationsHTML += '<p>🏆 Outstanding content proofing expertise! Here are some ways to further enhance your skills:</p>';
+        if (score >= 95 && weakAreas.length === 0) {
+            recommendationsHTML = '<p>🌟 Outstanding! You have demonstrated mastery in all aspects of content copy testing. You clearly understand the nuances of content copy testing and are well-equipped to handle any content copy testing challenges!</p>';
+        } else if (score >= 80) {
+            recommendationsHTML = '<p>🌟 Excellent performance! Your content copy testing skills are very strong. To achieve complete mastery, consider focusing on:</p>';
+            recommendationsHTML += '<ul>';
+            if (weakAreas.length > 0) {
+                weakAreas.forEach(area => {
+                    recommendationsHTML += `<li>${this.getRecommendation(area)}</li>`;
+                });
+            }
+            recommendationsHTML += '</ul>';
         } else if (score >= 60) {
-            recommendationsHTML += '<p>📝 Good understanding of content proofing! Here are areas to focus on:</p>';
+            recommendationsHTML = '<p>👍 Good effort! Here are some areas to focus on:</p>';
+            recommendationsHTML += '<ul>';
+            weakAreas.forEach(area => {
+                recommendationsHTML += `<li>${this.getRecommendation(area)}</li>`;
+            });
+            recommendationsHTML += '</ul>';
         } else {
-            recommendationsHTML += '<p>🎯 Here are key content proofing areas for improvement:</p>';
+            recommendationsHTML = '<p>📚 Here are key areas for improvement:</p>';
+            recommendationsHTML += '<ul>';
+            weakAreas.forEach(area => {
+                recommendationsHTML += `<li>${this.getRecommendation(area)}</li>`;
+            });
+            recommendationsHTML += '</ul>';
         }
 
-        recommendationsHTML += '<ul>';
-
-        // Add recommendations for weak areas
-        weakAreas.forEach(area => {
-            recommendationsHTML += `<li>${this.getRecommendation(area)}</li>`;
-        });
-
-        // If there are strong areas but still room for improvement
-        if (strongAreas.length > 0 && score < 100) {
-            recommendationsHTML += '<li>Continue leveraging your strengths in: ' + 
-                strongAreas.join(', ') + '</li>';
-        }
-
-        // Add general recommendations based on score
-        if (score < 70) {
-            recommendationsHTML += `
-                <li>Review content proofing best practices and methodologies</li>
-                <li>Practice identifying content inconsistencies across different platforms</li>
-                <li>Focus on systematic content review approaches and documentation</li>
-            `;
-        }
-
-        recommendationsHTML += '</ul>';
         recommendationsContainer.innerHTML = recommendationsHTML;
     }
 
@@ -1055,41 +1073,41 @@ class ContentCopyQuiz extends BaseQuiz {
         const title = scenario.title.toLowerCase();
         const description = scenario.description.toLowerCase();
 
-        if (title.includes('objective') || description.includes('objective')) {
-            return 'Content Proofing Fundamentals';
-        } else if (title.includes('scope') || description.includes('scope')) {
-            return 'Scope Management';
-        } else if (title.includes('platform') || description.includes('platform')) {
-            return 'Platform Consistency';
-        } else if (title.includes('localisation') || description.includes('localisation')) {
-            return 'Localization Testing';
-        } else if (title.includes('documentation') || description.includes('documentation')) {
-            return 'Documentation Quality';
-        } else if (title.includes('content requirements') || description.includes('requirements')) {
-            return 'Requirements Management';
+        if (title.includes('attention') || description.includes('detail')) {
+            return 'Quality Assurance';
+        } else if (title.includes('consistency') || description.includes('consistent')) {
+            return 'Cross-platform Consistency';
+        } else if (title.includes('volume') || description.includes('volume')) {
+            return 'Issue Management';
         } else if (title.includes('image') || description.includes('image')) {
             return 'Visual Content Review';
+        } else if (title.includes('requirements') || description.includes('copy deck')) {
+            return 'Documentation Review';
+        } else if (title.includes('discrepancies') || description.includes('differs')) {
+            return 'Content Verification';
+        } else if (title.includes('prioritisation') || description.includes('prioritise')) {
+            return 'Priority Assessment';
         } else {
-            return 'General Content Proofing';
+            return 'General Content Testing';
         }
     }
 
     getRecommendation(area) {
         const recommendations = {
-            'Content Proofing Fundamentals': 'Focus on core content proofing principles: grammar, spelling, and content consistency checks.',
-            'Scope Management': 'Practice identifying what is in and out of scope for content proofing vs. functional testing.',
-            'Platform Consistency': 'Enhance cross-platform content verification skills, particularly between mobile and desktop versions.',
-            'Localization Testing': 'Develop understanding of market-specific content requirements and cultural considerations.',
-            'Documentation Quality': 'Improve documentation practices for content issues and maintain high standards in reporting.',
-            'Requirements Management': 'Strengthen ability to handle content requirement changes and their impact on testing.',
-            'Visual Content Review': 'Focus on systematic image and visual content review processes across environments.',
-            'General Content Proofing': 'Review content proofing best practices and attention to detail techniques.'
+            'Quality Assurance': 'Focus on developing systematic approaches to detail-oriented content review.',
+            'Cross-platform Consistency': 'Strengthen verification of content consistency across different platforms and devices.',
+            'Issue Management': 'Improve organization and grouping of content-related issues for efficient reporting.',
+            'Visual Content Review': 'Enhance skills in comprehensive image quality assessment across environments.',
+            'Documentation Review': 'Work on thorough comparison between requirements and implemented content.',
+            'Content Verification': 'Develop better strategies for handling content discrepancies with documentation.',
+            'Priority Assessment': 'Focus on evaluating content issues based on user impact and brand consistency.',
+            'General Content Testing': 'Continue developing fundamental content testing principles and methodologies.'
         };
 
-        return recommendations[area] || 'Continue developing your content proofing expertise through practical experience.';
+        return recommendations[area] || 'Continue practicing core content testing principles.';
     }
 
-    endGame() {
+    endGame(failed = false) {
         this.gameScreen.classList.add('hidden');
         this.outcomeScreen.classList.add('hidden');
         this.endScreen.classList.remove('hidden');
@@ -1097,13 +1115,21 @@ class ContentCopyQuiz extends BaseQuiz {
         const finalScore = Math.min(this.player.experience, this.maxXP);
         const scorePercentage = Math.round((finalScore / this.maxXP) * 100);
         
-        // Save the final quiz result
+        // Save the final quiz result with pass/fail status
         const username = localStorage.getItem('username');
         if (username) {
             try {
                 const user = new QuizUser(username);
-                user.updateQuizScore(this.quizName, scorePercentage);
-                console.log('Final quiz score saved:', scorePercentage);
+                const result = {
+                    score: scorePercentage,
+                    status: failed ? 'failed' : 'passed',
+                    experience: this.player.experience,
+                    questionHistory: this.player.questionHistory,
+                    questionsAnswered: this.player.questionHistory.length,
+                    lastActive: new Date().toISOString()
+                };
+                user.updateQuizScore(this.quizName, result);
+                console.log('Final quiz score saved:', result);
             } catch (error) {
                 console.error('Error saving final quiz score:', error);
             }
@@ -1112,8 +1138,17 @@ class ContentCopyQuiz extends BaseQuiz {
         document.getElementById('final-score').textContent = `Final Score: ${finalScore}/${this.maxXP}`;
 
         const performanceSummary = document.getElementById('performance-summary');
-        const threshold = this.performanceThresholds.find(t => finalScore >= t.threshold);
-        performanceSummary.textContent = threshold.message;
+        if (failed) {
+            performanceSummary.textContent = 'Quiz failed. You did not meet the minimum XP requirement to progress. Please reset your progress to try again.';
+            // Hide restart button if failed
+            const restartBtn = document.getElementById('restart-btn');
+            if (restartBtn) {
+                restartBtn.style.display = 'none';
+            }
+        } else {
+            const threshold = this.performanceThresholds.find(t => finalScore >= t.threshold);
+            performanceSummary.textContent = threshold.message;
+        }
 
         // Display question review
         const reviewList = document.getElementById('question-review');

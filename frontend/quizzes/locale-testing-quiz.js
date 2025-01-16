@@ -1,7 +1,8 @@
 import { APIService } from '../api-service.js';
 import { BaseQuiz } from '../quiz-helper.js';
+import { QuizUser } from '../QuizUser.js';
 
-class EmailTestingQuiz extends BaseQuiz {
+export class LocaleTestingQuiz extends BaseQuiz {
     constructor() {
         const config = {
             maxXP: 300,
@@ -11,10 +12,10 @@ class EmailTestingQuiz extends BaseQuiz {
                 advanced: { questions: 15, minXP: 300 }
             },
             performanceThresholds: [
-                { threshold: 250, message: '🏆 Outstanding! You\'re a email testing expert!' },
-                { threshold: 200, message: '👏 Great job! You\'ve shown strong email testing skills!' },
+                { threshold: 250, message: '🏆 Outstanding! You\'re a locale testing expert!' },
+                { threshold: 200, message: '👏 Great job! You\'ve shown strong locale testing skills!' },
                 { threshold: 150, message: '👍 Good work! Keep practicing to improve further.' },
-                { threshold: 0, message: '📚 Consider reviewing email testing best practices and try again!' }
+                { threshold: 0, message: '📚 Consider reviewing locale testing best practices and try again!' }
             ]
         };
         
@@ -22,14 +23,14 @@ class EmailTestingQuiz extends BaseQuiz {
         
         // Set the quiz name
         Object.defineProperty(this, 'quizName', {
-            value: 'email-testing',
+            value: 'locale-testing',
             writable: false,
             configurable: false,
             enumerable: true
         });
         
-         // Initialize player state
-         this.player = {
+        // Initialize player state
+        this.player = {
             name: '',
             experience: 0,
             tools: [],
@@ -64,60 +65,61 @@ class EmailTestingQuiz extends BaseQuiz {
             return;
         }
 
-        // Basic Scenarios (IDs 1-5, 75 XP total)
+        // Basic Scenarios (IDs 1-5)
         this.basicScenarios = [
             {
                 id: 1,
                 level: 'Basic',
-                title: 'Primary Objective',
-                description: "What is the primary purpose of email testing?",
+                title: 'Primary objective',
+                description: 'What is the primary purpose of locale testing?',
                 options: [
                     {
-                        text: 'To analyze and optimize email marketing metrics including open rates, click-through rates, and conversion tracking across different segments',
-                        outcome: "This relates to marketing analytics, not functional testing",
-                        experience: -10
-                    },
-                    {
-                        text: "Verify email functionality and appearance",
-                        outcome: 'This is the core purpose of email testing.',
+                        text: 'This is the fundamental purpose of locale testing, encompassing language, rendering, and market-specific adaptations',
+                        outcome: 'This describes exploratory testing',
                         experience: 15
                     },
                     {
-                        text: "To implement comprehensive spam prevention strategies and ensure deliverability across various email service providers",
-                        outcome: "While spam prevention is important, it's not the primary testing focus.",
+                        text: 'To test the website\'s performance in different countries',
+                        outcome: 'While location may play a role, performance testing is a separate testing discipline.',
+                        experience: -5
+                    },
+                    {
+                        text: 'To verify translations are grammatically correct',
+                        outcome: 'While translation verification is part of locale testing, it\'s only one aspect of the broader scope.',
                         experience: 5
                     },
                     {
-                        text: "To test subject line effectiveness",
-                        outcome: "The subject line is just one component of email testing.",
-                        experience: -5
+                        text: 'To ensure the website loads quickly in different regions',
+                        outcome: 'Website loading speed is part of performance testing, not locale testing.',
+                        experience: -10
                     }
                 ]
             },
+
             {
                 id: 2,
                 level: 'Basic',
-                title: 'Email Clients',
-                description: 'Which email clients are typically included in testing scope?',
+                title: 'Documentation',
+                description: 'What type of documentation might clients provide for locale testing?',
                 options: [
                     {
-                        text: 'Conduct thorough testing exclusively on market-leading platforms like Gmail and Outlook to ensure maximum coverage',
-                        outcome: 'While these are important clients, the scope should be broader.',
-                        experience: 5
-                    },
-                    {
-                        text: 'Major email clients per requirements',
-                        outcome: 'Testing should focus on the main clients specified by the client.',
-                        experience: 15
-                    },
-                    {
-                        text: 'Every available email client to ensure complete compatibility across all possible platforms and versions',
-                        outcome: 'Testing all email clients would be impractical.',
+                        text: 'Server logs',
+                        outcome: 'Server logs are not typically used for locale testing.',
                         experience: -5
                     },
                     {
-                        text: 'Mobile clients only',
-                        outcome: 'Testing should not be limited to mobile clients.',
+                        text: 'Copy deck or translations matrix',
+                        outcome: 'These are the primary reference documents provided by clients for verifying correct translations and content.',
+                        experience: 15
+                    },
+                    {
+                        text: 'Design specifications',
+                        outcome: 'While design specs might be provided, they\'re secondary to translation documents.',
+                        experience: 5
+                    },
+                    {
+                        text: 'Network traffic data',
+                        outcome: 'Network data is not relevant for locale testing.',
                         experience: -10
                     }
                 ]
@@ -125,261 +127,251 @@ class EmailTestingQuiz extends BaseQuiz {
             {
                 id: 3,
                 level: 'Basic',
-                title: 'UTM Understanding',
-                description: 'What does UTM stand for in email testing?',
+                title: 'Characteristics of locale testing',
+                description: 'Which of the following is a key characteristic of locale testing?',
                 options: [
                     {
-                        text: 'A comprehensive tracking system designed for universal application across multiple marketing channels',
-                        outcome: 'While it is a tracking system, this is not what UTM stands for',
-                        experience: 5
-                    },
-                    {
-                        text: 'Unified Tracking Method',
-                        outcome: 'This is a made-up term.',
-                        experience: -10
-                    },
-                    {
-                        text: 'Urchin Tracking Module',
-                        outcome: 'This is a made-up term.',
+                        text: 'Requires programming knowledge',
+                        outcome: 'Programming knowledge is not a primary requirement for locale testing',
                         experience: -5
                     },
                     {
-                        text: 'Urchin Tracking Module',
-                        outcome: 'This is the correct definition',
+                        text: 'Requires keen eye for detail to spot minuscule variances',
+                        outcome: 'Attention to detail is important, especially for diacritics and subtle differences.',
                         experience: 15
+                    },
+                    {
+                        text: 'Requires fluency in all tested languages',
+                        outcome: 'While language knowledge is helpful, testers can work with translation matrices.',
+                        experience: 5
+                    },
+                    {
+                        text: 'Requires network engineering expertise',
+                        outcome: 'Network engineering is not related to locale testing',
+                        experience: -10
                     }
                 ]
             },
             {
                 id: 4,
                 level: 'Basic',
-                title: 'Dark Mode',
-                description: 'When should you check dark mode rendering?',
+                title: 'Locale currency testing',
+                description: 'When conducting locale testing, what should testers check regarding currencies?',
                 options: [
                     {
-                        text: 'Only on mobile devices',
-                        outcome: 'Testing only mobile would miss desktop issues.',
-                        experience: -10
+                        text: 'Currency symbol placement',
+                        outcome: 'While this is part of currency localization, it\'s just one aspect of currency-related checks.',
+                        experience: 5
                     },
                     {
-                        text: 'Only on desktop clients',
-                        outcome: 'Testing only desktop would miss mobile issues.',
+                        text: 'Exchange rates between currencies',
+                        outcome: 'Exchange rate verification is not part of locale testing.',
                         experience: -5
                     },
                     {
-                        text: 'Across all supported email clients and devices',
-                        outcome: 'Dark mode should be tested across all supported platforms',
+                        text: 'Currency updates based on selected market/locale',
+                        outcome: 'Verifying that currencies update appropriately for each market is part of locale testing',
                         experience: 15
                     },
                     {
-                        text: 'Only when specifically requested',
-                        outcome: 'While client requests matter, dark mode testing is standard',
-                        experience: 5
+                        text: 'Currency conversion calculations',
+                        outcome: 'Mathematical currency conversions are not part of locale testing',
+                        experience: -10
                     }
                 ]
             },
             {
                 id: 5,
                 level: 'Basic',
-                title: 'Email Testing Process',
-                description: 'What is the first step in email testing?',
+                title: 'Locale test scripts',
+                description: 'What is a recommended practice for organizing locale test scripts?',
                 options: [
                     {
-                        text: 'Check all links in the email',
-                        outcome: 'Link checking comes later in the process.',
+                        text: 'Test random sections across locales',
+                        outcome: 'This unstructured approach would not ensure comprehensive coverage.',
                         experience: -5
                     },
                     {
-                        text: 'Familiarise yourself with project documentation',
-                        outcome: 'This should be the first step in the testing process.',
-                        experience: 15
-                    },
-                    {
-                        text: 'Set up test environments',
-                        outcome: 'While important, this comes after reviewing documentation',
+                        text: 'Create separate scripts for each feature',
+                        outcome: 'While organization is important, the document recommends organizing by locale first.',
                         experience: 5
                     },
                     {
-                        text: 'Create test accounts',
-                        outcome: 'This would not come before reviewing documentation',
+                        text: 'Combine all locales into one test case',
+                        outcome: 'This would make testing confusing and difficult to track',
                         experience: -10
+                    },
+                    {
+                        text: 'Separate each page/section by locale',
+                        outcome: 'This is the recommended this organization method',
+                        experience: 15
                     }
                 ]
             },
-        ];
-
-
-        // Intermediate Scenarios (IDs 6-10, 125 XP total)
-        this.intermediateScenarios = [
             {
                 id: 6,
                 level: 'Intermediate',
-                title: 'Bug Reporting',
-                description: 'What should you do when you discover a bug in one environment?',
+                title: 'Locale testing risk',
+                description: 'What potential risk is associated with locale testing when the tester isn\'t bilingual?',
                 options: [
                     {
-                        text: 'Immediately report it',
-                        outcome: 'While reporting is important, checking other environments first is more efficient.',
-                        experience: 5
+                        text: 'Unable to complete any testing',
+                        outcome: 'Non-bilingual testers can still perform many aspects of locale testing.',
+                        experience: -5
                     },
                     {
-                        text: 'Check if the issue exists across other environments before reporting',
-                        outcome: 'Other environments must be checked to determine if the issue is global.',
-                        experience: 20
-                    },
-                    {
-                        text: 'Only report it if it affects functionality',
-                        outcome: 'All issues should be reported regardless of type',
+                        text: 'Must outsource all testing',
+                        outcome: 'Outsourcing is not necessary for locale testing.',
                         experience: -10
                     },
                     {
-                        text: 'Wait for client confirmation',
-                        outcome: 'Client confirmation isn\'t needed to report bugs',
-                        experience: -5
+                        text: 'Can verify basic language presence',
+                        outcome: 'While they can verify language presence, they may miss nuanced translation errors',
+                        experience: 5
+                    },
+                    {
+                        text: 'Certain incorrect translations may be missed even if in the correct language',
+                        outcome: 'This is known risk as a tester may not know all languages under test',
+                        experience: 15
                     }
                 ]
             },
             {
                 id: 7,
                 level: 'Intermediate',
-                title: 'Test Script Reporting',
-                description: 'How should test results be marked in the test script?',
+                title: 'Right to Left languages',
+                description: 'How should right-to-left (RTL) language testing be approached?',
                 options: [
                     {
-                        text: 'Only pass or fail',
-                        outcome: 'While pass/fail is included, more detailed options should be available and stated.',
-                        experience: 5
+                        text: 'Verify correct text rendering and layout adaptation',
+                        outcome: 'Checking rendering and layout for RTL languages is considered part of locale testing.',
+                        experience: 15
                     },
                     {
-                        text: 'Using the Result Key options',
-                        outcome: 'This is the recommended way of reporting issues.',
-                        experience: 20
-                    },
-                    {
-                        text: 'With detailed written descriptions',
-                        outcome: 'Written descriptions supplement but don\'t replace the Result Key',
+                        text: 'Only test text direction',
+                        outcome: 'RTL testing involves more than just text direction.',
                         experience: -5
                     },
                     {
-                        text: 'Only marking critical issues',
-                        outcome: 'All issues should be marked, not just critical ones',
+                        text: 'Check text alignment only',
+                        outcome: 'While alignment is important, RTL testing requires comprehensive layout verification',
+                        experience: -5
+                    },
+                    {
+                        text: 'Ignore formatting elements',
+                        outcome: 'Formatting elements are crucial for RTL testing',
                         experience: -10
                     }
                 ]
             },
-            {   
+            {
                 id: 8,
                 level: 'Intermediate',
-                title: 'Reviewing images',
-                description: 'What should be checked regarding email images?',
+                title: 'Issue identification',
+                description: 'What is the recommended approach for handling issue identification across multiple locales?',
                 options: [
                     {
-                        text: 'Just image quality and resolution',
-                        outcome: 'While quality is important, other aspects must also be checked',
-                        experience: 5
+                        text: 'Create separate bug trackers for each locale',
+                        outcome: 'This would complicate issue management unnecessarily',
+                        experience: -5
                     },
                     {
-                        text: 'Image placement, alignment, quality, label, and display in both light/dark modes',
-                        outcome: 'These are all necessary checks for images.',
-                        experience: 20
+                        text: 'Preface tickets with locale identifier (e.g., [FR], [ES])',
+                        outcome: 'This is the correct approach for ease of identification.',
+                        experience: 15
                     },
                     {
-                        text: 'Only whether images load properly',
-                        outcome: 'Loading is just one aspect of image testing',
+                        text: 'Report issues without locale references',
+                        outcome: 'This would make it difficult to track locale-specific issues',
                         experience: -10
                     },
                     {
-                        text: 'Just image size and format',
-                        outcome: 'Size and format are just basic aspects',
-                        experience: -5
+                        text: 'Group similar issues across locales',
+                        outcome: 'While grouping can be useful, clear locale identification is primary.',
+                        experience: 5
                     }
                 ]
             },
             {
                 id: 9,
                 level: 'Intermediate',
-                title: 'How should company details be verified in emails?',
-                description: 'Check against Wikipedia',
+                title: 'Validation messages',
+                description: 'What should testers verify regarding form validation messages?',
                 options: [
                     {
-                        text: 'Check against Wikipedia',
-                        outcome: 'Wikipedia isn\'t a reliable source for verification.',
-                        experience: -15
+                        text: 'Messages are translated and display correctly in each locale',
+                        outcome: 'This is a critical element for locale testing.',
+                        experience: 15
                     },
                     {
-                        text: 'Verify against the company website',
-                        outcome: 'While the website can help, target market specificity is key.',
+                        text: 'Only check if messages appear',
+                        outcome: 'Merely checking presence is insufficient.',
+                        experience: -5
+                    },
+                    {
+                        text: 'Verify message positioning',
+                        outcome: 'While positioning is important, translation and correct display are primary',
                         experience: 5
                     },
                     {
-                        text: 'Match details to the target market (e.g., UK address for UK market)',
-                        outcome: 'Details should be checked against target market',
-                        experience: 20
-                    },
-                    {
-                        text: 'Use generic company information',
-                        outcome: 'Generic information may not be accurate',
-                        experience: -5
+                        text: 'Skip validation message testing',
+                        outcome: 'Validation messages are an essential part of locale testing.',
+                        experience: -10
                     }
                 ]
             },
             {
                 id: 10,
                 level: 'Intermediate',
-                title: 'Project Metrics',
-                description: 'What should be included in the project metrics after testing?',
+                title: 'Time management',
+                description: 'How should testers manage time when testing multiple locales?',
                 options: [
                     {
-                        text: 'Only number of bugs',
-                        outcome: 'Bug count alone is insufficient.',
-                        experience: -5
+                        text: 'Focus only on primary locale',
+                        outcome: 'All scoped locales need appropriate coverage.',
+                        experience: -10
                     },
                     {
-                        text: 'Session totals, ticket resolution totals, and project burndown',
-                        outcome: 'All these metrics should be included unless otherwise specified.',
-                        experience: 20
-                    },
-                    {
-                        text: 'Just test completion percentage',
-                        outcome: 'While completion is tracked, more metrics are needed',
+                        text: 'Test one locale completely before moving to others',
+                        outcome: 'While thorough, this might not be the most efficient approach.',
                         experience: 5
                     },
                     {
-                        text: 'Only critical issues',
-                        outcome: 'All issues, not just critical ones, should be tracked',
-                        experience: -10
+                        text: 'Random testing of locales',
+                        outcome: 'Unstructured testing would not ensure proper coverage',
+                        experience: -5
+                    },
+                    {
+                        text: 'Balance testing across locales while maintaining thoroughness',
+                        outcome: 'The document emphasizes the importance of time management across locales',
+                        experience: 15
                     }
                 ]
             },
-        ];
-
-
-        // Advanced Scenarios (IDs 11-15, 100 XP total)
-        this.advancedScenarios = [
             {
                 id: 11,
                 level: 'Advanced',
-                title: 'Resource calculator',
-                description: 'How should the resource calculator be used in email testing?',
+                title: 'Language remenants',
+                description: 'What approach should be taken when testing for language remnants?',
                 options: [
                     {
-                        text: 'Only for estimating total project time',
-                        outcome: 'While it helps with timing, it\'s more comprehensive.',
+                        text: 'Check main navigation and headers only',
+                        outcome: 'While important, this is not comprehensive enough.',
                         experience: 5
                     },
                     {
-                        text: 'To calculate exact testing hours needed',
-                        outcome: 'It provides guidance rather than exact calculations.',
+                        text: 'Check all UI elements, including hidden states and validation messages',
+                        outcome: 'The document emphasizes comprehensive checking across all UI elements',
+                        experience: 15
+                    },
+                    {
+                        text: 'Only check visible text on main pages',
+                        outcome: 'This would miss many potential issues',
                         experience: -5
                     },
                     {
-                        text: 'For guided timeframe planning with adjustable fields for setup, copy check, link check, rendering check, and reporting',
-                        outcome: 'Correct as this is used for multiple adjustable testing activities',
-                        experience: 25
-                    },
-                    {
-                        text: 'Only for billing purposes',
-                        outcome: "It's used for planning, not billing",
+                        text: 'Rely on automated translation detection',
+                        outcome: 'Manual verification is necessary for thorough testing',
                         experience: -10
                     }
                 ]
@@ -387,55 +379,55 @@ class EmailTestingQuiz extends BaseQuiz {
             {
                 id: 12,
                 level: 'Advanced',
-                title: 'Unsubscribe links',
-                description: 'What is the correct approach when handling unsubscribe links during testing?',
+                title: 'Diacritic elements',
+                description: 'How should testers handle diacritic elements during testing?',
                 options: [
                     {
-                        text: 'Report all non-functioning unsubscribe links as critical bugs',
-                        outcome: 'These may not necessarily be bugs in the test environment.',
-                        experience: -5
-                    },
-                    {
-                        text: 'Ignore all unsubscribe link issues',
-                        outcome: 'Issues should still be documented appropriately.',
+                        text: 'Ignore diacritical marks',
+                        outcome: 'This would miss crucial linguistic elements.',
                         experience: -10
                     },
                     {
-                        text: 'Understand that unsubscribe links may error due to test distribution differences from live',
-                        outcome: 'This is potentially expected behaviour in test environment as live environment may yet not be set up of which details should be provided by the client',
-                        experience: 25
+                        text: 'Only check for presence of diacritics',
+                        outcome: 'Presence alone doesn\'t ensure correct usage or rendering.',
+                        experience: 5
                     },
                     {
-                        text: 'Test unsubscribe functionality in production',
-                        outcome: 'While production testing may work, it\'s not the recommended approach',
-                        experience: 5
+                        text: 'Verify correct rendering and meaning preservation',
+                        outcome: 'Diacritics must be checked for the importance of meaning',
+                        experience: 15
+                    },
+                    {
+                        text: 'Remove diacritics for testing',
+                        outcome: 'This would fundamentally alter the language',
+                        experience: -5
                     }
                 ]
             },
             {
                 id: 13,
                 level: 'Advanced',
-                title: 'Text wrap evaluation',
-                description: 'How should text wrapping issues be evaluated?',
+                title: 'Locale specific formatting',
+                description: 'What strategy should be employed when testing locale-specific formatting?',
                 options: [
                     {
-                        text: 'Only check on mobile devices',
-                        outcome: 'While mobile is important, all devices need checking specified by the client.',
-                        experience: 5
+                        text: 'Verify date, time, address, and phone number formats for each locale',
+                        outcome: 'These are all specific elements requiring verification',
+                        experience: 15
                     },
                     {
-                        text: 'Compare against design specifications for consistent text flow across all devices',
-                        outcome: 'Checking consistency with design across all platforms is recommended.',
-                        experience: 25
-                    },
-                    {
-                        text: 'Only check headlines',
-                        outcome: 'All text needs checking, not just headlines',
+                        text: 'Use standard formats across all locales',
+                        outcome: 'This defeats the purpose of localization.',
                         experience: -10
                     },
                     {
-                        text: 'Ignore minor wrapping differences',
-                        outcome: 'All wrapping issues should be noted',
+                        text: 'Check only date formats',
+                        outcome: 'While important, this is only one aspect of formatting',
+                        experience: 5
+                    },
+                    {
+                        text: 'Ignore format variations',
+                        outcome: 'Format verification is crucial for locale testing',
                         experience: -5
                     }
                 ]
@@ -443,61 +435,60 @@ class EmailTestingQuiz extends BaseQuiz {
             {
                 id: 14,
                 level: 'Advanced',
-                title: 'Results tables within scripts',
-                description: 'When updating the Overall Results table, what must be considered?',
+                title: 'Text expansions',
+                description: 'How should testers handle text expansion/contraction across different languages?',
                 options: [
                     {
-                        text: 'Only failed tests',
-                        outcome: 'While failures are important, all results must be included.',
-                        experience: 5
-                    },
-                    {
-                        text: 'Just critical issues',
-                        outcome: 'All issues, not just critical ones, must be included.',
-                        experience: -10
-                    },
-                    {
-                        text: 'Only passed tests',
-                        outcome: 'Both passes and failures must be included',
+                        text: 'Only test with maximum length text',
+                        outcome: 'This wouldn\'t catch all potential issues.',
                         experience: -5
                     },
                     {
-                        text: 'The entire range of tests including any newly added environments',
-                        outcome: 'All test ranges should be updated including updating formulas to include any new environments',
-                        experience: 25
+                        text: 'Ignore text length variations',
+                        outcome: 'Text length variations can cause significant issues.',
+                        experience: -10
+                    },
+                    {
+                        text: 'Check visible elements for truncation',
+                        outcome: 'While important, hidden states and dynamic content also need checking',
+                        experience: 5
+                    },
+                    {
+                        text: 'Verify layout integrity and check for truncation across all elements',
+                        outcome: 'The document emphasizes checking for truncation and layout issues',
+                        experience: 15
                     }
                 ]
             },
             {
                 id: 15,
                 level: 'Advanced',
-                title: 'Light & Dark mode testing priority',
-                description: 'How should light/dark mode testing be coordinated across devices?',
+                title: 'Language selectors',
+                description: 'What approach should be taken when testing language toggles/selectors?',
                 options: [
                     {
-                        text: 'Test only system-level changes',
-                        outcome: 'Client-specific settings must also be tested.',
-                        experience: -10
-                    },
-                    {
-                        text: 'Check each email client independently',
-                        outcome: 'While individual testing is needed, system settings must be considered.',
+                        text: 'Check immediate visual changes',
+                        outcome: 'While important, this doesn\'t cover all necessary aspects.',
                         experience: 5
                     },
                     {
-                        text: 'Coordinate system settings and individual app preferences, understanding that some clients follow system settings while others need manual configuration',
-                        outcome: 'The relationship between system and app-specific settings should be tested',
-                        experience: 25
+                        text: 'Only test switching between languages',
+                        outcome: 'This misses many important aspects of language switching.',
+                        experience: -5
                     },
                     {
-                        text: 'Use only default settings',
-                        outcome: 'Testing default settings alone is insufficient',
-                        experience: -5
+                        text: 'Assume all content updates correctly',
+                        outcome: 'This would miss potential issues in content loading and updates',
+                        experience: -10
+                    },
+                    {
+                        text: 'Verify content updates, loading behaviour, and state preservation',
+                        outcome: 'It is important to check all these aspects of language switching',
+                        experience: 15
                     }
                 ]
             },
         ];
-
 
         // Initialize UI and add event listeners
         this.initializeEventListeners();
@@ -1042,9 +1033,9 @@ class EmailTestingQuiz extends BaseQuiz {
         let recommendationsHTML = '';
 
         if (score >= 95 && weakAreas.length === 0) {
-            recommendationsHTML = '<p>🌟 Outstanding! You have demonstrated mastery in all aspects of email testing. You clearly understand the nuances of email testing and are well-equipped to handle any email testing challenges!</p>';
+            recommendationsHTML = '<p>🌟 Outstanding! You have demonstrated mastery in all aspects of locale testing. You clearly understand the nuances of locale testing and are well-equipped to handle any locale testing challenges!</p>';
         } else if (score >= 80) {
-            recommendationsHTML = '<p>🌟 Excellent performance! Your email testing skills are very strong. To achieve complete mastery, consider focusing on:</p>';
+            recommendationsHTML = '<p>🌟 Excellent performance! Your locale testing skills are very strong. To achieve complete mastery, consider focusing on:</p>';
             recommendationsHTML += '<ul>';
             if (weakAreas.length > 0) {
                 weakAreas.forEach(area => {
@@ -1076,38 +1067,41 @@ class EmailTestingQuiz extends BaseQuiz {
         const title = scenario.title.toLowerCase();
         const description = scenario.description.toLowerCase();
 
-        if (title.includes('dark mode') || description.includes('dark mode')) {
-            return 'Dark Mode Testing';
-        } else if (title.includes('utm') || description.includes('utm')) {
-            return 'Tracking Implementation';
-        } else if (title.includes('bug') || description.includes('bug')) {
-            return 'Bug Management';
-        } else if (title.includes('process') || description.includes('process')) {
-            return 'Testing Process';
-        } else if (title.includes('results') || description.includes('results')) {
-            return 'Results Documentation';
-        } else if (title.includes('environment') || description.includes('environment')) {
-            return 'Environment Testing';
-        } else if (title.includes('light') || description.includes('device')) {
-            return 'Cross-platform Testing';
+        if (title.includes('rtl') || description.includes('right-to-left')) {
+            return 'RTL Support';
+        } else if (title.includes('validation') || description.includes('validation')) {
+            return 'Form Validation';
+        } else if (title.includes('format') || description.includes('format')) {
+            return 'Locale Formatting';
+        } else if (title.includes('remnant') || description.includes('remnant')) {
+            return 'Language Remnants';
+        } else if (title.includes('diacritic') || description.includes('diacritic')) {
+            return 'Diacritic Handling';
+        } else if (title.includes('expansion') || description.includes('expansion')) {
+            return 'Text Expansion';
+        } else if (title.includes('selector') || description.includes('toggle')) {
+            return 'Language Selection';
+        } else if (title.includes('time') || description.includes('time')) {
+            return 'Time Management';
         } else {
-            return 'General Email Testing';
+            return 'General Locale Testing';
         }
     }
 
     getRecommendation(area) {
         const recommendations = {
-            'Dark Mode Testing': 'Focus on comprehensive dark mode testing across different email clients and system settings.',
-            'Tracking Implementation': 'Improve understanding of UTM parameters and tracking mechanisms in email campaigns.',
-            'Bug Management': 'Enhance cross-environment verification and documentation of email-related issues.',
-            'Testing Process': 'Strengthen systematic approach to email testing, starting with documentation review.',
-            'Results Documentation': 'Work on maintaining comprehensive test results including all environments and scenarios.',
-            'Environment Testing': 'Develop thorough testing strategies across different email clients and configurations.',
-            'Cross-platform Testing': 'Focus on coordinated testing across devices, system settings, and client preferences.',
-            'General Email Testing': 'Continue developing fundamental email testing principles and methodologies.'
+            'RTL Support': 'Focus on comprehensive testing of right-to-left language layout and functionality.',
+            'Form Validation': 'Strengthen verification of localized validation messages and error handling.',
+            'Locale Formatting': 'Improve testing of date, time, currency, and number formatting across locales.',
+            'Language Remnants': 'Enhance detection of untranslated content and mixed language occurrences.',
+            'Diacritic Handling': 'Focus on proper rendering and functionality with diacritical marks.',
+            'Text Expansion': 'Develop better strategies for handling text length variations across languages.',
+            'Language Selection': 'Strengthen testing of language switching and content preservation.',
+            'Time Management': 'Improve efficiency in testing multiple locales while maintaining thoroughness.',
+            'General Locale Testing': 'Continue developing fundamental locale testing principles and methodologies.'
         };
 
-        return recommendations[area] || 'Continue practicing core email testing principles.';
+        return recommendations[area] || 'Continue practicing core locale testing principles.';
     }
 
     endGame(failed = false) {
@@ -1182,8 +1176,8 @@ class EmailTestingQuiz extends BaseQuiz {
     }
 }
 
-// Initialize quiz when the page loads
+// Start the quiz when the page loads
 document.addEventListener('DOMContentLoaded', () => {
-    const quiz = new EmailTestingQuiz();
+    const quiz = new LocaleTestingQuiz();
     quiz.startGame();
 }); 

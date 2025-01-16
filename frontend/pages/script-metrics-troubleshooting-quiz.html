@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Content Copy Quiz</title>
+    <title>Communication Skills Quiz</title>
     <link rel="icon" type="image/x-icon" href="../assets/favicon.ico">
     <link rel="stylesheet" href="../styles.css">
     <script type="module" src="../config.js"></script>
@@ -16,7 +16,7 @@
         import { handleLogout } from '../auth.js';
         window.handleLogout = handleLogout;
     </script>
-    <script type="module" src="../quizzes/content-copy-quiz.js"></script>
+    <script type="module" src="../quizzes/script-metrics-troubleshooting-quiz.js"></script>
 </head>
 <body>
     <header class="app-header">
@@ -43,7 +43,7 @@
                 <div class="progress-bar">
                     <div id="progress-fill"></div>
                 </div>
-                <div id="question-progress" class="question-counter">Question: 1/15</div>
+                <div id="question-progress" class="question-counter">Question: 0/15</div>
             </div>
         </div>
 
@@ -91,9 +91,6 @@
                 <h3>Recommendations</h3>
                 <div id="recommendations"></div>
             </div>
-            
-            <button id="restart-btn" class="submit-button">Try Again</button>
-            <a href="../index.html" class="back-link">← Back to Hub</a>
         </div>
 
         <div id="loading-indicator" class="loading-indicator hidden">

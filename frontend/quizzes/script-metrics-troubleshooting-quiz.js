@@ -1,7 +1,8 @@
 import { APIService } from '../api-service.js';
 import { BaseQuiz } from '../quiz-helper.js';
+import { QuizUser } from '../QuizUser.js';
 
-class EmailTestingQuiz extends BaseQuiz {
+export class ScriptMetricsTroubleshootingQuiz extends BaseQuiz {
     constructor() {
         const config = {
             maxXP: 300,
@@ -11,10 +12,10 @@ class EmailTestingQuiz extends BaseQuiz {
                 advanced: { questions: 15, minXP: 300 }
             },
             performanceThresholds: [
-                { threshold: 250, message: '🏆 Outstanding! You\'re a email testing expert!' },
-                { threshold: 200, message: '👏 Great job! You\'ve shown strong email testing skills!' },
+                { threshold: 250, message: '🏆 Outstanding! You\'re a script metrics troubleshooting expert!' },
+                { threshold: 200, message: '👏 Great job! You\'ve shown strong script metrics troubleshooting skills!' },
                 { threshold: 150, message: '👍 Good work! Keep practicing to improve further.' },
-                { threshold: 0, message: '📚 Consider reviewing email testing best practices and try again!' }
+                { threshold: 0, message: '📚 Consider reviewing script metrics troubleshooting best practices and try again!' }
             ]
         };
         
@@ -22,14 +23,14 @@ class EmailTestingQuiz extends BaseQuiz {
         
         // Set the quiz name
         Object.defineProperty(this, 'quizName', {
-            value: 'email-testing',
+            value: 'script-metrics-troubleshooting',
             writable: false,
             configurable: false,
             enumerable: true
         });
         
-         // Initialize player state
-         this.player = {
+        // Initialize player state
+        this.player = {
             name: '',
             experience: 0,
             tools: [],
@@ -64,116 +65,116 @@ class EmailTestingQuiz extends BaseQuiz {
             return;
         }
 
-        // Basic Scenarios (IDs 1-5, 75 XP total)
+        // Basic Scenarios (IDs 1-5)
         this.basicScenarios = [
             {
                 id: 1,
                 level: 'Basic',
-                title: 'Primary Objective',
-                description: "What is the primary purpose of email testing?",
+                title: 'Primary objective',
+                description: 'What is the primary purpose of script metrics?',
                 options: [
                     {
-                        text: 'To analyze and optimize email marketing metrics including open rates, click-through rates, and conversion tracking across different segments',
-                        outcome: "This relates to marketing analytics, not functional testing",
-                        experience: -10
+                        text: 'To create visual presentations for clients only',
+                        outcome: 'While metrics may be shared with clients, this is not their primary purpose',
+                        experience: -5
                     },
                     {
-                        text: "Verify email functionality and appearance",
-                        outcome: 'This is the core purpose of email testing.',
+                        text: 'To gauge project progress and inform report writing',
+                        outcome: 'Correct - Metrics are used to track progress and help with daily reporting',
                         experience: 15
                     },
                     {
-                        text: "To implement comprehensive spam prevention strategies and ensure deliverability across various email service providers",
-                        outcome: "While spam prevention is important, it's not the primary testing focus.",
-                        experience: 5
+                        text: 'To track employee performance',
+                        outcome: 'Metrics are about project progress, not individual performance',
+                        experience: -10
                     },
                     {
-                        text: "To test subject line effectiveness",
-                        outcome: "The subject line is just one component of email testing.",
-                        experience: -5
+                        text: 'To gauge project progress only',
+                        outcome: 'This is true but incomplete as it misses the reporting aspect.',
+                        experience: 5
                     }
                 ]
             },
             {
                 id: 2,
                 level: 'Basic',
-                title: 'Email Clients',
-                description: 'Which email clients are typically included in testing scope?',
+                title: 'Environment Tables',
+                description: 'Where should you add new rows to environment tables?',
                 options: [
                     {
-                        text: 'Conduct thorough testing exclusively on market-leading platforms like Gmail and Outlook to ensure maximum coverage',
-                        outcome: 'While these are important clients, the scope should be broader.',
-                        experience: 5
-                    },
-                    {
-                        text: 'Major email clients per requirements',
-                        outcome: 'Testing should focus on the main clients specified by the client.',
-                        experience: 15
-                    },
-                    {
-                        text: 'Every available email client to ensure complete compatibility across all possible platforms and versions',
-                        outcome: 'Testing all email clients would be impractical.',
+                        text: 'At the very bottom of the table',
+                        outcome: 'Adding rows at the bottom can break formulas.',
                         experience: -5
                     },
                     {
-                        text: 'Mobile clients only',
-                        outcome: 'Testing should not be limited to mobile clients.',
+                        text: 'Within the existing table, above the final row',
+                        outcome: 'Correct - This ensures formulas remain intact and metrics update properly.',
+                        experience: 15
+                    },
+                    {
+                        text: 'In a new separate table',
+                        outcome: 'This would not maintain connection with existing metrics.',
                         experience: -10
+                    },
+                    {
+                        text: 'Above the table header',
+                        outcome: 'While this keeps data within the table, it\'s not the optimal location.',
+                        experience: 5
                     }
                 ]
             },
             {
                 id: 3,
                 level: 'Basic',
-                title: 'UTM Understanding',
-                description: 'What does UTM stand for in email testing?',
+                title: 'Metrics Pie Chart Labels',
+                description: 'What causes missing pie chart labels in the Metrics tab?',
                 options: [
                     {
-                        text: 'A comprehensive tracking system designed for universal application across multiple marketing channels',
-                        outcome: 'While it is a tracking system, this is not what UTM stands for',
-                        experience: 5
-                    },
-                    {
-                        text: 'Unified Tracking Method',
-                        outcome: 'This is a made-up term.',
+                        text: 'Software bugs only',
+                        outcome: 'Missing labels are usually due to chart size or data arrangement',
                         experience: -10
                     },
                     {
-                        text: 'Urchin Tracking Module',
-                        outcome: 'This is a made-up term.',
+                        text: 'Corrupted data',
+                        outcome: 'This is not typically the cause of missing labels.',
                         experience: -5
                     },
                     {
-                        text: 'Urchin Tracking Module',
-                        outcome: 'This is the correct definition',
+                        text: 'Chart size and data arrangement',
+                        outcome: 'Correct - Labels may be missing due to chart size or how data is arranged in the table.',
                         experience: 15
+                    },
+                    {
+                        text: 'Chart size only',
+                        outcome: 'While chart size is a factor, data arrangement also matters',
+                        experience: 5
                     }
                 ]
             },
             {
                 id: 4,
                 level: 'Basic',
-                title: 'Dark Mode',
-                description: 'When should you check dark mode rendering?',
+                title: 'Environment Rows',
+                description: 'How should you handle empty environment rows?',
                 options: [
                     {
-                        text: 'Only on mobile devices',
-                        outcome: 'Testing only mobile would miss desktop issues.',
+                        text: 'Delete them completely',
+                        outcome: 'Deleting rows can break formulas.',
                         experience: -10
                     },
                     {
-                        text: 'Only on desktop clients',
-                        outcome: 'Testing only desktop would miss mobile issues.',
-                        experience: -5
-                    },
-                    {
-                        text: 'Across all supported email clients and devices',
-                        outcome: 'Dark mode should be tested across all supported platforms',
+                        text: 'Copy formulas from existing rows and update environment details',
+                        outcome: 'Correct - This maintains formula integrity while allowing new environment details.',
                         experience: 15
                     },
                     {
-                        text: 'Only when specifically requested',
-                        outcome: 'While client requests matter, dark mode testing is standard',
+                        text: 'Hide them',
+                        outcome: 'Hiding rows doesn\'t properly address the issue',
+                        experience: -5
+                    },
+                    {
+                        text: 'Keep original formulas but clear content',
+                        outcome: 'While maintaining formulas is good, they need to be properly copied',
                         experience: 5
                     }
                 ]
@@ -181,205 +182,195 @@ class EmailTestingQuiz extends BaseQuiz {
             {
                 id: 5,
                 level: 'Basic',
-                title: 'Email Testing Process',
-                description: 'What is the first step in email testing?',
+                title: '#REF! Errors',
+                description: 'What causes #REF! errors in the Session Totals table?',
                 options: [
                     {
-                        text: 'Check all links in the email',
-                        outcome: 'Link checking comes later in the process.',
-                        experience: -5
-                    },
-                    {
-                        text: 'Familiarise yourself with project documentation',
-                        outcome: 'This should be the first step in the testing process.',
+                        text: 'Insufficient lines for all dates',
+                        outcome: 'Correct - The error appears when there aren\'t enough lines for all testing date.',
                         experience: 15
                     },
                     {
-                        text: 'Set up test environments',
-                        outcome: 'While important, this comes after reviewing documentation',
-                        experience: 5
+                        text: 'Corrupt spreadsheet',
+                        outcome: 'This is rarely the cause of #REF! errors in this context.',
+                        experience: -5
                     },
                     {
-                        text: 'Create test accounts',
-                        outcome: 'This would not come before reviewing documentation',
+                        text: 'Wrong date format',
+                        outcome: 'Date formatting is not the cause of #REF! errors',
                         experience: -10
+                    },
+                    {
+                        text: 'Too many dates entered',
+                        outcome: 'While related to dates, it\'s specifically about line availability',
+                        experience: 5
                     }
                 ]
             },
-        ];
-
-
-        // Intermediate Scenarios (IDs 6-10, 125 XP total)
-        this.intermediateScenarios = [
             {
                 id: 6,
                 level: 'Intermediate',
-                title: 'Bug Reporting',
-                description: 'What should you do when you discover a bug in one environment?',
+                title: 'Environment Check Tabs',
+                description: 'How should you handle multiple Environment Checks tabs?',
                 options: [
                     {
-                        text: 'Immediately report it',
-                        outcome: 'While reporting is important, checking other environments first is more efficient.',
-                        experience: 5
+                        text: 'Create new independent metrics',
+                        outcome: 'This would not maintain proper tracking across tabs.',
+                        experience: -5
                     },
                     {
-                        text: 'Check if the issue exists across other environments before reporting',
-                        outcome: 'Other environments must be checked to determine if the issue is global.',
-                        experience: 20
+                        text: 'Copy and update existing table with new tab references',
+                        outcome: 'Correct - This maintains consistency while incorporating new data.',
+                        experience: 15
                     },
                     {
-                        text: 'Only report it if it affects functionality',
-                        outcome: 'All issues should be reported regardless of type',
+                        text: 'Merge all data into one tab',
+                        outcome: 'This would make tracking different sessions difficult',
                         experience: -10
                     },
                     {
-                        text: 'Wait for client confirmation',
-                        outcome: 'Client confirmation isn\'t needed to report bugs',
-                        experience: -5
+                        text: 'Add new columns to existing table',
+                        outcome: 'While this maintains data connection, it\'s not the optimal solution',
+                        experience: 5
                     }
                 ]
             },
             {
                 id: 7,
                 level: 'Intermediate',
-                title: 'Test Script Reporting',
-                description: 'How should test results be marked in the test script?',
+                title: 'Compatibility Environments Completed',
+                description: 'What affects the Compatibility Environments Complete figure?',
                 options: [
                     {
-                        text: 'Only pass or fail',
-                        outcome: 'While pass/fail is included, more detailed options should be available and stated.',
+                        text: 'Primary column and environment count',
+                        outcome: 'While Primary is important, Checked is also needed.',
                         experience: 5
                     },
                     {
-                        text: 'Using the Result Key options',
-                        outcome: 'This is the recommended way of reporting issues.',
-                        experience: 20
-                    },
-                    {
-                        text: 'With detailed written descriptions',
-                        outcome: 'Written descriptions supplement but don\'t replace the Result Key',
+                        text: 'Only the Primary Column',
+                        outcome: 'Multiple columns affect this figure.',
                         experience: -5
                     },
                     {
-                        text: 'Only marking critical issues',
-                        outcome: 'All issues should be marked, not just critical ones',
+                        text: 'Only the Checked Column',
+                        outcome: 'This alone doesn\'t determine compatibility status',
                         experience: -10
+                    },
+                    {
+                        text: 'Both Primary and Checked Columns',
+                        outcome: 'Correct - Both columns together determine the completion status',
+                        experience: 15
                     }
                 ]
             },
-            {   
+            {
                 id: 8,
                 level: 'Intermediate',
-                title: 'Reviewing images',
-                description: 'What should be checked regarding email images?',
+                title: 'Environment Lists',
+                description: 'How should you modify environment lists across multiple tickets?',
                 options: [
                     {
-                        text: 'Just image quality and resolution',
-                        outcome: 'While quality is important, other aspects must also be checked',
-                        experience: 5
+                        text: 'Update each ticket individually',
+                        outcome: 'This is inefficient and prone to inconsistency',
+                        experience: -5
                     },
                     {
-                        text: 'Image placement, alignment, quality, label, and display in both light/dark modes',
-                        outcome: 'These are all necessary checks for images.',
-                        experience: 20
+                        text: 'Update Environment List tab and remove excess rows',
+                        outcome: 'Correct - This ensures consistent updates across all linked tickets.',
+                        experience: 15
                     },
                     {
-                        text: 'Only whether images load properly',
-                        outcome: 'Loading is just one aspect of image testing',
+                        text: 'Create new environment lists',
+                        outcome: 'This breaks the connection with existing metrics',
                         experience: -10
                     },
                     {
-                        text: 'Just image size and format',
-                        outcome: 'Size and format are just basic aspects',
-                        experience: -5
+                        text: 'Update the main tab only',
+                        outcome: 'While updating the main tab is important, excess rows still need handling.',
+                        experience: 5
                     }
                 ]
             },
             {
                 id: 9,
                 level: 'Intermediate',
-                title: 'How should company details be verified in emails?',
-                description: 'Check against Wikipedia',
+                title: 'New Row Formulas',
+                description: 'What should you do when formulas don\'t encompass new rows?',
                 options: [
                     {
-                        text: 'Check against Wikipedia',
-                        outcome: 'Wikipedia isn\'t a reliable source for verification.',
-                        experience: -15
-                    },
-                    {
-                        text: 'Verify against the company website',
-                        outcome: 'While the website can help, target market specificity is key.',
+                        text: 'Extend the formula manually',
+                        outcome: 'While this works, double-clicking is more efficient.',
                         experience: 5
                     },
                     {
-                        text: 'Match details to the target market (e.g., UK address for UK market)',
-                        outcome: 'Details should be checked against target market',
-                        experience: 20
+                        text: 'Copy from another sheet',
+                        outcome: 'This might not match the specific needs of your sheet.',
+                        experience: -5
                     },
                     {
-                        text: 'Use generic company information',
-                        outcome: 'Generic information may not be accurate',
-                        experience: -5
+                        text: 'Create new formulas',
+                        outcome: 'Creating new formulas may lead to inconsistencies',
+                        experience: -10
+                    },
+                    {
+                        text: 'Double-click and update cell ranges',
+                        outcome: 'Correct - This allows proper adjustment of formula ranges.',
+                        experience: 15
                     }
                 ]
             },
             {
                 id: 10,
                 level: 'Intermediate',
-                title: 'Project Metrics',
-                description: 'What should be included in the project metrics after testing?',
+                title: 'Environment Coverage',
+                description: 'How should you handle environment-specific coverage?',
                 options: [
                     {
-                        text: 'Only number of bugs',
-                        outcome: 'Bug count alone is insufficient.',
+                        text: 'Create separate sheets',
+                        outcome: 'This creates unnecessary complexity.',
+                        experience: -10
+                    },
+                    {
+                        text: 'Combine global and specific environments as needed',
+                        outcome: 'Correct - This allows flexibility while maintaining consistency.',
+                        experience: 15
+                    },
+                    {
+                        text: 'Use only global environments',
+                        outcome: 'This doesn\'t account for ticket-specific needs',
                         experience: -5
                     },
                     {
-                        text: 'Session totals, ticket resolution totals, and project burndown',
-                        outcome: 'All these metrics should be included unless otherwise specified.',
-                        experience: 20
-                    },
-                    {
-                        text: 'Just test completion percentage',
-                        outcome: 'While completion is tracked, more metrics are needed',
+                        text: 'Use specific environments only',
+                        outcome: 'While this works for some cases, it\'s not flexible enough',
                         experience: 5
-                    },
-                    {
-                        text: 'Only critical issues',
-                        outcome: 'All issues, not just critical ones, should be tracked',
-                        experience: -10
                     }
                 ]
             },
-        ];
-
-
-        // Advanced Scenarios (IDs 11-15, 100 XP total)
-        this.advancedScenarios = [
             {
                 id: 11,
                 level: 'Advanced',
-                title: 'Resource calculator',
-                description: 'How should the resource calculator be used in email testing?',
+                title: 'Duplicated Environment Checks',
+                description: 'When updating duplicated Environment Checks tabs, what\'s crucial?',
                 options: [
                     {
-                        text: 'Only for estimating total project time',
-                        outcome: 'While it helps with timing, it\'s more comprehensive.',
-                        experience: 5
-                    },
-                    {
-                        text: 'To calculate exact testing hours needed',
-                        outcome: 'It provides guidance rather than exact calculations.',
+                        text: 'Only update cell references',
+                        outcome: 'Multiple aspects need attention',
                         experience: -5
                     },
                     {
-                        text: 'For guided timeframe planning with adjustable fields for setup, copy check, link check, rendering check, and reporting',
-                        outcome: 'Correct as this is used for multiple adjustable testing activities',
-                        experience: 25
+                        text: 'Update all references and verify formula accuracy',
+                        outcome: 'Correct - This ensures complete and accurate metric tracking',
+                        experience: 15
                     },
                     {
-                        text: 'Only for billing purposes',
-                        outcome: "It's used for planning, not billing",
+                        text: 'Copy all formulas exactly',
+                        outcome: 'Formulas need adjustment for the new context',
+                        experience: -5
+                    },
+                    {
+                        text: 'Update table structure only',
+                        outcome: 'While structure matters, formula updates are also crucial',
                         experience: -10
                     }
                 ]
@@ -387,27 +378,27 @@ class EmailTestingQuiz extends BaseQuiz {
             {
                 id: 12,
                 level: 'Advanced',
-                title: 'Unsubscribe links',
-                description: 'What is the correct approach when handling unsubscribe links during testing?',
+                title: 'Environment Table Metrics',
+                description: 'How should you handle complex environment table metrics?',
                 options: [
                     {
-                        text: 'Report all non-functioning unsubscribe links as critical bugs',
-                        outcome: 'These may not necessarily be bugs in the test environment.',
-                        experience: -5
-                    },
-                    {
-                        text: 'Ignore all unsubscribe link issues',
-                        outcome: 'Issues should still be documented appropriately.',
+                        text: 'Simplify the metrics',
+                        outcome: 'This could lose important tracking details.',
                         experience: -10
                     },
                     {
-                        text: 'Understand that unsubscribe links may error due to test distribution differences from live',
-                        outcome: 'This is potentially expected behaviour in test environment as live environment may yet not be set up of which details should be provided by the client',
-                        experience: 25
+                        text: 'Use basic counting only',
+                        outcome: 'This wouldn\'t capture all necessary metrics.',
+                        experience: -5
                     },
                     {
-                        text: 'Test unsubscribe functionality in production',
-                        outcome: 'While production testing may work, it\'s not the recommended approach',
+                        text: 'Verify all formula chains and dependencies',
+                        outcome: 'Correct - This ensures accurate tracking across all dependencies',
+                        experience: 15
+                    },
+                    {
+                        text: 'Check individual formulas',
+                        outcome: 'While important, it misses the broader dependencies',
                         experience: 5
                     }
                 ]
@@ -415,27 +406,27 @@ class EmailTestingQuiz extends BaseQuiz {
             {
                 id: 13,
                 level: 'Advanced',
-                title: 'Text wrap evaluation',
-                description: 'How should text wrapping issues be evaluated?',
+                title: 'Cross Tab Metrics',
+                description: 'What\'s the correct approach for updating cross-tab metrics?',
                 options: [
                     {
-                        text: 'Only check on mobile devices',
-                        outcome: 'While mobile is important, all devices need checking specified by the client.',
-                        experience: 5
+                        text: 'Maintain formula relationships while updating references',
+                        outcome: 'Correct - This preserves metric integrity across tabs',
+                        experience: 15
                     },
                     {
-                        text: 'Compare against design specifications for consistent text flow across all devices',
-                        outcome: 'Checking consistency with design across all platforms is recommended.',
-                        experience: 25
-                    },
-                    {
-                        text: 'Only check headlines',
-                        outcome: 'All text needs checking, not just headlines',
+                        text: 'Update each tab independently',
+                        outcome: 'This breaks cross-tab relationships.',
                         experience: -10
                     },
                     {
-                        text: 'Ignore minor wrapping differences',
-                        outcome: 'All wrapping issues should be noted',
+                        text: 'Update primary metrics only',
+                        outcome: 'While important, secondary metrics also need attention',
+                        experience: 5
+                    },
+                    {
+                        text: 'Create new metrics',
+                        outcome: 'This loses historical tracking',
                         experience: -5
                     }
                 ]
@@ -443,61 +434,60 @@ class EmailTestingQuiz extends BaseQuiz {
             {
                 id: 14,
                 level: 'Advanced',
-                title: 'Results tables within scripts',
-                description: 'When updating the Overall Results table, what must be considered?',
+                title: 'Un-displayed Metrics',
+                description: 'How should you handle metric discrepancies across multiple tabs?',
                 options: [
                     {
-                        text: 'Only failed tests',
-                        outcome: 'While failures are important, all results must be included.',
+                        text: 'Check individual tab metrics',
+                        outcome: 'While important, cross-tab relationships also matter.',
                         experience: 5
                     },
                     {
-                        text: 'Just critical issues',
-                        outcome: 'All issues, not just critical ones, must be included.',
-                        experience: -10
-                    },
-                    {
-                        text: 'Only passed tests',
-                        outcome: 'Both passes and failures must be included',
+                        text: 'Average the differences',
+                        outcome: 'This doesn\'t address the root cause.',
                         experience: -5
                     },
                     {
-                        text: 'The entire range of tests including any newly added environments',
-                        outcome: 'All test ranges should be updated including updating formulas to include any new environments',
-                        experience: 25
+                        text: 'Use the highest values',
+                        outcome: 'This could hide actual issues',
+                        experience: -10
+                    },
+                    {
+                        text: 'Trace formula chains and verify all connections',
+                        outcome: 'Correct - This identifies and resolves the source of discrepancies',
+                        experience: 15
                     }
                 ]
             },
             {
                 id: 15,
                 level: 'Advanced',
-                title: 'Light & Dark mode testing priority',
-                description: 'How should light/dark mode testing be coordinated across devices?',
+                title: 'Metrics Updates',
+                description: 'What\'s the best approach for maintaining metric integrity during major updates?',
                 options: [
                     {
-                        text: 'Test only system-level changes',
-                        outcome: 'Client-specific settings must also be tested.',
+                        text: 'Start with fresh metrics',
+                        outcome: 'This loses valuable historical data.',
                         experience: -10
                     },
                     {
-                        text: 'Check each email client independently',
-                        outcome: 'While individual testing is needed, system settings must be considered.',
-                        experience: 5
-                    },
-                    {
-                        text: 'Coordinate system settings and individual app preferences, understanding that some clients follow system settings while others need manual configuration',
-                        outcome: 'The relationship between system and app-specific settings should be tested',
-                        experience: 25
-                    },
-                    {
-                        text: 'Use only default settings',
-                        outcome: 'Testing default settings alone is insufficient',
+                        text: 'Copy existing metrics',
+                        outcome: 'This could perpetuate existing issues.',
                         experience: -5
+                    },
+                    {
+                        text: 'Verify all dependencies and update systematically',
+                        outcome: 'Correct - This maintains accuracy while allowing updates',
+                        experience: 15
+                    },
+                    {
+                        text: 'Update primary metrics first',
+                        outcome: 'While a good start, it needs more comprehensive attention',
+                        experience: 5
                     }
                 ]
             },
         ];
-
 
         // Initialize UI and add event listeners
         this.initializeEventListeners();
@@ -1042,9 +1032,9 @@ class EmailTestingQuiz extends BaseQuiz {
         let recommendationsHTML = '';
 
         if (score >= 95 && weakAreas.length === 0) {
-            recommendationsHTML = '<p>🌟 Outstanding! You have demonstrated mastery in all aspects of email testing. You clearly understand the nuances of email testing and are well-equipped to handle any email testing challenges!</p>';
+            recommendationsHTML = '<p>🌟 Outstanding! You have demonstrated mastery in all aspects of troubleshooting script metrics. You clearly understand the nuances of script metrics and are well-equipped to handle any script metrics challenges!</p>';
         } else if (score >= 80) {
-            recommendationsHTML = '<p>🌟 Excellent performance! Your email testing skills are very strong. To achieve complete mastery, consider focusing on:</p>';
+            recommendationsHTML = '<p>🌟 Excellent performance! Your script metrics skills are very strong. To achieve complete mastery, consider focusing on:</p>';
             recommendationsHTML += '<ul>';
             if (weakAreas.length > 0) {
                 weakAreas.forEach(area => {
@@ -1076,38 +1066,41 @@ class EmailTestingQuiz extends BaseQuiz {
         const title = scenario.title.toLowerCase();
         const description = scenario.description.toLowerCase();
 
-        if (title.includes('dark mode') || description.includes('dark mode')) {
-            return 'Dark Mode Testing';
-        } else if (title.includes('utm') || description.includes('utm')) {
-            return 'Tracking Implementation';
-        } else if (title.includes('bug') || description.includes('bug')) {
-            return 'Bug Management';
-        } else if (title.includes('process') || description.includes('process')) {
-            return 'Testing Process';
-        } else if (title.includes('results') || description.includes('results')) {
-            return 'Results Documentation';
+        if (title.includes('formula') || description.includes('formula')) {
+            return 'Formula Management';
         } else if (title.includes('environment') || description.includes('environment')) {
-            return 'Environment Testing';
-        } else if (title.includes('light') || description.includes('device')) {
-            return 'Cross-platform Testing';
+            return 'Environment Coverage';
+        } else if (title.includes('table') || description.includes('table')) {
+            return 'Table Structure';
+        } else if (title.includes('metric') || description.includes('metric')) {
+            return 'Metric Accuracy';
+        } else if (title.includes('reference') || description.includes('reference')) {
+            return 'Data References';
+        } else if (title.includes('compatibility') || description.includes('compatibility')) {
+            return 'Compatibility Tracking';
+        } else if (title.includes('list') || description.includes('list')) {
+            return 'List Management';
+        } else if (title.includes('update') || description.includes('update')) {
+            return 'Update Handling';
         } else {
-            return 'General Email Testing';
+            return 'General Script Metrics';
         }
     }
 
     getRecommendation(area) {
         const recommendations = {
-            'Dark Mode Testing': 'Focus on comprehensive dark mode testing across different email clients and system settings.',
-            'Tracking Implementation': 'Improve understanding of UTM parameters and tracking mechanisms in email campaigns.',
-            'Bug Management': 'Enhance cross-environment verification and documentation of email-related issues.',
-            'Testing Process': 'Strengthen systematic approach to email testing, starting with documentation review.',
-            'Results Documentation': 'Work on maintaining comprehensive test results including all environments and scenarios.',
-            'Environment Testing': 'Develop thorough testing strategies across different email clients and configurations.',
-            'Cross-platform Testing': 'Focus on coordinated testing across devices, system settings, and client preferences.',
-            'General Email Testing': 'Continue developing fundamental email testing principles and methodologies.'
+            'Formula Management': 'Focus on maintaining accurate formula chains and proper cell references.',
+            'Environment Coverage': 'Strengthen tracking of environment-specific metrics and coverage data.',
+            'Table Structure': 'Improve organization and maintenance of data table structures.',
+            'Metric Accuracy': 'Enhance verification of metric calculations and dependencies.',
+            'Data References': 'Develop better strategies for managing cross-sheet data references.',
+            'Compatibility Tracking': 'Focus on accurate tracking of compatibility status across environments.',
+            'List Management': 'Strengthen maintenance and updates of environment lists.',
+            'Update Handling': 'Improve handling of metric updates while maintaining data integrity.',
+            'General Script Metrics': 'Continue developing fundamental script metrics principles.'
         };
 
-        return recommendations[area] || 'Continue practicing core email testing principles.';
+        return recommendations[area] || 'Continue practicing core script metrics principles.';
     }
 
     endGame(failed = false) {
@@ -1182,8 +1175,8 @@ class EmailTestingQuiz extends BaseQuiz {
     }
 }
 
-// Initialize quiz when the page loads
+// Start the quiz when the page loads
 document.addEventListener('DOMContentLoaded', () => {
-    const quiz = new EmailTestingQuiz();
+    const quiz = new ScriptMetricsTroubleshootingQuiz();
     quiz.startGame();
 }); 
