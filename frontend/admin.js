@@ -808,33 +808,94 @@ class AdminDashboard {
     }
 
     async showQuizQuestions(quizName) {
-        // Create overlay container
-        const overlay = document.createElement('div');
-        overlay.className = 'user-details-overlay';
-        overlay.style.zIndex = '1002'; // Ensure it's above other overlays
+        try {
+            // Get the current user's username from the parent element
+            const username = document.querySelector('.details-header h3').textContent.split("'")[0];
+            
+            // Create overlay container
+            const overlay = document.createElement('div');
+            overlay.className = 'user-details-overlay';
+            overlay.style.zIndex = '1002'; // Ensure it's above other overlays
 
-        // Create content container
-        const content = document.createElement('div');
-        content.className = 'user-details-content';
-        content.innerHTML = `
-            <div class="details-header">
-                <h3>Questions for ${this.formatQuizName(quizName)}</h3>
-                <button class="close-btn" aria-label="Close questions overlay">&times;</button>
-            </div>
-            <div class="questions-list">
-                <p>Questions will be displayed here.</p>
-            </div>
-        `;
+            // Create content container
+            const content = document.createElement('div');
+            content.className = 'user-details-content';
+            content.innerHTML = `
+                <div class="details-header">
+                    <h3>Questions for ${this.formatQuizName(quizName)}</h3>
+                    <button class="close-btn" aria-label="Close questions overlay">&times;</button>
+                </div>
+                <div class="questions-list">
+                    <div class="loading">Loading questions...</div>
+                </div>
+            `;
 
-        // Add close button functionality
-        const closeBtn = content.querySelector('.close-btn');
-        closeBtn.addEventListener('click', () => {
-            document.body.removeChild(overlay);
-        });
+            // Add close button functionality
+            const closeBtn = content.querySelector('.close-btn');
+            closeBtn.addEventListener('click', () => {
+                document.body.removeChild(overlay);
+            });
 
-        // Add content to overlay and overlay to body
-        overlay.appendChild(content);
-        document.body.appendChild(overlay);
+            // Add content to overlay and overlay to body
+            overlay.appendChild(content);
+            document.body.appendChild(overlay);
+
+            // Fetch questions data
+            const response = await this.apiService.getQuizQuestions(username, quizName);
+            const questionsList = content.querySelector('.questions-list');
+
+            if (!response.success || !response.data) {
+                questionsList.innerHTML = '<p class="error">Failed to load questions data.</p>';
+                return;
+            }
+
+            const { questionHistory = [] } = response.data;
+
+            if (questionHistory.length === 0) {
+                questionsList.innerHTML = '<p>No questions have been answered in this quiz yet.</p>';
+                return;
+            }
+
+            // Display questions
+            questionsList.innerHTML = questionHistory.map((record, index) => {
+                const scenario = record.scenario;
+                const answer = record.selectedAnswer;
+                const status = record.status || 
+                    (!answer ? 'not-complete' : answer.experience > 0 ? 'passed' : 'failed');
+
+                return `
+                    <div class="question-item ${status === 'passed' ? 'correct' : 
+                                               status === 'failed' ? 'incorrect' : 'not-complete'}">
+                        <div class="question-header">
+                            <h4>Question ${index + 1}</h4>
+                            <span class="status-badge ${status === 'passed' ? 'pass' : 
+                                                      status === 'failed' ? 'fail' : 'pending'}">
+                                ${status.toUpperCase().replace('-', ' ')}
+                            </span>
+                        </div>
+                        <div class="question-content">
+                            <p class="scenario-title"><strong>${scenario.title}</strong></p>
+                            <p class="scenario-description">${scenario.description}</p>
+                            ${answer ? `
+                                <div class="answer-section">
+                                    <p><strong>Selected Answer:</strong></p>
+                                    <p class="selected-answer">${answer.text}</p>
+                                    <p><strong>Outcome:</strong></p>
+                                    <p class="answer-outcome">${answer.outcome}</p>
+                                    <p><strong>Experience:</strong> ${answer.experience}</p>
+                                    ${answer.tool ? `<p><strong>Tool Gained:</strong> ${answer.tool}</p>` : ''}
+                                </div>
+                            ` : '<p class="not-attempted">Question not yet attempted</p>'}
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+        } catch (error) {
+            console.error('Error showing quiz questions:', error);
+            const questionsList = content.querySelector('.questions-list');
+            questionsList.innerHTML = '<p class="error">An error occurred while loading questions.</p>';
+        }
     }
 }
 

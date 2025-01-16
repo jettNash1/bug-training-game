@@ -337,4 +337,84 @@ router.post('/users/:username/quiz-scores/reset', auth, async (req, res) => {
     }
 });
 
+// Get quiz questions for a user
+router.get('/users/:username/quiz-questions/:quizName', auth, async (req, res) => {
+    try {
+        // Verify admin status
+        if (!req.user.isAdmin) {
+            return res.status(403).json({
+                success: false,
+                message: 'Admin access required'
+            });
+        }
+
+        const { username, quizName } = req.params;
+        console.log(`Fetching quiz questions for ${username}, quiz: ${quizName}`);
+
+        // Find the user
+        const user = await User.findOne({ username });
+        if (!user) {
+            console.log(`User ${username} not found`);
+            return res.status(404).json({
+                success: false,
+                message: 'User not found'
+            });
+        }
+
+        // Find the quiz results
+        const quizResult = user.quizResults?.find(result => 
+            result.quizName.toLowerCase() === quizName.toLowerCase()
+        );
+
+        if (!quizResult || !quizResult.questionHistory) {
+            console.log(`No quiz results found for ${username}/${quizName}`);
+            return res.json({
+                success: true,
+                data: {
+                    questionHistory: []
+                }
+            });
+        }
+
+        // Map the question history to include all necessary data
+        const questionHistory = quizResult.questionHistory.map(question => ({
+            scenario: {
+                title: question.scenario.title,
+                description: question.scenario.description,
+                level: question.scenario.level
+            },
+            selectedAnswer: {
+                text: question.selectedAnswer.text,
+                outcome: question.selectedAnswer.outcome,
+                experience: question.selectedAnswer.experience,
+                tool: question.selectedAnswer.tool
+            },
+            status: question.status || (question.selectedAnswer.experience > 0 ? 'passed' : 'failed')
+        }));
+
+        console.log(`Successfully fetched ${questionHistory.length} questions for ${username}/${quizName}`);
+
+        // Return the question history
+        res.json({
+            success: true,
+            data: {
+                questionHistory,
+                totalQuestions: questionHistory.length,
+                quizName: quizResult.quizName,
+                score: quizResult.score,
+                experience: quizResult.experience,
+                lastActive: quizResult.lastActive
+            }
+        });
+
+    } catch (error) {
+        console.error('Error fetching quiz questions:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Failed to fetch quiz questions',
+            error: error.message
+        });
+    }
+});
+
 module.exports = router; 

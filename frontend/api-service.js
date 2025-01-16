@@ -526,4 +526,14 @@ export class APIService {
             localStorage.removeItem('adminToken');
         }
     }
+
+    async getQuizQuestions(username, quizName) {
+        try {
+            const response = await this.fetchWithAdminAuth(`${this.baseUrl}/admin/users/${username}/quiz-questions/${quizName}`);
+            return response;
+        } catch (error) {
+            console.error(`Failed to fetch quiz questions for ${username}/${quizName}:`, error);
+            throw error;
+        }
+    }
 } 

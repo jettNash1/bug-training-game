@@ -274,6 +274,119 @@
             font-size: 0.85rem;
             color: var(--text-secondary);
         }
+
+        /* Questions Overlay Styles */
+        .questions-list {
+            margin-top: 1rem;
+        }
+
+        .question-item {
+            background: #f8f9fa;
+            border-radius: 8px;
+            padding: 1.5rem;
+            margin-bottom: 1rem;
+            border-left: 4px solid transparent;
+        }
+
+        .question-item.correct {
+            border-left-color: #28a745;
+        }
+
+        .question-item.incorrect {
+            border-left-color: #dc3545;
+        }
+
+        .question-item.not-complete {
+            border-left-color: #ffc107;
+        }
+
+        .question-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+
+        .question-header h4 {
+            margin: 0;
+            color: var(--text-primary);
+        }
+
+        .status-badge {
+            padding: 0.25rem 0.75rem;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: 500;
+        }
+
+        .status-badge.pass {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .status-badge.fail {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+        .status-badge.pending {
+            background: #fff3cd;
+            color: #856404;
+        }
+
+        .not-attempted {
+            text-align: center;
+            padding: 1rem;
+            background: #fff3cd;
+            border-radius: 4px;
+            color: #856404;
+            font-style: italic;
+        }
+
+        .question-content {
+            color: var(--text-secondary);
+        }
+
+        .scenario-title {
+            margin-bottom: 0.5rem;
+            color: var(--text-primary);
+        }
+
+        .scenario-description {
+            margin-bottom: 1rem;
+        }
+
+        .answer-section {
+            background: white;
+            padding: 1rem;
+            border-radius: 4px;
+            margin-top: 1rem;
+        }
+
+        .selected-answer {
+            margin: 0.5rem 0 1rem;
+            padding: 0.5rem;
+            background: #f1f3f5;
+            border-radius: 4px;
+        }
+
+        .answer-outcome {
+            margin: 0.5rem 0 1rem;
+            font-style: italic;
+            color: var(--text-secondary);
+        }
+
+        .loading {
+            text-align: center;
+            padding: 2rem;
+            color: var(--text-secondary);
+        }
+
+        .error {
+            color: #dc3545;
+            text-align: center;
+            padding: 1rem;
+        }
     </style>
 </body>
 </html> 
