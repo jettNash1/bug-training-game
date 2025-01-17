@@ -297,17 +297,30 @@ router.post('/quiz-progress', auth, async (req, res) => {
             currentScenario: progress.currentScenario !== undefined ? 
                            parseInt(progress.currentScenario, 10) : 
                            (parseInt(progress.questionsAnswered || progress.questionHistory?.length || 0, 10) % 5),
-            lastUpdated: lastUpdated.toISOString() // Store as ISO string for consistency
+            lastUpdated: lastUpdated.toISOString(), // Store as ISO string for consistency
+            status: progress.status || 'in_progress'
         };
 
         // Update quiz progress
         user.quizProgress.set(quizName, updatedProgress);
 
-        // Also update corresponding quiz result if it exists
+        // Always sync with quiz results to ensure question history is preserved
         const existingResultIndex = user.quizResults.findIndex(r => r.quizName === quizName);
         if (existingResultIndex !== -1) {
-            // Create a new quiz result object with only the fields we want
+            // Update existing quiz result with progress data
             user.quizResults[existingResultIndex] = {
+                ...user.quizResults[existingResultIndex],
+                experience: updatedProgress.experience,
+                tools: updatedProgress.tools,
+                questionHistory: updatedProgress.questionHistory,
+                questionsAnswered: updatedProgress.questionsAnswered,
+                currentScenario: updatedProgress.currentScenario,
+                status: updatedProgress.status,
+                updatedAt: lastUpdated.toISOString()
+            };
+        } else {
+            // Create new quiz result from progress data
+            user.quizResults.push({
                 quizName,
                 score: Math.round((updatedProgress.experience / 300) * 100), // Calculate score based on max XP of 300
                 experience: updatedProgress.experience,
@@ -315,9 +328,10 @@ router.post('/quiz-progress', auth, async (req, res) => {
                 questionHistory: updatedProgress.questionHistory,
                 questionsAnswered: updatedProgress.questionsAnswered,
                 currentScenario: updatedProgress.currentScenario,
+                status: updatedProgress.status,
                 completedAt: lastUpdated.toISOString(),
                 updatedAt: lastUpdated.toISOString()
-            };
+            });
         }
 
         await user.save();
@@ -492,54 +506,65 @@ router.post('/sync', auth, async (req, res) => {
 // Update quiz scores
 router.post('/quiz-scores', auth, async (req, res) => {
     try {
-        const { quizName, score, status, questionHistory, experience } = req.body;
+        const { quizName, score, status, questionHistory, experience, tools } = req.body;
         const user = await User.findById(req.user.id);
         
         if (!user) {
             return res.status(404).json({ success: false, message: 'User not found' });
         }
 
+        const timestamp = new Date();
+
         // Find and update or add new quiz result
         const existingIndex = user.quizResults.findIndex(r => r.quizName === quizName);
+        const updatedResult = {
+            quizName,
+            score: score || 0,
+            status: status || 'in_progress',
+            experience: experience || score || 0,
+            tools: tools || [],
+            questionHistory: Array.isArray(questionHistory) ? questionHistory : [],
+            questionsAnswered: questionHistory?.length || 0,
+            currentScenario: (questionHistory?.length || 0) % 5,
+            updatedAt: timestamp.toISOString()
+        };
+
         if (existingIndex !== -1) {
+            // Update existing result
             user.quizResults[existingIndex] = {
                 ...user.quizResults[existingIndex],
-                score: score,
-                status: status || 'in_progress',
-                experience: experience || score,
-                questionHistory: questionHistory || [],
-                updatedAt: new Date()
+                ...updatedResult
             };
         } else {
-            user.quizResults.push({
-                quizName,
-                score,
-                status: status || 'in_progress',
-                experience: experience || score,
-                questionHistory: questionHistory || [],
-                completedAt: new Date()
-            });
+            // Add new result
+            updatedResult.completedAt = timestamp.toISOString();
+            user.quizResults.push(updatedResult);
         }
 
-        // If the quiz is failed, also update the quiz progress
-        if (status === 'failed') {
-            if (!user.quizProgress) {
-                user.quizProgress = new Map();
-            }
-            const currentProgress = user.quizProgress.get(quizName) || {};
-            user.quizProgress.set(quizName, {
-                ...currentProgress,
-                status: 'failed',
-                questionHistory: questionHistory || [],
-                lastUpdated: new Date()
-            });
+        // Always sync with quiz progress
+        if (!user.quizProgress) {
+            user.quizProgress = new Map();
         }
+
+        // Update quiz progress with the same data
+        user.quizProgress.set(quizName, {
+            experience: updatedResult.experience,
+            tools: updatedResult.tools,
+            questionHistory: updatedResult.questionHistory,
+            questionsAnswered: updatedResult.questionsAnswered,
+            currentScenario: updatedResult.currentScenario,
+            status: updatedResult.status,
+            lastUpdated: timestamp.toISOString()
+        });
 
         await user.save();
         res.json({ 
             success: true, 
             message: 'Quiz score updated successfully',
-            data: user.quizResults 
+            data: {
+                quizResults: user.quizResults,
+                progress: user.quizProgress.get(quizName)
+            }
         });
     } catch (error) {
         console.error('Error updating quiz score:', error);
