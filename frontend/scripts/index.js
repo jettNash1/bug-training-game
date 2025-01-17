@@ -44,23 +44,41 @@ class IndexPage {
                     const localStorageKey = `quiz_progress_${username}_${quizId}`;
                     const localData = localStorage.getItem(localStorageKey);
                     let localProgress = null;
+                    let localStatus = 'not_started';
+                    
                     if (localData) {
                         try {
                             const parsed = JSON.parse(localData);
                             localProgress = parsed.progress;
+                            localStatus = parsed.status || parsed.progress?.status || 'in_progress';
+                        } catch (e) {} // Ignore parse errors
+                    }
+
+                    // Also check quiz results in localStorage for failed state
+                    const quizResultKey = `quiz_result_${username}_${quizId}`;
+                    const localResult = localStorage.getItem(quizResultKey);
+                    if (localResult) {
+                        try {
+                            const parsed = JSON.parse(localResult);
+                            if (parsed.status === 'failed') {
+                                localStatus = 'failed';
+                            }
                         } catch (e) {} // Ignore parse errors
                     }
 
                     // Then get server data
                     const serverProgress = await this.apiService.getQuizProgress(quizId);
                     const progress = serverProgress?.data || localProgress;
+                    
+                    // Determine final status - prefer server status if available
+                    const status = serverProgress?.data?.status || localStatus;
 
                     if (!progress) {
                         return {
                             quizName: quizId,
                             score: 0,
                             questionsAnswered: 0,
-                            status: 'not_started'
+                            status: status
                         };
                     }
 
@@ -68,7 +86,7 @@ class IndexPage {
                         quizName: quizId,
                         score: Math.round(((progress.questionHistory?.length || 0) / 15) * 100),
                         questionsAnswered: progress.questionHistory?.length || 0,
-                        status: progress.status || 'in_progress',
+                        status: status,
                         experience: progress.experience || 0
                     };
                 } catch (error) {

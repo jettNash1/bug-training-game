@@ -143,16 +143,32 @@ export class QuizUser {
         }
     }
 
-    async saveQuizResult(quizName, score, experience = 0, tools = [], questionHistory = [], questionsAnswered = null) {
-        const quizData = {
-            quizName,
-            score: Math.round(score),
-            experience: Math.round(experience || score),
-            tools: tools || [],
-            questionHistory: questionHistory || [],
-            questionsAnswered: questionsAnswered !== null ? questionsAnswered : (questionHistory ? questionHistory.length : 0),
-            completedAt: new Date().toISOString()
-        };
+    async saveQuizResult(quizName, data) {
+        // If data is passed as separate arguments for backward compatibility
+        let quizData;
+        if (typeof data === 'number' || typeof data === 'string') {
+            quizData = {
+                quizName,
+                score: Math.round(data),
+                experience: Math.round(arguments[2] || data),
+                tools: arguments[3] || [],
+                questionHistory: arguments[4] || [],
+                questionsAnswered: arguments[5] !== null ? arguments[5] : (arguments[4] ? arguments[4].length : 0),
+                status: 'completed',
+                completedAt: new Date().toISOString()
+            };
+        } else {
+            quizData = {
+                quizName,
+                score: Math.round(data.score),
+                experience: Math.round(data.experience || data.score),
+                tools: data.tools || [],
+                questionHistory: data.questionHistory || [],
+                questionsAnswered: data.questionsAnswered !== null ? data.questionsAnswered : (data.questionHistory ? data.questionHistory.length : 0),
+                status: data.status || 'completed',
+                completedAt: new Date().toISOString()
+            };
+        }
 
         try {
             // Save to server
@@ -178,7 +194,8 @@ export class QuizUser {
                     tools: quizData.tools,
                     questionHistory: quizData.questionHistory,
                     questionsAnswered: quizData.questionsAnswered,
-                    currentScenario: quizData.questionsAnswered % 5, // Keep track of position within current level
+                    currentScenario: quizData.questionsAnswered % 5,
+                    status: quizData.status,
                     lastUpdated: quizData.completedAt
                 };
                 
@@ -260,59 +277,43 @@ export class QuizUser {
         }
     }
 
-    async updateQuizScore(quizName, score, experience = 0, tools = [], questionHistory = [], questionsAnswered = null) {
+    async updateQuizScore(quizName, data) {
         try {
-            if (!this.api) {
-                throw new Error('API service not initialized');
-            }
+            // Handle both object and primitive score input
+            const scoreData = typeof data === 'object' ? data : { score: data };
             
-            // Get the current quiz progress to include question history
-            const progress = await this.getQuizProgress(quizName);
+            // Update server
+            const response = await this.api.updateQuizScore(quizName, scoreData);
             
-            // Create the quiz data with all necessary fields
-            const quizData = {
-                quizName,
-                score: Math.round(score),
-                experience: Math.round(experience || score),
-                tools: tools || [],
-                questionHistory: questionHistory || [],
-                questionsAnswered: questionsAnswered !== null ? questionsAnswered : (questionHistory ? questionHistory.length : 0),
-                completedAt: new Date().toISOString()
-            };
+            if (response && response.success) {
+                // Update local data
+                const existingIndex = this.quizResults.findIndex(r => r.quizName === quizName);
+                if (existingIndex !== -1) {
+                    this.quizResults[existingIndex] = {
+                        ...this.quizResults[existingIndex],
+                        ...scoreData,
+                        updatedAt: new Date().toISOString()
+                    };
+                } else {
+                    this.quizResults.push({
+                        quizName,
+                        ...scoreData,
+                        completedAt: new Date().toISOString()
+                    });
+                }
 
-            // Save to server
-            const response = await this.api.fetchWithAuth(`${config.apiUrl}/users/quiz-results`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify(quizData)
-            });
+                // Save to localStorage
+                this.saveToLocalStorage({
+                    quizName,
+                    ...scoreData,
+                    updatedAt: new Date().toISOString()
+                });
 
-            if (!response.ok) {
-                throw new Error('Failed to save quiz result to server');
-            }
-
-            const data = await response.json();
-            if (data.success) {
-                this.quizResults = data.data;
-                
-                // Also update the quiz progress
-                const progressData = {
-                    experience: quizData.experience,
-                    tools: quizData.tools,
-                    questionHistory: quizData.questionHistory,
-                    questionsAnswered: quizData.questionsAnswered,
-                    currentScenario: quizData.questionsAnswered % 5, // Keep track of position within current level
-                    lastUpdated: quizData.completedAt
-                };
-                
-                await this.api.saveQuizProgress(quizName, progressData);
                 return true;
             }
             return false;
         } catch (error) {
-            console.error('Failed to save quiz result:', error);
+            console.error('Failed to update quiz score:', error);
             return false;
         }
     }

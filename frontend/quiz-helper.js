@@ -124,27 +124,49 @@ export class BaseQuiz {
 
             const user = new QuizUser(this.player.name);
             const score = this.calculateScore();
+            const failed = score < 70; // Quiz is failed if score is below 70%
             
-            // First save the quiz result
+            // Update the end screen title based on pass/fail status
+            const titleElement = document.getElementById('end-screen-title');
+            if (titleElement) {
+                titleElement.textContent = failed ? 'Quiz Failed!' : 'Quiz Complete!';
+            }
+            
+            // First save the quiz result with status
             const saveResult = await user.saveQuizResult(
                 this.quizName,
-                score,
-                this.player.experience,
-                this.player.tools,
-                this.player.questionHistory
+                {
+                    score,
+                    status: failed ? 'failed' : 'completed',
+                    experience: this.player.experience,
+                    tools: this.player.tools,
+                    questionHistory: this.player.questionHistory
+                }
             );
 
             if (!saveResult) {
                 throw new Error('Failed to save quiz results');
             }
 
-            // Then update the quiz score
-            const updateResult = await user.updateQuizScore(this.quizName, score);
+            // Then update the quiz score with status
+            const updateResult = await user.updateQuizScore(this.quizName, {
+                score,
+                status: failed ? 'failed' : 'completed'
+            });
+            
             if (!updateResult) {
                 throw new Error('Failed to update quiz score');
             }
 
-            // Clear any local storage data for this quiz
+            // Save the failed status to localStorage for immediate feedback
+            const localStorageKey = `quiz_result_${user.username}_${this.quizName}`;
+            localStorage.setItem(localStorageKey, JSON.stringify({
+                score,
+                status: failed ? 'failed' : 'completed',
+                lastUpdated: new Date().toISOString()
+            }));
+
+            // Clear any progress data for this quiz
             this.clearQuizLocalStorage(user.username, this.quizName);
             
             // Redirect to home page
