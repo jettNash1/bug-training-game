@@ -616,6 +616,23 @@ export class LocaleTestingQuiz extends BaseQuiz {
                 return;
             }
 
+            // Check if quiz was previously failed
+            const username = localStorage.getItem('username');
+            if (username) {
+                try {
+                    const quizResult = await this.apiService.getQuizProgress(this.quizName);
+                    if (quizResult?.data?.status === 'failed') {
+                        // If quiz was failed, show the end screen immediately
+                        this.player.experience = quizResult.data.experience || 0;
+                        this.player.questionHistory = quizResult.data.questionHistory || [];
+                        this.endGame(true);
+                        return;
+                    }
+                } catch (error) {
+                    console.error('Error checking quiz status:', error);
+                }
+            }
+
             // Initialize event listeners
             this.initializeEventListeners();
 
@@ -1142,6 +1159,10 @@ export class LocaleTestingQuiz extends BaseQuiz {
                 };
                 user.updateQuizScore(this.quizName, result);
                 console.log('Final quiz score saved:', result);
+
+                // Also save to localStorage to ensure immediate persistence
+                const storageKey = `quiz_progress_${username}_${this.quizName}`;
+                localStorage.setItem(storageKey, JSON.stringify({ progress: result }));
             } catch (error) {
                 console.error('Error saving final quiz score:', error);
             }
@@ -1151,7 +1172,7 @@ export class LocaleTestingQuiz extends BaseQuiz {
 
         const performanceSummary = document.getElementById('performance-summary');
         if (failed) {
-            performanceSummary.textContent = 'Quiz failed. You did not meet the minimum XP requirement to progress. Please reset your progress to try again.';
+            performanceSummary.textContent = 'Quiz failed. You did not meet the minimum XP requirement to progress. Please contact your supervisor to reset your progress.';
             // Hide restart button if failed
             const restartBtn = document.getElementById('restart-btn');
             if (restartBtn) {

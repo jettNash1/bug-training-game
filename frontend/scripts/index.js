@@ -80,7 +80,7 @@ class IndexPage {
         const fragment = document.createDocumentFragment();
         const updates = new Map();
 
-        this.quizItems.forEach(item => {
+        this.quizItems.forEach(async item => {
             const quizId = item.dataset.quiz;
             const progressElement = document.getElementById(`${quizId}-progress`);
             if (!progressElement) return;
@@ -88,19 +88,40 @@ class IndexPage {
             const quizScore = this.quizScores.find(score => score.quizName === quizId);
             const percentage = quizScore ? quizScore.score : 0;
 
-            // Store updates to apply in batch
-            updates.set(item, {
-                progress: percentage,
-                element: progressElement
-            });
+            // Check if quiz was failed
+            try {
+                const quizResult = await this.apiService.getQuizProgress(quizId);
+                const failed = quizResult?.data?.status === 'failed';
+
+                // Store updates to apply in batch
+                updates.set(item, {
+                    progress: percentage,
+                    element: progressElement,
+                    failed
+                });
+            } catch (error) {
+                console.error(`Error checking quiz status for ${quizId}:`, error);
+                updates.set(item, {
+                    progress: percentage,
+                    element: progressElement,
+                    failed: false
+                });
+            }
         });
 
         // Apply all updates in one batch
         requestAnimationFrame(() => {
-            updates.forEach(({ progress, element }, item) => {
+            updates.forEach(({ progress, element, failed }, item) => {
                 item.setAttribute('data-progress', progress);
                 
-                if (progress > 0) {
+                if (failed) {
+                    // Show failed state
+                    element.textContent = 'Failed';
+                    element.style.display = 'block';
+                    item.style.background = 'linear-gradient(to right, rgba(231, 76, 60, 0.1), rgba(231, 76, 60, 0.2))';
+                    element.style.background = 'var(--error-color)';
+                    element.style.color = 'white';
+                } else if (progress > 0) {
                     element.textContent = `${progress}%`;
                     element.style.display = 'block';
                     
