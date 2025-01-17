@@ -935,7 +935,12 @@ export class CommunicationQuiz extends BaseQuiz {
                 quizName: this.quizName,
                 score: percentComplete,
                 experience: this.player.experience,
-                questionHistory: this.player.questionHistory,
+                questionHistory: this.player.questionHistory.map(record => ({
+                    questionText: record.questionText,
+                    selectedAnswerText: record.selectedAnswerText,
+                    experienceGained: record.experienceGained,
+                    isCorrect: record.isCorrect
+                })),
                 questionsAnswered: completedQuestions,
                 lastActive: new Date().toISOString()
             };
@@ -946,11 +951,7 @@ export class CommunicationQuiz extends BaseQuiz {
                 const quizUser = new QuizUser(username);
                 await quizUser.updateQuizScore(
                     this.quizName,
-                    score.score,
-                    score.experience,
-                    this.player.tools,
-                    score.questionHistory,
-                    score.questionsAnswered
+                    score
                 );
             }
 

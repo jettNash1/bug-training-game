@@ -283,7 +283,10 @@ export class QuizUser {
             const scoreData = typeof data === 'object' ? data : { score: data };
             
             // Update server
-            const response = await this.api.updateQuizScore(quizName, scoreData);
+            const response = await this.api.updateQuizScore(quizName, {
+                ...scoreData,
+                status: scoreData.status || 'in_progress'
+            });
             
             if (response && response.success) {
                 // Update local data

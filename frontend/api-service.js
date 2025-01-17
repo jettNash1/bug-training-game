@@ -324,9 +324,9 @@ export class APIService {
                     'Content-Type': 'application/json'
                 },
                 body: JSON.stringify({ 
-                    quizName, 
-                    score,
-                    status: score.status || 'in_progress' // Include status in the request
+                    quizName,
+                    ...score,
+                    status: score.status || 'in_progress'
                 })
             });
 
@@ -345,11 +345,11 @@ export class APIService {
                 throw new Error(data.message || 'Failed to update quiz score');
             }
 
-            // Also update quiz progress with the status
-            if (score.status === 'failed') {
+            // Also update quiz progress with the status and question history
+            if (score.questionHistory) {
                 await this.saveQuizProgress(quizName, {
                     ...score,
-                    status: 'failed',
+                    status: score.status || 'in_progress',
                     lastUpdated: new Date().toISOString()
                 });
             }
