@@ -58,10 +58,16 @@ class IndexPage {
                     return {
                         quizName: quizId,
                         score: progress ? Math.round(((progress.questionHistory?.length || 0) / 15) * 100) : 0,
-                        questionsAnswered: progress?.questionHistory?.length || 0
+                        questionsAnswered: progress?.questionHistory?.length || 0,
+                        status: progress?.status || 'in_progress'
                     };
                 } catch (error) {
-                    return { quizName: quizId, score: 0, questionsAnswered: 0 };
+                    return { 
+                        quizName: quizId, 
+                        score: 0, 
+                        questionsAnswered: 0,
+                        status: 'in_progress'
+                    };
                 }
             });
 
@@ -88,45 +94,25 @@ class IndexPage {
 
             const quizScore = this.quizScores.find(score => score.quizName === quizId);
             const percentage = quizScore ? quizScore.score : 0;
+            const failed = quizScore?.status === 'failed';
 
-            try {
-                // First try to get status from localStorage for immediate feedback
-                const username = localStorage.getItem('username');
-                const localStorageKey = `quiz_progress_${username}_${quizId}`;
-                const localData = localStorage.getItem(localStorageKey);
-                let failed = false;
-                
-                if (localData) {
-                    const parsedData = JSON.parse(localData);
-                    failed = parsedData.progress?.status === 'failed';
-                }
-
-                // Then check the API
-                const quizResult = await this.apiService.getQuizProgress(quizId);
-                failed = failed || quizResult?.data?.status === 'failed';
-
-                // If failed, also disable the quiz link
-                if (failed) {
-                    item.addEventListener('click', (e) => {
-                        e.preventDefault();
-                    });
-                    item.style.cursor = 'not-allowed';
-                    item.setAttribute('aria-disabled', 'true');
-                }
-
-                updates.set(item, {
-                    progress: percentage,
-                    element: progressElement,
-                    failed
-                });
-            } catch (error) {
-                console.error(`Error checking quiz status for ${quizId}:`, error);
-                updates.set(item, {
-                    progress: percentage,
-                    element: progressElement,
-                    failed: false
-                });
+            // If failed, disable the quiz link
+            if (failed) {
+                const clickHandler = (e) => {
+                    e.preventDefault();
+                };
+                // Remove any existing click handlers first
+                item.removeEventListener('click', clickHandler);
+                item.addEventListener('click', clickHandler);
+                item.style.cursor = 'not-allowed';
+                item.setAttribute('aria-disabled', 'true');
             }
+
+            updates.set(item, {
+                progress: percentage,
+                element: progressElement,
+                failed
+            });
         }));
 
         // Apply all updates in one batch
@@ -141,6 +127,8 @@ class IndexPage {
                     item.style.background = 'linear-gradient(to right, rgba(231, 76, 60, 0.1), rgba(231, 76, 60, 0.2))';
                     element.style.background = 'var(--error-color)';
                     element.style.color = 'white';
+                    // Make sure the link is disabled
+                    item.style.pointerEvents = 'none';
                 } else if (progress > 0) {
                     element.textContent = `${progress}%`;
                     element.style.display = 'block';
