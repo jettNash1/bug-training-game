@@ -636,10 +636,50 @@ class TestSupportQuiz extends BaseQuiz {
                 return;
             }
 
+            // Check if quiz was previously failed
+            const username = localStorage.getItem('username');
+            if (username) {
+                let failed = false;
+                
+                // First check localStorage for immediate feedback
+                const storageKey = `quiz_progress_${username}_${this.quizName}`;
+                const localData = localStorage.getItem(storageKey);
+                if (localData) {
+                    try {
+                        const parsedData = JSON.parse(localData);
+                        if (parsedData.progress?.status === 'failed') {
+                            failed = true;
+                            this.player.experience = parsedData.progress.experience || 0;
+                            this.player.questionHistory = parsedData.progress.questionHistory || [];
+                        }
+                    } catch (error) {
+                        console.error('Error parsing local storage data:', error);
+                    }
+                }
+
+                // Then check the API
+                try {
+                    const quizResult = await this.apiService.getQuizProgress(this.quizName);
+                    if (quizResult?.data?.status === 'failed') {
+                        failed = true;
+                        this.player.experience = quizResult.data.experience || this.player.experience || 0;
+                        this.player.questionHistory = quizResult.data.questionHistory || this.player.questionHistory || [];
+                    }
+                } catch (error) {
+                    console.error('Error checking quiz status from API:', error);
+                }
+
+                if (failed) {
+                    // If quiz was failed, show the end screen immediately
+                    this.endGame(true);
+                    return;
+                }
+            }
+
             // Initialize event listeners
             this.initializeEventListeners();
 
-            // Load previous progress
+            // Load previous progress only if not failed
             const hasProgress = await this.loadProgress();
             console.log('Previous progress loaded:', hasProgress);
             
@@ -1144,6 +1184,12 @@ class TestSupportQuiz extends BaseQuiz {
         const finalScore = Math.min(this.player.experience, this.maxXP);
         const scorePercentage = Math.round((finalScore / this.maxXP) * 100);
         
+        // Update the title based on pass/fail status
+        const titleElement = this.endScreen.querySelector('h2');
+        if (titleElement) {
+            titleElement.textContent = failed ? 'Quiz Failed!' : 'Quiz Complete!';
+        }
+
         // Save the final quiz result with pass/fail status
         const username = localStorage.getItem('username');
         if (username) {
@@ -1159,6 +1205,10 @@ class TestSupportQuiz extends BaseQuiz {
                 };
                 user.updateQuizScore(this.quizName, result);
                 console.log('Final quiz score saved:', result);
+
+                // Also save to localStorage to ensure immediate persistence
+                const storageKey = `quiz_progress_${username}_${this.quizName}`;
+                localStorage.setItem(storageKey, JSON.stringify({ progress: result }));
             } catch (error) {
                 console.error('Error saving final quiz score:', error);
             }
@@ -1168,7 +1218,7 @@ class TestSupportQuiz extends BaseQuiz {
 
         const performanceSummary = document.getElementById('performance-summary');
         if (failed) {
-            performanceSummary.textContent = 'Quiz failed. You did not meet the minimum XP requirement to progress. Please reset your progress to try again.';
+            performanceSummary.textContent = 'Quiz failed. You did not meet the minimum XP requirement to progress. Please contact your supervisor to reset your progress.';
             // Hide restart button if failed
             const restartBtn = document.getElementById('restart-btn');
             if (restartBtn) {

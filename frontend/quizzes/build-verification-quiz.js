@@ -637,10 +637,50 @@ class BuildVerificationQuiz extends BaseQuiz {
                 return;
             }
 
+            // Check if quiz was previously failed
+            const username = localStorage.getItem('username');
+            if (username) {
+                let failed = false;
+                
+                // First check localStorage for immediate feedback
+                const storageKey = `quiz_progress_${username}_${this.quizName}`;
+                const localData = localStorage.getItem(storageKey);
+                if (localData) {
+                    try {
+                        const parsedData = JSON.parse(localData);
+                        if (parsedData.progress?.status === 'failed') {
+                            failed = true;
+                            this.player.experience = parsedData.progress.experience || 0;
+                            this.player.questionHistory = parsedData.progress.questionHistory || [];
+                        }
+                    } catch (error) {
+                        console.error('Error parsing local storage data:', error);
+                    }
+                }
+
+                // Then check the API
+                try {
+                    const quizResult = await this.apiService.getQuizProgress(this.quizName);
+                    if (quizResult?.data?.status === 'failed') {
+                        failed = true;
+                        this.player.experience = quizResult.data.experience || this.player.experience || 0;
+                        this.player.questionHistory = quizResult.data.questionHistory || this.player.questionHistory || [];
+                    }
+                } catch (error) {
+                    console.error('Error checking quiz status from API:', error);
+                }
+
+                if (failed) {
+                    // If quiz was failed, show the end screen immediately
+                    this.endGame(true);
+                    return;
+                }
+            }
+
             // Initialize event listeners
             this.initializeEventListeners();
 
-            // Load previous progress
+            // Load previous progress only if not failed
             const hasProgress = await this.loadProgress();
             console.log('Previous progress loaded:', hasProgress);
             
@@ -845,9 +885,26 @@ class BuildVerificationQuiz extends BaseQuiz {
             const selectedOption = document.querySelector('input[name="option"]:checked');
             if (!selectedOption) return;
 
-            const currentScenarios = this.getCurrentScenarios();
-            const scenario = currentScenarios[this.player.currentScenario];
+            // Get the correct scenario based on question count
+            let scenario;
+            const questionCount = this.player.questionHistory.length;
+            
+            if (questionCount < 5) {
+                scenario = this.basicScenarios[questionCount];
+            } else if (questionCount < 10) {
+                scenario = this.intermediateScenarios[questionCount - 5];
+            } else if (questionCount < 15) {
+                scenario = this.advancedScenarios[questionCount - 10];
+            }
 
+            if (!scenario) {
+                console.error('No scenario found for question count:', questionCount);
+                this.endGame(true);
+                return;
+            }
+
+            const originalIndex = parseInt(selectedOption.value);
+            const selectedAnswer = scenario.options[originalIndex];
 
             // Update player state
             this.player.experience = Math.max(0, Math.min(this.maxXP, this.player.experience + selectedAnswer.experience));
@@ -859,9 +916,7 @@ class BuildVerificationQuiz extends BaseQuiz {
 
             // Increment current scenario
             this.player.currentScenario++;
-            
-            const originalIndex = parseInt(selectedOption.value);
-            const selectedAnswer = scenario.options[originalIndex];
+
             // Save progress
             await this.saveProgress();
 
@@ -1133,6 +1188,12 @@ class BuildVerificationQuiz extends BaseQuiz {
         const finalScore = Math.min(this.player.experience, this.maxXP);
         const scorePercentage = Math.round((finalScore / this.maxXP) * 100);
         
+        // Update the title based on pass/fail status
+        const titleElement = this.endScreen.querySelector('h2');
+        if (titleElement) {
+            titleElement.textContent = failed ? 'Quiz Failed!' : 'Quiz Complete!';
+        }
+
         // Save the final quiz result with pass/fail status
         const username = localStorage.getItem('username');
         if (username) {
@@ -1148,6 +1209,10 @@ class BuildVerificationQuiz extends BaseQuiz {
                 };
                 user.updateQuizScore(this.quizName, result);
                 console.log('Final quiz score saved:', result);
+
+                // Also save to localStorage to ensure immediate persistence
+                const storageKey = `quiz_progress_${username}_${this.quizName}`;
+                localStorage.setItem(storageKey, JSON.stringify({ progress: result }));
             } catch (error) {
                 console.error('Error saving final quiz score:', error);
             }
