@@ -159,13 +159,14 @@ class AdminDashboard {
             
             console.log('Admin token verified, fetching users...');
             const response = await this.apiService.getAllUsers();
+            console.log('Raw API response:', response);
 
             if (!response.success) {
                 throw new Error(response.error || 'Failed to fetch users');
             }
 
             const userData = response.data || [];
-            console.log(`Processing ${userData.length} users...`);
+            console.log('Processing users:', userData);
 
             if (!Array.isArray(userData)) {
                 throw new Error('Invalid response format: expected array of users');
@@ -175,16 +176,30 @@ class AdminDashboard {
             this.users = userData
                 .filter(user => user && user.username)
                 .map(user => {
-                    // Store the original progress data
-                    const progress = user.progress || {};
+                    // Process quiz progress data
+                    const progress = {};
+                    if (user.progress) {
+                        Object.entries(user.progress).forEach(([quizName, quizProgress]) => {
+                            if (quizProgress) {
+                                progress[quizName.toLowerCase()] = {
+                                    questionHistory: Array.isArray(quizProgress.questionHistory) ? quizProgress.questionHistory : [],
+                                    questionsAnswered: quizProgress.questionsAnswered || quizProgress.questionHistory?.length || 0,
+                                    experience: quizProgress.experience || 0,
+                                    currentScenario: quizProgress.currentScenario || 0,
+                                    lastUpdated: quizProgress.lastUpdated || null,
+                                    tools: quizProgress.tools || []
+                                };
+                            }
+                        });
+                    }
 
-                    // Format quiz results
+                    // Process quiz results
                     const quizResults = Array.isArray(user.quizResults) ? user.quizResults.map(result => ({
                         quizName: result.quizName,
                         score: result.score || 0,
                         questionsAnswered: result.questionsAnswered || result.questionHistory?.length || 0,
                         experience: result.experience || 0,
-                        questionHistory: result.questionHistory || [],
+                        questionHistory: Array.isArray(result.questionHistory) ? result.questionHistory : [],
                         completedAt: result.completedAt ? new Date(result.completedAt).toLocaleString() : null,
                         timestamp: result.timestamp ? new Date(result.timestamp).toLocaleString() : null
                     })) : [];
@@ -197,8 +212,8 @@ class AdminDashboard {
                                 quizResults.push({
                                     quizName: quizName,
                                     score: 0,
-                                    questionsAnswered: progressData.questionsAnswered || progressData.questionHistory.length,
-                                    experience: progressData.experience || 0,
+                                    questionsAnswered: progressData.questionsAnswered,
+                                    experience: progressData.experience,
                                     questionHistory: progressData.questionHistory,
                                     completedAt: progressData.lastUpdated ? new Date(progressData.lastUpdated).toLocaleString() : null,
                                     timestamp: progressData.lastUpdated ? new Date(progressData.lastUpdated).toLocaleString() : null
@@ -211,14 +226,20 @@ class AdminDashboard {
                         username: user.username,
                         lastLogin: user.lastLogin ? new Date(user.lastLogin).toLocaleString() : 'Never',
                         quizResults: quizResults,
-                        progress: progress, // Keep the original progress data
-                        quizProgress: progress // Also store as quizProgress for backward compatibility
+                        progress: progress,
+                        quizProgress: progress
                     };
 
                     console.log(`Processed user ${user.username}:`, {
+                        username: user.username,
                         quizResults: quizResults.length,
                         progressQuizzes: Object.keys(progress).length,
-                        progress: progress
+                        progressDetails: Object.entries(progress).map(([quiz, data]) => ({
+                            quiz,
+                            questionsAnswered: data.questionsAnswered,
+                            historyLength: data.questionHistory?.length,
+                            experience: data.experience
+                        }))
                     });
 
                     return processedUser;
