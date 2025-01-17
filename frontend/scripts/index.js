@@ -5,13 +5,14 @@ class IndexPage {
     constructor() {
         this.apiService = new APIService();
         this.user = new QuizUser(localStorage.getItem('username'));
-        this.quizItems = document.querySelectorAll('.quiz-item:not(.locked-quiz)');
         this.initialize();
     }
 
     async initialize() {
+        // Get quiz items after DOM is loaded
+        this.quizItems = document.querySelectorAll('.quiz-item:not(.locked-quiz)');
         await this.loadUserProgress();
-        this.updateQuizProgress();
+        await this.updateQuizProgress();
         this.updateCategoryProgress();
     }
 
@@ -39,12 +40,9 @@ class IndexPage {
             const progressPromises = Array.from(this.quizItems).map(async item => {
                 const quizId = item.dataset.quiz;
                 try {
-                    // Parallel requests for server and local data
-                    const [serverProgress, localData] = await Promise.all([
-                        this.apiService.getQuizProgress(quizId),
-                        localStorage.getItem(`quiz_progress_${username}_${quizId}`)
-                    ]);
-
+                    // First check localStorage for immediate feedback
+                    const localStorageKey = `quiz_progress_${username}_${quizId}`;
+                    const localData = localStorage.getItem(localStorageKey);
                     let localProgress = null;
                     if (localData) {
                         try {
@@ -53,26 +51,39 @@ class IndexPage {
                         } catch (e) {} // Ignore parse errors
                     }
 
+                    // Then get server data
+                    const serverProgress = await this.apiService.getQuizProgress(quizId);
                     const progress = serverProgress?.data || localProgress;
-                    
+
+                    if (!progress) {
+                        return {
+                            quizName: quizId,
+                            score: 0,
+                            questionsAnswered: 0,
+                            status: 'not_started'
+                        };
+                    }
+
                     return {
                         quizName: quizId,
-                        score: progress ? Math.round(((progress.questionHistory?.length || 0) / 15) * 100) : 0,
-                        questionsAnswered: progress?.questionHistory?.length || 0,
-                        status: progress?.status || 'in_progress'
+                        score: Math.round(((progress.questionHistory?.length || 0) / 15) * 100),
+                        questionsAnswered: progress.questionHistory?.length || 0,
+                        status: progress.status || 'in_progress',
+                        experience: progress.experience || 0
                     };
                 } catch (error) {
-                    return { 
-                        quizName: quizId, 
-                        score: 0, 
+                    console.error(`Error loading progress for quiz ${quizId}:`, error);
+                    return {
+                        quizName: quizId,
+                        score: 0,
                         questionsAnswered: 0,
-                        status: 'in_progress'
+                        status: 'not_started'
                     };
                 }
             });
 
-            // Wait for all progress data to load
             this.quizScores = await Promise.all(progressPromises);
+            console.log('Loaded quiz scores:', this.quizScores);
         } catch (error) {
             console.error('Error loading user progress:', error);
             this.quizScores = [];
@@ -80,74 +91,53 @@ class IndexPage {
     }
 
     async updateQuizProgress() {
-        if (!this.quizScores) return;
+        if (!this.quizScores || !this.quizItems) return;
 
-        // Create a document fragment to batch DOM updates
-        const fragment = document.createDocumentFragment();
-        const updates = new Map();
-
-        // Convert forEach to Promise.all to properly handle async operations
-        await Promise.all(this.quizItems.map(async item => {
+        this.quizItems.forEach(item => {
             const quizId = item.dataset.quiz;
             const progressElement = document.getElementById(`${quizId}-progress`);
             if (!progressElement) return;
 
             const quizScore = this.quizScores.find(score => score.quizName === quizId);
-            const percentage = quizScore ? quizScore.score : 0;
-            const failed = quizScore?.status === 'failed';
+            if (!quizScore) return;
 
-            // If failed, disable the quiz link
+            const percentage = quizScore.score;
+            const failed = quizScore.status === 'failed';
+
+            // Update progress display
+            progressElement.style.display = 'block';
+            
             if (failed) {
-                const clickHandler = (e) => {
-                    e.preventDefault();
-                };
-                // Remove any existing click handlers first
-                item.removeEventListener('click', clickHandler);
-                item.addEventListener('click', clickHandler);
+                // Show failed state
+                progressElement.textContent = 'Failed';
+                item.style.background = 'linear-gradient(to right, rgba(231, 76, 60, 0.1), rgba(231, 76, 60, 0.2))';
+                progressElement.style.background = 'var(--error-color)';
+                progressElement.style.color = 'white';
+                
+                // Disable the quiz link
+                item.style.pointerEvents = 'none';
                 item.style.cursor = 'not-allowed';
                 item.setAttribute('aria-disabled', 'true');
-            }
-
-            updates.set(item, {
-                progress: percentage,
-                element: progressElement,
-                failed
-            });
-        }));
-
-        // Apply all updates in one batch
-        requestAnimationFrame(() => {
-            updates.forEach(({ progress, element, failed }, item) => {
-                item.setAttribute('data-progress', progress);
                 
-                if (failed) {
-                    // Show failed state
-                    element.textContent = 'Failed';
-                    element.style.display = 'block';
-                    item.style.background = 'linear-gradient(to right, rgba(231, 76, 60, 0.1), rgba(231, 76, 60, 0.2))';
-                    element.style.background = 'var(--error-color)';
-                    element.style.color = 'white';
-                    // Make sure the link is disabled
-                    item.style.pointerEvents = 'none';
-                } else if (progress > 0) {
-                    element.textContent = `${progress}%`;
-                    element.style.display = 'block';
-                    
-                    if (progress === 100) {
-                        item.style.background = 'linear-gradient(to right, rgba(46, 204, 113, 0.1), rgba(46, 204, 113, 0.2))';
-                        element.style.background = 'var(--success-color)';
-                        element.style.color = 'white';
-                    } else {
-                        item.style.background = 'linear-gradient(to right, rgba(241, 196, 15, 0.1), rgba(241, 196, 15, 0.2))';
-                        element.style.background = 'var(--warning-color)';
-                        element.style.color = 'var(--text-primary)';
-                    }
+                // Prevent default click behavior
+                item.addEventListener('click', (e) => e.preventDefault());
+            } else if (percentage > 0) {
+                progressElement.textContent = `${percentage}%`;
+                
+                if (percentage === 100) {
+                    item.style.background = 'linear-gradient(to right, rgba(46, 204, 113, 0.1), rgba(46, 204, 113, 0.2))';
+                    progressElement.style.background = 'var(--success-color)';
+                    progressElement.style.color = 'white';
                 } else {
-                    element.textContent = '';
-                    element.style.display = 'none';
-                    item.style.background = 'var(--card-background)';
+                    item.style.background = 'linear-gradient(to right, rgba(241, 196, 15, 0.1), rgba(241, 196, 15, 0.2))';
+                    progressElement.style.background = 'var(--warning-color)';
+                    progressElement.style.color = 'var(--text-primary)';
                 }
-            });
+            } else {
+                progressElement.textContent = '';
+                progressElement.style.display = 'none';
+                item.style.background = 'var(--card-background)';
+            }
         });
     }
 
