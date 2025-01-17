@@ -835,11 +835,18 @@ class AdminDashboard {
 
     async resetQuizProgress(username, quizName) {
         try {
-            const response = await this.apiService.resetQuizProgress(username, quizName);
+            const normalizedQuizName = this.normalizeQuizName(quizName);
+            console.log('Resetting quiz progress:', { username, quizName: normalizedQuizName });
+            
+            const response = await this.apiService.resetQuizProgress(username, normalizedQuizName);
+            console.log('Reset progress response:', response);
 
-            if (!response.success) {
-                throw new Error(response.error || 'Failed to reset quiz progress');
+            if (!response || !response.success) {
+                throw new Error(response?.message || 'Failed to reset quiz progress');
             }
+
+            // Show success message
+            this.showMessage('Quiz progress reset successfully', 'success');
 
             // Reload users to get fresh data
             await this.loadUsers();
@@ -850,7 +857,7 @@ class AdminDashboard {
             return true;
         } catch (error) {
             console.error('Error resetting progress:', error);
-            this.showError('Failed to reset progress');
+            this.showError(`Failed to reset progress: ${error.message}`);
             throw error;
         }
     }

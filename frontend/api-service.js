@@ -42,25 +42,21 @@ export class APIService {
                 credentials: 'include'
             });
 
-            // Try to read the response text first
-            const text = await response.text();
-            console.log('Response text:', text);
-            
-            // Then parse it as JSON if possible
+            // Handle auth errors first
+            if (response.status === 401 || response.status === 403) {
+                console.log('Auth error response:', { status: response.status });
+                localStorage.removeItem('adminToken');
+                window.location.replace('/pages/admin-login.html');
+                throw new Error('Authentication failed');
+            }
+
+            // Try to parse response as JSON
             let data;
             try {
-                data = JSON.parse(text);
+                data = await response.json();
             } catch (e) {
                 console.error('Failed to parse response as JSON:', e);
                 throw new Error('Invalid JSON response from server');
-            }
-
-            // Handle auth errors
-            if (response.status === 401 || response.status === 403) {
-                console.log('Auth error response:', { status: response.status, data });
-                        localStorage.removeItem('adminToken');
-                        window.location.replace('/pages/admin-login.html');
-                throw new Error(data.message || 'Authentication failed');
             }
 
             // Handle other errors
@@ -547,20 +543,14 @@ export class APIService {
 
     async resetQuizProgress(username, quizName) {
         try {
-            const response = await this.fetchWithAdminAuth(`${this.baseUrl}/admin/reset-quiz-progress`, {
+            console.log('Resetting quiz progress:', { username, quizName });
+            const data = await this.fetchWithAdminAuth(`${this.baseUrl}/admin/reset-quiz-progress`, {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
                 body: JSON.stringify({ username, quizName })
             });
 
-            if (!response.ok) {
-                const errorData = await response.json();
-                throw new Error(errorData.message || 'Failed to reset quiz progress');
-            }
-
-            return await response.json();
+            console.log('Reset quiz progress response:', data);
+            return data;
         } catch (error) {
             console.error('Failed to reset quiz progress:', error);
             throw error;
