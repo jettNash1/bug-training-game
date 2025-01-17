@@ -342,35 +342,89 @@ class AdminDashboard {
     }
 
     updateStatistics() {
-        const today = new Date().setHours(0, 0, 0, 0);
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
         
-        const stats = this.users.reduce((acc, user) => {
-            // Check if user was active today
-            const lastActive = this.getLastActiveDate(user);
-            if (lastActive >= today) {
-                acc.activeUsers++;
-            }
-
-            // Calculate progress for average
-            const userProgress = this.calculateUserProgress(user);
-            acc.totalProgress += userProgress;
-            
-            console.log(`User ${user.username} stats:`, {
-                lastActive: new Date(lastActive),
-                progress: userProgress,
-                completedQuizzes: user.quizResults?.length || 0
-            });
-
-            return acc;
-        }, {
+        // Process each user and collect statistics
+        const stats = {
             totalUsers: this.users.length,
             activeUsers: 0,
             totalProgress: 0
+        };
+
+        this.users.forEach(user => {
+            // Check if user was active today by looking at:
+            // 1. Last login
+            // 2. Quiz results completion dates
+            // 3. Quiz progress last updated dates
+            let lastActive = 0;
+
+            // Check last login
+            if (user.lastLogin && user.lastLogin !== 'Never') {
+                const loginDate = new Date(user.lastLogin).getTime();
+                if (!isNaN(loginDate)) {
+                    lastActive = Math.max(lastActive, loginDate);
+                }
+            }
+
+            // Check quiz results
+            if (user.quizResults) {
+                user.quizResults.forEach(result => {
+                    if (result.completedAt) {
+                        const completedDate = new Date(result.completedAt).getTime();
+                        if (!isNaN(completedDate)) {
+                            lastActive = Math.max(lastActive, completedDate);
+                        }
+                    }
+                });
+            }
+
+            // Check quiz progress
+            if (user.quizProgress) {
+                Object.values(user.quizProgress).forEach(progress => {
+                    if (progress.lastUpdated) {
+                        const updatedDate = new Date(progress.lastUpdated).getTime();
+                        if (!isNaN(updatedDate)) {
+                            lastActive = Math.max(lastActive, updatedDate);
+                        }
+                    }
+                });
+            }
+
+            // Calculate user's progress
+            const userProgress = this.calculateUserProgress(user);
+            stats.totalProgress += userProgress;
+
+            // Check if user was active today
+            const wasActiveToday = lastActive >= today.getTime();
+            if (wasActiveToday) {
+                stats.activeUsers++;
+            }
+
+            // Log user stats with more detail
+            console.log(`User ${user.username} stats:`, {
+                lastActive: new Date(lastActive).toLocaleString(),
+                wasActiveToday,
+                progress: userProgress,
+                completedQuizzes: user.quizResults?.length || 0,
+                inProgressQuizzes: Object.keys(user.quizProgress || {}).length,
+                quizProgressDates: Object.entries(user.quizProgress || {}).map(([quiz, data]) => ({
+                    quiz,
+                    lastUpdated: data.lastUpdated
+                }))
+            });
         });
 
+        // Calculate average progress
         stats.averageProgress = Math.round(stats.totalProgress / stats.totalUsers);
         
-        console.log('Final statistics:', stats);
+        console.log('Final statistics:', {
+            totalUsers: stats.totalUsers,
+            activeUsers: stats.activeUsers,
+            totalProgress: stats.totalProgress,
+            averageProgress: stats.averageProgress
+        });
+
         return stats;
     }
 
