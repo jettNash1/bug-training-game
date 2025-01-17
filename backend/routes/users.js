@@ -397,7 +397,13 @@ router.get('/quiz-progress/:quizName', auth, async (req, res) => {
             return res.status(404).json({ success: false, message: 'User not found' });
         }
 
-        const progress = user.quizProgress ? user.quizProgress.get(quizName) : null;
+        // Normalize quiz name for consistency
+        const normalizedQuizName = normalizeQuizName(quizName);
+        console.log(`Getting progress for quiz: ${normalizedQuizName} (original: ${quizName})`);
+
+        // Get progress from the object using normalized name
+        const progress = user.quizProgress ? user.quizProgress[normalizedQuizName] : null;
+        console.log('Found progress:', progress);
         
         // If no progress exists, return a default structure
         const responseData = progress ? {
@@ -407,23 +413,27 @@ router.get('/quiz-progress/:quizName', auth, async (req, res) => {
             questionHistory: Array.isArray(progress.questionHistory) ? progress.questionHistory : [],
             questionsAnswered: parseInt(progress.questionsAnswered || progress.questionHistory?.length || 0, 10),
             currentScenario: parseInt(progress.currentScenario || 0, 10),
-            lastUpdated: progress.lastUpdated || new Date().toISOString()
+            lastUpdated: progress.lastUpdated || new Date().toISOString(),
+            status: progress.status || 'not_started'
         } : {
             experience: 0,
             tools: [],
             questionHistory: [],
             questionsAnswered: 0,
             currentScenario: 0,
-            lastUpdated: new Date().toISOString()
+            lastUpdated: new Date().toISOString(),
+            status: 'not_started'
         };
 
+        console.log('Sending response data:', responseData);
         res.json({ success: true, data: responseData });
     } catch (error) {
         console.error('Failed to get progress:', error);
         res.status(500).json({ 
             success: false, 
             message: 'Failed to get progress',
-            error: error.message 
+            error: error.message,
+            stack: process.env.NODE_ENV === 'production' ? undefined : error.stack
         });
     }
 });

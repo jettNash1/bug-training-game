@@ -362,4 +362,76 @@ router.post('/users/:username/quiz-scores/reset', auth, async (req, res) => {
     }
 });
 
+// Reset quiz progress for a user
+router.post('/reset-quiz-progress', auth, async (req, res) => {
+    try {
+        const { username, quizName } = req.body;
+        console.log('Attempting to reset quiz progress:', { username, quizName });
+
+        // Verify admin status
+        const admin = await User.findById(req.user.id);
+        if (!admin?.isAdmin) {
+            return res.status(403).json({ 
+                success: false, 
+                message: 'Unauthorized - Admin access required' 
+            });
+        }
+
+        // Find user
+        const user = await User.findOne({ username });
+        if (!user) {
+            return res.status(404).json({ 
+                success: false, 
+                message: 'User not found' 
+            });
+        }
+
+        // Normalize quiz name for consistency
+        const normalizedQuizName = quizName.toLowerCase().replace(/[^a-z0-9-]/g, '');
+        console.log(`Normalized quiz name: ${normalizedQuizName}`);
+
+        // Initialize quizProgress if it doesn't exist
+        if (!user.quizProgress) {
+            user.quizProgress = {};
+        }
+
+        // Remove the quiz progress
+        if (user.quizProgress[normalizedQuizName]) {
+            delete user.quizProgress[normalizedQuizName];
+            console.log(`Deleted progress for quiz: ${normalizedQuizName}`);
+        }
+
+        // Remove or reset the quiz result
+        const quizResultIndex = user.quizResults.findIndex(
+            result => result.quizName.toLowerCase().replace(/[^a-z0-9-]/g, '') === normalizedQuizName
+        );
+
+        if (quizResultIndex !== -1) {
+            user.quizResults.splice(quizResultIndex, 1);
+            console.log(`Removed quiz result for: ${normalizedQuizName}`);
+        }
+
+        await user.save();
+        console.log('Successfully reset quiz progress');
+
+        res.json({ 
+            success: true, 
+            message: 'Quiz progress reset successfully',
+            data: {
+                username,
+                quizName: normalizedQuizName,
+                remainingQuizzes: Object.keys(user.quizProgress)
+            }
+        });
+    } catch (error) {
+        console.error('Failed to reset quiz progress:', error);
+        res.status(500).json({ 
+            success: false, 
+            message: 'Failed to reset quiz progress',
+            error: error.message,
+            stack: process.env.NODE_ENV === 'production' ? undefined : error.stack
+        });
+    }
+});
+
 module.exports = router; 
