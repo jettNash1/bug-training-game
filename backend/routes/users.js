@@ -279,7 +279,11 @@ router.post('/:username/quiz-results', async (req, res) => {
 router.post('/quiz-progress', auth, async (req, res) => {
     try {
         const { quizName, progress } = req.body;
-        console.log('Saving quiz progress:', { quizName, progress });
+        console.log('Saving quiz progress:', { 
+            quizName, 
+            progress,
+            userId: req.user.id 
+        });
         
         const user = await User.findById(req.user.id);
         
@@ -289,7 +293,8 @@ router.post('/quiz-progress', auth, async (req, res) => {
 
         // Initialize quizProgress if it doesn't exist
         if (!user.quizProgress) {
-            user.quizProgress = new Map();
+            user.quizProgress = {};
+            console.log('Initialized empty quizProgress object');
         }
 
         // Parse dates if they're strings
@@ -314,8 +319,9 @@ router.post('/quiz-progress', auth, async (req, res) => {
 
         console.log('Processed progress data:', updatedProgress);
 
-        // Update quiz progress using normalized name
-        user.quizProgress.set(normalizedQuizName, updatedProgress);
+        // Update quiz progress using normalized name (as a plain object, not Map)
+        user.quizProgress[normalizedQuizName] = updatedProgress;
+        console.log('Updated quizProgress:', user.quizProgress);
 
         // Always sync with quiz results to ensure question history is preserved
         const existingResultIndex = user.quizResults.findIndex(r => 
@@ -353,6 +359,13 @@ router.post('/quiz-progress', auth, async (req, res) => {
             });
         }
 
+        // Log the final state before saving
+        console.log('Final user state before save:', {
+            username: user.username,
+            quizProgressKeys: Object.keys(user.quizProgress),
+            quizResultsCount: user.quizResults.length
+        });
+
         await user.save();
         console.log('Successfully saved quiz progress');
         
@@ -365,10 +378,12 @@ router.post('/quiz-progress', auth, async (req, res) => {
         });
     } catch (error) {
         console.error('Failed to save progress:', error);
+        // Send more detailed error information
         res.status(500).json({ 
             success: false, 
             message: 'Failed to save progress',
-            error: error.message 
+            error: error.message,
+            stack: process.env.NODE_ENV === 'production' ? undefined : error.stack
         });
     }
 });
