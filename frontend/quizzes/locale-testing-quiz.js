@@ -1167,6 +1167,12 @@ export class LocaleTestingQuiz extends BaseQuiz {
         const finalScore = Math.min(this.player.experience, this.maxXP);
         const scorePercentage = Math.round((finalScore / this.maxXP) * 100);
         
+        // Update the title based on pass/fail status
+        const titleElement = this.endScreen.querySelector('h2');
+        if (titleElement) {
+            titleElement.textContent = failed ? 'Quiz Failed!' : 'Quiz Complete!';
+        }
+
         // Save the final quiz result with pass/fail status
         const username = localStorage.getItem('username');
         if (username) {
