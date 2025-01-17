@@ -847,9 +847,7 @@ class BuildVerificationQuiz extends BaseQuiz {
 
             const currentScenarios = this.getCurrentScenarios();
             const scenario = currentScenarios[this.player.currentScenario];
-            const originalIndex = parseInt(selectedOption.value);
-            
-            const selectedAnswer = scenario.options[originalIndex];
+
 
             // Update player state
             this.player.experience = Math.max(0, Math.min(this.maxXP, this.player.experience + selectedAnswer.experience));
@@ -861,7 +859,9 @@ class BuildVerificationQuiz extends BaseQuiz {
 
             // Increment current scenario
             this.player.currentScenario++;
-
+            
+            const originalIndex = parseInt(selectedOption.value);
+            const selectedAnswer = scenario.options[originalIndex];
             // Save progress
             await this.saveProgress();
 
