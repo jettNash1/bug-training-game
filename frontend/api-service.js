@@ -422,17 +422,19 @@ export class APIService {
                 credentials: 'include'
             });
 
-            // Try to read the response text first
-            const text = await response.text();
-            console.log('Token verification response:', text);
+            // Handle auth errors first
+            if (response.status === 401 || response.status === 403) {
+                console.log('Auth error response:', { status: response.status });
+                localStorage.removeItem('adminToken');
+                return { valid: false, reason: 'unauthorized' };
+            }
 
-            // Then parse it as JSON if possible
+            // Try to parse response as JSON
             let data;
             try {
-                data = JSON.parse(text);
+                data = await response.json();
             } catch (e) {
                 console.error('Failed to parse verification response as JSON:', e);
-                // Don't remove token on parse error, might be temporary
                 return { valid: false, reason: 'invalid_json' };
             }
 
@@ -444,12 +446,6 @@ export class APIService {
                 valid: data.valid 
             });
 
-            // Only remove token if we get a clear invalid response
-            if (response.status === 401 || (response.ok && !data.valid)) {
-                console.log('Removing invalid token');
-                localStorage.removeItem('adminToken');
-            }
-
             return { 
                 valid: isValid,
                 reason: isValid ? 'valid' : 'invalid',
@@ -457,7 +453,6 @@ export class APIService {
             };
         } catch (error) {
             console.error('Admin token verification error:', error);
-            // Don't remove token on network errors, might be temporary
             return { 
                 valid: false, 
                 reason: 'error',
@@ -544,9 +539,9 @@ export class APIService {
     async resetQuizProgress(username, quizName) {
         try {
             console.log('Resetting quiz progress:', { username, quizName });
-            const data = await this.fetchWithAdminAuth(`${this.baseUrl}/admin/reset-quiz-progress`, {
+            const data = await this.fetchWithAdminAuth(`${this.baseUrl}/admin/users/${username}/quiz-scores/reset`, {
                 method: 'POST',
-                body: JSON.stringify({ username, quizName })
+                body: JSON.stringify({ quizName })
             });
 
             console.log('Reset quiz progress response:', data);
