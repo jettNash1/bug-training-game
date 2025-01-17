@@ -285,8 +285,14 @@ router.post('/quiz-progress', auth, async (req, res) => {
             userId: req.user.id 
         });
         
+        if (!quizName || !progress) {
+            return res.status(400).json({ 
+                success: false, 
+                message: 'Quiz name and progress data are required' 
+            });
+        }
+
         const user = await User.findById(req.user.id);
-        
         if (!user) {
             return res.status(404).json({ success: false, message: 'User not found' });
         }
@@ -294,21 +300,25 @@ router.post('/quiz-progress', auth, async (req, res) => {
         // Initialize quizProgress if it doesn't exist
         if (!user.quizProgress) {
             user.quizProgress = {};
-            console.log('Initialized empty quizProgress object');
         }
+
+        // Normalize quiz name for consistency
+        const normalizedQuizName = normalizeQuizName(quizName);
+        console.log(`Normalized quiz name: ${normalizedQuizName} (original: ${quizName})`);
 
         // Parse dates if they're strings
         const lastUpdated = progress.lastUpdated ? new Date(progress.lastUpdated) : new Date();
-
-        // Normalize quiz name
-        const normalizedQuizName = normalizeQuizName(quizName);
-        console.log(`Normalized quiz name: ${normalizedQuizName} (original: ${quizName})`);
 
         // Ensure all required fields are present with consistent types
         const updatedProgress = {
             experience: parseInt(progress.experience || 0, 10),
             tools: Array.isArray(progress.tools) ? progress.tools : [],
-            questionHistory: Array.isArray(progress.questionHistory) ? progress.questionHistory : [],
+            questionHistory: Array.isArray(progress.questionHistory) ? progress.questionHistory.map(q => ({
+                questionText: q.questionText || '',
+                selectedAnswerText: q.selectedAnswerText || '',
+                experienceGained: parseInt(q.experienceGained || 0, 10),
+                isCorrect: Boolean(q.isCorrect)
+            })) : [],
             questionsAnswered: parseInt(progress.questionsAnswered || progress.questionHistory?.length || 0, 10),
             currentScenario: progress.currentScenario !== undefined ? 
                            parseInt(progress.currentScenario, 10) : 
@@ -317,54 +327,35 @@ router.post('/quiz-progress', auth, async (req, res) => {
             status: progress.status || 'in_progress'
         };
 
-        console.log('Processed progress data:', updatedProgress);
-
-        // Update quiz progress using normalized name (as a plain object, not Map)
+        // Update quiz progress using normalized name
         user.quizProgress[normalizedQuizName] = updatedProgress;
-        console.log('Updated quizProgress:', user.quizProgress);
 
-        // Always sync with quiz results to ensure question history is preserved
+        // Always sync with quiz results
         const existingResultIndex = user.quizResults.findIndex(r => 
             normalizeQuizName(r.quizName) === normalizedQuizName
         );
 
+        const quizResultData = {
+            quizName: normalizedQuizName,
+            score: Math.round((updatedProgress.experience / 300) * 100), // Calculate score based on max XP of 300
+            experience: updatedProgress.experience,
+            tools: updatedProgress.tools,
+            questionHistory: updatedProgress.questionHistory,
+            questionsAnswered: updatedProgress.questionsAnswered,
+            currentScenario: updatedProgress.currentScenario,
+            status: updatedProgress.status,
+            updatedAt: lastUpdated.toISOString()
+        };
+
         if (existingResultIndex !== -1) {
-            console.log('Updating existing quiz result');
-            // Update existing quiz result with progress data
             user.quizResults[existingResultIndex] = {
                 ...user.quizResults[existingResultIndex],
-                quizName: normalizedQuizName, // Ensure consistent naming
-                experience: updatedProgress.experience,
-                tools: updatedProgress.tools,
-                questionHistory: updatedProgress.questionHistory,
-                questionsAnswered: updatedProgress.questionsAnswered,
-                currentScenario: updatedProgress.currentScenario,
-                status: updatedProgress.status,
-                updatedAt: lastUpdated.toISOString()
+                ...quizResultData
             };
         } else {
-            console.log('Creating new quiz result');
-            // Create new quiz result from progress data
-            user.quizResults.push({
-                quizName: normalizedQuizName,
-                score: Math.round((updatedProgress.experience / 300) * 100), // Calculate score based on max XP of 300
-                experience: updatedProgress.experience,
-                tools: updatedProgress.tools,
-                questionHistory: updatedProgress.questionHistory,
-                questionsAnswered: updatedProgress.questionsAnswered,
-                currentScenario: updatedProgress.currentScenario,
-                status: updatedProgress.status,
-                completedAt: lastUpdated.toISOString(),
-                updatedAt: lastUpdated.toISOString()
-            });
+            quizResultData.completedAt = lastUpdated.toISOString();
+            user.quizResults.push(quizResultData);
         }
-
-        // Log the final state before saving
-        console.log('Final user state before save:', {
-            username: user.username,
-            quizProgressKeys: Object.keys(user.quizProgress),
-            quizResultsCount: user.quizResults.length
-        });
 
         await user.save();
         console.log('Successfully saved quiz progress');
@@ -378,7 +369,6 @@ router.post('/quiz-progress', auth, async (req, res) => {
         });
     } catch (error) {
         console.error('Failed to save progress:', error);
-        // Send more detailed error information
         res.status(500).json({ 
             success: false, 
             message: 'Failed to save progress',
