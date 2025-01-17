@@ -95,8 +95,14 @@ class IndexPage {
 
         this.quizItems.forEach(item => {
             const quizId = item.dataset.quiz;
-            const progressElement = document.getElementById(`${quizId}-progress`);
-            if (!progressElement) return;
+            // First check if progress element exists, if not create it
+            let progressElement = document.getElementById(`${quizId}-progress`);
+            if (!progressElement) {
+                progressElement = document.createElement('div');
+                progressElement.id = `${quizId}-progress`;
+                progressElement.className = 'quiz-completion';
+                item.appendChild(progressElement);
+            }
 
             const quizScore = this.quizScores.find(score => score.quizName === quizId);
             if (!quizScore) return;
@@ -104,53 +110,60 @@ class IndexPage {
             const percentage = quizScore.score;
             const failed = quizScore.status === 'failed';
 
-            // Always ensure progress element is visible and properly positioned
-            progressElement.style.display = 'block';
-            progressElement.style.position = 'absolute';
-            progressElement.style.top = '8px';
-            progressElement.style.right = '8px';
-            progressElement.style.padding = '4px 8px';
-            progressElement.style.borderRadius = '4px';
-            progressElement.style.fontSize = '12px';
-            progressElement.style.fontWeight = 'bold';
+            // Style the quiz item for proper positioning
+            item.style.position = 'relative';
+            item.style.overflow = 'visible';
+
+            // Style the progress element
+            Object.assign(progressElement.style, {
+                display: 'block',
+                position: 'absolute',
+                top: '8px',
+                right: '8px',
+                padding: '4px 8px',
+                borderRadius: '4px',
+                fontSize: '12px',
+                fontWeight: 'bold',
+                zIndex: '1'
+            });
             
             if (failed) {
                 // Show failed state
                 progressElement.textContent = 'Failed';
-                progressElement.style.background = 'var(--error-color)';
+                progressElement.style.backgroundColor = '#e74c3c'; // Error color
                 progressElement.style.color = 'white';
-                item.style.background = 'linear-gradient(to right, rgba(231, 76, 60, 0.1), rgba(231, 76, 60, 0.2))';
-                item.style.borderColor = 'var(--error-color)';
-                item.style.opacity = '0.9';
                 
-                // Disable the quiz link
-                item.style.pointerEvents = 'none';
-                item.style.cursor = 'not-allowed';
+                // Style the quiz item
+                Object.assign(item.style, {
+                    background: 'linear-gradient(to right, rgba(231, 76, 60, 0.1), rgba(231, 76, 60, 0.2))',
+                    border: '1px solid #e74c3c',
+                    opacity: '0.9',
+                    pointerEvents: 'none',
+                    cursor: 'not-allowed'
+                });
+                
                 item.setAttribute('aria-disabled', 'true');
                 
                 // Prevent default click behavior
-                item.addEventListener('click', (e) => e.preventDefault());
+                const clickHandler = (e) => e.preventDefault();
+                item.removeEventListener('click', clickHandler);
+                item.addEventListener('click', clickHandler);
             } else if (percentage > 0) {
                 progressElement.textContent = `${percentage}%`;
                 
                 if (percentage === 100) {
-                    item.style.background = 'linear-gradient(to right, rgba(46, 204, 113, 0.1), rgba(46, 204, 113, 0.2))';
-                    progressElement.style.background = 'var(--success-color)';
+                    progressElement.style.backgroundColor = '#2ecc71'; // Success color
                     progressElement.style.color = 'white';
+                    item.style.background = 'linear-gradient(to right, rgba(46, 204, 113, 0.1), rgba(46, 204, 113, 0.2))';
                 } else {
+                    progressElement.style.backgroundColor = '#f1c40f'; // Warning color
+                    progressElement.style.color = '#2c3e50';
                     item.style.background = 'linear-gradient(to right, rgba(241, 196, 15, 0.1), rgba(241, 196, 15, 0.2))';
-                    progressElement.style.background = 'var(--warning-color)';
-                    progressElement.style.color = 'var(--text-primary)';
                 }
             } else {
-                progressElement.textContent = '';
                 progressElement.style.display = 'none';
                 item.style.background = 'var(--card-background)';
             }
-
-            // Ensure the quiz item has relative positioning for absolute progress element
-            item.style.position = 'relative';
-            item.style.overflow = 'visible';
         });
     }
 
