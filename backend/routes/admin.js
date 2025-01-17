@@ -127,6 +127,11 @@ router.get('/users', auth, async (req, res) => {
 
             // Update each quiz result with its corresponding progress data
             userData.quizResults = userData.quizResults.map(result => {
+                if (!result || !result.quizName) {
+                    console.warn('Invalid quiz result found:', result);
+                    return null;
+                }
+                
                 const progress = userData.quizProgress?.[result.quizName.toLowerCase()];
                 
                 // Calculate questions answered and experience
@@ -152,7 +157,7 @@ router.get('/users', auth, async (req, res) => {
                     questionsAnswered,
                     experience
                 };
-            });
+            }).filter(result => result !== null); // Remove any invalid results
 
             // Remove quizProgress from response since it's not needed
             delete userData.quizProgress;
