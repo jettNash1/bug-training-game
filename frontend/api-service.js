@@ -541,6 +541,9 @@ export class APIService {
             console.log('Resetting quiz progress:', { username, quizName });
             const data = await this.fetchWithAdminAuth(`${this.baseUrl}/admin/users/${username}/quiz-scores/reset`, {
                 method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
                 body: JSON.stringify({ quizName })
             });
 

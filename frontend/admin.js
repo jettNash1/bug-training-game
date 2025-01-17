@@ -838,14 +838,6 @@ class AdminDashboard {
             const normalizedQuizName = this.normalizeQuizName(quizName);
             console.log('Resetting quiz progress:', { username, quizName: normalizedQuizName });
             
-            // Verify admin token first
-            const tokenValid = await this.apiService.verifyAdminToken();
-            if (!tokenValid.valid) {
-                console.log('Admin token invalid:', tokenValid);
-                window.location.replace('/pages/admin-login.html');
-                throw new Error('Admin session expired. Please login again.');
-            }
-            
             const response = await this.apiService.resetQuizProgress(username, normalizedQuizName);
             console.log('Reset progress response:', response);
 
@@ -865,11 +857,7 @@ class AdminDashboard {
             return true;
         } catch (error) {
             console.error('Error resetting progress:', error);
-            if (error.message.includes('Admin session expired')) {
-                window.location.replace('/pages/admin-login.html');
-            } else {
-                this.showError(`Failed to reset progress: ${error.message}`);
-            }
+            this.showError(`Failed to reset progress: ${error.message}`);
             throw error;
         }
     }
