@@ -175,22 +175,8 @@ class AdminDashboard {
             this.users = userData
                 .filter(user => user && user.username)
                 .map(user => {
-                    // Ensure quiz progress exists and is properly formatted
-                    const quizProgress = {};
-                    if (user.progress) {
-                        Object.entries(user.progress).forEach(([quizName, progress]) => {
-                            if (progress) {
-                                quizProgress[quizName.toLowerCase()] = {
-                                    questionHistory: progress.questionHistory || [],
-                                    questionsAnswered: progress.questionsAnswered || progress.questionHistory?.length || 0,
-                                    experience: progress.experience || 0,
-                                    currentScenario: progress.currentScenario || 0,
-                                    lastUpdated: progress.lastUpdated || null,
-                                    tools: progress.tools || []
-                                };
-                            }
-                        });
-                    }
+                    // Store the original progress data
+                    const progress = user.progress || {};
 
                     // Format quiz results
                     const quizResults = Array.isArray(user.quizResults) ? user.quizResults.map(result => ({
@@ -204,18 +190,18 @@ class AdminDashboard {
                     })) : [];
 
                     // Add quiz progress data to results if not already present
-                    Object.entries(quizProgress).forEach(([quizName, progress]) => {
-                        if (progress && progress.questionHistory?.length > 0) {
+                    Object.entries(progress).forEach(([quizName, progressData]) => {
+                        if (progressData && progressData.questionHistory?.length > 0) {
                             const existingResult = quizResults.find(r => r.quizName.toLowerCase() === quizName.toLowerCase());
                             if (!existingResult) {
                                 quizResults.push({
                                     quizName: quizName,
                                     score: 0,
-                                    questionsAnswered: progress.questionsAnswered,
-                                    experience: progress.experience,
-                                    questionHistory: progress.questionHistory,
-                                    completedAt: progress.lastUpdated ? new Date(progress.lastUpdated).toLocaleString() : null,
-                                    timestamp: progress.lastUpdated ? new Date(progress.lastUpdated).toLocaleString() : null
+                                    questionsAnswered: progressData.questionsAnswered || progressData.questionHistory.length,
+                                    experience: progressData.experience || 0,
+                                    questionHistory: progressData.questionHistory,
+                                    completedAt: progressData.lastUpdated ? new Date(progressData.lastUpdated).toLocaleString() : null,
+                                    timestamp: progressData.lastUpdated ? new Date(progressData.lastUpdated).toLocaleString() : null
                                 });
                             }
                         }
@@ -225,12 +211,14 @@ class AdminDashboard {
                         username: user.username,
                         lastLogin: user.lastLogin ? new Date(user.lastLogin).toLocaleString() : 'Never',
                         quizResults: quizResults,
-                        quizProgress: quizProgress
+                        progress: progress, // Keep the original progress data
+                        quizProgress: progress // Also store as quizProgress for backward compatibility
                     };
 
                     console.log(`Processed user ${user.username}:`, {
                         quizResults: quizResults.length,
-                        progressQuizzes: Object.keys(quizProgress).length
+                        progressQuizzes: Object.keys(progress).length,
+                        progress: progress
                     });
 
                     return processedUser;
@@ -967,25 +955,28 @@ class AdminDashboard {
             console.log('Looking for quiz:', quizName);
 
             // Get both quiz result and progress data
-            const quizResult = user.quizResults.find(r => 
+            const quizResult = user.quizResults?.find(r => 
                 r.quizName.toLowerCase() === quizName.toLowerCase() ||
                 r.quizName.replace(/-/g, '').toLowerCase() === quizName.replace(/-/g, '').toLowerCase()
             );
             
-            const quizProgress = user.quizProgress?.[quizName.toLowerCase()];
+            // Get progress from user.progress instead of quizProgress
+            const quizProgress = user.progress?.[quizName.toLowerCase()] || user.quizProgress?.[quizName.toLowerCase()];
             
             console.log('Quiz result found:', quizResult);
             console.log('Quiz progress found:', quizProgress);
-            
+
             // Get question history from either source
             const questionHistory = quizProgress?.questionHistory || quizResult?.questionHistory || [];
-                
+
             if (!questionHistory || questionHistory.length === 0) {
                 console.log('Question history missing or empty:', {
                     hasQuizResult: !!quizResult,
                     hasQuizProgress: !!quizProgress,
                     resultHistory: quizResult?.questionHistory?.length,
-                    progressHistory: quizProgress?.questionHistory?.length
+                    progressHistory: quizProgress?.questionHistory?.length,
+                    userProgress: user.progress,
+                    userQuizProgress: user.quizProgress
                 });
                 this.showError('No question history available for this quiz');
                 return;
