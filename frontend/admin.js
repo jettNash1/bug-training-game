@@ -148,8 +148,16 @@ class AdminDashboard {
 
     async loadUsers() {
         try {
-            console.log('Fetching users from MongoDB...'); 
+            console.log('Starting user fetch...');
+            this.showLoading('Loading users...');
             
+            // Verify admin token first
+            const tokenValid = await this.apiService.verifyAdminToken();
+            if (!tokenValid) {
+                throw new Error('Admin session expired. Please login again.');
+            }
+            
+            console.log('Admin token verified, fetching users...');
             const response = await this.apiService.getAllUsers();
             console.log('Raw API response:', response);
 
@@ -166,54 +174,38 @@ class AdminDashboard {
 
             // Map MongoDB user data to our format
             this.users = userData.map(user => {
-                console.log('Processing user:', user);
-
-                if (!user.username) {
-                    console.warn('User missing username:', user);
-                    return null;
-                }
-
-                // Process quiz results to include question count and experience
-                const processedResults = (user.quizResults || []).map(result => {
-                    // Get the quiz name in lowercase for consistency
-                    const quizName = result.quizName.toLowerCase();
-                    
-                    // Get progress data from quizProgress if it exists
-                    const progress = user.quizProgress?.[quizName];
-                    
-                    // Get values directly from the result
-                    const questionsAnswered = result.questionsAnswered;
-                    const experience = result.experience;
-
+                if (!user || !user.username) return null;
+                
                 return {
-                        ...result,
-                        questionsAnswered,
-                        experience,
-                        score: result.score || 0,
-                        lastActive: result.lastActive || result.completedAt || null,
-                        completedAt: result.completedAt || null
-                    };
-                });
-
-                const processedUser = {
                     username: user.username,
-                    lastLogin: user.lastLogin || null,
-                    quizProgress: user.quizProgress || {},
-                    quizResults: processedResults
+                    lastLogin: user.lastLogin ? new Date(user.lastLogin).toLocaleString() : 'Never',
+                    quizResults: Array.isArray(user.quizResults) ? user.quizResults.map(result => ({
+                        quizName: result.quizName,
+                        score: result.score || 0,
+                        questionsAnswered: result.questionsAnswered || 0,
+                        experience: result.experience || 0,
+                        timestamp: result.timestamp ? new Date(result.timestamp).toLocaleString() : 'Unknown'
+                    })) : []
                 };
-
-                console.log('Processed user data:', processedUser);
-                return processedUser;
             }).filter(user => user !== null);
 
             console.log('Final processed users:', this.users);
             
             // Update the dashboard with the loaded users
             this.updateDashboard();
+            this.hideLoading();
             
             return true;
         } catch (error) {
             console.error('Failed to load users:', error);
+            this.hideLoading();
+            
+            if (error.message.includes('Admin session expired')) {
+                // Redirect to login on auth errors
+                window.location.replace('/pages/admin-login.html');
+                return false;
+            }
+            
             this.showError(`Failed to load users: ${error.message}`);
             return false;
         }

@@ -16,76 +16,62 @@ export class APIService {
     async fetchWithAdminAuth(url, options = {}) {
         try {
             const adminToken = localStorage.getItem('adminToken');
-            console.log('Fetching with admin auth:', { 
-                url, 
-                hasToken: !!adminToken,
-                method: options.method || 'GET'
-            });
+            console.log('Fetching with admin auth:', { url, hasToken: !!adminToken });
 
             if (!adminToken) {
-                console.log('No admin token found');
+                console.log('No admin token found, redirecting to login');
+                window.location.replace('/pages/admin-login.html');
                 throw new Error('No admin token found');
             }
 
-            console.log('Making request with token:', { token: adminToken });
-            const headers = {
-                'Authorization': `Bearer ${adminToken}`,
-                'Content-Type': 'application/json',
-                ...options.headers
-            };
+            // Verify token before making request
+            const verificationResult = await this.verifyAdminToken();
+            if (!verificationResult.valid) {
+                console.log('Admin token invalid:', verificationResult);
+                window.location.replace('/pages/admin-login.html');
+                throw new Error('Admin token invalid');
+            }
 
             const response = await fetch(url, {
                 ...options,
-                credentials: 'include',
-                headers
+                headers: {
+                    ...options.headers,
+                    'Authorization': `Bearer ${adminToken}`,
+                    'Content-Type': 'application/json'
+                },
+                credentials: 'include'
             });
 
-            // Try to parse response as JSON
+            // Try to read the response text first
+            const text = await response.text();
+            console.log('Response text:', text);
+            
+            // Then parse it as JSON if possible
+            let data;
             try {
-                const text = await response.text();
-                console.log('Response text:', text);
-                
-                let data;
-                try {
-                    data = JSON.parse(text);
-                } catch (e) {
-                    console.error('Failed to parse response as JSON:', text);
-                    throw new Error('Invalid response from server');
-                }
-
-                if (!response.ok) {
-                    if (response.status === 404) {
-                        throw new Error(`API endpoint not found: ${url}`);
-                    } else if (response.status === 401) {
-                        // Check if we need to refresh the token or re-verify
-                        const verificationResult = await this.verifyAdminToken();
-                        if (!verificationResult.valid) {
-                            throw new Error('Admin authentication required');
-                        }
-                        // If verification succeeded but we still got 401, throw error
-                        throw new Error('Admin authentication failed: ' + (data.message || 'Unauthorized'));
-                    } else {
-                        throw new Error(data.message || `Request failed with status ${response.status}`);
-                    }
-                }
-
-                return data;
-            } catch (error) {
-                console.error('Request failed:', error);
-                throw error;
+                data = JSON.parse(text);
+            } catch (e) {
+                console.error('Failed to parse response as JSON:', e);
+                throw new Error('Invalid JSON response from server');
             }
+
+            // Handle auth errors
+            if (response.status === 401 || response.status === 403) {
+                console.log('Auth error response:', { status: response.status, data });
+                        localStorage.removeItem('adminToken');
+                        window.location.replace('/pages/admin-login.html');
+                throw new Error(data.message || 'Authentication failed');
+            }
+
+            // Handle other errors
+            if (!response.ok) {
+                console.error('Request failed:', { status: response.status, data });
+                throw new Error(data.message || `Request failed with status ${response.status}`);
+            }
+
+            return data;
         } catch (error) {
-            console.error('Admin request failed:', error);
-            
-            // Only redirect on authentication errors
-            if (error.message.includes('Admin authentication required') || 
-                error.message.includes('Admin authentication failed')) {
-                localStorage.removeItem('adminToken');
-                // Add a small delay to see the error in console
-                await new Promise(resolve => setTimeout(resolve, 1000));
-                window.location.replace('/pages/admin-login.html');
-            }
-            
+            console.error('fetchWithAdminAuth error:', error);
             throw error;
         }
     }
@@ -486,27 +472,40 @@ export class APIService {
 
     async getAllUsers() {
         try {
-            // Fetch real data from MongoDB through the API
+            console.log('Fetching users from API...');
             const data = await this.fetchWithAdminAuth(`${this.baseUrl}/admin/users`);
             console.log('Raw users response:', data);
+
+            if (!data) {
+                throw new Error('No data received from server');
+            }
+
+            // Validate the response format
+            if (typeof data !== 'object') {
+                throw new Error('Invalid response format: expected object');
+            }
 
             // The backend returns { success: true, users: [...] }
             if (data.success && Array.isArray(data.users)) {
                 console.log('Found users array:', data.users.length);
+                
+                // Validate each user object
+                const validatedUsers = data.users.filter(user => {
+                    if (!user || typeof user !== 'object') return false;
+                    if (!user.username) return false;
+                    return true;
+                });
+
                 return {
                     success: true,
-                    data: data.users
+                    data: validatedUsers
                 };
             }
 
-            console.warn('Invalid response format from server');
-            return {
-                success: false,
-                data: [],
-                error: 'Invalid response format from server'
-            };
+            throw new Error('Invalid response format from server');
         } catch (error) {
             console.error('Failed to fetch users:', error);
+            // Don't redirect on fetch failures, just return error
             return {
                 success: false,
                 data: [],
