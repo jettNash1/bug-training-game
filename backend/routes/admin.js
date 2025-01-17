@@ -303,6 +303,7 @@ router.post('/users/:username/quiz-scores/reset', auth, async (req, res) => {
     try {
         // Verify admin status
         if (!req.user.isAdmin) {
+            console.log('Non-admin user attempted to reset quiz score');
             return res.status(403).json({
                 success: false,
                 message: 'Admin access required'
@@ -311,7 +312,16 @@ router.post('/users/:username/quiz-scores/reset', auth, async (req, res) => {
 
         const { username } = req.params;
         const { quizName } = req.body;
-        console.log('Attempting to reset quiz score:', { username, quizName });
+        console.log('Attempting to reset quiz score:', { username, quizName, body: req.body });
+
+        // Validate input
+        if (!username || !quizName) {
+            console.log('Missing required fields:', { username, quizName });
+            return res.status(400).json({
+                success: false,
+                message: 'Username and quiz name are required'
+            });
+        }
 
         // Find the user
         const user = await User.findOne({ username });
@@ -323,41 +333,68 @@ router.post('/users/:username/quiz-scores/reset', auth, async (req, res) => {
             });
         }
 
-        // Remove quiz result if it exists
-        if (user.quizResults) {
-            const initialLength = user.quizResults.length;
-            user.quizResults = user.quizResults.filter(result => {
-                // Handle both camelCase and hyphenated formats
-                const normalizedQuizName = result.quizName
-                    .replace(/([A-Z])/g, '-$1')
-                    .toLowerCase()
-                    .replace(/^-/, '');
-                return normalizedQuizName !== quizName.toLowerCase() &&
-                       result.quizName !== quizName;
-            });
-            console.log(`Removed ${initialLength - user.quizResults.length} quiz results for ${quizName}`);
-        }
+        // Initialize arrays if they don't exist
+        if (!user.quizResults) user.quizResults = [];
+        if (!user.quizProgress) user.quizProgress = {};
 
-        // Also ensure quiz progress is reset
-        if (user.quizProgress) {
-            delete user.quizProgress[quizName];
+        // Normalize quiz name for consistency
+        const normalizedQuizName = quizName.toLowerCase().replace(/[^a-z0-9-]/g, '');
+        console.log('Quiz reset details:', {
+            originalQuizName: quizName,
+            normalizedQuizName,
+            hasQuizResults: user.quizResults.length > 0,
+            hasQuizProgress: Object.keys(user.quizProgress).length > 0
+        });
+
+        // Remove quiz result if it exists
+        const initialResultsLength = user.quizResults.length;
+        user.quizResults = user.quizResults.filter(result => {
+            const resultNormalizedName = result.quizName.toLowerCase().replace(/[^a-z0-9-]/g, '');
+            return resultNormalizedName !== normalizedQuizName;
+        });
+        console.log(`Removed ${initialResultsLength - user.quizResults.length} quiz results for ${normalizedQuizName}`);
+
+        // Remove quiz progress
+        const progressKeys = Object.keys(user.quizProgress);
+        let removedProgress = false;
+        for (const key of progressKeys) {
+            const normalizedKey = key.toLowerCase().replace(/[^a-z0-9-]/g, '');
+            if (normalizedKey === normalizedQuizName) {
+                delete user.quizProgress[key];
+                removedProgress = true;
+                console.log(`Removed progress for key: ${key}`);
+            }
         }
 
         // Save the updated user document
         await user.save();
-        console.log('Successfully reset quiz score for:', { username, quizName });
+        console.log('Successfully reset quiz data:', {
+            username,
+            quizName: normalizedQuizName,
+            removedResults: initialResultsLength - user.quizResults.length,
+            removedProgress
+        });
         
         res.json({ 
             success: true,
             message: `Quiz score reset for user ${username}`,
-            user: user
+            data: {
+                username,
+                quizName: normalizedQuizName,
+                remainingQuizzes: Object.keys(user.quizProgress)
+            }
         });
     } catch (error) {
         console.error('Error resetting quiz score:', error);
         res.status(500).json({ 
             success: false,
             message: 'Failed to reset quiz score',
-            error: error.message
+            error: error.message,
+            details: process.env.NODE_ENV === 'development' ? {
+                stack: error.stack,
+                body: req.body,
+                params: req.params
+            } : undefined
         });
     }
 });
