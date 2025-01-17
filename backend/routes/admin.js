@@ -111,6 +111,8 @@ router.get('/users', auth, async (req, res) => {
             });
         }
 
+        console.log('Fetching users with quiz data...');
+
         // Get all users with their quiz data
         const users = await User.find({}, {
             username: 1,
@@ -120,8 +122,14 @@ router.get('/users', auth, async (req, res) => {
             _id: 0
         }).lean().sort({ username: 1 });
 
+        console.log(`Found ${users.length} users`);
+
         // Update quiz results with progress data
         const populatedUsers = users.map(user => {
+            console.log(`\nProcessing user: ${user.username}`);
+            console.log('Raw quiz results:', user.quizResults);
+            console.log('Raw quiz progress:', user.quizProgress);
+
             const userData = { ...user };
             userData.quizResults = userData.quizResults || [];
 
@@ -132,7 +140,14 @@ router.get('/users', auth, async (req, res) => {
                     return null;
                 }
                 
-                const progress = userData.quizProgress?.[result.quizName.toLowerCase()];
+                const normalizedQuizName = result.quizName.toLowerCase().replace(/[^a-z0-9-]/g, '');
+                console.log(`Processing quiz: ${result.quizName} (normalized: ${normalizedQuizName})`);
+                
+                const progress = userData.quizProgress?.[normalizedQuizName] || 
+                                userData.quizProgress?.[result.quizName] ||
+                                userData.quizProgress?.[result.quizName.toLowerCase()];
+                
+                console.log('Found progress data:', progress);
                 
                 // Calculate questions answered and experience
                 let questionsAnswered = 0;
@@ -143,6 +158,7 @@ router.get('/users', auth, async (req, res) => {
                     questionsAnswered = progress.questionsAnswered || 
                         (Array.isArray(progress.questionHistory) ? progress.questionHistory.length : 0);
                     experience = progress.experience || 0;
+                    console.log('Using progress data:', { questionsAnswered, experience });
                 }
 
                 // If no progress data, try to get from result (old format)
@@ -150,13 +166,16 @@ router.get('/users', auth, async (req, res) => {
                     // For old data, if there's a score, calculate questions based on it
                     questionsAnswered = Math.ceil((result.score / 100) * 15); // 15 is total questions
                     experience = Math.ceil((result.score / 100) * 300); // 300 is max XP
+                    console.log('Using calculated data from score:', { questionsAnswered, experience });
                 }
 
-                return {
+                const updatedResult = {
                     ...result,
                     questionsAnswered,
                     experience
                 };
+                console.log('Final result data:', updatedResult);
+                return updatedResult;
             }).filter(result => result !== null); // Remove any invalid results
 
             // Remove quizProgress from response since it's not needed
@@ -164,6 +183,7 @@ router.get('/users', auth, async (req, res) => {
             return userData;
         });
 
+        console.log('\nSending response with populated users data');
         res.json({
             success: true,
             users: populatedUsers

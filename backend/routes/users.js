@@ -4,6 +4,11 @@ const User = require('../models/user.model');
 const jwt = require('jsonwebtoken');
 const auth = require('../middleware/auth');
 
+// Add helper function at the top of the file
+const normalizeQuizName = (quizName) => {
+    return quizName.toLowerCase().replace(/[^a-z0-9-]/g, '');
+};
+
 // Register new user
 router.post('/register', async (req, res) => {
     console.log('Register attempt:', { 
@@ -274,6 +279,8 @@ router.post('/:username/quiz-results', async (req, res) => {
 router.post('/quiz-progress', auth, async (req, res) => {
     try {
         const { quizName, progress } = req.body;
+        console.log('Saving quiz progress:', { quizName, progress });
+        
         const user = await User.findById(req.user.id);
         
         if (!user) {
@@ -288,6 +295,10 @@ router.post('/quiz-progress', auth, async (req, res) => {
         // Parse dates if they're strings
         const lastUpdated = progress.lastUpdated ? new Date(progress.lastUpdated) : new Date();
 
+        // Normalize quiz name
+        const normalizedQuizName = normalizeQuizName(quizName);
+        console.log(`Normalized quiz name: ${normalizedQuizName} (original: ${quizName})`);
+
         // Ensure all required fields are present with consistent types
         const updatedProgress = {
             experience: parseInt(progress.experience || 0, 10),
@@ -297,19 +308,26 @@ router.post('/quiz-progress', auth, async (req, res) => {
             currentScenario: progress.currentScenario !== undefined ? 
                            parseInt(progress.currentScenario, 10) : 
                            (parseInt(progress.questionsAnswered || progress.questionHistory?.length || 0, 10) % 5),
-            lastUpdated: lastUpdated.toISOString(), // Store as ISO string for consistency
+            lastUpdated: lastUpdated.toISOString(),
             status: progress.status || 'in_progress'
         };
 
-        // Update quiz progress
-        user.quizProgress.set(quizName, updatedProgress);
+        console.log('Processed progress data:', updatedProgress);
+
+        // Update quiz progress using normalized name
+        user.quizProgress.set(normalizedQuizName, updatedProgress);
 
         // Always sync with quiz results to ensure question history is preserved
-        const existingResultIndex = user.quizResults.findIndex(r => r.quizName === quizName);
+        const existingResultIndex = user.quizResults.findIndex(r => 
+            normalizeQuizName(r.quizName) === normalizedQuizName
+        );
+
         if (existingResultIndex !== -1) {
+            console.log('Updating existing quiz result');
             // Update existing quiz result with progress data
             user.quizResults[existingResultIndex] = {
                 ...user.quizResults[existingResultIndex],
+                quizName: normalizedQuizName, // Ensure consistent naming
                 experience: updatedProgress.experience,
                 tools: updatedProgress.tools,
                 questionHistory: updatedProgress.questionHistory,
@@ -319,9 +337,10 @@ router.post('/quiz-progress', auth, async (req, res) => {
                 updatedAt: lastUpdated.toISOString()
             };
         } else {
+            console.log('Creating new quiz result');
             // Create new quiz result from progress data
             user.quizResults.push({
-                quizName,
+                quizName: normalizedQuizName,
                 score: Math.round((updatedProgress.experience / 300) * 100), // Calculate score based on max XP of 300
                 experience: updatedProgress.experience,
                 tools: updatedProgress.tools,
@@ -335,6 +354,8 @@ router.post('/quiz-progress', auth, async (req, res) => {
         }
 
         await user.save();
+        console.log('Successfully saved quiz progress');
+        
         res.json({ 
             success: true, 
             data: {

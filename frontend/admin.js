@@ -166,11 +166,20 @@ class AdminDashboard {
             }
 
             const userData = response.data || [];
-            console.log('Processing users:', userData);
+            console.log('Raw user data:', userData);
 
             if (!Array.isArray(userData)) {
                 throw new Error('Invalid response format: expected array of users');
             }
+
+            // Log detailed user data before processing
+            userData.forEach(user => {
+                console.log(`\nRaw data for user ${user.username}:`, {
+                    quizResults: user.quizResults,
+                    quizProgress: user.quizProgress,
+                    lastLogin: user.lastLogin
+                });
+            });
 
             // Map MongoDB user data to our format
             this.users = userData
@@ -180,8 +189,11 @@ class AdminDashboard {
                     const progress = {};
                     if (user.progress) {
                         Object.entries(user.progress).forEach(([quizName, quizProgress]) => {
+                            const normalizedQuizName = this.normalizeQuizName(quizName);
+                            console.log(`Processing progress for ${quizName} (normalized: ${normalizedQuizName})`);
+                            
                             if (quizProgress) {
-                                progress[quizName.toLowerCase()] = {
+                                progress[normalizedQuizName] = {
                                     questionHistory: Array.isArray(quizProgress.questionHistory) ? quizProgress.questionHistory : [],
                                     questionsAnswered: quizProgress.questionsAnswered || quizProgress.questionHistory?.length || 0,
                                     experience: quizProgress.experience || 0,
@@ -189,26 +201,35 @@ class AdminDashboard {
                                     lastUpdated: quizProgress.lastUpdated || null,
                                     tools: quizProgress.tools || []
                                 };
+                                console.log(`Progress data for ${normalizedQuizName}:`, progress[normalizedQuizName]);
                             }
                         });
                     }
 
                     // Process quiz results
-                    const quizResults = Array.isArray(user.quizResults) ? user.quizResults.map(result => ({
-                        quizName: result.quizName,
-                        score: result.score || 0,
-                        questionsAnswered: result.questionsAnswered || result.questionHistory?.length || 0,
-                        experience: result.experience || 0,
-                        questionHistory: Array.isArray(result.questionHistory) ? result.questionHistory : [],
-                        completedAt: result.completedAt ? new Date(result.completedAt).toLocaleString() : null,
-                        timestamp: result.timestamp ? new Date(result.timestamp).toLocaleString() : null
-                    })) : [];
+                    const quizResults = Array.isArray(user.quizResults) ? user.quizResults.map(result => {
+                        const normalizedQuizName = this.normalizeQuizName(result.quizName);
+                        console.log(`Processing result for ${result.quizName} (normalized: ${normalizedQuizName})`);
+                        
+                        const processedResult = {
+                            quizName: normalizedQuizName,
+                            score: result.score || 0,
+                            questionsAnswered: result.questionsAnswered || result.questionHistory?.length || 0,
+                            experience: result.experience || 0,
+                            questionHistory: Array.isArray(result.questionHistory) ? result.questionHistory : [],
+                            completedAt: result.completedAt ? new Date(result.completedAt).toLocaleString() : null,
+                            timestamp: result.timestamp ? new Date(result.timestamp).toLocaleString() : null
+                        };
+                        console.log(`Processed result for ${normalizedQuizName}:`, processedResult);
+                        return processedResult;
+                    }) : [];
 
                     // Add quiz progress data to results if not already present
                     Object.entries(progress).forEach(([quizName, progressData]) => {
                         if (progressData && progressData.questionHistory?.length > 0) {
-                            const existingResult = quizResults.find(r => r.quizName.toLowerCase() === quizName.toLowerCase());
+                            const existingResult = quizResults.find(r => this.normalizeQuizName(r.quizName) === quizName);
                             if (!existingResult) {
+                                console.log(`Adding missing result from progress for ${quizName}`);
                                 quizResults.push({
                                     quizName: quizName,
                                     score: 0,
@@ -319,7 +340,6 @@ class AdminDashboard {
     }
 
     normalizeQuizName(quizName) {
-        // Convert to lowercase and remove any spaces or special characters
         return quizName.toLowerCase().replace(/[^a-z0-9-]/g, '');
     }
 
