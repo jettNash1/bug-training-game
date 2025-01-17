@@ -845,10 +845,25 @@ class RiskAnalysisQuiz extends BaseQuiz {
             const selectedOption = document.querySelector('input[name="option"]:checked');
             if (!selectedOption) return;
 
-            const currentScenarios = this.getCurrentScenarios();
-            const scenario = currentScenarios[this.player.currentScenario];
-            const originalIndex = parseInt(selectedOption.value);
+            // Get the correct scenario based on question count
+            let scenario;
+            const questionCount = this.player.questionHistory.length;
             
+            if (questionCount < 5) {
+                scenario = this.basicScenarios[questionCount];
+            } else if (questionCount < 10) {
+                scenario = this.intermediateScenarios[questionCount - 5];
+            } else if (questionCount < 15) {
+                scenario = this.advancedScenarios[questionCount - 10];
+            }
+
+            if (!scenario) {
+                console.error('No scenario found for question count:', questionCount);
+                this.endGame(true);
+                return;
+            }
+
+            const originalIndex = parseInt(selectedOption.value);
             const selectedAnswer = scenario.options[originalIndex];
 
             // Update player state
