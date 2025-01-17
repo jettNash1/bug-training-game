@@ -472,22 +472,49 @@ class AdminDashboard {
 
         // Add lastLogin if exists
         if (user.lastLogin) {
-            dates.push(new Date(user.lastLogin).getTime());
+            const loginDate = new Date(user.lastLogin).getTime();
+            if (!isNaN(loginDate)) {
+                dates.push(loginDate);
+            }
         }
 
-        // Add quiz completion dates
+        // Add quiz completion dates and last active dates
         if (user.quizResults && user.quizResults.length > 0) {
             user.quizResults.forEach(result => {
                 if (result.completedAt) {
-                    dates.push(new Date(result.completedAt).getTime());
+                    const completedDate = new Date(result.completedAt).getTime();
+                    if (!isNaN(completedDate)) {
+                        dates.push(completedDate);
+                    }
                 }
                 if (result.lastActive) {
-                    dates.push(new Date(result.lastActive).getTime());
+                    const activeDate = new Date(result.lastActive).getTime();
+                    if (!isNaN(activeDate)) {
+                        dates.push(activeDate);
+                    }
+                }
+                if (result.timestamp) {
+                    const timestampDate = new Date(result.timestamp).getTime();
+                    if (!isNaN(timestampDate)) {
+                        dates.push(timestampDate);
+                    }
                 }
             });
         }
 
-        // Return most recent date or 0 if no dates found
+        // Add quiz progress dates if they exist
+        if (user.quizProgress) {
+            Object.values(user.quizProgress).forEach(progress => {
+                if (progress.lastUpdated) {
+                    const updatedDate = new Date(progress.lastUpdated).getTime();
+                    if (!isNaN(updatedDate)) {
+                        dates.push(updatedDate);
+                    }
+                }
+            });
+        }
+
+        // Return most recent date or 0 if no valid dates found
         return dates.length > 0 ? Math.max(...dates) : 0;
     }
 
@@ -801,7 +828,6 @@ class AdminDashboard {
 
             console.log('Found user:', user);
             console.log('Looking for quiz:', quizName);
-            console.log('All quiz results:', user.quizResults);
 
             // Find the quiz result with question history
             const quizResult = user.quizResults.find(r => 
@@ -811,19 +837,13 @@ class AdminDashboard {
             
             console.log('Quiz result found:', quizResult);
             
-            // Check quiz progress if no result found
-            if (!quizResult || !quizResult.questionHistory || quizResult.questionHistory.length === 0) {
-                console.log('Checking quiz progress...');
+            // Get quiz progress data
                 const progress = user.quizProgress?.[quizName.toLowerCase()];
                 console.log('Quiz progress found:', progress);
                 
-                if (progress?.questionHistory?.length > 0) {
-                    console.log('Using progress history instead of results');
-                    quizResult = {
-                        quizName: quizName,
-                        questionHistory: progress.questionHistory
-                    };
-                } else {
+            // If no quiz result or progress data found
+            if ((!quizResult || !quizResult.questionHistory || quizResult.questionHistory.length === 0) &&
+                (!progress || !progress.questionHistory || progress.questionHistory.length === 0)) {
                 console.log('Question history missing or empty:', {
                     hasQuizResult: !!quizResult,
                     hasHistory: quizResult ? !!quizResult.questionHistory : false,
@@ -833,8 +853,10 @@ class AdminDashboard {
                 });
                 this.showError('No question history available for this quiz');
                 return;
-                }
             }
+
+            // Use progress data if available, otherwise use quiz result
+            const questionHistory = progress?.questionHistory || quizResult?.questionHistory || [];
 
             // Create questions overlay
             const questionsOverlay = document.createElement('div');
@@ -871,7 +893,7 @@ class AdminDashboard {
                     <button class="close-btn" style="background: none; border: none; font-size: 1.5rem; cursor: pointer;">×</button>
                 </div>
                 <div class="questions-list">
-                    ${quizResult.questionHistory.map((item, index) => `
+                    ${questionHistory.map((item, index) => `
                         <div class="question-item" style="
                             margin-bottom: 1.5rem;
                             padding: 1rem;
@@ -881,17 +903,17 @@ class AdminDashboard {
                         ">
                             <div style="margin-bottom: 0.5rem;">
                                 <strong>Question ${index + 1}:</strong>
-                                <div style="margin: 0.5rem 0;">${item.questionText}</div>
+                                <div style="margin: 0.5rem 0;">${item.questionText || 'Question text not available'}</div>
                             </div>
                             <div style="margin-bottom: 0.5rem;">
                                 <strong>Selected Answer:</strong>
-                                <div style="margin: 0.5rem 0;">${item.selectedAnswerText}</div>
+                                <div style="margin: 0.5rem 0;">${item.selectedAnswerText || 'Answer text not available'}</div>
                             </div>
                             <div style="display: flex; justify-content: space-between; align-items: center;">
                                 <span>
                                     <strong>Experience:</strong> 
                                     <span style="color: ${item.experienceGained >= 0 ? 'green' : 'red'}">
-                                        ${item.experienceGained >= 0 ? '+' : ''}${item.experienceGained}
+                                        ${item.experienceGained >= 0 ? '+' : ''}${item.experienceGained || 0}
                                     </span>
                                 </span>
                                 <span>
