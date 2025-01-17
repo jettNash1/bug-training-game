@@ -159,74 +159,84 @@ class AdminDashboard {
             
             console.log('Admin token verified, fetching users...');
             const response = await this.apiService.getAllUsers();
-            console.log('Raw API response:', response);
 
             if (!response.success) {
                 throw new Error(response.error || 'Failed to fetch users');
             }
 
             const userData = response.data || [];
-            console.log('User data array:', userData);
+            console.log(`Processing ${userData.length} users...`);
 
             if (!Array.isArray(userData)) {
                 throw new Error('Invalid response format: expected array of users');
             }
 
             // Map MongoDB user data to our format
-            this.users = userData.map(user => {
-                if (!user || !user.username) return null;
-                
-                // Ensure quiz progress exists and is properly formatted
-                const quizProgress = {};
-                if (user.progress) {
-                    Object.entries(user.progress).forEach(([quizName, progress]) => {
-                        quizProgress[quizName.toLowerCase()] = {
-                            questionHistory: progress.questionHistory || [],
-                            questionsAnswered: progress.questionsAnswered || progress.questionHistory?.length || 0,
-                            experience: progress.experience || 0,
-                            currentScenario: progress.currentScenario || 0,
-                            lastUpdated: progress.lastUpdated || null,
-                            tools: progress.tools || []
-                        };
-                    });
-                }
-
-                // Format quiz results
-                const quizResults = Array.isArray(user.quizResults) ? user.quizResults.map(result => ({
-                    quizName: result.quizName,
-                    score: result.score || 0,
-                    questionsAnswered: result.questionsAnswered || result.questionHistory?.length || 0,
-                    experience: result.experience || 0,
-                    questionHistory: result.questionHistory || [],
-                    completedAt: result.completedAt ? new Date(result.completedAt).toLocaleString() : null,
-                    timestamp: result.timestamp ? new Date(result.timestamp).toLocaleString() : null
-                })) : [];
-
-                // Add quiz progress data to results if not already present
-                Object.entries(quizProgress).forEach(([quizName, progress]) => {
-                    const existingResult = quizResults.find(r => r.quizName.toLowerCase() === quizName.toLowerCase());
-                    if (!existingResult && progress.questionHistory?.length > 0) {
-                        quizResults.push({
-                            quizName: quizName,
-                            score: 0,
-                            questionsAnswered: progress.questionsAnswered,
-                            experience: progress.experience,
-                            questionHistory: progress.questionHistory,
-                            completedAt: progress.lastUpdated ? new Date(progress.lastUpdated).toLocaleString() : null,
-                            timestamp: progress.lastUpdated ? new Date(progress.lastUpdated).toLocaleString() : null
+            this.users = userData
+                .filter(user => user && user.username)
+                .map(user => {
+                    // Ensure quiz progress exists and is properly formatted
+                    const quizProgress = {};
+                    if (user.progress) {
+                        Object.entries(user.progress).forEach(([quizName, progress]) => {
+                            if (progress) {
+                                quizProgress[quizName.toLowerCase()] = {
+                                    questionHistory: progress.questionHistory || [],
+                                    questionsAnswered: progress.questionsAnswered || progress.questionHistory?.length || 0,
+                                    experience: progress.experience || 0,
+                                    currentScenario: progress.currentScenario || 0,
+                                    lastUpdated: progress.lastUpdated || null,
+                                    tools: progress.tools || []
+                                };
+                            }
                         });
                     }
-                });
-                
-                return {
-                    username: user.username,
-                    lastLogin: user.lastLogin ? new Date(user.lastLogin).toLocaleString() : 'Never',
-                    quizResults: quizResults,
-                    quizProgress: quizProgress
-                };
-            }).filter(user => user !== null);
 
-            console.log('Final processed users:', this.users);
+                    // Format quiz results
+                    const quizResults = Array.isArray(user.quizResults) ? user.quizResults.map(result => ({
+                        quizName: result.quizName,
+                        score: result.score || 0,
+                        questionsAnswered: result.questionsAnswered || result.questionHistory?.length || 0,
+                        experience: result.experience || 0,
+                        questionHistory: result.questionHistory || [],
+                        completedAt: result.completedAt ? new Date(result.completedAt).toLocaleString() : null,
+                        timestamp: result.timestamp ? new Date(result.timestamp).toLocaleString() : null
+                    })) : [];
+
+                    // Add quiz progress data to results if not already present
+                    Object.entries(quizProgress).forEach(([quizName, progress]) => {
+                        if (progress && progress.questionHistory?.length > 0) {
+                            const existingResult = quizResults.find(r => r.quizName.toLowerCase() === quizName.toLowerCase());
+                            if (!existingResult) {
+                                quizResults.push({
+                                    quizName: quizName,
+                                    score: 0,
+                                    questionsAnswered: progress.questionsAnswered,
+                                    experience: progress.experience,
+                                    questionHistory: progress.questionHistory,
+                                    completedAt: progress.lastUpdated ? new Date(progress.lastUpdated).toLocaleString() : null,
+                                    timestamp: progress.lastUpdated ? new Date(progress.lastUpdated).toLocaleString() : null
+                                });
+                            }
+                        }
+                    });
+
+                    const processedUser = {
+                        username: user.username,
+                        lastLogin: user.lastLogin ? new Date(user.lastLogin).toLocaleString() : 'Never',
+                        quizResults: quizResults,
+                        quizProgress: quizProgress
+                    };
+
+                    console.log(`Processed user ${user.username}:`, {
+                        quizResults: quizResults.length,
+                        progressQuizzes: Object.keys(quizProgress).length
+                    });
+
+                    return processedUser;
+                });
+
+            console.log(`Successfully processed ${this.users.length} users`);
             
             // Update the dashboard with the loaded users
             this.updateDashboard();
@@ -238,7 +248,6 @@ class AdminDashboard {
             this.hideLoading();
             
             if (error.message.includes('Admin session expired')) {
-                // Redirect to login on auth errors
                 window.location.replace('/pages/admin-login.html');
                 return false;
             }
