@@ -176,6 +176,16 @@ class AdminDashboard {
             this.users = userData.map(user => {
                 if (!user || !user.username) return null;
                 
+                // Initialize quiz progress if it doesn't exist
+                if (!user.quizProgress) {
+                    user.quizProgress = {};
+                }
+
+                // Convert Map to object if necessary
+                const quizProgress = typeof user.quizProgress.get === 'function' 
+                    ? Object.fromEntries(user.quizProgress)
+                    : user.quizProgress;
+                
                 return {
                     username: user.username,
                     lastLogin: user.lastLogin ? new Date(user.lastLogin).toLocaleString() : 'Never',
@@ -184,8 +194,10 @@ class AdminDashboard {
                         score: result.score || 0,
                         questionsAnswered: result.questionsAnswered || 0,
                         experience: result.experience || 0,
+                        questionHistory: result.questionHistory || [],
                         timestamp: result.timestamp ? new Date(result.timestamp).toLocaleString() : 'Unknown'
-                    })) : []
+                    })) : [],
+                    quizProgress: quizProgress
                 };
             }).filter(user => user !== null);
 
@@ -829,34 +841,30 @@ class AdminDashboard {
             console.log('Found user:', user);
             console.log('Looking for quiz:', quizName);
 
-            // Find the quiz result with question history
+            // Get both quiz result and progress data
             const quizResult = user.quizResults.find(r => 
                 r.quizName.toLowerCase() === quizName.toLowerCase() ||
                 r.quizName.replace(/-/g, '').toLowerCase() === quizName.replace(/-/g, '').toLowerCase()
             );
             
-            console.log('Quiz result found:', quizResult);
+            const quizProgress = user.quizProgress?.[quizName.toLowerCase()];
             
-            // Get quiz progress data
-                const progress = user.quizProgress?.[quizName.toLowerCase()];
-                console.log('Quiz progress found:', progress);
+            console.log('Quiz result found:', quizResult);
+            console.log('Quiz progress found:', quizProgress);
+            
+            // Get question history from either source
+            const questionHistory = quizProgress?.questionHistory || quizResult?.questionHistory || [];
                 
-            // If no quiz result or progress data found
-            if ((!quizResult || !quizResult.questionHistory || quizResult.questionHistory.length === 0) &&
-                (!progress || !progress.questionHistory || progress.questionHistory.length === 0)) {
+            if (!questionHistory || questionHistory.length === 0) {
                 console.log('Question history missing or empty:', {
                     hasQuizResult: !!quizResult,
-                    hasHistory: quizResult ? !!quizResult.questionHistory : false,
-                        historyLength: quizResult?.questionHistory?.length,
-                        hasProgress: !!progress,
-                        progressHistoryLength: progress?.questionHistory?.length
+                    hasQuizProgress: !!quizProgress,
+                    resultHistory: quizResult?.questionHistory?.length,
+                    progressHistory: quizProgress?.questionHistory?.length
                 });
                 this.showError('No question history available for this quiz');
                 return;
             }
-
-            // Use progress data if available, otherwise use quiz result
-            const questionHistory = progress?.questionHistory || quizResult?.questionHistory || [];
 
             // Create questions overlay
             const questionsOverlay = document.createElement('div');
