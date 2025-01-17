@@ -10,8 +10,8 @@ class AdminDashboard {
             'communication', 'initiative', 'time-management', 'tester-mindset',
             'risk-analysis', 'risk-management', 'non-functional', 'test-support',
             'issue-verification', 'build-verification', 'issue-tracking-tools',
-            'raising-tickets', 'reports', 'cms-testing', 'email-testing', 'content-copy',
-            'locale-testing', 'script-metrics-troubleshooting','standard-script-testing'
+            'raising-tickets', 'reports', 'CMS-Testing', 'email-testing', 'content-copy',
+            'locale-testing', 'script-metrics-troubleshooting', 'standard-script-testing'
         ];
         
         // Initialize immediately if we're on an admin page
@@ -807,11 +807,41 @@ class AdminDashboard {
                 return;
             }
 
+            console.log('Found user:', user);
+            console.log('Looking for quiz:', quizName);
+            console.log('All quiz results:', user.quizResults);
+
             // Find the quiz result with question history
-            const quizResult = user.quizResults.find(r => r.quizName.toLowerCase() === quizName.toLowerCase());
+            const quizResult = user.quizResults.find(r => 
+                r.quizName.toLowerCase() === quizName.toLowerCase() ||
+                r.quizName.replace(/-/g, '').toLowerCase() === quizName.replace(/-/g, '').toLowerCase()
+            );
+            
+            console.log('Quiz result found:', quizResult);
+            
+            // Check quiz progress if no result found
             if (!quizResult || !quizResult.questionHistory || quizResult.questionHistory.length === 0) {
+                console.log('Checking quiz progress...');
+                const progress = user.quizProgress?.[quizName.toLowerCase()];
+                console.log('Quiz progress found:', progress);
+                
+                if (progress?.questionHistory?.length > 0) {
+                    console.log('Using progress history instead of results');
+                    quizResult = {
+                        quizName: quizName,
+                        questionHistory: progress.questionHistory
+                    };
+                } else {
+                console.log('Question history missing or empty:', {
+                    hasQuizResult: !!quizResult,
+                    hasHistory: quizResult ? !!quizResult.questionHistory : false,
+                        historyLength: quizResult?.questionHistory?.length,
+                        hasProgress: !!progress,
+                        progressHistoryLength: progress?.questionHistory?.length
+                });
                 this.showError('No question history available for this quiz');
                 return;
+                }
             }
 
             // Create questions overlay
