@@ -590,6 +590,12 @@ class AdminDashboard {
                                         style="padding: 5px 10px; background-color: #ff4444; color: white; border: none; border-radius: 4px; cursor: pointer;">
                                         Reset Progress
                                     </button>
+                                    <button 
+                                        class="view-questions-btn" 
+                                        onclick="event.stopPropagation(); this.closest('.quiz-progress-item').dispatchEvent(new CustomEvent('viewQuestions', {detail: {quizName: '${quizName}'}}))"
+                                        style="padding: 5px 10px; margin-left: 10px; background-color: #4CAF50; color: white; border: none; border-radius: 4px; cursor: pointer;">
+                                        View Questions
+                                    </button>
                                 </div>
                             </div>
                         `;
@@ -600,7 +606,7 @@ class AdminDashboard {
             overlay.appendChild(content);
             document.body.appendChild(overlay);
 
-            // Add event listeners for reset buttons
+            // Add event listeners for reset buttons and view questions
             const quizItems = content.querySelectorAll('.quiz-progress-item');
             quizItems.forEach(item => {
                 item.addEventListener('resetQuiz', async (e) => {
@@ -617,6 +623,11 @@ class AdminDashboard {
                             this.showError(`Failed to reset ${this.formatQuizName(quizName)}`);
                         }
                     }
+                });
+
+                item.addEventListener('viewQuestions', (e) => {
+                    const quizName = e.detail.quizName;
+                    this.showQuestionDetails(username, quizName);
                 });
             });
 
@@ -785,6 +796,111 @@ class AdminDashboard {
         }
         if (averageCompletionElement) {
             averageCompletionElement.textContent = `${stats.averageProgress || 0}%`;
+        }
+    }
+
+    async showQuestionDetails(username, quizName) {
+        try {
+            const user = this.users.find(u => u.username === username);
+            if (!user) {
+                console.error(`User ${username} not found`);
+                return;
+            }
+
+            // Find the quiz result with question history
+            const quizResult = user.quizResults.find(r => r.quizName.toLowerCase() === quizName.toLowerCase());
+            if (!quizResult || !quizResult.questionHistory || quizResult.questionHistory.length === 0) {
+                this.showError('No question history available for this quiz');
+                return;
+            }
+
+            // Create questions overlay
+            const questionsOverlay = document.createElement('div');
+            questionsOverlay.className = 'questions-overlay';
+            questionsOverlay.style.cssText = `
+                position: fixed;
+                top: 0;
+                left: 0;
+                right: 0;
+                bottom: 0;
+                background: rgba(0, 0, 0, 0.8);
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                z-index: 1100;
+            `;
+
+            const content = document.createElement('div');
+            content.className = 'questions-content';
+            content.style.cssText = `
+                background: white;
+                padding: 2rem;
+                border-radius: 8px;
+                max-width: 800px;
+                width: 90%;
+                max-height: 90vh;
+                overflow-y: auto;
+                position: relative;
+            `;
+
+            content.innerHTML = `
+                <div class="questions-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+                    <h3>${this.formatQuizName(quizName)} - Question History</h3>
+                    <button class="close-btn" style="background: none; border: none; font-size: 1.5rem; cursor: pointer;">×</button>
+                </div>
+                <div class="questions-list">
+                    ${quizResult.questionHistory.map((item, index) => `
+                        <div class="question-item" style="
+                            margin-bottom: 1.5rem;
+                            padding: 1rem;
+                            border: 1px solid #eee;
+                            border-radius: 4px;
+                            background: ${item.isCorrect ? '#f0fff0' : '#fff0f0'};
+                        ">
+                            <div style="margin-bottom: 0.5rem;">
+                                <strong>Question ${index + 1}:</strong>
+                                <div style="margin: 0.5rem 0;">${item.questionText}</div>
+                            </div>
+                            <div style="margin-bottom: 0.5rem;">
+                                <strong>Selected Answer:</strong>
+                                <div style="margin: 0.5rem 0;">${item.selectedAnswerText}</div>
+                            </div>
+                            <div style="display: flex; justify-content: space-between; align-items: center;">
+                                <span>
+                                    <strong>Experience:</strong> 
+                                    <span style="color: ${item.experienceGained >= 0 ? 'green' : 'red'}">
+                                        ${item.experienceGained >= 0 ? '+' : ''}${item.experienceGained}
+                                    </span>
+                                </span>
+                                <span>
+                                    <strong>Result:</strong> 
+                                    <span style="color: ${item.isCorrect ? 'green' : 'red'}">
+                                        ${item.isCorrect ? 'Pass' : 'Fail'}
+                                    </span>
+                                </span>
+                            </div>
+                        </div>
+                    `).join('')}
+                </div>
+            `;
+
+            questionsOverlay.appendChild(content);
+            document.body.appendChild(questionsOverlay);
+
+            // Add close button functionality
+            const closeBtn = content.querySelector('.close-btn');
+            closeBtn.addEventListener('click', () => questionsOverlay.remove());
+
+            // Close on click outside
+            questionsOverlay.addEventListener('click', (e) => {
+                if (e.target === questionsOverlay) {
+                    questionsOverlay.remove();
+                }
+            });
+
+        } catch (error) {
+            console.error('Error showing question details:', error);
+            this.showError('Failed to load question details');
         }
     }
 }

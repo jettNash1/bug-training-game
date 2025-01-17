@@ -910,6 +910,11 @@ export class CommunicationQuiz extends BaseQuiz {
             // Update player state
             this.player.experience = Math.max(0, Math.min(this.maxXP, this.player.experience + selectedAnswer.experience));
             this.player.questionHistory.push({
+                questionText: scenario.description,
+                selectedAnswerText: selectedAnswer.text,
+                experienceGained: selectedAnswer.experience,
+                isCorrect: selectedAnswer.experience > 0,
+                // Keep existing data for backward compatibility
                 scenario: scenario,
                 selectedAnswer: selectedAnswer,
                 maxPossibleXP: Math.max(...scenario.options.map(o => o.experience))
