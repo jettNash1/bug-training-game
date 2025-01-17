@@ -835,15 +835,7 @@ class AdminDashboard {
 
     async resetQuizProgress(username, quizName) {
         try {
-            const response = await this.apiService.fetchWithAdminAuth(
-                `${this.apiService.baseUrl}/admin/users/${username}/quiz-progress/${quizName}/reset`,
-                {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    }
-                }
-            );
+            const response = await this.apiService.resetQuizProgress(username, quizName);
 
             if (!response.success) {
                 throw new Error(response.error || 'Failed to reset quiz progress');

@@ -544,4 +544,26 @@ export class APIService {
             localStorage.removeItem('adminToken');
         }
     }
+
+    async resetQuizProgress(username, quizName) {
+        try {
+            const response = await this.fetchWithAdminAuth(`${this.baseUrl}/admin/reset-quiz-progress`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ username, quizName })
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.message || 'Failed to reset quiz progress');
+            }
+
+            return await response.json();
+        } catch (error) {
+            console.error('Failed to reset quiz progress:', error);
+            throw error;
+        }
+    }
 } 
