@@ -492,7 +492,7 @@ router.post('/sync', auth, async (req, res) => {
 // Update quiz scores
 router.post('/quiz-scores', auth, async (req, res) => {
     try {
-        const { quizName, score } = req.body;
+        const { quizName, score, status } = req.body;
         const user = await User.findById(req.user.id);
         
         if (!user) {
@@ -502,16 +502,31 @@ router.post('/quiz-scores', auth, async (req, res) => {
         // Find and update or add new quiz result
         const existingIndex = user.quizResults.findIndex(r => r.quizName === quizName);
         if (existingIndex !== -1) {
-            // Only update if new score is higher
-            if (score > user.quizResults[existingIndex].score) {
-                user.quizResults[existingIndex].score = score;
-                user.quizResults[existingIndex].updatedAt = new Date();
-            }
+            user.quizResults[existingIndex] = {
+                ...user.quizResults[existingIndex],
+                score: score,
+                status: status || 'in_progress',
+                updatedAt: new Date()
+            };
         } else {
             user.quizResults.push({
                 quizName,
                 score,
+                status: status || 'in_progress',
                 completedAt: new Date()
+            });
+        }
+
+        // If the quiz is failed, also update the quiz progress
+        if (status === 'failed') {
+            if (!user.quizProgress) {
+                user.quizProgress = new Map();
+            }
+            const currentProgress = user.quizProgress.get(quizName) || {};
+            user.quizProgress.set(quizName, {
+                ...currentProgress,
+                status: 'failed',
+                lastUpdated: new Date()
             });
         }
 

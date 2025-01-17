@@ -297,7 +297,13 @@ export class APIService {
                 headers: {
                     'Content-Type': 'application/json'
                 },
-                body: JSON.stringify({ quizName, progress })
+                body: JSON.stringify({ 
+                    quizName, 
+                    progress: {
+                        ...progress,
+                        status: progress.status || 'in_progress' // Ensure status is included
+                    }
+                })
             });
 
             if (!response.ok) {
@@ -317,7 +323,11 @@ export class APIService {
                 headers: {
                     'Content-Type': 'application/json'
                 },
-                body: JSON.stringify({ quizName, score })
+                body: JSON.stringify({ 
+                    quizName, 
+                    score,
+                    status: score.status || 'in_progress' // Include status in the request
+                })
             });
 
             const text = await response.text();
@@ -333,6 +343,15 @@ export class APIService {
 
             if (!response.ok) {
                 throw new Error(data.message || 'Failed to update quiz score');
+            }
+
+            // Also update quiz progress with the status
+            if (score.status === 'failed') {
+                await this.saveQuizProgress(quizName, {
+                    ...score,
+                    status: 'failed',
+                    lastUpdated: new Date().toISOString()
+                });
             }
 
             return data;
