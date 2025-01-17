@@ -176,27 +176,52 @@ class AdminDashboard {
             this.users = userData.map(user => {
                 if (!user || !user.username) return null;
                 
-                // Initialize quiz progress if it doesn't exist
-                if (!user.quizProgress) {
-                    user.quizProgress = {};
+                // Ensure quiz progress exists and is properly formatted
+                const quizProgress = {};
+                if (user.progress) {
+                    Object.entries(user.progress).forEach(([quizName, progress]) => {
+                        quizProgress[quizName.toLowerCase()] = {
+                            questionHistory: progress.questionHistory || [],
+                            questionsAnswered: progress.questionsAnswered || progress.questionHistory?.length || 0,
+                            experience: progress.experience || 0,
+                            currentScenario: progress.currentScenario || 0,
+                            lastUpdated: progress.lastUpdated || null,
+                            tools: progress.tools || []
+                        };
+                    });
                 }
 
-                // Convert Map to object if necessary
-                const quizProgress = typeof user.quizProgress.get === 'function' 
-                    ? Object.fromEntries(user.quizProgress)
-                    : user.quizProgress;
+                // Format quiz results
+                const quizResults = Array.isArray(user.quizResults) ? user.quizResults.map(result => ({
+                    quizName: result.quizName,
+                    score: result.score || 0,
+                    questionsAnswered: result.questionsAnswered || result.questionHistory?.length || 0,
+                    experience: result.experience || 0,
+                    questionHistory: result.questionHistory || [],
+                    completedAt: result.completedAt ? new Date(result.completedAt).toLocaleString() : null,
+                    timestamp: result.timestamp ? new Date(result.timestamp).toLocaleString() : null
+                })) : [];
+
+                // Add quiz progress data to results if not already present
+                Object.entries(quizProgress).forEach(([quizName, progress]) => {
+                    const existingResult = quizResults.find(r => r.quizName.toLowerCase() === quizName.toLowerCase());
+                    if (!existingResult && progress.questionHistory?.length > 0) {
+                        quizResults.push({
+                            quizName: quizName,
+                            score: 0,
+                            questionsAnswered: progress.questionsAnswered,
+                            experience: progress.experience,
+                            questionHistory: progress.questionHistory,
+                            completedAt: progress.lastUpdated ? new Date(progress.lastUpdated).toLocaleString() : null,
+                            timestamp: progress.lastUpdated ? new Date(progress.lastUpdated).toLocaleString() : null
+                        });
+                    }
+                });
                 
                 return {
                     username: user.username,
                     lastLogin: user.lastLogin ? new Date(user.lastLogin).toLocaleString() : 'Never',
-                    quizResults: Array.isArray(user.quizResults) ? user.quizResults.map(result => ({
-                        quizName: result.quizName,
-                        score: result.score || 0,
-                        questionsAnswered: result.questionsAnswered || 0,
-                        experience: result.experience || 0,
-                        questionHistory: result.questionHistory || [],
-                        timestamp: result.timestamp ? new Date(result.timestamp).toLocaleString() : 'Unknown'
-                    })) : [],
+                    quizResults: quizResults,
                     quizProgress: quizProgress
                 };
             }).filter(user => user !== null);
