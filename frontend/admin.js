@@ -460,20 +460,57 @@ class AdminDashboard {
     calculateUserProgress(user) {
         if (!user) return 0;
 
-        // Count completed quizzes from quizResults
-        const completedQuizzes = new Set(user.quizResults.map(result => result.quizName.toLowerCase()));
+        // Track progress for each quiz type
+        const quizProgress = {};
         
-        // Calculate total progress
-        const totalQuizzes = this.quizTypes.length;
-        const progress = (completedQuizzes.size / totalQuizzes) * 100;
+        // First check completed quizzes from quizResults
+        if (user.quizResults) {
+            user.quizResults.forEach(result => {
+                const quizName = result.quizName.toLowerCase();
+                quizProgress[quizName] = {
+                    questionsAnswered: result.questionsAnswered || result.questionHistory?.length || 0,
+                    experience: result.experience || 0,
+                    isCompleted: true
+                };
+            });
+        }
 
-        console.log(`Progress calculation for ${user.username}:`, {
-            completedQuizzes: Array.from(completedQuizzes),
-            totalQuizzes,
-            progress
+        // Then check quiz progress for in-progress or completed quizzes
+        if (user.quizProgress) {
+            Object.entries(user.quizProgress).forEach(([quizName, progress]) => {
+                quizName = quizName.toLowerCase();
+                const questionsAnswered = progress.questionsAnswered || progress.questionHistory?.length || 0;
+                const experience = progress.experience || 0;
+
+                // Update progress if we have more progress than what's in quizResults
+                if (!quizProgress[quizName] || questionsAnswered > quizProgress[quizName].questionsAnswered) {
+                    quizProgress[quizName] = {
+                        questionsAnswered,
+                        experience,
+                        isCompleted: questionsAnswered >= 15
+                    };
+                }
+            });
+        }
+
+        // Calculate total progress across all quiz types
+        let totalProgress = 0;
+        this.quizTypes.forEach(quizType => {
+            const progress = quizProgress[quizType.toLowerCase()];
+            if (progress) {
+                // Each quiz contributes up to (100/totalQuizzes)% to overall progress
+                const quizContribution = (progress.questionsAnswered / 15) * (100 / this.quizTypes.length);
+                totalProgress += quizContribution;
+            }
         });
 
-        return progress;
+        console.log(`Progress calculation for ${user.username}:`, {
+            quizProgress,
+            totalProgress,
+            totalQuizzes: this.quizTypes.length
+        });
+
+        return totalProgress;
     }
 
     // Helper method to get last active date
