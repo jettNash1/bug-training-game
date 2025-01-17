@@ -104,15 +104,24 @@ class IndexPage {
             const percentage = quizScore.score;
             const failed = quizScore.status === 'failed';
 
-            // Update progress display
+            // Always ensure progress element is visible and properly positioned
             progressElement.style.display = 'block';
+            progressElement.style.position = 'absolute';
+            progressElement.style.top = '8px';
+            progressElement.style.right = '8px';
+            progressElement.style.padding = '4px 8px';
+            progressElement.style.borderRadius = '4px';
+            progressElement.style.fontSize = '12px';
+            progressElement.style.fontWeight = 'bold';
             
             if (failed) {
                 // Show failed state
                 progressElement.textContent = 'Failed';
-                item.style.background = 'linear-gradient(to right, rgba(231, 76, 60, 0.1), rgba(231, 76, 60, 0.2))';
                 progressElement.style.background = 'var(--error-color)';
                 progressElement.style.color = 'white';
+                item.style.background = 'linear-gradient(to right, rgba(231, 76, 60, 0.1), rgba(231, 76, 60, 0.2))';
+                item.style.borderColor = 'var(--error-color)';
+                item.style.opacity = '0.9';
                 
                 // Disable the quiz link
                 item.style.pointerEvents = 'none';
@@ -138,6 +147,10 @@ class IndexPage {
                 progressElement.style.display = 'none';
                 item.style.background = 'var(--card-background)';
             }
+
+            // Ensure the quiz item has relative positioning for absolute progress element
+            item.style.position = 'relative';
+            item.style.overflow = 'visible';
         });
     }
 
