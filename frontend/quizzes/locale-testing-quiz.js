@@ -619,24 +619,47 @@ export class LocaleTestingQuiz extends BaseQuiz {
             // Check if quiz was previously failed
             const username = localStorage.getItem('username');
             if (username) {
+                let failed = false;
+                
+                // First check localStorage for immediate feedback
+                const storageKey = `quiz_progress_${username}_${this.quizName}`;
+                const localData = localStorage.getItem(storageKey);
+                if (localData) {
+                    try {
+                        const parsedData = JSON.parse(localData);
+                        if (parsedData.progress?.status === 'failed') {
+                            failed = true;
+                            this.player.experience = parsedData.progress.experience || 0;
+                            this.player.questionHistory = parsedData.progress.questionHistory || [];
+                        }
+                    } catch (error) {
+                        console.error('Error parsing local storage data:', error);
+                    }
+                }
+
+                // Then check the API
                 try {
                     const quizResult = await this.apiService.getQuizProgress(this.quizName);
                     if (quizResult?.data?.status === 'failed') {
-                        // If quiz was failed, show the end screen immediately
-                        this.player.experience = quizResult.data.experience || 0;
-                        this.player.questionHistory = quizResult.data.questionHistory || [];
-                        this.endGame(true);
-                        return;
+                        failed = true;
+                        this.player.experience = quizResult.data.experience || this.player.experience || 0;
+                        this.player.questionHistory = quizResult.data.questionHistory || this.player.questionHistory || [];
                     }
                 } catch (error) {
-                    console.error('Error checking quiz status:', error);
+                    console.error('Error checking quiz status from API:', error);
+                }
+
+                if (failed) {
+                    // If quiz was failed, show the end screen immediately
+                    this.endGame(true);
+                    return;
                 }
             }
 
             // Initialize event listeners
             this.initializeEventListeners();
 
-            // Load previous progress
+            // Load previous progress only if not failed
             const hasProgress = await this.loadProgress();
             console.log('Previous progress loaded:', hasProgress);
             

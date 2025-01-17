@@ -73,14 +73,15 @@ class IndexPage {
         }
     }
 
-    updateQuizProgress() {
+    async updateQuizProgress() {
         if (!this.quizScores) return;
 
         // Create a document fragment to batch DOM updates
         const fragment = document.createDocumentFragment();
         const updates = new Map();
 
-        this.quizItems.forEach(async item => {
+        // Convert forEach to Promise.all to properly handle async operations
+        await Promise.all(this.quizItems.map(async item => {
             const quizId = item.dataset.quiz;
             const progressElement = document.getElementById(`${quizId}-progress`);
             if (!progressElement) return;
@@ -88,12 +89,31 @@ class IndexPage {
             const quizScore = this.quizScores.find(score => score.quizName === quizId);
             const percentage = quizScore ? quizScore.score : 0;
 
-            // Check if quiz was failed
             try {
-                const quizResult = await this.apiService.getQuizProgress(quizId);
-                const failed = quizResult?.data?.status === 'failed';
+                // First try to get status from localStorage for immediate feedback
+                const username = localStorage.getItem('username');
+                const localStorageKey = `quiz_progress_${username}_${quizId}`;
+                const localData = localStorage.getItem(localStorageKey);
+                let failed = false;
+                
+                if (localData) {
+                    const parsedData = JSON.parse(localData);
+                    failed = parsedData.progress?.status === 'failed';
+                }
 
-                // Store updates to apply in batch
+                // Then check the API
+                const quizResult = await this.apiService.getQuizProgress(quizId);
+                failed = failed || quizResult?.data?.status === 'failed';
+
+                // If failed, also disable the quiz link
+                if (failed) {
+                    item.addEventListener('click', (e) => {
+                        e.preventDefault();
+                    });
+                    item.style.cursor = 'not-allowed';
+                    item.setAttribute('aria-disabled', 'true');
+                }
+
                 updates.set(item, {
                     progress: percentage,
                     element: progressElement,
@@ -107,7 +127,7 @@ class IndexPage {
                     failed: false
                 });
             }
-        });
+        }));
 
         // Apply all updates in one batch
         requestAnimationFrame(() => {
