@@ -492,7 +492,7 @@ router.post('/sync', auth, async (req, res) => {
 // Update quiz scores
 router.post('/quiz-scores', auth, async (req, res) => {
     try {
-        const { quizName, score, status } = req.body;
+        const { quizName, score, status, questionHistory, experience } = req.body;
         const user = await User.findById(req.user.id);
         
         if (!user) {
@@ -506,6 +506,8 @@ router.post('/quiz-scores', auth, async (req, res) => {
                 ...user.quizResults[existingIndex],
                 score: score,
                 status: status || 'in_progress',
+                experience: experience || score,
+                questionHistory: questionHistory || [],
                 updatedAt: new Date()
             };
         } else {
@@ -513,6 +515,8 @@ router.post('/quiz-scores', auth, async (req, res) => {
                 quizName,
                 score,
                 status: status || 'in_progress',
+                experience: experience || score,
+                questionHistory: questionHistory || [],
                 completedAt: new Date()
             });
         }
@@ -526,6 +530,7 @@ router.post('/quiz-scores', auth, async (req, res) => {
             user.quizProgress.set(quizName, {
                 ...currentProgress,
                 status: 'failed',
+                questionHistory: questionHistory || [],
                 lastUpdated: new Date()
             });
         }
