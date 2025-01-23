@@ -627,8 +627,12 @@ class AdminDashboard {
 
     async resetQuizProgress(username, quizName) {
         try {
+            // Normalize the quiz name before sending to the API
+            const normalizedQuizName = quizName.replace(/([A-Z])/g, '-$1').toLowerCase().replace(/^-/, '');
+            console.log('Resetting quiz progress:', { username, quizName, normalizedQuizName });
+
             const response = await this.apiService.fetchWithAdminAuth(
-                `${this.apiService.baseUrl}/admin/users/${username}/quiz-progress/${quizName}/reset`,
+                `${this.apiService.baseUrl}/admin/users/${username}/quiz-progress/${normalizedQuizName}/reset`,
                 {
                     method: 'POST',
                     headers: {
