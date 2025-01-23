@@ -174,22 +174,37 @@ class AdminDashboard {
 
                 // Process quiz results to include question count and experience
                 const processedResults = (user.quizResults || []).map(result => {
-                    if (!result?.quizName) {
+                    // Skip invalid quiz results
+                    if (!result) {
+                        console.warn('Invalid quiz result:', result);
+                        return null;
+                    }
+
+                    // Handle missing or invalid quiz name
+                    let quizName;
+                    try {
+                        quizName = (result.quizName || '').toLowerCase();
+                    } catch (error) {
+                        console.warn('Error processing quiz name:', error);
+                        return null;
+                    }
+
+                    // Skip if no valid quiz name
+                    if (!quizName) {
                         console.warn('Quiz result missing quiz name:', result);
                         return null;
                     }
 
-                    // Get the quiz name in lowercase for consistency
-                    const quizName = result.quizName.toLowerCase();
-                    
                     // Get progress data from quizProgress if it exists
                     const progress = user.quizProgress?.[quizName];
 
-                return {
+                    return {
                         ...result,
                         questionsAnswered: result.questionsAnswered || 0,
                         experience: result.experience || 0,
-                        quizName: quizName
+                        quizName: quizName,
+                        score: result.score || 0,
+                        lastActive: result.lastActive || result.completedAt || null
                     };
                 }).filter(Boolean); // Remove null entries
 
@@ -197,7 +212,8 @@ class AdminDashboard {
                     username: user.username,
                     lastLogin: user.lastLogin || 'Never',
                     quizResults: processedResults,
-                    totalExperience: processedResults.reduce((sum, result) => sum + (result.experience || 0), 0)
+                    totalExperience: processedResults.reduce((sum, result) => sum + (result.experience || 0), 0),
+                    quizProgress: user.quizProgress || {}
                 };
             }).filter(Boolean); // Remove null entries
 
@@ -205,6 +221,7 @@ class AdminDashboard {
             return this.users;
         } catch (error) {
             console.error('Failed to load users:', error);
+            this.showError(`Failed to load users: ${error.message}`);
             throw error;
         }
     }

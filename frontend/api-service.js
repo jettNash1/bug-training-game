@@ -471,27 +471,41 @@ export class APIService {
             const data = await this.fetchWithAdminAuth(`${this.baseUrl}/admin/users`);
             console.log('Raw users response:', data);
 
+            // Check if data is valid
+            if (!data) {
+                console.warn('No data received from server');
+                return {
+                    success: false,
+                    data: [],
+                    error: 'No data received from server'
+                };
+            }
+
             // The backend returns { success: true, users: [...] }
             if (data.success && Array.isArray(data.users)) {
                 console.log('Found users array:', data.users.length);
                 return {
                     success: true,
-                    data: data.users
+                    data: data.users.map(user => ({
+                        ...user,
+                        quizResults: Array.isArray(user.quizResults) ? user.quizResults : [],
+                        quizProgress: user.quizProgress || {}
+                    }))
                 };
             }
 
-            console.warn('Invalid response format from server');
+            console.warn('Invalid response format from server:', data);
             return {
                 success: false,
                 data: [],
-                error: 'Invalid response format from server'
+                error: data.error || 'Invalid response format from server'
             };
         } catch (error) {
             console.error('Failed to fetch users:', error);
             return {
                 success: false,
                 data: [],
-                error: error.message
+                error: error.message || 'Failed to fetch users'
             };
         }
     }
