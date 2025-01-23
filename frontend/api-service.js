@@ -27,7 +27,6 @@ export class APIService {
                 throw new Error('No admin token found');
             }
 
-            console.log('Making request with token:', { token: adminToken });
             const headers = {
                 'Authorization': `Bearer ${adminToken}`,
                 'Content-Type': 'application/json',
@@ -41,8 +40,9 @@ export class APIService {
             });
 
             // Try to parse response as JSON
+            let text;
             try {
-                const text = await response.text();
+                text = await response.text();
                 console.log('Response text:', text);
                 
                 let data;
@@ -51,6 +51,16 @@ export class APIService {
                 } catch (e) {
                     console.error('Failed to parse response as JSON:', text);
                     throw new Error('Invalid response from server');
+                }
+
+                // If we get a 500 error, it's likely a server issue
+                if (response.status === 500) {
+                    console.error('Server error:', data);
+                    return {
+                        success: false,
+                        error: data.error || data.message || 'Internal server error',
+                        data: data.data || []
+                    };
                 }
 
                 if (!response.ok) {
@@ -481,33 +491,31 @@ export class APIService {
                 };
             }
 
-            // Handle error response from server
+            // If we got an error response, return it directly
             if (!data.success) {
-                console.warn('Server returned error:', data.error || data.message);
+                return data; // This will include error message and empty data array
+            }
+
+            // At this point, we should have valid data
+            // If users array is missing, return empty array
+            if (!data.users) {
+                console.warn('No users array in response:', data);
                 return {
-                    success: false,
+                    success: true,
                     data: [],
-                    error: data.error || data.message || 'Server returned an error'
+                    message: 'No users found'
                 };
             }
 
-            // Ensure we have a users array
-            const users = data.users || [];
-            if (!Array.isArray(users)) {
-                console.warn('Users data is not an array:', users);
-                return {
-                    success: false,
-                    data: [],
-                    error: 'Invalid users data format'
-                };
-            }
-
+            // Ensure users is an array
+            const users = Array.isArray(data.users) ? data.users : [];
             console.log('Processing users array:', JSON.stringify(users, null, 2));
 
             // Process each user's data
             const processedUsers = users.map(user => {
-                if (!user) return null;
+                if (!user || typeof user !== 'object') return null;
 
+                try {
                 // Ensure required fields exist
                 const processedUser = {
                     username: user.username || 'Unknown User',
@@ -516,25 +524,27 @@ export class APIService {
                     lastLogin: user.lastLogin || null
                 };
 
-                // Process quiz results if they exist
-                if (Array.isArray(user.quizResults)) {
-                    processedUser.quizResults = user.quizResults.map(result => {
-                        if (!result) return null;
-                        return {
-                            quizName: (result.quizName || '').toLowerCase(),
+                    // Safely process quiz results
+                    if (user.quizResults) {
+                        processedUser.quizResults = Array.isArray(user.quizResults) 
+                            ? user.quizResults
+                                .filter(result => result && typeof result === 'object')
+                                .map(result => ({
+                                    quizName: String(result.quizName || '').toLowerCase(),
                             score: Number(result.score) || 0,
                             experience: Number(result.experience) || 0,
                             questionsAnswered: Number(result.questionsAnswered) || 0,
                             lastActive: result.lastActive || result.completedAt || null
-                        };
-                    }).filter(Boolean);
+                                }))
+                            : [];
                 }
 
-                // Process quiz progress if it exists
+                    // Safely process quiz progress
                 if (user.quizProgress && typeof user.quizProgress === 'object') {
-                    processedUser.quizProgress = Object.entries(user.quizProgress).reduce((acc, [key, value]) => {
+                        processedUser.quizProgress = Object.entries(user.quizProgress)
+                            .reduce((acc, [key, value]) => {
                         if (value && typeof value === 'object') {
-                            acc[key.toLowerCase()] = {
+                                    acc[String(key).toLowerCase()] = {
                                 experience: Number(value.experience) || 0,
                                 questionsAnswered: Number(value.questionsAnswered) || 0,
                                 lastUpdated: value.lastUpdated || null
@@ -545,7 +555,11 @@ export class APIService {
                 }
 
                 return processedUser;
-            }).filter(Boolean);
+                } catch (error) {
+                    console.error('Error processing user:', user, error);
+                    return null;
+                }
+            }).filter(Boolean); // Remove null entries
 
             console.log('Processed users:', JSON.stringify(processedUsers, null, 2));
 
