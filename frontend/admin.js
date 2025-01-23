@@ -592,11 +592,17 @@ class AdminDashboard {
                         `;
                     }).join('')}
                 </div>
-                <div style="margin-top: 20px; padding-top: 20px; border-top: 1px solid #eee; text-align: center;">
+                <div style="margin-top: 20px; padding-top: 20px; border-top: 1px solid #eee; 
+                            display: flex; justify-content: center; gap: 20px;">
                     <button class="reset-all-btn" 
                         style="padding: 10px 20px; background-color: #dc3545; color: white; border: none; 
                                border-radius: 4px; cursor: pointer; font-weight: 500;">
                         Reset All Progress
+                    </button>
+                    <button class="reset-password-btn" 
+                        style="padding: 10px 20px; background-color: var(--secondary-color); color: white; 
+                               border: none; border-radius: 4px; cursor: pointer; font-weight: 500;">
+                        Reset Password
                     </button>
                 </div>
             `;
@@ -641,6 +647,17 @@ class AdminDashboard {
                         overlay.remove();
                     } catch (error) {
                         console.error('Failed to reset all progress:', error);
+                    }
+                }
+            });
+
+            // Add event listener for reset password button
+            content.querySelector('.reset-password-btn').addEventListener('click', async () => {
+                if (confirm(`Are you sure you want to reset the password for ${username}? This will set it back to default.`)) {
+                    try {
+                        await this.resetUserPassword(username);
+                    } catch (error) {
+                        console.error('Failed to reset password:', error);
                     }
                 }
             });
@@ -996,6 +1013,44 @@ class AdminDashboard {
         } catch (error) {
             console.error('Error resetting all progress:', error);
             this.showError('Failed to reset all progress');
+            throw error;
+        }
+    }
+
+    async resetUserPassword(username) {
+        try {
+            console.log('Resetting password for:', username);
+            
+            // Prompt for new password
+            const newPassword = prompt('Enter the new password for ' + username + ':');
+            
+            // If user cancels the prompt or enters empty password, abort
+            if (!newPassword) {
+                console.log('Password reset cancelled');
+                return false;
+            }
+
+            const response = await this.apiService.fetchWithAdminAuth(
+                `${this.apiService.baseUrl}/admin/users/${username}/reset-password`,
+                {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ newPassword })
+                }
+            );
+
+            if (!response.success) {
+                throw new Error(response.error || 'Failed to reset password');
+            }
+
+            // Show success message
+            alert(`Password has been successfully changed for ${username}`);
+            return true;
+        } catch (error) {
+            console.error('Error resetting password:', error);
+            this.showError('Failed to reset password');
             throw error;
         }
     }
