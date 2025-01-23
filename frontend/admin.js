@@ -787,6 +787,34 @@ class AdminDashboard {
             const content = document.createElement('div');
             content.className = 'user-details-content';
             content.innerHTML = `
+                <style>
+                    .questions-table tr.passed {
+                        background-color: rgba(75, 181, 67, 0.1);
+                    }
+                    .questions-table tr.failed {
+                        background-color: rgba(255, 68, 68, 0.1);
+                    }
+                    .questions-table tr.passed td {
+                        border-bottom: 1px solid rgba(75, 181, 67, 0.2);
+                    }
+                    .questions-table tr.failed td {
+                        border-bottom: 1px solid rgba(255, 68, 68, 0.2);
+                    }
+                    .status-badge {
+                        padding: 4px 8px;
+                        border-radius: 4px;
+                        font-weight: bold;
+                        font-size: 0.9em;
+                    }
+                    .status-badge.passed {
+                        background-color: #4BB543;
+                        color: white;
+                    }
+                    .status-badge.failed {
+                        background-color: #FF4444;
+                        color: white;
+                    }
+                </style>
                 <div class="details-header">
                     <h3>Questions for ${this.formatQuizName(quizName)}</h3>
                     <button class="close-btn" aria-label="Close questions overlay">&times;</button>
@@ -845,13 +873,13 @@ class AdminDashboard {
                     </div>
                 </div>
                 <div class="questions-table-container" style="overflow-x: auto;">
-                    <table class="questions-table" style="width: 100%; border-collapse: collapse;">
+                    <table class="questions-table" style="width: 100%; border-collapse: collapse; border-spacing: 0;">
                         <thead>
-                            <tr>
-                                <th style="width: 5%;">ID</th>
-                                <th style="width: 35%;">Description</th>
-                                <th style="width: 35%;">Selected Answer</th>
-                                <th style="width: 10%;">Status</th>
+                            <tr style="background-color: #f8f9fa;">
+                                <th style="width: 5%; padding: 12px; border-bottom: 2px solid #dee2e6;">ID</th>
+                                <th style="width: 35%; padding: 12px; border-bottom: 2px solid #dee2e6;">Description</th>
+                                <th style="width: 35%; padding: 12px; border-bottom: 2px solid #dee2e6;">Selected Answer</th>
+                                <th style="width: 10%; padding: 12px; border-bottom: 2px solid #dee2e6;">Status</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -861,10 +889,10 @@ class AdminDashboard {
 
                                 return `
                                     <tr class="${status}">
-                                        <td style="text-align: center;">${record.id}</td>
-                                        <td>${record.scenario.description}</td>
-                                        <td>${record.selectedAnswer.text}</td>
-                                        <td>
+                                        <td style="text-align: center; padding: 12px;">${record.id}</td>
+                                        <td style="padding: 12px;">${record.scenario.description}</td>
+                                        <td style="padding: 12px;">${record.selectedAnswer.text}</td>
+                                        <td style="padding: 12px; text-align: center;">
                                             <span class="status-badge ${status}">
                                                 ${status.toUpperCase()}
                                             </span>
