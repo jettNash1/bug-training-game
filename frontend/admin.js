@@ -527,9 +527,10 @@ class AdminDashboard {
                         const questionsAnswered = progress?.questionsAnswered || result?.questionsAnswered || 0;
                         const experience = progress?.experience || result?.experience || 0;
                         
-                        // Calculate status based on quiz result and progress
-                        const status = result?.score ? 'Completed' : 
-                                     questionsAnswered > 0 ? 'In Progress' : 'Not Started';
+                        // Calculate status based on questions answered
+                        const status = questionsAnswered === 15 ? 'Completed' : 
+                                       questionsAnswered > 0 ? 'In Progress' : 
+                                       'Not Started';
                         
                         const score = result?.score || 0;
                         const lastActive = result ? this.formatDate(result.lastActive || result.completedAt) : 'Never';
@@ -540,7 +541,9 @@ class AdminDashboard {
                                 <div class="progress-details" style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px;">
                                     <div>
                                         <strong>Progress:</strong> 
-                                        <span class="${status === 'Completed' ? 'text-success' : status === 'In Progress' ? 'text-warning' : 'text-muted'}">${status}</span>
+                                        <span class="${status === 'Completed' ? 'text-success' : 
+                                                     status === 'In Progress' ? 'text-warning' : 
+                                                     'text-muted'}">${status}</span>
                                     </div>
                                     <div>
                                         <strong>Score:</strong> 
