@@ -418,11 +418,32 @@ router.get('/users/:username/quiz-questions/:quizName', auth, async (req, res) =
 
         console.log(`Found ${questionHistory.length} questions for ${username}/${quizName}`);
         
-        // Return the question history
+        // Format the question history for display
+        const formattedHistory = questionHistory.map(record => ({
+            scenario: {
+                title: record.scenario.title,
+                description: record.scenario.description,
+                level: record.scenario.level
+            },
+            selectedAnswer: {
+                text: record.selectedAnswer.text,
+                outcome: record.selectedAnswer.outcome,
+                experience: record.selectedAnswer.experience,
+                tool: record.selectedAnswer.tool
+            },
+            status: record.selectedAnswer.experience > 0 ? 'passed' : 'failed'
+        }));
+
+        // Return the formatted question history
         res.json({
             success: true,
             data: {
-                questionHistory: questionHistory || []
+                questionHistory: formattedHistory,
+                totalQuestions: formattedHistory.length,
+                quizName: quizNameLower,
+                score: quizResult?.score || 0,
+                experience: quizResult?.experience || progress?.experience || 0,
+                lastActive: quizResult?.lastActive || progress?.lastUpdated || null
             }
         });
     } catch (error) {

@@ -818,7 +818,7 @@ class AdminDashboard {
                 return;
             }
 
-            const { questionHistory = [] } = response.data;
+            const { questionHistory = [], totalQuestions = 0, score = 0, experience = 0 } = response.data;
             console.log('Question history:', questionHistory);
 
             if (questionHistory.length === 0) {
@@ -826,8 +826,24 @@ class AdminDashboard {
                 return;
             }
 
-            // Display questions in table format
+            // Display quiz summary
             questionsList.innerHTML = `
+                <div class="quiz-summary" style="margin-bottom: 20px; padding: 15px; background: #f5f5f5; border-radius: 8px;">
+                    <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px;">
+                        <div>
+                            <strong>Questions Answered:</strong> 
+                            <span>${totalQuestions}/15</span>
+                        </div>
+                        <div>
+                            <strong>Score:</strong> 
+                            <span>${score}%</span>
+                        </div>
+                        <div>
+                            <strong>Experience:</strong> 
+                            <span>${experience}/300</span>
+                        </div>
+                    </div>
+                </div>
                 <table class="questions-table">
                     <thead>
                         <tr>
@@ -838,30 +854,28 @@ class AdminDashboard {
                     </thead>
                     <tbody>
                         ${questionHistory.map((record, index) => {
-                            const scenario = record.scenario;
-                            const answer = record.selectedAnswer;
                             const status = record.status || 
-                                (!answer ? 'not-complete' : answer.experience > 0 ? 'passed' : 'failed');
+                                (record.selectedAnswer.experience > 0 ? 'passed' : 'failed');
 
                             return `
-                                <tr class="${status === 'passed' ? 'correct' : 
-                                           status === 'failed' ? 'incorrect' : 'not-complete'}">
+                                <tr class="${status}">
                                     <td>
-                                        <strong>${scenario.title}</strong>
-                                        <p>${scenario.description}</p>
+                                        <strong>${record.scenario.title}</strong>
+                                        <p>${record.scenario.description}</p>
+                                        ${record.scenario.level ? `<small>Level: ${record.scenario.level}</small>` : ''}
                                     </td>
                                     <td>
-                                        ${answer ? `
-                                            <div class="answer-content">
-                                                <p>${answer.text}</p>
-                                                <small class="outcome">${answer.outcome}</small>
-                                            </div>
-                                        ` : 'Not attempted'}
+                                        <div class="answer-content">
+                                            <p>${record.selectedAnswer.text}</p>
+                                            <small class="outcome">${record.selectedAnswer.outcome}</small>
+                                            ${record.selectedAnswer.tool ? 
+                                                `<small class="tool">Tool: ${record.selectedAnswer.tool}</small>` : ''}
+                                            <small class="xp">XP: ${record.selectedAnswer.experience}</small>
+                                        </div>
                                     </td>
                                     <td>
-                                        <span class="status-badge ${status === 'passed' ? 'pass' : 
-                                                                   status === 'failed' ? 'fail' : 'pending'}">
-                                            ${status.toUpperCase().replace('-', ' ')}
+                                        <span class="status-badge ${status}">
+                                            ${status.toUpperCase()}
                                         </span>
                                     </td>
                                 </tr>
@@ -873,9 +887,11 @@ class AdminDashboard {
 
         } catch (error) {
             console.error('Error showing quiz questions:', error);
-            const questionsList = content?.querySelector('.questions-list');
-            if (questionsList) {
-                questionsList.innerHTML = '<p class="error">An error occurred while loading questions.</p>';
+            if (content) {
+                const questionsList = content.querySelector('.questions-list');
+                if (questionsList) {
+                    questionsList.innerHTML = '<p class="error">An error occurred while loading questions.</p>';
+                }
             }
         }
     }
