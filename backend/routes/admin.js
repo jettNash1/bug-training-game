@@ -127,35 +127,65 @@ router.get('/users', auth, async (req, res) => {
 
             // Update each quiz result with its corresponding progress data
             userData.quizResults = userData.quizResults.map(result => {
-                const progress = userData.quizProgress?.[result.quizName.toLowerCase()];
-                
-                // Calculate questions answered and experience
-                let questionsAnswered = 0;
-                let experience = 0;
-
-                // First try to get data from progress (new format)
-                if (progress) {
-                    questionsAnswered = progress.questionsAnswered || 
-                        (Array.isArray(progress.questionHistory) ? progress.questionHistory.length : 0);
-                    experience = progress.experience || 0;
+                if (!result || !result.quizName) {
+                    console.warn('Invalid quiz result:', result);
+                    return null;
                 }
 
-                // If no progress data, try to get from result (old format)
-                if (!questionsAnswered && result.score) {
-                    // For old data, if there's a score, calculate questions based on it
-                    questionsAnswered = Math.ceil((result.score / 100) * 15); // 15 is total questions
-                    experience = Math.ceil((result.score / 100) * 300); // 300 is max XP
+                try {
+                    const quizNameLower = String(result.quizName).toLowerCase();
+                    const progress = userData.quizProgress?.[quizNameLower];
+                    
+                    // Calculate questions answered and experience
+                    let questionsAnswered = 0;
+                    let experience = 0;
+
+                    // First try to get data from progress (new format)
+                    if (progress) {
+                        questionsAnswered = progress.questionsAnswered || 
+                            (Array.isArray(progress.questionHistory) ? progress.questionHistory.length : 0);
+                        experience = progress.experience || 0;
+                    }
+
+                    // If no progress data, try to get from result (old format)
+                    if (!questionsAnswered && result.score) {
+                        // For old data, if there's a score, calculate questions based on it
+                        questionsAnswered = Math.ceil((result.score / 100) * 15); // 15 is total questions
+                        experience = Math.ceil((result.score / 100) * 300); // 300 is max XP
+                    }
+
+                    return {
+                        ...result,
+                        quizName: quizNameLower,
+                        questionsAnswered,
+                        experience,
+                        score: Number(result.score) || 0,
+                        lastActive: result.lastActive || result.completedAt || null
+                    };
+                } catch (error) {
+                    console.error('Error processing quiz result:', error);
+                    return null;
                 }
+            }).filter(Boolean); // Remove null entries
 
-                return {
-                    ...result,
-                    questionsAnswered,
-                    experience
-                };
-            });
+            // Process quiz progress
+            if (userData.quizProgress) {
+                const processedProgress = {};
+                Object.entries(userData.quizProgress).forEach(([key, value]) => {
+                    try {
+                        const quizNameLower = String(key).toLowerCase();
+                        processedProgress[quizNameLower] = {
+                            questionsAnswered: Number(value.questionsAnswered) || 0,
+                            experience: Number(value.experience) || 0,
+                            lastUpdated: value.lastUpdated || null
+                        };
+                    } catch (error) {
+                        console.error('Error processing quiz progress:', error);
+                    }
+                });
+                userData.quizProgress = processedProgress;
+            }
 
-            // Remove quizProgress from response since it's not needed
-            delete userData.quizProgress;
             return userData;
         });
 
