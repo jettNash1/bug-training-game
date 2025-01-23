@@ -312,7 +312,7 @@ router.post('/users/:username/quiz-scores/reset', auth, async (req, res) => {
                 success: false,
                 message: 'Admin access required'
             });
-        }
+        } 
 
         const { username } = req.params;
         const { quizName } = req.body;
