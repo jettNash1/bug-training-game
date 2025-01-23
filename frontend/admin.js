@@ -1037,7 +1037,7 @@ class AdminDashboard {
                     headers: {
                         'Content-Type': 'application/json'
                     },
-                    body: JSON.stringify({ newPassword })
+                    body: JSON.stringify({ password: newPassword })
                 }
             );
 
