@@ -164,44 +164,47 @@
             display: flex;
             flex-direction: column;
             gap: 1rem;
-            min-width: 0; /* Ensures flex items can shrink below content size */
+            min-width: 0;
         }
 
         .user-header {
             display: flex;
-            justify-content: space-between;
-            align-items: flex-start;
+            flex-direction: column;
             width: 100%;
             gap: 1rem;
         }
 
         .user-header h4 {
             margin: 0;
-            font-size: 1.2rem;
+            font-size: 1.4rem;
             color: var(--text-primary);
+            text-align: center;
             overflow: hidden;
             text-overflow: ellipsis;
             white-space: nowrap;
         }
 
         .user-stats {
-            text-align: right;
-            font-size: 0.9rem;
-            color: var(--text-secondary);
-            min-width: 0; /* Allows stats to shrink */
+            display: grid;
+            gap: 1rem;
+            text-align: center;
         }
 
         .stat {
             display: flex;
-            justify-content: flex-end;
-            align-items: baseline;
-            gap: 0.5rem;
-            white-space: nowrap;
+            flex-direction: column;
+            align-items: center;
+            gap: 0.25rem;
         }
 
         .stat-label {
             color: var(--text-secondary);
             font-size: 0.85rem;
+        }
+
+        .stat-value {
+            font-size: 0.85rem;
+            color: var(--text-primary);
         }
 
         .view-details-btn {

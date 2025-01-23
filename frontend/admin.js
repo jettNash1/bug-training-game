@@ -724,11 +724,11 @@ class AdminDashboard {
         yesterday.setDate(yesterday.getDate() - 1);
 
         if (date.toDateString() === today.toDateString()) {
-            return `Today at ${date.toLocaleTimeString()}`;
+            return 'Today';
         } else if (date.toDateString() === yesterday.toDateString()) {
-            return `Yesterday at ${date.toLocaleTimeString()}`;
+            return 'Yesterday';
         } else {
-            return date.toLocaleString();
+            return date.toLocaleDateString();
         }
     }
 
