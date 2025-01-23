@@ -249,6 +249,13 @@ router.post('/users/:username/quiz-progress/:quizName/reset', auth, async (req, 
         }
 
         const { username, quizName } = req.params;
+        if (!quizName) {
+            return res.status(400).json({
+                success: false,
+                message: 'Quiz name is required'
+            });
+        }
+
         console.log('Attempting to reset quiz progress:', { username, quizName });
 
         // Find the user
@@ -261,25 +268,31 @@ router.post('/users/:username/quiz-progress/:quizName/reset', auth, async (req, 
             });
         }
 
+        // Normalize quiz name
+        const normalizedQuizName = String(quizName).replace(/([A-Z])/g, '-$1').toLowerCase().replace(/^-/, '');
+        console.log('Normalized quiz name:', normalizedQuizName);
+
         // Reset quiz progress
         if (!user.quizProgress) {
-            user.quizProgress = {};
+            user.quizProgress = new Map();
         }
 
-        // Completely remove the quiz progress
-        delete user.quizProgress[quizName];
+        // Delete the quiz progress using Map methods
+        user.quizProgress.delete(normalizedQuizName);
+        user.quizProgress.delete(quizName); // Also try original name just in case
 
         // Remove quiz result if it exists
         if (user.quizResults) {
             const initialLength = user.quizResults.length;
             user.quizResults = user.quizResults.filter(result => {
-                // Handle both camelCase and hyphenated formats
-                const normalizedQuizName = result.quizName
-                    .replace(/([A-Z])/g, '-$1')
-                    .toLowerCase()
-                    .replace(/^-/, '');
-                return normalizedQuizName !== quizName.toLowerCase() &&
-                       result.quizName !== quizName;
+                if (!result || !result.quizName) return false;
+                try {
+                    const resultQuizName = String(result.quizName).replace(/([A-Z])/g, '-$1').toLowerCase().replace(/^-/, '');
+                    return resultQuizName !== normalizedQuizName && result.quizName !== quizName;
+                } catch (error) {
+                    console.error('Error comparing quiz names:', error);
+                    return true; // Keep the result if we can't compare it
+                }
             });
             console.log(`Removed ${initialLength - user.quizResults.length} quiz results for ${quizName}`);
         }
