@@ -434,16 +434,29 @@ class AdminDashboard {
     calculateUserProgress(user) {
         if (!user) return 0;
 
-        // Count completed quizzes from quizResults
-        const completedQuizzes = new Set(user.quizResults.map(result => result.quizName.toLowerCase()));
-        
-        // Calculate total progress
-        const totalQuizzes = this.quizTypes.length;
-        const progress = (completedQuizzes.size / totalQuizzes) * 100;
+        let totalQuestionsAnswered = 0;
+        const totalPossibleQuestions = this.quizTypes.length * 15; // 15 questions per quiz
+
+        // Sum up questions answered across all quizzes
+        this.quizTypes.forEach(quizType => {
+            const progress = user.quizProgress?.[quizType.toLowerCase()];
+            const result = user.quizResults?.find(r => r.quizName.toLowerCase() === quizType.toLowerCase());
+            
+            // Get questions answered from progress first, then fall back to result
+            const questionsAnswered = progress?.questionsAnswered || 
+                                    progress?.questionHistory?.length || 
+                                    result?.questionsAnswered || 
+                                    result?.questionHistory?.length || 0;
+            
+            totalQuestionsAnswered += questionsAnswered;
+        });
+
+        // Calculate progress as percentage of total possible questions
+        const progress = (totalQuestionsAnswered / totalPossibleQuestions) * 100;
 
         console.log(`Progress calculation for ${user.username}:`, {
-            completedQuizzes: Array.from(completedQuizzes),
-            totalQuizzes,
+            totalQuestionsAnswered,
+            totalPossibleQuestions,
             progress
         });
 
