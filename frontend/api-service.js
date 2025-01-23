@@ -661,9 +661,9 @@ export class APIService {
     async resetUserPassword(username, newPassword) {
         try {
             const response = await this.fetchWithAdminAuth(
-                `${this.baseUrl}/admin/users/${username}/password`,
+                `${this.baseUrl}/admin/users/${username}/reset-password`,
                 {
-                    method: 'POST',
+                    method: 'PUT',
                     headers: {
                         'Content-Type': 'application/json'
                     },
