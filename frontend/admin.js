@@ -1031,16 +1031,13 @@ class AdminDashboard {
             }
 
             const response = await this.apiService.fetchWithAdminAuth(
-                `${this.apiService.baseUrl}/admin/reset-password`,
+                `${this.apiService.baseUrl}/admin/users/${username}/password`,
                 {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'
                     },
-                    body: JSON.stringify({ 
-                        username,
-                        newPassword 
-                    })
+                    body: JSON.stringify({ newPassword })
                 }
             );
 
