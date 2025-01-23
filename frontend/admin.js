@@ -1030,16 +1030,7 @@ class AdminDashboard {
                 return false;
             }
 
-            const response = await this.apiService.fetchWithAdminAuth(
-                `${this.apiService.baseUrl}/admin/users/${username}/password`,
-                {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({ password: newPassword })
-                }
-            );
+            const response = await this.apiService.resetUserPassword(username, newPassword);
 
             if (!response.success) {
                 throw new Error(response.error || 'Failed to reset password');

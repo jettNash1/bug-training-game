@@ -656,4 +656,25 @@ export class APIService {
             throw error;
         }
     }
+
+    // Add resetUserPassword method
+    async resetUserPassword(username, newPassword) {
+        try {
+            const response = await this.fetchWithAdminAuth(
+                `${this.baseUrl}/admin/users/${username}/password`,
+                {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ password: newPassword })
+                }
+            );
+
+            return response;
+        } catch (error) {
+            console.error('Failed to reset password:', error);
+            throw error;
+        }
+    }
 } 
