@@ -844,45 +844,50 @@ class AdminDashboard {
                         </div>
                     </div>
                 </div>
-                <table class="questions-table">
-                    <thead>
-                        <tr>
-                            <th>Question</th>
-                            <th>Selected Answer</th>
-                            <th>Status</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        ${questionHistory.map((record, index) => {
-                            const status = record.status || 
-                                (record.selectedAnswer.experience > 0 ? 'passed' : 'failed');
+                <div class="questions-table-container" style="overflow-x: auto;">
+                    <table class="questions-table" style="width: 100%; border-collapse: collapse;">
+                        <thead>
+                            <tr>
+                                <th style="width: 5%;">ID</th>
+                                <th style="width: 35%;">Question</th>
+                                <th style="width: 35%;">Selected Answer</th>
+                                <th style="width: 10%;">Level</th>
+                                <th style="width: 15%;">Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${questionHistory.map(record => {
+                                const status = record.status || 
+                                    (record.selectedAnswer.experience > 0 ? 'passed' : 'failed');
 
-                            return `
-                                <tr class="${status}">
-                                    <td>
-                                        <strong>${record.scenario.title}</strong>
-                                        <p>${record.scenario.description}</p>
-                                        ${record.scenario.level ? `<small>Level: ${record.scenario.level}</small>` : ''}
-                                    </td>
-                                    <td>
-                                        <div class="answer-content">
-                                            <p>${record.selectedAnswer.text}</p>
-                                            <small class="outcome">${record.selectedAnswer.outcome}</small>
-                                            ${record.selectedAnswer.tool ? 
-                                                `<small class="tool">Tool: ${record.selectedAnswer.tool}</small>` : ''}
-                                            <small class="xp">XP: ${record.selectedAnswer.experience}</small>
-                                        </div>
-                                    </td>
-                                    <td>
-                                        <span class="status-badge ${status}">
-                                            ${status.toUpperCase()}
-                                        </span>
-                                    </td>
-                                </tr>
-                            `;
-                        }).join('')}
-                    </tbody>
-                </table>
+                                return `
+                                    <tr class="${status}">
+                                        <td style="text-align: center;">${record.id}</td>
+                                        <td>
+                                            <strong>${record.scenario.title}</strong>
+                                            <p>${record.scenario.description}</p>
+                                        </td>
+                                        <td>
+                                            <div class="answer-content">
+                                                <p>${record.selectedAnswer.text}</p>
+                                                <small class="outcome">${record.selectedAnswer.outcome}</small>
+                                                ${record.selectedAnswer.tool ? 
+                                                    `<small class="tool">Tool: ${record.selectedAnswer.tool}</small>` : ''}
+                                                <small class="xp">XP: ${record.selectedAnswer.experience}</small>
+                                            </div>
+                                        </td>
+                                        <td style="text-align: center;">Level ${record.scenario.level}</td>
+                                        <td>
+                                            <span class="status-badge ${status}">
+                                                ${status.toUpperCase()}
+                                            </span>
+                                        </td>
+                                    </tr>
+                                `;
+                            }).join('')}
+                        </tbody>
+                    </table>
+                </div>
             `;
 
         } catch (error) {

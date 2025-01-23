@@ -392,13 +392,18 @@ router.get('/users/:username/quiz-questions/:quizName', auth, async (req, res) =
         }
 
         // Get quiz progress data
-        const quizNameLower = quizName.toLowerCase();
+        const quizNameLower = String(quizName).toLowerCase();
         const progress = user.quizProgress?.[quizNameLower];
 
         // Get quiz results data
         const quizResult = user.quizResults?.find(result => {
             if (!result?.quizName) return false;
-            return result.quizName.toLowerCase() === quizNameLower;
+            try {
+                return String(result.quizName).toLowerCase() === quizNameLower;
+            } catch (error) {
+                console.error('Error comparing quiz names:', error);
+                return false;
+            }
         });
 
         console.log('Found quiz result:', quizResult);
@@ -408,31 +413,44 @@ router.get('/users/:username/quiz-questions/:quizName', auth, async (req, res) =
         let questionHistory = [];
 
         // First try to get from progress (new format)
-        if (progress?.questionHistory) {
+        if (progress?.questionHistory && Array.isArray(progress.questionHistory)) {
             questionHistory = progress.questionHistory;
         }
         // If no progress history, try from quiz result (old format)
-        else if (quizResult?.questionHistory) {
+        else if (quizResult?.questionHistory && Array.isArray(quizResult.questionHistory)) {
             questionHistory = quizResult.questionHistory;
         }
 
         console.log(`Found ${questionHistory.length} questions for ${username}/${quizName}`);
         
         // Format the question history for display
-        const formattedHistory = questionHistory.map(record => ({
-            scenario: {
-                title: record.scenario.title,
-                description: record.scenario.description,
-                level: record.scenario.level
-            },
-            selectedAnswer: {
-                text: record.selectedAnswer.text,
-                outcome: record.selectedAnswer.outcome,
-                experience: record.selectedAnswer.experience,
-                tool: record.selectedAnswer.tool
-            },
-            status: record.selectedAnswer.experience > 0 ? 'passed' : 'failed'
-        }));
+        const formattedHistory = questionHistory.map((record, index) => {
+            try {
+                if (!record || !record.scenario || !record.selectedAnswer) {
+                    console.warn('Invalid record structure:', record);
+                    return null;
+                }
+
+                return {
+                    id: index + 1,
+                    scenario: {
+                        title: record.scenario.title || 'Untitled',
+                        description: record.scenario.description || '',
+                        level: record.scenario.level || 1
+                    },
+                    selectedAnswer: {
+                        text: record.selectedAnswer.text || '',
+                        outcome: record.selectedAnswer.outcome || '',
+                        experience: Number(record.selectedAnswer.experience) || 0,
+                        tool: record.selectedAnswer.tool || ''
+                    },
+                    status: record.selectedAnswer.experience > 0 ? 'passed' : 'failed'
+                };
+            } catch (error) {
+                console.error('Error formatting record:', error);
+                return null;
+            }
+        }).filter(Boolean); // Remove any null entries
 
         // Return the formatted question history
         res.json({
