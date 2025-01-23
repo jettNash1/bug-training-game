@@ -821,7 +821,7 @@ class AdminDashboard {
             const { questionHistory = [], totalQuestions = 0, score = 0, experience = 0 } = response.data;
             console.log('Question history:', questionHistory);
 
-            if (questionHistory.length === 0) {
+            if (!Array.isArray(questionHistory) || questionHistory.length === 0) {
                 questionsList.innerHTML = '<p>No questions have been answered in this quiz yet.</p>';
                 return;
             }
@@ -849,10 +849,9 @@ class AdminDashboard {
                         <thead>
                             <tr>
                                 <th style="width: 5%;">ID</th>
-                                <th style="width: 35%;">Question</th>
+                                <th style="width: 35%;">Description</th>
                                 <th style="width: 35%;">Selected Answer</th>
-                                <th style="width: 10%;">Level</th>
-                                <th style="width: 15%;">Status</th>
+                                <th style="width: 10%;">Status</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -863,20 +862,8 @@ class AdminDashboard {
                                 return `
                                     <tr class="${status}">
                                         <td style="text-align: center;">${record.id}</td>
-                                        <td>
-                                            <strong>${record.scenario.title}</strong>
-                                            <p>${record.scenario.description}</p>
-                                        </td>
-                                        <td>
-                                            <div class="answer-content">
-                                                <p>${record.selectedAnswer.text}</p>
-                                                <small class="outcome">${record.selectedAnswer.outcome}</small>
-                                                ${record.selectedAnswer.tool ? 
-                                                    `<small class="tool">Tool: ${record.selectedAnswer.tool}</small>` : ''}
-                                                <small class="xp">XP: ${record.selectedAnswer.experience}</small>
-                                            </div>
-                                        </td>
-                                        <td style="text-align: center;">Level ${record.scenario.level}</td>
+                                        <td>${record.scenario.description}</td>
+                                        <td>${record.selectedAnswer.text}</td>
                                         <td>
                                             <span class="status-badge ${status}">
                                                 ${status.toUpperCase()}

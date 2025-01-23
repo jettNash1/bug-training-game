@@ -391,23 +391,26 @@ router.get('/users/:username/quiz-questions/:quizName', auth, async (req, res) =
             });
         }
 
-        // Get quiz progress data
-        const quizNameLower = String(quizName).toLowerCase();
-        const progress = user.quizProgress?.[quizNameLower];
+        // Normalize quiz name - handle both camelCase and hyphenated formats
+        const normalizedQuizName = quizName.replace(/([A-Z])/g, '-$1').toLowerCase().replace(/^-/, '');
+        console.log('Normalized quiz name:', normalizedQuizName);
 
-        // Get quiz results data
+        // Get quiz progress data - try both normalized and original formats
+        const progress = user.quizProgress?.get(normalizedQuizName) || user.quizProgress?.get(quizName);
+        console.log('Found quiz progress:', progress);
+
+        // Get quiz results data - try both normalized and original formats
         const quizResult = user.quizResults?.find(result => {
             if (!result?.quizName) return false;
             try {
-                return String(result.quizName).toLowerCase() === quizNameLower;
+                const resultQuizName = String(result.quizName).replace(/([A-Z])/g, '-$1').toLowerCase().replace(/^-/, '');
+                return resultQuizName === normalizedQuizName || result.quizName === quizName;
             } catch (error) {
                 console.error('Error comparing quiz names:', error);
                 return false;
             }
         });
-
         console.log('Found quiz result:', quizResult);
-        console.log('Found quiz progress:', progress);
 
         // Combine question history from both sources
         let questionHistory = [];
@@ -415,10 +418,12 @@ router.get('/users/:username/quiz-questions/:quizName', auth, async (req, res) =
         // First try to get from progress (new format)
         if (progress?.questionHistory && Array.isArray(progress.questionHistory)) {
             questionHistory = progress.questionHistory;
+            console.log('Using question history from progress:', questionHistory.length);
         }
         // If no progress history, try from quiz result (old format)
         else if (quizResult?.questionHistory && Array.isArray(quizResult.questionHistory)) {
             questionHistory = quizResult.questionHistory;
+            console.log('Using question history from quiz result:', questionHistory.length);
         }
 
         console.log(`Found ${questionHistory.length} questions for ${username}/${quizName}`);
@@ -432,11 +437,11 @@ router.get('/users/:username/quiz-questions/:quizName', auth, async (req, res) =
                 }
 
                 return {
-                    id: index + 1,
+                    id: record.scenario.id || index + 1,
                     scenario: {
                         title: record.scenario.title || 'Untitled',
                         description: record.scenario.description || '',
-                        level: record.scenario.level || 1
+                        level: record.scenario.level || 'Basic'
                     },
                     selectedAnswer: {
                         text: record.selectedAnswer.text || '',
@@ -450,7 +455,7 @@ router.get('/users/:username/quiz-questions/:quizName', auth, async (req, res) =
                 console.error('Error formatting record:', error);
                 return null;
             }
-        }).filter(Boolean); // Remove any null entries
+        }).filter(Boolean);
 
         // Return the formatted question history
         res.json({
@@ -458,10 +463,10 @@ router.get('/users/:username/quiz-questions/:quizName', auth, async (req, res) =
             data: {
                 questionHistory: formattedHistory,
                 totalQuestions: formattedHistory.length,
-                quizName: quizNameLower,
+                quizName: normalizedQuizName,
                 score: quizResult?.score || 0,
-                experience: quizResult?.experience || progress?.experience || 0,
-                lastActive: quizResult?.lastActive || progress?.lastUpdated || null
+                experience: progress?.experience || quizResult?.experience || 0,
+                lastActive: progress?.lastUpdated || quizResult?.lastActive || null
             }
         });
     } catch (error) {
