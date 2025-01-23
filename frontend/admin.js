@@ -592,6 +592,13 @@ class AdminDashboard {
                         `;
                     }).join('')}
                 </div>
+                <div style="margin-top: 20px; padding-top: 20px; border-top: 1px solid #eee; text-align: center;">
+                    <button class="reset-all-btn" 
+                        style="padding: 10px 20px; background-color: #dc3545; color: white; border: none; 
+                               border-radius: 4px; cursor: pointer; font-weight: 500;">
+                        Reset All Progress
+                    </button>
+                </div>
             `;
             
             overlay.appendChild(content);
@@ -623,6 +630,19 @@ class AdminDashboard {
                     console.log('View questions clicked for:', { quizName, username });
                     await this.showQuizQuestions(quizName, username);
                 });
+            });
+
+            // Add event listener for reset all button
+            content.querySelector('.reset-all-btn').addEventListener('click', async () => {
+                if (confirm(`Are you sure you want to reset ALL quiz progress for ${username}? This action cannot be undone.`)) {
+                    try {
+                        await this.resetAllProgress(username);
+                        // Close the overlay after successful reset
+                        overlay.remove();
+                    } catch (error) {
+                        console.error('Failed to reset all progress:', error);
+                    }
+                }
             });
 
             // Add close button functionality
@@ -934,6 +954,49 @@ class AdminDashboard {
                     questionsList.innerHTML = '<p class="error">An error occurred while loading questions.</p>';
                 }
             }
+        }
+    }
+
+    async resetAllProgress(username) {
+        try {
+            console.log('Resetting all progress for:', username);
+            
+            // Get all quizzes that have any progress
+            const user = this.users.find(u => u.username === username);
+            if (!user) {
+                throw new Error('User not found');
+            }
+
+            // Get quizzes with progress
+            const quizzesWithProgress = this.quizTypes.filter(quizType => {
+                const progress = user.quizProgress?.[quizType.toLowerCase()];
+                const result = user.quizResults?.find(r => r.quizName.toLowerCase() === quizType.toLowerCase());
+                const questionsAnswered = progress?.questionsAnswered || 
+                                        progress?.questionHistory?.length || 
+                                        result?.questionsAnswered || 
+                                        result?.questionHistory?.length || 0;
+                return questionsAnswered > 0;
+            });
+
+            if (quizzesWithProgress.length === 0) {
+                this.showError('No quiz progress to reset');
+                return;
+            }
+
+            // Reset each quiz
+            for (const quizName of quizzesWithProgress) {
+                await this.resetQuizProgress(username, quizName);
+            }
+
+            // Refresh the data
+            await this.loadUsers();
+            await this.updateDashboard();
+            
+            return true;
+        } catch (error) {
+            console.error('Error resetting all progress:', error);
+            this.showError('Failed to reset all progress');
+            throw error;
         }
     }
 }
