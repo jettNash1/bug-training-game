@@ -11,7 +11,8 @@ class AdminDashboard {
             'risk-analysis', 'risk-management', 'non-functional', 'test-support',
             'issue-verification', 'build-verification', 'issue-tracking-tools',
             'raising-tickets', 'reports', 'cms-testing', 'email-testing', 'content-copy',
-            'locale-testing', 'script-metrics-troubleshooting','standard-script-testing'
+            'locale-testing', 'script-metrics-troubleshooting','standard-script-testing',
+            'test-types-tricks'
         ];
         
         // Initialize immediately if we're on an admin page
