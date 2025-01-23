@@ -469,7 +469,7 @@ export class APIService {
         try {
             // Fetch real data from MongoDB through the API
             const data = await this.fetchWithAdminAuth(`${this.baseUrl}/admin/users`);
-            console.log('Raw users response:', data);
+            console.log('Raw users response:', JSON.stringify(data, null, 2));
 
             // Check if data is valid
             if (!data) {
@@ -481,24 +481,77 @@ export class APIService {
                 };
             }
 
-            // The backend returns { success: true, users: [...] }
-            if (data.success && Array.isArray(data.users)) {
-                console.log('Found users array:', data.users.length);
+            // Handle error response from server
+            if (!data.success) {
+                console.warn('Server returned error:', data.error || data.message);
                 return {
-                    success: true,
-                    data: data.users.map(user => ({
-                        ...user,
-                        quizResults: Array.isArray(user.quizResults) ? user.quizResults : [],
-                        quizProgress: user.quizProgress || {}
-                    }))
+                    success: false,
+                    data: [],
+                    error: data.error || data.message || 'Server returned an error'
                 };
             }
 
-            console.warn('Invalid response format from server:', data);
+            // Ensure we have a users array
+            const users = data.users || [];
+            if (!Array.isArray(users)) {
+                console.warn('Users data is not an array:', users);
+                return {
+                    success: false,
+                    data: [],
+                    error: 'Invalid users data format'
+                };
+            }
+
+            console.log('Processing users array:', JSON.stringify(users, null, 2));
+
+            // Process each user's data
+            const processedUsers = users.map(user => {
+                if (!user) return null;
+
+                // Ensure required fields exist
+                const processedUser = {
+                    username: user.username || 'Unknown User',
+                    quizResults: [],
+                    quizProgress: {},
+                    lastLogin: user.lastLogin || null
+                };
+
+                // Process quiz results if they exist
+                if (Array.isArray(user.quizResults)) {
+                    processedUser.quizResults = user.quizResults.map(result => {
+                        if (!result) return null;
+                        return {
+                            quizName: (result.quizName || '').toLowerCase(),
+                            score: Number(result.score) || 0,
+                            experience: Number(result.experience) || 0,
+                            questionsAnswered: Number(result.questionsAnswered) || 0,
+                            lastActive: result.lastActive || result.completedAt || null
+                        };
+                    }).filter(Boolean);
+                }
+
+                // Process quiz progress if it exists
+                if (user.quizProgress && typeof user.quizProgress === 'object') {
+                    processedUser.quizProgress = Object.entries(user.quizProgress).reduce((acc, [key, value]) => {
+                        if (value && typeof value === 'object') {
+                            acc[key.toLowerCase()] = {
+                                experience: Number(value.experience) || 0,
+                                questionsAnswered: Number(value.questionsAnswered) || 0,
+                                lastUpdated: value.lastUpdated || null
+                            };
+                        }
+                        return acc;
+                    }, {});
+                }
+
+                return processedUser;
+            }).filter(Boolean);
+
+            console.log('Processed users:', JSON.stringify(processedUsers, null, 2));
+
             return {
-                success: false,
-                data: [],
-                error: data.error || 'Invalid response format from server'
+                success: true,
+                data: processedUsers
             };
         } catch (error) {
             console.error('Failed to fetch users:', error);

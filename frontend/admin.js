@@ -150,74 +150,28 @@ class AdminDashboard {
             console.log('Fetching users from MongoDB...'); 
             
             const response = await this.apiService.getAllUsers();
-            console.log('Raw API response:', response);
+            console.log('Raw API response:', JSON.stringify(response, null, 2));
 
             if (!response.success) {
                 throw new Error(response.error || 'Failed to fetch users');
             }
 
             const userData = response.data || [];
-            console.log('User data array:', userData);
+            console.log('User data array:', JSON.stringify(userData, null, 2));
 
             if (!Array.isArray(userData)) {
                 throw new Error('Invalid response format: expected array of users');
             }
 
-            // Map MongoDB user data to our format
-            this.users = userData.map(user => {
-                console.log('Processing user:', user);
+            // Store the processed users directly
+            this.users = userData;
 
-                if (!user?.username) {
-                    console.warn('User missing username:', user);
-                    return null;
-                }
-
-                // Process quiz results to include question count and experience
-                const processedResults = (user.quizResults || []).map(result => {
-                    // Skip invalid quiz results
-                    if (!result) {
-                        console.warn('Invalid quiz result:', result);
-                        return null;
-                    }
-
-                    // Handle missing or invalid quiz name
-                    let quizName;
-                    try {
-                        quizName = (result.quizName || '').toLowerCase();
-                    } catch (error) {
-                        console.warn('Error processing quiz name:', error);
-                        return null;
-                    }
-
-                    // Skip if no valid quiz name
-                    if (!quizName) {
-                        console.warn('Quiz result missing quiz name:', result);
-                        return null;
-                    }
-
-                    // Get progress data from quizProgress if it exists
-                    const progress = user.quizProgress?.[quizName];
-
-                    return {
-                        ...result,
-                        questionsAnswered: result.questionsAnswered || 0,
-                        experience: result.experience || 0,
-                        quizName: quizName,
-                        score: result.score || 0,
-                        lastActive: result.lastActive || result.completedAt || null
-                    };
-                }).filter(Boolean); // Remove null entries
-
-                return {
-                    username: user.username,
-                    lastLogin: user.lastLogin || 'Never',
-                    quizResults: processedResults,
-                    totalExperience: processedResults.reduce((sum, result) => sum + (result.experience || 0), 0),
-                    quizProgress: user.quizProgress || {}
-                };
-            }).filter(Boolean); // Remove null entries
-
-            console.log('Processed users:', this.users);
+            // Log the final processed users
+            console.log('Final processed users:', JSON.stringify(this.users, null, 2));
+            
+            // Update the dashboard with the loaded users
+            this.updateDashboard();
+            
             return this.users;
         } catch (error) {
             console.error('Failed to load users:', error);
