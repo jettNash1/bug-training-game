@@ -653,7 +653,7 @@ class AdminDashboard {
 
             // Add event listener for reset password button
             content.querySelector('.reset-password-btn').addEventListener('click', async () => {
-                if (confirm(`Are you sure you want to reset the password for ${username}? This will set it back to default.`)) {
+                if (confirm(`Are you sure you want to change the password for ${username}?`)) {
                     try {
                         await this.resetUserPassword(username);
                     } catch (error) {
@@ -1031,13 +1031,16 @@ class AdminDashboard {
             }
 
             const response = await this.apiService.fetchWithAdminAuth(
-                `${this.apiService.baseUrl}/admin/users/${username}/reset-password`,
+                `${this.apiService.baseUrl}/admin/reset-password`,
                 {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'
                     },
-                    body: JSON.stringify({ newPassword })
+                    body: JSON.stringify({ 
+                        username,
+                        newPassword 
+                    })
                 }
             );
 
