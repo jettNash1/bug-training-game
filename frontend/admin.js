@@ -25,44 +25,43 @@ class AdminDashboard {
         const adminToken = localStorage.getItem('adminToken');
         const currentPath = window.location.pathname;
         
-        if (!adminToken) {
-            console.log('No admin token found, redirecting to login');
+        // If we're on the admin login page and there's no token, just return
+        if (currentPath.includes('admin-login.html') && !adminToken) {
+            console.log('On admin login page without token, allowing access');
+            return;
+        }
+
+        // Always verify the token if it exists
+        let isTokenValid = false;
+        if (adminToken) {
+            isTokenValid = await this.verifyAdminToken(adminToken);
+            console.log('Token validation result:', isTokenValid);
+        }
+
+        // If token is invalid or missing, redirect to login unless already there
+        if (!isTokenValid) {
+            console.log('Invalid or missing token, redirecting to login');
+            localStorage.removeItem('adminToken'); // Clear invalid token
             if (!currentPath.includes('admin-login.html')) {
                 window.location.href = '/pages/admin-login.html';
             }
             return;
         }
 
-        const isTokenValid = await this.verifyAdminToken(adminToken);
-        console.log('Token validation result:', isTokenValid);
-
-        if (!isTokenValid && !currentPath.includes('admin-login.html')) {
-            console.log('Invalid token, redirecting to login');
-            window.location.href = '/pages/admin-login.html';
-            return;
-        }
-
+        // If we have a valid token and we're on the login page, redirect to admin panel
         if (isTokenValid && currentPath.includes('admin-login.html')) {
             console.log('Valid token on login page, redirecting to admin panel');
             window.location.href = '/pages/admin.html';
             return;
         }
 
+        // If we have a valid token and we're on the admin panel, load the dashboard
         if (isTokenValid && currentPath.includes('admin.html')) {
             console.log('Valid token on admin panel, loading dashboard');
-            // Load users first
             await this.loadUsers();
-            
-            // Set up event listeners
             this.setupEventListeners();
-            
-            // Update the dashboard immediately after loading users
             await this.updateDashboard();
-            
-            // Load progress for all users
             await this.loadAllUserProgress();
-            
-            // Update the dashboard again with progress data
             this.updateDashboard();
         }
     }
@@ -168,54 +167,45 @@ class AdminDashboard {
             this.users = userData.map(user => {
                 console.log('Processing user:', user);
 
-                if (!user.username) {
+                if (!user?.username) {
                     console.warn('User missing username:', user);
                     return null;
                 }
 
                 // Process quiz results to include question count and experience
                 const processedResults = (user.quizResults || []).map(result => {
+                    if (!result?.quizName) {
+                        console.warn('Quiz result missing quiz name:', result);
+                        return null;
+                    }
+
                     // Get the quiz name in lowercase for consistency
                     const quizName = result.quizName.toLowerCase();
                     
                     // Get progress data from quizProgress if it exists
                     const progress = user.quizProgress?.[quizName];
-                    
-                    // Get values directly from the result
-                    const questionsAnswered = result.questionsAnswered;
-                    const experience = result.experience;
 
                 return {
                         ...result,
-                        questionsAnswered,
-                        experience,
-                        score: result.score || 0,
-                        lastActive: result.lastActive || result.completedAt || null,
-                        completedAt: result.completedAt || null
+                        questionsAnswered: result.questionsAnswered || 0,
+                        experience: result.experience || 0,
+                        quizName: quizName
                     };
-                });
+                }).filter(Boolean); // Remove null entries
 
-                const processedUser = {
+                return {
                     username: user.username,
-                    lastLogin: user.lastLogin || null,
-                    quizProgress: user.quizProgress || {},
-                    quizResults: processedResults
+                    lastLogin: user.lastLogin || 'Never',
+                    quizResults: processedResults,
+                    totalExperience: processedResults.reduce((sum, result) => sum + (result.experience || 0), 0)
                 };
+            }).filter(Boolean); // Remove null entries
 
-                console.log('Processed user data:', processedUser);
-                return processedUser;
-            }).filter(user => user !== null);
-
-            console.log('Final processed users:', this.users);
-            
-            // Update the dashboard with the loaded users
-            this.updateDashboard();
-            
-            return true;
+            console.log('Processed users:', this.users);
+            return this.users;
         } catch (error) {
             console.error('Failed to load users:', error);
-            this.showError(`Failed to load users: ${error.message}`);
-            return false;
+            throw error;
         }
     }
 
