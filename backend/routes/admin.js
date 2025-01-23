@@ -391,60 +391,46 @@ router.get('/users/:username/quiz-questions/:quizName', auth, async (req, res) =
             });
         }
 
-        // Find the quiz results
-        const quizResult = user.quizResults?.find(result => 
-            result.quizName.toLowerCase() === quizName.toLowerCase()
-        );
+        // Get quiz progress data
+        const quizNameLower = quizName.toLowerCase();
+        const progress = user.quizProgress?.[quizNameLower];
+
+        // Get quiz results data
+        const quizResult = user.quizResults?.find(result => {
+            if (!result?.quizName) return false;
+            return result.quizName.toLowerCase() === quizNameLower;
+        });
 
         console.log('Found quiz result:', quizResult);
+        console.log('Found quiz progress:', progress);
 
-        if (!quizResult) {
-            console.log(`No quiz results found for ${username}/${quizName}`);
-            return res.json({
-                success: true,
-                data: {
-                    questionHistory: []
-                }
-            });
+        // Combine question history from both sources
+        let questionHistory = [];
+
+        // First try to get from progress (new format)
+        if (progress?.questionHistory) {
+            questionHistory = progress.questionHistory;
+        }
+        // If no progress history, try from quiz result (old format)
+        else if (quizResult?.questionHistory) {
+            questionHistory = quizResult.questionHistory;
         }
 
-        // Get question history from the quiz result
-        const questionHistory = quizResult.questionHistory || [];
         console.log(`Found ${questionHistory.length} questions for ${username}/${quizName}`);
-        console.log('Question history sample:', questionHistory[0]);
-
-        // Return the question history with all necessary data
+        
+        // Return the question history
         res.json({
             success: true,
             data: {
-                questionHistory: questionHistory.map(question => ({
-                    scenario: {
-                        title: question.scenario.title,
-                        description: question.scenario.description,
-                        level: question.scenario.level
-                    },
-                    selectedAnswer: {
-                        text: question.selectedAnswer.text,
-                        outcome: question.selectedAnswer.outcome,
-                        experience: question.selectedAnswer.experience,
-                        tool: question.selectedAnswer.tool
-                    },
-                    status: question.status || (question.selectedAnswer.experience > 0 ? 'passed' : 'failed')
-                })),
-                totalQuestions: questionHistory.length,
-                quizName: quizResult.quizName,
-                score: quizResult.score,
-                experience: quizResult.experience,
-                lastActive: quizResult.lastActive
+                questionHistory: questionHistory || []
             }
         });
-
     } catch (error) {
         console.error('Error fetching quiz questions:', error);
-        res.status(500).json({
-            success: false,
+        res.status(500).json({ 
+            success: false, 
             message: 'Failed to fetch quiz questions',
-            error: error.message
+            error: error.message 
         });
     }
 });
