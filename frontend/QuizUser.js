@@ -376,23 +376,36 @@ export class QuizUser {
                 const result = this.quizResults.find(r => r.quizName === quizName);
                 
                 // Remove any existing classes
-                progressElement.classList.remove('hidden', 'completed', 'in-progress');
-                quizItem.classList.remove('completed', 'in-progress');
+                progressElement.classList.remove('hidden', 'completed', 'in-progress', 'failed');
+                quizItem.classList.remove('completed', 'in-progress', 'failed');
 
                 if (result) {
                     const score = result.score || 0;
-                    progressElement.textContent = `${score}%`;
+                    const experience = result.experience || 0;
+                    const questionsAnswered = result.questionsAnswered || 0;
                     
+                    // Check if quiz was completed with max score
                     if (score === 100) {
+                        progressElement.textContent = 'Completed!';
                         progressElement.classList.add('completed');
                         quizItem.classList.add('completed');
-                    } else {
+                    } 
+                    // Check if quiz was failed (didn't reach XP threshold and answered enough questions)
+                    else if (experience < this.levelThresholds?.basic?.minXP && questionsAnswered >= 5) {
+                        progressElement.textContent = 'Failed';
+                        progressElement.classList.add('failed');
+                        quizItem.classList.add('failed');
+                    }
+                    // Quiz is in progress
+                    else if (questionsAnswered > 0) {
+                        const percentComplete = Math.round((questionsAnswered / 15) * 100);
+                        progressElement.textContent = `${percentComplete}% Complete`;
                         progressElement.classList.add('in-progress');
                         quizItem.classList.add('in-progress');
                     }
                 } else {
                     // Not started
-                    progressElement.textContent = '0%';
+                    progressElement.textContent = 'Not Started';
                 }
             });
 

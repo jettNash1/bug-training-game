@@ -36,12 +36,29 @@ export class BaseQuiz {
         document.getElementById('finish-button')?.addEventListener('click', () => this.finishQuiz());
     }
 
-    startGame() {
+    async startGame() {
         this.player.name = localStorage.getItem('username');
         if (!this.player.name) {
             window.location.href = '/login.html';
             return;
         }
+
+        // Check if quiz is already completed
+        const quizUser = new QuizUser(this.player.name);
+        const quizResult = await quizUser.getQuizResult(this.quizName);
+        
+        if (quizResult && quizResult.score === 100) {
+            // Quiz is completed with max score, show completion screen
+            this.showCompletionScreen(quizResult);
+            return;
+        }
+
+        // Check if quiz was failed (didn't reach XP threshold)
+        if (quizResult && quizResult.experience < this.levelThresholds.basic.minXP && quizResult.questionsAnswered >= 5) {
+            this.showFailureScreen();
+            return;
+        }
+
         this.showQuestion();
     }
 
@@ -351,5 +368,74 @@ export class BaseQuiz {
                 submitButton.disabled = false;
             }
         }
+    }
+
+    showCompletionScreen(quizResult) {
+        // Hide game and outcome screens
+        if (this.gameScreen) this.gameScreen.classList.add('hidden');
+        if (this.outcomeScreen) this.outcomeScreen.classList.add('hidden');
+
+        // Create and show completion screen
+        const completionScreen = document.createElement('div');
+        completionScreen.id = 'completion-screen';
+        completionScreen.className = 'quiz-screen';
+        completionScreen.innerHTML = `
+            <h2>Quiz Completed!</h2>
+            <div class="completion-stats">
+                <p>Final Score: ${quizResult.score}%</p>
+                <p>Experience Gained: ${quizResult.experience} XP</p>
+                ${quizResult.tools?.length ? `<p>Tools Acquired: ${quizResult.tools.join(', ')}</p>` : ''}
+            </div>
+            <div class="completion-message">
+                <p>Congratulations! You've successfully completed this quiz with a perfect score.</p>
+                <p>You can review your answers below or return to the main page.</p>
+            </div>
+            <button onclick="window.location.href='/'">Return to Main Page</button>
+        `;
+
+        // Add answer review section if we have question history
+        if (quizResult.questionHistory?.length) {
+            const reviewSection = document.createElement('div');
+            reviewSection.className = 'answer-review';
+            reviewSection.innerHTML = '<h3>Your Answers</h3>';
+            
+            quizResult.questionHistory.forEach((item, index) => {
+                const questionDiv = document.createElement('div');
+                questionDiv.className = 'review-item';
+                questionDiv.innerHTML = `
+                    <h4>Question ${index + 1}</h4>
+                    <p><strong>Scenario:</strong> ${item.scenario.title}</p>
+                    <p><strong>Your Answer:</strong> ${item.selectedAnswer.text}</p>
+                    <p><strong>Outcome:</strong> ${item.selectedAnswer.outcome}</p>
+                    <p><strong>Experience:</strong> ${item.selectedAnswer.experience} XP</p>
+                `;
+                reviewSection.appendChild(questionDiv);
+            });
+            
+            completionScreen.appendChild(reviewSection);
+        }
+
+        document.body.appendChild(completionScreen);
+    }
+
+    showFailureScreen() {
+        // Hide game and outcome screens
+        if (this.gameScreen) this.gameScreen.classList.add('hidden');
+        if (this.outcomeScreen) this.outcomeScreen.classList.add('hidden');
+
+        // Create and show failure screen
+        const failureScreen = document.createElement('div');
+        failureScreen.id = 'failure-screen';
+        failureScreen.className = 'quiz-screen';
+        failureScreen.innerHTML = `
+            <h2>Quiz Failed</h2>
+            <div class="failure-message">
+                <p>Unfortunately, you did not reach the required experience threshold to continue.</p>
+                <p>Please review the material and try a different quiz.</p>
+            </div>
+            <button onclick="window.location.href='/'">Return to Main Page</button>
+        `;
+
+        document.body.appendChild(failureScreen);
     }
 } 
