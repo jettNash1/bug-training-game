@@ -55,34 +55,23 @@ class IndexPage {
 
                     const progress = serverProgress?.data || localProgress;
                     
-                    // Define standard thresholds if not available in progress
-                    const thresholds = {
-                        basic: { minXP: 50 },
-                        intermediate: { minXP: 150 },
-                        advanced: { minXP: 300 }
-                    };
-                    
                     // Check if quiz is failed at any level
-                    const hasFailed = (progress?.questionHistory?.length >= 5 && progress?.experience < thresholds.basic.minXP) ||
-                                    (progress?.questionHistory?.length >= 10 && progress?.experience < thresholds.intermediate.minXP) ||
-                                    (progress?.questionHistory?.length >= 15 && progress?.experience < thresholds.advanced.minXP);
+                    const hasFailed = (progress?.questionHistory?.length >= 5 && progress?.experience < progress?.levelThresholds?.basic?.minXP) ||
+                                    (progress?.questionHistory?.length >= 10 && progress?.experience < progress?.levelThresholds?.intermediate?.minXP) ||
+                                    (progress?.questionHistory?.length >= 15 && progress?.experience < progress?.levelThresholds?.advanced?.minXP);
 
                     // Check if quiz is successfully completed
                     const isCompleted = progress?.questionHistory?.length >= 15 && 
-                                      progress?.experience >= thresholds.advanced.minXP;
-                    
-                    // Calculate the actual percentage based on questions completed
-                    const questionsAnswered = progress?.questionHistory?.length || 0;
-                    const totalQuestions = 15;
-                    const percentComplete = Math.round((questionsAnswered / totalQuestions) * 100);
+                                      progress?.experience >= progress?.levelThresholds?.advanced?.minXP;
                     
                     return {
                         quizName: quizId,
-                        score: percentComplete,
-                        questionsAnswered: questionsAnswered,
+                        score: progress ? Math.round(((progress.questionHistory?.length || 0) / 15) * 100) : 0,
+                        questionsAnswered: progress?.questionHistory?.length || 0,
                         failed: hasFailed,
                         completed: isCompleted,
-                        experience: progress?.experience || 0
+                        experience: progress?.experience || 0,
+                        levelThresholds: progress?.levelThresholds
                     };
                 } catch (error) {
                     console.error(`Error loading progress for quiz ${quizId}:`, error);
@@ -119,14 +108,14 @@ class IndexPage {
             if (!progressElement) return;
 
             const quizScore = this.quizScores.find(score => score.quizName === quizId);
-            if (!quizScore) return;
+            const percentage = quizScore ? quizScore.score : 0;
 
             // Store updates to apply in batch
             updates.set(item, {
-                progress: quizScore.score,
+                progress: percentage,
                 element: progressElement,
-                failed: quizScore.failed,
-                completed: quizScore.completed
+                failed: quizScore?.failed,
+                completed: quizScore?.completed
             });
         });
 
