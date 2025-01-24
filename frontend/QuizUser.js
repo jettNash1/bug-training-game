@@ -60,21 +60,30 @@ export class QuizUser {
                             progressElement.textContent = '';
                         }
                         
-                        progressElement.textContent = `${percentComplete}% Complete`;
-                        progressElement.classList.remove('hidden');
-                        
-                        // Update quiz item styling
+                        // Update quiz item styling based on status
                         const quizItem = document.querySelector(`[data-quiz="${result.quizName}"]`);
                         if (quizItem) {
-                            quizItem.classList.remove('completed', 'in-progress');
-                            if (percentComplete === 100) {
+                            quizItem.classList.remove('completed', 'in-progress', 'failed');
+                            progressElement.classList.remove('completed', 'in-progress', 'failed');
+
+                            if (result.status === 'failed') {
+                                // Failed quiz
+                                progressElement.textContent = 'Failed';
+                                quizItem.classList.add('failed');
+                                progressElement.classList.add('failed');
+                                quizItem.setAttribute('aria-disabled', 'true');
+                                quizItem.style.pointerEvents = 'none';
+                                quizItem.style.opacity = '0.7';
+                            } else if (result.status === 'passed') {
+                                // Passed quiz
+                                progressElement.textContent = 'Passed';
                                 quizItem.classList.add('completed');
                                 progressElement.classList.add('completed');
-                                progressElement.classList.remove('in-progress');
-                            } else if (percentComplete > 0) {
+                            } else if (completedQuestions > 0) {
+                                // In progress
+                                progressElement.textContent = `${completedQuestions}/15`;
                                 quizItem.classList.add('in-progress');
                                 progressElement.classList.add('in-progress');
-                                progressElement.classList.remove('completed');
                             }
                         }
                     }
@@ -260,7 +269,7 @@ export class QuizUser {
         }
     }
 
-    async updateQuizScore(quizName, score, experience = 0, tools = [], questionHistory = [], questionsAnswered = null) {
+    async updateQuizScore(quizName, score, experience = 0, tools = [], questionHistory = [], questionsAnswered = null, status = null) {
         try {
             if (!this.api) {
                 throw new Error('API service not initialized');
@@ -277,7 +286,8 @@ export class QuizUser {
                 tools: tools || [],
                 questionHistory: questionHistory || [],
                 questionsAnswered: questionsAnswered !== null ? questionsAnswered : (questionHistory ? questionHistory.length : 0),
-                completedAt: new Date().toISOString()
+                completedAt: new Date().toISOString(),
+                status: status || (score >= 70 ? 'passed' : 'failed') // Default to pass/fail based on score if no status provided
             };
 
             // Save to server
@@ -304,7 +314,8 @@ export class QuizUser {
                     questionHistory: quizData.questionHistory,
                     questionsAnswered: quizData.questionsAnswered,
                     currentScenario: quizData.questionsAnswered % 5, // Keep track of position within current level
-                    lastUpdated: quizData.completedAt
+                    lastUpdated: quizData.completedAt,
+                    status: quizData.status // Include status in progress data
                 };
                 
                 await this.api.saveQuizProgress(quizName, progressData);

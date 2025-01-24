@@ -50,12 +50,13 @@ class IndexPage {
                             questionsAnswered: 0, 
                             failed: false, 
                             completed: false,
-                            experience: 0
+                            experience: 0,
+                            status: null
                         };
                     }
 
-                    // Check if quiz is failed or completed based on status
-                    const status = progress.status || 'in_progress';
+                    // Get the status directly from the progress data
+                    const status = progress.status || null;
                     const hasFailed = status === 'failed';
                     const isCompleted = status === 'passed';
                     
@@ -69,7 +70,9 @@ class IndexPage {
                         questionsAnswered: questionsAnswered,
                         failed: hasFailed,
                         completed: isCompleted,
-                        experience: progress.experience || 0
+                        experience: progress.experience || 0,
+                        status: status,
+                        questionHistory: progress.questionHistory || []
                     };
                 } catch (error) {
                     console.error(`Error loading progress for quiz ${quizId}:`, error);
@@ -79,7 +82,8 @@ class IndexPage {
                         questionsAnswered: 0, 
                         failed: false, 
                         completed: false,
-                        experience: 0
+                        experience: 0,
+                        status: null
                     };
                 }
             });
@@ -109,14 +113,15 @@ class IndexPage {
             progressElement.classList.remove('failed', 'completed', 'in-progress');
 
             // Update the quiz item appearance based on its state
-            if (quizScore.failed) {
+            if (quizScore.status === 'failed') {
                 // Failed quiz state
                 progressElement.textContent = 'Failed';
                 progressElement.classList.add('failed');
                 item.classList.add('failed');
                 item.setAttribute('aria-disabled', 'true');
+                item.style.pointerEvents = 'none';
                 item.setAttribute('data-progress', quizScore.score);
-            } else if (quizScore.completed) {
+            } else if (quizScore.status === 'passed') {
                 // Completed quiz state
                 progressElement.textContent = 'Passed';
                 progressElement.classList.add('completed');
@@ -132,6 +137,12 @@ class IndexPage {
                 // Not started state
                 progressElement.textContent = '';
                 item.setAttribute('data-progress', '0');
+            }
+
+            // Ensure failed quizzes stay disabled
+            if (quizScore.status === 'failed') {
+                item.style.pointerEvents = 'none';
+                item.style.opacity = '0.7';
             }
         });
     }

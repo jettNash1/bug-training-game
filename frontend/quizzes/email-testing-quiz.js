@@ -1131,7 +1131,15 @@ class EmailTestingQuiz extends BaseQuiz {
                     questionsAnswered: this.player.questionHistory.length,
                     lastActive: new Date().toISOString()
                 };
-                user.updateQuizScore(this.quizName, result);
+                user.updateQuizScore(
+                    this.quizName,
+                    result.score,
+                    result.experience,
+                    this.player.tools,
+                    result.questionHistory,
+                    result.questionsAnswered,
+                    result.status
+                );
                 console.log('Final quiz score saved:', result);
             } catch (error) {
                 console.error('Error saving final quiz score:', error);
