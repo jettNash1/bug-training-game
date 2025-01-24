@@ -106,32 +106,24 @@ class IndexPage {
                 // Failed quiz state
                 progressElement.textContent = 'Failed';
                 progressElement.style.display = 'block';
-                progressElement.style.background = '#e74c3c'; // Red
+                progressElement.style.background = '#e74c3c';
                 progressElement.style.color = 'white';
-                item.style.background = 'linear-gradient(to right, rgba(231, 76, 60, 0.1), rgba(231, 76, 60, 0.2))';
-                item.style.cursor = 'not-allowed';
-                item.style.pointerEvents = 'none';
-                item.setAttribute('aria-disabled', 'true');
             } else if (quizScore.completed) {
-                // Completed quiz state (100%)
-                progressElement.textContent = '100%';
+                // Completed quiz state
+                progressElement.textContent = 'Passed';
                 progressElement.style.display = 'block';
-                progressElement.style.background = '#2ecc71'; // Green
+                progressElement.style.background = '#2ecc71';
                 progressElement.style.color = 'white';
-                item.style.background = 'linear-gradient(to right, rgba(46, 204, 113, 0.1), rgba(46, 204, 113, 0.2))';
-                item.style.cursor = 'pointer';
-            } else if (quizScore.score > 0) {
+            } else if (quizScore.questionsAnswered > 0) {
                 // In progress state
-                progressElement.textContent = `${quizScore.score}%`;
+                progressElement.textContent = `${quizScore.questionsAnswered}/15`;
                 progressElement.style.display = 'block';
-                progressElement.style.background = '#f1c40f'; // Yellow
+                progressElement.style.background = '#f1c40f';
                 progressElement.style.color = 'black';
-                item.style.background = 'linear-gradient(to right, rgba(241, 196, 15, 0.1), rgba(241, 196, 15, 0.2))';
             } else {
                 // Not started state
                 progressElement.textContent = '';
                 progressElement.style.display = 'none';
-                item.style.background = 'var(--card-background)';
             }
 
             // Update the data attribute
