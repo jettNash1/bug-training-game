@@ -41,9 +41,11 @@ class IndexPage {
                 try {
                     // Get the saved progress
                     const savedProgress = await this.apiService.getQuizProgress(quizId);
+                    console.log(`Raw progress data for ${quizId}:`, savedProgress); // Debug log
+                    
                     const progress = savedProgress?.data;
-
                     if (!progress) {
+                        console.log(`No progress data for ${quizId}`); // Debug log
                         return { 
                             quizName: quizId, 
                             score: 0, 
@@ -57,24 +59,29 @@ class IndexPage {
 
                     // Get the status directly from the progress data
                     const status = progress.status || null;
+                    console.log(`Progress status for ${quizId}:`, status); // Debug log
                     
                     // Calculate actual progress regardless of status
                     const questionsAnswered = progress.questionHistory?.length || 0;
                     const score = Math.round((questionsAnswered / 15) * 100);
+
+                    // Check if the quiz should be marked as failed
+                    const hasFailed = status === 'failed';
+                    console.log(`Quiz ${quizId} failed status:`, { status, hasFailed }); // Debug log
 
                     // Set failed and completed based on status
                     const result = {
                         quizName: quizId,
                         score: score,
                         questionsAnswered: questionsAnswered,
-                        failed: status === 'failed',
+                        failed: hasFailed,
                         completed: status === 'passed',
                         experience: progress.experience || 0,
                         status: status,
                         questionHistory: progress.questionHistory || []
                     };
 
-                    console.log(`Quiz ${quizId} status:`, { status, failed: result.failed });
+                    console.log(`Final result for ${quizId}:`, result); // Debug log
                     return result;
                 } catch (error) {
                     console.error(`Error loading progress for quiz ${quizId}:`, error);
@@ -92,7 +99,7 @@ class IndexPage {
 
             // Wait for all progress data to load
             this.quizScores = await Promise.all(progressPromises);
-            console.log('Loaded quiz scores:', this.quizScores); // Debug log
+            console.log('All quiz scores loaded:', this.quizScores); // Debug log
         } catch (error) {
             console.error('Error loading user progress:', error);
             this.quizScores = [];

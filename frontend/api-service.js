@@ -293,7 +293,26 @@ export class APIService {
             if (!response.ok) {
                 throw new Error('Failed to get quiz progress');
             }
-            return await response.json();
+
+            // Get the response text first for debugging
+            const text = await response.text();
+            console.log('Quiz progress response:', text);
+
+            // Parse the response
+            let data;
+            try {
+                data = JSON.parse(text);
+            } catch (e) {
+                console.error('Failed to parse quiz progress response:', e);
+                return null;
+            }
+
+            // If we have a status in the progress data, ensure it's properly set
+            if (data.data && data.data.status) {
+                console.log(`Quiz ${quizName} loaded with status:`, data.data.status);
+            }
+
+            return data;
         } catch (error) {
             console.error('Failed to get quiz progress:', error);
             return null;
