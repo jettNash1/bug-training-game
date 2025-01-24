@@ -54,14 +54,17 @@ class IndexPage {
                     }
 
                     const progress = serverProgress?.data || localProgress;
+                    const hasFailed = progress?.experience < progress?.levelThresholds?.basic?.minXP && progress?.questionHistory?.length >= 5;
                     
                     return {
                         quizName: quizId,
                         score: progress ? Math.round(((progress.questionHistory?.length || 0) / 15) * 100) : 0,
-                        questionsAnswered: progress?.questionHistory?.length || 0
+                        questionsAnswered: progress?.questionHistory?.length || 0,
+                        failed: hasFailed,
+                        completed: progress?.questionHistory?.length >= 15 && !hasFailed
                     };
                 } catch (error) {
-                    return { quizName: quizId, score: 0, questionsAnswered: 0 };
+                    return { quizName: quizId, score: 0, questionsAnswered: 0, failed: false, completed: false };
                 }
             });
 
@@ -91,29 +94,45 @@ class IndexPage {
             // Store updates to apply in batch
             updates.set(item, {
                 progress: percentage,
-                element: progressElement
+                element: progressElement,
+                failed: quizScore?.failed,
+                completed: quizScore?.completed
             });
         });
 
         // Apply all updates in one batch
         requestAnimationFrame(() => {
-            updates.forEach(({ progress, element }, item) => {
+            updates.forEach(({ progress, element, failed, completed }, item) => {
                 item.setAttribute('data-progress', progress);
                 
-                if (progress > 0) {
+                if (failed) {
+                    // Failed quiz state
+                    element.textContent = 'Failed';
+                    element.style.display = 'block';
+                    element.style.background = 'var(--error-color)';
+                    element.style.color = 'white';
+                    item.style.background = 'linear-gradient(to right, rgba(231, 76, 60, 0.1), rgba(231, 76, 60, 0.2))';
+                    item.style.cursor = 'not-allowed';
+                    item.style.pointerEvents = 'none';
+                    item.setAttribute('aria-disabled', 'true');
+                } else if (completed) {
+                    // Completed quiz state
+                    element.textContent = '100%';
+                    element.style.display = 'block';
+                    element.style.background = 'var(--success-color)';
+                    element.style.color = 'white';
+                    item.style.background = 'linear-gradient(to right, rgba(46, 204, 113, 0.1), rgba(46, 204, 113, 0.2))';
+                    // Keep clickable to view results
+                    item.style.cursor = 'pointer';
+                } else if (progress > 0) {
+                    // In progress state
                     element.textContent = `${progress}%`;
                     element.style.display = 'block';
-                    
-                    if (progress === 100) {
-                        item.style.background = 'linear-gradient(to right, rgba(46, 204, 113, 0.1), rgba(46, 204, 113, 0.2))';
-                        element.style.background = 'var(--success-color)';
-                        element.style.color = 'white';
-                    } else {
-                        item.style.background = 'linear-gradient(to right, rgba(241, 196, 15, 0.1), rgba(241, 196, 15, 0.2))';
-                        element.style.background = 'var(--warning-color)';
-                        element.style.color = 'var(--text-primary)';
-                    }
+                    item.style.background = 'linear-gradient(to right, rgba(241, 196, 15, 0.1), rgba(241, 196, 15, 0.2))';
+                    element.style.background = 'var(--warning-color)';
+                    element.style.color = 'var(--text-primary)';
                 } else {
+                    // Not started state
                     element.textContent = '';
                     element.style.display = 'none';
                     item.style.background = 'var(--card-background)';
