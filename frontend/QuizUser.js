@@ -151,8 +151,7 @@ export class QuizUser {
             tools: tools || [],
             questionHistory: questionHistory || [],
             questionsAnswered: questionsAnswered !== null ? questionsAnswered : (questionHistory ? questionHistory.length : 0),
-            completedAt: new Date().toISOString(),
-            isCompleted: score === 100 && questionsAnswered === 15
+            completedAt: new Date().toISOString()
         };
 
         try {
@@ -171,13 +170,7 @@ export class QuizUser {
 
             const data = await response.json();
             if (data.success) {
-                // Update local quiz results
-                const existingIndex = this.quizResults.findIndex(r => r.quizName === quizName);
-                if (existingIndex !== -1) {
-                    this.quizResults[existingIndex] = quizData;
-                } else {
-                    this.quizResults.push(quizData);
-                }
+                this.quizResults = data.data;
                 
                 // Also update the quiz progress
                 const progressData = {
@@ -185,22 +178,16 @@ export class QuizUser {
                     tools: quizData.tools,
                     questionHistory: quizData.questionHistory,
                     questionsAnswered: quizData.questionsAnswered,
-                    currentScenario: quizData.isCompleted ? -1 : (quizData.questionsAnswered % 5), // -1 indicates completed
-                    lastUpdated: quizData.completedAt,
-                    isCompleted: quizData.isCompleted
+                    currentScenario: quizData.questionsAnswered % 5, // Keep track of position within current level
+                    lastUpdated: quizData.completedAt
                 };
                 
-                // Save progress both to server and localStorage
-                await this.saveQuizProgress(quizName, progressData);
-                this.saveToLocalStorage(quizData);
-                
+                await this.api.saveQuizProgress(quizName, progressData);
                 return true;
             }
             return false;
         } catch (error) {
             console.error('Failed to save quiz result:', error);
-            // Save to localStorage as fallback
-            this.saveToLocalStorage(quizData);
             return false;
         }
     }
@@ -389,40 +376,23 @@ export class QuizUser {
                 const result = this.quizResults.find(r => r.quizName === quizName);
                 
                 // Remove any existing classes
-                progressElement.classList.remove('hidden', 'completed', 'in-progress', 'failed');
-                quizItem.classList.remove('completed', 'in-progress', 'failed');
+                progressElement.classList.remove('hidden', 'completed', 'in-progress');
+                quizItem.classList.remove('completed', 'in-progress');
 
                 if (result) {
                     const score = result.score || 0;
-                    const experience = result.experience || 0;
-                    const questionsAnswered = result.questionsAnswered || 0;
-                    const isCompleted = result.isCompleted || (score === 100 && questionsAnswered === 15);
+                    progressElement.textContent = `${score}%`;
                     
-                    // Check if quiz was completed with max score
-                    if (isCompleted) {
-                        progressElement.textContent = 'Completed!';
+                    if (score === 100) {
                         progressElement.classList.add('completed');
                         quizItem.classList.add('completed');
-                        
-                        // Add a data attribute to indicate completion
-                        quizItem.dataset.completed = 'true';
-                    } 
-                    // Check if quiz was failed (didn't reach XP threshold and answered enough questions)
-                    else if (experience < this.levelThresholds?.basic?.minXP && questionsAnswered >= 5) {
-                        progressElement.textContent = 'Failed';
-                        progressElement.classList.add('failed');
-                        quizItem.classList.add('failed');
-                    }
-                    // Quiz is in progress
-                    else if (questionsAnswered > 0) {
-                        const percentComplete = Math.round((questionsAnswered / 15) * 100);
-                        progressElement.textContent = `${percentComplete}% Complete`;
+                    } else {
                         progressElement.classList.add('in-progress');
                         quizItem.classList.add('in-progress');
                     }
                 } else {
                     // Not started
-                    progressElement.textContent = 'Not Started';
+                    progressElement.textContent = '0%';
                 }
             });
 

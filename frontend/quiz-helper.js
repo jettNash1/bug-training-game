@@ -9,47 +9,6 @@ export class BaseQuiz {
         this.gameScreen = document.getElementById('game-screen');
         this.outcomeScreen = document.getElementById('outcome-screen');
         this.isLoading = false;
-        this.player = {
-            name: null,
-            experience: 0,
-            tools: [],
-            questionHistory: [],
-            currentScenario: 0
-        };
-
-        // Initialize quiz state
-        this.initializeQuizState();
-    }
-
-    async initializeQuizState() {
-        const username = localStorage.getItem('username');
-        if (!username) return;
-
-        const quizUser = new QuizUser(username);
-        const quizResult = await quizUser.getQuizResult(this.quizName);
-        
-        if (quizResult) {
-            // If quiz is completed, show completion screen
-            if (quizResult.isCompleted || (quizResult.score === 100 && quizResult.questionsAnswered === 15)) {
-                this.showCompletionScreen(quizResult);
-                return;
-            }
-
-            // If quiz was failed, show failure screen
-            if (quizResult.experience < this.levelThresholds.basic.minXP && quizResult.questionsAnswered >= 5) {
-                this.showFailureScreen();
-                return;
-            }
-
-            // Otherwise, restore progress
-            this.player = {
-                name: username,
-                experience: quizResult.experience || 0,
-                tools: quizResult.tools || [],
-                questionHistory: quizResult.questionHistory || [],
-                currentScenario: quizResult.currentScenario || 0
-            };
-        }
     }
 
     showError(message) {
@@ -77,29 +36,12 @@ export class BaseQuiz {
         document.getElementById('finish-button')?.addEventListener('click', () => this.finishQuiz());
     }
 
-    async startGame() {
+    startGame() {
         this.player.name = localStorage.getItem('username');
         if (!this.player.name) {
             window.location.href = '/login.html';
             return;
         }
-
-        // Check if quiz is already completed
-        const quizUser = new QuizUser(this.player.name);
-        const quizResult = await quizUser.getQuizResult(this.quizName);
-        
-        if (quizResult && quizResult.score === 100) {
-            // Quiz is completed with max score, show completion screen
-            this.showCompletionScreen(quizResult);
-            return;
-        }
-
-        // Check if quiz was failed (didn't reach XP threshold)
-        if (quizResult && quizResult.experience < this.levelThresholds.basic.minXP && quizResult.questionsAnswered >= 5) {
-            this.showFailureScreen();
-            return;
-        }
-
         this.showQuestion();
     }
 
@@ -182,30 +124,24 @@ export class BaseQuiz {
 
             const user = new QuizUser(this.player.name);
             const score = this.calculateScore();
-            const totalQuestions = this.player.questionHistory.length;
             
-            // First save the quiz result with complete information
+            // First save the quiz result
             const saveResult = await user.saveQuizResult(
                 this.quizName,
                 score,
                 this.player.experience,
                 this.player.tools,
-                this.player.questionHistory,
-                totalQuestions
+                this.player.questionHistory
             );
 
             if (!saveResult) {
                 throw new Error('Failed to save quiz results');
             }
 
-            // If quiz is completed with max score, show completion screen
-            if (score === 100 && totalQuestions === 15) {
-                // Get the saved result to display
-                const quizResult = await user.getQuizResult(this.quizName);
-                if (quizResult) {
-                    this.showCompletionScreen(quizResult);
-                    return;
-                }
+            // Then update the quiz score
+            const updateResult = await user.updateQuizScore(this.quizName, score);
+            if (!updateResult) {
+                throw new Error('Failed to update quiz score');
             }
 
             // Clear any local storage data for this quiz
@@ -218,35 +154,6 @@ export class BaseQuiz {
             this.showError(error.message || 'Failed to save results. Please try again.');
         } finally {
             this.isLoading = false;
-        }
-    }
-
-    async saveProgress() {
-        if (!this.player.name) return false;
-        
-        try {
-            const user = new QuizUser(this.player.name);
-            const score = this.calculateScore();
-            const totalQuestions = this.player.questionHistory.length;
-            
-            // Save current progress
-            const result = await user.saveQuizResult(
-                this.quizName,
-                score,
-                this.player.experience,
-                this.player.tools,
-                this.player.questionHistory,
-                totalQuestions
-            );
-
-            if (!result) {
-                throw new Error('Failed to save progress');
-            }
-
-            return true;
-        } catch (error) {
-            console.error('Failed to save progress:', error);
-            throw error;
         }
     }
 
@@ -338,13 +245,32 @@ export class BaseQuiz {
             // Check if we're at a level transition point (question 5 or 10)
             const totalAnswered = this.player.questionHistory.length;
             const isTransitionPoint = totalAnswered === 5 || totalAnswered === 10;
+            const currentXP = this.player.experience;
+            
+            // Only treat it as a transition point if we meet the XP requirements
+            const isValidTransition = (totalAnswered === 5 && currentXP >= this.levelThresholds.basic.minXP) ||
+                                    (totalAnswered === 10 && currentXP >= this.levelThresholds.intermediate.minXP);
 
             // Save progress with current scenario (before incrementing)
             try {
                 await this.saveProgress();
+                
+                // If this is a valid transition point, ensure the save was successful
+                if (isValidTransition) {
+                    // Double-check the save by trying to load it back
+                    const username = localStorage.getItem('username');
+                    if (username) {
+                        const quizUser = new QuizUser(username);
+                        const progress = await quizUser.getQuizProgress(this.quizName);
+                        
+                        if (!progress || progress.questionHistory.length !== totalAnswered) {
+                            throw new Error('Progress verification failed');
+                        }
+                    }
+                }
             } catch (error) {
                 console.error('Failed to save progress:', error);
-                if (isTransitionPoint) {
+                if (isValidTransition) {
                     // At transition points, we must ensure progress is saved
                     this.showError('Failed to save your progress. Please try again.');
                     submitButton.disabled = false;
@@ -370,9 +296,17 @@ export class BaseQuiz {
                         this.player.tools,
                         this.player.questionHistory
                     );
+                    
+                    // For transition points, verify the save
+                    if (isValidTransition) {
+                        const savedResult = await quizUser.getQuizResult(this.quizName);
+                        if (!savedResult || savedResult.questionHistory.length !== totalAnswered) {
+                            throw new Error('Result verification failed');
+                        }
+                    }
                 } catch (error) {
                     console.error('Failed to save quiz result:', error);
-                    if (isTransitionPoint) {
+                    if (isValidTransition) {
                         this.showError('Failed to save your answer. Please try again.');
                         submitButton.disabled = false;
                         this.isLoading = false;
@@ -444,74 +378,5 @@ export class BaseQuiz {
                 submitButton.disabled = false;
             }
         }
-    }
-
-    showCompletionScreen(quizResult) {
-        // Hide game and outcome screens
-        if (this.gameScreen) this.gameScreen.classList.add('hidden');
-        if (this.outcomeScreen) this.outcomeScreen.classList.add('hidden');
-
-        // Create and show completion screen
-        const completionScreen = document.createElement('div');
-        completionScreen.id = 'completion-screen';
-        completionScreen.className = 'quiz-screen';
-        completionScreen.innerHTML = `
-            <h2>Quiz Completed!</h2>
-            <div class="completion-stats">
-                <p>Final Score: ${quizResult.score}%</p>
-                <p>Experience Gained: ${quizResult.experience} XP</p>
-                ${quizResult.tools?.length ? `<p>Tools Acquired: ${quizResult.tools.join(', ')}</p>` : ''}
-            </div>
-            <div class="completion-message">
-                <p>Congratulations! You've successfully completed this quiz with a perfect score.</p>
-                <p>You can review your answers below or return to the main page.</p>
-            </div>
-            <button onclick="window.location.href='/'">Return to Main Page</button>
-        `;
-
-        // Add answer review section if we have question history
-        if (quizResult.questionHistory?.length) {
-            const reviewSection = document.createElement('div');
-            reviewSection.className = 'answer-review';
-            reviewSection.innerHTML = '<h3>Your Answers</h3>';
-            
-            quizResult.questionHistory.forEach((item, index) => {
-                const questionDiv = document.createElement('div');
-                questionDiv.className = 'review-item';
-                questionDiv.innerHTML = `
-                    <h4>Question ${index + 1}</h4>
-                    <p><strong>Scenario:</strong> ${item.scenario.title}</p>
-                    <p><strong>Your Answer:</strong> ${item.selectedAnswer.text}</p>
-                    <p><strong>Outcome:</strong> ${item.selectedAnswer.outcome}</p>
-                    <p><strong>Experience:</strong> ${item.selectedAnswer.experience} XP</p>
-                `;
-                reviewSection.appendChild(questionDiv);
-            });
-            
-            completionScreen.appendChild(reviewSection);
-        }
-
-        document.body.appendChild(completionScreen);
-    }
-
-    showFailureScreen() {
-        // Hide game and outcome screens
-        if (this.gameScreen) this.gameScreen.classList.add('hidden');
-        if (this.outcomeScreen) this.outcomeScreen.classList.add('hidden');
-
-        // Create and show failure screen
-        const failureScreen = document.createElement('div');
-        failureScreen.id = 'failure-screen';
-        failureScreen.className = 'quiz-screen';
-        failureScreen.innerHTML = `
-            <h2>Quiz Failed</h2>
-            <div class="failure-message">
-                <p>Unfortunately, you did not reach the required experience threshold to continue.</p>
-                <p>Please review the material and try a different quiz.</p>
-            </div>
-            <button onclick="window.location.href='/'">Return to Main Page</button>
-        `;
-
-        document.body.appendChild(failureScreen);
     }
 } 
