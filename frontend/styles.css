@@ -100,73 +100,33 @@ body {
 .quiz-item {
     position: relative;
     display: flex;
-    align-items: center;
-    padding: 1rem;
-    margin-bottom: 0.5rem;
-    border-radius: 8px;
+    align-items: flex-start;
+    padding: 1.5rem;
+    border-radius: 12px;
     background: var(--card-background);
-    text-decoration: none;
     color: var(--text-primary);
-    transition: all 0.3s ease;
+    text-decoration: none;
+    transition: all 0.2s ease;
+    border: 1px solid rgba(0, 0, 0, 0.08);
+    gap: 1.25rem;
+    cursor: pointer;
 }
 
-.quiz-completion {
-    position: absolute;
-    top: 0.5rem;
-    right: 0.5rem;
-    padding: 0.25rem 0.5rem;
-    border-radius: 4px;
-    font-size: 0.875rem;
-    font-weight: 600;
-    display: none;
-}
-
-/* Quiz states */
-.quiz-item[data-progress="100"] {
-    background: linear-gradient(to right, rgba(46, 204, 113, 0.1), rgba(46, 204, 113, 0.2));
-}
-
-.quiz-item[data-progress="100"] .quiz-completion {
-    display: block;
-    background: #2ecc71;
-    color: white;
-}
-
-.quiz-item.failed {
-    background: linear-gradient(to right, rgba(231, 76, 60, 0.1), rgba(231, 76, 60, 0.2));
-    pointer-events: none;
-    cursor: not-allowed;
-}
-
-.quiz-item.failed .quiz-completion {
-    display: block;
-    background: #e74c3c;
-    color: white;
-}
-
-.quiz-item[data-progress]:not([data-progress="0"]):not([data-progress="100"]):not(.failed) {
-    background: linear-gradient(to right, rgba(241, 196, 15, 0.1), rgba(241, 196, 15, 0.2));
-}
-
-.quiz-item[data-progress]:not([data-progress="0"]):not([data-progress="100"]):not(.failed) .quiz-completion {
-    display: block;
-    background: #f1c40f;
-    color: black;
-}
-
-/* Quiz item hover states */
-.quiz-item:not(.failed):hover {
+.quiz-item:hover {
     transform: translateY(-2px);
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
 }
 
 .quiz-icon {
     font-size: 1.5rem;
-    margin-right: 1rem;
+    min-width: 2rem;
+    text-align: center;
 }
 
 .quiz-info {
-    flex: 1;
+    flex-grow: 1;
+    display: flex;
+    flex-direction: column;
 }
 
 .quiz-title {
@@ -175,8 +135,49 @@ body {
 }
 
 .quiz-description {
-    font-size: 0.875rem;
-    color: var(--text-secondary);
+    font-size: 0.9rem;
+    color: var(--text-muted);
+}
+
+.quiz-completion {
+    position: absolute;
+    top: 0;
+    right: 0;
+    padding: 0.25rem 0.75rem;
+    font-size: 0.85rem;
+    font-weight: 500;
+    border-radius: 0 12px 0 12px;
+    transition: all 0.3s ease;
+    z-index: 1;
+}
+
+/* Progress states */
+.quiz-item[data-progress="0"] {
+    background: var(--card-background);
+}
+
+.quiz-item[data-progress="0"] .quiz-completion {
+    display: none;
+}
+
+.quiz-item[data-progress="100"] {
+    background: linear-gradient(to right, rgba(46, 204, 113, 0.1), rgba(46, 204, 113, 0.2));
+}
+
+.quiz-item[data-progress="100"] .quiz-completion {
+    background: var(--success-color);
+    color: white;
+    display: block;
+}
+
+.quiz-item:not([data-progress="0"]):not([data-progress="100"]) {
+    background: linear-gradient(to right, rgba(241, 196, 15, 0.1), rgba(241, 196, 15, 0.2));
+}
+
+.quiz-item:not([data-progress="0"]):not([data-progress="100"]) .quiz-completion {
+    background: var(--warning-color);
+    color: var(--text-primary);
+    display: block;
 }
 
 .category-progress {

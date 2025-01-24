@@ -32,13 +32,10 @@ class IndexPage {
 
     async loadUserProgress() {
         try {
-            // Get the user's username from localStorage
             const username = localStorage.getItem('username');
-            if (!username) {
-                console.error('No username found in localStorage');
-                return;
-            }
+            if (!username) return;
 
+            // Batch all quiz progress requests
             const progressPromises = Array.from(this.quizItems).map(async item => {
                 const quizId = item.dataset.quiz;
                 try {
@@ -57,20 +54,15 @@ class IndexPage {
                         };
                     }
 
-                    // Get the quiz level and required experience
-                    const level = progress.level?.toLowerCase() || 'basic';
-                    const requiredExperience = level === 'advanced' ? 25 : level === 'intermediate' ? 20 : 15;
-                    const totalRequiredExperience = requiredExperience * 15; // 15 questions
-
-                    // Calculate if quiz is failed based on experience points
-                    const hasFailed = progress.questionHistory?.length === 15 && progress.experience < totalRequiredExperience;
+                    // Check if quiz is failed (didn't meet XP requirements)
+                    const hasFailed = progress.status === 'failed';
 
                     // Check if quiz is completed successfully
-                    const isCompleted = progress.questionHistory?.length === 15 && progress.experience >= totalRequiredExperience;
+                    const isCompleted = progress.status === 'completed';
                     
                     return {
                         quizName: quizId,
-                        score: hasFailed ? 0 : Math.round((progress.questionHistory?.length || 0) / 15 * 100),
+                        score: isCompleted ? 100 : Math.round((progress.questionHistory?.length || 0) / 15 * 100),
                         questionsAnswered: progress.questionHistory?.length || 0,
                         failed: hasFailed,
                         completed: isCompleted,
@@ -92,10 +84,6 @@ class IndexPage {
             // Wait for all progress data to load
             this.quizScores = await Promise.all(progressPromises);
             console.log('Loaded quiz scores:', this.quizScores); // Debug log
-            
-            // Update the UI with the loaded progress
-            this.updateQuizProgress();
-            this.updateCategoryProgress();
         } catch (error) {
             console.error('Error loading user progress:', error);
             this.quizScores = [];
@@ -120,48 +108,30 @@ class IndexPage {
                 progressElement.style.display = 'block';
                 progressElement.style.background = '#e74c3c'; // Red
                 progressElement.style.color = 'white';
-                progressElement.classList.add('failed');
-                progressElement.classList.remove('completed', 'in-progress');
-                
                 item.style.background = 'linear-gradient(to right, rgba(231, 76, 60, 0.1), rgba(231, 76, 60, 0.2))';
-                item.style.cursor = 'pointer'; // Allow retrying
-                item.classList.add('failed');
-                item.classList.remove('completed', 'in-progress');
+                item.style.cursor = 'not-allowed';
+                item.style.pointerEvents = 'none';
+                item.setAttribute('aria-disabled', 'true');
             } else if (quizScore.completed) {
                 // Completed quiz state (100%)
                 progressElement.textContent = '100%';
                 progressElement.style.display = 'block';
                 progressElement.style.background = '#2ecc71'; // Green
                 progressElement.style.color = 'white';
-                progressElement.classList.add('completed');
-                progressElement.classList.remove('failed', 'in-progress');
-                
                 item.style.background = 'linear-gradient(to right, rgba(46, 204, 113, 0.1), rgba(46, 204, 113, 0.2))';
                 item.style.cursor = 'pointer';
-                item.classList.add('completed');
-                item.classList.remove('failed', 'in-progress');
             } else if (quizScore.score > 0) {
                 // In progress state
                 progressElement.textContent = `${quizScore.score}%`;
                 progressElement.style.display = 'block';
                 progressElement.style.background = '#f1c40f'; // Yellow
                 progressElement.style.color = 'black';
-                progressElement.classList.add('in-progress');
-                progressElement.classList.remove('failed', 'completed');
-                
                 item.style.background = 'linear-gradient(to right, rgba(241, 196, 15, 0.1), rgba(241, 196, 15, 0.2))';
-                item.style.cursor = 'pointer';
-                item.classList.add('in-progress');
-                item.classList.remove('failed', 'completed');
             } else {
                 // Not started state
                 progressElement.textContent = '';
                 progressElement.style.display = 'none';
-                progressElement.classList.remove('failed', 'completed', 'in-progress');
-                
                 item.style.background = 'var(--card-background)';
-                item.style.cursor = 'pointer';
-                item.classList.remove('failed', 'completed', 'in-progress');
             }
 
             // Update the data attribute
