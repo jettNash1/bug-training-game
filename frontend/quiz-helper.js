@@ -185,6 +185,15 @@ export class BaseQuiz {
         const totalAnswered = this.player.questionHistory.length;
         const currentXP = this.player.experience;
         
+        // Save progress before level transition
+        if ((totalAnswered === 5 && currentXP >= this.levelThresholds.basic.minXP) ||
+            (totalAnswered === 10 && currentXP >= this.levelThresholds.intermediate.minXP)) {
+            this.saveProgress().catch(error => {
+                console.error('Failed to save progress during level transition:', error);
+                this.showError('Failed to save your progress. Please try refreshing the page.');
+            });
+        }
+        
         // Check for level progression
         if (totalAnswered >= 10 && currentXP >= this.levelThresholds.intermediate.minXP) {
             return this.advancedScenarios;
@@ -233,8 +242,25 @@ export class BaseQuiz {
                 maxPossibleXP: Math.max(...scenario.options.map(o => o.experience))
             });
 
+            // Check if we're at a level transition point (question 5 or 10)
+            const totalAnswered = this.player.questionHistory.length;
+            const isTransitionPoint = totalAnswered === 5 || totalAnswered === 10;
+
             // Save progress with current scenario (before incrementing)
-            await this.saveProgress();
+            try {
+                await this.saveProgress();
+            } catch (error) {
+                console.error('Failed to save progress:', error);
+                if (isTransitionPoint) {
+                    // At transition points, we must ensure progress is saved
+                    this.showError('Failed to save your progress. Please try again.');
+                    submitButton.disabled = false;
+                    this.isLoading = false;
+                    return;
+                }
+                // For non-transition points, continue but show warning
+                this.showError('Warning: Progress may not have saved correctly');
+            }
 
             // Also save quiz result and update display
             const username = localStorage.getItem('username');
@@ -242,14 +268,25 @@ export class BaseQuiz {
                 const quizUser = new QuizUser(username);
                 const score = Math.round((this.player.experience / this.maxXP) * 100);
                 
-                // Save both score and question history
-                await quizUser.saveQuizResult(
-                    this.quizName,
-                    score,
-                    this.player.experience,
-                    this.player.tools,
-                    this.player.questionHistory
-                );
+                try {
+                    // Save both score and question history
+                    await quizUser.saveQuizResult(
+                        this.quizName,
+                        score,
+                        this.player.experience,
+                        this.player.tools,
+                        this.player.questionHistory
+                    );
+                } catch (error) {
+                    console.error('Failed to save quiz result:', error);
+                    if (isTransitionPoint) {
+                        this.showError('Failed to save your answer. Please try again.');
+                        submitButton.disabled = false;
+                        this.isLoading = false;
+                        return;
+                    }
+                    this.showError('Warning: Your progress may not have saved correctly');
+                }
                 
                 // Update progress display on index page
                 const progressElement = document.querySelector(`#${this.quizName}-progress`);

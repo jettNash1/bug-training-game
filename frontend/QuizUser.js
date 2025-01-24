@@ -220,19 +220,41 @@ export class QuizUser {
 
     async saveQuizProgress(quizName, progress) {
         try {
-            const result = await this.api.saveQuizProgress(quizName, progress);
-            if (result) {
-                this.quizProgress[quizName] = progress;
-                // Update localStorage as backup
-                localStorage.setItem(`quizProgress_${this.username}`, JSON.stringify(this.quizProgress));
-                return true;
+            // Add retry logic for important saves
+            const maxRetries = 3;
+            let lastError = null;
+            
+            for (let attempt = 0; attempt < maxRetries; attempt++) {
+                try {
+                    const result = await this.api.saveQuizProgress(quizName, progress);
+                    if (result) {
+                        this.quizProgress[quizName] = progress;
+                        // Update localStorage as backup
+                        localStorage.setItem(`quizProgress_${this.username}`, JSON.stringify(this.quizProgress));
+                        return true;
+                    }
+                    // If result is false, try again
+                    await new Promise(resolve => setTimeout(resolve, 1000 * attempt)); // Exponential backoff
+                } catch (error) {
+                    lastError = error;
+                    console.error(`Failed to save quiz progress (attempt ${attempt + 1}/${maxRetries}):`, error);
+                    await new Promise(resolve => setTimeout(resolve, 1000 * attempt)); // Exponential backoff
+                }
             }
-            return false;
+            
+            // If we get here, all retries failed
+            console.error('All attempts to save quiz progress failed:', lastError);
+            
+            // Save to localStorage as fallback
+            this.saveProgressToLocalStorage(quizName, progress);
+            
+            // Re-throw the error to be handled by the caller
+            throw lastError || new Error('Failed to save quiz progress after multiple attempts');
         } catch (error) {
             console.error('Failed to save quiz progress:', error);
             // Save to localStorage as fallback
             this.saveProgressToLocalStorage(quizName, progress);
-            return false;
+            throw error; // Re-throw to be handled by the caller
         }
     }
 
