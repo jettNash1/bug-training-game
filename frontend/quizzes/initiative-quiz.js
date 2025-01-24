@@ -1,5 +1,6 @@
 import { APIService } from '../api-service.js';
 import { BaseQuiz } from '../quiz-helper.js';
+import { QuizUser } from '../QuizUser.js';
 
 class InitiativeQuiz extends BaseQuiz {
     constructor() {
@@ -745,10 +746,13 @@ class InitiativeQuiz extends BaseQuiz {
         
         // Show level transition message at the start of each level or when level changes
         const currentLevel = this.getCurrentLevel();
-        const previousLevel = this.player.questionHistory.length > 0 ? 
-            this.getCurrentLevel() : null;
+        const previousLevel = questionCount > 0 ? 
+            (questionCount <= 5 ? 'Basic' : 
+            questionCount <= 10 ? 'Intermediate' : 'Advanced') : null;
             
-        if (this.player.questionHistory.length === 0 || previousLevel !== currentLevel) {
+        if (questionCount === 0 || 
+            (questionCount === 5 && currentLevel === 'Intermediate') || 
+            (questionCount === 10 && currentLevel === 'Advanced')) {
             const transitionContainer = document.getElementById('level-transition-container');
             if (transitionContainer) {
                 transitionContainer.innerHTML = ''; // Clear any existing messages
@@ -850,9 +854,12 @@ class InitiativeQuiz extends BaseQuiz {
 
             // Update player state
             this.player.experience = Math.max(0, Math.min(this.maxXP, this.player.experience + selectedAnswer.experience));
+            
+            // Add status to question history
             this.player.questionHistory.push({
                 scenario: scenario,
                 selectedAnswer: selectedAnswer,
+                status: selectedAnswer.experience > 0 ? 'passed' : 'failed',
                 maxPossibleXP: Math.max(...scenario.options.map(o => o.experience))
             });
 
