@@ -536,7 +536,8 @@ class TesterMindsetQuiz extends BaseQuiz {
             tools: this.player.tools,
             currentScenario: this.player.currentScenario,
             questionHistory: this.player.questionHistory,
-            lastUpdated: new Date().toISOString()
+            lastUpdated: new Date().toISOString(),
+            status: this.player.status
         };
 
         try {
@@ -587,6 +588,13 @@ class TesterMindsetQuiz extends BaseQuiz {
             }
 
             if (progress) {
+                // Check if quiz was failed
+                if (progress.status === 'failed') {
+                    // Show failed state and prevent further attempts
+                    this.endGame(true);
+                    return true;
+                }
+
                 // Set the player state from progress
                 this.player.experience = progress.experience || 0;
                 this.player.tools = progress.tools || [];
@@ -643,6 +651,13 @@ class TesterMindsetQuiz extends BaseQuiz {
             // Load previous progress
             const hasProgress = await this.loadProgress();
             console.log('Previous progress loaded:', hasProgress);
+            
+            // Check if quiz is in a failed state
+            const savedProgress = await this.apiService.getQuizProgress(this.quizName);
+            if (savedProgress?.data?.status === 'failed') {
+                this.endGame(true);
+                return;
+            }
             
             if (!hasProgress) {
                 // Reset player state if no valid progress exists
@@ -1130,6 +1145,9 @@ class TesterMindsetQuiz extends BaseQuiz {
         const finalScore = Math.min(this.player.experience, this.maxXP);
         const scorePercentage = Math.round((finalScore / this.maxXP) * 100);
         
+        // Set the player status
+        this.player.status = failed ? 'failed' : 'passed';
+        
         // Save the final quiz result with pass/fail status
         const username = localStorage.getItem('username');
         if (username) {
@@ -1137,14 +1155,25 @@ class TesterMindsetQuiz extends BaseQuiz {
                 const user = new QuizUser(username);
                 const result = {
                     score: scorePercentage,
-                    status: failed ? 'failed' : 'passed',
+                    status: this.player.status,
                     experience: this.player.experience,
                     questionHistory: this.player.questionHistory,
                     questionsAnswered: this.player.questionHistory.length,
                     lastActive: new Date().toISOString()
                 };
-                user.updateQuizScore(this.quizName, result);
+                user.updateQuizScore(
+                    this.quizName,
+                    result.score,
+                    result.experience,
+                    this.player.tools,
+                    result.questionHistory,
+                    result.questionsAnswered,
+                    result.status
+                );
                 console.log('Final quiz score saved:', result);
+
+                // Also save the progress with the failed/passed status
+                this.saveProgress();
             } catch (error) {
                 console.error('Error saving final quiz score:', error);
             }
