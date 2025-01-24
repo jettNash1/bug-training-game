@@ -530,8 +530,8 @@ class TesterMindsetQuiz extends BaseQuiz {
         return totalQuestionsAnswered >= 15 || currentXP >= this.maxXP;
     }
 
-    async saveProgress() {
-        const progress = {
+    async saveProgress(progressData = null) {
+        const progress = progressData || {
             experience: this.player.experience,
             tools: this.player.tools,
             currentScenario: this.player.currentScenario,
@@ -1195,24 +1195,16 @@ class TesterMindsetQuiz extends BaseQuiz {
 
                 // Then update the quiz score
                 const user = new QuizUser(username);
-                const result = {
-                    score: scorePercentage,
-                    status: this.player.status,
-                    experience: this.player.experience,
-                    questionHistory: this.player.questionHistory,
-                    questionsAnswered: this.player.questionHistory.length,
-                    lastActive: new Date().toISOString()
-                };
                 await user.updateQuizScore(
                     this.quizName,
-                    result.score,
-                    result.experience,
+                    scorePercentage,
+                    this.player.experience,
                     this.player.tools,
-                    result.questionHistory,
-                    result.questionsAnswered,
-                    result.status
+                    this.player.questionHistory,
+                    this.player.questionHistory.length,
+                    this.player.status // Pass the status directly
                 );
-                console.log('Final quiz score saved:', result);
+                console.log('Final quiz score saved with status:', this.player.status);
             } catch (error) {
                 console.error('Error saving final quiz score:', error);
             }
