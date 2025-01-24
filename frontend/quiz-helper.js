@@ -9,6 +9,47 @@ export class BaseQuiz {
         this.gameScreen = document.getElementById('game-screen');
         this.outcomeScreen = document.getElementById('outcome-screen');
         this.isLoading = false;
+        this.player = {
+            name: null,
+            experience: 0,
+            tools: [],
+            questionHistory: [],
+            currentScenario: 0
+        };
+
+        // Initialize quiz state
+        this.initializeQuizState();
+    }
+
+    async initializeQuizState() {
+        const username = localStorage.getItem('username');
+        if (!username) return;
+
+        const quizUser = new QuizUser(username);
+        const quizResult = await quizUser.getQuizResult(this.quizName);
+        
+        if (quizResult) {
+            // If quiz is completed, show completion screen
+            if (quizResult.isCompleted || (quizResult.score === 100 && quizResult.questionsAnswered === 15)) {
+                this.showCompletionScreen(quizResult);
+                return;
+            }
+
+            // If quiz was failed, show failure screen
+            if (quizResult.experience < this.levelThresholds.basic.minXP && quizResult.questionsAnswered >= 5) {
+                this.showFailureScreen();
+                return;
+            }
+
+            // Otherwise, restore progress
+            this.player = {
+                name: username,
+                experience: quizResult.experience || 0,
+                tools: quizResult.tools || [],
+                questionHistory: quizResult.questionHistory || [],
+                currentScenario: quizResult.currentScenario || 0
+            };
+        }
     }
 
     showError(message) {
@@ -141,24 +182,30 @@ export class BaseQuiz {
 
             const user = new QuizUser(this.player.name);
             const score = this.calculateScore();
+            const totalQuestions = this.player.questionHistory.length;
             
-            // First save the quiz result
+            // First save the quiz result with complete information
             const saveResult = await user.saveQuizResult(
                 this.quizName,
                 score,
                 this.player.experience,
                 this.player.tools,
-                this.player.questionHistory
+                this.player.questionHistory,
+                totalQuestions
             );
 
             if (!saveResult) {
                 throw new Error('Failed to save quiz results');
             }
 
-            // Then update the quiz score
-            const updateResult = await user.updateQuizScore(this.quizName, score);
-            if (!updateResult) {
-                throw new Error('Failed to update quiz score');
+            // If quiz is completed with max score, show completion screen
+            if (score === 100 && totalQuestions === 15) {
+                // Get the saved result to display
+                const quizResult = await user.getQuizResult(this.quizName);
+                if (quizResult) {
+                    this.showCompletionScreen(quizResult);
+                    return;
+                }
             }
 
             // Clear any local storage data for this quiz
@@ -171,6 +218,35 @@ export class BaseQuiz {
             this.showError(error.message || 'Failed to save results. Please try again.');
         } finally {
             this.isLoading = false;
+        }
+    }
+
+    async saveProgress() {
+        if (!this.player.name) return false;
+        
+        try {
+            const user = new QuizUser(this.player.name);
+            const score = this.calculateScore();
+            const totalQuestions = this.player.questionHistory.length;
+            
+            // Save current progress
+            const result = await user.saveQuizResult(
+                this.quizName,
+                score,
+                this.player.experience,
+                this.player.tools,
+                this.player.questionHistory,
+                totalQuestions
+            );
+
+            if (!result) {
+                throw new Error('Failed to save progress');
+            }
+
+            return true;
+        } catch (error) {
+            console.error('Failed to save progress:', error);
+            throw error;
         }
     }
 

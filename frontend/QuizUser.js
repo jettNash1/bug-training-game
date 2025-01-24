@@ -151,7 +151,8 @@ export class QuizUser {
             tools: tools || [],
             questionHistory: questionHistory || [],
             questionsAnswered: questionsAnswered !== null ? questionsAnswered : (questionHistory ? questionHistory.length : 0),
-            completedAt: new Date().toISOString()
+            completedAt: new Date().toISOString(),
+            isCompleted: score === 100 && questionsAnswered === 15
         };
 
         try {
@@ -170,7 +171,13 @@ export class QuizUser {
 
             const data = await response.json();
             if (data.success) {
-                this.quizResults = data.data;
+                // Update local quiz results
+                const existingIndex = this.quizResults.findIndex(r => r.quizName === quizName);
+                if (existingIndex !== -1) {
+                    this.quizResults[existingIndex] = quizData;
+                } else {
+                    this.quizResults.push(quizData);
+                }
                 
                 // Also update the quiz progress
                 const progressData = {
@@ -178,16 +185,22 @@ export class QuizUser {
                     tools: quizData.tools,
                     questionHistory: quizData.questionHistory,
                     questionsAnswered: quizData.questionsAnswered,
-                    currentScenario: quizData.questionsAnswered % 5, // Keep track of position within current level
-                    lastUpdated: quizData.completedAt
+                    currentScenario: quizData.isCompleted ? -1 : (quizData.questionsAnswered % 5), // -1 indicates completed
+                    lastUpdated: quizData.completedAt,
+                    isCompleted: quizData.isCompleted
                 };
                 
-                await this.api.saveQuizProgress(quizName, progressData);
+                // Save progress both to server and localStorage
+                await this.saveQuizProgress(quizName, progressData);
+                this.saveToLocalStorage(quizData);
+                
                 return true;
             }
             return false;
         } catch (error) {
             console.error('Failed to save quiz result:', error);
+            // Save to localStorage as fallback
+            this.saveToLocalStorage(quizData);
             return false;
         }
     }
@@ -383,12 +396,16 @@ export class QuizUser {
                     const score = result.score || 0;
                     const experience = result.experience || 0;
                     const questionsAnswered = result.questionsAnswered || 0;
+                    const isCompleted = result.isCompleted || (score === 100 && questionsAnswered === 15);
                     
                     // Check if quiz was completed with max score
-                    if (score === 100) {
+                    if (isCompleted) {
                         progressElement.textContent = 'Completed!';
                         progressElement.classList.add('completed');
                         quizItem.classList.add('completed');
+                        
+                        // Add a data attribute to indicate completion
+                        quizItem.dataset.completed = 'true';
                     } 
                     // Check if quiz was failed (didn't reach XP threshold and answered enough questions)
                     else if (experience < this.levelThresholds?.basic?.minXP && questionsAnswered >= 5) {
