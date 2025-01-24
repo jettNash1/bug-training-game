@@ -141,43 +141,50 @@ body {
 
 .quiz-completion {
     position: absolute;
-    top: 0;
-    right: 0;
+    top: 0.5rem;
+    right: 0.5rem;
     padding: 0.25rem 0.75rem;
-    font-size: 0.85rem;
+    border-radius: 12px;
+    font-size: 0.8rem;
     font-weight: 500;
-    border-radius: 0 12px 0 12px;
-    transition: all 0.3s ease;
-    z-index: 1;
+    color: white;
+    display: none;
 }
 
-/* Progress states */
+.quiz-completion.completed {
+    display: block;
+    background: var(--success-color);
+}
+
+.quiz-completion.in-progress {
+    display: block;
+    background: var(--warning-color);
+    color: var(--text-primary);
+}
+
+.quiz-completion.failed {
+    display: block;
+    background: var(--danger-color);
+}
+
+/* Quiz item states */
 .quiz-item[data-progress="0"] {
     background: var(--card-background);
-}
-
-.quiz-item[data-progress="0"] .quiz-completion {
-    display: none;
 }
 
 .quiz-item[data-progress="100"] {
     background: linear-gradient(to right, rgba(46, 204, 113, 0.1), rgba(46, 204, 113, 0.2));
 }
 
-.quiz-item[data-progress="100"] .quiz-completion {
-    background: var(--success-color);
-    color: white;
-    display: block;
-}
-
 .quiz-item:not([data-progress="0"]):not([data-progress="100"]) {
     background: linear-gradient(to right, rgba(241, 196, 15, 0.1), rgba(241, 196, 15, 0.2));
 }
 
-.quiz-item:not([data-progress="0"]):not([data-progress="100"]) .quiz-completion {
-    background: var(--warning-color);
-    color: var(--text-primary);
-    display: block;
+.quiz-item.failed {
+    background: linear-gradient(to right, rgba(231, 76, 60, 0.1), rgba(231, 76, 60, 0.2));
+    opacity: 0.7;
+    pointer-events: none;
+    cursor: not-allowed;
 }
 
 .category-progress {
@@ -1034,25 +1041,6 @@ body {
     background: var(--text-secondary);
     transform: translateY(-2px);
     box-shadow: 0 6px 8px rgba(0, 0, 0, 0.15);
-}
-
-.quiz-completion {
-    position: absolute;
-    top: 0.5rem;
-    right: 0.5rem;
-    padding: 0.25rem 0.75rem;
-    border-radius: 12px;
-    font-size: 0.8rem;
-    font-weight: 500;
-    color: white;
-}
-
-.quiz-completion.completed {
-    background: var(--success-color);
-}
-
-.quiz-completion.in-progress {
-    background: var(--warning-color);
 }
 
 .logo {

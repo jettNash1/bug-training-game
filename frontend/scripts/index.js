@@ -54,8 +54,10 @@ class IndexPage {
                         };
                     }
 
-                    // Check if quiz is failed (didn't meet XP requirements)
-                    const hasFailed = progress.status === 'failed';
+                    // Check if quiz is failed or completed based on status
+                    const status = progress.status || 'in_progress';
+                    const hasFailed = status === 'failed';
+                    const isCompleted = status === 'passed';
                     
                     // Calculate actual progress regardless of status
                     const questionsAnswered = progress.questionHistory?.length || 0;
@@ -66,7 +68,7 @@ class IndexPage {
                         score: score,
                         questionsAnswered: questionsAnswered,
                         failed: hasFailed,
-                        completed: progress.status === 'completed',
+                        completed: isCompleted,
                         experience: progress.experience || 0
                     };
                 } catch (error) {
@@ -102,37 +104,33 @@ class IndexPage {
             const quizScore = this.quizScores.find(score => score.quizName === quizId);
             if (!quizScore) return;
 
+            // Remove any existing state classes
+            item.classList.remove('failed', 'completed', 'in-progress');
+            progressElement.classList.remove('failed', 'completed', 'in-progress');
+
             // Update the quiz item appearance based on its state
             if (quizScore.failed) {
                 // Failed quiz state
                 progressElement.textContent = 'Failed';
-                progressElement.style.display = 'block';
-                progressElement.style.background = '#e74c3c';
-                progressElement.style.color = 'white';
-                // Prevent retrying failed quizzes
-                item.style.pointerEvents = 'none';
-                item.style.opacity = '0.7';
+                progressElement.classList.add('failed');
+                item.classList.add('failed');
                 item.setAttribute('aria-disabled', 'true');
-                // Keep the progress data
                 item.setAttribute('data-progress', quizScore.score);
             } else if (quizScore.completed) {
                 // Completed quiz state
                 progressElement.textContent = 'Passed';
-                progressElement.style.display = 'block';
-                progressElement.style.background = '#2ecc71';
-                progressElement.style.color = 'white';
-                item.setAttribute('data-progress', quizScore.score);
+                progressElement.classList.add('completed');
+                item.classList.add('completed');
+                item.setAttribute('data-progress', '100');
             } else if (quizScore.questionsAnswered > 0) {
                 // In progress state
                 progressElement.textContent = `${quizScore.questionsAnswered}/15`;
-                progressElement.style.display = 'block';
-                progressElement.style.background = '#f1c40f';
-                progressElement.style.color = 'black';
+                progressElement.classList.add('in-progress');
+                item.classList.add('in-progress');
                 item.setAttribute('data-progress', quizScore.score);
             } else {
                 // Not started state
                 progressElement.textContent = '';
-                progressElement.style.display = 'none';
                 item.setAttribute('data-progress', '0');
             }
         });
