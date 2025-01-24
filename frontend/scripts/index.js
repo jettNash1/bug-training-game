@@ -54,22 +54,41 @@ class IndexPage {
                     }
 
                     const progress = serverProgress?.data || localProgress;
-                    const hasFailed = progress?.experience < progress?.levelThresholds?.basic?.minXP && progress?.questionHistory?.length >= 5;
+                    
+                    // Check if quiz is failed at any level
+                    const hasFailed = (progress?.questionHistory?.length >= 5 && progress?.experience < progress?.levelThresholds?.basic?.minXP) ||
+                                    (progress?.questionHistory?.length >= 10 && progress?.experience < progress?.levelThresholds?.intermediate?.minXP) ||
+                                    (progress?.questionHistory?.length >= 15 && progress?.experience < progress?.levelThresholds?.advanced?.minXP);
+
+                    // Check if quiz is successfully completed
+                    const isCompleted = progress?.questionHistory?.length >= 15 && 
+                                      progress?.experience >= progress?.levelThresholds?.advanced?.minXP;
                     
                     return {
                         quizName: quizId,
                         score: progress ? Math.round(((progress.questionHistory?.length || 0) / 15) * 100) : 0,
                         questionsAnswered: progress?.questionHistory?.length || 0,
                         failed: hasFailed,
-                        completed: progress?.questionHistory?.length >= 15 && !hasFailed
+                        completed: isCompleted,
+                        experience: progress?.experience || 0,
+                        levelThresholds: progress?.levelThresholds
                     };
                 } catch (error) {
-                    return { quizName: quizId, score: 0, questionsAnswered: 0, failed: false, completed: false };
+                    console.error(`Error loading progress for quiz ${quizId}:`, error);
+                    return { 
+                        quizName: quizId, 
+                        score: 0, 
+                        questionsAnswered: 0, 
+                        failed: false, 
+                        completed: false,
+                        experience: 0
+                    };
                 }
             });
 
             // Wait for all progress data to load
             this.quizScores = await Promise.all(progressPromises);
+            console.log('Loaded quiz scores:', this.quizScores); // Debug log
         } catch (error) {
             console.error('Error loading user progress:', error);
             this.quizScores = [];
