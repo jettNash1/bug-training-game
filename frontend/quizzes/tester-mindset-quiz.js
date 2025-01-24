@@ -713,7 +713,7 @@ class TesterMindsetQuiz extends BaseQuiz {
         // Check basic level completion
         if (this.player.questionHistory.length >= 5) {
             if (this.player.experience < this.levelThresholds.basic.minXP) {
-                await this.endGame(true); // End with failure state
+                this.endGame(true); // End with failure state
                 return;
             }
         }
@@ -721,7 +721,7 @@ class TesterMindsetQuiz extends BaseQuiz {
         // Check intermediate level completion
         if (this.player.questionHistory.length >= 10) {
             if (this.player.experience < this.levelThresholds.intermediate.minXP) {
-                await this.endGame(true); // End with failure state
+                this.endGame(true); // End with failure state
                 return;
             }
         }
@@ -729,10 +729,10 @@ class TesterMindsetQuiz extends BaseQuiz {
         // Check Advanced level completion
         if (this.player.questionHistory.length >= 15) {
             if (this.player.experience < this.levelThresholds.advanced.minXP) {
-                await this.endGame(true); // End with failure state
+                this.endGame(true); // End with failure state
                 return;
             } else {
-                await this.endGame(false); // Completed successfully
+                this.endGame(false); // Completed successfully
                 return;
             }
         }
@@ -754,7 +754,7 @@ class TesterMindsetQuiz extends BaseQuiz {
 
         if (!scenario) {
             console.error('No scenario found for current progress. Question count:', questionCount);
-            await this.endGame(true);
+            this.endGame(true);
             return;
         }
 
@@ -1137,7 +1137,7 @@ class TesterMindsetQuiz extends BaseQuiz {
         return recommendations[area] || 'Continue practicing core testing mindset principles.';
     }
 
-    async endGame(failed = false) {
+    endGame(failed = false) {
         this.gameScreen.classList.add('hidden');
         this.outcomeScreen.classList.add('hidden');
         this.endScreen.classList.remove('hidden');
@@ -1161,7 +1161,7 @@ class TesterMindsetQuiz extends BaseQuiz {
                     questionsAnswered: this.player.questionHistory.length,
                     lastActive: new Date().toISOString()
                 };
-                await user.updateQuizScore(
+                user.updateQuizScore(
                     this.quizName,
                     result.score,
                     result.experience,
@@ -1173,14 +1173,7 @@ class TesterMindsetQuiz extends BaseQuiz {
                 console.log('Final quiz score saved:', result);
 
                 // Also save the progress with the failed/passed status
-                await this.saveProgress();
-
-                // If failed, redirect to index page after a short delay
-                if (failed) {
-                    setTimeout(() => {
-                        window.location.href = '/index.html';
-                    }, 2000);
-                }
+                this.saveProgress();
             } catch (error) {
                 console.error('Error saving final quiz score:', error);
             }
@@ -1190,12 +1183,18 @@ class TesterMindsetQuiz extends BaseQuiz {
 
         const performanceSummary = document.getElementById('performance-summary');
         if (failed) {
-            performanceSummary.textContent = 'Quiz failed. You did not meet the minimum XP requirement to progress. Redirecting to homepage...';
+            performanceSummary.textContent = 'Quiz failed. You did not meet the minimum XP requirement to progress. Please return to the homepage to view your results.';
             // Hide restart button if failed
             const restartBtn = document.getElementById('restart-btn');
             if (restartBtn) {
                 restartBtn.style.display = 'none';
             }
+            // Add a return to homepage button
+            const homeBtn = document.createElement('button');
+            homeBtn.textContent = 'Return to Homepage';
+            homeBtn.className = 'button primary-button';
+            homeBtn.onclick = () => window.location.href = '/index.html';
+            document.getElementById('end-screen').appendChild(homeBtn);
         } else {
             const threshold = this.performanceThresholds.find(t => finalScore >= t.threshold);
             performanceSummary.textContent = threshold.message;

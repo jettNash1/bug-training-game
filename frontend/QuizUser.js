@@ -318,7 +318,40 @@ export class QuizUser {
                     status: quizData.status // Include status in progress data
                 };
                 
+                // Save progress to both API and localStorage
                 await this.api.saveQuizProgress(quizName, progressData);
+                this.saveProgressToLocalStorage(quizName, progressData);
+
+                // Update UI immediately if we're on the index page
+                const progressElement = document.querySelector(`#${quizName}-progress`);
+                const quizItem = document.querySelector(`[data-quiz="${quizName}"]`);
+                
+                if (progressElement && quizItem) {
+                    // Remove existing state classes
+                    progressElement.classList.remove('completed', 'in-progress', 'failed');
+                    quizItem.classList.remove('completed', 'in-progress', 'failed');
+
+                    if (quizData.status === 'failed') {
+                        // Failed quiz state
+                        progressElement.textContent = 'Failed';
+                        progressElement.classList.add('failed');
+                        quizItem.classList.add('failed');
+                        quizItem.setAttribute('aria-disabled', 'true');
+                        quizItem.style.pointerEvents = 'none';
+                        quizItem.style.opacity = '0.7';
+                    } else if (quizData.status === 'passed') {
+                        // Completed quiz state
+                        progressElement.textContent = 'Passed';
+                        progressElement.classList.add('completed');
+                        quizItem.classList.add('completed');
+                    } else if (quizData.questionsAnswered > 0) {
+                        // In progress state
+                        progressElement.textContent = `${quizData.questionsAnswered}/15`;
+                        progressElement.classList.add('in-progress');
+                        quizItem.classList.add('in-progress');
+                    }
+                }
+
                 return true;
             }
             return false;

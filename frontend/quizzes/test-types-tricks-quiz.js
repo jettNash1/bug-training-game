@@ -172,12 +172,12 @@ export class TestTypesTricksQuiz extends BaseQuiz {
                     },
                     {
                         text: 'Only the platform',
-                        outcome: 'While this is important, if it's the only information diagnosing the issue would be difficult',
+                        outcome: 'While this is important, if it\'s the only information diagnosing the issue would be difficult',
                         experience: -10
                     },
                     {
                         text: 'Tester\'s name',
-                        outcome: 'This important but not as crucial as some other information required and wouldn't aid the developer in debugging the issue',
+                        outcome: 'This important but not as crucial as some other information required and wouldn\'t aid the developer in debugging the issue',
                         experience: -5
                     }
                 ]
@@ -496,7 +496,7 @@ export class TestTypesTricksQuiz extends BaseQuiz {
                     },
                     {
                         text: 'Use external storage',
-                        outcome: 'This doesn't address the file size if limitations are set for upload',
+                        outcome: 'This doesn\'t address the file size if limitations are set for upload',
                         experience: -10
                     }
                 ]
