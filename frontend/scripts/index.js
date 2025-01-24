@@ -35,17 +35,21 @@ class IndexPage {
             const username = localStorage.getItem('username');
             if (!username) return;
 
+            // First load quiz results to get the overall status
+            const quizUser = new QuizUser(username);
+            await quizUser.loadUserData();
+
             // Batch all quiz progress requests
             const progressPromises = Array.from(this.quizItems).map(async item => {
                 const quizId = item.dataset.quiz;
                 try {
                     // Get the saved progress
                     const savedProgress = await this.apiService.getQuizProgress(quizId);
-                    console.log(`Raw progress data for ${quizId}:`, savedProgress); // Debug log
+                    console.log(`Raw progress data for ${quizId}:`, savedProgress);
                     
                     const progress = savedProgress?.data;
                     if (!progress) {
-                        console.log(`No progress data for ${quizId}`); // Debug log
+                        console.log(`No progress data for ${quizId}`);
                         return { 
                             quizName: quizId, 
                             score: 0, 
@@ -57,31 +61,32 @@ class IndexPage {
                         };
                     }
 
-                    // Get the status directly from the progress data
+                    // Get the status from both progress and quiz results
                     const status = progress.status || null;
-                    console.log(`Progress status for ${quizId}:`, status); // Debug log
-                    
+                    const quizResult = quizUser.getQuizResult(quizId);
+                    console.log(`Quiz result for ${quizId}:`, quizResult);
+
                     // Calculate actual progress regardless of status
                     const questionsAnswered = progress.questionHistory?.length || 0;
                     const score = Math.round((questionsAnswered / 15) * 100);
 
                     // Check if the quiz should be marked as failed
-                    const hasFailed = status === 'failed';
-                    console.log(`Quiz ${quizId} failed status:`, { status, hasFailed }); // Debug log
+                    const hasFailed = status === 'failed' || quizResult?.status === 'failed';
+                    console.log(`Quiz ${quizId} failed status:`, { status, resultStatus: quizResult?.status, hasFailed });
 
-                    // Set failed and completed based on status
+                    // Set failed and completed based on both progress and quiz result status
                     const result = {
                         quizName: quizId,
                         score: score,
                         questionsAnswered: questionsAnswered,
                         failed: hasFailed,
-                        completed: status === 'passed',
+                        completed: status === 'passed' || quizResult?.status === 'passed',
                         experience: progress.experience || 0,
-                        status: status,
+                        status: status || quizResult?.status,
                         questionHistory: progress.questionHistory || []
                     };
 
-                    console.log(`Final result for ${quizId}:`, result); // Debug log
+                    console.log(`Final result for ${quizId}:`, result);
                     return result;
                 } catch (error) {
                     console.error(`Error loading progress for quiz ${quizId}:`, error);
@@ -99,64 +104,61 @@ class IndexPage {
 
             // Wait for all progress data to load
             this.quizScores = await Promise.all(progressPromises);
-            console.log('All quiz scores loaded:', this.quizScores); // Debug log
+            console.log('All quiz scores loaded:', this.quizScores);
         } catch (error) {
             console.error('Error loading user progress:', error);
             this.quizScores = [];
         }
     }
 
-    updateQuizProgress() {
-        if (!this.quizScores) return;
+    updateQuizProgress(quizName) {
+        const quizItem = this.quizItems.find(item => item.dataset.quiz === quizName);
+        if (!quizItem) return;
 
-        this.quizItems.forEach(item => {
-            const quizId = item.dataset.quiz;
-            const progressElement = document.getElementById(`${quizId}-progress`);
-            if (!progressElement) return;
+        const progressElement = quizItem.querySelector('.quiz-completion');
+        if (!progressElement) return;
 
-            const quizScore = this.quizScores.find(score => score.quizName === quizId);
-            if (!quizScore) return;
+        const quizScore = this.quizScores.find(score => score.quizName === quizName);
+        if (!quizScore) return;
 
-            console.log(`Updating quiz ${quizId}:`, quizScore); // Debug log
+        console.log(`Updating progress for ${quizName}:`, quizScore);
 
-            // Remove any existing state classes
-            item.classList.remove('failed', 'completed', 'in-progress');
-            progressElement.classList.remove('failed', 'completed', 'in-progress');
+        // Remove any existing state classes
+        quizItem.classList.remove('failed', 'completed', 'in-progress');
+        progressElement.classList.remove('failed', 'completed', 'in-progress');
 
-            // Update the quiz item appearance based on its state
-            if (quizScore.failed || quizScore.status === 'failed') {
-                // Failed quiz state
-                console.log(`Quiz ${quizId} marked as failed`); // Debug log
-                progressElement.textContent = 'Failed';
-                progressElement.classList.add('failed');
-                item.classList.add('failed');
-                item.setAttribute('aria-disabled', 'true');
-                item.style.pointerEvents = 'none';
-                item.style.opacity = '0.7';
-            } else if (quizScore.completed || quizScore.status === 'passed') {
-                // Completed quiz state
-                progressElement.textContent = 'Passed';
-                progressElement.classList.add('completed');
-                item.classList.add('completed');
-            } else if (quizScore.questionsAnswered > 0) {
-                // In progress state
-                progressElement.textContent = `${quizScore.questionsAnswered}/15`;
-                progressElement.classList.add('in-progress');
-                item.classList.add('in-progress');
-            } else {
-                // Not started state
-                progressElement.textContent = '';
-            }
+        // Check if the quiz is failed
+        if (quizScore.failed || quizScore.status === 'failed') {
+            console.log(`Quiz ${quizName} is failed`);
+            quizItem.classList.add('failed');
+            progressElement.classList.add('failed');
+            progressElement.textContent = 'Failed';
+            quizItem.style.pointerEvents = 'none';
+            return;
+        }
 
-            // Set progress data attribute
-            item.setAttribute('data-progress', quizScore.completed ? '100' : quizScore.score);
+        // Check if the quiz is completed
+        if (quizScore.completed || quizScore.status === 'passed') {
+            console.log(`Quiz ${quizName} is completed`);
+            quizItem.classList.add('completed');
+            progressElement.classList.add('completed');
+            progressElement.textContent = 'Passed';
+            return;
+        }
 
-            // Ensure failed quizzes stay disabled
-            if (quizScore.failed || quizScore.status === 'failed') {
-                item.style.pointerEvents = 'none';
-                item.style.opacity = '0.7';
-            }
-        });
+        // If the quiz has started but not completed
+        if (quizScore.questionsAnswered > 0) {
+            console.log(`Quiz ${quizName} is in progress`);
+            quizItem.classList.add('in-progress');
+            progressElement.classList.add('in-progress');
+            progressElement.textContent = `${quizScore.questionsAnswered}/15 Questions`;
+            return;
+        }
+
+        // Quiz hasn't started
+        console.log(`Quiz ${quizName} hasn't started`);
+        progressElement.textContent = '';
+        progressElement.dataset.progress = '0';
     }
 
     updateCategoryProgress() {

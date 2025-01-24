@@ -271,93 +271,53 @@ export class QuizUser {
 
     async updateQuizScore(quizName, score, experience = 0, tools = [], questionHistory = [], questionsAnswered = null, status = null) {
         try {
-            if (!this.api) {
-                throw new Error('API service not initialized');
+            // Calculate the status if not provided
+            if (!status) {
+                status = score >= 70 ? 'passed' : 'failed';
             }
-            
-            // Get the current quiz progress to include question history
-            const progress = await this.getQuizProgress(quizName);
-            
-            // Create the quiz data with all necessary fields
+
+            console.log(`Updating quiz score for ${quizName}:`, { score, status });
+
             const quizData = {
                 quizName,
-                score: Math.round(score),
-                experience: Math.round(experience || score),
-                tools: tools || [],
-                questionHistory: questionHistory || [],
-                questionsAnswered: questionsAnswered !== null ? questionsAnswered : (questionHistory ? questionHistory.length : 0),
-                completedAt: new Date().toISOString(),
-                status: status || (score >= 70 ? 'passed' : 'failed') // Default to pass/fail based on score if no status provided
+                score,
+                experience,
+                tools,
+                questionHistory,
+                questionsAnswered,
+                status,
+                lastUpdated: new Date().toISOString()
             };
 
-            // Save to server
-            const response = await this.api.fetchWithAuth(`${config.apiUrl}/users/quiz-results`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify(quizData)
-            });
+            // Save to API
+            await this.api.saveQuizProgress(quizName, quizData);
 
-            if (!response.ok) {
-                throw new Error('Failed to save quiz result to server');
+            // Update local storage
+            const quizResults = this.getQuizResults();
+            quizResults[quizName] = quizData;
+            localStorage.setItem(`${this.username}_quiz_results`, JSON.stringify(quizResults));
+
+            // If we're on the index page, update the UI
+            const indexPage = window.indexPage;
+            if (indexPage) {
+                await indexPage.loadUserProgress();
+                indexPage.updateQuizProgress(quizName);
             }
 
-            const data = await response.json();
-            if (data.success) {
-                this.quizResults = data.data;
-                
-                // Also update the quiz progress
-                const progressData = {
-                    experience: quizData.experience,
-                    tools: quizData.tools,
-                    questionHistory: quizData.questionHistory,
-                    questionsAnswered: quizData.questionsAnswered,
-                    currentScenario: quizData.questionsAnswered % 5, // Keep track of position within current level
-                    lastUpdated: quizData.completedAt,
-                    status: quizData.status // Include status in progress data
-                };
-                
-                // Save progress to both API and localStorage
-                await this.api.saveQuizProgress(quizName, progressData);
-                this.saveProgressToLocalStorage(quizName, progressData);
-
-                // Update UI immediately if we're on the index page
-                const progressElement = document.querySelector(`#${quizName}-progress`);
-                const quizItem = document.querySelector(`[data-quiz="${quizName}"]`);
-                
-                if (progressElement && quizItem) {
-                    // Remove existing state classes
-                    progressElement.classList.remove('completed', 'in-progress', 'failed');
-                    quizItem.classList.remove('completed', 'in-progress', 'failed');
-
-                    if (quizData.status === 'failed') {
-                        // Failed quiz state
-                        progressElement.textContent = 'Failed';
-                        progressElement.classList.add('failed');
-                        quizItem.classList.add('failed');
-                        quizItem.setAttribute('aria-disabled', 'true');
-                        quizItem.style.pointerEvents = 'none';
-                        quizItem.style.opacity = '0.7';
-                    } else if (quizData.status === 'passed') {
-                        // Completed quiz state
-                        progressElement.textContent = 'Passed';
-                        progressElement.classList.add('completed');
-                        quizItem.classList.add('completed');
-                    } else if (quizData.questionsAnswered > 0) {
-                        // In progress state
-                        progressElement.textContent = `${quizData.questionsAnswered}/15`;
-                        progressElement.classList.add('in-progress');
-                        quizItem.classList.add('in-progress');
-                    }
-                }
-
-                return true;
-            }
-            return false;
+            return quizData;
         } catch (error) {
-            console.error('Failed to save quiz result:', error);
-            return false;
+            console.error('Error updating quiz score:', error);
+            throw error;
+        }
+    }
+
+    getQuizResults() {
+        try {
+            const resultsJson = localStorage.getItem(`${this.username}_quiz_results`);
+            return resultsJson ? JSON.parse(resultsJson) : {};
+        } catch (error) {
+            console.error('Error getting quiz results:', error);
+            return {};
         }
     }
 
