@@ -1,5 +1,6 @@
 import { APIService } from '../api-service.js';
 import { BaseQuiz } from '../quiz-helper.js';
+import { QuizUser } from '../quiz-user.js';
 
 class IssueTrackingToolsQuiz extends BaseQuiz {
     constructor() {
@@ -726,15 +727,19 @@ class IssueTrackingToolsQuiz extends BaseQuiz {
         let scenario;
         const questionCount = this.player.questionHistory.length;
         
+        // Reset currentScenario based on the current level
         if (questionCount < 5) {
             // Basic questions (0-4)
             scenario = this.basicScenarios[questionCount];
+            this.player.currentScenario = questionCount;
         } else if (questionCount < 10) {
             // Intermediate questions (5-9)
             scenario = this.intermediateScenarios[questionCount - 5];
+            this.player.currentScenario = questionCount - 5;
         } else if (questionCount < 15) {
             // Advanced questions (10-14)
             scenario = this.advancedScenarios[questionCount - 10];
+            this.player.currentScenario = questionCount - 10;
         }
 
         if (!scenario) {
@@ -748,10 +753,13 @@ class IssueTrackingToolsQuiz extends BaseQuiz {
         
         // Show level transition message at the start of each level or when level changes
         const currentLevel = this.getCurrentLevel();
-        const previousLevel = this.player.questionHistory.length > 0 ? 
-            this.getCurrentLevel() : null;
+        const previousLevel = questionCount > 0 ? 
+            (questionCount <= 5 ? 'Basic' : 
+             questionCount <= 10 ? 'Intermediate' : 'Advanced') : null;
             
-        if (this.player.questionHistory.length === 0 || previousLevel !== currentLevel) {
+        if (questionCount === 0 || 
+            (questionCount === 5 && currentLevel === 'Intermediate') || 
+            (questionCount === 10 && currentLevel === 'Advanced')) {
             const transitionContainer = document.getElementById('level-transition-container');
             if (transitionContainer) {
                 transitionContainer.innerHTML = ''; // Clear any existing messages
@@ -830,7 +838,7 @@ class IssueTrackingToolsQuiz extends BaseQuiz {
         });
 
         this.updateProgress();
-    }
+    } 
 
     async handleAnswer() {
         if (this.isLoading) return;

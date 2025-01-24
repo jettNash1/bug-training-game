@@ -724,15 +724,19 @@ class InitiativeQuiz extends BaseQuiz {
         let scenario;
         const questionCount = this.player.questionHistory.length;
         
+        // Reset currentScenario based on the current level
         if (questionCount < 5) {
             // Basic questions (0-4)
             scenario = this.basicScenarios[questionCount];
+            this.player.currentScenario = questionCount;
         } else if (questionCount < 10) {
             // Intermediate questions (5-9)
             scenario = this.intermediateScenarios[questionCount - 5];
+            this.player.currentScenario = questionCount - 5;
         } else if (questionCount < 15) {
             // Advanced questions (10-14)
             scenario = this.advancedScenarios[questionCount - 10];
+            this.player.currentScenario = questionCount - 10;
         }
 
         if (!scenario) {
@@ -748,7 +752,7 @@ class InitiativeQuiz extends BaseQuiz {
         const currentLevel = this.getCurrentLevel();
         const previousLevel = questionCount > 0 ? 
             (questionCount <= 5 ? 'Basic' : 
-            questionCount <= 10 ? 'Intermediate' : 'Advanced') : null;
+             questionCount <= 10 ? 'Intermediate' : 'Advanced') : null;
             
         if (questionCount === 0 || 
             (questionCount === 5 && currentLevel === 'Intermediate') || 
