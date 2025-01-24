@@ -1,7 +1,7 @@
 import { APIService } from '../api-service.js';
 import { BaseQuiz } from '../quiz-helper.js';
 
-export class ReportsQuiz extends BaseQuiz {
+class ReportsQuiz extends BaseQuiz {
     constructor() {
         const config = {
             maxXP: 300,
@@ -20,14 +20,14 @@ export class ReportsQuiz extends BaseQuiz {
         
         super(config);
         
-        // Set quiz name
+        // Set the quiz name
         Object.defineProperty(this, 'quizName', {
             value: 'reports',
             writable: false,
             configurable: false,
             enumerable: true
         });
-
+        
         // Initialize player state
         this.player = {
             name: '',
@@ -40,12 +40,31 @@ export class ReportsQuiz extends BaseQuiz {
         // Initialize API service
         this.apiService = new APIService();
 
-        // Initialize screens
+        // Initialize all screen elements
         this.gameScreen = document.getElementById('game-screen');
         this.outcomeScreen = document.getElementById('outcome-screen');
         this.endScreen = document.getElementById('end-screen');
+        
+        // Verify all required elements exist
+        if (!this.gameScreen) {
+            console.error('Game screen element not found');
+            this.showError('Quiz initialization failed. Please refresh the page.');
+            return;
+        }
+        
+        if (!this.outcomeScreen) {
+            console.error('Outcome screen element not found');
+            this.showError('Quiz initialization failed. Please refresh the page.');
+            return;
+        }
+        
+        if (!this.endScreen) {
+            console.error('End screen element not found');
+            this.showError('Quiz initialization failed. Please refresh the page.');
+            return;
+        }
 
-        // Initialize scenarios
+        // Basic Scenarios (IDs 1-5, 75 XP total)
         this.basicScenarios = [
             {
                 id: 1,
@@ -193,6 +212,8 @@ export class ReportsQuiz extends BaseQuiz {
                 ]
             }
         ];
+
+        // Intermediate Scenarios (IDs 6-10, 125 XP total)
         this.intermediateScenarios = [
             {
                 id: 6,
@@ -340,6 +361,8 @@ export class ReportsQuiz extends BaseQuiz {
                 ]
             }
         ];
+
+        // Advanced Scenarios (IDs 11-15, 100 XP total)
         this.advancedScenarios = [
             {
                 id: 11,
@@ -658,13 +681,13 @@ export class ReportsQuiz extends BaseQuiz {
         // Add form submission handler
         document.getElementById('options-form')?.addEventListener('submit', (e) => {
             e.preventDefault();
-            super.handleAnswer();
+            this.handleAnswer();
         });
 
         // Add keyboard navigation
         document.addEventListener('keydown', (e) => {
             if (e.key === 'Enter' && e.target.type === 'radio') {
-                super.handleAnswer();
+                this.handleAnswer();
             }
         });
     }
@@ -807,6 +830,101 @@ export class ReportsQuiz extends BaseQuiz {
         });
 
         this.updateProgress();
+    }
+
+    async handleAnswer() {
+        if (this.isLoading) return;
+        
+        const submitButton = document.querySelector('.submit-button');
+        if (submitButton) {
+            submitButton.disabled = true;
+        }
+        
+        try {
+            this.isLoading = true;
+            const selectedOption = document.querySelector('input[name="option"]:checked');
+            if (!selectedOption) return;
+
+            const currentScenarios = this.getCurrentScenarios();
+            const scenario = currentScenarios[this.player.currentScenario];
+            const originalIndex = parseInt(selectedOption.value);
+            
+            const selectedAnswer = scenario.options[originalIndex];
+
+            // Update player state
+            this.player.experience = Math.max(0, Math.min(this.maxXP, this.player.experience + selectedAnswer.experience));
+            this.player.questionHistory.push({
+                scenario: scenario,
+                selectedAnswer: selectedAnswer,
+                maxPossibleXP: Math.max(...scenario.options.map(o => o.experience))
+            });
+
+            // Increment current scenario
+            this.player.currentScenario++;
+
+            // Save progress
+            await this.saveProgress();
+
+            // Calculate the score and experience
+            const totalQuestions = 15;
+            const completedQuestions = this.player.questionHistory.length;
+            const percentComplete = Math.round((completedQuestions / totalQuestions) * 100);
+            
+            const score = {
+                quizName: this.quizName,
+                score: percentComplete,
+                experience: this.player.experience,
+                questionHistory: this.player.questionHistory,
+                questionsAnswered: completedQuestions,
+                lastActive: new Date().toISOString()
+            };
+            
+            // Save quiz result
+            const username = localStorage.getItem('username');
+            if (username) {
+                const quizUser = new QuizUser(username);
+                await quizUser.updateQuizScore(
+                    this.quizName,
+                    score.score,
+                    score.experience,
+                    this.player.tools,
+                    score.questionHistory,
+                    score.questionsAnswered
+                );
+            }
+
+            // Show outcome screen
+            if (this.gameScreen && this.outcomeScreen) {
+                this.gameScreen.classList.add('hidden');
+                this.outcomeScreen.classList.remove('hidden');
+            }
+            
+            // Update outcome display
+            document.getElementById('outcome-text').textContent = selectedAnswer.outcome;
+            const xpText = selectedAnswer.experience >= 0 ? 
+                `Experience gained: +${selectedAnswer.experience}` : 
+                `Experience: ${selectedAnswer.experience}`;
+            document.getElementById('xp-gained').textContent = xpText;
+            
+            if (selectedAnswer.tool) {
+                document.getElementById('tool-gained').textContent = `Tool acquired: ${selectedAnswer.tool}`;
+                if (!this.player.tools.includes(selectedAnswer.tool)) {
+                    this.player.tools.push(selectedAnswer.tool);
+                }
+            } else {
+                document.getElementById('tool-gained').textContent = '';
+            }
+
+            this.updateProgress();
+        } catch (error) {
+            console.error('Failed to handle answer:', error);
+            this.showError('Failed to save your answer. Please try again.');
+        } finally {
+            this.isLoading = false;
+            if (submitButton) {
+                submitButton.disabled = false;
+            }
+        }
     }
 
     nextScenario() {
