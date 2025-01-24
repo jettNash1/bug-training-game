@@ -39,50 +39,34 @@ class IndexPage {
             const progressPromises = Array.from(this.quizItems).map(async item => {
                 const quizId = item.dataset.quiz;
                 try {
-                    // Parallel requests for server and local data
-                    const [serverProgress, localData] = await Promise.all([
-                        this.apiService.getQuizProgress(quizId),
-                        localStorage.getItem(`quiz_progress_${username}_${quizId}`)
-                    ]);
+                    // Get the saved progress
+                    const savedProgress = await this.apiService.getQuizProgress(quizId);
+                    const progress = savedProgress?.data;
 
-                    let localProgress = null;
-                    if (localData) {
-                        try {
-                            const parsed = JSON.parse(localData);
-                            localProgress = parsed.progress;
-                        } catch (e) {} // Ignore parse errors
+                    if (!progress) {
+                        return { 
+                            quizName: quizId, 
+                            score: 0, 
+                            questionsAnswered: 0, 
+                            failed: false, 
+                            completed: false,
+                            experience: 0
+                        };
                     }
 
-                    const progress = serverProgress?.data || localProgress;
-                    
-                    // Define standard thresholds if not available in progress
-                    const thresholds = {
-                        basic: { minXP: 50 },
-                        intermediate: { minXP: 150 },
-                        advanced: { minXP: 300 }
-                    };
-                    
-                    // Check if quiz is failed at any level
-                    const hasFailed = (progress?.questionHistory?.length >= 5 && progress?.experience < thresholds.basic.minXP) ||
-                                    (progress?.questionHistory?.length >= 10 && progress?.experience < thresholds.intermediate.minXP) ||
-                                    (progress?.questionHistory?.length >= 15 && progress?.experience < thresholds.advanced.minXP);
+                    // Check if quiz is failed (didn't meet XP requirements)
+                    const hasFailed = progress.status === 'failed';
 
-                    // Check if quiz is successfully completed
-                    const isCompleted = progress?.questionHistory?.length >= 15 && 
-                                      progress?.experience >= thresholds.advanced.minXP;
-                    
-                    // Calculate the actual percentage based on questions completed
-                    const questionsAnswered = progress?.questionHistory?.length || 0;
-                    const totalQuestions = 15;
-                    const percentComplete = Math.round((questionsAnswered / totalQuestions) * 100);
+                    // Check if quiz is completed successfully
+                    const isCompleted = progress.status === 'completed';
                     
                     return {
                         quizName: quizId,
-                        score: percentComplete,
-                        questionsAnswered: questionsAnswered,
+                        score: isCompleted ? 100 : Math.round((progress.questionHistory?.length || 0) / 15 * 100),
+                        questionsAnswered: progress.questionHistory?.length || 0,
                         failed: hasFailed,
                         completed: isCompleted,
-                        experience: progress?.experience || 0
+                        experience: progress.experience || 0
                     };
                 } catch (error) {
                     console.error(`Error loading progress for quiz ${quizId}:`, error);
@@ -109,10 +93,6 @@ class IndexPage {
     updateQuizProgress() {
         if (!this.quizScores) return;
 
-        // Create a document fragment to batch DOM updates
-        const fragment = document.createDocumentFragment();
-        const updates = new Map();
-
         this.quizItems.forEach(item => {
             const quizId = item.dataset.quiz;
             const progressElement = document.getElementById(`${quizId}-progress`);
@@ -121,53 +101,41 @@ class IndexPage {
             const quizScore = this.quizScores.find(score => score.quizName === quizId);
             if (!quizScore) return;
 
-            // Store updates to apply in batch
-            updates.set(item, {
-                progress: quizScore.score,
-                element: progressElement,
-                failed: quizScore.failed,
-                completed: quizScore.completed
-            });
-        });
+            // Update the quiz item appearance based on its state
+            if (quizScore.failed) {
+                // Failed quiz state
+                progressElement.textContent = 'Failed';
+                progressElement.style.display = 'block';
+                progressElement.style.background = '#e74c3c'; // Red
+                progressElement.style.color = 'white';
+                item.style.background = 'linear-gradient(to right, rgba(231, 76, 60, 0.1), rgba(231, 76, 60, 0.2))';
+                item.style.cursor = 'not-allowed';
+                item.style.pointerEvents = 'none';
+                item.setAttribute('aria-disabled', 'true');
+            } else if (quizScore.completed) {
+                // Completed quiz state (100%)
+                progressElement.textContent = '100%';
+                progressElement.style.display = 'block';
+                progressElement.style.background = '#2ecc71'; // Green
+                progressElement.style.color = 'white';
+                item.style.background = 'linear-gradient(to right, rgba(46, 204, 113, 0.1), rgba(46, 204, 113, 0.2))';
+                item.style.cursor = 'pointer';
+            } else if (quizScore.score > 0) {
+                // In progress state
+                progressElement.textContent = `${quizScore.score}%`;
+                progressElement.style.display = 'block';
+                progressElement.style.background = '#f1c40f'; // Yellow
+                progressElement.style.color = 'black';
+                item.style.background = 'linear-gradient(to right, rgba(241, 196, 15, 0.1), rgba(241, 196, 15, 0.2))';
+            } else {
+                // Not started state
+                progressElement.textContent = '';
+                progressElement.style.display = 'none';
+                item.style.background = 'var(--card-background)';
+            }
 
-        // Apply all updates in one batch
-        requestAnimationFrame(() => {
-            updates.forEach(({ progress, element, failed, completed }, item) => {
-                item.setAttribute('data-progress', progress);
-                
-                if (failed) {
-                    // Failed quiz state
-                    element.textContent = 'Failed';
-                    element.style.display = 'block';
-                    element.style.background = 'var(--error-color)';
-                    element.style.color = 'white';
-                    item.style.background = 'linear-gradient(to right, rgba(231, 76, 60, 0.1), rgba(231, 76, 60, 0.2))';
-                    item.style.cursor = 'not-allowed';
-                    item.style.pointerEvents = 'none';
-                    item.setAttribute('aria-disabled', 'true');
-                } else if (completed) {
-                    // Completed quiz state
-                    element.textContent = '100%';
-                    element.style.display = 'block';
-                    element.style.background = 'var(--success-color)';
-                    element.style.color = 'white';
-                    item.style.background = 'linear-gradient(to right, rgba(46, 204, 113, 0.1), rgba(46, 204, 113, 0.2))';
-                    // Keep clickable to view results
-                    item.style.cursor = 'pointer';
-                } else if (progress > 0) {
-                    // In progress state
-                    element.textContent = `${progress}%`;
-                    element.style.display = 'block';
-                    item.style.background = 'linear-gradient(to right, rgba(241, 196, 15, 0.1), rgba(241, 196, 15, 0.2))';
-                    element.style.background = 'var(--warning-color)';
-                    element.style.color = 'var(--text-primary)';
-                } else {
-                    // Not started state
-                    element.textContent = '';
-                    element.style.display = 'none';
-                    item.style.background = 'var(--card-background)';
-                }
-            });
+            // Update the data attribute
+            item.setAttribute('data-progress', quizScore.score);
         });
     }
 
