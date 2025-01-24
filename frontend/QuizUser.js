@@ -219,12 +219,33 @@ export class QuizUser {
     }
 
     getQuizResult(quizName) {
-        const result = this.quizResults.find(result => 
-            result.quizName === quizName || 
-            result.quizName === this.normalizeQuizName(quizName)
-        );
-        console.log('Getting quiz result for', quizName, ':', result);
-        return result || null;
+        try {
+            const quizResults = this.getQuizResults();
+            const result = quizResults[quizName];
+            
+            // If we have a result but no status, calculate it based on experience thresholds
+            if (result && !result.status) {
+                const experience = result.experience || 0;
+                const questionsAnswered = result.questionsAnswered || 0;
+                
+                // Determine the level based on questions answered
+                if (questionsAnswered >= 15) { // Advanced level completed
+                    result.status = experience >= 300 ? 'passed' : 'failed';
+                } else if (questionsAnswered >= 10) { // Intermediate level completed
+                    result.status = experience >= 150 ? 'passed' : 'failed';
+                } else if (questionsAnswered >= 5) { // Beginner level completed
+                    result.status = experience >= 50 ? 'passed' : 'failed';
+                } else if (questionsAnswered > 0) { // In progress
+                    result.status = 'in_progress';
+                }
+            }
+            
+            console.log(`Getting quiz result for ${quizName}:`, result);
+            return result;
+        } catch (error) {
+            console.error('Error getting quiz result:', error);
+            return null;
+        }
     }
 
     async saveQuizProgress(quizName, progress) {
@@ -271,12 +292,20 @@ export class QuizUser {
 
     async updateQuizScore(quizName, score, experience = 0, tools = [], questionHistory = [], questionsAnswered = null, status = null) {
         try {
-            // Calculate the status if not provided
+            // Calculate the status based on experience thresholds if not provided
             if (!status) {
-                status = score >= 70 ? 'passed' : 'failed';
+                if (questionsAnswered >= 15) { // Advanced level completed
+                    status = experience >= 300 ? 'passed' : 'failed';
+                } else if (questionsAnswered >= 10) { // Intermediate level completed
+                    status = experience >= 150 ? 'passed' : 'failed';
+                } else if (questionsAnswered >= 5) { // Beginner level completed
+                    status = experience >= 50 ? 'passed' : 'failed';
+                } else {
+                    status = 'in_progress';
+                }
             }
 
-            console.log(`Updating quiz score for ${quizName}:`, { score, status });
+            console.log(`Updating quiz score for ${quizName}:`, { score, experience, questionsAnswered, status });
 
             const quizData = {
                 quizName,

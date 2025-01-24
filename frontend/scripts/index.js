@@ -61,28 +61,48 @@ class IndexPage {
                         };
                     }
 
-                    // Get the status from both progress and quiz results
-                    const status = progress.status || null;
+                    // Get the quiz result which includes the calculated status
                     const quizResult = quizUser.getQuizResult(quizId);
                     console.log(`Quiz result for ${quizId}:`, quizResult);
 
                     // Calculate actual progress regardless of status
                     const questionsAnswered = progress.questionHistory?.length || 0;
-                    const score = Math.round((questionsAnswered / 15) * 100);
+                    const experience = progress.experience || 0;
 
-                    // Check if the quiz should be marked as failed
-                    const hasFailed = status === 'failed' || quizResult?.status === 'failed';
-                    console.log(`Quiz ${quizId} failed status:`, { status, resultStatus: quizResult?.status, hasFailed });
+                    // Calculate status based on experience thresholds
+                    let calculatedStatus;
+                    if (questionsAnswered >= 15) { // Advanced level completed
+                        calculatedStatus = experience >= 300 ? 'passed' : 'failed';
+                    } else if (questionsAnswered >= 10) { // Intermediate level completed
+                        calculatedStatus = experience >= 150 ? 'passed' : 'failed';
+                    } else if (questionsAnswered >= 5) { // Beginner level completed
+                        calculatedStatus = experience >= 50 ? 'passed' : 'failed';
+                    } else if (questionsAnswered > 0) {
+                        calculatedStatus = 'in_progress';
+                    } else {
+                        calculatedStatus = null;
+                    }
 
-                    // Set failed and completed based on both progress and quiz result status
+                    // Determine the final status - prefer the stored status, fallback to calculated
+                    const finalStatus = progress.status || quizResult?.status || calculatedStatus;
+                    console.log(`Final status for ${quizId}:`, { finalStatus, experience, questionsAnswered });
+
+                    // Check if the quiz should be marked as failed based on experience thresholds
+                    const hasFailed = finalStatus === 'failed' || 
+                        (questionsAnswered >= 15 && experience < 300) ||
+                        (questionsAnswered >= 10 && experience < 150) ||
+                        (questionsAnswered >= 5 && experience < 50);
+
+                    console.log(`Quiz ${quizId} failed status:`, { finalStatus, experience, questionsAnswered, hasFailed });
+
                     const result = {
                         quizName: quizId,
-                        score: score,
+                        score: quizResult?.score || 0,
                         questionsAnswered: questionsAnswered,
                         failed: hasFailed,
-                        completed: status === 'passed' || quizResult?.status === 'passed',
-                        experience: progress.experience || 0,
-                        status: status || quizResult?.status,
+                        completed: finalStatus === 'passed',
+                        experience: experience,
+                        status: finalStatus,
                         questionHistory: progress.questionHistory || []
                     };
 
