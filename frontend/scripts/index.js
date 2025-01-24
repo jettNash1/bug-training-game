@@ -33,27 +33,61 @@ class IndexPage {
     async loadUserProgress() {
         try {
             const username = localStorage.getItem('username');
-            if (!username) {
-                console.error('No username found in localStorage');
-                return;
-            }
+            if (!username) return;
 
-            const response = await fetch(`/api/users/${username}/quiz-results`);
-            if (!response.ok) {
-                throw new Error('Failed to fetch quiz results');
-            }
+            // Batch all quiz progress requests
+            const progressPromises = Array.from(this.quizItems).map(async item => {
+                const quizId = item.dataset.quiz;
+                try {
+                    // Get the saved progress
+                    const savedProgress = await this.apiService.getQuizProgress(quizId);
+                    const progress = savedProgress?.data;
 
-            const data = await response.json();
-            this.quizScores = data.map(quiz => ({
-                quizName: quiz.quizName,
-                score: quiz.score,
-                questionsAnswered: quiz.questionHistory ? quiz.questionHistory.length : 0,
-                status: quiz.status || 'in_progress'
-            }));
+                    if (!progress) {
+                        return { 
+                            quizName: quizId, 
+                            score: 0, 
+                            questionsAnswered: 0, 
+                            failed: false, 
+                            completed: false,
+                            experience: 0
+                        };
+                    }
 
-            this.updateQuizProgress();
+                    // Check if quiz is failed (didn't meet XP requirements)
+                    const hasFailed = progress.status === 'failed';
+                    
+                    // Calculate actual progress regardless of status
+                    const questionsAnswered = progress.questionHistory?.length || 0;
+                    const score = Math.round((questionsAnswered / 15) * 100);
+
+                    return {
+                        quizName: quizId,
+                        score: score,
+                        questionsAnswered: questionsAnswered,
+                        failed: hasFailed,
+                        completed: progress.status === 'completed',
+                        experience: progress.experience || 0
+                    };
+                } catch (error) {
+                    console.error(`Error loading progress for quiz ${quizId}:`, error);
+                    return { 
+                        quizName: quizId, 
+                        score: 0, 
+                        questionsAnswered: 0, 
+                        failed: false, 
+                        completed: false,
+                        experience: 0
+                    };
+                }
+            });
+
+            // Wait for all progress data to load
+            this.quizScores = await Promise.all(progressPromises);
+            console.log('Loaded quiz scores:', this.quizScores); // Debug log
         } catch (error) {
             console.error('Error loading user progress:', error);
+            this.quizScores = [];
         }
     }
 
@@ -69,7 +103,7 @@ class IndexPage {
             if (!quizScore) return;
 
             // Update the quiz item appearance based on its state
-            if (quizScore.status === 'failed') {
+            if (quizScore.failed) {
                 // Failed quiz state
                 progressElement.textContent = 'Failed';
                 progressElement.style.display = 'block';
@@ -79,26 +113,28 @@ class IndexPage {
                 item.style.pointerEvents = 'none';
                 item.style.opacity = '0.7';
                 item.setAttribute('aria-disabled', 'true');
-            } else if (quizScore.status === 'passed') {
+                // Keep the progress data
+                item.setAttribute('data-progress', quizScore.score);
+            } else if (quizScore.completed) {
                 // Completed quiz state
                 progressElement.textContent = 'Passed';
                 progressElement.style.display = 'block';
                 progressElement.style.background = '#2ecc71';
                 progressElement.style.color = 'white';
+                item.setAttribute('data-progress', quizScore.score);
             } else if (quizScore.questionsAnswered > 0) {
                 // In progress state
                 progressElement.textContent = `${quizScore.questionsAnswered}/15`;
                 progressElement.style.display = 'block';
                 progressElement.style.background = '#f1c40f';
                 progressElement.style.color = 'black';
+                item.setAttribute('data-progress', quizScore.score);
             } else {
                 // Not started state
                 progressElement.textContent = '';
                 progressElement.style.display = 'none';
+                item.setAttribute('data-progress', '0');
             }
-
-            // Update the data attribute
-            item.setAttribute('data-progress', quizScore.score);
         });
     }
 

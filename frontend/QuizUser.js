@@ -144,9 +144,6 @@ export class QuizUser {
     }
 
     async saveQuizResult(quizName, score, experience = 0, tools = [], questionHistory = [], questionsAnswered = null) {
-        // Determine the status based on score and experience
-        const status = score < 70 ? 'failed' : 'passed';
-        
         const quizData = {
             quizName,
             score: Math.round(score),
@@ -154,8 +151,7 @@ export class QuizUser {
             tools: tools || [],
             questionHistory: questionHistory || [],
             questionsAnswered: questionsAnswered !== null ? questionsAnswered : (questionHistory ? questionHistory.length : 0),
-            completedAt: new Date().toISOString(),
-            status: status // Include the status
+            completedAt: new Date().toISOString()
         };
 
         try {
@@ -176,15 +172,14 @@ export class QuizUser {
             if (data.success) {
                 this.quizResults = data.data;
                 
-                // Also update the quiz progress with the same status
+                // Also update the quiz progress
                 const progressData = {
                     experience: quizData.experience,
                     tools: quizData.tools,
                     questionHistory: quizData.questionHistory,
                     questionsAnswered: quizData.questionsAnswered,
-                    currentScenario: quizData.questionsAnswered % 5,
-                    lastUpdated: quizData.completedAt,
-                    status: status // Include the same status in progress data
+                    currentScenario: quizData.questionsAnswered % 5, // Keep track of position within current level
+                    lastUpdated: quizData.completedAt
                 };
                 
                 await this.api.saveQuizProgress(quizName, progressData);
@@ -265,7 +260,7 @@ export class QuizUser {
         }
     }
 
-    async updateQuizScore(quizName, result) {
+    async updateQuizScore(quizName, score, experience = 0, tools = [], questionHistory = [], questionsAnswered = null) {
         try {
             if (!this.api) {
                 throw new Error('API service not initialized');
@@ -277,12 +272,11 @@ export class QuizUser {
             // Create the quiz data with all necessary fields
             const quizData = {
                 quizName,
-                score: Math.round(result.score),
-                status: result.status,
-                experience: Math.round(result.experience),
-                tools: result.tools || [],
-                questionHistory: result.questionHistory || [],
-                questionsAnswered: result.questionsAnswered,
+                score: Math.round(score),
+                experience: Math.round(experience || score),
+                tools: tools || [],
+                questionHistory: questionHistory || [],
+                questionsAnswered: questionsAnswered !== null ? questionsAnswered : (questionHistory ? questionHistory.length : 0),
                 completedAt: new Date().toISOString()
             };
 
@@ -310,8 +304,7 @@ export class QuizUser {
                     questionHistory: quizData.questionHistory,
                     questionsAnswered: quizData.questionsAnswered,
                     currentScenario: quizData.questionsAnswered % 5, // Keep track of position within current level
-                    lastUpdated: quizData.completedAt,
-                    status: quizData.status // Include the status in progress data
+                    lastUpdated: quizData.completedAt
                 };
                 
                 await this.api.saveQuizProgress(quizName, progressData);

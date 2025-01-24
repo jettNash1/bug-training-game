@@ -297,8 +297,7 @@ router.post('/quiz-progress', auth, async (req, res) => {
             currentScenario: progress.currentScenario !== undefined ? 
                            parseInt(progress.currentScenario, 10) : 
                            (parseInt(progress.questionsAnswered || progress.questionHistory?.length || 0, 10) % 5),
-            lastUpdated: lastUpdated.toISOString(), // Store as ISO string for consistency
-            status: progress.status || 'in_progress' // Add status field
+            lastUpdated: lastUpdated.toISOString() // Store as ISO string for consistency
         };
 
         // Update quiz progress
@@ -358,16 +357,14 @@ router.get('/quiz-progress/:quizName', auth, async (req, res) => {
             questionHistory: Array.isArray(progress.questionHistory) ? progress.questionHistory : [],
             questionsAnswered: parseInt(progress.questionsAnswered || progress.questionHistory?.length || 0, 10),
             currentScenario: parseInt(progress.currentScenario || 0, 10),
-            lastUpdated: progress.lastUpdated || new Date().toISOString(),
-            status: progress.status || 'in_progress'
+            lastUpdated: progress.lastUpdated || new Date().toISOString()
         } : {
             experience: 0,
             tools: [],
             questionHistory: [],
             questionsAnswered: 0,
             currentScenario: 0,
-            lastUpdated: new Date().toISOString(),
-            status: 'not_started'
+            lastUpdated: new Date().toISOString()
         };
 
         res.json({ success: true, data: responseData });
