@@ -553,13 +553,15 @@ export class CommunicationQuiz extends BaseQuiz {
         }
 
         const progress = {
-            experience: this.player.experience,
-            tools: this.player.tools,
-            currentScenario: this.player.currentScenario,
-            questionHistory: this.player.questionHistory,
-            lastUpdated: new Date().toISOString(),
-            questionsAnswered: this.player.questionHistory.length,
-            status: status
+            data: {
+                experience: this.player.experience,
+                tools: this.player.tools,
+                currentScenario: this.player.currentScenario,
+                questionHistory: this.player.questionHistory,
+                lastUpdated: new Date().toISOString(),
+                questionsAnswered: this.player.questionHistory.length,
+                status: status
+            }
         };
 
         try {
@@ -571,10 +573,10 @@ export class CommunicationQuiz extends BaseQuiz {
             
             // Use user-specific key for localStorage
             const storageKey = `quiz_progress_${username}_${this.quizName}`;
-            localStorage.setItem(storageKey, JSON.stringify({ progress }));
+            localStorage.setItem(storageKey, JSON.stringify(progress));
             
-            await this.apiService.saveQuizProgress(this.quizName, progress);
-            console.log('Progress saved successfully:', progress);
+            console.log('Saving progress with status:', status);
+            await this.apiService.saveQuizProgress(this.quizName, progress.data);
         } catch (error) {
             console.error('Failed to save progress:', error);
         }
@@ -593,16 +595,17 @@ export class CommunicationQuiz extends BaseQuiz {
             const savedProgress = await this.apiService.getQuizProgress(this.quizName);
             let progress = null;
             
-            if (savedProgress && savedProgress.data) {
-                progress = savedProgress.data;
+            if (savedProgress && savedProgress.data && savedProgress.data.data) {
+                // Access the nested data structure from the API
+                progress = savedProgress.data.data;
                 console.log('Loaded progress from API:', progress);
             } else {
                 // Try loading from localStorage
                 const localData = localStorage.getItem(storageKey);
                 if (localData) {
                     const parsed = JSON.parse(localData);
-                    if (parsed.progress) {
-                        progress = parsed.progress;
+                    if (parsed.data) {
+                        progress = parsed.data;
                         console.log('Loaded progress from localStorage:', progress);
                     }
                 }
@@ -614,6 +617,12 @@ export class CommunicationQuiz extends BaseQuiz {
                 this.player.tools = progress.tools || [];
                 this.player.questionHistory = progress.questionHistory || [];
                 this.player.currentScenario = progress.currentScenario || 0;
+
+                console.log('Setting quiz state from progress:', {
+                    status: progress.status,
+                    experience: progress.experience,
+                    questionsAnswered: progress.questionsAnswered
+                });
 
                 // Check quiz status and show appropriate screen
                 if (progress.status === 'failed') {
@@ -1161,7 +1170,7 @@ export class CommunicationQuiz extends BaseQuiz {
         return recommendations[area] || 'Continue practicing general communication skills.';
     }
 
-    endGame(failed = false) {
+    async endGame(failed = false) {
         this.gameScreen.classList.add('hidden');
         this.outcomeScreen.classList.add('hidden');
         this.endScreen.classList.remove('hidden');
@@ -1186,7 +1195,7 @@ export class CommunicationQuiz extends BaseQuiz {
                     lastActive: new Date().toISOString()
                 };
 
-                // Save both to QuizUser and directly via API
+                // Save to QuizUser
                 user.updateQuizScore(
                     this.quizName,
                     result.score,
@@ -1197,10 +1206,18 @@ export class CommunicationQuiz extends BaseQuiz {
                     status
                 );
 
-                // Also save directly via API to ensure status is updated
-                this.apiService.saveQuizProgress(this.quizName, result);
-                
-                console.log('Final quiz score and status saved:', result);
+                // Save to API with proper structure
+                const apiProgress = {
+                    data: {
+                        ...result,
+                        tools: this.player.tools,
+                        currentScenario: this.player.currentScenario
+                    }
+                };
+
+                // Save directly via API to ensure status is updated
+                console.log('Saving final progress to API:', apiProgress);
+                await this.apiService.saveQuizProgress(this.quizName, apiProgress.data);
             } catch (error) {
                 console.error('Error saving final quiz score:', error);
             }
