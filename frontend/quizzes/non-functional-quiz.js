@@ -1,6 +1,6 @@
 import { APIService } from '../api-service.js';
 import { BaseQuiz } from '../quiz-helper.js';
-import { QuizUser } from '../quiz-user.js';
+import { QuizUser } from '../QuizUser.js';
 
 class NonFunctionalQuiz extends BaseQuiz {
     constructor() {
