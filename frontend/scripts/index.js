@@ -105,34 +105,31 @@ class IndexPage {
             // Update the quiz item appearance based on its state
             if (quizScore.failed) {
                 // Failed quiz state
+                item.classList.add('failed');
                 progressElement.textContent = 'Failed';
-                progressElement.style.display = 'block';
-                progressElement.style.background = '#e74c3c';
-                progressElement.style.color = 'white';
+                progressElement.classList.add('failed');
                 // Prevent retrying failed quizzes
                 item.style.pointerEvents = 'none';
-                item.style.opacity = '0.7';
                 item.setAttribute('aria-disabled', 'true');
                 // Keep the progress data
                 item.setAttribute('data-progress', quizScore.score);
             } else if (quizScore.completed) {
                 // Completed quiz state
+                item.classList.add('completed');
                 progressElement.textContent = 'Passed';
-                progressElement.style.display = 'block';
-                progressElement.style.background = '#2ecc71';
-                progressElement.style.color = 'white';
-                item.setAttribute('data-progress', quizScore.score);
+                progressElement.classList.add('completed');
+                item.setAttribute('data-progress', '100');
             } else if (quizScore.questionsAnswered > 0) {
                 // In progress state
+                item.classList.add('in-progress');
                 progressElement.textContent = `${quizScore.questionsAnswered}/15`;
-                progressElement.style.display = 'block';
-                progressElement.style.background = '#f1c40f';
-                progressElement.style.color = 'black';
+                progressElement.classList.add('in-progress');
                 item.setAttribute('data-progress', quizScore.score);
             } else {
                 // Not started state
+                item.classList.remove('failed', 'completed', 'in-progress');
                 progressElement.textContent = '';
-                progressElement.style.display = 'none';
+                progressElement.classList.remove('failed', 'completed', 'in-progress');
                 item.setAttribute('data-progress', '0');
             }
         });

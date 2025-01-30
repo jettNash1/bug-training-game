@@ -170,14 +170,41 @@ body {
     display: block;
 }
 
-.quiz-item:not([data-progress="0"]):not([data-progress="100"]) {
+/* Quiz item states */
+.quiz-item.completed {
+    background: linear-gradient(to right, rgba(46, 204, 113, 0.1), rgba(46, 204, 113, 0.2));
+}
+
+.quiz-item.failed {
+    background: linear-gradient(to right, rgba(231, 76, 60, 0.1), rgba(231, 76, 60, 0.2));
+    opacity: 0.7;
+}
+
+.quiz-item.in-progress {
     background: linear-gradient(to right, rgba(241, 196, 15, 0.1), rgba(241, 196, 15, 0.2));
 }
 
-.quiz-item:not([data-progress="0"]):not([data-progress="100"]) .quiz-completion {
+/* Quiz completion states */
+.quiz-completion {
+    display: none;
+}
+
+.quiz-completion.completed {
+    display: block;
+    background: var(--success-color);
+    color: white;
+}
+
+.quiz-completion.failed {
+    display: block;
+    background: var(--danger-color);
+    color: white;
+}
+
+.quiz-completion.in-progress {
+    display: block;
     background: var(--warning-color);
     color: var(--text-primary);
-    display: block;
 }
 
 .category-progress {
