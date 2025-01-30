@@ -94,33 +94,36 @@ class IndexPage {
             if (!quizScore) return;
 
             // First remove all existing state classes
-            item.classList.remove('failed', 'completed', 'in-progress');
-            progressElement.classList.remove('failed', 'completed', 'in-progress');
-
-            // Update based on the quiz status
-            switch (quizScore.status) {
-                case 'failed':
-                    item.classList.add('failed');
-                    progressElement.textContent = 'Failed';
-                    progressElement.classList.add('failed');
-                    item.style.pointerEvents = 'none';
-                    item.setAttribute('aria-disabled', 'true');
-                    break;
-                case 'completed':
-                    item.classList.add('completed');
-                    progressElement.textContent = `${quizScore.questionsAnswered}/15`;
-                    progressElement.classList.add('completed');
-                    break;
-                case 'in-progress':
-                default:
-                    item.classList.add('in-progress');
-                    progressElement.textContent = `${quizScore.questionsAnswered}/15`;
-                    progressElement.classList.add('in-progress');
-                    break;
-            }
+            item.classList.remove('failed', 'completed', 'in-progress', 'not-started');
+            progressElement.classList.remove('failed', 'completed', 'in-progress', 'not-started');
 
             // Set the progress data attribute
             item.setAttribute('data-progress', quizScore.score);
+
+            // Handle the four different states
+            if (quizScore.questionsAnswered === 0) {
+                // No questions answered - white background
+                item.classList.add('not-started');
+                progressElement.classList.add('not-started');
+                progressElement.textContent = '0/15';
+            } else if (quizScore.status === 'failed') {
+                // Failed state - red background
+                item.classList.add('failed');
+                progressElement.classList.add('failed');
+                progressElement.textContent = `${quizScore.questionsAnswered}/15`;
+                item.style.pointerEvents = 'none';
+                item.setAttribute('aria-disabled', 'true');
+            } else if (quizScore.status === 'completed' && quizScore.questionsAnswered === 15) {
+                // Completed state - green background
+                item.classList.add('completed');
+                progressElement.classList.add('completed');
+                progressElement.textContent = '15/15';
+            } else if (quizScore.questionsAnswered > 0) {
+                // In progress - pale yellow background
+                item.classList.add('in-progress');
+                progressElement.classList.add('in-progress');
+                progressElement.textContent = `${quizScore.questionsAnswered}/15`;
+            }
         });
     }
 
