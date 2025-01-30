@@ -1198,6 +1198,32 @@ export class CommunicationQuiz extends BaseQuiz {
             }
         }
 
+        // Generate question review list
+        const reviewList = document.getElementById('review-list');
+        if (reviewList) {
+            reviewList.innerHTML = ''; // Clear existing content
+            this.player.questionHistory.forEach((record, index) => {
+                const reviewItem = document.createElement('div');
+                reviewItem.className = 'review-item';
+                
+                const maxXP = Math.max(...record.scenario.options.map(o => o.experience));
+                const earnedXP = record.selectedAnswer.experience;
+                const isCorrect = earnedXP === maxXP;
+                
+                reviewItem.classList.add(isCorrect ? 'correct' : 'incorrect');
+                
+                reviewItem.innerHTML = `
+                    <h4>Question ${index + 1}</h4>
+                    <p class="scenario">${record.scenario.description}</p>
+                    <p class="answer"><strong>Your Answer:</strong> ${record.selectedAnswer.text}</p>
+                    <p class="outcome"><strong>Outcome:</strong> ${record.selectedAnswer.outcome}</p>
+                    <p class="xp"><strong>Experience Earned:</strong> ${earnedXP}/${maxXP}</p>
+                `;
+                
+                reviewList.appendChild(reviewItem);
+            });
+        }
+
         this.generateRecommendations();
     }
 }
