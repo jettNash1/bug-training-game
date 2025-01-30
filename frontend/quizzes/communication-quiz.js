@@ -532,18 +532,34 @@ export class CommunicationQuiz extends BaseQuiz {
     }
 
     async saveProgress() {
+        // First determine the status based on clear conditions
+        let status = 'in-progress';
+        
+        // Check for completion (all 15 questions answered)
+        if (this.player.questionHistory.length >= 15) {
+            // Check if they met the advanced XP requirement
+            if (this.player.experience >= this.levelThresholds.advanced.minXP) {
+                status = 'completed';
+            } else {
+                status = 'failed';
+            }
+        } 
+        // Check for early failure conditions
+        else if (
+            (this.player.questionHistory.length >= 10 && this.player.experience < this.levelThresholds.intermediate.minXP) ||
+            (this.player.questionHistory.length >= 5 && this.player.experience < this.levelThresholds.basic.minXP)
+        ) {
+            status = 'failed';
+        }
+
         const progress = {
             experience: this.player.experience,
             tools: this.player.tools,
             currentScenario: this.player.currentScenario,
             questionHistory: this.player.questionHistory,
             lastUpdated: new Date().toISOString(),
-            isCompleted: this.player.questionHistory.length >= 15,
-            status: this.player.questionHistory.length >= 5 && (
-                (this.player.questionHistory.length >= 15 && this.player.experience < this.levelThresholds.advanced.minXP) ||
-                (this.player.questionHistory.length >= 10 && this.player.experience < this.levelThresholds.intermediate.minXP) ||
-                (this.player.questionHistory.length >= 5 && this.player.experience < this.levelThresholds.basic.minXP)
-            ) ? 'failed' : (this.player.questionHistory.length >= 15 ? 'completed' : 'in-progress')
+            questionsAnswered: this.player.questionHistory.length,
+            status: status
         };
 
         try {
