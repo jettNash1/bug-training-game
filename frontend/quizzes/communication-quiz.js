@@ -538,12 +538,12 @@ export class CommunicationQuiz extends BaseQuiz {
             currentScenario: this.player.currentScenario,
             questionHistory: this.player.questionHistory,
             lastUpdated: new Date().toISOString(),
-            isCompleted: this.player.questionHistory.length >= 15, // Add completion state
-            isFailed: this.player.questionHistory.length >= 5 && (
+            isCompleted: this.player.questionHistory.length >= 15,
+            status: this.player.questionHistory.length >= 5 && (
                 (this.player.questionHistory.length >= 15 && this.player.experience < this.levelThresholds.advanced.minXP) ||
                 (this.player.questionHistory.length >= 10 && this.player.experience < this.levelThresholds.intermediate.minXP) ||
                 (this.player.questionHistory.length >= 5 && this.player.experience < this.levelThresholds.basic.minXP)
-            )
+            ) ? 'failed' : (this.player.questionHistory.length >= 15 ? 'completed' : 'in-progress')
         };
 
         try {
@@ -561,7 +561,6 @@ export class CommunicationQuiz extends BaseQuiz {
             console.log('Progress saved successfully:', progress);
         } catch (error) {
             console.error('Failed to save progress:', error);
-            // Continue without saving - don't interrupt the user experience
         }
     }
 
@@ -1174,7 +1173,7 @@ export class CommunicationQuiz extends BaseQuiz {
                 const user = new QuizUser(username);
                 const result = {
                     score: scorePercentage,
-                    status: failed ? 'failed' : 'passed',
+                    status: failed ? 'failed' : 'completed',
                     experience: this.player.experience,
                     questionHistory: this.player.questionHistory,
                     questionsAnswered: this.player.questionHistory.length,

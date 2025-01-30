@@ -48,25 +48,17 @@ class IndexPage {
                             quizName: quizId, 
                             score: 0, 
                             questionsAnswered: 0, 
-                            failed: false, 
-                            completed: false,
+                            status: 'in-progress',
                             experience: 0
                         };
                     }
 
-                    // Check if quiz is failed (didn't meet XP requirements)
-                    const hasFailed = progress.status === 'failed';
-                    
-                    // Calculate actual progress regardless of status
-                    const questionsAnswered = progress.questionHistory?.length || 0;
-                    const score = Math.round((questionsAnswered / 15) * 100);
-
+                    // Use the status directly from the saved progress
                     return {
                         quizName: quizId,
-                        score: score,
-                        questionsAnswered: questionsAnswered,
-                        failed: hasFailed,
-                        completed: progress.status === 'completed',
+                        score: progress.score || 0,
+                        questionsAnswered: progress.questionsAnswered || 0,
+                        status: progress.status || 'in-progress',
                         experience: progress.experience || 0
                     };
                 } catch (error) {
@@ -75,8 +67,7 @@ class IndexPage {
                         quizName: quizId, 
                         score: 0, 
                         questionsAnswered: 0, 
-                        failed: false, 
-                        completed: false,
+                        status: 'in-progress',
                         experience: 0
                     };
                 }
@@ -106,34 +97,30 @@ class IndexPage {
             item.classList.remove('failed', 'completed', 'in-progress');
             progressElement.classList.remove('failed', 'completed', 'in-progress');
 
-            // Update the quiz item appearance based on its state
-            if (quizScore.failed || (quizScore.status === 'failed')) {
-                // Failed quiz state
-                item.classList.add('failed');
-                progressElement.textContent = 'Failed';
-                progressElement.classList.add('failed');
-                // Prevent retrying failed quizzes
-                item.style.pointerEvents = 'none';
-                item.setAttribute('aria-disabled', 'true');
-                // Keep the progress data
-                item.setAttribute('data-progress', quizScore.score);
-            } else if (quizScore.completed || quizScore.score === 100) {
-                // Completed quiz state
-                item.classList.add('completed');
-                progressElement.textContent = `${quizScore.questionsAnswered}/15`;
-                progressElement.classList.add('completed');
-                item.setAttribute('data-progress', '100');
-            } else if (quizScore.questionsAnswered > 0) {
-                // In progress state
-                item.classList.add('in-progress');
-                progressElement.textContent = `${quizScore.questionsAnswered}/15`;
-                progressElement.classList.add('in-progress');
-                item.setAttribute('data-progress', quizScore.score);
-            } else {
-                // Not started state
-                item.setAttribute('data-progress', '0');
-                progressElement.textContent = '';
+            // Update based on the quiz status
+            switch (quizScore.status) {
+                case 'failed':
+                    item.classList.add('failed');
+                    progressElement.textContent = 'Failed';
+                    progressElement.classList.add('failed');
+                    item.style.pointerEvents = 'none';
+                    item.setAttribute('aria-disabled', 'true');
+                    break;
+                case 'completed':
+                    item.classList.add('completed');
+                    progressElement.textContent = `${quizScore.questionsAnswered}/15`;
+                    progressElement.classList.add('completed');
+                    break;
+                case 'in-progress':
+                default:
+                    item.classList.add('in-progress');
+                    progressElement.textContent = `${quizScore.questionsAnswered}/15`;
+                    progressElement.classList.add('in-progress');
+                    break;
             }
+
+            // Set the progress data attribute
+            item.setAttribute('data-progress', quizScore.score);
         });
     }
 
