@@ -2,7 +2,7 @@ import { APIService } from '../api-service.js';
 import { BaseQuiz } from '../quiz-helper.js';
 import { QuizUser } from '../QuizUser.js';
 
-class BuildVerificationQuiz extends BaseQuiz {
+export class BuildVerificationQuiz extends BaseQuiz {
     constructor() {
         const config = {
             maxXP: 300,
