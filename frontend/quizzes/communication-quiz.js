@@ -609,35 +609,22 @@ export class CommunicationQuiz extends BaseQuiz {
             }
 
             if (progress) {
-                // Check if quiz was failed
-                if (progress.isFailed) {
-                    // Load the failed state
-                    this.player.experience = progress.experience || 0;
-                    this.player.tools = progress.tools || [];
-                    this.player.questionHistory = progress.questionHistory || [];
-                    this.player.currentScenario = progress.currentScenario || 0;
-                    this.endGame(true); // Show failed state
-                    return true;
-                }
-                
-                // Check if quiz was completed
-                if (progress.isCompleted) {
-                    // Show end screen with completion state
-                    this.player.experience = progress.experience || 0;
-                    this.player.tools = progress.tools || [];
-                    this.player.questionHistory = progress.questionHistory || [];
-                    this.player.currentScenario = progress.currentScenario || 0;
-                    this.endGame(false); // Show completion state
-                    return true;
-                }
-
-                // Set the player state from progress for continuing
+                // Set the player state from progress
                 this.player.experience = progress.experience || 0;
                 this.player.tools = progress.tools || [];
                 this.player.questionHistory = progress.questionHistory || [];
                 this.player.currentScenario = progress.currentScenario || 0;
 
-                // Update UI
+                // Check quiz status and show appropriate screen
+                if (progress.status === 'failed') {
+                    this.endGame(true); // Show failed state
+                    return true;
+                } else if (progress.status === 'completed') {
+                    this.endGame(false); // Show completion state
+                    return true;
+                }
+
+                // Update UI for in-progress state
                 this.updateProgress();
 
                 // Update the questions progress display
