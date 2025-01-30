@@ -1199,7 +1199,7 @@ export class CommunicationQuiz extends BaseQuiz {
         }
 
         // Generate question review list
-        const reviewList = document.getElementById('review-list');
+        const reviewList = document.getElementById('question-review');
         if (reviewList) {
             reviewList.innerHTML = ''; // Clear existing content
             this.player.questionHistory.forEach((record, index) => {
