@@ -537,7 +537,8 @@ export class BuildVerificationQuiz extends BaseQuiz {
             tools: this.player.tools,
             currentScenario: this.player.currentScenario,
             questionHistory: this.player.questionHistory,
-            lastUpdated: new Date().toISOString()
+            lastUpdated: new Date().toISOString(),
+            isCompleted: this.player.questionHistory.length >= 15 // Add completion state
         };
 
         try {
@@ -588,12 +589,21 @@ export class BuildVerificationQuiz extends BaseQuiz {
             }
 
             if (progress) {
+                // Check if quiz was completed
+                if (progress.isCompleted) {
+                    // Show end screen with completion state
+                    this.player.experience = progress.experience || 0;
+                    this.player.tools = progress.tools || [];
+                    this.player.questionHistory = progress.questionHistory || [];
+                    this.player.currentScenario = progress.currentScenario || 0;
+                    this.endGame(false); // Show completion state
+                    return true;
+                }
+
                 // Set the player state from progress
                 this.player.experience = progress.experience || 0;
                 this.player.tools = progress.tools || [];
                 this.player.questionHistory = progress.questionHistory || [];
-                
-                // Set the current scenario to the actual value from progress
                 this.player.currentScenario = progress.currentScenario || 0;
 
                 // Update UI
@@ -861,9 +871,12 @@ export class BuildVerificationQuiz extends BaseQuiz {
 
             // Update player state
             this.player.experience = Math.max(0, Math.min(this.maxXP, this.player.experience + selectedAnswer.experience));
+            
+            // Add status to question history
             this.player.questionHistory.push({
                 scenario: scenario,
                 selectedAnswer: selectedAnswer,
+                status: selectedAnswer.experience > 0 ? 'passed' : 'failed',
                 maxPossibleXP: Math.max(...scenario.options.map(o => o.experience))
             });
 
@@ -1154,7 +1167,15 @@ export class BuildVerificationQuiz extends BaseQuiz {
                     questionsAnswered: this.player.questionHistory.length,
                     lastActive: new Date().toISOString()
                 };
-                user.updateQuizScore(this.quizName, result);
+                user.updateQuizScore(
+                    this.quizName,
+                    result.score,
+                    result.experience,
+                    this.player.tools,
+                    result.questionHistory,
+                    result.questionsAnswered,
+                    result.status
+                );
                 console.log('Final quiz score saved:', result);
             } catch (error) {
                 console.error('Error saving final quiz score:', error);
@@ -1172,34 +1193,39 @@ export class BuildVerificationQuiz extends BaseQuiz {
                 restartBtn.style.display = 'none';
             }
         } else {
-            const threshold = this.performanceThresholds.find(t => finalScore >= t.threshold);
-            performanceSummary.textContent = threshold.message;
+            const threshold = this.performanceThresholds.find(t => t.threshold <= finalScore);
+            if (threshold) {
+                performanceSummary.textContent = threshold.message;
+            } else {
+                performanceSummary.textContent = 'Quiz completed successfully!';
+            }
         }
 
-        // Display question review
+        // Generate question review list
         const reviewList = document.getElementById('question-review');
-        reviewList.innerHTML = '';
-        
-        this.player.questionHistory.forEach((record, index) => {
-            const reviewItem = document.createElement('div');
-            reviewItem.className = 'review-item';
-            
-            const maxXP = record.maxPossibleXP;
-            const earnedXP = record.selectedAnswer.experience;
-            const isCorrect = earnedXP === maxXP;
-            
-            reviewItem.classList.add(isCorrect ? 'correct' : 'incorrect');
-            
-            reviewItem.innerHTML = `
-                <h4>Question ${index + 1}</h4>
-                <p>${record.scenario.description}</p>
-                <p><strong>Your Answer:</strong> ${record.selectedAnswer.text}</p>
-                <p><strong>Outcome:</strong> ${record.selectedAnswer.outcome}</p>
-                <p><strong>Experience Earned:</strong> ${earnedXP}/${maxXP}</p>
-            `;
-            
-            reviewList.appendChild(reviewItem);
-        });
+        if (reviewList) {
+            reviewList.innerHTML = ''; // Clear existing content
+            this.player.questionHistory.forEach((record, index) => {
+                const reviewItem = document.createElement('div');
+                reviewItem.className = 'review-item';
+                
+                const maxXP = Math.max(...record.scenario.options.map(o => o.experience));
+                const earnedXP = record.selectedAnswer.experience;
+                const isCorrect = earnedXP === maxXP;
+                
+                reviewItem.classList.add(isCorrect ? 'correct' : 'incorrect');
+                
+                reviewItem.innerHTML = `
+                    <h4>Question ${index + 1}</h4>
+                    <p class="scenario">${record.scenario.description}</p>
+                    <p class="answer"><strong>Your Answer:</strong> ${record.selectedAnswer.text}</p>
+                    <p class="outcome"><strong>Outcome:</strong> ${record.selectedAnswer.outcome}</p>
+                    <p class="xp"><strong>Experience Earned:</strong> ${earnedXP}/${maxXP}</p>
+                `;
+                
+                reviewList.appendChild(reviewItem);
+            });
+        }
 
         this.generateRecommendations();
     }
