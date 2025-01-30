@@ -147,29 +147,31 @@ body {
     font-size: 0.85rem;
     font-weight: 500;
     border-radius: 0 12px 0 12px;
-    display: none;
 }
 
-/* State-specific styles */
+/* Quiz states */
+.quiz-item[data-progress="100"],
 .quiz-item.completed {
-    background: linear-gradient(to right, rgba(46, 204, 113, 0.1), rgba(46, 204, 113, 0.2));
+    background: rgba(46, 204, 113, 0.15) !important;
     border-color: var(--success-color);
 }
 
 .quiz-item.failed {
-    background: linear-gradient(to right, rgba(231, 76, 60, 0.1), rgba(231, 76, 60, 0.2));
+    background: rgba(231, 76, 60, 0.15) !important;
     border-color: var(--danger-color);
     opacity: 0.7;
     pointer-events: none;
 }
 
+.quiz-item[data-progress]:not([data-progress="0"]):not([data-progress="100"]),
 .quiz-item.in-progress {
-    background: linear-gradient(to right, rgba(241, 196, 15, 0.1), rgba(241, 196, 15, 0.2));
+    background: rgba(241, 196, 15, 0.15);
     border-color: var(--warning-color);
 }
 
-/* Quiz completion badge styles */
-.quiz-completion.completed {
+/* Quiz completion badge */
+.quiz-completion.completed,
+.quiz-item[data-progress="100"] .quiz-completion {
     display: block;
     background: var(--success-color);
     color: white;
