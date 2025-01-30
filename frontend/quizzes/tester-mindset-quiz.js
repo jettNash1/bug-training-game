@@ -2,7 +2,7 @@ import { APIService } from '../api-service.js';
 import { BaseQuiz } from '../quiz-helper.js';
 import { QuizUser } from '../quiz-user.js';
 
-class TesterMindsetQuiz extends BaseQuiz {
+export class TesterMindsetQuiz extends BaseQuiz {
     constructor() {
         const config = {
             maxXP: 300,
@@ -861,11 +861,14 @@ class TesterMindsetQuiz extends BaseQuiz {
 
             // Update player state
             this.player.experience = Math.max(0, Math.min(this.maxXP, this.player.experience + selectedAnswer.experience));
+                     
+            // Add status to question history
             this.player.questionHistory.push({
                 scenario: scenario,
                 selectedAnswer: selectedAnswer,
+                status: selectedAnswer.experience > 0 ? 'passed' : 'failed',
                 maxPossibleXP: Math.max(...scenario.options.map(o => o.experience))
-            });
+            });;
 
             // Increment current scenario
             this.player.currentScenario++;

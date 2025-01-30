@@ -1154,7 +1154,15 @@ export class CommunicationQuiz extends BaseQuiz {
                     questionsAnswered: this.player.questionHistory.length,
                     lastActive: new Date().toISOString()
                 };
-                user.updateQuizScore(this.quizName, result);
+                user.updateQuizScore(
+                    this.quizName,
+                    result.score,
+                    result.experience,
+                    this.player.tools,
+                    result.questionHistory,
+                    result.questionsAnswered,
+                    result.status
+                );
                 console.log('Final quiz score saved:', result);
             } catch (error) {
                 console.error('Error saving final quiz score:', error);
@@ -1172,15 +1180,8 @@ export class CommunicationQuiz extends BaseQuiz {
                 restartBtn.style.display = 'none';
             }
         } else {
-            const threshold = this.performanceThresholds.find(t => finalScore >= t.threshold);
-            performanceSummary.textContent = threshold.message;
-        }
-
-        // Display question review
-        const reviewList = document.getElementById('question-review');
-        reviewList.innerHTML = '';
-        
-        this.player.questionHistory.forEach((record, index) => {
+            const threshold = this.perf                user.updateQuizScore(this.quizName, result);
+ex) => {
             const reviewItem = document.createElement('div');
             reviewItem.className = 'review-item';
             
