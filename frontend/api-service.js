@@ -293,7 +293,9 @@ export class APIService {
             if (!response.ok) {
                 throw new Error('Failed to get quiz progress');
             }
-            return await response.json();
+            const data = await response.json();
+            console.log('Quiz progress received from API:', { quizName, data });
+            return data;
         } catch (error) {
             console.error('Failed to get quiz progress:', error);
             return null;
@@ -302,6 +304,7 @@ export class APIService {
 
     async saveQuizProgress(quizName, progress) {
         try {
+            console.log('Saving quiz progress to API:', { quizName, progress });
             const response = await this.fetchWithAuth(`${this.baseUrl}/users/quiz-progress`, {
                 method: 'POST',
                 headers: {
@@ -313,7 +316,9 @@ export class APIService {
             if (!response.ok) {
                 throw new Error('Failed to save quiz progress');
             }
-            return await response.json();
+            const data = await response.json();
+            console.log('Quiz progress saved successfully:', { quizName, data });
+            return data;
         } catch (error) {
             console.error('Failed to save quiz progress:', error);
             return null;

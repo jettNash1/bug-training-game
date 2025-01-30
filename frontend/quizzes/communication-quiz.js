@@ -1174,14 +1174,19 @@ export class CommunicationQuiz extends BaseQuiz {
         if (username) {
             try {
                 const user = new QuizUser(username);
+                const status = failed ? 'failed' : 'completed';
+                console.log('Setting final quiz status:', { status, score: scorePercentage });
+                
                 const result = {
                     score: scorePercentage,
-                    status: failed ? 'failed' : 'completed',
+                    status: status,
                     experience: this.player.experience,
                     questionHistory: this.player.questionHistory,
                     questionsAnswered: this.player.questionHistory.length,
                     lastActive: new Date().toISOString()
                 };
+
+                // Save both to QuizUser and directly via API
                 user.updateQuizScore(
                     this.quizName,
                     result.score,
@@ -1189,9 +1194,13 @@ export class CommunicationQuiz extends BaseQuiz {
                     this.player.tools,
                     result.questionHistory,
                     result.questionsAnswered,
-                    result.status
+                    status
                 );
-                console.log('Final quiz score saved:', result);
+
+                // Also save directly via API to ensure status is updated
+                this.apiService.saveQuizProgress(this.quizName, result);
+                
+                console.log('Final quiz score and status saved:', result);
             } catch (error) {
                 console.error('Error saving final quiz score:', error);
             }
