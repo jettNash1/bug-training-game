@@ -102,8 +102,12 @@ class IndexPage {
             const quizScore = this.quizScores.find(score => score.quizName === quizId);
             if (!quizScore) return;
 
+            // First remove all existing state classes
+            item.classList.remove('failed', 'completed', 'in-progress');
+            progressElement.classList.remove('failed', 'completed', 'in-progress');
+
             // Update the quiz item appearance based on its state
-            if (quizScore.failed) {
+            if (quizScore.failed || (quizScore.status === 'failed')) {
                 // Failed quiz state
                 item.classList.add('failed');
                 progressElement.textContent = 'Failed';
@@ -113,10 +117,10 @@ class IndexPage {
                 item.setAttribute('aria-disabled', 'true');
                 // Keep the progress data
                 item.setAttribute('data-progress', quizScore.score);
-            } else if (quizScore.completed) {
+            } else if (quizScore.completed || quizScore.score === 100) {
                 // Completed quiz state
                 item.classList.add('completed');
-                progressElement.textContent = 'Passed';
+                progressElement.textContent = `${quizScore.questionsAnswered}/15`;
                 progressElement.classList.add('completed');
                 item.setAttribute('data-progress', '100');
             } else if (quizScore.questionsAnswered > 0) {
@@ -127,10 +131,8 @@ class IndexPage {
                 item.setAttribute('data-progress', quizScore.score);
             } else {
                 // Not started state
-                item.classList.remove('failed', 'completed', 'in-progress');
-                progressElement.textContent = '';
-                progressElement.classList.remove('failed', 'completed', 'in-progress');
                 item.setAttribute('data-progress', '0');
+                progressElement.textContent = '';
             }
         });
     }

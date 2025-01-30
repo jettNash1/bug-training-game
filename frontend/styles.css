@@ -141,24 +141,26 @@ body {
 
 .quiz-completion {
     position: absolute;
-    top: 0;
-    right: 0;
-    padding: 0.25rem 0.75rem;
-    font-size: 0.85rem;
-    font-weight: 500;
-    border-radius: 0 12px 0 12px;
+    top: 0.5rem;
+    right: 0.5rem;
+    padding: 0.5rem 1rem;
+    font-size: 0.9rem;
+    font-weight: 600;
+    border-radius: 8px;
+    z-index: 1;
 }
 
 /* Quiz states */
 .quiz-item[data-progress="100"],
 .quiz-item.completed {
-    background: rgba(46, 204, 113, 0.15) !important;
-    border-color: var(--success-color);
+    background: rgba(46, 204, 113, 0.2) !important;
+    border: 2px solid var(--success-color) !important;
 }
 
-.quiz-item.failed {
-    background: rgba(231, 76, 60, 0.15) !important;
-    border-color: var(--danger-color);
+.quiz-item.failed,
+.quiz-item[data-status="failed"] {
+    background: rgba(231, 76, 60, 0.2) !important;
+    border: 2px solid var(--danger-color) !important;
     opacity: 0.7;
     pointer-events: none;
 }
@@ -166,7 +168,7 @@ body {
 .quiz-item[data-progress]:not([data-progress="0"]):not([data-progress="100"]),
 .quiz-item.in-progress {
     background: rgba(241, 196, 15, 0.15);
-    border-color: var(--warning-color);
+    border: 1px solid var(--warning-color);
 }
 
 /* Quiz completion badge */
@@ -174,7 +176,9 @@ body {
 .quiz-item[data-progress="100"] .quiz-completion {
     display: block;
     background: var(--success-color);
-    color: white;
+    color: black;
+    background: rgba(46, 204, 113, 0.3);
+    border: 1px solid var(--success-color);
 }
 
 .quiz-completion.failed {
