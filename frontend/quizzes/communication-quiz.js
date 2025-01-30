@@ -538,7 +538,12 @@ export class CommunicationQuiz extends BaseQuiz {
             currentScenario: this.player.currentScenario,
             questionHistory: this.player.questionHistory,
             lastUpdated: new Date().toISOString(),
-            isCompleted: this.player.questionHistory.length >= 15 // Add completion state
+            isCompleted: this.player.questionHistory.length >= 15, // Add completion state
+            isFailed: this.player.questionHistory.length >= 5 && (
+                (this.player.questionHistory.length >= 15 && this.player.experience < this.levelThresholds.advanced.minXP) ||
+                (this.player.questionHistory.length >= 10 && this.player.experience < this.levelThresholds.intermediate.minXP) ||
+                (this.player.questionHistory.length >= 5 && this.player.experience < this.levelThresholds.basic.minXP)
+            )
         };
 
         try {
@@ -589,6 +594,17 @@ export class CommunicationQuiz extends BaseQuiz {
             }
 
             if (progress) {
+                // Check if quiz was failed
+                if (progress.isFailed) {
+                    // Load the failed state
+                    this.player.experience = progress.experience || 0;
+                    this.player.tools = progress.tools || [];
+                    this.player.questionHistory = progress.questionHistory || [];
+                    this.player.currentScenario = progress.currentScenario || 0;
+                    this.endGame(true); // Show failed state
+                    return true;
+                }
+                
                 // Check if quiz was completed
                 if (progress.isCompleted) {
                     // Show end screen with completion state
@@ -600,7 +616,7 @@ export class CommunicationQuiz extends BaseQuiz {
                     return true;
                 }
 
-                // Set the player state from progress
+                // Set the player state from progress for continuing
                 this.player.experience = progress.experience || 0;
                 this.player.tools = progress.tools || [];
                 this.player.questionHistory = progress.questionHistory || [];
@@ -1183,11 +1199,16 @@ export class CommunicationQuiz extends BaseQuiz {
 
         const performanceSummary = document.getElementById('performance-summary');
         if (failed) {
-            performanceSummary.textContent = 'Quiz failed. You did not meet the minimum XP requirement to progress. Please reset your progress to try again.';
+            performanceSummary.textContent = 'Quiz failed. You did not meet the minimum XP requirement to progress. You cannot retry this quiz.';
             // Hide restart button if failed
             const restartBtn = document.getElementById('restart-btn');
             if (restartBtn) {
                 restartBtn.style.display = 'none';
+            }
+            // Add failed class to quiz container for styling
+            const quizContainer = document.getElementById('quiz-container');
+            if (quizContainer) {
+                quizContainer.classList.add('failed');
             }
         } else {
             const threshold = this.performanceThresholds.find(t => t.threshold <= finalScore);
