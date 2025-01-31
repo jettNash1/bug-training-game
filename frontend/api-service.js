@@ -294,6 +294,21 @@ export class APIService {
                 throw new Error('Failed to get quiz progress');
             }
             const data = await response.json();
+            
+            // If data is missing status, determine it based on the progress
+            if (data.data && !data.data.status) {
+                const progress = data.data;
+                if (progress.questionsAnswered >= 15) {
+                    progress.status = progress.experience >= 300 ? 'completed' : 'failed';
+                } else if (progress.questionsAnswered >= 10 && progress.experience < 150) {
+                    progress.status = 'failed';
+                } else if (progress.questionsAnswered >= 5 && progress.experience < 50) {
+                    progress.status = 'failed';
+                } else if (progress.questionsAnswered > 0) {
+                    progress.status = 'in-progress';
+                }
+            }
+            
             console.log('Quiz progress received from API:', { quizName, data });
             return data;
         } catch (error) {
@@ -304,13 +319,32 @@ export class APIService {
 
     async saveQuizProgress(quizName, progress) {
         try {
+            // Ensure status is set before saving
+            if (!progress.status) {
+                if (progress.questionsAnswered >= 15) {
+                    progress.status = progress.experience >= 300 ? 'completed' : 'failed';
+                } else if (progress.questionsAnswered >= 10 && progress.experience < 150) {
+                    progress.status = 'failed';
+                } else if (progress.questionsAnswered >= 5 && progress.experience < 50) {
+                    progress.status = 'failed';
+                } else if (progress.questionsAnswered > 0) {
+                    progress.status = 'in-progress';
+                }
+            }
+
             console.log('Saving quiz progress to API:', { quizName, progress });
             const response = await this.fetchWithAuth(`${this.baseUrl}/users/quiz-progress`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
                 },
-                body: JSON.stringify({ quizName, progress })
+                body: JSON.stringify({ 
+                    quizName, 
+                    progress: {
+                        ...progress,
+                        status: progress.status // Ensure status is included
+                    }
+                })
             });
 
             if (!response.ok) {
