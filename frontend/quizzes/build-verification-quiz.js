@@ -1228,6 +1228,12 @@ export class BuildVerificationQuiz extends BaseQuiz {
 
         document.getElementById('final-score').textContent = `Final Score: ${finalScore}/${this.maxXP}`;
 
+        // Update the quiz complete header based on status
+        const quizCompleteHeader = document.querySelector('#end-screen h2');
+        if (quizCompleteHeader) {
+            quizCompleteHeader.textContent = failed ? 'Quiz Failed!' : 'Quiz Complete!';
+        }
+
         const performanceSummary = document.getElementById('performance-summary');
         if (failed) {
             performanceSummary.textContent = 'Quiz failed. You did not meet the minimum XP requirement to progress. You cannot retry this quiz.';
