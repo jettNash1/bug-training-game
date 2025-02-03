@@ -136,17 +136,20 @@ class IndexPage {
         document.querySelectorAll('.category-card').forEach(category => {
             const quizItems = category.querySelectorAll('.quiz-item:not(.locked-quiz)');
             const progressBar = category.querySelector('.progress-fill');
-            const progressText = category.querySelector('.category-progress');
+            const progressText = category.querySelector('.progress-text');
             
             if (!quizItems.length || !progressBar || !progressText) return;
 
             const categoryStats = Array.from(quizItems).reduce((stats, item) => {
                 const quizId = item.dataset.quiz;
                 const quizScore = this.quizScores.find(score => score.quizName === quizId);
+                
+                // Count as completed only if status is 'completed'
+                const isCompleted = quizScore && quizScore.status === 'completed';
                 const progress = quizScore ? quizScore.score : 0;
                 
                 return {
-                    completedQuizzes: stats.completedQuizzes + (progress === 100 ? 1 : 0),
+                    completedQuizzes: stats.completedQuizzes + (isCompleted ? 1 : 0),
                     totalProgress: stats.totalProgress + progress
                 };
             }, { completedQuizzes: 0, totalProgress: 0 });
@@ -168,12 +171,15 @@ class IndexPage {
         requestAnimationFrame(() => {
             updates.forEach(({ completedQuizzes, totalQuizzes, categoryPercentage, progressBar, progressText }) => {
                 progressBar.style.width = `${categoryPercentage}%`;
-                progressText.innerHTML = `
-                    <div class="progress-text">Progress: ${completedQuizzes}/${totalQuizzes} Complete</div>
-                    <div class="progress-bar">
-                        <div class="progress-fill" style="width: ${categoryPercentage}%"></div>
-                    </div>
-                `;
+                const progressTextElement = progressText.closest('.category-progress');
+                if (progressTextElement) {
+                    progressTextElement.innerHTML = `
+                        <div class="progress-text">Progress: ${completedQuizzes}/${totalQuizzes} Complete</div>
+                        <div class="progress-bar">
+                            <div class="progress-fill" style="width: ${categoryPercentage}%"></div>
+                        </div>
+                    `;
+                }
             });
         });
     }
