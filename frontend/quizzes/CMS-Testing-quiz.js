@@ -23,7 +23,7 @@ export class CMS_Testing_Quiz extends BaseQuiz {
         
         // Set quiz name
         Object.defineProperty(this, 'quizName', {
-            value: 'CMS-Testing',
+            value: 'cms-testing',
             writable: false,
             configurable: false,
             enumerable: true
