@@ -206,13 +206,18 @@ export class StandardScriptTestingQuiz extends BaseQuiz {
                         experience: -10
                     }
                 ]
-            },
+            }
+        ];
+
+        // Intermediate Scenarios (IDs 6-10, 125 XP total)
+        this.intermediateScenarios = [
             {
                 id: 6,
                 level: 'Intermediate',
                 title: 'Test Case Priority',
                 description: 'Which of the following is a key factor in determining test case priority?',
                 options: [
+
                     {
                         text: 'The alphabetical order of the test case',
                         outcome: 'Alphabetical order is not a factor in priority.',
@@ -346,13 +351,18 @@ export class StandardScriptTestingQuiz extends BaseQuiz {
                         experience: -5
                     }
                 ]
-            },
+            }
+        ];
+
+        // Advanced Scenarios (IDs 11-15, 150 XP total)
+        this.advancedScenarios = [
             {
                 id: 11,
                 level: 'Advanced',
                 title: 'Multiple Primary Environments',
                 description: 'What is the correct approach when dealing with multiple primary environments in a standard test script?',
                 options: [
+
                     {
                         text: 'Create entirely new test cases for each environment',
                         outcome: 'While some new cases might be needed, copying and modifying is more efficient',

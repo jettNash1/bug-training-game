@@ -206,13 +206,18 @@ export class ScriptMetricsTroubleshootingQuiz extends BaseQuiz {
                         experience: 5
                     }
                 ]
-            },
+            }
+        ];
+
+         // Intermediate Scenarios (IDs 6-10, 125 XP total)
+        this.intermediateScenarios = [
             {
                 id: 6,
                 level: 'Intermediate',
                 title: 'Environment Check Tabs',
                 description: 'How should you handle multiple Environment Checks tabs?',
                 options: [
+
                     {
                         text: 'Create new independent metrics',
                         outcome: 'This would not maintain proper tracking across tabs.',
@@ -346,13 +351,18 @@ export class ScriptMetricsTroubleshootingQuiz extends BaseQuiz {
                         experience: 5
                     }
                 ]
-            },
+            }
+        ];
+
+        // Advanced Scenarios (IDs 11-15, 150 XP total)
+        this.advancedScenarios = [
             {
                 id: 11,
                 level: 'Advanced',
                 title: 'Duplicated Environment Checks',
                 description: 'When updating duplicated Environment Checks tabs, what\'s crucial?',
                 options: [
+
                     {
                         text: 'Only update cell references',
                         outcome: 'Multiple aspects need attention',

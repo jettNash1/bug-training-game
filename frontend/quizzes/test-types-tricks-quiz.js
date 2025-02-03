@@ -210,14 +210,18 @@ export class TestTypesTricksQuiz extends BaseQuiz {
                         experience: -5
                     }
                 ]
-            },
+            }
+        ];
 
+        // Intermediate Scenarios (IDs 6-10, 125 XP total)
+        this.intermediateScenarios = [
             {
                 id: 6,
                 level: 'Intermediate',
                 title: 'Artificial Intelligence Classifications',
                 description: 'What are three classifications of AI?',
                 options: [
+
                     {
                         text: 'Basic, Advanced, Expert',
                         outcome: 'Whilst this shows an understanding of progression, the terminology is incorrect.',
@@ -355,14 +359,18 @@ export class TestTypesTricksQuiz extends BaseQuiz {
                         experience: 5
                     }
                 ]
-            },
+            }
+        ];
 
+        // Advanced Scenarios (IDs 11-15, 150 XP total)
+        this.advancedScenarios = [
             {
                 id: 11,
                 level: 'Advanced',
                 title: 'Application Program Interface Testing Preparation',
                 description: 'In API testing, what is most important before beginning?',
                 options: [
+
                     {
                         text: 'Having complete documentation',
                         outcome: 'While important, other details are also required outside of documentation',

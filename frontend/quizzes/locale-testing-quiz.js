@@ -207,13 +207,18 @@ export class LocaleTestingQuiz extends BaseQuiz {
                         experience: 15
                     }
                 ]
-            },
+            }
+        ];
+
+        // Intermediate Scenarios (IDs 6-10, 125 XP total)
+        this.intermediateScenarios = [
             {
                 id: 6,
                 level: 'Intermediate',
                 title: 'Locale testing risk',
                 description: 'What potential risk is associated with locale testing when the tester isn\'t bilingual?',
                 options: [
+
                     {
                         text: 'Unable to complete any testing',
                         outcome: 'Non-bilingual testers can still perform many aspects of locale testing.',
@@ -347,13 +352,18 @@ export class LocaleTestingQuiz extends BaseQuiz {
                         experience: 15
                     }
                 ]
-            },
+            }
+        ];
+
+        // Advanced Scenarios (IDs 11-15, 150 XP total)
+        this.advancedScenarios = [
             {
                 id: 11,
                 level: 'Advanced',
                 title: 'Language remenants',
                 description: 'What approach should be taken when testing for language remnants?',
                 options: [
+
                     {
                         text: 'Check main navigation and headers only',
                         outcome: 'While important, this is not comprehensive enough.',
