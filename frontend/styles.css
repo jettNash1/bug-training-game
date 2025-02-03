@@ -173,24 +173,26 @@ body {
 
 /* Quiz completion badge */
 .quiz-completion.completed,
-.quiz-item[data-progress="100"] .quiz-completion {
+.quiz-completion.failed,
+.quiz-completion.in-progress {
     display: block;
-    background: var(--success-color);
     color: black;
+    border: 1px solid black;
+    padding: 0.5rem 1rem;
+    border-radius: 8px;
+    font-weight: 600;
+}
+
+.quiz-completion.completed {
     background: rgba(46, 204, 113, 0.3);
-    border: 1px solid var(--success-color);
 }
 
 .quiz-completion.failed {
-    display: block;
-    background: var(--danger-color);
-    color: white;
+    background: rgba(231, 76, 60, 0.3);
 }
 
 .quiz-completion.in-progress {
-    display: block;
-    background: var(--warning-color);
-    color: var(--text-primary);
+    background: rgba(241, 196, 15, 0.3);
 }
 
 /* Remove old conflicting styles */
