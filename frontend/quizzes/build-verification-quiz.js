@@ -532,13 +532,36 @@ export class BuildVerificationQuiz extends BaseQuiz {
     }
 
     async saveProgress() {
+        // First determine the status based on clear conditions
+        let status = 'in-progress';
+        
+        // Check for completion (all 15 questions answered)
+        if (this.player.questionHistory.length >= 15) {
+            // Check if they met the advanced XP requirement
+            if (this.player.experience >= this.levelThresholds.advanced.minXP) {
+                status = 'completed';
+            } else {
+                status = 'failed';
+            }
+        } 
+        // Check for early failure conditions
+        else if (
+            (this.player.questionHistory.length >= 10 && this.player.experience < this.levelThresholds.intermediate.minXP) ||
+            (this.player.questionHistory.length >= 5 && this.player.experience < this.levelThresholds.basic.minXP)
+        ) {
+            status = 'failed';
+        }
+
         const progress = {
-            experience: this.player.experience,
-            tools: this.player.tools,
-            currentScenario: this.player.currentScenario,
-            questionHistory: this.player.questionHistory,
-            lastUpdated: new Date().toISOString(),
-            isCompleted: this.player.questionHistory.length >= 15 // Add completion state
+            data: {
+                experience: this.player.experience,
+                tools: this.player.tools,
+                currentScenario: this.player.currentScenario,
+                questionHistory: this.player.questionHistory,
+                lastUpdated: new Date().toISOString(),
+                questionsAnswered: this.player.questionHistory.length,
+                status: status
+            }
         };
 
         try {
@@ -550,13 +573,12 @@ export class BuildVerificationQuiz extends BaseQuiz {
             
             // Use user-specific key for localStorage
             const storageKey = `quiz_progress_${username}_${this.quizName}`;
-            localStorage.setItem(storageKey, JSON.stringify({ progress }));
+            localStorage.setItem(storageKey, JSON.stringify(progress));
             
-            await this.apiService.saveQuizProgress(this.quizName, progress);
-            console.log('Progress saved successfully:', progress);
+            console.log('Saving progress with status:', status);
+            await this.apiService.saveQuizProgress(this.quizName, progress.data);
         } catch (error) {
             console.error('Failed to save progress:', error);
-            // Continue without saving - don't interrupt the user experience
         }
     }
 
@@ -573,40 +595,45 @@ export class BuildVerificationQuiz extends BaseQuiz {
             const savedProgress = await this.apiService.getQuizProgress(this.quizName);
             let progress = null;
             
-            if (savedProgress && savedProgress.data) {
-                progress = savedProgress.data;
+            if (savedProgress && savedProgress.data && savedProgress.data.data) {
+                // Access the nested data structure from the API
+                progress = savedProgress.data.data;
                 console.log('Loaded progress from API:', progress);
             } else {
                 // Try loading from localStorage
                 const localData = localStorage.getItem(storageKey);
                 if (localData) {
                     const parsed = JSON.parse(localData);
-                    if (parsed.progress) {
-                        progress = parsed.progress;
+                    if (parsed.data) {
+                        progress = parsed.data;
                         console.log('Loaded progress from localStorage:', progress);
                     }
                 }
             }
 
             if (progress) {
-                // Check if quiz was completed
-                if (progress.isCompleted) {
-                    // Show end screen with completion state
-                    this.player.experience = progress.experience || 0;
-                    this.player.tools = progress.tools || [];
-                    this.player.questionHistory = progress.questionHistory || [];
-                    this.player.currentScenario = progress.currentScenario || 0;
-                    this.endGame(false); // Show completion state
-                    return true;
-                }
-
                 // Set the player state from progress
                 this.player.experience = progress.experience || 0;
                 this.player.tools = progress.tools || [];
                 this.player.questionHistory = progress.questionHistory || [];
                 this.player.currentScenario = progress.currentScenario || 0;
 
-                // Update UI
+                console.log('Setting quiz state from progress:', {
+                    status: progress.status,
+                    experience: progress.experience,
+                    questionsAnswered: progress.questionsAnswered
+                });
+
+                // Check quiz status and show appropriate screen
+                if (progress.status === 'failed') {
+                    this.endGame(true); // Show failed state
+                    return true;
+                } else if (progress.status === 'completed') {
+                    this.endGame(false); // Show completion state
+                    return true;
+                }
+
+                // Update UI for in-progress state
                 this.updateProgress();
 
                 // Update the questions progress display
@@ -1146,7 +1173,7 @@ export class BuildVerificationQuiz extends BaseQuiz {
         return recommendations[area] || 'Continue practicing core build verification principles.';
     }
 
-    endGame(failed = false) {
+    async endGame(failed = false) {
         this.gameScreen.classList.add('hidden');
         this.outcomeScreen.classList.add('hidden');
         this.endScreen.classList.remove('hidden');
@@ -1159,14 +1186,19 @@ export class BuildVerificationQuiz extends BaseQuiz {
         if (username) {
             try {
                 const user = new QuizUser(username);
+                const status = failed ? 'failed' : 'completed';
+                console.log('Setting final quiz status:', { status, score: scorePercentage });
+                
                 const result = {
                     score: scorePercentage,
-                    status: failed ? 'failed' : 'passed',
+                    status: status,
                     experience: this.player.experience,
                     questionHistory: this.player.questionHistory,
                     questionsAnswered: this.player.questionHistory.length,
                     lastActive: new Date().toISOString()
                 };
+
+                // Save to QuizUser
                 user.updateQuizScore(
                     this.quizName,
                     result.score,
@@ -1174,9 +1206,21 @@ export class BuildVerificationQuiz extends BaseQuiz {
                     this.player.tools,
                     result.questionHistory,
                     result.questionsAnswered,
-                    result.status
+                    status
                 );
-                console.log('Final quiz score saved:', result);
+
+                // Save to API with proper structure
+                const apiProgress = {
+                    data: {
+                        ...result,
+                        tools: this.player.tools,
+                        currentScenario: this.player.currentScenario
+                    }
+                };
+
+                // Save directly via API to ensure status is updated
+                console.log('Saving final progress to API:', apiProgress);
+                await this.apiService.saveQuizProgress(this.quizName, apiProgress.data);
             } catch (error) {
                 console.error('Error saving final quiz score:', error);
             }
@@ -1186,11 +1230,16 @@ export class BuildVerificationQuiz extends BaseQuiz {
 
         const performanceSummary = document.getElementById('performance-summary');
         if (failed) {
-            performanceSummary.textContent = 'Quiz failed. You did not meet the minimum XP requirement to progress. Please reset your progress to try again.';
+            performanceSummary.textContent = 'Quiz failed. You did not meet the minimum XP requirement to progress. You cannot retry this quiz.';
             // Hide restart button if failed
             const restartBtn = document.getElementById('restart-btn');
             if (restartBtn) {
                 restartBtn.style.display = 'none';
+            }
+            // Add failed class to quiz container for styling
+            const quizContainer = document.getElementById('quiz-container');
+            if (quizContainer) {
+                quizContainer.classList.add('failed');
             }
         } else {
             const threshold = this.performanceThresholds.find(t => t.threshold <= finalScore);

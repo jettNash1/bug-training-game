@@ -518,108 +518,6 @@ export class IssueTrackingToolsQuiz extends BaseQuiz {
         this.isLoading = false;
     }
 
-    showError(message) {
-        const errorDiv = document.createElement('div');
-        errorDiv.className = 'error-notification';
-        errorDiv.setAttribute('role', 'alert');
-        errorDiv.textContent = message;
-        document.body.appendChild(errorDiv);
-        setTimeout(() => errorDiv.remove(), 5000);
-    }
-
-    shouldEndGame(totalQuestionsAnswered, currentXP) {
-        return totalQuestionsAnswered >= 15 || currentXP >= this.maxXP;
-    }
-
-    async saveProgress() {
-        const progress = {
-            experience: this.player.experience,
-            tools: this.player.tools,
-            currentScenario: this.player.currentScenario,
-            questionHistory: this.player.questionHistory,
-            lastUpdated: new Date().toISOString()
-        };
-
-        try {
-            const username = localStorage.getItem('username');
-            if (!username) {
-                console.error('No user found, cannot save progress');
-                return;
-            }
-            
-            // Use user-specific key for localStorage
-            const storageKey = `quiz_progress_${username}_${this.quizName}`;
-            localStorage.setItem(storageKey, JSON.stringify({ progress }));
-            
-            await this.apiService.saveQuizProgress(this.quizName, progress);
-            console.log('Progress saved successfully:', progress);
-        } catch (error) {
-            console.error('Failed to save progress:', error);
-            // Continue without saving - don't interrupt the user experience
-        }
-    }
-
-    async loadProgress() {
-        try {
-            const username = localStorage.getItem('username');
-            if (!username) {
-                console.error('No user found, cannot load progress');
-                return false;
-            }
-
-            // Use user-specific key for localStorage
-            const storageKey = `quiz_progress_${username}_${this.quizName}`;
-            const savedProgress = await this.apiService.getQuizProgress(this.quizName);
-            let progress = null;
-            
-            if (savedProgress && savedProgress.data) {
-                progress = savedProgress.data;
-                console.log('Loaded progress from API:', progress);
-            } else {
-                // Try loading from localStorage
-                const localData = localStorage.getItem(storageKey);
-                if (localData) {
-                    const parsed = JSON.parse(localData);
-                    if (parsed.progress) {
-                        progress = parsed.progress;
-                        console.log('Loaded progress from localStorage:', progress);
-                    }
-                }
-            }
-
-            if (progress) {
-                // Set the player state from progress
-                this.player.experience = progress.experience || 0;
-                this.player.tools = progress.tools || [];
-                this.player.questionHistory = progress.questionHistory || [];
-                
-                // Set the current scenario to the actual value from progress
-                this.player.currentScenario = progress.currentScenario || 0;
-
-                // Update UI
-                this.updateProgress();
-
-                // Update the questions progress display
-                const questionsProgress = document.getElementById('questions-progress');
-                if (questionsProgress) {
-                    questionsProgress.textContent = `${this.player.questionHistory.length}/15`;
-                }
-
-                // Update the current scenario display
-                const currentScenarioDisplay = document.getElementById('current-scenario');
-                if (currentScenarioDisplay) {
-                    currentScenarioDisplay.textContent = `${this.player.currentScenario}`;
-                }
-
-                return true;
-            }
-            return false;
-        } catch (error) {
-            console.error('Failed to load progress:', error);
-            return false;
-        }
-    }
-
     async startGame() {
         if (this.isLoading) return;
         
@@ -838,7 +736,7 @@ export class IssueTrackingToolsQuiz extends BaseQuiz {
         });
 
         this.updateProgress();
-    } 
+    }
 
     async handleAnswer() {
         if (this.isLoading) return;
@@ -861,9 +759,12 @@ export class IssueTrackingToolsQuiz extends BaseQuiz {
 
             // Update player state
             this.player.experience = Math.max(0, Math.min(this.maxXP, this.player.experience + selectedAnswer.experience));
+            
+            // Add status to question history
             this.player.questionHistory.push({
                 scenario: scenario,
                 selectedAnswer: selectedAnswer,
+                status: selectedAnswer.experience > 0 ? 'passed' : 'failed',
                 maxPossibleXP: Math.max(...scenario.options.map(o => o.experience))
             });
 
@@ -1130,7 +1031,7 @@ export class IssueTrackingToolsQuiz extends BaseQuiz {
         return recommendations[area] || 'Continue practicing core issue tracking principles.';
     }
 
-    endGame(failed = false) {
+    async endGame(failed = false) {
         this.gameScreen.classList.add('hidden');
         this.outcomeScreen.classList.add('hidden');
         this.endScreen.classList.remove('hidden');
@@ -1143,16 +1044,41 @@ export class IssueTrackingToolsQuiz extends BaseQuiz {
         if (username) {
             try {
                 const user = new QuizUser(username);
+                const status = failed ? 'failed' : 'completed';
+                console.log('Setting final quiz status:', { status, score: scorePercentage });
+                
                 const result = {
                     score: scorePercentage,
-                    status: failed ? 'failed' : 'passed',
+                    status: status,
                     experience: this.player.experience,
                     questionHistory: this.player.questionHistory,
                     questionsAnswered: this.player.questionHistory.length,
                     lastActive: new Date().toISOString()
                 };
-                user.updateQuizScore(this.quizName, result);
-                console.log('Final quiz score saved:', result);
+
+                // Save to QuizUser
+                user.updateQuizScore(
+                    this.quizName,
+                    result.score,
+                    result.experience,
+                    this.player.tools,
+                    result.questionHistory,
+                    result.questionsAnswered,
+                    status
+                );
+
+                // Save to API with proper structure
+                const apiProgress = {
+                    data: {
+                        ...result,
+                        tools: this.player.tools,
+                        currentScenario: this.player.currentScenario
+                    }
+                };
+
+                // Save directly via API to ensure status is updated
+                console.log('Saving final progress to API:', apiProgress);
+                await this.apiService.saveQuizProgress(this.quizName, apiProgress.data);
             } catch (error) {
                 console.error('Error saving final quiz score:', error);
             }
@@ -1162,41 +1088,51 @@ export class IssueTrackingToolsQuiz extends BaseQuiz {
 
         const performanceSummary = document.getElementById('performance-summary');
         if (failed) {
-            performanceSummary.textContent = 'Quiz failed. You did not meet the minimum XP requirement to progress. Please reset your progress to try again.';
+            performanceSummary.textContent = 'Quiz failed. You did not meet the minimum XP requirement to progress. You cannot retry this quiz.';
             // Hide restart button if failed
             const restartBtn = document.getElementById('restart-btn');
             if (restartBtn) {
                 restartBtn.style.display = 'none';
             }
+            // Add failed class to quiz container for styling
+            const quizContainer = document.getElementById('quiz-container');
+            if (quizContainer) {
+                quizContainer.classList.add('failed');
+            }
         } else {
-            const threshold = this.performanceThresholds.find(t => finalScore >= t.threshold);
-            performanceSummary.textContent = threshold.message;
+            const threshold = this.performanceThresholds.find(t => t.threshold <= finalScore);
+            if (threshold) {
+                performanceSummary.textContent = threshold.message;
+            } else {
+                performanceSummary.textContent = 'Quiz completed successfully!';
+            }
         }
 
-        // Display question review
+        // Generate question review list
         const reviewList = document.getElementById('question-review');
-        reviewList.innerHTML = '';
-        
-        this.player.questionHistory.forEach((record, index) => {
-            const reviewItem = document.createElement('div');
-            reviewItem.className = 'review-item';
-            
-            const maxXP = record.maxPossibleXP;
-            const earnedXP = record.selectedAnswer.experience;
-            const isCorrect = earnedXP === maxXP;
-            
-            reviewItem.classList.add(isCorrect ? 'correct' : 'incorrect');
-            
-            reviewItem.innerHTML = `
-                <h4>Question ${index + 1}</h4>
-                <p>${record.scenario.description}</p>
-                <p><strong>Your Answer:</strong> ${record.selectedAnswer.text}</p>
-                <p><strong>Outcome:</strong> ${record.selectedAnswer.outcome}</p>
-                <p><strong>Experience Earned:</strong> ${earnedXP}/${maxXP}</p>
-            `;
-            
-            reviewList.appendChild(reviewItem);
-        });
+        if (reviewList) {
+            reviewList.innerHTML = ''; // Clear existing content
+            this.player.questionHistory.forEach((record, index) => {
+                const reviewItem = document.createElement('div');
+                reviewItem.className = 'review-item';
+                
+                const maxXP = Math.max(...record.scenario.options.map(o => o.experience));
+                const earnedXP = record.selectedAnswer.experience;
+                const isCorrect = earnedXP === maxXP;
+                
+                reviewItem.classList.add(isCorrect ? 'correct' : 'incorrect');
+                
+                reviewItem.innerHTML = `
+                    <h4>Question ${index + 1}</h4>
+                    <p class="scenario">${record.scenario.description}</p>
+                    <p class="answer"><strong>Your Answer:</strong> ${record.selectedAnswer.text}</p>
+                    <p class="outcome"><strong>Outcome:</strong> ${record.selectedAnswer.outcome}</p>
+                    <p class="xp"><strong>Experience Earned:</strong> ${earnedXP}/${maxXP}</p>
+                `;
+                
+                reviewList.appendChild(reviewItem);
+            });
+        }
 
         this.generateRecommendations();
     }
