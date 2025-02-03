@@ -146,16 +146,16 @@ class IndexPage {
                 
                 // Count as completed only if status is 'completed'
                 const isCompleted = quizScore && quizScore.status === 'completed';
-                const progress = quizScore ? quizScore.score : 0;
                 
                 return {
                     completedQuizzes: stats.completedQuizzes + (isCompleted ? 1 : 0),
-                    totalProgress: stats.totalProgress + progress
+                    totalProgress: stats.totalProgress + (isCompleted ? 100 : 0)
                 };
             }, { completedQuizzes: 0, totalProgress: 0 });
 
             const totalQuizzes = quizItems.length;
-            const categoryPercentage = Math.round(categoryStats.totalProgress / totalQuizzes);
+            // Calculate percentage based on completed quizzes instead of total progress
+            const categoryPercentage = Math.round((categoryStats.completedQuizzes / totalQuizzes) * 100);
 
             // Store updates to apply in batch
             updates.set(category, {
