@@ -505,6 +505,144 @@ export class EmailTestingQuiz extends BaseQuiz {
 
         this.isLoading = false;
     }
+    showError(message) {
+        const errorDiv = document.createElement('div');
+        errorDiv.className = 'error-notification';
+        errorDiv.setAttribute('role', 'alert');
+        errorDiv.textContent = message;
+        document.body.appendChild(errorDiv);
+        setTimeout(() => errorDiv.remove(), 5000);
+    }
+
+    shouldEndGame(totalQuestionsAnswered, currentXP) {
+        return totalQuestionsAnswered >= 15 || currentXP >= this.maxXP;
+    }
+
+    async saveProgress() {
+        // First determine the status based on clear conditions
+        let status = 'in-progress';
+        
+        // Check for completion (all 15 questions answered)
+        if (this.player.questionHistory.length >= 15) {
+            // Check if they met the advanced XP requirement
+            if (this.player.experience >= this.levelThresholds.advanced.minXP) {
+                status = 'completed';
+            } else {
+                status = 'failed';
+            }
+        } 
+        // Check for early failure conditions
+        else if (
+            (this.player.questionHistory.length >= 10 && this.player.experience < this.levelThresholds.intermediate.minXP) ||
+            (this.player.questionHistory.length >= 5 && this.player.experience < this.levelThresholds.basic.minXP)
+        ) {
+            status = 'failed';
+        }
+
+        const progress = {
+            data: {
+                experience: this.player.experience,
+                tools: this.player.tools,
+                currentScenario: this.player.currentScenario,
+                questionHistory: this.player.questionHistory,
+                lastUpdated: new Date().toISOString(),
+                questionsAnswered: this.player.questionHistory.length,
+                status: status
+            }
+        };
+
+        try {
+            const username = localStorage.getItem('username');
+            if (!username) {
+                console.error('No user found, cannot save progress');
+                return;
+            }
+            
+            // Use user-specific key for localStorage
+            const storageKey = `quiz_progress_${username}_${this.quizName}`;
+            localStorage.setItem(storageKey, JSON.stringify(progress));
+            
+            console.log('Saving progress with status:', status);
+            await this.apiService.saveQuizProgress(this.quizName, progress.data);
+        } catch (error) {
+            console.error('Failed to save progress:', error);
+        }
+    }
+
+    async loadProgress() {
+        try {
+            const username = localStorage.getItem('username');
+            if (!username) {
+                console.error('No user found, cannot load progress');
+                return false;
+            }
+
+            // Use user-specific key for localStorage
+            const storageKey = `quiz_progress_${username}_${this.quizName}`;
+            const savedProgress = await this.apiService.getQuizProgress(this.quizName);
+            let progress = null;
+            
+            if (savedProgress && savedProgress.data && savedProgress.data.data) {
+                // Access the nested data structure from the API
+                progress = savedProgress.data.data;
+                console.log('Loaded progress from API:', progress);
+            } else {
+                // Try loading from localStorage
+                const localData = localStorage.getItem(storageKey);
+                if (localData) {
+                    const parsed = JSON.parse(localData);
+                    if (parsed.data) {
+                        progress = parsed.data;
+                        console.log('Loaded progress from localStorage:', progress);
+                    }
+                }
+            }
+
+            if (progress) {
+                // Set the player state from progress
+                this.player.experience = progress.experience || 0;
+                this.player.tools = progress.tools || [];
+                this.player.questionHistory = progress.questionHistory || [];
+                this.player.currentScenario = progress.currentScenario || 0;
+
+                console.log('Setting quiz state from progress:', {
+                    status: progress.status,
+                    experience: progress.experience,
+                    questionsAnswered: progress.questionsAnswered
+                });
+
+                // Check quiz status and show appropriate screen
+                if (progress.status === 'failed') {
+                    this.endGame(true); // Show failed state
+                    return true;
+                } else if (progress.status === 'completed') {
+                    this.endGame(false); // Show completion state
+                    return true;
+                }
+
+                // Update UI for in-progress state
+                this.updateProgress();
+
+                // Update the questions progress display
+                const questionsProgress = document.getElementById('questions-progress');
+                if (questionsProgress) {
+                    questionsProgress.textContent = `${this.player.questionHistory.length}/15`;
+                }
+
+                // Update the current scenario display
+                const currentScenarioDisplay = document.getElementById('current-scenario');
+                if (currentScenarioDisplay) {
+                    currentScenarioDisplay.textContent = `${this.player.currentScenario}`;
+                }
+
+                return true;
+            }
+            return false;
+        } catch (error) {
+            console.error('Failed to load progress:', error);
+            return false;
+        }
+    }
 
     async startGame() {
         if (this.isLoading) return;
