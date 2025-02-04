@@ -92,20 +92,12 @@ export class QuizUser {
     clearLocalStorageData() {
         // Clear all quiz-related data for this user
         const quizTypes = [
-            'communication',
-            'initiative', 
-            'time-management',
-            'tester-mindset',
-            'risk-analysis',
-            'risk-management',
-            'non-functional',
-            'test-support',
-            'issue-verification',
-            'build-verification',
-            'issue-tracking-tools',
-            'raising-tickets',
-            'reports',
-            'CMS-Testing'
+            'communication', 'initiative', 'time-management', 'tester-mindset',
+            'risk-analysis', 'risk-management', 'non-functional', 'test-support',
+            'issue-verification', 'build-verification', 'issue-tracking-tools',
+            'raising-tickets', 'reports', 'cms-testing', 'email-testing', 'content-copy',
+            'locale-testing', 'script-metrics-troubleshooting','standard-script-testing',
+            'test-types-tricks'
         ];
 
         quizTypes.forEach(quizName => {
@@ -360,10 +352,40 @@ export class QuizUser {
             this.quizResults = data.quizResults || [];
             
             // Update progress bars for each category
-            this.updateCategoryProgress('Personal Organisation', ['communication', 'initiative', 'tester-mindset', 'time-management']);
-            this.updateCategoryProgress('Risk Management', ['risk-analysis', 'risk-management']);
-            this.updateCategoryProgress('Test Execution', ['non-functional', 'test-support', 'issue-verification', 'build-verification']);
-            this.updateCategoryProgress('Tickets and Tracking', ['issue-tracking-tools', 'raising-tickets', 'reports', 'CMS-Testing']);
+            this.updateCategoryProgress('Core QA Skills', [
+                'tester-mindset',
+                'communication',
+                'initiative',
+                'standard-script-testing'
+            ]);
+            
+            this.updateCategoryProgress('Technical Testing', [
+                'script-metrics-troubleshooting',
+                'locale-testing',
+                'build-verification',
+                'test-types-tricks',
+                'test-support'
+            ]);
+            
+            this.updateCategoryProgress('Project Management', [
+                'time-management',
+                'risk-analysis',
+                'risk-management'
+            ]);
+            
+            this.updateCategoryProgress('Bug Management', [
+                'issue-tracking-tools',
+                'raising-tickets',
+                'issue-verification',
+                'reports'
+            ]);
+            
+            this.updateCategoryProgress('Specialized Testing', [
+                'cms-testing',
+                'email-testing',
+                'non-functional',
+                'content-copy'
+            ]);
 
             // Update individual quiz progress indicators
             document.querySelectorAll('.quiz-item').forEach(quizItem => {
