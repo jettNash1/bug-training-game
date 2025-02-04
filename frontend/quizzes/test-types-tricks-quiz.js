@@ -72,325 +72,371 @@ export class TestTypesTricksQuiz extends BaseQuiz {
                 level: 'Basic',
                 title: 'API Understanding',
                 description: 'What does API stand for?',
+
                 options: [
                     {
                         text: 'Advanced Programming Interface',
                         outcome: 'Close but technically incorrect terminology',
                         experience: 5
+
                     },
                     {
                         text: 'Application Programming Interface',
-                        outcome: 'Correct - Accurate technical definition describing how software components communicate',
+                        outcome: 'Correct! Accurate technical definition describing how software components communicate',
                         experience: 15
                     },
+
                     {
                         text: 'Automated Programming Interface',
                         outcome: 'This is a fabricated term',
                         experience: -10
                     },
+
                     {
                         text: 'Advanced Process Integration',
                         outcome: 'This is a fabricated term',
                         experience: -5
                     }
+
                 ]
             },
-
             {
                 id: 2,
                 level: 'Basic',
                 title: 'Augmented Reality Testing',
                 description: 'In AR (Augmented Reality) testing, what unique aspect might testers need to consider?',
+
                 options: [
                     {
                         text: 'Only testing on desktop browsers',
                         outcome: 'This shows awareness of testing platforms but misses AR specifics.',
                         experience: 5
                     },
+
                     {
                         text: 'Checking app performance in different lighting conditions',
-                        outcome: 'Correct – This demonstrates understanding of AR\'s unique environmental interactions.',
+                        outcome: 'Correct! This demonstrates understanding of AR\'s unique environmental interactions.',
                         experience: 15
                     },
+
                     {
                         text: 'Testing only colour schemes',
                         outcome: 'This could miss issues in other areas.',
                         experience: -5
                     },
+
                     {
                         text: 'Verifying app icons',
                         outcome: 'This is not a specific requirement of an AR test.',
                         experience: -10
                     }
+
                 ]
             },
-
             {
                 id: 3,
                 level: 'Basic',
                 title: 'Test Email Address',
                 description: 'What is the recommended email domain for test email addresses?',
+
                 options: [
                     {
                         text: '@testing.com',
                         outcome: 'This is a generic testing domain but not the recommended one',
                         experience: 5
+
                     },
                     {
                         text: '@zoonou.com',
                         outcome: 'This is the company email address for employees',
                         experience: -5
                     },
+
                     {
                         text: '@teztr.com',
-                        outcome: 'Correct – This is the address that should be used for testing puposes.',
+                        outcome: 'Correct! This is the address that should be used for testing purposes.',
                         experience: 15
                     },
+
                     {
                         text: '@example.com',
                         outcome: 'This is incorrect and unrelated',
                         experience: -10
                     }
+
                 ]
             },
-
             {
                 id: 4,
                 level: 'Basic',
                 title: 'Application Ticket Writing',
-                description: 'When testing apps, what is crucial to include in bug tickets?',
+                description: 'When testing applications, what is crucial to include in bug tickets?',
+
                 options: [
                     {
                         text: 'Only the date',
                         outcome: 'Partially relevant but incomplete information.',
                         experience: 5
+
                     },
                     {
-                        text: 'App version number',
-                        outcome: 'Correct – The application version number is crucial to diagnosing issues.',
+                        text: 'Application version number',
+                        outcome: 'Correct! The application version number is crucial to diagnosing defects.',
                         experience: 15
                     },
+
                     {
                         text: 'Only the platform',
                         outcome: 'While this is important, if it’s the only information diagnosing the issue would be difficult',
                         experience: -10
                     },
+
                     {
                         text: 'Tester\'s name',
                         outcome: 'This important but not as crucial as some other information required and wouldn\'t aid the developer in debugging the issue',
                         experience: -5
                     }
+
                 ]
             },
-
             {
                 id: 5,
                 level: 'Basic',
-                title: 'VPN Usage',
-                description: 'What is a VPN primarily used for in testing?',
+
+                title: 'Virtual Private Network Usage',
+                description: 'What is a Virtual Private Network primarily used for in testing?',
+
                 options: [
                     {
                         text: 'Generating fake data',
-                        outcome: 'This is related to testing but not specific to VPN functionality.',
+                        outcome: 'This is related to testing but not specific to Virtual Private Network functionality.',
                         experience: 5
                     },
+
                     {
                         text: 'Simulating different locations',
-                        outcome: 'Correct – This accurately describes VPN usage for testing purposes.',
+                        outcome: 'Correct! This accurately describes Virtual Private Network usage for testing purposes.',
                         experience: 15
                     },
+
                     {
                         text: 'Creating screenshots',
-                        outcome: 'This is unrelated to VPN usage',
+                        outcome: 'This is unrelated to Virtual Private Network usage',
                         experience: -10
                     },
+
                     {
                         text: 'Storing test results',
-                        outcome: 'This is unrelated to VPN usage',
+                        outcome: 'This is unrelated to Virtual Private Network usage',
                         experience: -5
                     }
+
                 ]
-            }
+            },
         ];
 
-        // Intermediate Scenarios (IDs 6-10, 125 XP total)
+        // Intermediate Scenarios (IDs 6-10, 100 XP total, 20 XP each)
         this.intermediateScenarios = [
             {
                 id: 6,
                 level: 'Intermediate',
                 title: 'Artificial Intelligence Classifications',
                 description: 'What are three classifications of AI?',
+
                 options: [
 
                     {
                         text: 'Basic, Advanced, Expert',
                         outcome: 'Whilst this shows an understanding of progression, the terminology is incorrect.',
                         experience: 5
+
                     },
                     {
                         text: 'Narrow, General, Super AI',
-                        outcome: 'Correct - Classifications are described as Narrow AI (specific tasks), General AI (multiple tasks), and Super AI (unlimited capabilities)',
-                        experience: 10
+                        outcome: 'Correct! Classifications are described as Narrow AI (specific tasks), General AI (multiple tasks), and Super AI (unlimited capabilities)',
+                        experience: 15
                     },
+
                     {
                         text: 'Simple, Complex, Intelligent',
                         outcome: 'These are generic categorisations',
                         experience: -5
                     },
+
                     {
                         text: 'Beginner, Intermediate, Advanced',
                         outcome: 'These are generic categorisations',
                         experience: -10
                     }
+
                 ]
             },
-
             {
                 id: 7,
                 level: 'Intermediate',
                 title: 'Voice Skills Testing',
                 description: 'When testing voice skills, what device type is most commonly used?',
+
                 options: [
-                    {
+                    {       
                         text: 'Laptops',
                         outcome: 'This is less suitable device for voice skill testing',
                         experience: -10
+
                     },
                     {
                         text: 'Smartphones',
                         outcome: 'Mobile devices can be used but not primary recommendation.',
                         experience: 5
                     },
+
                     {
                         text: 'Smart home devices',
-                        outcome: 'Correct - Voice skill testing typically involves smart home devices like Amazon Echo, which use voice interaction',
+                        outcome: 'Correct! Voice skill testing typically involves smart home devices like Amazon Echo, which use voice interaction',
                         experience: 15
                     },
+
                     {
                         text: 'Tablets',
                         outcome: 'This is less suitable device for voice skill testing',
                         experience: -5
                     }
+
                 ]
             },
-
             {
                 id: 8,
                 level: 'Intermediate',
                 title: 'Storage Issues',
                 description: 'What should be disabled on Android devices to prevent storage issues?',
+
                 options: [
                     {
                         text: 'Bluetooth',
                         outcome: 'Related to device settings but incorrect solution',
                         experience: 5
+
                     },
                     {
                         text: 'Location services',
                         outcome: 'This is an unrelated device management setting.',
                         experience: -5
                     },
+
                     {
                         text: 'Google Backup',
-                        outcome: 'Correct - Turning off Google Backup prevents frequent backups filling up the zoonoutesting Google account storage',
+                        outcome: 'Correct! Turning off Google Backup prevents frequent backups filling up the zoonoutesting Google account storage',
                         experience: 15
                     },
+
                     {
                         text: 'Automatic updates',
                         outcome: 'This is an unrelated device management setting.',
                         experience: -10
                     }
+
                 ]
             },
-
             {
                 id: 9,
                 level: 'Intermediate',
                 title: 'Accessibility Extensions',
                 description: 'Which Chrome extension is recommended for accessibility testing?',
+
                 options: [
                     {
                         text: 'GoFullPage',
                         outcome: 'This is a screen capture tool, but not generally used for accessibility.',
                         experience: 5
+
                     },
                     {
                         text: 'Accessibility Insights for Web',
-                        outcome: 'Correct – This is useful for accessibility testing, particularly for tab stops.',
+                        outcome: 'Correct! This is useful for accessibility testing, particularly for tab stops.',
                         experience: 15
                     },
+
                     {
                         text: 'Viewport Dimensions',
                         outcome: 'This is an unrelated browser extension',
                         experience: -5
                     },
+
                     {
                         text: 'Broken Link Checker',
                         outcome: 'This is an unrelated browser extension.',
                         experience: -10
                     }
+
                 ]
             },
-
             {
                 id: 10,
                 level: 'Intermediate',
                 title: 'Bug Report Evidence',
                 description: 'What is recommended when capturing evidence for bug tickets?',
+
                 options: [
                     {
                         text: 'Include other client work',
                         outcome: 'This would compromise confidentiality.',
                         experience: -10
                     },
+
                     {
                         text: 'Keep background noise',
                         outcome: 'This compromises a professional standard.',
-                        experience: 15
+                        experience: -5
                     },
+
                     {
                         text: 'Hide bookmarks bar and avoid showing other client work',
-                        outcome: 'Correct – This protects client confidentiality and practices professionalism when capturing evidence',
+                        outcome: 'Correct! This protects client confidentiality and practices professionalism when capturing evidence',
                         experience: 15
                     },
+
                     {
                         text: 'Use maximum resolution always',
                         outcome: 'Whilst important, this is not always essential',
                         experience: 5
                     }
-                ]
-            }
-        ];
 
-        // Advanced Scenarios (IDs 11-15, 150 XP total)
+                ]
+            },
+        ];
+        // Advanced Scenarios (IDs 11-15, 125 XP total, 25 XP each)
         this.advancedScenarios = [
             {
                 id: 11,
                 level: 'Advanced',
                 title: 'Application Program Interface Testing Preparation',
                 description: 'In API testing, what is most important before beginning?',
-                options: [
 
+                options: [
                     {
                         text: 'Having complete documentation',
                         outcome: 'While important, other details are also required outside of documentation',
                         experience: 5
                     },
+
                     {
                         text: 'Understanding endpoints and access methods',
-                        outcome: 'Correct - Knowing URLs, access methods, and having a point of contact with developers before API testing is recommended.',
+                        outcome: 'Correct! Knowing URLs, access methods, and having a point of contact with developers before API testing is recommended',
                         experience: 15
                     },
+
                     {
                         text: 'Knowing all possible user interactions',
                         outcome: 'This does not cover the most essential aspects needed for preparation',
                         experience: -5
                     },
+
                     {
                         text: 'Having the latest testing tools',
                         outcome: 'This is not an essential requirement',
-                        experience: -5
+                        experience: -10
                     }
+
                 ]
             },
 
@@ -399,27 +445,32 @@ export class TestTypesTricksQuiz extends BaseQuiz {
                 level: 'Advanced',
                 title: 'Intelligent Systems',
                 description: 'What quality characteristics are considered when testing intelligent systems?',
+
                 options: [
                     {
                         text: 'Speed and colour',
                         outcome: 'This recognizes some technical considerations but not all characteristics.',
                         experience: 5
+
                     },
                     {
                         text: 'Flexibility, Autonomy, Ethics, Safety',
-                        outcome: 'Correct - Characteristics like Flexibility, Autonomy, Evolution, Bias, Ethics, Transparency, and Safety for AI testing are recommended practices',
+                        outcome: 'Correct! Characteristics like Flexibility, Autonomy, Evolution, Bias, Ethics, Transparency, and Safety for AI testing are recommended practices',
                         experience: 15
                     },
+
                     {
                         text: 'Memory and processing power',
                         outcome: 'These are not characteristics to be considered',
                         experience: -5
                     },
+
                     {
                         text: 'User interface design',
                         outcome: 'This is not characteristic to be considered',
                         experience: -10
                     }
+
                 ]
             },
 
@@ -428,85 +479,98 @@ export class TestTypesTricksQuiz extends BaseQuiz {
                 level: 'Advanced',
                 title: 'Windows Commands',
                 description: 'When testing file uploads, what Windows command can generate large files?',
+
                 options: [
                     {
                         text: 'mkdir',
                         outcome: 'Related to file manipulation but incorrect',
                         experience: 5
+
                     },
                     {
                         text: 'fsutil file createnew',
-                        outcome: 'Correct – The fsutil command is used to generate large test files of specific sizes.',
+                        outcome: 'Correct! The fsutil command is used to generate large test files of specific sizes.',
                         experience: 15
                     },
+
                     {
                         text: 'touch',
                         outcome: 'This is not a windows command',
                         experience: -10
                     },
+
                     {
                         text: 'create file',
                         outcome: 'This is an unrelated command',
                         experience: -5
                     }
+
                 ]
             },
-
             {
                 id: 14,
                 level: 'Advanced',
                 title: 'Samsung Device Testing',
                 description: 'What should be checked on Samsung devices during testing?',
                 options: [
+
                     {
                         text: 'Battery percentage',
                         outcome: 'Related to device settings but would not be essential focus for testing',
                         experience: 5
                     },
+
                     {
                         text: 'Default font size setting',
-                        outcome: 'Correct - Checking that font size is set to default on Samsung devices can expose rendering issues.',
+                        outcome: 'Correct! Checking that font size is set to default on Samsung devices can expose rendering issues.',
                         experience: 15
                     },
+
                     {
                         text: 'Accounts & Back Up',
                         outcome: 'This would not directly affect general testing activities',
                         experience: -10
                     },
+
                     {
                         text: 'Safety & Emergency',
                         outcome: 'This would not directly affect general testing activities',
                         experience: -5
                     }
+
                 ]
             },
-
             {
                 id: 15,
                 level: 'Advanced',
                 title: 'Screen Recording Size Limitations',
                 description: 'What is recommended for capturing large screen recording files with size limitations?',
+
                 options: [
                     {
                         text: 'Use higher resolution',
                         outcome: 'This suggests quality modification but may be ineffective in reducing a file size.',
                         experience: -5
                     },
+
                     {
                         text: 'Compress using tools like HandBrake or convert to GIF',
-                        outcome: 'Correct – Using tools like HandBrake or converting to a lower-fps GIF to reduce file size for ticket uploads is recommended',
+                        outcome: 'Correct! Using tools like HandBrake or converting to a lower-fps GIF to reduce file size for ticket uploads is recommended',
                         experience: 15
                     },
+
                     {
                         text: 'Split the video manually',
                         outcome: 'While this may help it is time consuming and ineffective use of time management',
                         experience: 5
                     },
+
                     {
                         text: 'Use external storage',
                         outcome: 'This doesn’t address the file size if limitations are set for upload',
                         experience: -10
                     }
+
                 ]
             },
         ];

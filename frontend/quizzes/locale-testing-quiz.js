@@ -74,54 +74,62 @@ export class LocaleTestingQuiz extends BaseQuiz {
                 description: 'What is the primary purpose of locale testing?',
                 options: [
                     {
-                        text: 'This is the fundamental purpose of locale testing, encompassing language, rendering, and market-specific adaptations',
-                        outcome: 'This describes exploratory testing',
+                        text: 'To conduct copy checks to ensure that either, no English remnants are present after translation or remnants of other languages do not appear',
+                        outcome: 'Correct! This is the fundamental purpose of locale testing, encompassing language, rendering, and market-specific adaptations',
                         experience: 15
+
                     },
                     {
                         text: 'To test the website\'s performance in different countries',
                         outcome: 'While location may play a role, performance testing is a separate testing discipline.',
                         experience: -5
                     },
+
                     {
                         text: 'To verify translations are grammatically correct',
                         outcome: 'While translation verification is part of locale testing, it\'s only one aspect of the broader scope.',
                         experience: 5
                     },
+
                     {
                         text: 'To ensure the website loads quickly in different regions',
                         outcome: 'Website loading speed is part of performance testing, not locale testing.',
                         experience: -10
                     }
+
                 ]
             },
-
             {
                 id: 2,
                 level: 'Basic',
                 title: 'Documentation',
                 description: 'What type of documentation might clients provide for locale testing?',
+
                 options: [
                     {
                         text: 'Server logs',
                         outcome: 'Server logs are not typically used for locale testing.',
                         experience: -5
                     },
+
                     {
                         text: 'Copy deck or translations matrix',
-                        outcome: 'These are the primary reference documents provided by clients for verifying correct translations and content.',
+                        outcome: 'Correct! These are the primary reference documents provided by clients for verifying correct translations and content.',
                         experience: 15
                     },
+
                     {
                         text: 'Design specifications',
                         outcome: 'While design specs might be provided, they\'re secondary to translation documents.',
                         experience: 5
                     },
+
                     {
                         text: 'Network traffic data',
                         outcome: 'Network data is not relevant for locale testing.',
                         experience: -10
                     }
+
                 ]
             },
             {
@@ -134,22 +142,26 @@ export class LocaleTestingQuiz extends BaseQuiz {
                         text: 'Requires programming knowledge',
                         outcome: 'Programming knowledge is not a primary requirement for locale testing',
                         experience: -5
+
                     },
                     {
                         text: 'Requires keen eye for detail to spot minuscule variances',
-                        outcome: 'Attention to detail is important, especially for diacritics and subtle differences.',
+                        outcome: 'Correct! Attention to detail is important, especially for diacritics and subtle differences.',
                         experience: 15
                     },
+
                     {
                         text: 'Requires fluency in all tested languages',
                         outcome: 'While language knowledge is helpful, testers can work with translation matrices.',
                         experience: 5
                     },
+
                     {
                         text: 'Requires network engineering expertise',
                         outcome: 'Network engineering is not related to locale testing',
                         experience: -10
                     }
+
                 ]
             },
             {
@@ -157,27 +169,32 @@ export class LocaleTestingQuiz extends BaseQuiz {
                 level: 'Basic',
                 title: 'Locale currency testing',
                 description: 'When conducting locale testing, what should testers check regarding currencies?',
+
                 options: [
                     {
                         text: 'Currency symbol placement',
                         outcome: 'While this is part of currency localization, it\'s just one aspect of currency-related checks.',
                         experience: 5
                     },
+
                     {
                         text: 'Exchange rates between currencies',
                         outcome: 'Exchange rate verification is not part of locale testing.',
                         experience: -5
                     },
+
                     {
                         text: 'Currency updates based on selected market/locale',
-                        outcome: 'Verifying that currencies update appropriately for each market is part of locale testing',
+                        outcome: 'Correct! Verifying that currencies update appropriately for each market is part of locale testing',
                         experience: 15
                     },
+
                     {
                         text: 'Currency conversion calculations',
                         outcome: 'Mathematical currency conversions are not part of locale testing',
                         experience: -10
                     }
+
                 ]
             },
             {
@@ -185,32 +202,36 @@ export class LocaleTestingQuiz extends BaseQuiz {
                 level: 'Basic',
                 title: 'Locale test scripts',
                 description: 'What is a recommended practice for organizing locale test scripts?',
+
                 options: [
                     {
                         text: 'Test random sections across locales',
                         outcome: 'This unstructured approach would not ensure comprehensive coverage.',
                         experience: -5
+
                     },
                     {
                         text: 'Create separate scripts for each feature',
                         outcome: 'While organization is important, the document recommends organizing by locale first.',
                         experience: 5
                     },
+
                     {
                         text: 'Combine all locales into one test case',
                         outcome: 'This would make testing confusing and difficult to track',
                         experience: -10
                     },
+
                     {
                         text: 'Separate each page/section by locale',
-                        outcome: 'This is the recommended this organization method',
+                        outcome: 'Correct! This is the recommended organization method',
                         experience: 15
                     }
-                ]
-            }
-        ];
 
-        // Intermediate Scenarios (IDs 6-10, 125 XP total)
+                ]
+            },
+        ];
+                // Intermediate Scenarios (IDs 6-10, 100 XP total, 20 XP each)
         this.intermediateScenarios = [
             {
                 id: 6,
@@ -218,7 +239,6 @@ export class LocaleTestingQuiz extends BaseQuiz {
                 title: 'Locale testing risk',
                 description: 'What potential risk is associated with locale testing when the tester isn\'t bilingual?',
                 options: [
-
                     {
                         text: 'Unable to complete any testing',
                         outcome: 'Non-bilingual testers can still perform many aspects of locale testing.',
@@ -236,9 +256,10 @@ export class LocaleTestingQuiz extends BaseQuiz {
                     },
                     {
                         text: 'Certain incorrect translations may be missed even if in the correct language',
-                        outcome: 'This is known risk as a tester may not know all languages under test',
+                        outcome: 'Correct! This is known risk as a tester may not know all languages under test',
                         experience: 15
                     }
+
                 ]
             },
             {
@@ -247,54 +268,65 @@ export class LocaleTestingQuiz extends BaseQuiz {
                 title: 'Right to Left languages',
                 description: 'How should right-to-left (RTL) language testing be approached?',
                 options: [
+
                     {
                         text: 'Verify correct text rendering and layout adaptation',
                         outcome: 'Checking rendering and layout for RTL languages is considered part of locale testing.',
                         experience: 15
                     },
+
                     {
                         text: 'Only test text direction',
                         outcome: 'RTL testing involves more than just text direction.',
                         experience: -5
                     },
+
                     {
                         text: 'Check text alignment only',
                         outcome: 'While alignment is important, RTL testing requires comprehensive layout verification',
                         experience: -5
                     },
+
                     {
                         text: 'Ignore formatting elements',
                         outcome: 'Formatting elements are crucial for RTL testing',
                         experience: -10
                     }
+
                 ]
             },
+
             {
                 id: 8,
                 level: 'Intermediate',
                 title: 'Issue identification',
                 description: 'What is the recommended approach for handling issue identification across multiple locales?',
+
                 options: [
                     {
                         text: 'Create separate bug trackers for each locale',
                         outcome: 'This would complicate issue management unnecessarily',
                         experience: -5
                     },
+
                     {
                         text: 'Preface tickets with locale identifier (e.g., [FR], [ES])',
-                        outcome: 'This is the correct approach for ease of identification.',
+                        outcome: 'Correct! This is the correct approach for ease of identification.',
                         experience: 15
                     },
+
                     {
                         text: 'Report issues without locale references',
                         outcome: 'This would make it difficult to track locale-specific issues',
                         experience: -10
                     },
+
                     {
                         text: 'Group similar issues across locales',
                         outcome: 'While grouping can be useful, clear locale identification is primary.',
                         experience: 5
                     }
+
                 ]
             },
             {
@@ -302,27 +334,32 @@ export class LocaleTestingQuiz extends BaseQuiz {
                 level: 'Intermediate',
                 title: 'Validation messages',
                 description: 'What should testers verify regarding form validation messages?',
+
                 options: [
                     {
                         text: 'Messages are translated and display correctly in each locale',
-                        outcome: 'This is a critical element for locale testing.',
+                        outcome: 'Correct! This is a critical element for locale testing.',
                         experience: 15
                     },
+
                     {
                         text: 'Only check if messages appear',
                         outcome: 'Merely checking presence is insufficient.',
                         experience: -5
                     },
+
                     {
                         text: 'Verify message positioning',
                         outcome: 'While positioning is important, translation and correct display are primary',
                         experience: 5
                     },
+
                     {
                         text: 'Skip validation message testing',
                         outcome: 'Validation messages are an essential part of locale testing.',
                         experience: -10
                     }
+
                 ]
             },
             {
@@ -330,37 +367,42 @@ export class LocaleTestingQuiz extends BaseQuiz {
                 level: 'Intermediate',
                 title: 'Time management',
                 description: 'How should testers manage time when testing multiple locales?',
+
                 options: [
                     {
                         text: 'Focus only on primary locale',
                         outcome: 'All scoped locales need appropriate coverage.',
                         experience: -10
                     },
+
                     {
                         text: 'Test one locale completely before moving to others',
                         outcome: 'While thorough, this might not be the most efficient approach.',
                         experience: 5
                     },
+
                     {
                         text: 'Random testing of locales',
                         outcome: 'Unstructured testing would not ensure proper coverage',
                         experience: -5
                     },
+
                     {
                         text: 'Balance testing across locales while maintaining thoroughness',
-                        outcome: 'The document emphasizes the importance of time management across locales',
+                        outcome: 'Correct! The document emphasizes the importance of time management across locales',
                         experience: 15
                     }
+
                 ]
-            }
+            },
         ];
 
-        // Advanced Scenarios (IDs 11-15, 150 XP total)
+                // Advanced Scenarios (IDs 11-15, 125 XP total, 25 XP each)
         this.advancedScenarios = [
             {
                 id: 11,
                 level: 'Advanced',
-                title: 'Language remenants',
+                title: 'Language remnants',
                 description: 'What approach should be taken when testing for language remnants?',
                 options: [
 
@@ -368,22 +410,26 @@ export class LocaleTestingQuiz extends BaseQuiz {
                         text: 'Check main navigation and headers only',
                         outcome: 'While important, this is not comprehensive enough.',
                         experience: 5
+
                     },
                     {
                         text: 'Check all UI elements, including hidden states and validation messages',
-                        outcome: 'The document emphasizes comprehensive checking across all UI elements',
+                        outcome: 'Correct! The document emphasizes comprehensive checking across all UI elements',
                         experience: 15
                     },
+
                     {
                         text: 'Only check visible text on main pages',
                         outcome: 'This would miss many potential issues',
                         experience: -5
                     },
+
                     {
                         text: 'Rely on automated translation detection',
                         outcome: 'Manual verification is necessary for thorough testing',
                         experience: -10
                     }
+
                 ]
             },
             {
@@ -392,26 +438,31 @@ export class LocaleTestingQuiz extends BaseQuiz {
                 title: 'Diacritic elements',
                 description: 'How should testers handle diacritic elements during testing?',
                 options: [
+
                     {
                         text: 'Ignore diacritical marks',
                         outcome: 'This would miss crucial linguistic elements.',
                         experience: -10
                     },
+
                     {
                         text: 'Only check for presence of diacritics',
                         outcome: 'Presence alone doesn\'t ensure correct usage or rendering.',
                         experience: 5
                     },
+
                     {
                         text: 'Verify correct rendering and meaning preservation',
-                        outcome: 'Diacritics must be checked for the importance of meaning',
+                        outcome: 'Correct! Diacritics must be checked for the importance of meaning',
                         experience: 15
                     },
+
                     {
                         text: 'Remove diacritics for testing',
                         outcome: 'This would fundamentally alter the language',
                         experience: -5
                     }
+
                 ]
             },
             {
@@ -419,27 +470,32 @@ export class LocaleTestingQuiz extends BaseQuiz {
                 level: 'Advanced',
                 title: 'Locale specific formatting',
                 description: 'What strategy should be employed when testing locale-specific formatting?',
+
                 options: [
                     {
                         text: 'Verify date, time, address, and phone number formats for each locale',
-                        outcome: 'These are all specific elements requiring verification',
+                        outcome: 'Correct! These are all specific elements requiring verification',
                         experience: 15
                     },
+
                     {
                         text: 'Use standard formats across all locales',
                         outcome: 'This defeats the purpose of localization.',
                         experience: -10
                     },
+
                     {
                         text: 'Check only date formats',
                         outcome: 'While important, this is only one aspect of formatting',
                         experience: 5
                     },
+
                     {
                         text: 'Ignore format variations',
                         outcome: 'Format verification is crucial for locale testing',
                         experience: -5
                     }
+
                 ]
             },
             {
@@ -448,26 +504,31 @@ export class LocaleTestingQuiz extends BaseQuiz {
                 title: 'Text expansions',
                 description: 'How should testers handle text expansion/contraction across different languages?',
                 options: [
+
                     {
                         text: 'Only test with maximum length text',
                         outcome: 'This wouldn\'t catch all potential issues.',
                         experience: -5
                     },
+
                     {
                         text: 'Ignore text length variations',
                         outcome: 'Text length variations can cause significant issues.',
                         experience: -10
                     },
+
                     {
                         text: 'Check visible elements for truncation',
                         outcome: 'While important, hidden states and dynamic content also need checking',
                         experience: 5
                     },
+
                     {
                         text: 'Verify layout integrity and check for truncation across all elements',
-                        outcome: 'The document emphasizes checking for truncation and layout issues',
+                        outcome: 'Correct! The document emphasizes checking for truncation and layout issues',
                         experience: 15
                     }
+
                 ]
             },
             {
@@ -475,27 +536,32 @@ export class LocaleTestingQuiz extends BaseQuiz {
                 level: 'Advanced',
                 title: 'Language selectors',
                 description: 'What approach should be taken when testing language toggles/selectors?',
+
                 options: [
                     {
                         text: 'Check immediate visual changes',
                         outcome: 'While important, this doesn\'t cover all necessary aspects.',
                         experience: 5
+
                     },
                     {
                         text: 'Only test switching between languages',
                         outcome: 'This misses many important aspects of language switching.',
                         experience: -5
                     },
+
                     {
                         text: 'Assume all content updates correctly',
                         outcome: 'This would miss potential issues in content loading and updates',
                         experience: -10
                     },
+
                     {
                         text: 'Verify content updates, loading behaviour, and state preservation',
-                        outcome: 'It is important to check all these aspects of language switching',
+                        outcome: 'Correct! It is important to check all these aspects of language switching',
                         experience: 15
                     }
+
                 ]
             },
         ];

@@ -77,139 +77,168 @@ export class StandardScriptTestingQuiz extends BaseQuiz {
                         text: 'A piece of automated code that runs tests without human intervention',
                         outcome: 'While scripts can be automated, this answer misses the fundamental purpose of documenting and structuring test cases',
                         experience: 5
+
                     },
                     {
                         text: 'A documented set of instructions and conditions that outline how to execute specific test cases within a software testing process',
-                        outcome: 'Correct - This is the exact definition of a standard test script',
+                        outcome: 'Correct! This is the exact definition of a standard test script',
                         experience: 15
                     },
+
                     {
                         text: 'A set of programming commands used to create software',
                         outcome: 'This describes programming code, not test scripts',
                         experience: -10
                     },
+
                     {
                         text: 'A random collection of test cases without any structure',
                         outcome: 'This contradicts the organized nature of standard test scripts.',
                         experience: -5
                     }
+
                 ]
             },
             {
+
                 id: 2,
                 level: 'Basic',
                 title: 'Script Format',
                 description: 'Which format is used for writing test cases in standard test scripts?',
+
                 options: [
                     {
                         text: 'Python code',
                         outcome: 'Python is a programming language, not a test case format.',
                         experience: -5
                     },
+
                     {
                         text: 'SQL queries',
                         outcome: 'SQL is for database queries, not test case writing.',
                         experience: -10
                     },
+
                     {
                         text: 'Gherkin language',
-                        outcome: 'Correct - The documentation specifically states that Gherkin language is used for writing test cases.',
+                        outcome: 'Correct! The documentation specifically states that Gherkin language is used for writing test cases.',
                         experience: 15
                     },
+
                     {
                         text: 'JSON format',
                         outcome: 'While JSON is a structured format, it\'s not the specified format for test cases.',
                         experience: 5
                     }
+
                 ]
             },
             {
+
                 id: 3,
                 level: 'Basic',
                 title: 'Test Case Planning',
+
                 description: 'How many test cases should be planned per day of testing on average?',
+
                 options: [
                     {
                         text: '25-50 test cases',
                         outcome: 'This is well below the recommended amount',
                         experience: -10
                     },
+
                     {
                         text: '50-75 test cases',
                         outcome: 'While close to the correct range, this is slightly below the recommended amount.',
                         experience: 5
                     },
+
                     {
                         text: '75-100 test cases',
-                        outcome: 'Correct - The documentation specifically recommends planning for 75-100 test cases per day of testing.',
+                        outcome: 'Correct! The documentation specifically recommends planning for 75-100 test cases per day of testing.',
                         experience: 15
                     },
+
                     {
                         text: '100-125 test cases',
                         outcome: 'This exceeds the recommended amount',
                         experience: -5
                     }
+
                 ]
             },
             {
+
                 id: 4,
                 level: 'Basic',
                 title: 'Executing The Script',
                 description: 'What is the first step in executing a standard test script?',
+
                 options: [
                     {
                         text: 'Start writing new test cases',
                         outcome: 'Test cases should already be written during the planning phase.',
                         experience: -10
                     },
+
                     {
                         text: 'Begin testing immediately',
                         outcome: 'While testing needs to be done, review must come first.',
                         experience: 5
                     },
+
                     {
                         text: 'Review the Operational Project Details and Statement of Work',
-                        outcome: 'Correct - The is the first step before writing the test cases',
+                        outcome: 'Correct! The is the first step before writing the test cases',
                         experience: 15
                     },
+
                     {
                         text: 'Create a new test environment',
                         outcome: 'This is not part of the execution process',
                         experience: -5
                     }
+
                 ]
             },
             {
+
                 id: 5,
                 level: 'Basic',
                 title: 'Submission Data',
                 description: 'What is the primary purpose of the "Submissions Data" tab in the test script?',
+
                 options: [
+
                     {
                         text: 'To record test case results',
                         outcome: 'While it does record data, it\'s specifically for submissions, not general test results.',
                         experience: 5
                     },
+
                     {
                         text: 'To store test environment details',
                         outcome: 'Environment details are stored elsewhere.',
                         experience: -5
                     },
+
                     {
                         text: 'To maintain a record of submitted data for traceability',
-                        outcome: 'Correct - The tab is used for recording submitted data for traceability',
+                        outcome: 'Correct! The tab is used for recording submitted data for traceability',
                         experience: 15
                     },
+
                     {
                         text: 'To track bug reports',
                         outcome: 'Bug tracking is handled in a separate system',
                         experience: -10
                     }
-                ]
-            }
-        ];
 
-        // Intermediate Scenarios (IDs 6-10, 125 XP total)
+                ]
+            },
+        ];
+        // Intermediate Scenarios (IDs 6-10, 100 XP total, 20 XP each)
         this.intermediateScenarios = [
             {
                 id: 6,
@@ -222,139 +251,169 @@ export class StandardScriptTestingQuiz extends BaseQuiz {
                         text: 'The alphabetical order of the test case',
                         outcome: 'Alphabetical order is not a factor in priority.',
                         experience: -5
+
                     },
                     {
                         text: 'The length of time it takes to execute the test',
                         outcome: 'While execution time might be considered, it\'s not a primary factor.',
                         experience: 5
                     },
+
                     {
                         text: 'The impact of the feature being tested and frequency of use',
-                        outcome: 'Correct - The documentation specifically mentions impact and frequency of use as key factors',
+                        outcome: 'Correct! The documentation specifically mentions impact and frequency of use as key factors',
                         experience: 15
                     },
+
                     {
                         text: 'The preference of the individual tester',
                         outcome: 'Individual preferences should not determine priority',
                         experience: -10
                     }
+
                 ]
             },
+
             {
+
                 id: 7,
                 level: 'Intermediate',
                 title: 'Out Of Scope Environments',
                 description: 'What should be done with environment sections that are not in scope?',
+
                 options: [
                     {
                         text: 'Delete them entirely',
                         outcome: 'Deleting sections could cause problems if they\'re needed later.',
                         experience: -10
+
                     },
                     {
                         text: 'Leave them unchanged',
                         outcome: 'Leaving them unchanged could cause confusion.',
                         experience: -5
                     },
+
                     {
                         text: 'Hide the columns',
                         outcome: 'While this would hide unused sections, it\'s not the recommended approach',
                         experience: 5
                     },
+
                     {
                         text: 'Grey them out and remove dashes from the Result and Date columns',
-                        outcome: 'Correct - The documentation explicitly states to grey out unused sections and remove dashes',
+                        outcome: 'Correct! The documentation explicitly states to grey out unused sections and remove dashes',
                         experience: 15
                     }
+
                 ]
             },
             {
+
                 id: 8,
                 level: 'Intermediate',
                 title: 'Primary Test Tab',
                 description: 'How should test suites be organized in the primary functional tests tab?',
+
                 options: [
                     {
                         text: 'Alphabetically by suite name',
                         outcome: 'While this would be organized, it doesn\'t consider importance',
                         experience: 5
+
                     },
                     {
                         text: 'Random order based on tester preference',
                         outcome: 'Random ordering would make the script difficult to follow.',
                         experience: -10
                     },
+
                     {
                         text: 'By complexity and risk factors using High, Medium, and Low priorities',
-                        outcome: 'Correct - The documentation states suites should be prioritized by complexity and risk factors',
+                        outcome: 'Correct! The documentation states suites should be prioritized by complexity and risk factors',
                         experience: 15
                     },
+
                     {
                         text: 'By the date they were created',
                         outcome: 'Creation date is not a factor in organization.',
                         experience: 5
                     }
+
                 ]
             },
             {
+
                 id: 9,
                 level: 'Intermediate',
                 title: 'Document References',
                 description: 'What should be included in the document reference for a test case?',
+
                 options: [
                     {
                         text: 'Only the test case ID',
                         outcome: 'While ID is important, more information is needed.',
                         experience: 5
                     },
+
                     {
                         text: 'Information that aided in creating the test case and will help during execution',
-                        outcome: 'Correct - The documentation states references should aid in creation and execution.',
+                        outcome: 'Correct! The documentation states references should aid in creation and execution.',
                         experience: 15
                     },
+
                     {
                         text: 'The tester\'s name',
                         outcome: 'Tester\'s name is not part of the document reference',
                         experience: -5
                     },
+
                     {
                         text: 'The current date',
                         outcome: 'Date is not part of the document reference.',
                         experience: -10
                     }
+
                 ]
             },
+
             {
+
                 id: 10,
                 level: 'Intermediate',
                 title: 'Smoke Tests',
                 description: 'When should smoke tests be executed during standard script testing?',
+
                 options: [
                     {
                         text: 'At the end of all testing',
                         outcome: 'This would be too late to catch major issues.',
                         experience: -10
+
                     },
                     {
                         text: 'First, before other test cases',
-                        outcome: 'The documentation states smoke tests should be run first.',
+                        outcome: 'Correct! Smoke tests should be run first.',
                         experience: 15
                     },
+
                     {
                         text: 'Only when issues are found',
                         outcome: 'While issues might trigger retesting, smoke tests come first',
                         experience: 5
                     },
+
                     {
                         text: 'After compatibility testing',
                         outcome: 'Compatibility testing comes after primary testing',
                         experience: -5
                     }
+
                 ]
-            }
+            },
         ];
 
-        // Advanced Scenarios (IDs 11-15, 150 XP total)
+                        // Advanced Scenarios (IDs 11-15, 125 XP total, 25 XP each)
         this.advancedScenarios = [
             {
                 id: 11,
@@ -368,137 +427,164 @@ export class StandardScriptTestingQuiz extends BaseQuiz {
                         outcome: 'While some new cases might be needed, copying and modifying is more efficient',
                         experience: 5
                     },
+
                     {
                         text: 'Copy and modify test suites as needed, adjusting for environment-specific differences',
-                        outcome: 'Correct - Test suites can be copied and modified for different environments',
+                        outcome: 'Correct! Test suites can be copied and modified for different environments',
                         experience: 15
                     },
+
                     {
                         text: 'Test only on the main environment',
                         outcome: 'All primary environments need testing',
                         experience: -10
                     },
+
                     {
                         text: 'Randomly select which tests to run on each environment',
                         outcome: 'Random selection would not ensure proper coverage',
                         experience: -5
                     }
+
                 ]
             },
             {
+
                 id: 12,
                 level: 'Advanced',
                 title: 'Compatibility Testing',
                 description: 'How should compatibility testing be integrated with primary environment testing?',
+
                 options: [
                     {
                         text: 'Always complete primary testing first',
                         outcome: 'While primary testing is important, parallel testing is possible.',
                         experience: -5
+
                     },
                     {
                         text: 'Only do compatibility testing if time permits',
                         outcome: 'Compatibility testing is required, not optional.',
                         experience: -5
                     },
+
                     {
                         text: 'Can be started alongside primary testing in parallel, depending on project scheduling',
-                        outcome: 'Correct - Compatibility testing can be done in parallel with primary environment testing',
+                        outcome: 'Correct! Compatibility testing can be done in parallel with primary environment testing',
                         experience: 15
                     },
+
                     {
                         text: 'Must be done before primary testing',
                         outcome: 'This is not the correct approach',
                         experience: -5
                     }
+
                 ]
             },
             {
+
                 id: 13,
                 level: 'Advanced',
                 title: 'Requirements Updates',
                 description: 'What is the appropriate way to handle changes in requirements during the testing phase?',
+
                 options: [
                     {
                         text: 'Ignore the changes and continue with original test cases',
                         outcome: 'Ignoring changes would lead to invalid test results',
                         experience: -5
+
                     },
                     {
                         text: 'Mark test cases where expected behaviour is in question, add comments for clarification, and remove comments once clarified',
-                        outcome: 'Correct – This is the process for handling requirement changes.',
+                        outcome: 'Correct! This is the process for handling requirement changes.',
                         experience: 15
                     },
+
                     {
                         text: 'Stop testing until all requirements are finalized',
-                        outcome: 'While pausing might seem logical, it\'s not the recommended approach',
+                        outcome: "While pausing might seem logical, it's not the recommended approach",
                         experience: 5
                     },
+
                     {
                         text: 'Delete affected test cases',
                         outcome: 'Deleting cases would lose valuable information',
                         experience: -10
                     }
+
                 ]
             },
             {
+
                 id: 14,
                 level: 'Advanced',
                 title: 'User Journeys',
                 description: 'How should user journeys be structured in comparison to functional tests?',
+
                 options: [
                     {
                         text: 'Must always use Gherkin format',
                         outcome: 'While Gherkin can be used, it\'s not required for user journeys',
                         experience: 5
+
                     },
                     {
-                        text: 'Don\'t require Gherkin format but should contain logical step processes',
-                        outcome: 'Correct - User journeys don\'t require Gherkin but should be logical steps.',
+                        text: "Don't require Gherkin format but should contain logical step processes",
+                        outcome: "Correct! User journeys don't require Gherkin but should be logical steps.",
                         experience: 15
                     },
+
                     {
                         text: 'Should be written in technical programming language',
                         outcome: 'Technical programming language is not appropriate for user journeys',
                         experience: -10
                     },
+
                     {
                         text: 'Must be single-line instructions only',
                         outcome: 'Single-line instructions would be insufficient',
                         experience: -5
                     }
+
                 ]
             },
             {
+
                 id: 15,
                 level: 'Advanced',
                 title: 'Test Case Structure',
                 description: 'What factors should influence the structure of test case creation in the standard script?',
+
                 options: [
                     {
                         text: 'Only the client\'s stated requirements',
                         outcome: 'While client requirements are important, other factors must be considered.',
                         experience: 5
+
                     },
                     {
                         text: 'A combination of target audience, project timing, risk assessment, and client requirements',
-                        outcome: 'Correct – These are all factors for important considerations.',
+                        outcome: 'Correct! These are all factors for important considerations.',
                         experience: 15
                     },
+
                     {
-                        text: 'The tester\'s previous experience with similar projects',
-                        outcome: 'While experience is valuable, it shouldn\'t determine structure',
+                        text: "The tester's previous experience with similar projects",
+                        outcome: "While experience is valuable, it shouldn't determine structure",
                         experience: -5
                     },
+
                     {
                         text: 'The number of available testers',
                         outcome: 'Tester availability doesn\'t determine test case structure',
                         experience: -10
                     }
                 ]
+
             },
         ];
-
 
         // Initialize UI and add event listeners
         this.initializeEventListeners();

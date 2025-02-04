@@ -71,28 +71,34 @@ export class EmailTestingQuiz extends BaseQuiz {
                 id: 1,
                 level: 'Basic',
                 title: 'Primary Objective',
-                description: "What is the primary purpose of email testing?",
+                description: 'What is the primary purpose of email testing?',
                 options: [
                     {
-                        text: 'To analyze and optimize email marketing metrics including open rates, click-through rates, and conversion tracking across different segments',
-                        outcome: "This relates to marketing analytics, not functional testing",
+                        text: 'To increase email open rates',
+
+                        outcome: 'This relates to marketing metrics, not testing',
                         experience: -10
+
                     },
                     {
-                        text: "Verify email functionality and appearance",
-                        outcome: 'This is the core purpose of email testing.',
+                        text: 'To verify email functionality and appearance',
+                        outcome: 'Correct! This is the purpose of email testing.',
                         experience: 15
                     },
+
                     {
-                        text: "To implement comprehensive spam prevention strategies and ensure deliverability across various email service providers",
-                        outcome: "While spam prevention is important, it's not the primary testing focus.",
+                        text: 'To check if emails reach spam folders',
+                        outcome: 'While spam prevention is a benefit, it\'s not the primary purpose.',
                         experience: 5
                     },
+
+
                     {
-                        text: "To test subject line effectiveness",
-                        outcome: "The subject line is just one component of email testing.",
+                        text: 'To test different subject lines for marketing effectiveness',
+                        outcome: 'The subject line is just one small component of an email.',
                         experience: -5
                     }
+
                 ]
             },
             {
@@ -100,27 +106,32 @@ export class EmailTestingQuiz extends BaseQuiz {
                 level: 'Basic',
                 title: 'Email Clients',
                 description: 'Which email clients are typically included in testing scope?',
+
                 options: [
                     {
-                        text: 'Conduct thorough testing exclusively on market-leading platforms like Gmail and Outlook to ensure maximum coverage',
+                        text: 'Only Gmail and Outlook',
                         outcome: 'While these are important clients, the scope should be broader.',
                         experience: 5
                     },
+
                     {
-                        text: 'Major email clients per requirements',
-                        outcome: 'Testing should focus on the main clients specified by the client.',
+                        text: 'Gmail, Outlook, Yahoo Mail, and Apple Mail',
+                        outcome: 'Correct! These are the main email clients, however, the client may request additional email clients.',
                         experience: 15
                     },
+
                     {
-                        text: 'Every available email client to ensure complete compatibility across all possible platforms and versions',
-                        outcome: 'Testing all email clients would be impractical.',
+                        text: 'All possible email clients globally',
+                        outcome: 'Testing all global email clients would be impractical.',
                         experience: -5
                     },
+
                     {
-                        text: 'Mobile clients only',
+                        text: 'Only mobile email clients',
                         outcome: 'Testing should not be limited to mobile clients.',
                         experience: -10
                     }
+
                 ]
             },
             {
@@ -128,55 +139,65 @@ export class EmailTestingQuiz extends BaseQuiz {
                 level: 'Basic',
                 title: 'UTM Understanding',
                 description: 'What does UTM stand for in email testing?',
+
                 options: [
                     {
-                        text: 'A comprehensive tracking system designed for universal application across multiple marketing channels',
-                        outcome: 'While it is a tracking system, this is not what UTM stands for',
+                        text: 'Universal Testing Module',
+                        outcome: 'While it is a module for testing, "Universal" is incorrect',
                         experience: 5
+
                     },
                     {
                         text: 'Unified Tracking Method',
                         outcome: 'This is a made-up term.',
                         experience: -10
                     },
+
                     {
-                        text: 'Urchin Tracking Module',
+                        text: 'Urchin Trace Module',
                         outcome: 'This is a made-up term.',
                         experience: -5
                     },
+
                     {
                         text: 'Urchin Tracking Module',
-                        outcome: 'This is the correct definition',
+                        outcome: 'Correct! This is the correct statement',
                         experience: 15
                     }
+
                 ]
             },
             {
                 id: 4,
                 level: 'Basic',
                 title: 'Dark Mode',
-                description: 'When should you check dark mode rendering?',
+                description: 'Where or when should you check dark mode rendering?',
+
                 options: [
                     {
                         text: 'Only on mobile devices',
                         outcome: 'Testing only mobile would miss desktop issues.',
                         experience: -10
                     },
+
                     {
                         text: 'Only on desktop clients',
                         outcome: 'Testing only desktop would miss mobile issues.',
                         experience: -5
                     },
+
                     {
                         text: 'Across all supported email clients and devices',
-                        outcome: 'Dark mode should be tested across all supported platforms',
+                        outcome: 'Correct! Dark mode should be tested across all supported platforms',
                         experience: 15
                     },
+
                     {
                         text: 'Only when specifically requested',
                         outcome: 'While client requests matter, dark mode testing is standard',
                         experience: 5
                     }
+
                 ]
             },
             {
@@ -185,59 +206,69 @@ export class EmailTestingQuiz extends BaseQuiz {
                 title: 'Email Testing Process',
                 description: 'What is the first step in email testing?',
                 options: [
+
                     {
                         text: 'Check all links in the email',
                         outcome: 'Link checking comes later in the process.',
                         experience: -5
                     },
+
                     {
                         text: 'Familiarise yourself with project documentation',
-                        outcome: 'This should be the first step in the testing process.',
+                        outcome: 'Correct! This should be the first step in the testing process.',
                         experience: 15
                     },
+
                     {
                         text: 'Set up test environments',
                         outcome: 'While important, this comes after reviewing documentation',
                         experience: 5
                     },
+
                     {
                         text: 'Create test accounts',
                         outcome: 'This would not come before reviewing documentation',
                         experience: -10
                     }
+
                 ]
-            },
+            }
         ];
 
-
-        // Intermediate Scenarios (IDs 6-10, 125 XP total)
+        // Intermediate Scenarios (IDs 6-10, 100 XP total, 20 XP each)
         this.intermediateScenarios = [
             {
                 id: 6,
                 level: 'Intermediate',
                 title: 'Bug Reporting',
                 description: 'What should you do when you discover a bug in one environment?',
+
                 options: [
                     {
                         text: 'Immediately report it',
                         outcome: 'While reporting is important, checking other environments first is more efficient.',
                         experience: 5
                     },
+
                     {
-                        text: 'Check if the issue exists across other environments before reporting',
-                        outcome: 'Other environments must be checked to determine if the issue is global.',
-                        experience: 20
+                        text: 'Correct! Check if the issue exists across other environments before reporting',
+                        outcome: 'Correct! Other environments must be checked to determine if the issue is global.',
+                        experience: 15
                     },
+
                     {
                         text: 'Only report it if it affects functionality',
                         outcome: 'All issues should be reported regardless of type',
                         experience: -10
                     },
+
                     {
                         text: 'Wait for client confirmation',
-                        outcome: 'Client confirmation isn\'t needed to report bugs',
+                        outcome: "Client confirmation isn't needed to report bugs",
                         experience: -5
                     }
+
+
                 ]
             },
             {
@@ -245,256 +276,306 @@ export class EmailTestingQuiz extends BaseQuiz {
                 level: 'Intermediate',
                 title: 'Test Script Reporting',
                 description: 'How should test results be marked in the test script?',
+
                 options: [
                     {
                         text: 'Only pass or fail',
                         outcome: 'While pass/fail is included, more detailed options should be available and stated.',
                         experience: 5
+
                     },
                     {
                         text: 'Using the Result Key options',
-                        outcome: 'This is the recommended way of reporting issues.',
-                        experience: 20
+                        outcome: 'Correct! This is the recommended way of reporting issues.',
+                        experience: 15
                     },
+
                     {
                         text: 'With detailed written descriptions',
-                        outcome: 'Written descriptions supplement but don\'t replace the Result Key',
+                        outcome: "Written descriptions supplement but don't replace the Result Key",
                         experience: -5
                     },
+
+
                     {
                         text: 'Only marking critical issues',
                         outcome: 'All issues should be marked, not just critical ones',
                         experience: -10
                     }
+
                 ]
             },
-            {   
+            {
                 id: 8,
                 level: 'Intermediate',
-                title: 'Reviewing images',
+                title: 'Reviewing Images',
                 description: 'What should be checked regarding email images?',
                 options: [
+
                     {
                         text: 'Just image quality and resolution',
                         outcome: 'While quality is important, other aspects must also be checked',
                         experience: 5
                     },
+
                     {
                         text: 'Image placement, alignment, quality, label, and display in both light/dark modes',
-                        outcome: 'These are all necessary checks for images.',
-                        experience: 20
+                        outcome: 'Correct! These are all necessary checks for images.',
+                        experience: 15
                     },
+
                     {
                         text: 'Only whether images load properly',
                         outcome: 'Loading is just one aspect of image testing',
                         experience: -10
                     },
+
                     {
                         text: 'Just image size and format',
                         outcome: 'Size and format are just basic aspects',
                         experience: -5
                     }
+
                 ]
             },
             {
                 id: 9,
                 level: 'Intermediate',
-                title: 'How should company details be verified in emails?',
-                description: 'Check against Wikipedia',
+
+                title: 'Company Details Signitures',
+                description: 'How should company details be verified in emails?',
+
                 options: [
                     {
                         text: 'Check against Wikipedia',
-                        outcome: 'Wikipedia isn\'t a reliable source for verification.',
-                        experience: -15
+                        outcome: "Wikipedia isn't a reliable source for verification.",
+                        experience: -10
+
                     },
                     {
                         text: 'Verify against the company website',
-                        outcome: 'While the website can help, target market specificity is key.',
+                        outcome: "While the website can help, target market specificity is key.",
                         experience: 5
                     },
+
                     {
                         text: 'Match details to the target market (e.g., UK address for UK market)',
-                        outcome: 'Details should be checked against target market',
-                        experience: 20
+                        outcome: 'Correct! Details should be checked against target market',
+                        experience: 15
                     },
+
                     {
                         text: 'Use generic company information',
                         outcome: 'Generic information may not be accurate',
                         experience: -5
                     }
+
                 ]
             },
             {
                 id: 10,
                 level: 'Intermediate',
+
                 title: 'Project Metrics',
                 description: 'What should be included in the project metrics after testing?',
+
                 options: [
                     {
                         text: 'Only number of bugs',
                         outcome: 'Bug count alone is insufficient.',
                         experience: -5
                     },
+
                     {
                         text: 'Session totals, ticket resolution totals, and project burndown',
-                        outcome: 'All these metrics should be included unless otherwise specified.',
-                        experience: 20
+                        outcome: 'Correct! All these metrics should be included unless otherwise specified.',
+                        experience: 15
                     },
+
                     {
                         text: 'Just test completion percentage',
                         outcome: 'While completion is tracked, more metrics are needed',
                         experience: 5
                     },
+
                     {
                         text: 'Only critical issues',
                         outcome: 'All issues, not just critical ones, should be tracked',
                         experience: -10
                     }
+
                 ]
-            },
+            }
         ];
-
-
-        // Advanced Scenarios (IDs 11-15, 100 XP total)
+        
+        // Advanced Scenarios (IDs 11-15, 125 XP total, 25 XP each)
         this.advancedScenarios = [
             {
                 id: 11,
                 level: 'Advanced',
-                title: 'Resource calculator',
+                title: 'Resource Calculator',
                 description: 'How should the resource calculator be used in email testing?',
                 options: [
+
                     {
                         text: 'Only for estimating total project time',
                         outcome: 'While it helps with timing, it\'s more comprehensive.',
                         experience: 5
                     },
+
                     {
                         text: 'To calculate exact testing hours needed',
                         outcome: 'It provides guidance rather than exact calculations.',
                         experience: -5
                     },
+
                     {
                         text: 'For guided timeframe planning with adjustable fields for setup, copy check, link check, rendering check, and reporting',
-                        outcome: 'Correct as this is used for multiple adjustable testing activities',
-                        experience: 25
+                        outcome: 'Correct! This is used for multiple adjustable testing activities',
+                        experience: 15
                     },
+
                     {
                         text: 'Only for billing purposes',
                         outcome: "It's used for planning, not billing",
                         experience: -10
                     }
+
                 ]
             },
             {
                 id: 12,
                 level: 'Advanced',
-                title: 'Unsubscribe links',
+
+                title: 'Unsubscribe Links',
                 description: 'What is the correct approach when handling unsubscribe links during testing?',
+
                 options: [
                     {
                         text: 'Report all non-functioning unsubscribe links as critical bugs',
                         outcome: 'These may not necessarily be bugs in the test environment.',
                         experience: -5
                     },
+
                     {
                         text: 'Ignore all unsubscribe link issues',
                         outcome: 'Issues should still be documented appropriately.',
                         experience: -10
                     },
+
                     {
-                        text: 'Understand that unsubscribe links may error due to test distribution differences from live',
-                        outcome: 'This is potentially expected behaviour in test environment as live environment may yet not be set up of which details should be provided by the client',
-                        experience: 25
+                        text: 'Understand that unsubscribe links may error due to test distribution differences from live environment',
+                        outcome: 'Correct! This is potentially expected behaviour in test environment as live environment may yet not be set up of which details should be provided by the client',
+                        experience: 15
                     },
+
                     {
                         text: 'Test unsubscribe functionality in production',
-                        outcome: 'While production testing may work, it\'s not the recommended approach',
+                        outcome: "While production testing may work, it's not the recommended approach",
                         experience: 5
                     }
+
                 ]
             },
             {
                 id: 13,
                 level: 'Advanced',
-                title: 'Text wrap evaluation',
+
+                title: 'Text Wrap Evaluation',
                 description: 'How should text wrapping issues be evaluated?',
+
                 options: [
                     {
                         text: 'Only check on mobile devices',
                         outcome: 'While mobile is important, all devices need checking specified by the client.',
                         experience: 5
+
                     },
                     {
                         text: 'Compare against design specifications for consistent text flow across all devices',
-                        outcome: 'Checking consistency with design across all platforms is recommended.',
-                        experience: 25
+                        outcome: 'Correct! Checking consistency with design across all platforms is recommended.',
+                        experience: 15
                     },
+
                     {
                         text: 'Only check headlines',
                         outcome: 'All text needs checking, not just headlines',
                         experience: -10
                     },
+
                     {
                         text: 'Ignore minor wrapping differences',
                         outcome: 'All wrapping issues should be noted',
                         experience: -5
                     }
+
                 ]
             },
             {
                 id: 14,
                 level: 'Advanced',
-                title: 'Results tables within scripts',
+
+                title: 'Results Tables Within Scripts',
                 description: 'When updating the Overall Results table, what must be considered?',
+
                 options: [
                     {
                         text: 'Only failed tests',
                         outcome: 'While failures are important, all results must be included.',
                         experience: 5
                     },
+
                     {
                         text: 'Just critical issues',
                         outcome: 'All issues, not just critical ones, must be included.',
                         experience: -10
                     },
+
                     {
                         text: 'Only passed tests',
                         outcome: 'Both passes and failures must be included',
                         experience: -5
                     },
+
                     {
                         text: 'The entire range of tests including any newly added environments',
-                        outcome: 'All test ranges should be updated including updating formulas to include any new environments',
-                        experience: 25
+                        outcome: 'Correct! All test ranges should be updated including updating formulas to include any new environments',
+                        experience: 15
                     }
+
                 ]
             },
             {
                 id: 15,
                 level: 'Advanced',
-                title: 'Light & Dark mode testing priority',
+                title: 'Light & Dark Mode Testing Priority',
                 description: 'How should light/dark mode testing be coordinated across devices?',
+
                 options: [
                     {
                         text: 'Test only system-level changes',
                         outcome: 'Client-specific settings must also be tested.',
                         experience: -10
                     },
+
                     {
                         text: 'Check each email client independently',
                         outcome: 'While individual testing is needed, system settings must be considered.',
                         experience: 5
                     },
+
                     {
                         text: 'Coordinate system settings and individual app preferences, understanding that some clients follow system settings while others need manual configuration',
-                        outcome: 'The relationship between system and app-specific settings should be tested',
-                        experience: 25
+                        outcome: 'Correct! The relationship between system and app-specific settings should be tested',
+                        experience: 15
                     },
+
                     {
                         text: 'Use only default settings',
                         outcome: 'Testing default settings alone is insufficient',
                         experience: -5
                     }
+
                 ]
             },
         ];
