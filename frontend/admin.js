@@ -669,12 +669,10 @@ class AdminDashboard {
 
             // Add event listener for delete user button
             content.querySelector('.delete-user-btn').addEventListener('click', async () => {
-                if (confirm(`Are you sure you want to delete user ${username}? This action cannot be undone.`)) {
-                    try {
-                        await this.deleteUser(username);
-                    } catch (error) {
-                        console.error('Failed to delete user:', error);
-                    }
+                try {
+                    await this.deleteUser(username);
+                } catch (error) {
+                    console.error('Failed to delete user:', error);
                 }
             });
 
