@@ -896,8 +896,20 @@ export class TesterMindsetQuiz extends BaseQuiz {
             
             const selectedAnswer = scenario.options[originalIndex];
 
-            // Update player state
-            this.player.experience = Math.max(0, Math.min(this.maxXP, this.player.experience + selectedAnswer.experience));
+            // Calculate new experience with level-based minimum thresholds
+            let newExperience = this.player.experience + selectedAnswer.experience;
+            
+            // Apply minimum thresholds based on current level
+            const questionCount = this.player.questionHistory.length;
+            if (questionCount >= 5) { // Intermediate level
+                newExperience = Math.max(this.levelThresholds.basic.minXP, newExperience);
+            }
+            if (questionCount >= 10) { // Advanced level
+                newExperience = Math.max(this.levelThresholds.intermediate.minXP, newExperience);
+            }
+
+            // Update player experience with bounds
+            this.player.experience = Math.max(0, Math.min(this.maxXP, newExperience));
             
             // Add status to question history
             this.player.questionHistory.push({
@@ -1230,7 +1242,7 @@ export class TesterMindsetQuiz extends BaseQuiz {
         if (quizCompleteHeader) {
             quizCompleteHeader.textContent = failed ? 'Quiz Failed!' : 'Quiz Complete!';
         }
-        
+
         const performanceSummary = document.getElementById('performance-summary');
         if (failed) {
             performanceSummary.textContent = 'Quiz failed. You did not meet the minimum XP requirement to progress. You cannot retry this quiz.';
