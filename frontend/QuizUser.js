@@ -101,11 +101,22 @@ export class QuizUser {
         ];
 
         quizTypes.forEach(quizName => {
-            // Clear both hyphenated and camelCase versions
-            localStorage.removeItem(`quiz_progress_${this.username}_${quizName}`);
-            localStorage.removeItem(`quiz_progress_${this.username}_${this.normalizeQuizName(quizName)}`);
-            localStorage.removeItem(`quizResults_${this.username}_${quizName}`);
-            localStorage.removeItem(`quizResults_${this.username}_${this.normalizeQuizName(quizName)}`);
+            // Clear all possible variations of the quiz name
+            const variations = [
+                quizName,                                              // original (hyphenated)
+                this.normalizeQuizName(quizName),                     // camelCase
+                quizName.replace(/-/g, ''),                           // no hyphens
+                quizName.toUpperCase(),                               // uppercase
+                quizName.toLowerCase(),                               // lowercase
+                // Special handling for CMS-Testing variations
+                quizName === 'cms-testing' ? 'CMS-Testing' : null,    // historical CMS-Testing
+                quizName === 'cms-testing' ? 'cmsTesting' : null      // historical cmsTesting
+            ].filter(Boolean); // Remove null values
+
+            variations.forEach(variant => {
+                localStorage.removeItem(`quiz_progress_${this.username}_${variant}`);
+                localStorage.removeItem(`quizResults_${this.username}_${variant}`);
+            });
         });
 
         // Clear general user data

@@ -240,7 +240,6 @@ router.get('/stats', auth, async (req, res) => {
 // Reset a user's quiz progress
 router.post('/users/:username/quiz-progress/:quizName/reset', auth, async (req, res) => {
     try {
-        // Verify admin status
         if (!req.user.isAdmin) {
             return res.status(403).json({
                 success: false,
@@ -258,7 +257,6 @@ router.post('/users/:username/quiz-progress/:quizName/reset', auth, async (req, 
 
         console.log('Attempting to reset quiz progress:', { username, quizName });
 
-        // Find the user
         const user = await User.findOne({ username });
         if (!user) {
             console.log('User not found:', username);
@@ -268,36 +266,45 @@ router.post('/users/:username/quiz-progress/:quizName/reset', auth, async (req, 
             });
         }
 
-        // Normalize quiz name
-        const normalizedQuizName = String(quizName).replace(/([A-Z])/g, '-$1').toLowerCase().replace(/^-/, '');
-        console.log('Normalized quiz name:', normalizedQuizName);
+        // Generate all possible variations of the quiz name
+        const quizVariations = [
+            quizName.toLowerCase(),                                    // lowercase
+            quizName.toUpperCase(),                                    // uppercase
+            quizName.replace(/-/g, ''),                               // no hyphens
+            quizName.replace(/([A-Z])/g, '-$1').toLowerCase(),        // kebab-case
+            quizName.replace(/-([a-z])/g, (_, c) => c.toUpperCase()), // camelCase
+            quizName.replace(/-/g, '_'),                              // snake_case
+            // Special handling for CMS
+            quizName.toLowerCase().includes('cms') ? 
+                [
+                    'CMS-Testing',
+                    'cms-testing',
+                    'cmsTesting',
+                    'CMS_Testing',
+                    'cms_testing'
+                ] : []
+        ].flat();
 
-        // Reset quiz progress
+        // Reset quiz progress for all variations
         if (!user.quizProgress) {
             user.quizProgress = new Map();
         }
 
-        // Delete the quiz progress using Map methods
-        user.quizProgress.delete(normalizedQuizName);
-        user.quizProgress.delete(quizName); // Also try original name just in case
+        // Delete all variations from quiz progress
+        quizVariations.forEach(variant => {
+            user.quizProgress.delete(variant);
+        });
 
-        // Remove quiz result if it exists
+        // Remove quiz results for all variations
         if (user.quizResults) {
             const initialLength = user.quizResults.length;
             user.quizResults = user.quizResults.filter(result => {
                 if (!result || !result.quizName) return false;
-                try {
-                    const resultQuizName = String(result.quizName).replace(/([A-Z])/g, '-$1').toLowerCase().replace(/^-/, '');
-                    return resultQuizName !== normalizedQuizName && result.quizName !== quizName;
-                } catch (error) {
-                    console.error('Error comparing quiz names:', error);
-                    return true; // Keep the result if we can't compare it
-                }
+                return !quizVariations.includes(result.quizName);
             });
-            console.log(`Removed ${initialLength - user.quizResults.length} quiz results for ${quizName}`);
+            console.log(`Removed ${initialLength - user.quizResults.length} quiz results`);
         }
 
-        // Save the updated user document
         await user.save();
         console.log('Successfully reset quiz progress for:', { username, quizName });
         

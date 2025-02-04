@@ -158,12 +158,31 @@ export class BaseQuiz {
     }
 
     clearQuizLocalStorage(username, quizName) {
-        // Clear both hyphenated and camelCase versions
-        const normalizedName = this.normalizeQuizName(quizName);
-        localStorage.removeItem(`quiz_progress_${username}_${quizName}`);
-        localStorage.removeItem(`quiz_progress_${username}_${normalizedName}`);
-        localStorage.removeItem(`quizResults_${username}_${quizName}`);
-        localStorage.removeItem(`quizResults_${username}_${normalizedName}`);
+        const variations = [
+            quizName,                                              // original
+            quizName.toLowerCase(),                               // lowercase
+            quizName.toUpperCase(),                               // uppercase
+            quizName.replace(/-/g, ''),                           // no hyphens
+            quizName.replace(/([A-Z])/g, '-$1').toLowerCase(),    // kebab-case
+            quizName.replace(/-([a-z])/g, (_, c) => c.toUpperCase()), // camelCase
+            quizName.replace(/-/g, '_'),                          // snake_case
+        ];
+
+        // Add CMS-specific variations if relevant
+        if (quizName.toLowerCase().includes('cms')) {
+            variations.push(
+                'CMS-Testing',
+                'cms-testing',
+                'cmsTesting',
+                'CMS_Testing',
+                'cms_testing'
+            );
+        }
+
+        variations.forEach(variant => {
+            localStorage.removeItem(`quiz_progress_${username}_${variant}`);
+            localStorage.removeItem(`quizResults_${username}_${variant}`);
+        });
     }
 
     normalizeQuizName(quizName) {
