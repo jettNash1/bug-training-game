@@ -604,6 +604,11 @@ class AdminDashboard {
                                border: none; border-radius: 4px; cursor: pointer; font-weight: 500;">
                         Reset Password
                     </button>
+                    <button class="delete-user-btn" 
+                        style="padding: 10px 20px; background-color: #dc3545; color: white; 
+                               border: 2px solid #dc3545; border-radius: 4px; cursor: pointer; font-weight: 500;">
+                        Delete User
+                    </button>
                 </div>
             `;
             
@@ -658,6 +663,17 @@ class AdminDashboard {
                         await this.resetUserPassword(username);
                     } catch (error) {
                         console.error('Failed to reset password:', error);
+                    }
+                }
+            });
+
+            // Add event listener for delete user button
+            content.querySelector('.delete-user-btn').addEventListener('click', async () => {
+                if (confirm(`Are you sure you want to delete user ${username}? This action cannot be undone.`)) {
+                    try {
+                        await this.deleteUser(username);
+                    } catch (error) {
+                        console.error('Failed to delete user:', error);
                     }
                 }
             });
@@ -1048,6 +1064,52 @@ class AdminDashboard {
         } catch (error) {
             console.error('Error resetting password:', error);
             this.showError('Failed to reset password');
+            throw error;
+        }
+    }
+
+    async deleteUser(username) {
+        try {
+            console.log('Deleting user:', username);
+            
+            // Double confirmation for deleting a user
+            const confirmMessage = `Are you sure you want to delete user ${username}? This action cannot be undone.`;
+            if (!confirm(confirmMessage)) {
+                return false;
+            }
+
+            // Second confirmation with typing username
+            const confirmInput = prompt(`To confirm deletion, please type the username "${username}":`);
+            if (confirmInput !== username) {
+                alert('Username did not match. Deletion cancelled.');
+                return false;
+            }
+
+            const response = await this.apiService.fetchWithAdminAuth(
+                `${this.apiService.baseUrl}/admin/users/${username}`,
+                {
+                    method: 'DELETE'
+                }
+            );
+
+            if (!response.success) {
+                throw new Error(response.error || 'Failed to delete user');
+            }
+
+            // Remove any open overlays
+            const overlays = document.querySelectorAll('.user-details-overlay');
+            overlays.forEach(overlay => overlay.remove());
+
+            // Refresh the users list
+            await this.loadUsers();
+            await this.updateDashboard();
+
+            // Show success message
+            alert(`User ${username} has been successfully deleted`);
+            return true;
+        } catch (error) {
+            console.error('Error deleting user:', error);
+            this.showError('Failed to delete user');
             throw error;
         }
     }

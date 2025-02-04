@@ -499,4 +499,45 @@ router.get('/users/:username/quiz-questions/:quizName', auth, async (req, res) =
     }
 });
 
+// Delete a user
+router.delete('/users/:username', auth, async (req, res) => {
+    try {
+        // Verify admin status
+        if (!req.user.isAdmin) {
+            return res.status(403).json({
+                success: false,
+                message: 'Admin access required'
+            });
+        }
+
+        const { username } = req.params;
+        console.log(`Attempting to delete user: ${username}`);
+
+        // Find and delete the user
+        const result = await User.findOneAndDelete({ username });
+        
+        if (!result) {
+            console.log(`User ${username} not found`);
+            return res.status(404).json({
+                success: false,
+                message: 'User not found'
+            });
+        }
+
+        console.log(`Successfully deleted user: ${username}`);
+        res.json({
+            success: true,
+            message: `User ${username} has been deleted`,
+            deletedUser: result
+        });
+    } catch (error) {
+        console.error('Error deleting user:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Failed to delete user',
+            error: error.message
+        });
+    }
+});
+
 module.exports = router; 
