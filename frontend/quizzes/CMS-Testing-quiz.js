@@ -592,21 +592,26 @@ export class CMS_Testing_Quiz extends BaseQuiz {
             // Use user-specific key for localStorage
             const storageKey = `quiz_progress_${username}_${this.quizName}`;
             const savedProgress = await this.apiService.getQuizProgress(this.quizName);
+            console.log('Raw API Response:', savedProgress);
             let progress = null;
             
-            if (savedProgress && savedProgress.data && savedProgress.data.data) {
-                // Access the nested data structure from the API
-                progress = savedProgress.data.data;
-                console.log('Loaded progress from API:', progress);
+            if (savedProgress && savedProgress.data) {
+                // Normalize the data structure
+                progress = {
+                    experience: savedProgress.data.experience || 0,
+                    tools: savedProgress.data.tools || [],
+                    questionHistory: savedProgress.data.questionHistory || [],
+                    currentScenario: savedProgress.data.currentScenario || 0,
+                    status: savedProgress.data.status || 'in-progress'
+                };
+                console.log('Normalized progress data:', progress);
             } else {
-                // Try loading from localStorage
+                // Try loading from localStorage as fallback
                 const localData = localStorage.getItem(storageKey);
                 if (localData) {
                     const parsed = JSON.parse(localData);
-                    if (parsed.data) {
-                        progress = parsed.data;
-                        console.log('Loaded progress from localStorage:', progress);
-                    }
+                    progress = parsed;
+                    console.log('Loaded progress from localStorage:', progress);
                 }
             }
 
@@ -617,34 +622,16 @@ export class CMS_Testing_Quiz extends BaseQuiz {
                 this.player.questionHistory = progress.questionHistory || [];
                 this.player.currentScenario = progress.currentScenario || 0;
 
-                console.log('Setting quiz state from progress:', {
-                    status: progress.status,
-                    experience: progress.experience,
-                    questionsAnswered: progress.questionsAnswered
-                });
-
+                // Ensure we're updating the UI correctly
+                this.updateProgress();
+                
                 // Check quiz status and show appropriate screen
                 if (progress.status === 'failed') {
-                    this.endGame(true); // Show failed state
+                    this.endGame(true);
                     return true;
                 } else if (progress.status === 'completed') {
-                    this.endGame(false); // Show completion state
+                    this.endGame(false);
                     return true;
-                }
-
-                // Update UI for in-progress state
-                this.updateProgress();
-
-                // Update the questions progress display
-                const questionsProgress = document.getElementById('questions-progress');
-                if (questionsProgress) {
-                    questionsProgress.textContent = `${this.player.questionHistory.length}/15`;
-                }
-
-                // Update the current scenario display
-                const currentScenarioDisplay = document.getElementById('current-scenario');
-                if (currentScenarioDisplay) {
-                    currentScenarioDisplay.textContent = `${this.player.currentScenario}`;
                 }
 
                 return true;
