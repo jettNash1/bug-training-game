@@ -13,30 +13,11 @@
         <header class="app-header" role="banner">
             <div class="logo">
                 <img src="../assets/zoonou-logo.svg" alt="Zoonou Logo" width="32" height="32">
-                <span class="logo-text">Admin Dashboard</span>
+                <h1 class="logo-text">Admin Dashboard</h1>
             </div>
-            <nav class="admin-nav" role="navigation" style="padding-right: 15px; display: flex; align-items: center; gap: 10px;">
-                <a href="../index.html" class="nav-button" style="
-                    padding: 8px 16px;
-                    background-color: var(--primary-color);
-                    color: white;
-                    text-decoration: none;
-                    border-radius: 4px;
-                    font-weight: 500;
-                    transition: background-color 0.2s;
-                    border: none;
-                    cursor: pointer;
-                ">Return to Learning Hub</a>
-                <button id="logoutBtn" class="nav-button" style="
-                    padding: 8px 16px;
-                    background-color: var(--secondary-color);
-                    color: white;
-                    border: none;
-                    border-radius: 4px;
-                    font-weight: 500;
-                    cursor: pointer;
-                    transition: background-color 0.2s;
-                ">Logout</button>
+            <nav class="admin-nav" role="navigation">
+                <a href="../index.html" class="nav-button" role="button" aria-label="Return to learning hub">Return to Learning Hub</a>
+                <button id="logoutBtn" class="nav-button logout" aria-label="Logout from admin panel">Logout</button>
             </nav>
         </header>
 
