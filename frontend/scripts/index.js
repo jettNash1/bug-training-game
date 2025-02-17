@@ -43,12 +43,9 @@ class IndexPage {
 
             console.log('User data received:', {
                 userType: userData.data.userType,
-                allowedQuizzes: userData.data.allowedQuizzes,
                 hiddenQuizzes: userData.data.hiddenQuizzes
             });
 
-            const isInterviewAccount = userData.data.userType === 'interview_candidate';
-            const allowedQuizzes = userData.data.allowedQuizzes || [];
             const hiddenQuizzes = userData.data.hiddenQuizzes || [];
 
             // Batch all quiz progress requests
@@ -56,33 +53,14 @@ class IndexPage {
                 const quizId = item.dataset.quiz;
                 const quizLower = quizId.toLowerCase();
 
-                console.log('Processing quiz:', {
-                    quizId,
-                    quizLower,
-                    isInterviewAccount,
-                    isInAllowedQuizzes: allowedQuizzes.includes(quizLower),
-                    isInHiddenQuizzes: hiddenQuizzes.includes(quizLower)
-                });
-
-                // Handle quiz visibility based on account type
-                if (isInterviewAccount) {
-                    // For interview accounts, only show quizzes in allowedQuizzes
-                    if (!allowedQuizzes.includes(quizLower)) {
-                        console.log(`Hiding quiz ${quizId} - not in allowed quizzes`);
-                        item.style.display = 'none';
-                        return null;
-                    }
-                } else {
-                    // For regular accounts, hide quizzes in hiddenQuizzes
-                    if (hiddenQuizzes.includes(quizLower)) {
-                        console.log(`Hiding quiz ${quizId} - in hidden quizzes`);
-                        item.style.display = 'none';
-                        return null;
-                    }
+                // Handle quiz visibility based on hiddenQuizzes
+                if (hiddenQuizzes.includes(quizLower)) {
+                    item.style.display = 'none';
+                    return null;
                 }
                 
-                console.log(`Showing quiz ${quizId}`);
-                item.style.display = ''; // Reset display style
+                // Show the quiz if it's not hidden
+                item.style.display = '';
 
                 try {
                     // Get the saved progress
