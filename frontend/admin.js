@@ -455,11 +455,11 @@ class AdminDashboard {
         // Calculate progress as percentage of total possible questions
         const progress = (totalQuestionsAnswered / totalPossibleQuestions) * 100;
 
-        console.log(`Progress calculation for ${user.username}:`, {
+        /*console.log(`Progress calculation for ${user.username}:`, {
             totalQuestionsAnswered,
             totalPossibleQuestions,
             progress
-        });
+        });*/
 
         return progress;
     }
@@ -547,6 +547,7 @@ class AdminDashboard {
                                      questionsAnswered > 0 ? 'In Progress' : 
                                      'Not Started';
                         
+                        // Only show the quiz item if it's visible for the user type
                         return `
                             <div class="quiz-progress-item" style="margin-bottom: 20px; padding: 15px; background: #f5f5f5; border-radius: 8px;">
                                 <h4 style="margin: 0 0 10px 0;">${this.formatQuizName(quizName)}</h4>
@@ -579,10 +580,14 @@ class AdminDashboard {
                                             <input type="checkbox" 
                                                 class="quiz-visibility-toggle"
                                                 data-quiz-name="${quizName}"
-                                                ${isVisible ? 'checked="checked"' : ''}
+                                                ${isInterviewAccount ? 
+                                                    (allowedQuizzes.includes(quizLower) ? 'checked="checked"' : '') : 
+                                                    (!hiddenQuizzes.includes(quizLower) ? 'checked="checked"' : '')}
                                                 ${isInterviewAccount ? 'disabled="disabled"' : ''}
                                                 style="margin: 0;">
-                                            <span>${isVisible ? 'Visible' : 'Hidden'}</span>
+                                            <span>${isInterviewAccount ? 
+                                                (allowedQuizzes.includes(quizLower) ? 'Visible' : 'Hidden') : 
+                                                (!hiddenQuizzes.includes(quizLower) ? 'Visible' : 'Hidden')}</span>
                                         </label>
                                     </div>
                                 </div>
