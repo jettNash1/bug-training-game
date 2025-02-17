@@ -389,7 +389,19 @@ class AdminDashboard {
             card.innerHTML = `
                 <div class="user-card-content">
                     <div class="user-header">
-                        <h4>${user.username}</h4>
+                        <div style="display: flex; align-items: center; gap: 10px;">
+                            <h4>${user.username}</h4>
+                            <span class="account-type-badge" style="
+                                padding: 4px 8px;
+                                border-radius: 12px;
+                                font-size: 0.8em;
+                                font-weight: 500;
+                                ${user.userType === 'interview_candidate' ? 
+                                    'background-color: #ff9800; color: white;' : 
+                                    'background-color: #4CAF50; color: white;'}">
+                                ${user.userType === 'interview_candidate' ? 'Interview' : 'Regular'}
+                            </span>
+                        </div>
                         <div class="user-stats">
                             <div class="stat">
                                 <span class="stat-label">Overall Progress:</span>
