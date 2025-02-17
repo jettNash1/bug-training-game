@@ -848,6 +848,24 @@ class AdminDashboard {
         setTimeout(() => errorDiv.remove(), 5000);
     }
 
+    showSuccess(message) {
+        const successDiv = document.createElement('div');
+        successDiv.className = 'success-notification';
+        successDiv.style.cssText = `
+            position: fixed;
+            top: 1rem;
+            right: 1rem;
+            background: #28a745;
+            color: white;
+            padding: 1rem;
+            border-radius: 4px;
+            z-index: 1001;
+        `;
+        successDiv.textContent = message;
+        document.body.appendChild(successDiv);
+        setTimeout(() => successDiv.remove(), 5000);
+    }
+
     verifyQuizProgress(user) {
         if (!user.quizProgress) {
             console.warn(`Initializing empty quiz progress for user ${user.username}`);
@@ -1193,8 +1211,8 @@ class AdminDashboard {
                 throw new Error(response.message || 'Failed to create interview account');
             }
 
-            // Show success message
-            this.showError(`Interview account created for ${username}`);
+            // Show success message using the correct method
+            this.showSuccess(`Interview account created for ${username}`);
             
             // Refresh the user list
             await this.loadUsers();
@@ -1226,10 +1244,10 @@ class AdminDashboard {
                             <label>Select Quizzes:</label>
                             <div class="quiz-selection" style="max-height: 200px; overflow-y: auto; padding: 10px; border: 1px solid #ddd;">
                                 ${this.quizTypes.map(quiz => `
-                                    <div style="margin-bottom: 8px;">
-                                        <label style="display: flex; align-items: center; gap: 8px;">
-                                            <input type="checkbox" name="quizzes" value="${quiz}">
-                                            <span>${this.formatQuizName(quiz)}</span>
+                                    <div style="margin-bottom: 8px; display: flex; align-items: center;">
+                                        <label style="display: flex; align-items: center; gap: 8px; width: 100%;">
+                                            <input type="checkbox" name="quizzes" value="${quiz}" style="margin: 0;">
+                                            <span style="flex: 1;">${this.formatQuizName(quiz)}</span>
                                         </label>
                                     </div>
                                 `).join('')}

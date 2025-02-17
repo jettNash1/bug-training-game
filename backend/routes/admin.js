@@ -617,10 +617,10 @@ router.post('/create-interview-account', auth, async (req, res) => {
 
         const { username, password, allowedQuizzes } = req.body;
 
-        if (!username || !password) {
+        if (!username || !password || !allowedQuizzes) {
             return res.status(400).json({
                 success: false,
-                message: 'Username and password are required'
+                message: 'Username, password, and allowed quizzes are required'
             });
         }
 
@@ -633,26 +633,29 @@ router.post('/create-interview-account', auth, async (req, res) => {
             });
         }
 
-        // Get all available quiz names from the frontend
+        // Get all available quiz names
         const allQuizzes = [
             'tester-mindset', 'communication', 'initiative', 'standard-script-testing',
             'script-metrics-troubleshooting', 'locale-testing', 'build-verification',
             'test-types-tricks', 'test-support', 'time-management', 'risk-analysis',
             'risk-management', 'issue-tracking-tools', 'raising-tickets', 'issue-verification',
             'reports', 'cms-testing', 'email-testing', 'non-functional', 'content-copy'
-        ];
+        ].map(quiz => quiz.toLowerCase());
+
+        // Normalize allowed quizzes to lowercase
+        const normalizedAllowedQuizzes = allowedQuizzes.map(quiz => quiz.toLowerCase());
 
         // Create hiddenQuizzes array with quizzes that aren't in allowedQuizzes
         const hiddenQuizzes = allQuizzes.filter(quiz => 
-            !allowedQuizzes.includes(quiz.toLowerCase())
-        ).map(quiz => quiz.toLowerCase());
+            !normalizedAllowedQuizzes.includes(quiz)
+        );
 
         // Create new interview user
         const user = new User({
             username,
             password,
             userType: 'interview_candidate',
-            allowedQuizzes: allowedQuizzes.map(quiz => quiz.toLowerCase()),
+            allowedQuizzes: normalizedAllowedQuizzes,
             hiddenQuizzes: hiddenQuizzes
         });
 
