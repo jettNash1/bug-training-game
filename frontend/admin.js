@@ -1173,7 +1173,7 @@ class AdminDashboard {
                 .filter(quiz => !allowedQuizzes.includes(quiz));
 
             const response = await this.apiService.fetchWithAdminAuth(
-                `${this.apiService.baseUrl}/admin/users/create-interview`,
+                `${this.apiService.baseUrl}/admin/create-interview-account`,
                 {
                     method: 'POST',
                     headers: {
@@ -1209,76 +1209,84 @@ class AdminDashboard {
     }
 
     showCreateInterviewAccountForm() {
-        const overlay = document.createElement('div');
-        overlay.className = 'user-details-overlay';
-        
-        const content = document.createElement('div');
-        content.className = 'user-details-content';
-        
-        content.innerHTML = `
-            <div class="details-header">
-                <h3>Create Interview Account</h3>
-                <button class="close-btn" style="position: absolute; right: 20px; top: 20px; 
-                        padding: 5px 10px; cursor: pointer; background: none; border: none; font-size: 20px;">×</button>
-            </div>
-            <form id="interviewAccountForm" style="display: flex; flex-direction: column; gap: 15px; padding: 20px;">
-                <div>
-                    <label for="username">Username:</label>
-                    <input type="text" id="username" required style="width: 100%; padding: 8px; margin-top: 5px;">
-                </div>
-                <div>
-                    <label for="password">Password:</label>
-                    <input type="password" id="password" required style="width: 100%; padding: 8px; margin-top: 5px;">
-                </div>
-                <div>
-                    <label>Select Quizzes:</label>
-                    <div class="quiz-selection" style="margin-top: 10px; max-height: 200px; overflow-y: auto;">
-                        ${this.quizTypes.map(quiz => `
-                            <div style="margin: 5px 0;">
-                                <label style="display: flex; align-items: center; gap: 5px;">
-                                    <input type="checkbox" value="${quiz}" class="quiz-checkbox">
-                                    ${this.formatQuizName(quiz)}
-                                </label>
+        const modalHTML = `
+            <div class="modal-overlay">
+                <div class="modal-content">
+                    <h2>Create Interview Account</h2>
+                    <form id="createInterviewForm">
+                        <div class="form-group">
+                            <label for="username">Username:</label>
+                            <input type="text" id="username" name="username" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="password">Password:</label>
+                            <input type="password" id="password" name="password" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Select Quizzes:</label>
+                            <div class="quiz-selection" style="max-height: 200px; overflow-y: auto; padding: 10px; border: 1px solid #ddd;">
+                                ${this.quizTypes.map(quiz => `
+                                    <div style="margin-bottom: 8px;">
+                                        <label style="display: flex; align-items: center; gap: 8px;">
+                                            <input type="checkbox" name="quizzes" value="${quiz}">
+                                            <span>${this.formatQuizName(quiz)}</span>
+                                        </label>
+                                    </div>
+                                `).join('')}
                             </div>
-                        `).join('')}
-                    </div>
+                        </div>
+                        <div class="button-group">
+                            <button type="submit" class="action-button">Create Account</button>
+                            <button type="button" class="cancel-button">Cancel</button>
+                        </div>
+                    </form>
                 </div>
-                <button type="submit" style="padding: 10px; background: var(--primary-color); color: white; border: none; border-radius: 4px; cursor: pointer;">
-                    Create Account
-                </button>
-            </form>
+            </div>
         `;
-        
-        overlay.appendChild(content);
-        document.body.appendChild(overlay);
 
-        // Add form submission handler
-        const form = content.querySelector('#interviewAccountForm');
+        const modalElement = document.createElement('div');
+        modalElement.innerHTML = modalHTML;
+        document.body.appendChild(modalElement.firstElementChild);
+
+        const modal = document.querySelector('.modal-overlay');
+        const form = document.getElementById('createInterviewForm');
+        const cancelButton = modal.querySelector('.cancel-button');
+
+        cancelButton.addEventListener('click', () => {
+            modal.remove();
+        });
+
         form.addEventListener('submit', async (e) => {
             e.preventDefault();
             
-            const username = form.querySelector('#username').value;
-            const password = form.querySelector('#password').value;
-            const selectedQuizzes = Array.from(form.querySelectorAll('.quiz-checkbox:checked'))
+            const username = form.querySelector('#username').value.trim();
+            const password = form.querySelector('#password').value.trim();
+            const selectedQuizzes = Array.from(form.querySelectorAll('input[name="quizzes"]:checked'))
                 .map(checkbox => checkbox.value);
 
-            try {
-                await this.createInterviewAccount(username, password, selectedQuizzes);
-                overlay.remove();
-                this.showError('Interview account created successfully', 'success');
-            } catch (error) {
-                console.error('Failed to create interview account:', error);
+            if (!username || !password) {
+                this.showError('Username and password are required');
+                return;
             }
-        });
 
-        // Add close button functionality
-        const closeBtn = content.querySelector('.close-btn');
-        closeBtn.addEventListener('click', () => overlay.remove());
+            if (selectedQuizzes.length === 0) {
+                this.showError('Please select at least one quiz');
+                return;
+            }
 
-        // Close on click outside
-        overlay.addEventListener('click', (e) => {
-            if (e.target === overlay) {
-                overlay.remove();
+            try {
+                const response = await this.createInterviewAccount(username, password, selectedQuizzes);
+                if (response.success) {
+                    modal.remove();
+                    this.showSuccess(`Interview account created for ${username}`);
+                    await this.loadUsers();
+                    await this.updateDashboard();
+                } else {
+                    this.showError(response.message || 'Failed to create interview account');
+                }
+            } catch (error) {
+                console.error('Error creating interview account:', error);
+                this.showError(error.message || 'Failed to create interview account');
             }
         });
     }
