@@ -547,6 +547,7 @@ router.get('/data', auth, async (req, res) => {
         const hiddenQuizzes = (user.hiddenQuizzes || []).map(quiz => quiz.toLowerCase());
 
         console.log('Sending user data:', {
+            username: user.username,
             userType: user.userType,
             allowedQuizzes,
             hiddenQuizzes
@@ -556,10 +557,12 @@ router.get('/data', auth, async (req, res) => {
             success: true,
             data: {
                 username: user.username,
-                userType: user.userType,
+                userType: user.userType || 'regular', // Default to regular if not set
                 allowedQuizzes,
                 hiddenQuizzes,
-                lastLogin: user.lastLogin
+                lastLogin: user.lastLogin,
+                quizResults: user.quizResults || [],
+                quizProgress: user.quizProgress || {}
             }
         });
     } catch (error) {

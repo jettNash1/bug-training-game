@@ -727,16 +727,17 @@ export class APIService {
                 throw new Error('Failed to fetch user data');
             }
             const data = await response.json();
-            if (!data.success) {
+            if (!data.success || !data.data) {
                 throw new Error(data.message || 'Failed to get user data');
             }
 
             // Ensure quiz arrays are lowercase for consistent comparison
-            const allowedQuizzes = (data.allowedQuizzes || []).map(quiz => quiz.toLowerCase());
-            const hiddenQuizzes = (data.hiddenQuizzes || []).map(quiz => quiz.toLowerCase());
+            const allowedQuizzes = (data.data.allowedQuizzes || []).map(quiz => quiz.toLowerCase());
+            const hiddenQuizzes = (data.data.hiddenQuizzes || []).map(quiz => quiz.toLowerCase());
 
             console.log('User data from API:', {
-                userType: data.userType,
+                username: data.data.username,
+                userType: data.data.userType,
                 allowedQuizzes,
                 hiddenQuizzes
             });
@@ -744,12 +745,12 @@ export class APIService {
             return {
                 success: true,
                 data: {
-                    username: data.username,
-                    userType: data.userType,
+                    username: data.data.username,
+                    userType: data.data.userType || 'regular',
                     allowedQuizzes,
                     hiddenQuizzes,
-                    quizResults: data.quizResults || [],
-                    quizProgress: data.quizProgress || {}
+                    quizResults: data.data.quizResults || [],
+                    quizProgress: data.data.quizProgress || {}
                 }
             };
         } catch (error) {

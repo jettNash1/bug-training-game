@@ -43,9 +43,9 @@ class IndexPage {
 
             console.log('Raw user data:', userData);
             
-            // Check if we have the necessary user data
-            if (!userData.data || (!userData.data.hiddenQuizzes && !userData.data.allowedQuizzes)) {
-                console.error('User data is missing visibility settings:', userData);
+            // Ensure we have the user data object
+            if (!userData.data) {
+                console.error('User data is missing');
                 return;
             }
 
@@ -60,19 +60,22 @@ class IndexPage {
                 userType: userData.data.userType
             });
 
+            // If allowedQuizzes has entries, only show those quizzes
+            const useWhitelist = allowedQuizzes.length > 0;
+
             // Batch all quiz progress requests
             const progressPromises = Array.from(this.quizItems).map(async item => {
                 const quizId = item.dataset.quiz;
                 const quizLower = quizId.toLowerCase();
 
-                // For interview accounts or if allowedQuizzes is populated, use whitelist approach
-                if (isInterviewAccount || allowedQuizzes.length > 0) {
+                // If using whitelist (allowedQuizzes has entries), only show allowed quizzes
+                if (useWhitelist) {
                     if (!allowedQuizzes.includes(quizLower)) {
                         console.log(`Hiding quiz ${quizId} - not in allowed list`);
                         item.style.display = 'none';
                         return null;
                     }
-                } else if (hiddenQuizzes.includes(quizLower)) { // For regular accounts, use blacklist approach
+                } else if (hiddenQuizzes.includes(quizLower)) { // Otherwise use blacklist
                     console.log(`Hiding quiz ${quizId} - in hidden list`);
                     item.style.display = 'none';
                     return null;
