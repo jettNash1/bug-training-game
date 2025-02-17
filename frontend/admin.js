@@ -598,7 +598,6 @@ class AdminDashboard {
                                                 class="quiz-visibility-toggle"
                                                 data-quiz-name="${quizName}"
                                                 ${isVisible ? 'checked="checked"' : ''}
-                                                ${isInterviewAccount ? 'disabled="disabled"' : ''}
                                                 style="margin: 0;">
                                             <span>${isVisible ? 'Visible' : 'Hidden'}</span>
                                         </label>
