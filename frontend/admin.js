@@ -519,9 +519,9 @@ class AdminDashboard {
                 <div class="quiz-progress-list" style="margin-top: 20px;">
                     ${this.quizTypes.map(quizName => {
                         const quizLower = quizName.toLowerCase();
-                        const isVisible = isInterviewAccount ? 
-                            allowedQuizzes.includes(quizLower) : 
-                            !hiddenQuizzes.includes(quizLower);
+                        const allowedQuizzes = (user.allowedQuizzes || []).map(q => q.toLowerCase());
+                        const hiddenQuizzes = (user.hiddenQuizzes || []).map(q => q.toLowerCase());
+                        const isVisible = isInterviewAccount ? allowedQuizzes.includes(quizLower) : !hiddenQuizzes.includes(quizLower);
                         
                         console.log('Quiz visibility check:', {
                             quizName,
@@ -576,8 +576,8 @@ class AdminDashboard {
                                             <input type="checkbox" 
                                                 class="quiz-visibility-toggle"
                                                 data-quiz-name="${quizName}"
-                                                ${isVisible ? 'checked' : ''}
-                                                ${isInterviewAccount ? 'disabled' : ''}
+                                                ${isVisible ? 'checked="checked"' : ''}
+                                                ${isInterviewAccount ? 'disabled="disabled"' : ''}
                                                 style="margin: 0;">
                                             <span>${isVisible ? 'Visible' : 'Hidden'}</span>
                                         </label>
