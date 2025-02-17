@@ -510,18 +510,13 @@ class AdminDashboard {
             
             content.innerHTML = `
                 <div class="details-header">
-                    <h3>${username}'s Details</h3>
-                    <button class="close-btn" aria-label="Close details">&times;</button>
+                    <h3>${username}'s Progress</h3>
+                    <button class="close-btn" style="position: absolute; right: 20px; top: 20px; 
+                            padding: 5px 10px; cursor: pointer; background: none; border: none; font-size: 20px;">×</button>
                 </div>
-                <div class="user-actions">
-                    <button class="action-button" id="resetAllProgressBtn">Reset All Progress</button>
-                    <button class="action-button" id="resetPasswordBtn">Reset Password</button>
-                    <button class="action-button" id="deleteUserBtn">Delete User</button>
-                    ${!isInterviewAccount ? '<button class="action-button" id="registerUserBtn">Register User</button>' : ''}
-                </div>
-                <div class="quiz-progress-list">
-                    ${this.quizTypes.map(quiz => {
-                        const quizLower = quiz.toLowerCase();
+                <div class="quiz-progress-list" style="margin-top: 20px;">
+                    ${this.quizTypes.map(quizName => {
+                        const quizLower = quizName.toLowerCase();
                         const isVisible = isInterviewAccount ? 
                             user.allowedQuizzes?.includes(quizLower) : 
                             !user.hiddenQuizzes?.includes(quizLower);
@@ -535,60 +530,119 @@ class AdminDashboard {
                         const score = result?.score || 0;
                         const lastActive = progress?.lastUpdated || result?.lastActive || result?.completedAt || 'Never';
                         
+                        // Calculate status based on questions answered
+                        const status = questionsAnswered === 15 ? 'Completed' : 
+                                     questionsAnswered > 0 ? 'In Progress' : 
+                                     'Not Started';
+                        
                         return `
-                            <div class="quiz-progress-item">
-                                <h4>${this.formatQuizName(quiz)}</h4>
-                                <div class="quiz-stats">
-                                    <div class="stat-item">
-                                        <span>Progress:</span>
-                                        <span>${questionsAnswered}/15 Questions</span>
+                            <div class="quiz-progress-item" style="margin-bottom: 20px; padding: 15px; background: #f5f5f5; border-radius: 8px;">
+                                <h4 style="margin: 0 0 10px 0;">${this.formatQuizName(quizName)}</h4>
+                                <div class="progress-details" style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px;">
+                                    <div>
+                                        <strong>Progress:</strong> 
+                                        <span class="${status === 'Completed' ? 'text-success' : 
+                                                     status === 'In Progress' ? 'text-warning' : 
+                                                     'text-muted'}">${status}</span>
                                     </div>
-                                    <div class="stat-item">
-                                        <span>Score:</span>
+                                    <div>
+                                        <strong>Score:</strong> 
                                         <span>${score}%</span>
                                     </div>
-                                    <div class="stat-item">
-                                        <span>XP:</span>
+                                    <div>
+                                        <strong>Questions:</strong> 
+                                        <span>${questionsAnswered}/15</span>
+                                    </div>
+                                    <div>
+                                        <strong>XP:</strong> 
                                         <span>${experience}/300</span>
                                     </div>
-                                    <div class="stat-item">
-                                        <span>Last Active:</span>
+                                    <div>
+                                        <strong>Last Active:</strong> 
                                         <span>${this.formatDate(lastActive)}</span>
                                     </div>
-                                    <div class="stat-item">
-                                        <span>Visibility:</span>
-                                        <label class="toggle-switch">
+                                    <div>
+                                        <strong>Visibility:</strong>
+                                        <label class="visibility-toggle" style="display: inline-flex; align-items: center; gap: 5px;">
                                             <input type="checkbox" 
                                                    class="quiz-visibility-toggle"
-                                                   data-quiz="${quiz}" 
-                                                   ${isVisible ? 'checked' : ''} 
-                                                   ${isInterviewAccount ? 'disabled' : ''}>
-                                            <span class="slider"></span>
-                                            <span class="toggle-label">${isVisible ? 'Visible' : 'Hidden'}</span>
+                                                   data-quiz-name="${quizName}"
+                                                   ${isVisible ? 'checked' : ''}
+                                                   ${isInterviewAccount ? 'disabled' : ''}
+                                                   style="margin: 0;">
+                                            <span>${isVisible ? 'Visible' : 'Hidden'}</span>
                                         </label>
                                     </div>
-                                    <div class="quiz-actions">
-                                        <button class="view-questions-btn" data-quiz="${quiz}">View Questions</button>
-                                        <button class="reset-progress-btn" data-quiz="${quiz}">Reset Progress</button>
-                                    </div>
+                                </div>
+                                <div style="display: flex; flex-direction: column; gap: 10px; margin-top: 15px;">
+                                    <button class="reset-quiz-btn"
+                                        data-quiz-name="${quizName}"
+                                        style="padding: 5px 10px; background-color: #ff4444; color: white; border: none; border-radius: 4px; cursor: pointer;">
+                                        Reset Progress
+                                    </button>
+                                    <button class="view-questions-btn"
+                                        data-quiz-name="${quizName}"
+                                        style="padding: 5px 10px; background-color: #4444ff; color: white; border: none; border-radius: 4px; cursor: pointer;">
+                                        View Questions
+                                    </button>
                                 </div>
                             </div>
                         `;
                     }).join('')}
+                </div>
+                <div style="margin-top: 20px; padding-top: 20px; border-top: 1px solid #eee; 
+                            display: flex; justify-content: center; gap: 20px;">
+                    <button class="reset-all-btn" 
+                        style="padding: 10px 20px; background-color: #dc3545; color: white; border: none; 
+                               border-radius: 4px; cursor: pointer; font-weight: 500;">
+                        Reset All Progress
+                    </button>
+                    <button class="reset-password-btn" 
+                        style="padding: 10px 20px; background-color: var(--secondary-color); color: white; 
+                               border: none; border-radius: 4px; cursor: pointer; font-weight: 500;">
+                        Reset Password
+                    </button>
+                    <button class="delete-user-btn" 
+                        style="padding: 10px 20px; background-color: #dc3545; color: white; 
+                               border: 2px solid #dc3545; border-radius: 4px; cursor: pointer; font-weight: 500;">
+                        Delete User
+                    </button>
+                    ${!isInterviewAccount ? `
+                        <button class="register-user-btn" 
+                            style="padding: 10px 20px; background-color: var(--primary-color); color: white; 
+                                   border: none; border-radius: 4px; cursor: pointer; font-weight: 500;">
+                            Register User
+                        </button>
+                    ` : ''}
                 </div>
             `;
             
             overlay.appendChild(content);
             document.body.appendChild(overlay);
 
-            // Add event listeners
-            const closeBtn = content.querySelector('.close-btn');
-            closeBtn.addEventListener('click', () => overlay.remove());
+            // Add event listeners for buttons
+            content.querySelectorAll('.reset-quiz-btn').forEach(button => {
+                button.addEventListener('click', async (e) => {
+                    const quizName = e.target.dataset.quizName;
+                    if (confirm(`Are you sure you want to reset progress for ${this.formatQuizName(quizName)}?`)) {
+                        try {
+                            await this.resetQuizProgress(username, quizName);
+                            // Refresh the user list and details view
+                            await this.loadUsers();
+                            await this.updateDashboard();
+                            this.showUserDetails(username);
+                        } catch (error) {
+                            console.error('Failed to reset quiz:', error);
+                            this.showError(`Failed to reset ${this.formatQuizName(quizName)}`);
+                        }
+                    }
+                });
+            });
 
             // Add event listeners for quiz visibility toggles
             content.querySelectorAll('.quiz-visibility-toggle').forEach(toggle => {
                 toggle.addEventListener('change', async (e) => {
-                    const quizName = e.target.dataset.quiz;
+                    const quizName = e.target.dataset.quizName;
                     const isVisible = e.target.checked;
                     
                     try {
@@ -608,7 +662,7 @@ class AdminDashboard {
                         }
 
                         // Update the toggle label
-                        const label = toggle.nextElementSibling.nextElementSibling;
+                        const label = e.target.nextElementSibling;
                         if (label) {
                             label.textContent = isVisible ? 'Visible' : 'Hidden';
                         }
@@ -624,79 +678,57 @@ class AdminDashboard {
                 });
             });
 
-            // Add event listeners for buttons
-            content.querySelectorAll('.reset-progress-btn').forEach(button => {
-                button.addEventListener('click', async (e) => {
-                    const quizName = e.target.closest('.quiz-progress-item').querySelector('.quiz-visibility-toggle').dataset.quiz;
-                    if (confirm(`Are you sure you want to reset progress for ${this.formatQuizName(quizName)}?`)) {
-                        try {
-                            await this.resetQuizProgress(username, quizName);
-                            // Refresh the user details view
-                            overlay.remove();
-                            await this.showUserDetails(username);
-                        } catch (error) {
-                            console.error('Failed to reset quiz:', error);
-                            this.showError(`Failed to reset ${this.formatQuizName(quizName)}`);
-                        }
-                    }
-                });
-            });
-
             // Add event listeners for view questions buttons
             content.querySelectorAll('.view-questions-btn').forEach(button => {
-                button.addEventListener('click', async () => {
-                    const quizName = button.closest('.quiz-progress-item').querySelector('.quiz-visibility-toggle').dataset.quiz;
+                button.addEventListener('click', async (e) => {
+                    const quizName = e.target.dataset.quizName;
+                    console.log('View questions clicked for:', { quizName, username });
                     await this.showQuizQuestions(quizName, username);
                 });
             });
 
-            // Add event listeners for action buttons
-            const resetAllBtn = content.querySelector('#resetAllProgressBtn');
-            if (resetAllBtn) {
-                resetAllBtn.addEventListener('click', async () => {
-                    if (confirm(`Are you sure you want to reset ALL quiz progress for ${username}? This action cannot be undone.`)) {
-                        try {
-                            await this.resetAllProgress(username);
-                            overlay.remove();
-                        } catch (error) {
-                            console.error('Failed to reset all progress:', error);
-                        }
-                    }
-                });
-            }
-
-            const resetPasswordBtn = content.querySelector('#resetPasswordBtn');
-            if (resetPasswordBtn) {
-                resetPasswordBtn.addEventListener('click', async () => {
-                    if (confirm(`Are you sure you want to change the password for ${username}?`)) {
-                        try {
-                            await this.resetUserPassword(username);
-                        } catch (error) {
-                            console.error('Failed to reset password:', error);
-                        }
-                    }
-                });
-            }
-
-            const deleteUserBtn = content.querySelector('#deleteUserBtn');
-            if (deleteUserBtn) {
-                deleteUserBtn.addEventListener('click', async () => {
+            // Add event listener for reset all button
+            content.querySelector('.reset-all-btn').addEventListener('click', async () => {
+                if (confirm(`Are you sure you want to reset ALL quiz progress for ${username}? This action cannot be undone.`)) {
                     try {
-                        await this.deleteUser(username);
+                        await this.resetAllProgress(username);
+                        // Close the overlay after successful reset
                         overlay.remove();
                     } catch (error) {
-                        console.error('Failed to delete user:', error);
+                        console.error('Failed to reset all progress:', error);
                     }
-                });
+                }
+            });
+
+            // Add event listener for reset password button
+            content.querySelector('.reset-password-btn').addEventListener('click', async () => {
+                if (confirm(`Are you sure you want to change the password for ${username}?`)) {
+                    try {
+                        await this.resetUserPassword(username);
+                    } catch (error) {
+                        console.error('Failed to reset password:', error);
+                    }
+                }
+            });
+
+            // Add event listener for delete user button
+            content.querySelector('.delete-user-btn').addEventListener('click', async () => {
+                try {
+                    await this.deleteUser(username);
+                } catch (error) {
+                    console.error('Failed to delete user:', error);
+                }
+            });
+
+            // Add event listener for register user button
+            const registerUserBtn = content.querySelector('.register-user-btn');
+            if (registerUserBtn) {
+                registerUserBtn.addEventListener('click', () => this.registerUser(username));
             }
 
-            const registerUserBtn = content.querySelector('#registerUserBtn');
-            if (registerUserBtn) {
-                registerUserBtn.addEventListener('click', () => {
-                    this.registerUser(username);
-                    overlay.remove();
-                });
-            }
+            // Add close button functionality
+            const closeBtn = content.querySelector('.close-btn');
+            closeBtn.addEventListener('click', () => overlay.remove());
 
             // Close on click outside
             overlay.addEventListener('click', (e) => {
@@ -704,6 +736,7 @@ class AdminDashboard {
                     overlay.remove();
                 }
             });
+
         } catch (error) {
             console.error('Error showing user details:', error);
             this.showError('Failed to load user details');
@@ -1133,9 +1166,14 @@ class AdminDashboard {
         try {
             // Convert selected quizzes to lowercase for consistency
             const allowedQuizzes = selectedQuizzes.map(quiz => quiz.toLowerCase());
+            
+            // Create array of hidden quizzes (all quizzes not in allowedQuizzes)
+            const hiddenQuizzes = this.quizTypes
+                .map(quiz => quiz.toLowerCase())
+                .filter(quiz => !allowedQuizzes.includes(quiz));
 
             const response = await this.apiService.fetchWithAdminAuth(
-                `${this.apiService.baseUrl}/admin/create-interview-account`,
+                `${this.apiService.baseUrl}/admin/users/create-interview`,
                 {
                     method: 'POST',
                     headers: {
@@ -1144,7 +1182,9 @@ class AdminDashboard {
                     body: JSON.stringify({
                         username,
                         password,
-                        allowedQuizzes
+                        userType: 'interview_candidate',
+                        allowedQuizzes,
+                        hiddenQuizzes
                     })
                 }
             );
@@ -1153,14 +1193,18 @@ class AdminDashboard {
                 throw new Error(response.message || 'Failed to create interview account');
             }
 
+            // Show success message
+            this.showError(`Interview account created for ${username}`);
+            
             // Refresh the user list
             await this.loadUsers();
-            this.showError('Interview account created successfully', 'success');
-            return true;
+            await this.updateDashboard();
+            
+            return response;
         } catch (error) {
             console.error('Failed to create interview account:', error);
             this.showError(error.message || 'Failed to create interview account');
-            return false;
+            throw error;
         }
     }
 
