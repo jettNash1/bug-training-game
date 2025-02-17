@@ -615,7 +615,7 @@ router.post('/create-interview-account', auth, async (req, res) => {
             });
         }
 
-        const { username, password, allowedQuizzes } = req.body;
+        const { username, password, allowedQuizzes, hiddenQuizzes } = req.body;
 
         if (!username || !password || !allowedQuizzes) {
             return res.status(400).json({
@@ -645,10 +645,21 @@ router.post('/create-interview-account', auth, async (req, res) => {
         // Normalize allowed quizzes to lowercase
         const normalizedAllowedQuizzes = allowedQuizzes.map(quiz => quiz.toLowerCase());
 
-        // Create hiddenQuizzes array with quizzes that aren't in allowedQuizzes
-        const hiddenQuizzes = allQuizzes.filter(quiz => 
-            !normalizedAllowedQuizzes.includes(quiz)
-        );
+        // If hiddenQuizzes is not provided, create it from allowedQuizzes
+        const normalizedHiddenQuizzes = hiddenQuizzes ? 
+            hiddenQuizzes.map(quiz => quiz.toLowerCase()) :
+            allQuizzes.filter(quiz => !normalizedAllowedQuizzes.includes(quiz));
+
+        // Validate that all quizzes are valid
+        const invalidAllowedQuizzes = normalizedAllowedQuizzes.filter(quiz => !allQuizzes.includes(quiz));
+        const invalidHiddenQuizzes = normalizedHiddenQuizzes.filter(quiz => !allQuizzes.includes(quiz));
+
+        if (invalidAllowedQuizzes.length > 0 || invalidHiddenQuizzes.length > 0) {
+            return res.status(400).json({
+                success: false,
+                message: 'Invalid quiz names provided'
+            });
+        }
 
         // Create new interview user
         const user = new User({
@@ -656,7 +667,7 @@ router.post('/create-interview-account', auth, async (req, res) => {
             password,
             userType: 'interview_candidate',
             allowedQuizzes: normalizedAllowedQuizzes,
-            hiddenQuizzes: hiddenQuizzes
+            hiddenQuizzes: normalizedHiddenQuizzes
         });
 
         await user.save();

@@ -521,8 +521,8 @@ class AdminDashboard {
                         // For interview accounts, check if quiz is in allowedQuizzes
                         // For regular accounts, check if quiz is not in hiddenQuizzes
                         const isVisible = isInterviewAccount ? 
-                            (user.allowedQuizzes || []).includes(quizLower) : 
-                            !(user.hiddenQuizzes || []).includes(quizLower);
+                            (user.allowedQuizzes || []).map(q => q.toLowerCase()).includes(quizLower) : 
+                            !(user.hiddenQuizzes || []).map(q => q.toLowerCase()).includes(quizLower);
                         
                         // For interview accounts, only show quizzes that are in allowedQuizzes
                         if (isInterviewAccount && !isVisible) {
@@ -1225,10 +1225,10 @@ class AdminDashboard {
                 throw new Error(response.message || 'Failed to create interview account');
             }
 
-            // Show success message using the correct method
+            // Show success message
             this.showSuccess(`Interview account created for ${username}`);
             
-            // Refresh the user list
+            // Refresh the user list and dashboard
             await this.loadUsers();
             await this.updateDashboard();
             
