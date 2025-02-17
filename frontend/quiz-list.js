@@ -24,16 +24,18 @@ class QuizList {
                 throw new Error('Failed to get user data');
             }
 
-            const { userType, allowedQuizzes, hiddenQuizzes } = userData.data;
+            const { userType, allowedQuizzes = [], hiddenQuizzes = [] } = userData.data;
             const isInterviewAccount = userType === 'interview_candidate';
 
             // Filter quizzes based on user type and visibility
             const visibleQuizzes = this.quizTypes.filter(quiz => {
                 const quizLower = quiz.toLowerCase();
                 if (isInterviewAccount) {
-                    return allowedQuizzes?.includes(quizLower);
+                    // For interview accounts, only show quizzes that are explicitly allowed
+                    return allowedQuizzes.includes(quizLower);
                 } else {
-                    return !hiddenQuizzes?.includes(quizLower);
+                    // For regular accounts, show all quizzes that aren't explicitly hidden
+                    return !hiddenQuizzes.includes(quizLower);
                 }
             });
 
@@ -58,9 +60,11 @@ class QuizList {
             // Update the container
             const container = document.getElementById('quizList');
             if (container) {
-                container.innerHTML = visibleQuizzes.length > 0 ? 
-                    quizListHTML : 
-                    '<p class="no-quizzes">No quizzes available.</p>';
+                if (visibleQuizzes.length > 0) {
+                    container.innerHTML = quizListHTML;
+                } else {
+                    container.innerHTML = '<p class="no-quizzes">No quizzes available for your account.</p>';
+                }
             }
         } catch (error) {
             console.error('Error displaying quizzes:', error);
