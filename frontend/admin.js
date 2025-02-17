@@ -528,7 +528,6 @@ class AdminDashboard {
                 </div>
                 <div class="quiz-progress-list" style="margin-top: 20px;">
                     ${this.quizTypes.map(quizName => {
-                        // Convert quiz names to lowercase for comparison, keeping hyphens
                         const quizLower = quizName.toLowerCase();
                         
                         // For interview accounts:
@@ -540,11 +539,10 @@ class AdminDashboard {
                         const isInAllowedQuizzes = allowedQuizzes.includes(quizLower);
                         const isInHiddenQuizzes = hiddenQuizzes.includes(quizLower);
                         
-                        // For interview accounts: checked if in allowedQuizzes
-                        // For regular accounts: checked if NOT in hiddenQuizzes
-                        const shouldBeChecked = isInterviewAccount ? isInAllowedQuizzes : !isInHiddenQuizzes;
+                        // Determine visibility based on account type
+                        const isVisible = isInterviewAccount ? isInAllowedQuizzes : !isInHiddenQuizzes;
                         
-                        console.log('Quiz visibility check:', {
+                        console.log('Quiz visibility details:', {
                             quizName,
                             quizLower,
                             isInterviewAccount,
@@ -552,7 +550,7 @@ class AdminDashboard {
                             hiddenQuizzes,
                             isInAllowedQuizzes,
                             isInHiddenQuizzes,
-                            shouldBeChecked
+                            isVisible
                         });
                         
                         const progress = user.quizProgress?.[quizLower];
@@ -599,10 +597,10 @@ class AdminDashboard {
                                             <input type="checkbox" 
                                                 class="quiz-visibility-toggle"
                                                 data-quiz-name="${quizName}"
-                                                ${shouldBeChecked ? 'checked="checked"' : ''}
+                                                ${isVisible ? 'checked="checked"' : ''}
                                                 ${isInterviewAccount ? 'disabled="disabled"' : ''}
                                                 style="margin: 0;">
-                                            <span>${shouldBeChecked ? 'Visible' : 'Hidden'}</span>
+                                            <span>${isVisible ? 'Visible' : 'Hidden'}</span>
                                         </label>
                                     </div>
                                 </div>
