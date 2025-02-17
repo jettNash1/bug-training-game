@@ -184,12 +184,21 @@ class IndexPage {
         
         document.querySelectorAll('.category-card').forEach(category => {
             const quizItems = category.querySelectorAll('.quiz-item:not(.locked-quiz)');
+            const visibleQuizItems = Array.from(quizItems).filter(item => item.style.display !== 'none');
             const progressBar = category.querySelector('.progress-fill');
             const progressText = category.querySelector('.progress-text');
             
-            if (!quizItems.length || !progressBar || !progressText) return;
+            // Hide the category if there are no visible quizzes
+            if (visibleQuizItems.length === 0) {
+                category.style.display = 'none';
+                return;
+            } else {
+                category.style.display = '';
+            }
 
-            const categoryStats = Array.from(quizItems).reduce((stats, item) => {
+            if (!progressBar || !progressText) return;
+
+            const categoryStats = visibleQuizItems.reduce((stats, item) => {
                 const quizId = item.dataset.quiz;
                 const quizScore = this.quizScores.find(score => score.quizName === quizId);
                 
@@ -202,34 +211,20 @@ class IndexPage {
                 };
             }, { completedQuizzes: 0, totalProgress: 0 });
 
-            const totalQuizzes = quizItems.length;
+            const totalQuizzes = visibleQuizItems.length;
             // Calculate percentage based on completed quizzes instead of total progress
             const categoryPercentage = Math.round((categoryStats.completedQuizzes / totalQuizzes) * 100);
 
-            // Store updates to apply in batch
-            updates.set(category, {
-                completedQuizzes: categoryStats.completedQuizzes,
-                totalQuizzes,
-                categoryPercentage,
-                progressBar,
-                progressText
-            });
-        });
-
-        // Apply all updates in one batch
-        requestAnimationFrame(() => {
-            updates.forEach(({ completedQuizzes, totalQuizzes, categoryPercentage, progressBar, progressText }) => {
-                progressBar.style.width = `${categoryPercentage}%`;
-                const progressTextElement = progressText.closest('.category-progress');
-                if (progressTextElement) {
-                    progressTextElement.innerHTML = `
-                        <div class="progress-text">Progress: ${completedQuizzes}/${totalQuizzes} Complete</div>
-                        <div class="progress-bar">
-                            <div class="progress-fill" style="width: ${categoryPercentage}%"></div>
-                        </div>
-                    `;
-                }
-            });
+            // Update the category progress text and bar
+            const progressTextElement = progressText.closest('.category-progress');
+            if (progressTextElement) {
+                progressTextElement.innerHTML = `
+                    <div class="progress-text">Progress: ${categoryStats.completedQuizzes}/${totalQuizzes} Complete</div>
+                    <div class="progress-bar">
+                        <div class="progress-fill" style="width: ${categoryPercentage}%"></div>
+                    </div>
+                `;
+            }
         });
     }
 }
