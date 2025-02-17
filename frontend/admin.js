@@ -524,12 +524,7 @@ class AdminDashboard {
                             (user.allowedQuizzes || []).map(q => q.toLowerCase()).includes(quizLower) : 
                             !(user.hiddenQuizzes || []).map(q => q.toLowerCase()).includes(quizLower);
                         
-                        // For interview accounts, only show quizzes that are in allowedQuizzes
-                        if (isInterviewAccount && !isVisible) {
-                            return '';
-                        }
-                        
-                        // Get quiz progress data
+                        // For interview accounts, show all quizzes but mark only allowed ones as visible
                         const progress = user.quizProgress?.[quizLower];
                         const result = user.quizResults?.find(r => r.quizName.toLowerCase() === quizLower);
                         
