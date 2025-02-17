@@ -597,7 +597,7 @@ class AdminDashboard {
                                             <input type="checkbox" 
                                                 class="quiz-visibility-toggle"
                                                 data-quiz-name="${quizName}"
-                                                ${isVisible ? 'checked="checked"' : ''}
+                                                ${isVisible ? 'checked' : ''}
                                                 style="margin: 0;">
                                             <span>${isVisible ? 'Visible' : 'Hidden'}</span>
                                         </label>
