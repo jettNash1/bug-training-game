@@ -720,7 +720,24 @@ export class APIService {
     async getUserData() {
         try {
             const response = await this.fetchWithAuth(`${this.baseUrl}/users/data`);
-            return response;
+            if (!response.ok) {
+                throw new Error('Failed to fetch user data');
+            }
+            const data = await response.json();
+            if (!data.success) {
+                throw new Error(data.message || 'Failed to get user data');
+            }
+            return {
+                success: true,
+                data: {
+                    username: data.username,
+                    userType: data.userType,
+                    allowedQuizzes: data.allowedQuizzes,
+                    hiddenQuizzes: data.hiddenQuizzes,
+                    quizResults: data.quizResults || [],
+                    quizProgress: data.quizProgress || {}
+                }
+            };
         } catch (error) {
             console.error('Error fetching user data:', error);
             throw error;

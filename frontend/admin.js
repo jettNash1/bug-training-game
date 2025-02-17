@@ -550,8 +550,14 @@ class AdminDashboard {
                         const score = result?.score || 0;
                         const lastActive = result ? this.formatDate(result.lastActive || result.completedAt) : 'Never';
 
-                        // Check if quiz is hidden
-                        const isHidden = this.users.find(u => u.username === username).hiddenQuizzes?.includes(quizName.toLowerCase());
+                        // Get user data for visibility check
+                        const user = this.users.find(u => u.username === username);
+                        const isInterviewAccount = user?.userType === 'interview_candidate';
+                        const isHidden = user?.hiddenQuizzes?.includes(quizName.toLowerCase());
+                        const isAllowed = user?.allowedQuizzes?.includes(quizName.toLowerCase());
+
+                        // For interview accounts, quiz is visible only if it's in allowedQuizzes
+                        const isVisible = isInterviewAccount ? isAllowed : !isHidden;
 
                         return `
                             <div class="quiz-progress-item" style="margin-bottom: 20px; padding: 15px; background: #f5f5f5; border-radius: 8px;">
@@ -585,9 +591,10 @@ class AdminDashboard {
                                             <input type="checkbox" 
                                                    class="quiz-visibility-toggle"
                                                    data-quiz-name="${quizName}"
-                                                   ${!isHidden ? 'checked' : ''}
+                                                   ${isVisible ? 'checked' : ''}
+                                                   ${isInterviewAccount ? 'disabled' : ''}
                                                    style="margin: 0;">
-                                            <span>${!isHidden ? 'Visible' : 'Hidden'}</span>
+                                            <span>${isVisible ? 'Visible' : 'Hidden'}</span>
                                         </label>
                                     </div>
                                 </div>

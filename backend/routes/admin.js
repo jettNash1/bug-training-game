@@ -633,12 +633,27 @@ router.post('/create-interview-account', auth, async (req, res) => {
             });
         }
 
+        // Get all available quiz names from the frontend
+        const allQuizzes = [
+            'tester-mindset', 'communication', 'initiative', 'standard-script-testing',
+            'script-metrics-troubleshooting', 'locale-testing', 'build-verification',
+            'test-types-tricks', 'test-support', 'time-management', 'risk-analysis',
+            'risk-management', 'issue-tracking-tools', 'raising-tickets', 'issue-verification',
+            'reports', 'cms-testing', 'email-testing', 'non-functional', 'content-copy'
+        ];
+
+        // Create hiddenQuizzes array with quizzes that aren't in allowedQuizzes
+        const hiddenQuizzes = allQuizzes.filter(quiz => 
+            !allowedQuizzes.includes(quiz.toLowerCase())
+        ).map(quiz => quiz.toLowerCase());
+
         // Create new interview user
         const user = new User({
             username,
             password,
             userType: 'interview_candidate',
-            allowedQuizzes: allowedQuizzes || []
+            allowedQuizzes: allowedQuizzes.map(quiz => quiz.toLowerCase()),
+            hiddenQuizzes: hiddenQuizzes
         });
 
         await user.save();
@@ -649,7 +664,8 @@ router.post('/create-interview-account', auth, async (req, res) => {
             user: {
                 username: user.username,
                 userType: user.userType,
-                allowedQuizzes: user.allowedQuizzes
+                allowedQuizzes: user.allowedQuizzes,
+                hiddenQuizzes: user.hiddenQuizzes
             }
         });
     } catch (error) {
