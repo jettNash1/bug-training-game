@@ -500,6 +500,8 @@ class AdminDashboard {
             }
 
             const isInterviewAccount = user.userType === 'interview_candidate';
+            const allowedQuizzes = (user.allowedQuizzes || []).map(q => q.toLowerCase());
+            const hiddenQuizzes = (user.hiddenQuizzes || []).map(q => q.toLowerCase());
 
             // Create the overlay
             const overlay = document.createElement('div');
@@ -517,24 +519,19 @@ class AdminDashboard {
                 <div class="quiz-progress-list" style="margin-top: 20px;">
                     ${this.quizTypes.map(quizName => {
                         const quizLower = quizName.toLowerCase();
+                        const isVisible = isInterviewAccount ? 
+                            allowedQuizzes.includes(quizLower) : 
+                            !hiddenQuizzes.includes(quizLower);
                         
-                        // For interview accounts, check if quiz is in allowedQuizzes
-                        // For regular accounts, check if quiz is not in hiddenQuizzes
                         console.log('Quiz visibility check:', {
                             quizName,
                             quizLower,
                             isInterviewAccount,
-                            allowedQuizzes: user.allowedQuizzes,
-                            hiddenQuizzes: user.hiddenQuizzes
+                            allowedQuizzes,
+                            hiddenQuizzes,
+                            isVisible
                         });
                         
-                        const isVisible = isInterviewAccount ? 
-                            (user.allowedQuizzes || []).map(q => q.toLowerCase()).includes(quizLower) : 
-                            !(user.hiddenQuizzes || []).map(q => q.toLowerCase()).includes(quizLower);
-                            
-                        console.log('Visibility result:', { quizName, isVisible });
-                        
-                        // For interview accounts, show all quizzes but mark only allowed ones as visible
                         const progress = user.quizProgress?.[quizLower];
                         const result = user.quizResults?.find(r => r.quizName.toLowerCase() === quizLower);
                         
@@ -543,7 +540,6 @@ class AdminDashboard {
                         const score = result?.score || 0;
                         const lastActive = progress?.lastUpdated || result?.lastActive || result?.completedAt || 'Never';
                         
-                        // Calculate status based on questions answered
                         const status = questionsAnswered === 15 ? 'Completed' : 
                                      questionsAnswered > 0 ? 'In Progress' : 
                                      'Not Started';
@@ -580,8 +576,8 @@ class AdminDashboard {
                                             <input type="checkbox" 
                                                 class="quiz-visibility-toggle"
                                                 data-quiz-name="${quizName}"
-                                                ${isVisible ? 'checked="checked"' : ''}
-                                                ${isInterviewAccount ? 'disabled="disabled"' : ''}
+                                                ${isVisible ? 'checked' : ''}
+                                                ${isInterviewAccount ? 'disabled' : ''}
                                                 style="margin: 0;">
                                             <span>${isVisible ? 'Visible' : 'Hidden'}</span>
                                         </label>
