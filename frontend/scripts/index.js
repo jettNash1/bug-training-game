@@ -41,25 +41,44 @@ class IndexPage {
                 throw new Error('Failed to load user data');
             }
 
-            console.log('User data received:', {
-                userType: userData.data.userType,
-                hiddenQuizzes: userData.data.hiddenQuizzes
-            });
+            console.log('Raw user data:', userData);
+            
+            // Check if we have the necessary user data
+            if (!userData.data || (!userData.data.hiddenQuizzes && !userData.data.allowedQuizzes)) {
+                console.error('User data is missing visibility settings:', userData);
+                return;
+            }
 
+            const isInterviewAccount = userData.data.userType === 'interview_candidate';
+            const allowedQuizzes = userData.data.allowedQuizzes || [];
             const hiddenQuizzes = userData.data.hiddenQuizzes || [];
+
+            console.log('Visibility settings:', {
+                isInterviewAccount,
+                allowedQuizzes,
+                hiddenQuizzes,
+                userType: userData.data.userType
+            });
 
             // Batch all quiz progress requests
             const progressPromises = Array.from(this.quizItems).map(async item => {
                 const quizId = item.dataset.quiz;
                 const quizLower = quizId.toLowerCase();
 
-                // Handle quiz visibility based on hiddenQuizzes
-                if (hiddenQuizzes.includes(quizLower)) {
+                // For interview accounts or if allowedQuizzes is populated, use whitelist approach
+                if (isInterviewAccount || allowedQuizzes.length > 0) {
+                    if (!allowedQuizzes.includes(quizLower)) {
+                        console.log(`Hiding quiz ${quizId} - not in allowed list`);
+                        item.style.display = 'none';
+                        return null;
+                    }
+                } else if (hiddenQuizzes.includes(quizLower)) { // For regular accounts, use blacklist approach
+                    console.log(`Hiding quiz ${quizId} - in hidden list`);
                     item.style.display = 'none';
                     return null;
                 }
                 
-                // Show the quiz if it's not hidden
+                console.log(`Showing quiz ${quizId}`);
                 item.style.display = '';
 
                 try {
