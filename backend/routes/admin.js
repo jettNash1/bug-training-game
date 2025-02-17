@@ -117,6 +117,9 @@ router.get('/users', auth, async (req, res) => {
             lastLogin: 1,
             quizResults: 1,
             quizProgress: 1,
+            userType: 1,
+            allowedQuizzes: 1,
+            hiddenQuizzes: 1,
             _id: 0
         }).lean().sort({ username: 1 });
 
