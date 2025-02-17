@@ -520,9 +520,19 @@ class AdminDashboard {
                         
                         // For interview accounts, check if quiz is in allowedQuizzes
                         // For regular accounts, check if quiz is not in hiddenQuizzes
+                        console.log('Quiz visibility check:', {
+                            quizName,
+                            quizLower,
+                            isInterviewAccount,
+                            allowedQuizzes: user.allowedQuizzes,
+                            hiddenQuizzes: user.hiddenQuizzes
+                        });
+                        
                         const isVisible = isInterviewAccount ? 
                             (user.allowedQuizzes || []).map(q => q.toLowerCase()).includes(quizLower) : 
                             !(user.hiddenQuizzes || []).map(q => q.toLowerCase()).includes(quizLower);
+                            
+                        console.log('Visibility result:', { quizName, isVisible });
                         
                         // For interview accounts, show all quizzes but mark only allowed ones as visible
                         const progress = user.quizProgress?.[quizLower];
@@ -570,8 +580,8 @@ class AdminDashboard {
                                             <input type="checkbox" 
                                                 class="quiz-visibility-toggle"
                                                 data-quiz-name="${quizName}"
-                                                ${isVisible ? 'checked' : ''}
-                                                ${isInterviewAccount ? 'disabled' : ''}
+                                                ${isVisible ? 'checked="checked"' : ''}
+                                                ${isInterviewAccount ? 'disabled="disabled"' : ''}
                                                 style="margin: 0;">
                                             <span>${isVisible ? 'Visible' : 'Hidden'}</span>
                                         </label>
