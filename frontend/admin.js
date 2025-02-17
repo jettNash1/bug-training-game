@@ -648,13 +648,6 @@ class AdminDashboard {
                                border: 2px solid #dc3545; border-radius: 4px; cursor: pointer; font-weight: 500;">
                         Delete User
                     </button>
-                    ${!isInterviewAccount ? `
-                        <button class="register-user-btn" 
-                            style="padding: 10px 20px; background-color: var(--primary-color); color: white; 
-                                   border: none; border-radius: 4px; cursor: pointer; font-weight: 500;">
-                            Register User
-                        </button>
-                    ` : ''}
                 </div>
             `;
             
@@ -782,16 +775,6 @@ class AdminDashboard {
                     console.error('Failed to delete user:', error);
                 }
             });
-
-            // Add event listener for register user button
-            const registerUserBtn = content.querySelector('.register-user-btn');
-            if (registerUserBtn) {
-                registerUserBtn.addEventListener('click', () => this.registerUser(username));
-            }
-
-            // Add close button functionality
-            const closeBtn = content.querySelector('.close-btn');
-            closeBtn.addEventListener('click', () => overlay.remove());
 
             // Close on click outside
             overlay.addEventListener('click', (e) => {
@@ -1468,84 +1451,6 @@ class AdminDashboard {
                 this.showError(error.message || 'Failed to create interview account');
             }
         });
-    }
-
-    async registerUser(username) {
-        try {
-            // Create a modal for password input
-            const modal = document.createElement('div');
-            modal.className = 'modal-overlay';
-            modal.innerHTML = `
-                <div class="modal-content">
-                    <h3>Register User: ${username}</h3>
-                    <p>Please enter a password for this user:</p>
-                    <form id="registerUserForm">
-                        <div class="form-group">
-                            <label for="password">Password:</label>
-                            <input type="password" id="password" required minlength="6">
-                        </div>
-                        <div class="form-group">
-                            <label for="confirmPassword">Confirm Password:</label>
-                            <input type="password" id="confirmPassword" required minlength="6">
-                        </div>
-                        <div class="button-group">
-                            <button type="submit" class="action-button">Register</button>
-                            <button type="button" class="cancel-button">Cancel</button>
-                        </div>
-                    </form>
-                </div>
-            `;
-
-            document.body.appendChild(modal);
-
-            // Add event listeners
-            const form = modal.querySelector('#registerUserForm');
-            const cancelButton = modal.querySelector('.cancel-button');
-
-            cancelButton.addEventListener('click', () => {
-                modal.remove();
-            });
-
-            form.addEventListener('submit', async (e) => {
-                e.preventDefault();
-                
-                const password = form.querySelector('#password').value;
-                const confirmPassword = form.querySelector('#confirmPassword').value;
-
-                if (password !== confirmPassword) {
-                    this.showError('Passwords do not match');
-                    return;
-                }
-
-                try {
-                    const response = await this.apiService.fetchWithAdminAuth(
-                        `${this.apiService.baseUrl}/admin/register-user`,
-                        {
-                            method: 'POST',
-                            headers: {
-                                'Content-Type': 'application/json'
-                            },
-                            body: JSON.stringify({ username, password })
-                        }
-                    );
-
-                    if (response.success) {
-                        this.showSuccess('User registered successfully');
-                        modal.remove();
-                        // Refresh the user list
-                        await this.loadUsers();
-                    } else {
-                        this.showError(response.message || 'Failed to register user');
-                    }
-                } catch (error) {
-                    console.error('Error registering user:', error);
-                    this.showError('Failed to register user');
-                }
-            });
-        } catch (error) {
-            console.error('Error showing registration modal:', error);
-            this.showError('Failed to show registration form');
-        }
     }
 }
 
