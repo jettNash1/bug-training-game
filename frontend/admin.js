@@ -1314,34 +1314,109 @@ class AdminDashboard {
 
     showCreateInterviewAccountForm() {
         const modalHTML = `
-            <div class="modal-overlay">
-                <div class="modal-content">
-                    <h2>Create Interview Account</h2>
+            <div class="modal-overlay" style="
+                position: fixed;
+                top: 0;
+                left: 0;
+                right: 0;
+                bottom: 0;
+                background: rgba(0, 0, 0, 0.7);
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                z-index: 1000;">
+                <div class="modal-content" style="
+                    background: white;
+                    padding: 2rem;
+                    border-radius: 8px;
+                    max-width: 500px;
+                    width: 90%;
+                    max-height: 90vh;
+                    overflow-y: auto;">
+                    <h2 style="margin-bottom: 1.5rem;">Create Interview Account</h2>
                     <form id="createInterviewForm">
-                        <div class="form-group">
-                            <label for="username">Username:</label>
-                            <input type="text" id="username" name="username" required>
+                        <div class="form-group" style="margin-bottom: 1.5rem;">
+                            <label for="username" style="display: block; margin-bottom: 0.5rem; font-weight: 500;">Username:</label>
+                            <input type="text" 
+                                   id="username" 
+                                   name="username" 
+                                   required 
+                                   style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
                         </div>
-                        <div class="form-group">
-                            <label for="password">Password:</label>
-                            <input type="password" id="password" name="password" required>
+                        <div class="form-group" style="margin-bottom: 1.5rem;">
+                            <label for="password" style="display: block; margin-bottom: 0.5rem; font-weight: 500;">Password:</label>
+                            <input type="password" 
+                                   id="password" 
+                                   name="password" 
+                                   required 
+                                   style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
                         </div>
-                        <div class="form-group">
-                            <label>Select Quizzes:</label>
-                            <div class="quiz-selection" style="max-height: 200px; overflow-y: auto; padding: 10px; border: 1px solid #ddd;">
+                        <div class="form-group" style="margin-bottom: 1.5rem;">
+                            <label style="display: block; margin-bottom: 0.5rem; font-weight: 500;">Select Quizzes:</label>
+                            <div class="quiz-selection" style="
+                                max-height: 300px;
+                                overflow-y: auto;
+                                padding: 1rem;
+                                border: 1px solid #ddd;
+                                border-radius: 4px;
+                                background: #f8f9fa;">
                                 ${this.quizTypes.map(quiz => `
-                                    <div style="margin-bottom: 8px; display: flex; align-items: center;">
-                                        <label style="display: flex; align-items: center; gap: 8px; width: 100%;">
-                                            <input type="checkbox" name="quizzes" value="${quiz}" style="margin: 0;">
-                                            <span style="flex: 1;">${this.formatQuizName(quiz)}</span>
+                                    <div style="
+                                        padding: 8px;
+                                        margin-bottom: 8px;
+                                        border-radius: 4px;
+                                        background: white;
+                                        box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
+                                        <label style="
+                                            display: flex;
+                                            align-items: center;
+                                            gap: 12px;
+                                            margin: 0;
+                                            cursor: pointer;">
+                                            <input type="checkbox" 
+                                                   name="quizzes" 
+                                                   value="${quiz}" 
+                                                   style="
+                                                    width: 18px;
+                                                    height: 18px;
+                                                    margin: 0;
+                                                    cursor: pointer;">
+                                            <span style="flex: 1; font-size: 0.95rem;">${this.formatQuizName(quiz)}</span>
                                         </label>
                                     </div>
                                 `).join('')}
                             </div>
                         </div>
-                        <div class="button-group">
-                            <button type="submit" class="action-button">Create Account</button>
-                            <button type="button" class="cancel-button">Cancel</button>
+                        <div class="button-group" style="
+                            display: flex;
+                            gap: 1rem;
+                            margin-top: 1.5rem;">
+                            <button type="submit" 
+                                    class="action-button" 
+                                    style="
+                                        flex: 1;
+                                        padding: 10px;
+                                        background: var(--primary-color);
+                                        color: white;
+                                        border: none;
+                                        border-radius: 4px;
+                                        cursor: pointer;
+                                        font-weight: 500;">
+                                Create Account
+                            </button>
+                            <button type="button" 
+                                    class="cancel-button" 
+                                    style="
+                                        flex: 1;
+                                        padding: 10px;
+                                        background: #6c757d;
+                                        color: white;
+                                        border: none;
+                                        border-radius: 4px;
+                                        cursor: pointer;
+                                        font-weight: 500;">
+                                Cancel
+                            </button>
                         </div>
                     </form>
                 </div>
