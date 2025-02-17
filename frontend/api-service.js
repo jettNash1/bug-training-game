@@ -560,7 +560,10 @@ export class APIService {
                     username: user.username || 'Unknown User',
                     quizResults: [],
                     quizProgress: {},
-                    lastLogin: user.lastLogin || null
+                    lastLogin: user.lastLogin || null,
+                    userType: user.userType || null,
+                    allowedQuizzes: (user.allowedQuizzes || []).map(q => q.toLowerCase()),
+                    hiddenQuizzes: (user.hiddenQuizzes || []).map(q => q.toLowerCase())
                 };
 
                     // Safely process quiz results
