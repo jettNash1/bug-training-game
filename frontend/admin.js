@@ -517,9 +517,17 @@ class AdminDashboard {
                 <div class="quiz-progress-list" style="margin-top: 20px;">
                     ${this.quizTypes.map(quizName => {
                         const quizLower = quizName.toLowerCase();
+                        
+                        // For interview accounts, only show allowed quizzes
+                        // For regular accounts, show all quizzes not in hiddenQuizzes
                         const isVisible = isInterviewAccount ? 
-                            user.allowedQuizzes?.includes(quizLower) : 
-                            !user.hiddenQuizzes?.includes(quizLower);
+                            (user.allowedQuizzes || []).includes(quizLower) : 
+                            !(user.hiddenQuizzes || []).includes(quizLower);
+                        
+                        // Skip this quiz if it's not visible for interview accounts
+                        if (isInterviewAccount && !isVisible) {
+                            return '';
+                        }
                         
                         // Get quiz progress data
                         const progress = user.quizProgress?.[quizLower];
