@@ -1250,8 +1250,13 @@ class AdminDashboard {
             // Show success message
             this.showSuccess(`Interview account created for ${username}`);
             
-            // Refresh the user list and dashboard
+            // Ensure we have the latest user data
             await this.loadUsers();
+            
+            // Wait a moment for the data to be processed
+            await new Promise(resolve => setTimeout(resolve, 100));
+            
+            // Update the dashboard with the new data
             await this.updateDashboard();
             
             return response;
