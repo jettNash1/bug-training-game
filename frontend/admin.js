@@ -493,24 +493,58 @@ class AdminDashboard {
 
     async showUserDetails(username) {
         try {
-            const userDetailsOverlay = document.createElement('div');
-            userDetailsOverlay.className = 'user-details-overlay';
-            userDetailsOverlay.innerHTML = `
+            // Get user data
+            const response = await this.apiService.fetchWithAdminAuth(`${this.apiService.baseUrl}/admin/users/${username}`);
+            if (!response.success) {
+                throw new Error('Failed to fetch user details');
+            }
+
+            const user = response.data;
+            const isInterviewAccount = user.userType === 'interview_candidate';
+
+            // Create the overlay
+            const overlay = document.createElement('div');
+            overlay.className = 'user-details-overlay';
+            overlay.innerHTML = `
                 <div class="user-details-content">
                     <div class="details-header">
-                        <h3>User Details: ${username}</h3>
+                        <h3>${username}'s Details</h3>
                         <button class="close-btn" aria-label="Close details">&times;</button>
                     </div>
                     <div class="user-actions">
-                        <button class="action-button reset-all-btn">Reset All Progress</button>
-                        <button class="action-button reset-password-btn">Reset Password</button>
-                        <button class="action-button delete-user-btn">Delete User</button>
-                        ${!username.startsWith('interview_') ? `
-                            <button class="action-button register-user-btn">Register User</button>
-                        ` : ''}
+                        <button class="action-button" id="resetAllProgressBtn">Reset All Progress</button>
+                        <button class="action-button" id="resetPasswordBtn">Reset Password</button>
+                        <button class="action-button" id="deleteUserBtn">Delete User</button>
+                        ${!isInterviewAccount ? '<button class="action-button" id="registerUserBtn">Register User</button>' : ''}
                     </div>
                     <div class="quiz-progress-list">
-                        Loading quiz progress...
+                        ${this.quizTypes.map(quiz => {
+                            const quizLower = quiz.toLowerCase();
+                            const isVisible = isInterviewAccount ? 
+                                user.allowedQuizzes?.includes(quizLower) : 
+                                !user.hiddenQuizzes?.includes(quizLower);
+                            
+                            return `
+                                <div class="quiz-progress-item">
+                                    <h4>${this.formatQuizName(quiz)}</h4>
+                                    <div class="quiz-stats">
+                                        <div class="stat-item">
+                                            <span>Visibility:</span>
+                                            <label class="toggle-switch">
+                                                <input type="checkbox" 
+                                                       data-quiz="${quiz}" 
+                                                       ${isVisible ? 'checked' : ''} 
+                                                       ${isInterviewAccount ? 'disabled' : ''}>
+                                                <span class="slider"></span>
+                                                <span class="toggle-label">${isVisible ? 'Visible' : 'Hidden'}</span>
+                                            </label>
+                                        </div>
+                                        <button class="view-questions-btn" data-quiz="${quiz}">View Questions</button>
+                                        <button class="reset-progress-btn" data-quiz="${quiz}">Reset Progress</button>
+                                    </div>
+                                </div>
+                            `;
+                        }).join('')}
                     </div>
                 </div>
             `;
@@ -520,9 +554,6 @@ class AdminDashboard {
                 this.users.find(u => u.username === username).quizResults.map(result => [result.quizName.toLowerCase(), result])
             );
 
-            const overlay = document.createElement('div');
-            overlay.className = 'user-details-overlay';
-            
             const content = document.createElement('div');
             content.className = 'user-details-content';
             
@@ -756,7 +787,7 @@ class AdminDashboard {
 
         } catch (error) {
             console.error('Error showing user details:', error);
-            this.showError('Failed to show user details');
+            this.showError('Failed to load user details');
         }
     }
 
