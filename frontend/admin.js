@@ -696,8 +696,9 @@ class AdminDashboard {
                             label.textContent = isVisible ? 'Visible' : 'Hidden';
                         }
 
-                        // Refresh user data
+                        // Refresh user data and update the view
                         await this.loadUsers();
+                        await this.showUserDetails(username);
                     } catch (error) {
                         console.error('Failed to update quiz visibility:', error);
                         this.showError(`Failed to update visibility for ${this.formatQuizName(quizName)}`);
