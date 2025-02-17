@@ -730,13 +730,24 @@ export class APIService {
             if (!data.success) {
                 throw new Error(data.message || 'Failed to get user data');
             }
+
+            // Ensure quiz arrays are lowercase for consistent comparison
+            const allowedQuizzes = (data.allowedQuizzes || []).map(quiz => quiz.toLowerCase());
+            const hiddenQuizzes = (data.hiddenQuizzes || []).map(quiz => quiz.toLowerCase());
+
+            console.log('User data from API:', {
+                userType: data.userType,
+                allowedQuizzes,
+                hiddenQuizzes
+            });
+
             return {
                 success: true,
                 data: {
                     username: data.username,
                     userType: data.userType,
-                    allowedQuizzes: data.allowedQuizzes,
-                    hiddenQuizzes: data.hiddenQuizzes,
+                    allowedQuizzes,
+                    hiddenQuizzes,
                     quizResults: data.quizResults || [],
                     quizProgress: data.quizProgress || {}
                 }

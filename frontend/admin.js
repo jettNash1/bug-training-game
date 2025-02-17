@@ -1249,14 +1249,26 @@ class AdminDashboard {
             // Show success message
             this.showSuccess(`Interview account created for ${username}`);
             
-            // Ensure we have the latest user data
+            // Wait for a moment to ensure the backend has processed the new account
+            await new Promise(resolve => setTimeout(resolve, 500));
+            
+            // Load the latest user data
             await this.loadUsers();
             
-            // Wait a moment for the data to be processed
+            // Wait for the user data to be processed
             await new Promise(resolve => setTimeout(resolve, 100));
             
             // Update the dashboard with the new data
             await this.updateDashboard();
+            
+            // Verify the new user is in the list
+            const newUser = this.users.find(user => user.username === username);
+            if (!newUser) {
+                console.warn('New user not found in users list after creation');
+                // Try loading users one more time
+                await this.loadUsers();
+                await this.updateDashboard();
+            }
             
             return response;
         } catch (error) {

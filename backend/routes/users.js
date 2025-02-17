@@ -542,11 +542,23 @@ router.get('/data', auth, async (req, res) => {
             });
         }
 
+        // Ensure quiz arrays are lowercase for consistent comparison
+        const allowedQuizzes = (user.allowedQuizzes || []).map(quiz => quiz.toLowerCase());
+        const hiddenQuizzes = (user.hiddenQuizzes || []).map(quiz => quiz.toLowerCase());
+
+        console.log('Sending user data:', {
+            userType: user.userType,
+            allowedQuizzes,
+            hiddenQuizzes
+        });
+
         res.json({
             success: true,
             data: {
                 username: user.username,
-                hiddenQuizzes: user.hiddenQuizzes || [],
+                userType: user.userType,
+                allowedQuizzes,
+                hiddenQuizzes,
                 lastLogin: user.lastLogin
             }
         });

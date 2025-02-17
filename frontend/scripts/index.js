@@ -41,6 +41,12 @@ class IndexPage {
                 throw new Error('Failed to load user data');
             }
 
+            console.log('User data received:', {
+                userType: userData.data.userType,
+                allowedQuizzes: userData.data.allowedQuizzes,
+                hiddenQuizzes: userData.data.hiddenQuizzes
+            });
+
             const isInterviewAccount = userData.data.userType === 'interview_candidate';
             const allowedQuizzes = userData.data.allowedQuizzes || [];
             const hiddenQuizzes = userData.data.hiddenQuizzes || [];
@@ -50,21 +56,32 @@ class IndexPage {
                 const quizId = item.dataset.quiz;
                 const quizLower = quizId.toLowerCase();
 
+                console.log('Processing quiz:', {
+                    quizId,
+                    quizLower,
+                    isInterviewAccount,
+                    isInAllowedQuizzes: allowedQuizzes.includes(quizLower),
+                    isInHiddenQuizzes: hiddenQuizzes.includes(quizLower)
+                });
+
                 // Handle quiz visibility based on account type
                 if (isInterviewAccount) {
                     // For interview accounts, only show quizzes in allowedQuizzes
                     if (!allowedQuizzes.includes(quizLower)) {
+                        console.log(`Hiding quiz ${quizId} - not in allowed quizzes`);
                         item.style.display = 'none';
                         return null;
                     }
                 } else {
                     // For regular accounts, hide quizzes in hiddenQuizzes
                     if (hiddenQuizzes.includes(quizLower)) {
+                        console.log(`Hiding quiz ${quizId} - in hidden quizzes`);
                         item.style.display = 'none';
                         return null;
                     }
                 }
                 
+                console.log(`Showing quiz ${quizId}`);
                 item.style.display = ''; // Reset display style
 
                 try {
