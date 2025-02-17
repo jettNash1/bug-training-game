@@ -528,7 +528,8 @@ class AdminDashboard {
                 </div>
                 <div class="quiz-progress-list" style="margin-top: 20px;">
                     ${this.quizTypes.map(quizName => {
-                        const quizLower = quizName.toLowerCase();
+                        // Convert quiz names to lowercase for comparison
+                        const quizLower = quizName.toLowerCase().replace(/-/g, '');
                         
                         // For interview accounts:
                         //   - Visible (checked) if in allowedQuizzes
@@ -537,8 +538,8 @@ class AdminDashboard {
                         //   - Hidden (unchecked) if in hiddenQuizzes
                         //   - Visible (checked) if not in hiddenQuizzes
                         const isVisible = isInterviewAccount ? 
-                            allowedQuizzes.includes(quizLower) : 
-                            !hiddenQuizzes.includes(quizLower);
+                            allowedQuizzes.some(q => q.replace(/-/g, '') === quizLower) : 
+                            !hiddenQuizzes.some(q => q.replace(/-/g, '') === quizLower);
                         
                         console.log('Quiz visibility check:', {
                             quizName,
@@ -547,8 +548,8 @@ class AdminDashboard {
                             allowedQuizzes,
                             hiddenQuizzes,
                             isVisible,
-                            allowedCheck: allowedQuizzes.includes(quizLower),
-                            hiddenCheck: hiddenQuizzes.includes(quizLower)
+                            allowedCheck: allowedQuizzes.some(q => q.replace(/-/g, '') === quizLower),
+                            hiddenCheck: hiddenQuizzes.some(q => q.replace(/-/g, '') === quizLower)
                         });
                         
                         const progress = user.quizProgress?.[quizLower];
