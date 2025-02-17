@@ -41,19 +41,31 @@ class IndexPage {
                 throw new Error('Failed to load user data');
             }
 
+            const isInterviewAccount = userData.data.userType === 'interview_candidate';
+            const allowedQuizzes = userData.data.allowedQuizzes || [];
             const hiddenQuizzes = userData.data.hiddenQuizzes || [];
 
             // Batch all quiz progress requests
             const progressPromises = Array.from(this.quizItems).map(async item => {
                 const quizId = item.dataset.quiz;
+                const quizLower = quizId.toLowerCase();
 
-                // Hide quiz if it's in the hiddenQuizzes array
-                if (hiddenQuizzes.includes(quizId.toLowerCase())) {
-                    item.style.display = 'none';
-                    return null;
+                // Handle quiz visibility based on account type
+                if (isInterviewAccount) {
+                    // For interview accounts, only show quizzes in allowedQuizzes
+                    if (!allowedQuizzes.includes(quizLower)) {
+                        item.style.display = 'none';
+                        return null;
+                    }
                 } else {
-                    item.style.display = ''; // Reset display style
+                    // For regular accounts, hide quizzes in hiddenQuizzes
+                    if (hiddenQuizzes.includes(quizLower)) {
+                        item.style.display = 'none';
+                        return null;
+                    }
                 }
+                
+                item.style.display = ''; // Reset display style
 
                 try {
                     // Get the saved progress
