@@ -7,12 +7,81 @@ class IndexPage {
         this.user = new QuizUser(localStorage.getItem('username'));
         this.quizItems = document.querySelectorAll('.quiz-item:not(.locked-quiz)');
         this.initialize();
+        this.showLoadingOverlay();
+    }
+
+    showLoadingOverlay() {
+        // Create loading overlay if it doesn't exist
+        if (!document.querySelector('.loading-overlay')) {
+            const overlay = document.createElement('div');
+            overlay.className = 'loading-overlay';
+            overlay.innerHTML = `
+                <div class="loading-spinner"></div>
+                <div class="loading-text">Loading your learning journey...</div>
+            `;
+            document.body.appendChild(overlay);
+
+            // Add styles if they don't exist
+            if (!document.querySelector('#loading-styles')) {
+                const styles = document.createElement('style');
+                styles.id = 'loading-styles';
+                styles.textContent = `
+                    .loading-overlay {
+                        position: fixed;
+                        top: 0;
+                        left: 0;
+                        width: 100%;
+                        height: 100%;
+                        background: rgba(255, 255, 255, 0.9);
+                        display: flex;
+                        flex-direction: column;
+                        justify-content: center;
+                        align-items: center;
+                        z-index: 9999;
+                    }
+                    .loading-spinner {
+                        width: 50px;
+                        height: 50px;
+                        border: 5px solid #f3f3f3;
+                        border-top: 5px solid var(--primary-color, #4a90e2);
+                        border-radius: 50%;
+                        animation: spin 1s linear infinite;
+                        margin-bottom: 20px;
+                    }
+                    .loading-text {
+                        font-size: 1.2em;
+                        color: var(--primary-color, #4a90e2);
+                    }
+                    @keyframes spin {
+                        0% { transform: rotate(0deg); }
+                        100% { transform: rotate(360deg); }
+                    }
+                `;
+                document.head.appendChild(styles);
+            }
+        }
+    }
+
+    hideLoadingOverlay() {
+        const overlay = document.querySelector('.loading-overlay');
+        if (overlay) {
+            // Add fade-out animation
+            overlay.style.transition = 'opacity 0.3s ease-out';
+            overlay.style.opacity = '0';
+            setTimeout(() => overlay.remove(), 300);
+        }
     }
 
     async initialize() {
-        await this.loadUserProgress();
-        this.updateQuizProgress();
-        this.updateCategoryProgress();
+        try {
+            await this.loadUserProgress();
+            this.updateQuizProgress();
+            this.updateCategoryProgress();
+        } catch (error) {
+            console.error('Failed to initialize:', error);
+        } finally {
+            this.hideLoadingOverlay();
+        }
     }
 
     handleLogout() {
@@ -125,9 +194,12 @@ class IndexPage {
 
             // Update category progress after hiding quizzes
             this.updateCategoryProgress();
+
+            return true;
         } catch (error) {
             console.error('Error loading user progress:', error);
             this.quizScores = [];
+            return false;
         }
     }
 
