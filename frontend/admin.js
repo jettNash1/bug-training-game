@@ -577,7 +577,9 @@ class AdminDashboard {
                                             <input type="checkbox" 
                                                 class="quiz-visibility-toggle"
                                                 data-quiz-name="${quizName}"
-                                                ${isVisible ? 'checked="checked"' : ''}
+                                                ${isInterviewAccount ? 
+                                                    (allowedQuizzes.includes(quizLower) ? 'checked="checked"' : '') : 
+                                                    (!hiddenQuizzes.includes(quizLower) ? 'checked="checked"' : '')}
                                                 ${isInterviewAccount ? 'disabled="disabled"' : ''}
                                                 style="margin: 0;">
                                             <span>${isVisible ? 'Visible' : 'Hidden'}</span>
