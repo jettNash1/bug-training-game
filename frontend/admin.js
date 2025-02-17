@@ -296,11 +296,11 @@ class AdminDashboard {
             const userProgress = this.calculateUserProgress(user);
             acc.totalProgress += userProgress;
             
-            console.log(`User ${user.username} stats:`, {
+           /*console.log(`User ${user.username} stats:`, {
                 lastActive: new Date(lastActive),
                 progress: userProgress,
                 completedQuizzes: user.quizResults?.length || 0
-            });
+            });*/
 
             return acc;
         }, {
@@ -503,6 +503,13 @@ class AdminDashboard {
             const allowedQuizzes = (user.allowedQuizzes || []).map(q => q.toLowerCase());
             const hiddenQuizzes = (user.hiddenQuizzes || []).map(q => q.toLowerCase());
 
+            console.log('User details:', {
+                username,
+                isInterviewAccount,
+                allowedQuizzes,
+                hiddenQuizzes
+            });
+
             // Create the overlay
             const overlay = document.createElement('div');
             overlay.className = 'user-details-overlay';
@@ -523,8 +530,8 @@ class AdminDashboard {
                         // For interview accounts, a quiz is only visible if it's in allowedQuizzes
                         // For regular accounts, a quiz is visible if it's not in hiddenQuizzes
                         const isVisible = isInterviewAccount ? 
-                            (allowedQuizzes && allowedQuizzes.includes(quizLower)) : 
-                            !(hiddenQuizzes && hiddenQuizzes.includes(quizLower));
+                            allowedQuizzes.includes(quizLower) : 
+                            !hiddenQuizzes.includes(quizLower);
                         
                         console.log('Quiz visibility check:', {
                             quizName,
@@ -532,7 +539,8 @@ class AdminDashboard {
                             isInterviewAccount,
                             allowedQuizzes,
                             hiddenQuizzes,
-                            isVisible
+                            isVisible,
+                            allowedCheck: allowedQuizzes.includes(quizLower)
                         });
                         
                         const progress = user.quizProgress?.[quizLower];
@@ -580,14 +588,10 @@ class AdminDashboard {
                                             <input type="checkbox" 
                                                 class="quiz-visibility-toggle"
                                                 data-quiz-name="${quizName}"
-                                                ${isInterviewAccount ? 
-                                                    (allowedQuizzes.includes(quizLower) ? 'checked="checked"' : '') : 
-                                                    (!hiddenQuizzes.includes(quizLower) ? 'checked="checked"' : '')}
+                                                ${isVisible ? 'checked="checked"' : ''}
                                                 ${isInterviewAccount ? 'disabled="disabled"' : ''}
                                                 style="margin: 0;">
-                                            <span>${isInterviewAccount ? 
-                                                (allowedQuizzes.includes(quizLower) ? 'Visible' : 'Hidden') : 
-                                                (!hiddenQuizzes.includes(quizLower) ? 'Visible' : 'Hidden')}</span>
+                                            <span>${isVisible ? 'Visible' : 'Hidden'}</span>
                                         </label>
                                     </div>
                                 </div>
