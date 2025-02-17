@@ -518,13 +518,13 @@ class AdminDashboard {
                     ${this.quizTypes.map(quizName => {
                         const quizLower = quizName.toLowerCase();
                         
-                        // For interview accounts, only show allowed quizzes
-                        // For regular accounts, show all quizzes not in hiddenQuizzes
+                        // For interview accounts, check if quiz is in allowedQuizzes
+                        // For regular accounts, check if quiz is not in hiddenQuizzes
                         const isVisible = isInterviewAccount ? 
                             (user.allowedQuizzes || []).includes(quizLower) : 
                             !(user.hiddenQuizzes || []).includes(quizLower);
                         
-                        // Skip this quiz if it's not visible for interview accounts
+                        // For interview accounts, only show quizzes that are in allowedQuizzes
                         if (isInterviewAccount && !isVisible) {
                             return '';
                         }
@@ -1197,6 +1197,12 @@ class AdminDashboard {
             const hiddenQuizzes = this.quizTypes
                 .map(quiz => quiz.toLowerCase())
                 .filter(quiz => !allowedQuizzes.includes(quiz));
+
+            console.log('Creating interview account with:', {
+                username,
+                allowedQuizzes,
+                hiddenQuizzes
+            });
 
             const response = await this.apiService.fetchWithAdminAuth(
                 `${this.apiService.baseUrl}/admin/create-interview-account`,
