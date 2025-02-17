@@ -500,12 +500,15 @@ class AdminDashboard {
             }
 
             const isInterviewAccount = user.userType === 'interview_candidate';
+            // For interview accounts, allowedQuizzes means visible, everything else is hidden
+            // For regular accounts, hiddenQuizzes means hidden, everything else is visible
             const allowedQuizzes = (user.allowedQuizzes || []).map(q => q.toLowerCase());
             const hiddenQuizzes = (user.hiddenQuizzes || []).map(q => q.toLowerCase());
 
             console.log('User details:', {
                 username,
                 isInterviewAccount,
+                userType: user.userType,
                 allowedQuizzes,
                 hiddenQuizzes
             });
@@ -527,8 +530,12 @@ class AdminDashboard {
                     ${this.quizTypes.map(quizName => {
                         const quizLower = quizName.toLowerCase();
                         
-                        // For interview accounts, a quiz is only visible if it's in allowedQuizzes
-                        // For regular accounts, a quiz is visible if it's not in hiddenQuizzes
+                        // For interview accounts:
+                        //   - Visible (checked) if in allowedQuizzes
+                        //   - Hidden (unchecked) if not in allowedQuizzes
+                        // For regular accounts:
+                        //   - Hidden (unchecked) if in hiddenQuizzes
+                        //   - Visible (checked) if not in hiddenQuizzes
                         const isVisible = isInterviewAccount ? 
                             allowedQuizzes.includes(quizLower) : 
                             !hiddenQuizzes.includes(quizLower);
@@ -540,7 +547,8 @@ class AdminDashboard {
                             allowedQuizzes,
                             hiddenQuizzes,
                             isVisible,
-                            allowedCheck: allowedQuizzes.includes(quizLower)
+                            allowedCheck: allowedQuizzes.includes(quizLower),
+                            hiddenCheck: hiddenQuizzes.includes(quizLower)
                         });
                         
                         const progress = user.quizProgress?.[quizLower];
@@ -555,7 +563,6 @@ class AdminDashboard {
                                      questionsAnswered > 0 ? 'In Progress' : 
                                      'Not Started';
                         
-                        // Only show the quiz item if it's visible for the user type
                         return `
                             <div class="quiz-progress-item" style="margin-bottom: 20px; padding: 15px; background: #f5f5f5; border-radius: 8px;">
                                 <h4 style="margin: 0 0 10px 0;">${this.formatQuizName(quizName)}</h4>
