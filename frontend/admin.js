@@ -568,11 +568,11 @@ class AdminDashboard {
                                         <strong>Visibility:</strong>
                                         <label class="visibility-toggle" style="display: inline-flex; align-items: center; gap: 5px;">
                                             <input type="checkbox" 
-                                                   class="quiz-visibility-toggle"
-                                                   data-quiz-name="${quizName}"
-                                                   ${isVisible ? 'checked' : ''}
-                                                   ${isInterviewAccount ? 'disabled' : ''}
-                                                   style="margin: 0;">
+                                                class="quiz-visibility-toggle"
+                                                data-quiz-name="${quizName}"
+                                                ${isVisible ? 'checked' : ''}
+                                                ${isInterviewAccount ? 'disabled' : ''}
+                                                style="margin: 0;">
                                             <span>${isVisible ? 'Visible' : 'Hidden'}</span>
                                         </label>
                                     </div>
