@@ -696,9 +696,30 @@ class AdminDashboard {
                             label.textContent = isVisible ? 'Visible' : 'Hidden';
                         }
 
-                        // Refresh user data and update the view
+                        // Refresh user data without closing the overlay
                         await this.loadUsers();
-                        await this.showUserDetails(username);
+                        
+                        // Update the user object in memory
+                        const updatedUser = this.users.find(u => u.username === username);
+                        if (updatedUser) {
+                            const isInterviewAccount = updatedUser.userType === 'interview_candidate';
+                            const allowedQuizzes = (updatedUser.allowedQuizzes || []).map(q => q.toLowerCase());
+                            const hiddenQuizzes = (updatedUser.hiddenQuizzes || []).map(q => q.toLowerCase());
+                            
+                            // Update other toggles that might have been affected
+                            content.querySelectorAll('.quiz-visibility-toggle').forEach(otherToggle => {
+                                const otherQuizName = otherToggle.dataset.quizName.toLowerCase();
+                                const shouldBeVisible = isInterviewAccount ? 
+                                    allowedQuizzes.includes(otherQuizName) : 
+                                    !hiddenQuizzes.includes(otherQuizName);
+                                
+                                otherToggle.checked = shouldBeVisible;
+                                const otherLabel = otherToggle.nextElementSibling;
+                                if (otherLabel) {
+                                    otherLabel.textContent = shouldBeVisible ? 'Visible' : 'Hidden';
+                                }
+                            });
+                        }
                     } catch (error) {
                         console.error('Failed to update quiz visibility:', error);
                         this.showError(`Failed to update visibility for ${this.formatQuizName(quizName)}`);
