@@ -716,4 +716,14 @@ export class APIService {
             throw error;
         }
     }
+
+    async getUserData() {
+        try {
+            const response = await this.fetchWithAuth(`${this.baseUrl}/users/data`);
+            return response;
+        } catch (error) {
+            console.error('Error fetching user data:', error);
+            throw error;
+        }
+    }
 } 

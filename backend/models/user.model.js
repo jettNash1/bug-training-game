@@ -23,12 +23,25 @@ const userSchema = new mongoose.Schema({
         type: String,
         required: true
     },
+    userType: {
+        type: String,
+        enum: ['standard', 'interview_candidate', 'admin'],
+        default: 'standard'
+    },
+    allowedQuizzes: {
+        type: [String],
+        default: []
+    },
     quizResults: [quizResultSchema],
     createdAt: {
         type: Date,
         default: Date.now
     },
     lastLogin: Date,
+    hiddenQuizzes: {
+        type: [String],
+        default: []
+    },
     quizProgress: {
         type: Map,
         of: {

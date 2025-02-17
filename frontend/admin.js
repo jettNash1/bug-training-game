@@ -493,30 +493,31 @@ class AdminDashboard {
 
     async showUserDetails(username) {
         try {
-            console.log(`Opening details for ${username}`);
-            
-            // Remove any existing overlay first
-            const existingOverlay = document.querySelector('.user-details-overlay');
-            if (existingOverlay) {
-                existingOverlay.remove();
-            }
-            
-            const user = this.users.find(u => u.username === username);
-            
-            if (!user) {
-                console.error(`User ${username} not found`);
-                return;
-            }
-
-            console.log(`Showing details for ${username}:`, {
-                user,
-                quizResults: user.quizResults,
-                quizProgress: user.quizProgress
-            });
+            const userDetailsOverlay = document.createElement('div');
+            userDetailsOverlay.className = 'user-details-overlay';
+            userDetailsOverlay.innerHTML = `
+                <div class="user-details-content">
+                    <div class="details-header">
+                        <h3>User Details: ${username}</h3>
+                        <button class="close-btn" aria-label="Close details">&times;</button>
+                    </div>
+                    <div class="user-actions">
+                        <button class="action-button reset-all-btn">Reset All Progress</button>
+                        <button class="action-button reset-password-btn">Reset Password</button>
+                        <button class="action-button delete-user-btn">Delete User</button>
+                        ${!username.startsWith('interview_') ? `
+                            <button class="action-button register-user-btn">Register User</button>
+                        ` : ''}
+                    </div>
+                    <div class="quiz-progress-list">
+                        Loading quiz progress...
+                    </div>
+                </div>
+            `;
 
             // Create a map of quiz results for easy lookup
             const quizResultsMap = new Map(
-                user.quizResults.map(result => [result.quizName.toLowerCase(), result])
+                this.users.find(u => u.username === username).quizResults.map(result => [result.quizName.toLowerCase(), result])
             );
 
             const overlay = document.createElement('div');
@@ -535,7 +536,7 @@ class AdminDashboard {
                     ${this.quizTypes.map(quizName => {
                         // Get both quiz result and progress data
                         const result = quizResultsMap.get(quizName.toLowerCase());
-                        const progress = user.quizProgress?.[quizName.toLowerCase()];
+                        const progress = this.users.find(u => u.username === username).quizProgress?.[quizName.toLowerCase()];
                         
                         // Get questions answered and experience from quiz progress first, then fall back to quiz result
                         const questionsAnswered = progress?.questionsAnswered || result?.questionsAnswered || 0;
@@ -548,6 +549,9 @@ class AdminDashboard {
                         
                         const score = result?.score || 0;
                         const lastActive = result ? this.formatDate(result.lastActive || result.completedAt) : 'Never';
+
+                        // Check if quiz is hidden
+                        const isHidden = this.users.find(u => u.username === username).hiddenQuizzes?.includes(quizName.toLowerCase());
 
                         return `
                             <div class="quiz-progress-item" style="margin-bottom: 20px; padding: 15px; background: #f5f5f5; border-radius: 8px;">
@@ -574,6 +578,17 @@ class AdminDashboard {
                                     <div>
                                         <strong>Last Active:</strong> 
                                         <span>${lastActive}</span>
+                                    </div>
+                                    <div>
+                                        <strong>Visibility:</strong>
+                                        <label class="visibility-toggle" style="display: inline-flex; align-items: center; gap: 5px;">
+                                            <input type="checkbox" 
+                                                   class="quiz-visibility-toggle"
+                                                   data-quiz-name="${quizName}"
+                                                   ${!isHidden ? 'checked' : ''}
+                                                   style="margin: 0;">
+                                            <span>${!isHidden ? 'Visible' : 'Hidden'}</span>
+                                        </label>
                                     </div>
                                 </div>
                                 <div style="display: flex; flex-direction: column; gap: 10px; margin-top: 15px;">
@@ -634,6 +649,45 @@ class AdminDashboard {
                 });
             });
 
+            // Add event listeners for quiz visibility toggles
+            content.querySelectorAll('.quiz-visibility-toggle').forEach(toggle => {
+                toggle.addEventListener('change', async (e) => {
+                    const quizName = e.target.dataset.quizName;
+                    const isVisible = e.target.checked;
+                    
+                    try {
+                        const response = await this.apiService.fetchWithAdminAuth(
+                            `${this.apiService.baseUrl}/admin/users/${username}/quiz-visibility/${quizName}`,
+                            {
+                                method: 'POST',
+                                headers: {
+                                    'Content-Type': 'application/json'
+                                },
+                                body: JSON.stringify({ isVisible })
+                            }
+                        );
+
+                        if (!response.success) {
+                            throw new Error(response.message || 'Failed to update quiz visibility');
+                        }
+
+                        // Update the toggle label
+                        const label = e.target.nextElementSibling;
+                        if (label) {
+                            label.textContent = isVisible ? 'Visible' : 'Hidden';
+                        }
+
+                        // Refresh user data
+                        await this.loadUsers();
+                    } catch (error) {
+                        console.error('Failed to update quiz visibility:', error);
+                        this.showError(`Failed to update visibility for ${this.formatQuizName(quizName)}`);
+                        // Revert the toggle
+                        e.target.checked = !isVisible;
+                    }
+                });
+            });
+
             // Add event listeners for view questions buttons
             content.querySelectorAll('.view-questions-btn').forEach(button => {
                 button.addEventListener('click', async (e) => {
@@ -676,6 +730,12 @@ class AdminDashboard {
                 }
             });
 
+            // Add event listener for register user button
+            const registerUserBtn = content.querySelector('.register-user-btn');
+            if (registerUserBtn) {
+                registerUserBtn.addEventListener('click', () => this.registerUser(username));
+            }
+
             // Add close button functionality
             const closeBtn = content.querySelector('.close-btn');
             closeBtn.addEventListener('click', () => overlay.remove());
@@ -688,8 +748,8 @@ class AdminDashboard {
             });
 
         } catch (error) {
-            console.error(`Error showing user details for ${username}:`, error);
-            this.showError('Failed to load user details');
+            console.error('Error showing user details:', error);
+            this.showError('Failed to show user details');
         }
     }
 
@@ -1109,6 +1169,192 @@ class AdminDashboard {
             console.error('Error deleting user:', error);
             this.showError('Failed to delete user');
             throw error;
+        }
+    }
+
+    async createInterviewAccount(username, password, selectedQuizzes) {
+        try {
+            const response = await this.apiService.fetchWithAdminAuth(
+                `${this.apiService.baseUrl}/admin/create-interview-account`,
+                {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        username,
+                        password,
+                        allowedQuizzes: selectedQuizzes
+                    })
+                }
+            );
+
+            if (!response.success) {
+                throw new Error(response.message || 'Failed to create interview account');
+            }
+
+            // Refresh the users list
+            await this.loadUsers();
+            await this.updateDashboard();
+
+            return response;
+        } catch (error) {
+            console.error('Failed to create interview account:', error);
+            this.showError('Failed to create interview account');
+            throw error;
+        }
+    }
+
+    showCreateInterviewAccountForm() {
+        const overlay = document.createElement('div');
+        overlay.className = 'user-details-overlay';
+        
+        const content = document.createElement('div');
+        content.className = 'user-details-content';
+        
+        content.innerHTML = `
+            <div class="details-header">
+                <h3>Create Interview Account</h3>
+                <button class="close-btn" style="position: absolute; right: 20px; top: 20px; 
+                        padding: 5px 10px; cursor: pointer; background: none; border: none; font-size: 20px;">×</button>
+            </div>
+            <form id="interviewAccountForm" style="display: flex; flex-direction: column; gap: 15px; padding: 20px;">
+                <div>
+                    <label for="username">Username:</label>
+                    <input type="text" id="username" required style="width: 100%; padding: 8px; margin-top: 5px;">
+                </div>
+                <div>
+                    <label for="password">Password:</label>
+                    <input type="password" id="password" required style="width: 100%; padding: 8px; margin-top: 5px;">
+                </div>
+                <div>
+                    <label>Select Quizzes:</label>
+                    <div class="quiz-selection" style="margin-top: 10px; max-height: 200px; overflow-y: auto;">
+                        ${this.quizTypes.map(quiz => `
+                            <div style="margin: 5px 0;">
+                                <label style="display: flex; align-items: center; gap: 5px;">
+                                    <input type="checkbox" value="${quiz}" class="quiz-checkbox">
+                                    ${this.formatQuizName(quiz)}
+                                </label>
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+                <button type="submit" style="padding: 10px; background: var(--primary-color); color: white; border: none; border-radius: 4px; cursor: pointer;">
+                    Create Account
+                </button>
+            </form>
+        `;
+        
+        overlay.appendChild(content);
+        document.body.appendChild(overlay);
+
+        // Add form submission handler
+        const form = content.querySelector('#interviewAccountForm');
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const username = form.querySelector('#username').value;
+            const password = form.querySelector('#password').value;
+            const selectedQuizzes = Array.from(form.querySelectorAll('.quiz-checkbox:checked'))
+                .map(checkbox => checkbox.value);
+
+            try {
+                await this.createInterviewAccount(username, password, selectedQuizzes);
+                overlay.remove();
+                this.showError('Interview account created successfully', 'success');
+            } catch (error) {
+                console.error('Failed to create interview account:', error);
+            }
+        });
+
+        // Add close button functionality
+        const closeBtn = content.querySelector('.close-btn');
+        closeBtn.addEventListener('click', () => overlay.remove());
+
+        // Close on click outside
+        overlay.addEventListener('click', (e) => {
+            if (e.target === overlay) {
+                overlay.remove();
+            }
+        });
+    }
+
+    async registerUser(username) {
+        try {
+            // Create a modal for password input
+            const modal = document.createElement('div');
+            modal.className = 'modal-overlay';
+            modal.innerHTML = `
+                <div class="modal-content">
+                    <h3>Register User: ${username}</h3>
+                    <p>Please enter a password for this user:</p>
+                    <form id="registerUserForm">
+                        <div class="form-group">
+                            <label for="password">Password:</label>
+                            <input type="password" id="password" required minlength="6">
+                        </div>
+                        <div class="form-group">
+                            <label for="confirmPassword">Confirm Password:</label>
+                            <input type="password" id="confirmPassword" required minlength="6">
+                        </div>
+                        <div class="button-group">
+                            <button type="submit" class="action-button">Register</button>
+                            <button type="button" class="cancel-button">Cancel</button>
+                        </div>
+                    </form>
+                </div>
+            `;
+
+            document.body.appendChild(modal);
+
+            // Add event listeners
+            const form = modal.querySelector('#registerUserForm');
+            const cancelButton = modal.querySelector('.cancel-button');
+
+            cancelButton.addEventListener('click', () => {
+                modal.remove();
+            });
+
+            form.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                
+                const password = form.querySelector('#password').value;
+                const confirmPassword = form.querySelector('#confirmPassword').value;
+
+                if (password !== confirmPassword) {
+                    this.showError('Passwords do not match');
+                    return;
+                }
+
+                try {
+                    const response = await this.apiService.fetchWithAdminAuth(
+                        `${this.apiService.baseUrl}/admin/register-user`,
+                        {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json'
+                            },
+                            body: JSON.stringify({ username, password })
+                        }
+                    );
+
+                    if (response.success) {
+                        this.showSuccess('User registered successfully');
+                        modal.remove();
+                        // Refresh the user list
+                        await this.loadUsers();
+                    } else {
+                        this.showError(response.message || 'Failed to register user');
+                    }
+                } catch (error) {
+                    console.error('Error registering user:', error);
+                    this.showError('Failed to register user');
+                }
+            });
+        } catch (error) {
+            console.error('Error showing registration modal:', error);
+            this.showError('Failed to show registration form');
         }
     }
 }

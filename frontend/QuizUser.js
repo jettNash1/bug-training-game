@@ -12,74 +12,23 @@ export class QuizUser {
     async loadUserData() {
         try {
             // First try to load from server
-            const response = await fetch(`${config.apiUrl}/users/${this.username}/quiz-results`);
-            if (!response.ok) {
-                throw new Error('Failed to load user data from server');
-            }
-            const data = await response.json();
+            const data = await this.api.getUserData();
             
             if (data.success) {
-                this.quizResults = data.data || [];
-                console.log('Loaded quiz results:', this.quizResults);
-                
-                // Load quiz progress for each quiz
-                for (const result of this.quizResults) {
-                    try {
-                        const progressResponse = await this.api.getQuizProgress(result.quizName);
-                        if (progressResponse && progressResponse.data) {
-                            this.quizProgress[result.quizName] = progressResponse.data;
+                this.userType = data.data.userType;
+                this.allowedQuizzes = data.data.allowedQuizzes || [];
+                this.quizResults = data.data.quizResults || [];
+
+                // If this is an interview account, only show allowed quizzes
+                if (this.userType === 'interview_candidate') {
+                    document.querySelectorAll('.quiz-item').forEach(quizItem => {
+                        const quizName = quizItem.dataset.quiz;
+                        if (!this.allowedQuizzes.includes(quizName.toLowerCase())) {
+                            quizItem.style.display = 'none';
                         }
-                    } catch (error) {
-                        console.error(`Failed to load progress for ${result.quizName}:`, error);
-                    }
+                    });
                 }
-                
-                // Update progress display for each quiz
-                this.quizResults.forEach(result => {
-                    const progressElement = document.querySelector(`#${result.quizName}-progress`);
-                    if (progressElement) {
-                        const totalQuestions = 15;
-                        const progress = this.quizProgress[result.quizName];
-                        
-                        // Get the most up-to-date question count
-                        const completedQuestions = progress?.questionHistory?.length || 
-                                                result.questionHistory?.length || 
-                                                result.questionsAnswered || 0;
-                        
-                        const percentComplete = Math.round((completedQuestions / totalQuestions) * 100);
-                        
-                        console.log(`Updating progress for ${result.quizName}:`, {
-                            completedQuestions,
-                            percentComplete,
-                            progress,
-                            result
-                        });
-                        
-                        // Remove "No progress" message if it exists
-                        if (progressElement.textContent.includes('No progress')) {
-                            progressElement.textContent = '';
-                        }
-                        
-                        progressElement.textContent = `${percentComplete}% Complete`;
-                        progressElement.classList.remove('hidden');
-                        
-                        // Update quiz item styling
-                        const quizItem = document.querySelector(`[data-quiz="${result.quizName}"]`);
-                        if (quizItem) {
-                            quizItem.classList.remove('completed', 'in-progress');
-                            if (percentComplete === 100) {
-                                quizItem.classList.add('completed');
-                                progressElement.classList.add('completed');
-                                progressElement.classList.remove('in-progress');
-                            } else if (percentComplete > 0) {
-                                quizItem.classList.add('in-progress');
-                                progressElement.classList.add('in-progress');
-                                progressElement.classList.remove('completed');
-                            }
-                        }
-                    }
-                });
-                
+
                 return true;
             }
             return false;
@@ -456,6 +405,108 @@ export class QuizUser {
             const percentage = (completedQuizzes / quizIds.length) * 100;
             progressBar.style.width = `${percentage}%`;
             progressBar.setAttribute('aria-valuenow', percentage);
+        }
+    }
+
+    startQuizTimer() {
+        if (this.userType !== 'interview_candidate') return;
+
+        const TIMER_DURATION = 180; // 3 minutes in seconds
+        let timeLeft = TIMER_DURATION;
+
+        // Create timer display
+        const timerDisplay = document.createElement('div');
+        timerDisplay.className = 'quiz-timer';
+        timerDisplay.style.cssText = `
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: rgba(0, 0, 0, 0.8);
+            color: white;
+            padding: 10px 20px;
+            border-radius: 4px;
+            font-size: 1.2em;
+            z-index: 1000;
+        `;
+        document.body.appendChild(timerDisplay);
+
+        // Update timer every second
+        this.timerInterval = setInterval(() => {
+            timeLeft--;
+            const minutes = Math.floor(timeLeft / 60);
+            const seconds = timeLeft % 60;
+            timerDisplay.textContent = `Time Left: ${minutes}:${seconds.toString().padStart(2, '0')}`;
+
+            if (timeLeft <= 30) {
+                timerDisplay.style.backgroundColor = 'rgba(255, 0, 0, 0.8)';
+            }
+
+            if (timeLeft <= 0) {
+                clearInterval(this.timerInterval);
+                this.handleTimeUp();
+            }
+        }, 1000);
+    }
+
+    handleTimeUp() {
+        // Submit the quiz automatically
+        const submitButton = document.querySelector('.submit-quiz-btn');
+        if (submitButton) {
+            submitButton.click();
+        }
+
+        // Show time up message
+        alert('Time is up! Your answers have been submitted.');
+    }
+
+    clearQuizTimer() {
+        if (this.timerInterval) {
+            clearInterval(this.timerInterval);
+            const timerDisplay = document.querySelector('.quiz-timer');
+            if (timerDisplay) {
+                timerDisplay.remove();
+            }
+        }
+    }
+
+    async startQuiz(quizName) {
+        try {
+            // Clear any existing timer
+            this.clearQuizTimer();
+
+            // Start timer if user is an interview candidate
+            if (this.userType === 'interview_candidate') {
+                this.startQuizTimer();
+            }
+
+            // Rest of the quiz initialization code...
+            const response = await this.api.getQuizProgress(quizName);
+            if (!response || !response.success) {
+                throw new Error('Failed to start quiz');
+            }
+
+            return response.data;
+        } catch (error) {
+            console.error('Failed to start quiz:', error);
+            throw error;
+        }
+    }
+
+    async finishQuiz(quizName, results) {
+        try {
+            // Clear the timer if it exists
+            this.clearQuizTimer();
+
+            // Rest of the quiz completion code...
+            const response = await this.api.saveQuizProgress(quizName, results);
+            if (!response || !response.success) {
+                throw new Error('Failed to save quiz progress');
+            }
+
+            return response.data;
+        } catch (error) {
+            console.error('Failed to finish quiz:', error);
+            throw error;
         }
     }
 }

@@ -35,9 +35,26 @@ class IndexPage {
             const username = localStorage.getItem('username');
             if (!username) return;
 
+            // Get user data including hidden quizzes
+            const userData = await this.apiService.getUserData();
+            if (!userData.success) {
+                throw new Error('Failed to load user data');
+            }
+
+            const hiddenQuizzes = userData.data.hiddenQuizzes || [];
+
             // Batch all quiz progress requests
             const progressPromises = Array.from(this.quizItems).map(async item => {
                 const quizId = item.dataset.quiz;
+
+                // Hide quiz if it's in the hiddenQuizzes array
+                if (hiddenQuizzes.includes(quizId.toLowerCase())) {
+                    item.style.display = 'none';
+                    return null;
+                } else {
+                    item.style.display = ''; // Reset display style
+                }
+
                 try {
                     // Get the saved progress
                     const savedProgress = await this.apiService.getQuizProgress(quizId);
@@ -74,8 +91,11 @@ class IndexPage {
             });
 
             // Wait for all progress data to load
-            this.quizScores = await Promise.all(progressPromises);
+            this.quizScores = (await Promise.all(progressPromises)).filter(Boolean);
             console.log('Loaded quiz scores:', this.quizScores); // Debug log
+
+            // Update category progress after hiding quizzes
+            this.updateCategoryProgress();
         } catch (error) {
             console.error('Error loading user progress:', error);
             this.quizScores = [];

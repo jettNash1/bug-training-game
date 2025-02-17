@@ -540,4 +540,174 @@ router.delete('/users/:username', auth, async (req, res) => {
     }
 });
 
+// Toggle quiz visibility for a user
+router.post('/users/:username/quiz-visibility/:quizName', auth, async (req, res) => {
+    try {
+        // Verify admin status
+        if (!req.user.isAdmin) {
+            return res.status(403).json({
+                success: false,
+                message: 'Admin access required'
+            });
+        }
+
+        const { username, quizName } = req.params;
+        const { isVisible } = req.body;
+
+        if (typeof isVisible !== 'boolean') {
+            return res.status(400).json({
+                success: false,
+                message: 'isVisible must be a boolean value'
+            });
+        }
+
+        // Find the user
+        const user = await User.findOne({ username });
+        if (!user) {
+            return res.status(404).json({
+                success: false,
+                message: 'User not found'
+            });
+        }
+
+        // Initialize hiddenQuizzes array if it doesn't exist
+        if (!user.hiddenQuizzes) {
+            user.hiddenQuizzes = [];
+        }
+
+        // Update the quiz visibility
+        const normalizedQuizName = quizName.toLowerCase();
+        const quizIndex = user.hiddenQuizzes.indexOf(normalizedQuizName);
+
+        if (!isVisible && quizIndex === -1) {
+            // Add to hidden quizzes if not visible and not already hidden
+            user.hiddenQuizzes.push(normalizedQuizName);
+        } else if (isVisible && quizIndex !== -1) {
+            // Remove from hidden quizzes if visible and currently hidden
+            user.hiddenQuizzes.splice(quizIndex, 1);
+        }
+
+        await user.save();
+
+        res.json({
+            success: true,
+            message: `Quiz visibility updated for ${username}`,
+            hiddenQuizzes: user.hiddenQuizzes
+        });
+    } catch (error) {
+        console.error('Error updating quiz visibility:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Failed to update quiz visibility',
+            error: error.message
+        });
+    }
+});
+
+// Create interview account
+router.post('/create-interview-account', auth, async (req, res) => {
+    try {
+        // Verify admin status
+        if (!req.user.isAdmin) {
+            return res.status(403).json({
+                success: false,
+                message: 'Admin access required'
+            });
+        }
+
+        const { username, password, allowedQuizzes } = req.body;
+
+        if (!username || !password) {
+            return res.status(400).json({
+                success: false,
+                message: 'Username and password are required'
+            });
+        }
+
+        // Check if user already exists
+        let existingUser = await User.findOne({ username });
+        if (existingUser) {
+            return res.status(409).json({
+                success: false,
+                message: 'Username already exists'
+            });
+        }
+
+        // Create new interview user
+        const user = new User({
+            username,
+            password,
+            userType: 'interview_candidate',
+            allowedQuizzes: allowedQuizzes || []
+        });
+
+        await user.save();
+
+        res.json({
+            success: true,
+            message: 'Interview account created successfully',
+            user: {
+                username: user.username,
+                userType: user.userType,
+                allowedQuizzes: user.allowedQuizzes
+            }
+        });
+    } catch (error) {
+        console.error('Error creating interview account:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Failed to create interview account',
+            error: error.message
+        });
+    }
+});
+
+// Register a user (admin only)
+router.post('/register-user', auth, async (req, res) => {
+    try {
+        // Verify admin status
+        if (!req.user.isAdmin) {
+            return res.status(403).json({
+                success: false,
+                message: 'Admin access required'
+            });
+        }
+
+        const { username, password } = req.body;
+
+        if (!username || !password) {
+            return res.status(400).json({
+                success: false,
+                message: 'Username and password are required'
+            });
+        }
+
+        // Check if user already exists
+        const existingUser = await User.findOne({ username });
+        
+        if (!existingUser) {
+            return res.status(404).json({
+                success: false,
+                message: 'User not found'
+            });
+        }
+
+        // Update the user's password
+        existingUser.password = password;
+        await existingUser.save();
+
+        res.json({
+            success: true,
+            message: 'User registered successfully'
+        });
+    } catch (error) {
+        console.error('Error registering user:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Failed to register user',
+            error: error.message
+        });
+    }
+});
+
 module.exports = router; 

@@ -531,4 +531,33 @@ router.post('/quiz-scores', auth, async (req, res) => {
     }
 });
 
+// Get user data including hidden quizzes
+router.get('/data', auth, async (req, res) => {
+    try {
+        const user = await User.findById(req.user.id);
+        if (!user) {
+            return res.status(404).json({
+                success: false,
+                message: 'User not found'
+            });
+        }
+
+        res.json({
+            success: true,
+            data: {
+                username: user.username,
+                hiddenQuizzes: user.hiddenQuizzes || [],
+                lastLogin: user.lastLogin
+            }
+        });
+    } catch (error) {
+        console.error('Error fetching user data:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Failed to fetch user data',
+            error: error.message
+        });
+    }
+});
+
 module.exports = router;
