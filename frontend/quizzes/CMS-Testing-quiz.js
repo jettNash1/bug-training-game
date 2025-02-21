@@ -380,17 +380,17 @@ export class CMS_Testing_Quiz extends BaseQuiz {
                     {
                         text: 'Check response time for newly updated content',
                         outcome: 'All aspects of performance testing are essential and require testing.',
-                        experience: -15
+                        experience: -20
                     },
                     {
                         text: 'By not including load testing if the content management system is not to be use extensively',
                         outcome: 'Load handling is crucial regardless of initial known usage as this can fluctuate.',
-                        experience: -10
+                        experience: -15
                     },
                     {
                         text: 'By minimizing responsiveness testing as long as the functionality eventually updates as required',
                         outcome: 'Response time is crucial, as users can attempt to perform other functions whilst the initial request is still yet to respond, in turn causing issues.',
-                        experience: -5
+                        experience: -10
                     }
                 ]
             },
@@ -409,17 +409,17 @@ export class CMS_Testing_Quiz extends BaseQuiz {
                     {
                         text: 'The user credential login function as is sufficient for security testing',
                         outcome: 'Login testing is just one aspect of content management system security.',
-                        experience: -15
+                        experience: -20
                     },
                     {
                         text: 'Vulnerability testing requires testing, although this is of low priority and can be left out of planning',
                         outcome: 'Vulnerability testing crucial for content management system testing as this exposes weaknesses in the system.',
-                        experience: -10
+                        experience: -15
                     },
                     {
                         text: 'Minimal permissions testing as long as admin users have the correct access',
                         outcome: 'Access controls are important for all user permission levels.',
-                        experience: -5
+                        experience: -10
                     }
                 ]
             },
@@ -438,17 +438,17 @@ export class CMS_Testing_Quiz extends BaseQuiz {
                     {
                         text: 'Test that backups are stored correctly and in order',
                         outcome: 'Other aspects of back up testing are required including restoration of a back up.',
-                        experience: -15
+                        experience: -20
                     },
                     {
                         text: 'Leave integrity checks in accordance with time constraints as these are of a low priority as long as restoration can be performed',
                         outcome: 'Data integrity is a crucial part of back up, as data needs to remain consistent throughout the process.',
-                        experience: -10
+                        experience: -15
                     },
                     {
                         text: "Don't test restoration as long as the back up is stored correctly",
                         outcome: 'Recovery verification is essential to the back up process.',
-                        experience: -5
+                        experience: -10
                     }
                 ]
             },
@@ -467,17 +467,17 @@ export class CMS_Testing_Quiz extends BaseQuiz {
                     {
                         text: 'Test one browser across multiple devices as this is sufficient',
                         outcome: 'Multiple environments are required including different browsers and devices.',
-                        experience: -15
+                        experience: -20
                     },
                     {
                         text: 'Test on desktop environments only as content management systems are generally not used on mobile devices',
                         outcome: 'Mobile compatibility is supported by content management systems and is also a crucial element in environment checks.',
-                        experience: -10
+                        experience: -15
                     },
                     {
                         text: 'Ignore operating system differences as long as browser and device tests have been performed',
                         outcome: 'Operating system compatibility is important regardless of browser and device checks.',
-                        experience: -5
+                        experience: -10
                     }
                 ]
             },
@@ -496,17 +496,17 @@ export class CMS_Testing_Quiz extends BaseQuiz {
                     {
                         text: 'Test Application Programme Interface connection features',
                         outcome: 'All supported integration functionality require thorough testing.',
-                        experience: -15
+                        experience: -20
                     },
                     {
                         text: 'Third-party tests are not needed as they have not directly been developed by the content management system provider',
                         outcome: 'External services are a crucial part to content management system testing and any supported integrations within scope mist be tested.',
-                        experience: -10
+                        experience: -15
                     },
                     {
                         text: 'Data flow testing is of low priority and can be left out of planning and execution',
                         outcome: 'Data transfer essential and must be tested as it directly affects the integrity of the content within the content management system.',
-                        experience: -5
+                        experience: -10
                     }
                 ]
             }

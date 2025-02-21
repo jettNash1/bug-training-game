@@ -82,16 +82,16 @@ export class CommunicationQuiz extends BaseQuiz {
                     {
                         text: 'Give a detailed explanation of every task you worked on',
                         outcome: 'Stand-ups should be concise and focused.',
-                        experience: -5
+                        experience: 0
                     },
                     {
-                        text: 'Just say everything is fine',
-                        outcome: 'Updates should be specific and informative.',
+                        text: 'State that everything is fine and you progressing well',
+                        outcome: 'Updates should be specific and informative as stakeholders need to factor in project resources and time management.',
                         experience: -10
                     },
                     {
-                        text: 'Wait for others to ask you questions',
-                        outcome: 'Be proactive in providing updates.',
+                        text: 'Wait for people to ask you questions about specific areas of the project during the meeting',
+                        outcome: 'Being proactive in providing updates is a more productive use of meeting time.',
                         experience: -5
                     }
                 ]
@@ -109,18 +109,18 @@ export class CommunicationQuiz extends BaseQuiz {
                         tool: 'Email Etiquette'
                     },
                     {
-                        text: 'Write one long paragraph with all information',
-                        outcome: 'Emails should be well-organized and easy to scan.',
+                        text: 'Write a paragraph which includes all possible information that might be required',
+                        outcome: 'Emails should be well-organized and easy to pinpoint priority areas.',
                         experience: -10
                     },
                     {
-                        text: 'Send multiple short emails instead',
-                        outcome: 'Important updates should be consolidated when possible.',
-                        experience: -5
+                        text: 'Send multiple short emails targeting different areas of the project that require an update',
+                        outcome: 'Important updates should be consolidated when possible to avoid losing important information.',
+                        experience: 0
                     },
                     {
-                        text: 'Use informal language and emojis',
-                        outcome: 'Professional communication requires appropriate tone.',
+                        text: 'Use informal language and emojis to keep a friendly approach',
+                        outcome: 'Professional communication requires an appropriate tone.',
                         experience: -5
                     }
                 ]
@@ -138,19 +138,19 @@ export class CommunicationQuiz extends BaseQuiz {
                         tool: 'Documentation Reference'
                     },
                     {
-                        text: 'Tell them to search online',
-                        outcome: 'This isn\'t helpful or collaborative.',
-                        experience: -15
-                    },
-                    {
-                        text: 'Ignore the question',
-                        outcome: 'Team communication requires active participation.',
+                        text: 'Advise them to search for suggestions online and give general direction',
+                        outcome: 'This may not be helpful or collaborative and can slow down testing processes.',
                         experience: -10
                     },
                     {
-                        text: 'Give a vague answer',
-                        outcome: 'Clear and specific responses are more helpful.',
+                        text: 'Wait for someone else to respond to the question',
+                        outcome: 'Team communication requires active participation.',
                         experience: -5
+                    },
+                    {
+                        text: 'Give a vague answer to their queries if you are not sure',
+                        outcome: 'Clear and specific responses are more helpful and if the answer is not known, direct to someone who might be able to help.',
+                        experience: 0
                     }
                 ]
             },
@@ -167,19 +167,19 @@ export class CommunicationQuiz extends BaseQuiz {
                         tool: 'Status Reporting'
                     },
                     {
-                        text: 'Wait until someone asks about the delay',
-                        outcome: 'Delays should be communicated proactively.',
-                        experience: -10
-                    },
-                    {
-                        text: 'Only mention it in the next scheduled meeting',
-                        outcome: 'Important updates shouldn\'t wait for scheduled meetings.',
+                        text: 'Wait until someone else affected asks about the delay in the project',
+                        outcome: 'Delays should be communicated proactively as to redistribute working resources effectively.',
                         experience: -5
                     },
                     {
-                        text: 'Try to handle it without telling anyone',
-                        outcome: 'Transparency is important in team communication.',
-                        experience: -15
+                        text: 'Mention the delay in the next scheduled meeting',
+                        outcome: 'Important updates shouldn\'t wait for scheduled meetings as it could cause bottlenecks further into the project.',
+                        experience: 0
+                    },
+                    {
+                        text: 'Find solutions to delay yourself without telling anyone',
+                        outcome: 'Transparency is important in team communication and in this instance may be helped with extra resources to mitigate the delay.',
+                        experience: -10
                     }
                 ]
             },
@@ -190,25 +190,25 @@ export class CommunicationQuiz extends BaseQuiz {
                 description: 'You\'ve completed a new feature. How should you document it?',
                 options: [
                     {
-                        text: 'Write clear, organized documentation with examples and update relevant guides',
+                        text: 'Write clear, organised documentation with examples and update relevant guides',
                         outcome: 'Perfect! This helps the team understand and maintain the feature.',
                         experience: 15,
                         tool: 'Technical Documentation'
                     },
                     {
-                        text: 'Leave comments in the code only',
-                        outcome: 'Proper documentation should be more comprehensive.',
-                        experience: -5
+                        text: 'Leave comments in the specific code that you have access to',
+                        outcome: 'Documentation should be more comprehensive and accessible to all interested parties.',
+                        experience: 0
                     },
                     {
-                        text: 'Skip documentation since the code is self-explanatory',
-                        outcome: 'Documentation is crucial for team knowledge.',
-                        experience: -15
-                    },
-                    {
-                        text: 'Create a quick note in your personal files',
-                        outcome: 'Documentation should be accessible to the team.',
+                        text: 'Leave guides and documentation as this is not needed since the code itself is self-explanatory',
+                        outcome: 'Documentation is crucial for diverse teams with different skill sets to understand the feature.',
                         experience: -10
+                    },
+                    {
+                        text: 'Create quick notes in your personal files to lean on should any questions arise',
+                        outcome: 'Documentation should be accessible to the full team.',
+                        experience: -5
                     }
                 ]
             }
@@ -229,19 +229,19 @@ export class CommunicationQuiz extends BaseQuiz {
                         tool: 'Stakeholder Communication'
                     },
                     {
-                        text: 'Use technical terms to sound professional',
+                        text: 'Use technical terms to maintain a professional approach',
                         outcome: 'Technical jargon can confuse non-technical stakeholders.',
-                        experience: -15
-                    },
-                    {
-                        text: 'Keep it very brief to avoid confusion',
-                        outcome: 'Clear explanation is needed for understanding.',
                         experience: -10
                     },
                     {
-                        text: 'Let someone else handle it',
-                        outcome: 'Technical communication is an important skill.',
-                        experience: -20
+                        text: 'Keep it very brief to avoid any confusion around processes',
+                        outcome: 'Although keeping the explanation brief is a good approach. Thorough and clear wording is needed for good understanding.',
+                        experience: -5
+                    },
+                    {
+                        text: 'Let someone else who has been on the project longer handle it',
+                        outcome: 'Technical communication at all levels is an important skillset and will have to be utilised at points throughout project based work.',
+                        experience: -15
                     }
                 ]
             },
@@ -258,19 +258,19 @@ export class CommunicationQuiz extends BaseQuiz {
                         tool: 'Conflict Resolution'
                     },
                     {
-                        text: 'Let the most senior person decide',
-                        outcome: 'Team input and consensus are valuable.',
+                        text: 'The most senior person within the team should decide the outcome',
+                        outcome: 'All round team input and consensus is valuable as different observations can bring about solutions.',
+                        experience: -5
+                    },
+                    {
+                        text: 'Avoid the conflict as matters of these type generally resolve themselves',
+                        outcome: 'Conflicts should be addressed professionally and solutions sought as to move forward with a good working relationship.',
                         experience: -10
                     },
                     {
-                        text: 'Avoid the conflict',
-                        outcome: 'Conflicts should be addressed professionally.',
+                        text: 'Push for your preferred solution to quickly resolve the matter before it escalates',
+                        outcome: 'All viewpoints should be considered in technical discussions as everyone has valuable experience.',
                         experience: -15
-                    },
-                    {
-                        text: 'Push for your preferred solution',
-                        outcome: 'Consider all viewpoints in technical discussions.',
-                        experience: -20
                     }
                 ]
             },
@@ -278,7 +278,7 @@ export class CommunicationQuiz extends BaseQuiz {
                 id: 8,
                 level: 'Intermediate',
                 title: 'Code Review Communication',
-                description: 'You\'re reviewing a colleague\'s code and find several issues. How do you communicate this?',
+                description: 'You\'re reviewing a colleague\'s documentation and find several issues. How do you communicate this?',
                 options: [
                     {
                         text: 'Provide specific, constructive feedback with examples and suggestions for improvement',
@@ -287,19 +287,19 @@ export class CommunicationQuiz extends BaseQuiz {
                         tool: 'Code Review'
                     },
                     {
-                        text: 'List all the problems found',
-                        outcome: 'Feedback should be constructive and helpful.',
+                        text: 'List all the problems found in document and send these to be addressed',
+                        outcome: 'Feedback should be constructive and helpful and not just point out issues.',
+                        experience: -5
+                    },
+                    {
+                        text: 'Tell them they need to review it again and update it',
+                        outcome: 'Specific feedback is more valuable and helps move towards solutions.',
                         experience: -10
                     },
                     {
-                        text: 'Just say it needs work',
-                        outcome: 'Specific feedback is more valuable.',
+                        text: 'Approve it to avoid any type of confrontation and to move forward with the project quickly',
+                        outcome: 'Honest, constructive feedback is important, as team and personal progress may not be achieved moving forward.',
                         experience: -15
-                    },
-                    {
-                        text: 'Approve it to avoid confrontation',
-                        outcome: 'Honest, constructive feedback is important.',
-                        experience: -20
                     }
                 ]
             },
@@ -316,18 +316,18 @@ export class CommunicationQuiz extends BaseQuiz {
                         tool: 'Remote Collaboration'
                     },
                     {
-                        text: 'Rely on email only',
-                        outcome: 'Multiple communication channels are often needed.',
+                        text: 'Use email as your source of communication and copy everyone in that\'s involved in the project',
+                        outcome: 'Multiple communication channels are often needed for different teams related to the project.',
                         experience: -15
                     },
                     {
-                        text: 'Wait for others to initiate communication',
-                        outcome: 'Be proactive in remote communication.',
+                        text: 'Wait for others to initiate communication to establish their preferred channels',
+                        outcome: 'Being proactive in remote communication creates a professional approach.',
                         experience: -10
                     },
                     {
-                        text: 'Handle everything through chat',
-                        outcome: 'Complex tasks often need richer communication.',
+                        text: 'Handle everything through chat channels for quick responses',
+                        outcome: 'Complex tasks often need richer communication and extensive detail that chat channels cant provide.',
                         experience: -5
                     }
                 ]
@@ -345,19 +345,19 @@ export class CommunicationQuiz extends BaseQuiz {
                         tool: 'Project Communication'
                     },
                     {
-                        text: 'Send quick updates as things happen',
-                        outcome: 'Project updates should be organized and regular.',
+                        text: 'Send quick updates on the fly as changes to projects or issue occur',
+                        outcome: 'Project updates should be organised and regular.',
+                        experience: -5
+                    },
+                    {
+                        text: 'Update your immediate team members within the appropriate channel',
+                        outcome: 'All stakeholders need appropriate updates to form project progress plans going forward.',
                         experience: -10
                     },
                     {
-                        text: 'Update only your immediate team',
-                        outcome: 'All stakeholders need appropriate updates.',
+                        text: 'Wait for official review meetings and report all project updates at that time',
+                        outcome: 'Regular project communication is important for stakeholder prioritisation and project progress.',
                         experience: -15
-                    },
-                    {
-                        text: 'Wait for the next quarterly review',
-                        outcome: 'Regular project communication is important.',
-                        experience: -20
                     }
                 ]
             }
@@ -378,19 +378,19 @@ export class CommunicationQuiz extends BaseQuiz {
                         tool: 'Crisis Management'
                     },
                     {
-                        text: 'Send one mass email about the issue',
-                        outcome: 'Critical issues need ongoing communication.',
-                        experience: -20
+                        text: 'Send an email about the issue and copy everyone in that\'s involved in the project',
+                        outcome: 'Critical issues need ongoing communication with the people who are dealing with the solution and interested parties.',
+                        experience: -10
                     },
                     {
                         text: 'Let each team handle their own communications',
-                        outcome: 'Coordinated communication is crucial in crises.',
-                        experience: -25
+                        outcome: 'Coordinated communication is crucial in crises so all interested parties can be updated on progress.',
+                        experience: -15
                     },
                     {
-                        text: 'Wait until the issue is resolved to communicate',
-                        outcome: 'Proactive communication is essential in crises.',
-                        experience: -30
+                        text: 'Wait until the issue is resolved to communicate with any interested party',
+                        outcome: 'Proactive communication is essential in crises and interested parties should be kept up to date with progress.',
+                        experience: -20
                     }
                 ]
             },
@@ -407,19 +407,19 @@ export class CommunicationQuiz extends BaseQuiz {
                         tool: 'Global Communication'
                     },
                     {
-                        text: 'Stick to your preferred communication style',
-                        outcome: 'Adapt communication for different cultures.',
-                        experience: -25
-                    },
-                    {
-                        text: 'Only communicate during your working hours',
-                        outcome: 'Consider time zones in global teams.',
+                        text: 'Use your preferred communication style',
+                        outcome: 'Adaptive communication for different cultures needs to be addressed in these situations to maintain a professional standard.',
                         experience: -20
                     },
                     {
-                        text: 'Use informal language to seem friendly',
-                        outcome: 'Professional tone is important across cultures.',
+                        text: 'Communicate with all teams during your normal working hours',
+                        outcome: 'Time zones must be considered in global team projects and working hours can sometimes be amended to suite all parties.',
                         experience: -15
+                    },
+                    {
+                        text: 'Use informal language to set a friendly tone and promote trust',
+                        outcome: 'A professional tone is important across different cultures to respect a good business standard.',
+                        experience: -10
                     }
                 ]
             },
@@ -436,19 +436,19 @@ export class CommunicationQuiz extends BaseQuiz {
                         tool: 'Technical Presentation'
                     },
                     {
-                        text: 'Focus only on technical details',
-                        outcome: 'Consider the diverse audience needs.',
-                        experience: -25
-                    },
-                    {
-                        text: 'Keep it very high-level for everyone',
-                        outcome: 'Balance technical depth for different audiences.',
+                        text: 'Focus on the technical details as these should be understood to move forward',
+                        outcome: 'The diverse audience needs to be considered and some may not have a technical background.',
                         experience: -15
                     },
                     {
-                        text: 'Have someone else present',
-                        outcome: 'Develop your presentation skills.',
-                        experience: -30
+                        text: 'Keep it very high-level for everyone involved in the presentation',
+                        outcome: 'Balanced technical depth is a preferred approach for different audiences.',
+                        experience: -10
+                    },
+                    {
+                        text: 'Have someone else take the demonstration that has more experience with presenting',
+                        outcome: 'Presentation skills are essential in a testers skill set and practice will develop these skills.',
+                        experience: -20
                     }
                 ]
             },
@@ -465,19 +465,19 @@ export class CommunicationQuiz extends BaseQuiz {
                         tool: 'Knowledge Management'
                     },
                     {
-                        text: 'Leave detailed code comments',
-                        outcome: 'Knowledge transfer needs multiple approaches.',
+                        text: 'Leave detailed comments relating to the code of the system under test within the project',
+                        outcome: 'Knowledge transfer needs multiple approaches targeting specific expertise for different team members.',
+                        experience: -10
+                    },
+                    {
+                        text: 'Take one handoff meeting for everyone involved in the project',
+                        outcome: 'Thorough knowledge transfer takes time and planning different avenues to share this knowledge is required.',
+                        experience: -15
+                    },
+                    {
+                        text: 'Let the new team work from previous project communication and emails',
+                        outcome: 'A full handoff is crucial for continuity throughout the project.',
                         experience: -20
-                    },
-                    {
-                        text: 'Have one handoff meeting',
-                        outcome: 'Thorough knowledge transfer takes time.',
-                        experience: -25
-                    },
-                    {
-                        text: 'Let the new team figure it out',
-                        outcome: 'Proper handoff is crucial for continuity.',
-                        experience: -30
                     }
                 ]
             },
@@ -494,19 +494,19 @@ export class CommunicationQuiz extends BaseQuiz {
                         tool: 'Change Management'
                     },
                     {
-                        text: 'Send a proposal by email',
-                        outcome: 'Major changes need comprehensive communication.',
-                        experience: -25
+                        text: 'Send the proposal by email so everyone can digest the information when they have time',
+                        outcome: 'Major changes need comprehensive communication and in most cases meetings to gain sign off from all interested parties.',
+                        experience: -15
                     },
                     {
-                        text: 'Start implementing and inform others later',
-                        outcome: 'Changes should be communicated beforehand.',
-                        experience: -30
-                    },
-                    {
-                        text: 'Let management handle the communication',
-                        outcome: 'Technical leads should drive technical changes.',
+                        text: 'Start implementing the change and inform others at a later date when happy with progress',
+                        outcome: 'Any major proposed changes should be communicated and signed off beforehand.',
                         experience: -20
+                    },
+                    {
+                        text: 'Let management handle the communication with all parties',
+                        outcome: 'Change proposals and meetings should be driven by the implementors of those proposal.',
+                        experience: -10
                     }
                 ]
             }

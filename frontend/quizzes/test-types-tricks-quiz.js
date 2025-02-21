@@ -254,7 +254,7 @@ export class TestTypesTricksQuiz extends BaseQuiz {
                     {
                         text: 'Narrow, General, Super AI',
                         outcome: 'Correct! Classifications are described as Narrow AI (specific tasks), General AI (multiple tasks), and Super AI (unlimited capabilities)',
-                        experience: 15
+                        experience: 20
                     },
 
                     {
@@ -293,7 +293,7 @@ export class TestTypesTricksQuiz extends BaseQuiz {
                     {
                         text: 'Smart home devices',
                         outcome: 'Correct! Voice skill testing typically involves smart home devices like Amazon Echo, which use voice interaction',
-                        experience: 15
+                        experience: 20
                     },
 
                     {
@@ -326,7 +326,7 @@ export class TestTypesTricksQuiz extends BaseQuiz {
                     {
                         text: 'Google Backup',
                         outcome: 'Correct! Turning off Google Backup prevents frequent backups filling up the zoonoutesting Google account storage',
-                        experience: 15
+                        experience: 20
                     },
 
                     {
@@ -353,7 +353,7 @@ export class TestTypesTricksQuiz extends BaseQuiz {
                     {
                         text: 'Accessibility Insights for Web',
                         outcome: 'Correct! This is useful for accessibility testing, particularly for tab stops.',
-                        experience: 15
+                        experience: 20
                     },
 
                     {
@@ -392,7 +392,7 @@ export class TestTypesTricksQuiz extends BaseQuiz {
                     {
                         text: 'Hide bookmarks bar and avoid showing other client work',
                         outcome: 'Correct! This protects client confidentiality and practices professionalism when capturing evidence',
-                        experience: 15
+                        experience: 20
                     },
 
                     {
@@ -422,7 +422,7 @@ export class TestTypesTricksQuiz extends BaseQuiz {
                     {
                         text: 'Understanding endpoints and access methods',
                         outcome: 'Correct! Knowing URLs, access methods, and having a point of contact with developers before API testing is recommended',
-                        experience: 15
+                        experience: 25
                     },
 
                     {
@@ -456,7 +456,7 @@ export class TestTypesTricksQuiz extends BaseQuiz {
                     {
                         text: 'Flexibility, Autonomy, Ethics, Safety',
                         outcome: 'Correct! Characteristics like Flexibility, Autonomy, Evolution, Bias, Ethics, Transparency, and Safety for AI testing are recommended practices',
-                        experience: 15
+                        experience: 25
                     },
 
                     {
@@ -490,7 +490,7 @@ export class TestTypesTricksQuiz extends BaseQuiz {
                     {
                         text: 'fsutil file createnew',
                         outcome: 'Correct! The fsutil command is used to generate large test files of specific sizes.',
-                        experience: 15
+                        experience: 25
                     },
 
                     {
@@ -523,7 +523,7 @@ export class TestTypesTricksQuiz extends BaseQuiz {
                     {
                         text: 'Default font size setting',
                         outcome: 'Correct! Checking that font size is set to default on Samsung devices can expose rendering issues.',
-                        experience: 15
+                        experience: 25
                     },
 
                     {
@@ -556,7 +556,7 @@ export class TestTypesTricksQuiz extends BaseQuiz {
                     {
                         text: 'Compress using tools like HandBrake or convert to GIF',
                         outcome: 'Correct! Using tools like HandBrake or converting to a lower-fps GIF to reduce file size for ticket uploads is recommended',
-                        experience: 15
+                        experience: 25
                     },
 
                     {

@@ -8,8 +8,8 @@ export class AutomationInterviewQuiz extends BaseQuiz {
             maxXP: 300,
             levelThresholds: {
                 basic: { questions: 5, minXP: 35 },
-                intermediate: { questions: 10, minXP: 120 },
-                advanced: { questions: 15, minXP: 250 }
+                intermediate: { questions: 10, minXP: 110 },
+                advanced: { questions: 15, minXP: 235 }
             },
             performanceThresholds: [
                 { threshold: 250, message: '🏆 Outstanding! You\'re an automation expert!' },
@@ -140,7 +140,7 @@ export class AutomationInterviewQuiz extends BaseQuiz {
                     {
                         text: 'Create complex CSS selectors that chain multiple classes and attributes together for maximum specificity',
                         outcome: 'Simple, unique locators are more reliable.',
-                        experience: -15
+                        experience: -10
                     },
                     {
                         text: 'Generate full XPath expressions from the browser\'s copy selector feature',
@@ -179,7 +179,7 @@ export class AutomationInterviewQuiz extends BaseQuiz {
                     {
                         text: 'Place test code alongside application code for easy access',
                         outcome: 'Test code should be separate from application code.',
-                        experience: -15
+                        experience: -10
                     }
                 ]
             },
@@ -203,7 +203,7 @@ export class AutomationInterviewQuiz extends BaseQuiz {
                     {
                         text: 'Configure the CI system to automatically retry failed tests multiple times',
                         outcome: 'Root causes should be addressed.',
-                        experience: -15
+                        experience: -10
                     },
                     {
                         text: 'Mark flaky tests as known issues in the test report',
@@ -231,7 +231,7 @@ export class AutomationInterviewQuiz extends BaseQuiz {
                     {
                         text: 'Create elaborate setup scripts that generate fresh test data before each test execution',
                         outcome: 'Test data should be managed efficiently.',
-                        experience: -15
+                        experience: -5
                     },
                     {
                         text: 'Copy and sanitize production data for testing purposes',
@@ -241,7 +241,7 @@ export class AutomationInterviewQuiz extends BaseQuiz {
                     {
                         text: 'Maintain test data directly in the test scripts',
                         outcome: 'Test data should be externalized.',
-                        experience: -20
+                        experience: -15
                     }
                 ]
             },
@@ -265,12 +265,12 @@ export class AutomationInterviewQuiz extends BaseQuiz {
                     {
                         text: 'Run tests manually before each production deployment',
                         outcome: 'Automation should be integrated into CI/CD.',
-                        experience: -15
+                        experience: -5
                     },
                     {
                         text: 'Configure nightly runs of all automated tests',
                         outcome: 'Tests should provide timely feedback.',
-                        experience: -20
+                        experience: -15
                     }
                 ]
             },
@@ -294,12 +294,12 @@ export class AutomationInterviewQuiz extends BaseQuiz {
                     {
                         text: 'Focus testing on the most popular browser only',
                         outcome: 'Multiple browsers should be tested.',
-                        experience: -15
+                        experience: -5
                     },
                     {
                         text: 'Test manually in different browsers',
                         outcome: 'Browser testing should be automated.',
-                        experience: -20
+                        experience: -15
                     }
                 ]
             },
@@ -352,12 +352,12 @@ export class AutomationInterviewQuiz extends BaseQuiz {
                     {
                         text: 'Use basic console output',
                         outcome: 'Proper reporting tools should be used.',
-                        experience: -15
+                        experience: -5
                     },
                     {
                         text: 'Rely on CI/CD platform logs',
                         outcome: 'Dedicated test reporting is needed.',
-                        experience: -20
+                        experience: -15
                     }
                 ]
             }
@@ -380,17 +380,17 @@ export class AutomationInterviewQuiz extends BaseQuiz {
                     {
                         text: 'Create complex performance test scenarios that simulate every possible user interaction simultaneously',
                         outcome: 'Focus on key performance indicators.',
-                        experience: -20
+                        experience: -10
                     },
                     {
                         text: 'Record browser timings in production',
                         outcome: 'Use proper test environments.',
-                        experience: -25
+                        experience: -15
                     },
                     {
                         text: 'Test with maximum concurrent users',
                         outcome: 'Various load scenarios needed.',
-                        experience: -30
+                        experience: -20
                     }
                 ]
             },
@@ -409,12 +409,12 @@ export class AutomationInterviewQuiz extends BaseQuiz {
                     {
                         text: 'Write exhaustive tests covering every possible combination of API parameters and headers',
                         outcome: 'Focus on meaningful test scenarios.',
-                        experience: -25
+                        experience: -20
                     },
                     {
                         text: 'Test only success scenarios',
                         outcome: 'Edge cases must be tested.',
-                        experience: -20
+                        experience: -10
                     },
                     {
                         text: 'Manual API testing only',
@@ -438,7 +438,7 @@ export class AutomationInterviewQuiz extends BaseQuiz {
                     {
                         text: 'Create separate test suites for every possible device-OS combination in your target market',
                         outcome: 'Focus on representative devices.',
-                        experience: -25
+                        experience: -20
                     },
                     {
                         text: 'Use desktop automation tools',
@@ -448,7 +448,7 @@ export class AutomationInterviewQuiz extends BaseQuiz {
                     {
                         text: 'Test on latest devices only',
                         outcome: 'Consider device diversity.',
-                        experience: -30
+                        experience: -10
                     }
                 ]
             },
@@ -472,12 +472,12 @@ export class AutomationInterviewQuiz extends BaseQuiz {
                     {
                         text: 'Test authentication only',
                         outcome: 'Multiple aspects need testing.',
-                        experience: -25
+                        experience: -15
                     },
                     {
                         text: 'Skip security automation',
                         outcome: 'Security tests are essential.',
-                        experience: -30
+                        experience: -10
                     }
                 ]
             },
@@ -496,12 +496,12 @@ export class AutomationInterviewQuiz extends BaseQuiz {
                     {
                         text: 'Set up elaborate testing environments with redundant systems for every possible configuration',
                         outcome: 'Focus on essential configurations.',
-                        experience: -25
+                        experience: -10
                     },
                     {
                         text: 'Use shared test environments',
                         outcome: 'Isolated environments needed.',
-                        experience: -30
+                        experience: -15
                     },
                     {
                         text: 'Rely on local machines',

@@ -262,7 +262,7 @@ export class StandardScriptTestingQuiz extends BaseQuiz {
                     {
                         text: 'The impact of the feature being tested and frequency of use',
                         outcome: 'Correct! The documentation specifically mentions impact and frequency of use as key factors',
-                        experience: 15
+                        experience: 20
                     },
 
                     {
@@ -303,7 +303,7 @@ export class StandardScriptTestingQuiz extends BaseQuiz {
                     {
                         text: 'Grey them out and remove dashes from the Result and Date columns',
                         outcome: 'Correct! The documentation explicitly states to grey out unused sections and remove dashes',
-                        experience: 15
+                        experience: 20
                     }
 
                 ]
@@ -331,7 +331,7 @@ export class StandardScriptTestingQuiz extends BaseQuiz {
                     {
                         text: 'By complexity and risk factors using High, Medium, and Low priorities',
                         outcome: 'Correct! The documentation states suites should be prioritized by complexity and risk factors',
-                        experience: 15
+                        experience: 20
                     },
 
                     {
@@ -359,7 +359,7 @@ export class StandardScriptTestingQuiz extends BaseQuiz {
                     {
                         text: 'Information that aided in creating the test case and will help during execution',
                         outcome: 'Correct! The documentation states references should aid in creation and execution.',
-                        experience: 15
+                        experience: 20
                     },
 
                     {
@@ -394,7 +394,7 @@ export class StandardScriptTestingQuiz extends BaseQuiz {
                     {
                         text: 'First, before other test cases',
                         outcome: 'Correct! Smoke tests should be run first.',
-                        experience: 15
+                        experience: 20
                     },
 
                     {
@@ -431,7 +431,7 @@ export class StandardScriptTestingQuiz extends BaseQuiz {
                     {
                         text: 'Copy and modify test suites as needed, adjusting for environment-specific differences',
                         outcome: 'Correct! Test suites can be copied and modified for different environments',
-                        experience: 15
+                        experience: 25
                     },
 
                     {
@@ -471,7 +471,7 @@ export class StandardScriptTestingQuiz extends BaseQuiz {
                     {
                         text: 'Can be started alongside primary testing in parallel, depending on project scheduling',
                         outcome: 'Correct! Compatibility testing can be done in parallel with primary environment testing',
-                        experience: 15
+                        experience: 25
                     },
 
                     {
@@ -499,7 +499,7 @@ export class StandardScriptTestingQuiz extends BaseQuiz {
                     {
                         text: 'Mark test cases where expected behaviour is in question, add comments for clarification, and remove comments once clarified',
                         outcome: 'Correct! This is the process for handling requirement changes.',
-                        experience: 15
+                        experience: 25
                     },
 
                     {
@@ -533,7 +533,7 @@ export class StandardScriptTestingQuiz extends BaseQuiz {
                     {
                         text: "Don't require Gherkin format but should contain logical step processes",
                         outcome: "Correct! User journeys don't require Gherkin but should be logical steps.",
-                        experience: 15
+                        experience: 25
                     },
 
                     {
@@ -567,7 +567,7 @@ export class StandardScriptTestingQuiz extends BaseQuiz {
                     {
                         text: 'A combination of target audience, project timing, risk assessment, and client requirements',
                         outcome: 'Correct! These are all factors for important considerations.',
-                        experience: 15
+                        experience: 25
                     },
 
                     {

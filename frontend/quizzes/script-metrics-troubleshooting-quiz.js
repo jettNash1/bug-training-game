@@ -225,8 +225,8 @@ export class ScriptMetricsTroubleshootingQuiz extends BaseQuiz {
                     },
                     {
                         text: 'Copy and update existing table with new tab references',
-                        outcome: 'Correct - This maintains consistency while incorporating new data.',
-                        experience: 15
+                        outcome: 'Correct! This maintains consistency while incorporating new data.',
+                        experience: 20
                     },
                     {
                         text: 'Merge all data into one tab',
@@ -263,8 +263,8 @@ export class ScriptMetricsTroubleshootingQuiz extends BaseQuiz {
                     },
                     {
                         text: 'Both Primary and Checked Columns',
-                        outcome: 'Correct - Both columns together determine the completion status',
-                        experience: 15
+                        outcome: 'Correct! Both columns together determine the completion status',
+                        experience: 20
                     }
                 ]
             },
@@ -281,8 +281,8 @@ export class ScriptMetricsTroubleshootingQuiz extends BaseQuiz {
                     },
                     {
                         text: 'Update Environment List tab and remove excess rows',
-                        outcome: 'Correct - This ensures consistent updates across all linked tickets.',
-                        experience: 15
+                        outcome: 'Correct! This ensures consistent updates across all linked tickets.',
+                        experience: 20
                     },
                     {
                         text: 'Create new environment lists',
@@ -319,8 +319,8 @@ export class ScriptMetricsTroubleshootingQuiz extends BaseQuiz {
                     },
                     {
                         text: 'Double-click and update cell ranges',
-                        outcome: 'Correct - This allows proper adjustment of formula ranges.',
-                        experience: 15
+                        outcome: 'Correct! This allows proper adjustment of formula ranges.',
+                        experience: 20
                     }
                 ]
             },
@@ -337,8 +337,8 @@ export class ScriptMetricsTroubleshootingQuiz extends BaseQuiz {
                     },
                     {
                         text: 'Combine global and specific environments as needed',
-                        outcome: 'Correct - This allows flexibility while maintaining consistency.',
-                        experience: 15
+                        outcome: 'Correct! This allows flexibility while maintaining consistency.',
+                        experience: 20
                     },
                     {
                         text: 'Use only global environments',
@@ -371,7 +371,7 @@ export class ScriptMetricsTroubleshootingQuiz extends BaseQuiz {
                     {
                         text: 'Update all references and verify formula accuracy',
                         outcome: 'Correct - This ensures complete and accurate metric tracking',
-                        experience: 15
+                        experience: 25
                     },
                     {
                         text: 'Copy all formulas exactly',
@@ -403,8 +403,8 @@ export class ScriptMetricsTroubleshootingQuiz extends BaseQuiz {
                     },
                     {
                         text: 'Verify all formula chains and dependencies',
-                        outcome: 'Correct - This ensures accurate tracking across all dependencies',
-                        experience: 15
+                        outcome: 'Correct! This ensures accurate tracking across all dependencies',
+                        experience: 25
                     },
                     {
                         text: 'Check individual formulas',
@@ -421,8 +421,8 @@ export class ScriptMetricsTroubleshootingQuiz extends BaseQuiz {
                 options: [
                     {
                         text: 'Maintain formula relationships while updating references',
-                        outcome: 'Correct - This preserves metric integrity across tabs',
-                        experience: 15
+                        outcome: 'Correct! This preserves metric integrity across tabs',
+                        experience: 25
                     },
                     {
                         text: 'Update each tab independently',
@@ -464,8 +464,8 @@ export class ScriptMetricsTroubleshootingQuiz extends BaseQuiz {
                     },
                     {
                         text: 'Trace formula chains and verify all connections',
-                        outcome: 'Correct - This identifies and resolves the source of discrepancies',
-                        experience: 15
+                        outcome: 'Correct! This identifies and resolves the source of discrepancies',
+                        experience: 25
                     }
                 ]
             },
@@ -487,8 +487,8 @@ export class ScriptMetricsTroubleshootingQuiz extends BaseQuiz {
                     },
                     {
                         text: 'Verify all dependencies and update systematically',
-                        outcome: 'Correct - This maintains accuracy while allowing updates',
-                        experience: 15
+                        outcome: 'Correct! This maintains accuracy while allowing updates',
+                        experience: 25
                     },
                     {
                         text: 'Update primary metrics first',

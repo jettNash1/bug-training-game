@@ -257,7 +257,7 @@ export class LocaleTestingQuiz extends BaseQuiz {
                     {
                         text: 'Certain incorrect translations may be missed even if in the correct language',
                         outcome: 'Correct! This is known risk as a tester may not know all languages under test',
-                        experience: 15
+                        experience: 20
                     }
 
                 ]
@@ -272,7 +272,7 @@ export class LocaleTestingQuiz extends BaseQuiz {
                     {
                         text: 'Verify correct text rendering and layout adaptation',
                         outcome: 'Checking rendering and layout for RTL languages is considered part of locale testing.',
-                        experience: 15
+                        experience: 20
                     },
 
                     {
@@ -312,7 +312,7 @@ export class LocaleTestingQuiz extends BaseQuiz {
                     {
                         text: 'Preface tickets with locale identifier (e.g., [FR], [ES])',
                         outcome: 'Correct! This is the correct approach for ease of identification.',
-                        experience: 15
+                        experience: 20
                     },
 
                     {
@@ -339,7 +339,7 @@ export class LocaleTestingQuiz extends BaseQuiz {
                     {
                         text: 'Messages are translated and display correctly in each locale',
                         outcome: 'Correct! This is a critical element for locale testing.',
-                        experience: 15
+                        experience: 20
                     },
 
                     {
@@ -390,7 +390,7 @@ export class LocaleTestingQuiz extends BaseQuiz {
                     {
                         text: 'Balance testing across locales while maintaining thoroughness',
                         outcome: 'Correct! The document emphasizes the importance of time management across locales',
-                        experience: 15
+                        experience: 20
                     }
 
                 ]
@@ -415,7 +415,7 @@ export class LocaleTestingQuiz extends BaseQuiz {
                     {
                         text: 'Check all UI elements, including hidden states and validation messages',
                         outcome: 'Correct! The document emphasizes comprehensive checking across all UI elements',
-                        experience: 15
+                        experience: 25
                     },
 
                     {
@@ -454,7 +454,7 @@ export class LocaleTestingQuiz extends BaseQuiz {
                     {
                         text: 'Verify correct rendering and meaning preservation',
                         outcome: 'Correct! Diacritics must be checked for the importance of meaning',
-                        experience: 15
+                        experience: 25
                     },
 
                     {
@@ -475,7 +475,7 @@ export class LocaleTestingQuiz extends BaseQuiz {
                     {
                         text: 'Verify date, time, address, and phone number formats for each locale',
                         outcome: 'Correct! These are all specific elements requiring verification',
-                        experience: 15
+                        experience: 25
                     },
 
                     {
@@ -526,7 +526,7 @@ export class LocaleTestingQuiz extends BaseQuiz {
                     {
                         text: 'Verify layout integrity and check for truncation across all elements',
                         outcome: 'Correct! The document emphasizes checking for truncation and layout issues',
-                        experience: 15
+                        experience: 25
                     }
 
                 ]
@@ -559,7 +559,7 @@ export class LocaleTestingQuiz extends BaseQuiz {
                     {
                         text: 'Verify content updates, loading behaviour, and state preservation',
                         outcome: 'Correct! It is important to check all these aspects of language switching',
-                        experience: 15
+                        experience: 25
                     }
 
                 ]

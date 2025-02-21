@@ -70,26 +70,26 @@ export class ContentCopyQuiz extends BaseQuiz {
             {
                 id: 1,
                 level: 'Basic',
-                title: 'Primary Objective',
+                title: 'Primary objective',
                 description: 'What is the primary focus of copy proofing?',
                 options: [
                     {
-                        text: 'Conduct comprehensive software functionality testing to ensure all features work as intended across different platforms and environments',
+                        text: 'Testing the functionality of the software',
                         outcome: 'Functionality testing is explicitly out of scope for copy proofing.',
                         experience: -10
                     },
                     {
-                        text: 'Review content accuracy',
-                        outcome: 'This is the core purpose of copy proofing.',
+                        text: 'Checking grammar, spelling, and typos in content',
+                        outcome: 'Correct! This is the core purpose of copy proofing.',
                         experience: 15
                     },
                     {
-                        text: 'Evaluate and optimize the user interface design elements including layout, color schemes, and interactive components',
+                        text: 'Verifying user interface design matches submitted documentation',
                         outcome: 'While content proofing includes some UI elements, copy proofing specifically focuses on text content.',
                         experience: 5
                     },
                     {
-                        text: 'Verify browser compatibility',
+                        text: 'Testing cross-browser compatibility with supported environments',
                         outcome: 'This is a functional testing concern, not related to copy proofing.',
                         experience: -5
                     }
@@ -98,27 +98,27 @@ export class ContentCopyQuiz extends BaseQuiz {
             {
                 id: 2,
                 level: 'Basic',
-                title: 'Content Proofing Scope',
+                title: 'Content proofing scope',
                 description: 'When conducting content proofing, what is considered out of scope?',
                 options: [
                     {
-                        text: 'Detailed analysis of spelling and typographical errors throughout the content',
+                        text: 'Any spelling errors throughout the system under test',
                         outcome: 'Spelling errors are a key focus of content proofing.',
                         experience: -10
                     },
                     {
-                        text: 'Comprehensive grammar and syntax verification',
+                        text: 'Grammatical mistakes throughout the system under test',
                         outcome: 'Grammar checking is a fundamental part of content proofing.',
                         experience: -5
                     },
                     {
-                        text: 'Software functionality issues',
-                        outcome: 'Functionality is out of scope.',
+                        text: 'Software functionality issues throughout the system under test',
+                        outcome: 'Correct! functionality is out of scope for content testing.',
                         experience: 15
                     },
                     {
-                        text: 'Review of content alignment with brand guidelines and messaging consistency',
-                        outcome: 'While consistency is important, some aspects might be out of scope depending on the project.',
+                        text: 'Content consistency throughout the system under test',
+                        outcome: 'While consistency is important, some aspects might be out of scope depending on the project and client recommendations.',
                         experience: 5
                     }
                 ]
@@ -126,26 +126,26 @@ export class ContentCopyQuiz extends BaseQuiz {
             {
                 id: 3,
                 level: 'Basic',
-                title: 'Main Objectives',
-                description: 'What is the primary objective of content proofing?',
+                title: 'Main objectives',
+                description: 'When conducting content proofing, what can be considered as main objectives?',
                 options: [
                     {
-                        text: 'Improving Content quality',
-                        outcome: 'This is a primary objective of content proofing.',
+                        text: 'Ensuring quality of the product',
+                        outcome: 'Correct! This is a primary objective of content proofing.',
                         experience: 15
                     },
                     {
-                        text: 'Implementing and optimizing website performance metrics including page load times, server response, and resource utilization',
+                        text: 'Improving website loading speed',
                         outcome: 'This is a technical performance concern, not related to content.',
                         experience: -10
                     },
                     {
-                        text: 'Validating payment processing systems and transaction workflows',
+                        text: 'Testing payment systems',
                         outcome: 'This is a functional testing concern.',
                         experience: -5
                     },
                     {
-                        text: 'Database optimization',
+                        text: 'Optimizing database performance',
                         outcome: 'While quality-related, this is not a content proofing objective',
                         experience: 5
                     }
@@ -154,26 +154,26 @@ export class ContentCopyQuiz extends BaseQuiz {
             {
                 id: 4,
                 level: 'Basic',
-                title: 'Attention to Detail',
-                description: 'Why is attention to detail important in content proofing?',
+                title: 'Attention to detail',
+                description: 'Why is attention to detail important in content proofing',
                 options: [
                     {
-                        text: 'To find security vulnerabilities',
-                        outcome: 'Security testing is separate from content proofing.',
+                        text: 'To find security vulnerabilities that might compromise the system',
+                        outcome: 'Security testing is separate to content proofing.',
                         experience: -10
                     },
                     {
-                        text: 'Helps the client maintain quality',
-                        outcome: 'This is within the main characteristics of content testing.',
+                        text: 'To maintain client confidence in quality work',
+                        outcome: 'Correct! This is within the main characteristics of content testing.',
                         experience: 15
                     },
                     {
-                        text: 'To improve server performance',
+                        text: 'To improve server performance and response times',
                         outcome: 'This is not related to content proofing',
                         experience: -5
                     },
                     {
-                        text: 'To reduce development costs',
+                        text: 'To reduce development costs with less build releases required',
                         outcome: 'While good quality can reduce costs, it\'s not the primary reason for attention to detail',
                         experience: 5
                     }
@@ -182,26 +182,26 @@ export class ContentCopyQuiz extends BaseQuiz {
             {
                 id: 5,
                 level: 'Basic',
-                title: 'Changes to Content Requirements',
+                title: 'Changes to content requirements',
                 description: 'What can happen if content changes occur after testing?',
                 options: [
                     {
-                        text: 'The testing becomes completely invalid',
+                        text: 'Previous testing will become completely invalid',
                         outcome: 'Not all testing will become invalid, but some changes may make prior testing redundant.',
                         experience: 5
                     },
                     {
-                        text: 'The system will crash',
-                        outcome: 'Content changes should not cause system crashes.',
+                        text: 'The functionality of the system under test will be affected',
+                        outcome: 'Introducing content changes should not cause functionality issues.',
                         experience: -10
                     },
                     {
-                        text: 'Previous testing may be partially voided',
-                        outcome: 'This is a risk to content changes during the testing cycle',
+                        text: 'Previous content copy testing may be partially voided',
+                        outcome: 'Correct! This is a risk to content changes during the testing cycle',
                         experience: 15
                     },
                     {
-                        text: 'The client must restart the project',
+                        text: 'The client must restart the project to introduce new content',
                         outcome: 'While content changes may affect some areas already tested, it is not considered to fully re-test all content again',
                         experience: 5
                     }
@@ -214,27 +214,27 @@ export class ContentCopyQuiz extends BaseQuiz {
             {
                 id: 6,
                 level: 'Intermediate',
-                title: 'Operating System Content Consistency',
+                title: 'Operating system content consistency',
                 description: 'When comparing Android and iOS versions of an application, what should testers look for?',
                 options: [
                     {
-                        text: 'Different operating system versions',
+                        text: 'Different operating system versions must be observed for inconsitencies',
                         outcome: 'This is a technical consideration, not a content concern.',
                         experience: -10
                     },
                     {
-                        text: 'Consistent user experience across platforms',
-                        outcome: 'Content testing should specifically address platform consistency.',
+                        text: 'Consistent user experience across all supported platforms',
+                        outcome: 'Correct! Content testing should specifically addresses platform consistency.',
                         experience: 20
                     },
                     {
-                        text: 'Different screen sizes',
+                        text: 'Discrepancies between different screen sizes',
                         outcome: 'While relevant for content display, it\'s not the primary focus',
                         experience: 5
                     },
                     {
-                        text: 'Battery consumption differences',
-                        outcome: 'This is a technical performance concern',
+                        text: 'Battery consumption differences across the supported environments',
+                        outcome: 'This is a technical performance concern and not related to content',
                         experience: -5
                     }
                 ]
@@ -242,55 +242,55 @@ export class ContentCopyQuiz extends BaseQuiz {
             {
                 id: 7,
                 level: 'Intermediate',
-                title: 'Volume of Raised Content Issues',
+                title: 'Volume of raised content issues',
                 description: 'What is a recommended approach when dealing with a high volume of small issues?',
                 options: [
                     {
-                        text: 'Ignore minor issues',
+                        text: 'Leave minor issues undocumented to stay in line with specific time constraints',
                         outcome: 'All issues should be documented appropriately.',
                         experience: -10
                     },
                     {
-                        text: 'Group issues by content section',
-                        outcome: 'This is the recommended way of reporting issues for ease of identification.',
+                        text: 'Group all raised issues by content section they fall under',
+                        outcome: 'Correct! This is the recommended way of reporting issues for ease of identification.',
                         experience: 20
                     },
                     {
-                        text: 'Only report critical issues',
-                        outcome: 'While issues may be considered minor, some would still be considered important to the client/user',
+                        text: 'Report only critical issues to stay in line with specific time constraints',
+                        outcome: 'While issues may be considered minor, some would still be considered important to the client and user',
                         experience: -5
                     },
                     {
-                        text: 'Create separate tickets for each typo',
-                        outcome: 'While thorough, this could be too time-consuming',
-                        experience: -5
+                        text: 'Create separate tickets for each typo found during testing activities',
+                        outcome: 'While thorough, this could be too time-consuming and grouping under specific areas is preferred',
+                        experience: 5
                     }
                 ]
             },
             {
                 id: 8,
                 level: 'Intermediate',
-                title: 'Reviewing Images',
+                title: 'Reviewing images',
                 description: 'What should testers consider when reviewing images across environments?',
                 options: [
                     {
-                        text: 'Image file size only',
-                        outcome: 'While important, this is too narrow a focus.',
+                        text: 'Image file size and any issue regarding this area',
+                        outcome: 'While important, this is too narrow a testing focus. Image quality and resolution should also be considered',
                         experience: 5
                     },
                     {
-                        text: 'Image loading speed only',
-                        outcome: 'This is a performance concern.',
+                        text: 'Image loading speed to check for response time issues',
+                        outcome: 'This is a performance concern and not a content issue.',
                         experience: -10
                     },
                     {
                         text: 'Image quality and resolution across all environments',
-                        outcome: 'This is a primary factor in reviewing image content',
+                        outcome: 'Correct! These are a primary factors in reviewing image content',
                         experience: 20
                     },
                     {
-                        text: 'Number of images used',
-                        outcome: 'This is a design decision, not a content proofing concern',
+                        text: 'Number of images that can be used across the system under test',
+                        outcome: 'This is a design decision and not a content proofing concern',
                         experience: -5
                     }
                 ]
@@ -298,26 +298,26 @@ export class ContentCopyQuiz extends BaseQuiz {
             {
                 id: 9,
                 level: 'Intermediate',
-                title: 'Provided Requirements',
+                title: 'Provided requirements',
                 description: 'How does the absence of a copy deck affect testing?',
                 options: [
                     {
-                        text: 'Testing becomes impossible',
-                        outcome: 'Testing can still proceed with limited scope.',
+                        text: 'Testing will become impossible as there is no documentation to refer to',
+                        outcome: 'Testing can still proceed with limited scope and tester knowledge.',
                         experience: -5
                     },
                     {
                         text: 'Testing becomes limited to grammar and punctuation',
-                        outcome: 'This is a risk of documentation not being provided by the client.',
+                        outcome: 'Correct! This is a risk of documentation not being provided by the client.',
                         experience: 20
                     },
                     {
-                        text: 'Testing requires more time',
-                        outcome: 'While potentially true, it\'s not the main impact',
+                        text: 'Testing without documentation requires more time',
+                        outcome: 'While potentially true, it\'s not the main impact as grammar and spelling can still be tested',
                         experience: 5
                     },
                     {
-                        text: 'Testing must be automated',
+                        text: 'Testing must then become automated to move forward',
                         outcome: 'Automation is not a method use for content testing',
                         experience: -10
                     }
@@ -327,26 +327,26 @@ export class ContentCopyQuiz extends BaseQuiz {
                 id: 10,
                 level: 'Intermediate',
                 title: 'Localisation',
-                description: 'What role does localization play in content proofing?',
+                description: 'What role does localisation play in content proofing?',
                 options: [
                     {
-                        text: 'None, it\'s out of scope',
+                        text: 'None, as localisation is generally it\'s out of scope for content proofing',
                         outcome: 'Localisation is an important part of content testing if required by the client.',
                         experience: -10
                     },
                     {
-                        text: 'Only for technical terms',
+                        text: 'This focuses on technical terms throughout the system under test',
                         outcome: 'While technical terms should be included, this is a risk of narrow scoping.',
                         experience: 5
                     },
                     {
-                        text: 'Reviewing content appropriateness for target market',
-                        outcome: 'Market considerations should be considered',
+                        text: 'Reviewing content appropriateness for a target market',
+                        outcome: 'Correct! Market considerations should be considered',
                         experience: 20
                     },
                     {
-                        text: 'Checking page load times',
-                        outcome: 'This is a performance concern',
+                        text: 'Checking page and content load times across all environments',
+                        outcome: 'This is a performance concern and not part of content testing',
                         experience: -10
                     }
                 ]
@@ -358,12 +358,12 @@ export class ContentCopyQuiz extends BaseQuiz {
             {
                 id: 11,
                 level: 'Advanced',
-                title: 'Platform Content Inconsistencies',
+                title: 'Platform content inconsistencies',
                 description: 'How should testers approach platform inconsistencies between mobile versions?',
                 options: [
                     {
-                        text: 'Ignore them as they\'re different platforms',
-                        outcome: 'All inconsistencies should be documented.',
+                        text: 'These should be treated as minor issues and only reported if time constraints allow',
+                        outcome: 'All inconsistencies should be documented no matter what severity they are.',
                         experience: -10
                     },
                     {
@@ -372,13 +372,13 @@ export class ContentCopyQuiz extends BaseQuiz {
                         experience: 5
                     },
                     {
-                        text: 'Report all differences unless variation is specified',
-                        outcome: 'This is considered the correct approach',
+                        text: 'Report all differences between environments unless variation is specified in documentation',
+                        outcome: 'Correct! This is considered the correct approach',
                         experience: 25
                     },
                     {
-                        text: 'Focus only on iOS issues',
-                        outcome: 'All platforms need equal attention',
+                        text: 'Focus only on issues found on iOS supported devices',
+                        outcome: 'All supported environments require equal attention',
                         experience: -10
                     }
                 ]
@@ -386,27 +386,27 @@ export class ContentCopyQuiz extends BaseQuiz {
             {
                 id: 12,
                 level: 'Advanced',
-                title: 'Functional & Content Testing Relationship',
+                title: 'Functional & Content testing relationship',
                 description: 'What is the relationship between content proofing and functional testing in a project?',
                 options: [
                     {
-                        text: 'They must always be separate',
-                        outcome: 'Functional & Content testing can be combined.',
+                        text: 'They must always be conducted separately',
+                        outcome: 'Functional & Content testing can be combined during testing activities.',
                         experience: -5
                     },
                     {
                         text: 'They can be combined or separate based on project needs',
-                        outcome: 'This technique can be used on most projects dependent on client needs.',
+                        outcome: 'Correct! This technique can be used on most projects dependent on client needs.',
                         experience: 25
                     },
                     {
-                        text: 'They must always be combined',
+                        text: 'They must always be combined to maximise test coverage',
                         outcome: 'Only some projects may need content proofing which would be advised by the client',
                         experience: -10
                     },
                     {
-                        text: 'Content proofing must come first',
-                        outcome: 'While sometimes logical, it\'s not a requirement',
+                        text: 'Content proofing must come first in the testing cycle',
+                        outcome: 'While sometimes logical, it\'s not always a requirement',
                         experience: 5
                     }
                 ]
@@ -414,27 +414,27 @@ export class ContentCopyQuiz extends BaseQuiz {
             {
                 id: 13,
                 level: 'Advanced',
-                title: 'Content Discrepancies Within Documentation',
+                title: 'Content discrepancies within documentation',
                 description: 'How should testers handle content that differs from provided design documentation?',
                 options: [
                     {
-                        text: 'Automatically reject the content',
-                        outcome: 'Differences should be communicated to the client.',
+                        text: 'Automatically reject the content as failed',
+                        outcome: 'Obvious differences can be raised, yet minor differences can be communicated to the client first before raising.',
                         experience: -10
                     },
                     {
-                        text: 'Ignore differences in older designs',
+                        text: 'disregard differences in older designs',
                         outcome: 'This could lead to missing important inconsistencies.',
                         experience: -5
                     },
                     {
                         text: 'Raise as a query to verify if designs are current',
-                        outcome: 'This approach gives the client visibility and prompts confirmation for moving forward',
+                        outcome: 'Correct! This approach gives the client visibility and prompts confirmation for moving forward',
                         experience: 25
                     },
                     {
-                        text: 'Only check current content',
-                        outcome: 'Potential documentation issues could be missed',
+                        text: 'Check content updates and query any inconsistencies',
+                        outcome: 'Whilst checking current updates is important, potential issues could be missed within prior documentation areas',
                         experience: 5
                     }
                 ]
@@ -442,7 +442,7 @@ export class ContentCopyQuiz extends BaseQuiz {
             {
                 id: 14,
                 level: 'Advanced',
-                title: 'Tester Documentation',
+                title: 'Tester documentation',
                 description: 'What impact does the quality of tester documentation have on content proofing?',
                 options: [
                     {
@@ -451,17 +451,17 @@ export class ContentCopyQuiz extends BaseQuiz {
                         experience: -10
                     },
                     {
-                        text: 'Builds trust',
-                        outcome: 'It creates a professional impression that reinforces the value of the testing service.',
+                        text: 'It affects client confidence in testing quality',
+                        outcome: 'Correct! It creates a professional impression that reinforces the value of the testing service.',
                         experience: 25
                     },
                     {
-                        text: 'Only impacts internal processes',
-                        outcome: 'This is partially correct although it overlooks how documentation quality influences client relationships',
+                        text: 'It only impacts internal processes',
+                        outcome: 'This is partially correct, although it overlooks how documentation quality influences client relationships',
                         experience: 5
                     },
                     {
-                        text: 'Reduces testing speed',
+                        text: 'It reduces testing productivity and volume',
                         outcome: 'There\'s no direct correlation between documentation quality and testing speed',
                         experience: -5
                     }
@@ -474,23 +474,23 @@ export class ContentCopyQuiz extends BaseQuiz {
                 description: 'How should testers prioritise different types of content issues?',
                 options: [
                     {
-                        text: 'All issues are equally important',
+                        text: 'All issues are equally important and should be reported as such',
                         outcome: 'Not all issues have equal impact.',
                         experience: -10
                     },
                     {
-                        text: 'Only focus on spelling errors',
+                        text: 'Focus testing activities on spelling errors',
                         outcome: 'This is too narrow in focus and other critical content issues may be missed.',
                         experience: -5
                     },
                     {
                         text: 'Evaluate impact on user experience and brand consistency',
-                        outcome: 'This is the correct approach for prioritisation of issues',
+                        outcome: 'Correct! This is the correct approach for prioritisation of issues',
                         experience: 25
                     },
                     {
-                        text: 'Prioritise based on page location',
-                        outcome: 'This can be relevant to the project however, other critical issues may be missed by taking this approach',
+                        text: 'Prioritise issues based on page location',
+                        outcome: 'This can be relevant to the project. However, other critical issues may be missed by taking this approach',
                         experience: 5
                     }
                 ]
