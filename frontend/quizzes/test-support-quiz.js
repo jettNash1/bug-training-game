@@ -13,7 +13,7 @@ export class TestSupportQuiz extends BaseQuiz {
             },
             performanceThresholds: [
                 { threshold: 250, message: '🏆 Outstanding! You\'re a test support expert!' },
-                { threshold: 200, message: '👏 Great job! You\'ve shown strong support skills!' },
+                { threshold: 200, message: '👏 Great job! You\'ve shown strong test support skills!' },
                 { threshold: 150, message: '👍 Good work! Keep practicing to improve further.' },
                 { threshold: 0, message: '📚 Consider reviewing test support best practices and try again!' }
             ]
@@ -25,46 +25,43 @@ export class TestSupportQuiz extends BaseQuiz {
         Object.defineProperty(this, 'quizName', {
             value: 'test-support',
             writable: false,
-            configurable: false
+            configurable: false,
+            enumerable: true
         });
-
-         // Initialize player state
-         this.player = {
+        
+        this.player = {
             name: '',
             experience: 0,
             tools: [],
             currentScenario: 0,
             questionHistory: []
         };
-
-        // Initialize API service
+        
         this.apiService = new APIService();
 
-        // Initialize all screen elements
         this.gameScreen = document.getElementById('game-screen');
         this.outcomeScreen = document.getElementById('outcome-screen');
         this.endScreen = document.getElementById('end-screen');
-        
-        // Verify all required elements exist
+       
         if (!this.gameScreen) {
             console.error('Game screen element not found');
             this.showError('Quiz initialization failed. Please refresh the page.');
             return;
         }
-        
+       
         if (!this.outcomeScreen) {
             console.error('Outcome screen element not found');
             this.showError('Quiz initialization failed. Please refresh the page.');
             return;
         }
-        
+       
         if (!this.endScreen) {
             console.error('End screen element not found');
             this.showError('Quiz initialization failed. Please refresh the page.');
             return;
         }
 
-        // Basic Scenarios (IDs 1-5, 75 XP total)
+        // Basic Scenarios (IDs 1-5)
         this.basicScenarios = [
             {
                 id: 1,
@@ -79,18 +76,18 @@ export class TestSupportQuiz extends BaseQuiz {
                         tool: 'Client Communication'
                     },
                     {
-                        text: 'Start testing without checking in',
+                        text: 'Start test activities without checking in with client contacts for the project',
                         outcome: 'Morning check-ins are crucial for test support coordination.',
                         experience: -10
                     },
                     {
-                        text: 'Wait for the client to contact you',
-                        outcome: 'Proactive communication is essential in test support.',
+                        text: 'Wait for the client to contact you directly to coordinate testing activities',
+                        outcome: 'Proactive communication is essential in test support. The client can make an informed decision on progress and suggested focus areas.',
                         experience: -5
                     },
                     {
-                        text: 'Only check internal emails',
-                        outcome: 'Client communication should be prioritized at start of day.',
+                        text: 'Check internal emails for client instruction or any scheduled meetings',
+                        outcome: 'External client communication should be prioritized at start of day when working on a test support project.',
                         experience: 0
                     }
                 ]
@@ -108,18 +105,18 @@ export class TestSupportQuiz extends BaseQuiz {
                         tool: 'Access Management'
                     },
                     {
-                        text: 'Only check test environment access',
-                        outcome: 'All resources need verification for effective testing.',
+                        text: 'Check test environment access associated with the URL\'s provided by the client',
+                        outcome: 'This is important, although all resources require verification for effective testing.',
                         experience: -10
                     },
                     {
-                        text: 'Wait until access is needed',
-                        outcome: 'Proactive access verification prevents delays.',
+                        text: 'Initiate contact with the client once access is required for the system under test',
+                        outcome: 'Proactive access verification is the best approach as this prevents delays in testing activities.',
                         experience: -5
                     },
                     {
-                        text: 'Ask client for access during testing',
-                        outcome: 'Access should be verified before starting work.',
+                        text: 'Contact the client for access to any required areas during testing',
+                        outcome: 'Access to areas needed to commence testing activities should be verified before starting any test activities.',
                         experience: 0
                     }
                 ]
@@ -137,18 +134,18 @@ export class TestSupportQuiz extends BaseQuiz {
                         tool: 'Process Documentation'
                     },
                     {
-                        text: 'Rely on memory for processes',
+                        text: 'Rely on processes from memory and experience of working with the client on an ongoing basis',
                         outcome: 'Documentation is crucial for consistency and knowledge transfer.',
                         experience: -10
                     },
                     {
-                        text: 'Only document major issues',
-                        outcome: 'All processes and important information need documentation.',
+                        text: 'Document any major issues that have been raised or previously highlighted by the client',
+                        outcome: 'While essential, all processes and important information require documentation for clarity and traceability.',
                         experience: -5
                     },
                     {
-                        text: 'Wait for someone else to document',
-                        outcome: 'Proactive documentation is everyone\'s responsibility.',
+                        text: 'Contact the client and ask if there is any documentation in place for current processes',
+                        outcome: 'While some procedures the client uses within their work flow will apply. Procedures and processes relating to how Zoonou integrate those are most useful and should be noted',
                         experience: 0
                     }
                 ]
@@ -160,24 +157,24 @@ export class TestSupportQuiz extends BaseQuiz {
                 description: 'You notice you don\'t have direct client communication access. What\'s the best approach?',
                 options: [
                     {
-                        text: 'Check with PM about getting added to relevant communication channels',
-                        outcome: 'Excellent! This ensures proper communication setup.',
+                        text: 'Check with the project manager about getting added to relevant communication channels',
+                        outcome: 'Excellent! This ensures a proper communication setup for moving forward.',
                         experience: 15,
                         tool: 'Communication Setup'
                     },
                     {
-                        text: 'Work without direct communication',
-                        outcome: 'Direct client communication is crucial for test support.',
+                        text: 'Proceed without direct communication with the client as the project manager can cover this',
+                        outcome: 'Direct client communication is crucial for an ongoing test support role as there will be multiple meetings and potentially multiple releases during weekly testing.',
                         experience: -10
                     },
                     {
-                        text: 'Use personal communication methods',
-                        outcome: 'Official channels should be used for client communication.',
+                        text: 'Use personal communication methods as this promotes trust',
+                        outcome: 'Official channels should always be used for client communication for traceability and process resolution.',
                         experience: -5
                     },
                     {
-                        text: 'Rely only on email',
-                        outcome: 'Proper communication channels need to be established.',
+                        text: 'Use email as a full history thread can be utilised',
+                        outcome: 'Established communication channels need to be agreed upon and in general acted upon quickly. Whilst email is an important tool in communication, it is not always the quickest way to resolve any queries.',
                         experience: 0
                     }
                 ]
@@ -189,31 +186,31 @@ export class TestSupportQuiz extends BaseQuiz {
                 description: 'How should you approach project board management during test support?',
                 options: [
                     {
-                        text: 'Keep board open and regularly monitor for new tickets and progress updates',
+                        text: 'Keep the board open and regularly monitor it for new tickets and progress updates',
                         outcome: 'Perfect! This ensures timely response to new testing needs.',
                         experience: 15,
                         tool: 'Project Tracking'
                     },
                     {
-                        text: 'Check board once daily',
-                        outcome: 'Regular monitoring throughout the day is needed.',
+                        text: 'Check the project board once daily and continue with testing activities',
+                        outcome: 'Regular monitoring throughout the day is required to ensure quick response times.',
                         experience: -10
                     },
                     {
-                        text: 'Wait for notifications',
-                        outcome: 'Proactive board monitoring is essential.',
+                        text: 'Wait for notifications from client contacts to refer to the project board',
+                        outcome: 'Proactive board monitoring is essential as notifications will come from different sources and may not be set up fully.',
                         experience: -5
                     },
                     {
-                        text: 'Only check assigned tickets',
-                        outcome: 'Overall project progress needs monitoring.',
+                        text: 'Check any assigned tickets from the project board',
+                        outcome: 'Overall project progress requires monitoring not only for any tickets that can potentially be resolved, but also for project roadmap assesment.',
                         experience: 0
                     }
                 ]
             }
         ];
 
-        // Intermediate Scenarios (IDs 6-10, 125 XP total)
+        // Intermediate Scenarios (IDs 6-10)
         this.intermediateScenarios = [
             {
                 id: 6,
@@ -228,18 +225,18 @@ export class TestSupportQuiz extends BaseQuiz {
                         tool: 'Process Adaptation'
                     },
                     {
-                        text: 'Insist on using Zoonou terminology',
-                        outcome: 'Adapting to client processes is crucial for effective collaboration.',
+                        text: 'Subtly introduce Zoonou terminology throughout the project',
+                        outcome: 'Adapting to client processes is crucial for effective collaboration as Zoonou is integrating with their work flow.',
                         experience: -15
                     },
                     {
-                        text: 'Ignore client processes',
-                        outcome: 'Understanding and adapting to client processes is essential.',
+                        text: 'Continue with Zoonou terminology throughout documentation and reports',
+                        outcome: 'Understanding and adapting to client processes is essential. This will also promote less confusion if more resources are required or when reports are submitted to the client',
                         experience: -10
                     },
                     {
-                        text: 'Only use client processes when forced',
-                        outcome: 'Proactive adaptation improves collaboration.',
+                        text: 'Use client terminology in meetings with the client and Zoonou terminology for internal meetings',
+                        outcome: 'Adaptation improves collaboration with the client, and making Zoonou colleagues aware of this terminology improves awareness should more project resources be required.',
                         experience: 0
                     }
                 ]
@@ -251,24 +248,24 @@ export class TestSupportQuiz extends BaseQuiz {
                 description: 'You\'re booked for test support but have no tasks due to client delays. What\'s the best approach?',
                 options: [
                     {
-                        text: 'Inform PM and explore additional ways to add value to the project',
+                        text: 'Inform the project manager and explore additional ways to add value to the project',
                         outcome: 'Excellent! This ensures productive use of time and adds value.',
                         experience: 20,
                         tool: 'Time Management'
                     },
                     {
-                        text: 'Wait for tasks to be assigned',
-                        outcome: 'Proactive exploration of additional tasks is beneficial.',
+                        text: 'Wait for tasks to be assigned by the client project manager',
+                        outcome: 'Proactive exploration of additional tasks is more beneficial to both the client and the project understanding.',
                         experience: -15
                     },
                     {
-                        text: 'Use time for personal tasks',
-                        outcome: 'Idle time should be used productively for the project.',
+                        text: 'Use the time for self-improvement as long as it\'s of benefit to Zoonou',
+                        outcome: 'Any down time should be used productively for the specific project. This should also be communicated with the client and project manager',
                         experience: -10
                     },
                     {
-                        text: 'Only inform client of availability',
-                        outcome: 'PM should be informed to explore additional opportunities.',
+                        text: 'Inform the client of availability and what you intend to do with the project downtime',
+                        outcome: 'Whilst this is a good approach. The Zoonou project manager should also be made aware as they may need to explore additional opportunities.',
                         experience: 0
                     }
                 ]
@@ -280,24 +277,24 @@ export class TestSupportQuiz extends BaseQuiz {
                 description: 'The client is slow to respond, affecting your testing. What\'s the best approach?',
                 options: [
                     {
-                        text: 'Maintain open communication, update PM, and suggest raising the issue in regular catch-ups',
+                        text: 'Maintain open communication, update the project manager, and suggest raising the issue in regular catch-ups',
                         outcome: 'Excellent! This ensures issues are addressed and communication remains open.',
                         experience: 20,
                         tool: 'Communication Management'
                     },
                     {
-                        text: 'Stop testing until client responds',
-                        outcome: 'Testing should continue with available information.',
+                        text: 'Stop testing until client responds with how to proceed',
+                        outcome: 'Testing should continue with available information and on any other areas possible.',
                         experience: -15
                     },
                     {
-                        text: 'Only communicate when client responds',
-                        outcome: 'Proactive communication is essential.',
+                        text: 'Communicate when client responds and look for a resolution to any raised concerns',
+                        outcome: 'Proactive communication is essential and it is good practice to follow up on any concerns that have not been addressed.',
                         experience: -10
                     },
                     {
-                        text: 'Ignore communication issues',
-                        outcome: 'Communication issues need addressing for effective collaboration.',
+                        text: 'Find a way around the communication issues by raising any issues with other team members',
+                        outcome: 'Whilst this approach may work in some instances. It is good practice to address communication for effective collaboration moving forward.',
                         experience: 0
                     }
                 ]
@@ -309,24 +306,24 @@ export class TestSupportQuiz extends BaseQuiz {
                 description: 'You\'re assigned to multiple test support projects. What\'s the best approach to manage your workload?',
                 options: [
                     {
-                        text: 'Prioritize tasks based on deadlines and importance, communicate availability to PMs',
+                        text: 'Prioritise tasks based on deadlines and importance, communicate availability to project managers',
                         outcome: 'Excellent! This ensures effective workload management.',
                         experience: 20,
                         tool: 'Workload Management'
                     },
                     {
-                        text: 'Focus on one project at a time',
-                        outcome: 'Multiple projects require balanced attention.',
+                        text: 'Focus on one project at a time using prior experience and preference',
+                        outcome: 'Multiple projects require balanced attention as clients will base project time management around any issues raised.',
                         experience: -15
                     },
                     {
-                        text: 'Wait for PMs to assign priorities',
-                        outcome: 'Proactive prioritization is beneficial.',
+                        text: 'Rely on project managers to assign priorities as they are aligned with the client and business needs',
+                        outcome: 'Proactive project prioritisation is a preferred approach. However, this should also be cross referenced with the project managers',
                         experience: -10
                     },
                     {
-                        text: 'Only work on the most interesting project',
-                        outcome: 'All projects need attention based on priorities.',
+                        text: 'Work on the project that has the shortest time line in regards to project release dates',
+                        outcome: 'All projects need attention based on priorities. However, there may be other contributing factors and shorter sprints within competing projects. In this instance the project manager should be informed of any decisions moving forward',
                         experience: 0
                     }
                 ]
@@ -344,25 +341,25 @@ export class TestSupportQuiz extends BaseQuiz {
                         tool: 'Relationship Building'
                     },
                     {
-                        text: 'Only communicate when necessary',
-                        outcome: 'Regular communication is key to building relationships.',
+                        text: 'Communicate if necessary and when major issues need resolving',
+                        outcome: 'Regular communication is key to building a good working relationship. Process improvements, project progress and suggestions are also an important factor in test support roles',
                         experience: -15
                     },
                     {
-                        text: 'Focus solely on testing tasks',
-                        outcome: 'Building relationships requires more than task completion.',
+                        text: 'Focus communication on testing tasks relating to the project',
+                        outcome: 'Building relationships requires more than task completion. Process improvements, project progress and suggestions are also an important factor in test support roles',
                         experience: -10
                     },
                     {
-                        text: 'Wait for client to initiate relationship building',
-                        outcome: 'Proactive relationship building is beneficial.',
+                        text: 'Wait for client to initiate relationship building through communication channels',
+                        outcome: 'Proactive relationship building is the preferred approach as this promotes professionalism towards the project and client trust.',
                         experience: 0
                     }
                 ]
             }
         ];
 
-        // Advanced Scenarios (IDs 11-15, 100 XP total)
+        // Advanced Scenarios (IDs 11-15)
         this.advancedScenarios = [
             {
                 id: 11,
@@ -371,24 +368,24 @@ export class TestSupportQuiz extends BaseQuiz {
                 description: 'You\'ve identified a more efficient testing approach. How do you proceed?',
                 options: [
                     {
-                        text: 'Communicate the approach to PM and client, providing rationale and expected benefits',
+                        text: 'Communicate the approach to the project manager and client, providing rationale and expected benefits',
                         outcome: 'Excellent! This demonstrates initiative and effective communication.',
                         experience: 25,
                         tool: 'Decision Making'
                     },
                     {
-                        text: 'Implement the approach without consultation',
-                        outcome: 'Consultation ensures alignment and acceptance.',
+                        text: 'Implement the approach after consulting with the Zoonou project manager',
+                        outcome: 'Consultation ensures alignment and acceptance. So this should also be communicated with the client to gain their feedback',
                         experience: -15
                     },
                     {
-                        text: 'Ignore the new approach',
-                        outcome: 'Innovative approaches should be explored.',
+                        text: 'Leave any new approaches to processes as the client will have the current processes in place for a good period of time',
+                        outcome: 'Innovative approaches should always be communicated and explored.',
                         experience: -10
                     },
                     {
-                        text: 'Wait for client to suggest changes',
-                        outcome: 'Proactive suggestions are valuable.',
+                        text: 'Always wait for client to suggest changes as they have a better insight to business goals',
+                        outcome: 'Proactive suggestions are a valuable asset in gaining a good working relationship and a collaborative approach.',
                         experience: -5
                     }
                 ]
@@ -406,18 +403,18 @@ export class TestSupportQuiz extends BaseQuiz {
                         tool: 'Request Management'
                     },
                     {
-                        text: 'Agree to the request immediately',
+                        text: 'Agree to the request and carry out the process within the project testing activities',
                         outcome: 'Approval is needed for deviations from standard processes.',
                         experience: -15
                     },
                     {
-                        text: 'Decline the request without discussion',
-                        outcome: 'Discussion ensures understanding and potential compromise.',
+                        text: 'Decline the request and continue with usual standard processes',
+                        outcome: 'Discussion with the client, project manager and line manager ensures understanding and potential compromise.',
                         experience: -10
                     },
                     {
-                        text: 'Ignore the request',
-                        outcome: 'Client requests need addressing.',
+                        text: 'Don\'t respond to the request as the client should propose this directly through the business channels agreed',
+                        outcome: 'Whilst this may be true in some circumstances. It essential for good communication, business collaboration and quick resolution that the client can feel the need to come directly to the person working on the project.',
                         experience: -5
                     }
                 ]
@@ -435,18 +432,18 @@ export class TestSupportQuiz extends BaseQuiz {
                         tool: 'Knowledge Management'
                     },
                     {
-                        text: 'Rely on verbal handover',
-                        outcome: 'Written documentation ensures thorough knowledge transfer.',
+                        text: 'Promote a verbal handover process that doesn\'t require documentation',
+                        outcome: 'Written documentation ensures thorough knowledge transfer and can be updated in line with changes for future reference and traceability.',
                         experience: -15
                     },
                     {
-                        text: 'Only document major issues',
-                        outcome: 'All relevant information needs documentation.',
+                        text: 'Document all major issues that have been resolved and that are still open',
+                        outcome: 'All relevant information needs documentation. Including business processes and project progress',
                         experience: -10
                     },
                     {
-                        text: 'Leave without documentation',
-                        outcome: 'Documentation is crucial for continuity.',
+                        text: 'Provide updated links to client documentation',
+                        outcome: 'Whilst client documentation is essential. Any documentation on all aspects of the project gathered by Zoonou should be updated and shared for continuity.',
                         experience: -5
                     }
                 ]
@@ -458,24 +455,24 @@ export class TestSupportQuiz extends BaseQuiz {
                 description: 'A client expects more testing than the agreed scope allows. How do you manage this?',
                 options: [
                     {
-                        text: 'Communicate scope limitations clearly and discuss potential adjustments with PM',
+                        text: 'Communicate scope limitations clearly and discuss potential adjustments with the project manager',
                         outcome: 'Excellent! This ensures clear expectations and potential solutions.',
                         experience: 25,
                         tool: 'Expectation Management'
                     },
                     {
-                        text: 'Attempt to meet expectations regardless of scope',
-                        outcome: 'Scope limitations need clear communication.',
+                        text: 'Attempt to meet the client expectations regardless of scope',
+                        outcome: 'Scope limitations need clear communication as new updates to what is expected may exceed agreed project time frames.',
                         experience: -15
                     },
                     {
-                        text: 'Ignore the client\'s expectations',
-                        outcome: 'Expectations need addressing and managing.',
+                        text: 'Continue to reach the initial scope and expectations set out in planning',
+                        outcome: 'Expectations need addressing and managing, especially if new targets are set mid project.',
                         experience: -10
                     },
                     {
-                        text: 'Only inform PM without client communication',
-                        outcome: 'Direct client communication is essential.',
+                        text: 'Inform the project manager without client communication',
+                        outcome: 'Direct client communication is essential as this will promote a good working relationship and inform them of what can be expected within the time frame set.',
                         experience: -5
                     }
                 ]
@@ -493,18 +490,18 @@ export class TestSupportQuiz extends BaseQuiz {
                         tool: 'Project Leadership'
                     },
                     {
-                        text: 'Rely on initial processes without change',
-                        outcome: 'Continuous improvement is key to long-term success.',
+                        text: 'Follow initial client processes without change',
+                        outcome: 'Continuous improvement is key to long-term success and any potential improvements to processes should be communicated and explored.',
                         experience: -15
                     },
                     {
-                        text: 'Only focus on immediate tasks',
-                        outcome: 'Long-term success requires strategic focus.',
+                        text: 'Focus on immediate tasks set out in planning and meetings',
+                        outcome: 'Long-term success requires strategic focus and this should be continuously monitored to mitigate any project risks.',
                         experience: -10
                     },
                     {
-                        text: 'Wait for client feedback to make changes',
-                        outcome: 'Proactive improvement is beneficial.',
+                        text: 'Wait for client feedback to current progress to make any changes that may benefit the project',
+                        outcome: 'Proactive improvement is the preferred approach and promotes good awareness of the business goals and a good collaborative relationship.',
                         experience: -5
                     }
                 ]
@@ -750,7 +747,6 @@ export class TestSupportQuiz extends BaseQuiz {
         let scenario;
         const questionCount = this.player.questionHistory.length;
         
-        // Reset currentScenario based on the current level
         if (questionCount < 5) {
             // Basic questions (0-4)
             scenario = this.basicScenarios[questionCount];

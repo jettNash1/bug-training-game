@@ -13,7 +13,7 @@ export class RiskAnalysisQuiz extends BaseQuiz {
             },
             performanceThresholds: [
                 { threshold: 250, message: '🏆 Outstanding! You\'re a risk analysis expert!' },
-                { threshold: 200, message: '👏 Great job! You\'ve shown strong analytical skills!' },
+                { threshold: 200, message: '👏 Great job! You\'ve shown strong risk analysis skills!' },
                 { threshold: 150, message: '👍 Good work! Keep practicing to improve further.' },
                 { threshold: 0, message: '📚 Consider reviewing risk analysis best practices and try again!' }
             ]
@@ -65,7 +65,7 @@ export class RiskAnalysisQuiz extends BaseQuiz {
             return;
         }
 
-        // Basic Scenarios (IDs 1-5, 75 XP total)
+        // Basic Scenarios (IDs 1-5)
         this.basicScenarios = [
             {
                 id: 1,
@@ -80,18 +80,18 @@ export class RiskAnalysisQuiz extends BaseQuiz {
                         tool: 'Severity Assessment Framework'
                     },
                     {
-                        text: 'Only consider immediate impact',
-                        outcome: 'Risk severity needs broader consideration.',
+                        text: 'Consider immediate impact on the system under test',
+                        outcome: 'Whilst impact is important risk severity needs to take in broader consideration, like risk likelihood and impact on the user.',
                         experience: -5
                     },
                     {
-                        text: 'Wait for issues to occur',
-                        outcome: 'Proactive assessment prevents issues.',
+                        text: 'Consider the developers feedback and base severity on their expertise on the system under test',
+                        outcome: 'Whilst a developers input can be important, the severity of a risk requires a more measured approach taking into consideration a range of factors.',
                         experience: -10
                     },
                     {
-                        text: 'Base it on gut feeling',
-                        outcome: 'Structured assessment is more reliable.',
+                        text: 'Consider number of affected parties, duration of effect and impact',
+                        outcome: 'While all these factors will form a structured assessment of the severity of a risk. Likelihood of the issue occurring is also a main factor that can\'t be left out.',
                         experience: 0
                     }
                 ]
@@ -109,18 +109,18 @@ export class RiskAnalysisQuiz extends BaseQuiz {
                         tool: 'Likelihood Assessment Tool'
                     },
                     {
-                        text: 'Only check if it happened before',
-                        outcome: 'Consider all factors that affect likelihood.',
+                        text: 'Check prior occurrences of the same type of issue being raised',
+                        outcome: 'All factors that affect risk likelihood which include frequency and triggers should be taken into consideration.',
                         experience: -5
                     },
                     {
-                        text: 'Assume all risks are equally likely',
-                        outcome: 'Different risks have different likelihoods.',
+                        text: 'Factor into the risk analysis report that all risks are equally likely',
+                        outcome: 'Different risks have different likelihoods. Therefore, they require different overall risk level and prioritisation',
                         experience: -10
                     },
                     {
-                        text: 'Only consider current conditions',
-                        outcome: 'Historical data helps predict likelihood.',
+                        text: 'Take into consideration the current environment conditions',
+                        outcome: 'Historical data should also be considered when determining risk likelihood. This type of data from supported environment types helps to evaluate the accuracy of a risk.',
                         experience: 0
                     }
                 ]
@@ -138,18 +138,18 @@ export class RiskAnalysisQuiz extends BaseQuiz {
                         tool: 'Daily Risk Checklist'
                     },
                     {
-                        text: 'Start working immediately',
-                        outcome: 'Risk assessment should precede work.',
+                        text: 'Commence functional testing activates straight away to make sure coverage within time constraints are sufficiently met',
+                        outcome: 'Risk assessment should always precede work on the system under test as there could be potential risks that may block testing activities. These risks would need communicating and resolving',
                         experience: -10
                     },
                     {
-                        text: 'Wait for issues to arise',
-                        outcome: 'Proactive morning checks prevent problems.',
+                        text: 'Wait for the morning project meeting so that the project manager can relay any project risks',
+                        outcome: 'Proactive morning checks are recommended to potentially prevent problems in project readiness and to convey potential risk to project managers or clients that may block testing activities.',
                         experience: -5
                     },
                     {
-                        text: 'Only check emails',
-                        outcome: 'Comprehensive morning review needed.',
+                        text: 'Check emails for any information regarding the project and the system under test',
+                        outcome: 'Whilst important, a comprehensive morning review of any supported client documentation including the operational project details is required.',
                         experience: 0
                     }
                 ]
@@ -167,18 +167,18 @@ export class RiskAnalysisQuiz extends BaseQuiz {
                         tool: 'Risk Calculator'
                     },
                     {
-                        text: 'Only consider severity',
-                        outcome: 'Both severity and likelihood matter.',
+                        text: 'Consider the severity of the issue and base the overall risk on this',
+                        outcome: 'Both severity and likelihood should be taken into consideration. If the severity of a risk is high but the likelihood of this occurring is extremely low. Then overall severity would be reduced',
                         experience: -10
                     },
                     {
-                        text: 'Only consider likelihood',
-                        outcome: 'Severity must be factored in.',
+                        text: 'Consider the likelihood of the issue occurring and base overall risk on this',
+                        outcome: 'Severity of the risk must also be factored in. If the likelihood of a risk is high but the severity of this risk is extremely low. Then overall severity would be reduced',
                         experience: -5
                     },
                     {
-                        text: 'Add severity and likelihood',
-                        outcome: 'Multiplication better reflects risk level.',
+                        text: 'Add severity and likelihood ratings to gain the overall risk calculation',
+                        outcome: 'Multiplication of severity and likelihood is the formula used for overall risk level.',
                         experience: 0
                     }
                 ]
@@ -196,25 +196,25 @@ export class RiskAnalysisQuiz extends BaseQuiz {
                         tool: 'Progress Tracking'
                     },
                     {
-                        text: 'Only check time remaining',
-                        outcome: 'Multiple factors need checking.',
+                        text: 'Check the time remaining in the day for testing activities to factor in test coverage',
+                        outcome: 'Whilst this is important to keep test coverage on track. Multiple factors need to be taken into consideration including device status and any new project information.',
                         experience: -5
                     },
                     {
-                        text: 'Skip mid-day check',
-                        outcome: 'Regular checks maintain efficiency.',
+                        text: 'Conduct a thorough risk assessment at the beginning of the day so updated assessments are not required',
+                        outcome: 'Regular checks maintain efficiency as progress may be hindered for a number of factors including blocking issues or client requests.',
                         experience: -10
                     },
                     {
-                        text: 'Wait for end of day',
-                        outcome: 'Mid-day assessment allows adjustments.',
+                        text: 'Report an updated risk assessment to the project manager towards the end of the days testing',
+                        outcome: 'Mid-day assessments are essential as they allow for adjustments within the days testing activities.',
                         experience: 0
                     }
                 ]
             }
         ];
 
-        // Intermediate Scenarios (IDs 6-10, 125 XP total)
+        // Intermediate Scenarios (IDs 6-10)
         this.intermediateScenarios = [
             {
                 id: 6,
@@ -229,18 +229,18 @@ export class RiskAnalysisQuiz extends BaseQuiz {
                         tool: 'Timeline Risk Assessment'
                     },
                     {
-                        text: 'Only check total duration',
-                        outcome: 'Multiple timeline factors need consideration.',
+                        text: 'Check the duration of time allocated for functional test activities on the system under test',
+                        outcome: 'Multiple timeline factors need to be taken into consideration including planning and resource availability.',
                         experience: -15
                     },
                     {
-                        text: 'Assume timelines are fixed',
-                        outcome: 'Timeline flexibility needs assessment.',
+                        text: 'Assume timelines are in a set format as delivered by the client and all activities are to be planned in relation to this',
+                        outcome: 'Timeline flexibility requires assessment for potential deviations and additional coverage if required.',
                         experience: -10
                     },
                     {
-                        text: 'Focus only on testing time',
-                        outcome: 'Consider all timeline components.',
+                        text: 'Take resource availability into consideration to help with a set project timeline',
+                        outcome: 'While this is important other factors should be taken into consideration including flexibility and planning time.',
                         experience: -5
                     }
                 ]
@@ -258,18 +258,18 @@ export class RiskAnalysisQuiz extends BaseQuiz {
                         tool: 'Documentation Review'
                     },
                     {
-                        text: 'Only check if docs exist',
-                        outcome: 'Documentation quality needs review.',
+                        text: 'Check if documentation has been supplied by the client to form operational project details',
+                        outcome: 'Documentation content also needs reviewing to determine quality and potential issues that may prevent testing activities.',
                         experience: -15
                     },
                     {
-                        text: 'Start without documentation',
-                        outcome: 'Documentation review prevents issues.',
+                        text: 'Commence testing activities without documentation presented by the client',
+                        outcome: 'Whilst in some respects this can be achieved including exploratory testing to a certain degree. Documentation reviews prevent potential blocking issues to testing activities.',
                         experience: -10
                     },
                     {
-                        text: 'Assume docs are complete',
-                        outcome: 'Documentation assessment needed.',
+                        text: 'Ensure front end URL\'s have been supplied by the client and can be accessed',
+                        outcome: 'Whilst this is important, there are many other factors that need to be taken into consideration. Including, bug tracking details and access credentials or any areas out of scope.',
                         experience: -5
                     }
                 ]
@@ -287,18 +287,18 @@ export class RiskAnalysisQuiz extends BaseQuiz {
                         tool: 'Access Risk Checklist'
                     },
                     {
-                        text: 'Only check login works',
-                        outcome: 'Multiple access factors need checking.',
+                        text: 'Check a user can login can login to the environment specified by the URL or application provided by the client',
+                        outcome: 'This behaviour is important. However, other factors need to be taken into consideration including permissions for multiple users.',
                         experience: -15
                     },
                     {
-                        text: 'Wait for access issues',
-                        outcome: 'Proactive access verification needed.',
+                        text: 'Assess access methods, specific requirements and user permissions',
+                        outcome: 'Whilst all these factors are essential, environment stability needs to be taken into consideration. This could include actual environment completeness and any server downtime for development activities.',
                         experience: -10
                     },
                     {
-                        text: 'Assume access is stable',
-                        outcome: 'Access stability needs verification.',
+                        text: 'Assess access methods, user permissions, and environment stability',
+                        outcome: 'Whilst all these factors are essential, specific client requirements also needs to be taken into consideration. This could include version control and which versions/URL\'s should be under test',
                         experience: -5
                     }
                 ]
@@ -316,18 +316,18 @@ export class RiskAnalysisQuiz extends BaseQuiz {
                         tool: 'Concurrent Testing Assessment'
                     },
                     {
-                        text: 'Only check if login works',
-                        outcome: 'Consider all multi-user impacts.',
+                        text: 'Assess the impact of logging into the environment sequentially with different users',
+                        outcome: 'This type of test should be carried out with multiple users simultaneously to evaluate potential performance issues.',
                         experience: -15
                     },
                     {
-                        text: 'Ignore other users',
-                        outcome: 'User interaction effects matter.',
+                        text: 'Assess the impact of logging into an environment with the same user on different tabs on the same browser type',
+                        outcome: 'Whilst this is a valid test, logging into the environment with the same user on multiple devices should be taken into consideration.',
                         experience: -10
                     },
                     {
-                        text: 'Assume no impact',
-                        outcome: 'Multi-user risks need evaluation.',
+                        text: 'Assess the impact of logging in and out with the same user on multiple occasions',
+                        outcome: 'Whilst this is a valid test, it doesn\'t assess the impact of multiple users access the system under test at the same time.',
                         experience: -5
                     }
                 ]
@@ -345,25 +345,25 @@ export class RiskAnalysisQuiz extends BaseQuiz {
                         tool: 'Communication Risk Assessment'
                     },
                     {
-                        text: 'Only use email',
-                        outcome: 'Multiple communication channels needed.',
+                        text: 'Promote email as the one communication channel',
+                        outcome: 'Multiple client supported communication channels may be required. Also, response times need to be assessed to realise the best and quickest form of communication.',
                         experience: -15
                     },
                     {
-                        text: 'Wait for communication issues',
-                        outcome: 'Proactive communication planning needed.',
+                        text: 'Adress communication issues when they arise during testing activities',
+                        outcome: 'Proactive planning is required to maintain effective communication with the client throughout testing activities.',
                         experience: -10
                     },
                     {
-                        text: 'Assume client is always available',
-                        outcome: 'Communication availability needs verification.',
+                        text: 'Establish contact methods and verify response times with the client and project manager',
+                        outcome: 'While these factors are important, escalation paths for any urgent issues also need to be verified for clarity and resolution of any points of failure.',
                         experience: -5
                     }
                 ]
             }
         ];
 
-        // Advanced Scenarios (IDs 11-15, 100 XP total)
+        // Advanced Scenarios (IDs 11-15)
         this.advancedScenarios = [
             {
                 id: 11,
@@ -378,18 +378,18 @@ export class RiskAnalysisQuiz extends BaseQuiz {
                         tool: 'Bug Impact Analysis'
                     },
                     {
-                        text: 'Continue testing as normal',
-                        outcome: 'High bug count needs strategy adjustment.',
+                        text: 'Continue following the planned test script and report findings at the end of the day to the project manager',
+                        outcome: 'A high bug count generally needs a strategy adjustment involving certain coverage areas or resource availability which should also be relayed to the project manager.',
                         experience: -15
                     },
                     {
-                        text: 'Skip affected areas',
-                        outcome: 'All areas need appropriate coverage.',
+                        text: 'Reduce coverage of all areas to meet time constraints',
+                        outcome: 'All areas need appropriate coverage. Any potential reduction in agreed coverage should be reported and agreed with the project manager.',
                         experience: -10
                     },
                     {
-                        text: 'Only report major bugs',
-                        outcome: 'All issues need proper documentation.',
+                        text: 'Document major bugs and build a backlog of notes for any minor issues',
+                        outcome: 'All issues found need proper documentation and reporting. Progress should also be reported to the project manager for assessment of additional resources',
                         experience: -5
                     }
                 ]
@@ -407,18 +407,18 @@ export class RiskAnalysisQuiz extends BaseQuiz {
                         tool: 'Resource Risk Management'
                     },
                     {
-                        text: 'Continue with original plan',
-                        outcome: 'Resource changes need plan adjustment.',
+                        text: 'Continue with the original testing activities set out in planning and inform the project manager of progress at the end of the day',
+                        outcome: 'Any resource changes need plan adjustment and project managers should be informed on potential impact so those adjustments can be made.',
                         experience: -15
                     },
                     {
-                        text: 'Reduce test coverage',
-                        outcome: 'Maintain coverage with adjusted approach.',
+                        text: 'Remove some areas under test from planning to meet agreed project timelines.',
+                        outcome: 'Coverage areas should not necessarily be removed. Although a reduction in test coverage of non-priority areas could potentially be adjusted. This would need confirmation from the project manager and the client',
                         experience: -10
                     },
                     {
-                        text: 'Ignore resource changes',
-                        outcome: 'Resource changes need addressing.',
+                        text: 'Assess the impact on timeline and report this information to the project manager',
+                        outcome: 'Whilst this is an important factor, the impact on coverage should also be taken into consideration and reported to stakeholders involved in the project.',
                         experience: -5
                     }
                 ]
@@ -436,18 +436,18 @@ export class RiskAnalysisQuiz extends BaseQuiz {
                         tool: 'Late-Stage Risk Analysis'
                     },
                     {
-                        text: 'Rush remaining testing',
-                        outcome: 'Maintain quality while reprioritizing.',
+                        text: 'Reduce the remaining test areas to meet the project timeline set out in planning',
+                        outcome: 'Reprioritising test areas rather than reducing them is better approach to deal with major issues. This should also be agreed with the project manager.',
                         experience: -15
                     },
                     {
-                        text: 'Skip regression testing',
-                        outcome: 'Regression testing remains important.',
+                        text: 'Remove outstanding regression testing from planning as bug fixes and new features take priority',
+                        outcome: 'Regression testing remains important area of issue verification. Instead of removing this completely, reprioritisation of regression areas should be taken into consideration and agreed with the project manager.',
                         experience: -10
                     },
                     {
-                        text: 'Ignore new issues',
-                        outcome: 'Late issues need proper handling.',
+                        text: 'Assess a route cause analysis for the client and developers to better understand a fix timeline',
+                        outcome: 'Whilst this will help going forward for a new release. It doesn\'t help with reprioritisation of the current system under tests activities.',
                         experience: -5
                     }
                 ]
@@ -465,18 +465,18 @@ export class RiskAnalysisQuiz extends BaseQuiz {
                         tool: 'Change Impact Assessment'
                     },
                     {
-                        text: 'Continue with original plan',
-                        outcome: 'Requirement changes need plan updates.',
+                        text: 'Continue with the original testing activities set out in planning',
+                        outcome: 'Requirement changes require reassessment and plan updates.',
                         experience: -15
                     },
                     {
-                        text: 'Only test new requirements',
-                        outcome: 'All requirements need coverage.',
+                        text: 'Test the new requirement areas as these are the most current set out by the client',
+                        outcome: 'All requirements need coverage relating to priority and any set out in planning that are still relevant need testing.',
                         experience: -10
                     },
                     {
-                        text: 'Ignore requirement changes',
-                        outcome: 'Changes need proper assessment.',
+                        text: 'Analyse impact on test coverage and report this to the project manager',
+                        outcome: 'Whilst coverage is important. Other factors need to be taken into consideration including impact on project time line and existing tests.',
                         experience: -5
                     }
                 ]
@@ -494,18 +494,18 @@ export class RiskAnalysisQuiz extends BaseQuiz {
                         tool: 'Project Review Framework'
                     },
                     {
-                        text: 'Only note major issues',
-                        outcome: 'All aspects need review for improvement.',
+                        text: 'Document all major issues in a project review',
+                        outcome: 'While important all aspects need to be included for review including project challenges. Thes can then be reviewed for improvement moving forward.',
                         experience: -15
                     },
                     {
-                        text: 'Skip final review',
-                        outcome: 'Project review improves future work.',
+                        text: 'Document lessons learned in the project review',
+                        outcome: 'Whilst this is an important factor in the review. It may not target exact areas where processes can be improved.',
                         experience: -10
                     },
                     {
-                        text: 'Focus only on successes',
-                        outcome: 'Both successes and challenges need review.',
+                        text: 'Focus on successes achieved throughout the project and document them in the project review',
+                        outcome: 'Both successes and challenges are essential to the project review. This promotes a way of carrying forward good process and highlights the need for process improvement',
                         experience: -5
                     }
                 ]

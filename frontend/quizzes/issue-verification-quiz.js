@@ -79,18 +79,18 @@ export class IssueVerificationQuiz extends BaseQuiz {
                         tool: 'Prioritization'
                     },
                     {
-                        text: 'Verify tickets in chronological order',
+                        text: 'Verify tickets in chronological order to address the most current issues first',
                         outcome: 'Priority and severity should guide verification order.',
                         experience: -10
                     },
                     {
-                        text: 'Start with easiest tickets',
+                        text: 'Start with easiest tickets to gain the most coverage of open tickets',
                         outcome: 'Critical issues need verification first.',
                         experience: -5
                     },
                     {
-                        text: 'Verify random tickets',
-                        outcome: 'Structured prioritization is needed.',
+                        text: 'Verify issues based on your familiarity with specific tickets',
+                        outcome: 'Structured prioritisation is required to address the most critical issues first.',
                         experience: 0
                     }
                 ]
@@ -108,18 +108,18 @@ export class IssueVerificationQuiz extends BaseQuiz {
                         tool: 'Environment Management'
                     },
                     {
-                        text: 'Test on any available device',
-                        outcome: 'Original environment should be prioritized.',
+                        text: 'Test on any available device to verify the issue has been resolved',
+                        outcome: 'The original environment should be prioritised as this is where the issue was raised and has been addressed.',
                         experience: -10
                     },
                     {
-                        text: 'Skip device-specific issues',
-                        outcome: 'Device-specific issues need verification.',
+                        text: 'Verify on an older device before moving onto the specified device',
+                        outcome: 'Device-specific issues require verification as users will operate many different devices.',
                         experience: -5
                     },
                     {
-                        text: 'Mark as verified without testing',
-                        outcome: 'Actual verification is required.',
+                        text: 'This can be marked as verified without testing as long as functionality on the primary environment behaves as intended',
+                        outcome: 'Verification is required on specific devices the issue was raised on.',
                         experience: 0
                     }
                 ]
@@ -137,18 +137,18 @@ export class IssueVerificationQuiz extends BaseQuiz {
                         tool: 'Documentation'
                     },
                     {
-                        text: 'Just update the status',
-                        outcome: 'Detailed comments are required.',
+                        text: 'Update the ticket status, as this ensures proper traceability of the issue',
+                        outcome: 'More details are required for traceability.',
                         experience: -10
                     },
                     {
-                        text: 'Write "fixed" or "not fixed"',
-                        outcome: 'More detailed documentation needed.',
+                        text: 'Update the ticket by stating \"fixed\" or \"not fixed\" as further details are not required',
+                        outcome: 'More detailed documentation is required for developer and stakeholder information.',
                         experience: -5
                     },
                     {
-                        text: 'Only add screenshots',
-                        outcome: 'Written documentation needed with evidence.',
+                        text: 'Add screenshots as visual representation of issues is vital for developers to debug issues',
+                        outcome: 'Written documentation is also required to accompany evidence.',
                         experience: 0
                     }
                 ]
@@ -166,18 +166,18 @@ export class IssueVerificationQuiz extends BaseQuiz {
                         tool: 'Evidence Capture'
                     },
                     {
-                        text: 'Quick unlabeled screenshots',
-                        outcome: 'Evidence needs clear highlighting.',
+                        text: 'Included screenshots don\'t need labelling as attachment should provide enough detail',
+                        outcome: 'Any submitted evidence requires clear highlighting.',
                         experience: -10
                     },
                     {
-                        text: 'Skip evidence capture',
-                        outcome: 'Evidence is important for verification.',
+                        text: 'Evidence capture is generally not needed as steps and description should provide enough detail',
+                        outcome: 'Visual evidence is essential for verification.',
                         experience: -5
                     },
                     {
-                        text: 'Rushed video capture',
-                        outcome: 'Clear, repeated demonstrations needed.',
+                        text: 'A video capture in low resolution should be sufficient evidence',
+                        outcome: 'While a video capture is good evidence, the resolution should be up to a legible standard.',
                         experience: 0
                     }
                 ]
@@ -189,24 +189,24 @@ export class IssueVerificationQuiz extends BaseQuiz {
                 description: 'An issue is partially fixed. How do you update its status?',
                 options: [
                     {
-                        text: 'Mark as Partially Fixed with detailed explanation of remaining issues',
+                        text: 'Mark as partially fixed with a detailed explanation of the remaining issues',
                         outcome: 'Perfect! This accurately reflects partial fixes.',
                         experience: 15,
                         tool: 'Status Management'
                     },
                     {
-                        text: 'Mark as Fixed',
-                        outcome: 'Partial fixes need specific status.',
+                        text: 'Change the status to fixed, adding a note to re-open once fully fixed',
+                        outcome: 'Partial fixes should not be closed unless instructed by the client.',
                         experience: -10
                     },
                     {
-                        text: 'Mark as Not Fixed',
-                        outcome: 'Acknowledge partial improvements.',
+                        text: 'Update the status to not fixed without adding a comment, as the status itself indicates the ticket requires a revisit',
+                        outcome: 'Partial fix tickets require a partial fix status with full details included.',
                         experience: -5
                     },
                     {
-                        text: 'Leave status unchanged',
-                        outcome: 'Status needs updating with verification.',
+                        text: 'Keep the status unchanged, as the open ticket reflects the current situation',
+                        outcome: 'This type of ticket requires the correct status update with the relevant verification details.',
                         experience: 0
                     }
                 ]
@@ -228,18 +228,18 @@ export class IssueVerificationQuiz extends BaseQuiz {
                         tool: 'Regression Testing'
                     },
                     {
-                        text: 'Only check fixed issues',
-                        outcome: 'Surrounding areas need testing too.',
+                        text: 'Check all of the fixed issues as confirmed by the client',
+                        outcome: 'Regression testing should cover areas that have been recently modified. This may include new features or bug fixes.',
                         experience: -15
                     },
                     {
-                        text: 'Skip regression testing',
-                        outcome: 'Regression is crucial after fixes.',
+                        text: 'Stick to minimal regression testing as previous issues have been fixed and tested during the current release',
+                        outcome: 'Regression testing reduces the risk of introducing new bugs into the system, which can be costly and time-consuming to fix later.',
                         experience: -10
                     },
                     {
-                        text: 'Test random areas',
-                        outcome: 'Focus needed on changed areas.',
+                        text: 'Focus regression testing on tester preference using experience gained during initial testing',
+                        outcome: 'Regression tests should focus on high risk areas, recent changes and core functionality.',
                         experience: 0
                     }
                 ]
@@ -257,18 +257,18 @@ export class IssueVerificationQuiz extends BaseQuiz {
                         tool: 'Time Management'
                     },
                     {
-                        text: 'Verify tickets until done',
-                        outcome: 'Time needs allocation for regression.',
+                        text: 'Work through verification of all tickets to completion',
+                        outcome: 'Time needs to be allocated for both issue verification and regression testing on a priority basis.',
                         experience: -15
                     },
                     {
-                        text: 'Focus only on regression',
-                        outcome: 'Verification needs proper time allocation.',
+                        text: 'Focus time management on regression testing',
+                        outcome: 'Issue verification requires time allocation for both ticket verification and regression testing.',
                         experience: -10
                     },
                     {
-                        text: 'No time planning',
-                        outcome: 'Structured time management needed.',
+                        text: 'Focus time management and planning on issue verification',
+                        outcome: 'Issue verification requires time allocation for both ticket verification and regression testing.',
                         experience: 0
                     }
                 ]
@@ -286,18 +286,18 @@ export class IssueVerificationQuiz extends BaseQuiz {
                         tool: 'Issue Management'
                     },
                     {
-                        text: 'Add to existing tickets',
-                        outcome: 'New issues need separate tickets.',
+                        text: 'Add any new issues to existing tickets within the project',
+                        outcome: 'Any new issues found require separate tickets.',
                         experience: -15
                     },
                     {
-                        text: 'Ignore new issues',
-                        outcome: 'All issues need documentation.',
+                        text: 'Leave new issues for a further round of testing as issue verification should focus on current tickets',
+                        outcome: 'All issues require documentation as and when they are found.',
                         experience: -10
                     },
                     {
-                        text: 'Only mention in summary',
-                        outcome: 'New issues need proper tickets.',
+                        text: 'Raise any new issue found during issue verification in the report summary',
+                        outcome: 'While new issue can be stated in a report summary, they also require tickets to be raised.',
                         experience: 0
                     }
                 ]
@@ -306,27 +306,27 @@ export class IssueVerificationQuiz extends BaseQuiz {
                 id: 9,
                 level: 'Intermediate',
                 title: 'Device Availability',
-                description: 'Original test device isn\'t available. How do you proceed?',
+                description: 'An original test device isn\'t available. How do you proceed?',
                 options: [
                     {
-                        text: 'Contact device owner early, check device lists, consider BrowserStack with PM approval',
-                        outcome: 'Excellent! This shows proper device management.',
+                        text: 'Contact the device owner early, check device lists and consider BrowserStack with PM approval',
+                        outcome: 'Excellent! This shows correct device management.',
                         experience: 20,
                         tool: 'Resource Management'
                     },
                     {
-                        text: 'Skip device-specific issues',
-                        outcome: 'Alternative solutions should be explored.',
+                        text: 'Test on any available device to verify the issue has been resolved',
+                        outcome: 'The original environment should be prioritised, even if this is tested on BrowserStack as this is where the issue was raised and has been addressed.',
                         experience: -15
                     },
                     {
-                        text: 'Test on different device without noting',
-                        outcome: 'Environment differences need documentation.',
+                        text: 'Test on a similar device and document test outcome',
+                        outcome: 'Using a different device for verification should be confirmed by the project manager and all environment differences require documentation.',
                         experience: -10
                     },
                     {
-                        text: 'Mark as cannot test',
-                        outcome: 'Explore alternative testing options.',
+                        text: 'Mark the ticket as cannot test due to lack of device resources',
+                        outcome: 'Alternative testing options must be explored including a similar device and BrowserStack.',
                         experience: 0
                     }
                 ]
@@ -335,27 +335,27 @@ export class IssueVerificationQuiz extends BaseQuiz {
                 id: 10,
                 level: 'Intermediate',
                 title: 'Client Communication',
-                description: 'Client hasn\'t updated ticket statuses. How do you proceed?',
+                description: 'The client hasn\'t updated ticket statuses. How do you proceed?',
                 options: [
                     {
-                        text: 'Contact PM to confirm which issues have been worked on, prioritize known fixed issues',
+                        text: 'Contact the Project Manager to confirm which issues have been worked on and prioritise known fixed issues',
                         outcome: 'Perfect! This ensures efficient verification.',
                         experience: 20,
                         tool: 'Communication'
                     },
                     {
-                        text: 'Test all tickets',
-                        outcome: 'Prioritization needed for efficiency.',
+                        text: 'Test all tickets that have previously been raised within the project',
+                        outcome: 'Prioritisation is required as some tickets may not have been worked on by the client.',
                         experience: -15
                     },
                     {
-                        text: 'Wait for updates',
-                        outcome: 'Proactive communication needed.',
+                        text: 'Continue with issue verification whilst awaiting updates to tickets from the client',
+                        outcome: 'Proactive communication with the Project Manager and client is required in this instance as they may not intend to work on specific tickets.',
                         experience: -10
                     },
                     {
-                        text: 'Skip verification',
-                        outcome: 'Verification needed with prioritization.',
+                        text: 'Leave the tickets that don\'t have any status update and include the information in the summary report.',
+                        outcome: 'It is best practice to confirm with the client which that has tickets are intended for verification.',
                         experience: 0
                     }
                 ]
@@ -377,18 +377,18 @@ export class IssueVerificationQuiz extends BaseQuiz {
                         tool: 'Complex Testing'
                     },
                     {
-                        text: 'Only test main feature',
-                        outcome: 'Connected features need verification.',
+                        text: 'Test the main feature and document the outcome',
+                        outcome: 'All connected features require verification and regression testing.',
                         experience: -15
                     },
                     {
-                        text: 'Quick check only',
-                        outcome: 'Complex issues need thorough testing.',
+                        text: 'Test the features that are connected to the main feature as this ensures all issues have been addressed',
+                        outcome: 'Complex issues need thorough testing and all affected features require attention.',
                         experience: -10
                     },
                     {
-                        text: 'Mark as too complex',
-                        outcome: 'All issues need proper verification.',
+                        text: 'Test the specific issues that have been addressed by the client without the full feature workflow',
+                        outcome: 'All issues require verification as well as the full workflow of interconnected features.',
                         experience: -5
                     }
                 ]
@@ -400,24 +400,24 @@ export class IssueVerificationQuiz extends BaseQuiz {
                 description: 'An issue affects multiple environments differently. How do you verify it?',
                 options: [
                     {
-                        text: 'Test each environment, document specific behaviors, note any variations',
+                        text: 'Test each environment, document specific behaviours, note any variations',
                         outcome: 'Excellent! This provides complete environment coverage.',
                         experience: 25,
                         tool: 'Environment Testing'
                     },
                     {
-                        text: 'Test one environment only',
-                        outcome: 'All affected environments need testing.',
+                        text: 'Test any of the affected environments to verify the issue has been addressed by the client',
+                        outcome: 'All affected environments require testing as behaviour has been stated as environment specific.',
                         experience: -15
                     },
                     {
-                        text: 'Assume same behavior',
-                        outcome: 'Environment variations need verification.',
+                        text: 'Test the majority of environments, ascertain an average outcome and document results',
+                        outcome: 'All stated environment variations are required for verification.',
                         experience: -10
                     },
                     {
-                        text: 'Mark as too complex',
-                        outcome: 'Environment differences need documentation.',
+                        text: 'Test all stated environments and document the outcome of the primary device',
+                        outcome: 'Environment differences require full documentation for traceability.',
                         experience: -5
                     }
                 ]
@@ -429,24 +429,24 @@ export class IssueVerificationQuiz extends BaseQuiz {
                 description: 'Multiple fixes have been implemented. How do you assess regression impact?',
                 options: [
                     {
-                        text: 'Map fix relationships, test impacted areas, document any cascading effects',
+                        text: 'Research fix relationships, test impacted areas, document any cascading effects',
                         outcome: 'Perfect! This ensures comprehensive regression analysis.',
                         experience: 25,
                         tool: 'Impact Analysis'
                     },
                     {
-                        text: 'Test fixes in isolation',
-                        outcome: 'Related impacts need assessment.',
+                        text: 'Verify any client stated fixes specifically',
+                        outcome: 'Potential related impacts from specific bug fixes also require assessment.',
                         experience: -15
                     },
                     {
-                        text: 'Basic regression only',
-                        outcome: 'Thorough impact analysis needed.',
+                        text: 'Use a basic regression process to ascertain focus feature fixes',
+                        outcome: 'Thorough impact analysis is required for regression testing to explore any other areas that might be affected by a specific bug fix.',
                         experience: -10
                     },
                     {
-                        text: 'Skip impact analysis',
-                        outcome: 'Fix impacts need assessment.',
+                        text: 'Impact analysis can be left until all specific fixes have been verified',
+                        outcome: 'Fix impacts require assessment systematically throughout verification as blocking issues could be direct impact of a current fix.',
                         experience: -5
                     }
                 ]
