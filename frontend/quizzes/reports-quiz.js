@@ -7,9 +7,9 @@ export class ReportsQuiz extends BaseQuiz {
         const config = {
             maxXP: 300,
             levelThresholds: {
-                basic: { questions: 5, minXP: 50 },
-                intermediate: { questions: 10, minXP: 150 },
-                advanced: { questions: 15, minXP: 300 }
+                basic: { questions: 5, minXP: 35 },
+                intermediate: { questions: 10, minXP: 120 },
+                advanced: { questions: 15, minXP: 250 }
             },
             performanceThresholds: [
                 { threshold: 250, message: '🏆 Outstanding! You\'re a reporting expert!' },
