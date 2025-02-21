@@ -74,23 +74,23 @@ export class BuildVerificationQuiz extends BaseQuiz {
                 description: 'What is the primary purpose of Build Verification Testing?',
                 options: [
                     {
-                        text: 'Ensure core functionality and stability remain intact in each new build before further testing',
+                        text: 'To ensure core functionality and stability remain intact in each new build before further testing',
                         outcome: 'Perfect! BVT validates build stability and readiness.',
                         experience: 15,
                         tool: 'Build Verification Framework'
                     },
                     {
-                        text: 'Find all possible bugs',
+                        text: 'To find all possible bugs related to the release',
                         outcome: 'BVT focuses on core functionality, not exhaustive testing.',
                         experience: -5
                     },
                     {
-                        text: 'Test new features only',
+                        text: 'To test new features for upcoming sprints',
                         outcome: 'BVT checks existing core functionality.',
                         experience: -10
                     },
                     {
-                        text: 'Document all issues',
+                        text: 'To document all issues relating to functionality',
                         outcome: 'BVT primarily validates build stability.',
                         experience: 0
                     }
@@ -109,17 +109,17 @@ export class BuildVerificationQuiz extends BaseQuiz {
                         tool: 'Test Case Template'
                     },
                     {
-                        text: 'Test everything possible',
-                        outcome: 'BVT needs focused, critical test cases.',
+                        text: 'Test everything possible for each release',
+                        outcome: 'BVT needs focused, critical test cases and exhaustive testing is generally not possible.',
                         experience: -5
                     },
                     {
-                        text: 'Create random test cases',
+                        text: 'Create test cases based on tester experience and preference',
                         outcome: 'Test cases must be structured and repeatable.',
                         experience: -10
                     },
                     {
-                        text: 'Skip test case documentation',
+                        text: 'Leave test case documentation in favour of test execution',
                         outcome: 'Documentation is crucial for consistency.',
                         experience: 0
                     }
@@ -138,18 +138,18 @@ export class BuildVerificationQuiz extends BaseQuiz {
                         tool: 'Core Function Checklist'
                     },
                     {
-                        text: 'Minor visual issues',
-                        outcome: 'Focus on critical functionality first.',
+                        text: 'Multiple minor visual issues should be reported thoroughly',
+                        outcome: 'Focus on critical functionality must be the first priority.',
                         experience: -10
                     },
                     {
-                        text: 'New features only',
-                        outcome: 'Core functionality needs verification.',
+                        text: 'New features should be the focus of any new release',
+                        outcome: 'Core functionality needs verification as focusing on just new features can miss issues in other areas.',
                         experience: -5
                     },
                     {
-                        text: 'Documentation errors',
-                        outcome: 'Critical operations take priority.',
+                        text: 'Documentation errors should priority as this can lead to blocking issues with testing activities',
+                        outcome: 'Critical operations should take priority as testing can be carried out if core functionality of the application behaves as intended.',
                         experience: 0
                     }
                 ]
@@ -167,18 +167,18 @@ export class BuildVerificationQuiz extends BaseQuiz {
                         tool: 'Environment Matrix'
                     },
                     {
-                        text: 'Test one environment only',
-                        outcome: 'All relevant environments need verification.',
+                        text: 'Test one primary environment as all other environments should follow the same functionality',
+                        outcome: 'All relevant supported environments need verification.',
                         experience: -10
                     },
                     {
-                        text: 'Skip environment planning',
-                        outcome: 'Environment planning is crucial.',
+                        text: 'Leave environment planning until all other priority documentation and execution has been completed',
+                        outcome: 'Environment planning is crucial for coverage within set out time constraints.',
                         experience: -5
                     },
                     {
-                        text: 'Use same tests for all',
-                        outcome: 'Environment-specific tests needed.',
+                        text: 'Use the same tests for all environments that are supported for the project',
+                        outcome: 'Environment-specific tests are required as not all perform the same functionality.',
                         experience: 0
                     }
                 ]
@@ -196,18 +196,18 @@ export class BuildVerificationQuiz extends BaseQuiz {
                         tool: 'Issue Tracker'
                     },
                     {
-                        text: 'Continue testing regardless',
-                        outcome: 'Critical issues need immediate attention.',
+                        text: 'Continue with the tests set out in project planning',
+                        outcome: 'Critical issues need immediate attention and documenting.',
                         experience: -10
                     },
                     {
-                        text: 'Fix issues yourself',
-                        outcome: 'Report issues for proper resolution.',
+                        text: 'Attempt to look for a fix resolution to the issues yourself',
+                        outcome: 'Issues must be reported for full and proper resolution so the tester can continue with testing activities.',
                         experience: -5
                     },
                     {
-                        text: 'Document minor issues only',
-                        outcome: 'Major issues need priority attention.',
+                        text: 'Document all minor issues found during build verification testing',
+                        outcome: 'While minor issues need documenting, major issues need priority attention.',
                         experience: 0
                     }
                 ]
@@ -229,18 +229,18 @@ export class BuildVerificationQuiz extends BaseQuiz {
                         tool: 'Test Case Manager'
                     },
                     {
-                        text: 'Keep original test cases only',
-                        outcome: 'Test cases need regular updates.',
+                        text: 'Keep and execute original test cases only',
+                        outcome: 'Test cases need regular updates as there are constant changes to build process and features.',
                         experience: -15
                     },
                     {
-                        text: 'Remove old test cases',
-                        outcome: 'Update existing cases as needed.',
+                        text: 'Remove old test cases from the test script as new features should be the sole focus',
+                        outcome: 'Updating existing test cases is required, as the removal of old test cases can result in missed feature processes.',
                         experience: -10
                     },
                     {
-                        text: 'Ignore new features',
-                        outcome: 'New core features need coverage.',
+                        text: 'Reduce new feature update test cases to save on time management for new releases',
+                        outcome: 'New core features are essential and require coverage.',
                         experience: -5
                     }
                 ]
@@ -252,24 +252,24 @@ export class BuildVerificationQuiz extends BaseQuiz {
                 description: 'How does BVT help prevent regression issues?',
                 options: [
                     {
-                        text: 'Verify critical functionality in each build to catch issues before they affect other modules',
+                        text: 'It verifies critical functionality in each build to catch issues before they affect other modules',
                         outcome: 'Perfect! Early detection prevents regression spread.',
                         experience: 20,
                         tool: 'Regression Checker'
                     },
                     {
-                        text: 'Test new code only',
-                        outcome: 'Existing functionality needs verification.',
+                        text: 'It focuses on testing new code only',
+                        outcome: 'Existing functionality also needs verification through existing test cases.',
                         experience: -15
                     },
                     {
-                        text: 'Skip regular testing',
-                        outcome: 'Consistent testing prevents regression.',
+                        text: 'It can be a factor in skipping more regular testing activities',
+                        outcome: 'Consistent testing does not skip the need for regular testing activities, although can help to prevent the need for full regression testing.',
                         experience: -10
                     },
                     {
-                        text: 'Ignore previous issues',
-                        outcome: 'Previous fixes need verification.',
+                        text: 'It can be a factor in preventing verification testing of previous issues',
+                        outcome: 'This is untrue as all previous fixes need verification testing.',
                         experience: -5
                     }
                 ]
@@ -287,18 +287,18 @@ export class BuildVerificationQuiz extends BaseQuiz {
                         tool: 'Resource Planner'
                     },
                     {
-                        text: 'Use minimal resources',
-                        outcome: 'Adequate resources needed for coverage.',
+                        text: 'Use minimal resources regardless of project size',
+                        outcome: 'Adequate resources are needed for coverage.',
                         experience: -15
                     },
                     {
-                        text: 'Overallocate resources',
-                        outcome: 'Efficient resource use is important.',
+                        text: 'Over allocate resources to complete build verification testing under the agreed time frame',
+                        outcome: 'While over allocation can help in complex projects, efficient resource usage is most important for BVT testing.',
                         experience: -10
                     },
                     {
-                        text: 'Skip resource planning',
-                        outcome: 'Resource planning ensures efficiency.',
+                        text: 'Spend the least time regarding testing activities on resource planning',
+                        outcome: 'Resource planning ensures efficiency and mistakes in this area can have a knock-on effect further on into the testing process.',
                         experience: -5
                     }
                 ]
@@ -310,24 +310,24 @@ export class BuildVerificationQuiz extends BaseQuiz {
                 description: 'When should a build be accepted for further testing?',
                 options: [
                     {
-                        text: 'When all critical functionality passes and no blocking issues are found',
+                        text: 'When all critical functionality passes testing and no blocking issues are found',
                         outcome: 'Perfect! Build stability is crucial for further testing.',
                         experience: 20,
                         tool: 'Acceptance Criteria'
                     },
                     {
-                        text: 'Accept all builds',
-                        outcome: 'Builds must meet stability criteria.',
+                        text: 'All builds should be accepted for further testing activities',
+                        outcome: 'Builds must meet stability criteria before being submitted.',
                         experience: -15
                     },
                     {
-                        text: 'Ignore minor issues',
-                        outcome: 'Critical functionality must work.',
+                        text: 'Builds should be accepted if any minor issues are still present',
+                        outcome: 'Critical functionality must work and this includes minor issues if they affect functionality.',
                         experience: -10
                     },
                     {
-                        text: 'Skip verification',
-                        outcome: 'Verification ensures build quality.',
+                        text: 'When build verification is 80% complete according to what set out in the planning stages',
+                        outcome: 'Verification ensures build quality and any missed areas can result in major issues.',
                         experience: -5
                     }
                 ]
@@ -345,18 +345,18 @@ export class BuildVerificationQuiz extends BaseQuiz {
                         tool: 'Documentation Template'
                     },
                     {
-                        text: 'Skip documentation',
-                        outcome: 'Documentation is crucial for BVT.',
+                        text: 'Minimal documentation is required to be able to focus on test execution',
+                        outcome: 'Documentation is crucial for BVT to maintain consistency and traceability.',
                         experience: -15
                     },
                     {
-                        text: 'Document failures only',
-                        outcome: 'All results need documentation.',
+                        text: 'Document failures only as this is the main concern of build verification testing',
+                        outcome: 'All results require documentation for traceability.',
                         experience: -10
                     },
                     {
-                        text: 'Use informal notes',
-                        outcome: 'Structured documentation needed.',
+                        text: 'Use informal notes and submit these regularly to speed up the process',
+                        outcome: 'Structured documentation is always required for consistency.',
                         experience: -5
                     }
                 ]
@@ -372,24 +372,24 @@ export class BuildVerificationQuiz extends BaseQuiz {
                 description: 'How do you improve BVT processes over time?',
                 options: [
                     {
-                        text: 'Analyze effectiveness, gather feedback, and update processes based on project needs',
+                        text: 'Analyse effectiveness, gather feedback, and update processes based on project needs',
                         outcome: 'Perfect! Continuous improvement enhances BVT effectiveness.',
                         experience: 25,
-                        tool: 'Process Analyzer'
+                        tool: 'Process Analyser'
                     },
                     {
-                        text: 'Keep existing process',
-                        outcome: 'Processes need regular updates.',
+                        text: 'Keep the existing processes as this will promote familiarity and speed up the process',
+                        outcome: 'Processes need regular updates to keep up to date with new features and requirements changes.',
                         experience: -15
                     },
                     {
-                        text: 'Change randomly',
-                        outcome: 'Changes need proper analysis.',
+                        text: 'Change processes on tester experience and preference basis',
+                        outcome: 'Changes need proper analysis and not by tester preference.',
                         experience: -10
                     },
                     {
-                        text: 'Ignore feedback',
-                        outcome: 'Feedback drives improvement.',
+                        text: 'Take into consideration feedback on a minimal basis',
+                        outcome: 'Feedback is essential and drives improvement.',
                         experience: -5
                     }
                 ]
@@ -407,18 +407,18 @@ export class BuildVerificationQuiz extends BaseQuiz {
                         tool: 'Integration Planner'
                     },
                     {
-                        text: 'Test one module only',
-                        outcome: 'All modules need verification.',
+                        text: 'Test one module for integration, as once one is verified other connected modules should follow suit',
+                        outcome: 'All modules need verification at the risk of missing major issues.',
                         experience: -15
                     },
                     {
-                        text: 'Skip integration tests',
-                        outcome: 'Integration testing is crucial.',
+                        text: 'Leave integration testing in favour of making up time for functionality testing',
+                        outcome: 'Integration testing is crucial to the BVT process and if missed can cause major issues with compatibility.',
                         experience: -10
                     },
                     {
-                        text: 'Assume compatibility',
-                        outcome: 'Module interaction needs testing.',
+                        text: 'Assume compatibility for all modules once one interaction is completed successfully',
+                        outcome: 'All module interaction tests require completing for optimal coverage.',
                         experience: -5
                     }
                 ]
@@ -436,18 +436,18 @@ export class BuildVerificationQuiz extends BaseQuiz {
                         tool: 'Communication Plan'
                     },
                     {
-                        text: 'Work in isolation',
-                        outcome: 'Team communication is essential.',
+                        text: 'Work in isolation until build verification is complete and a test report can be submitted',
+                        outcome: 'Team communication is essential for quick resolution to potential issues.',
                         experience: -15
                     },
                     {
-                        text: 'Delay issue reporting',
-                        outcome: 'Quick communication needed.',
+                        text: 'Delay issue reporting in favour test coverage',
+                        outcome: 'Quick communication is needed and issues can sometimes be mitigated quickly.',
                         experience: -10
                     },
                     {
-                        text: 'Report to one person',
-                        outcome: 'All stakeholders need updates.',
+                        text: 'Report to one person within the project development team',
+                        outcome: 'All stakeholders require updates on progress and issues to form action plans going forward.',
                         experience: -5
                     }
                 ]
@@ -465,18 +465,18 @@ export class BuildVerificationQuiz extends BaseQuiz {
                         tool: 'Risk Assessment'
                     },
                     {
-                        text: 'Ignore risks',
-                        outcome: 'Risk management is crucial.',
+                        text: 'Attention to risk management should only be pursued when all functional tasks have been completed',
+                        outcome: 'Risk management is crucial and should be set out in the planning stages.',
                         experience: -15
                     },
                     {
-                        text: 'Handle issues as they occur',
-                        outcome: 'Proactive risk management needed.',
+                        text: 'Handle issues as they occur throughout the functional build verification process',
+                        outcome: 'Proactive risk management is required in planning stages to mitigate any potential project risks.',
                         experience: -10
                     },
                     {
-                        text: 'Focus on minor risks',
-                        outcome: 'Prioritize critical risks first.',
+                        text: 'Focus on multiple minor risks during the testing process',
+                        outcome: 'Critical risks should be prioritised first and decisions can be made by stakeholders on minor risks taking time constraints and user impact into consideration.',
                         experience: -5
                     }
                 ]
@@ -494,18 +494,18 @@ export class BuildVerificationQuiz extends BaseQuiz {
                         tool: 'Quality Dashboard'
                     },
                     {
-                        text: 'Count total tests only',
-                        outcome: 'Multiple metrics needed.',
+                        text: 'Count total test completion only for test coverage reporting',
+                        outcome: 'Multiple metrics are required for a measured outcome. Including pass and failure rates.',
                         experience: -15
                     },
                     {
-                        text: 'Skip measurements',
-                        outcome: 'Metrics guide improvement.',
+                        text: 'By minimal tracking of measurements, as functional testing takes priority',
+                        outcome: 'Metrics and measurements are equally as important as they guide future improvement.',
                         experience: -10
                     },
                     {
-                        text: 'Track time only',
-                        outcome: 'Quality metrics are crucial.',
+                        text: 'Track time only to make sure project time lines are met',
+                        outcome: 'Quality metrics are also crucial for a measured and affective outcome on improvement.',
                         experience: -5
                     }
                 ]
