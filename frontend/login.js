@@ -17,6 +17,10 @@ function showError(message) {
     }, 3000);
 }
 
+// Constants for validation
+const MIN_USERNAME_LENGTH = 3;
+const MIN_PASSWORD_LENGTH = 6;
+
 // Only run initialization if we're on the login page
 document.addEventListener('DOMContentLoaded', () => {
     // Check if we're on the login page
@@ -58,6 +62,17 @@ document.addEventListener('DOMContentLoaded', () => {
                 return;
             }
 
+            // Add length validation
+            if (username.length < MIN_USERNAME_LENGTH) {
+                showError(`Username must be at least ${MIN_USERNAME_LENGTH} characters long`);
+                return;
+            }
+
+            if (password.length < MIN_PASSWORD_LENGTH) {
+                showError(`Password must be at least ${MIN_PASSWORD_LENGTH} characters long`);
+                return;
+            }
+
             try {
                 const response = await api.login(username, password);
                 console.log('Login response:', response);
@@ -95,6 +110,17 @@ document.addEventListener('DOMContentLoaded', () => {
 
             if (!username || !password) {
                 showError('Please enter both username and password');
+                return;
+            }
+
+            // Add length validation
+            if (username.length < MIN_USERNAME_LENGTH) {
+                showError(`Username must be at least ${MIN_USERNAME_LENGTH} characters long`);
+                return;
+            }
+
+            if (password.length < MIN_PASSWORD_LENGTH) {
+                showError(`Password must be at least ${MIN_PASSWORD_LENGTH} characters long`);
                 return;
             }
 

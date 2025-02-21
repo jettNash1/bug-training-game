@@ -1156,11 +1156,17 @@ class AdminDashboard {
             console.log('Resetting password for:', username);
             
             // Prompt for new password
-            const newPassword = prompt('Enter the new password for ' + username + ':');
+            const newPassword = prompt('Enter the new password for ' + username + ' (minimum 6 characters):');
             
             // If user cancels the prompt or enters empty password, abort
             if (!newPassword) {
                 console.log('Password reset cancelled');
+                return false;
+            }
+
+            // Validate password length
+            if (newPassword.length < 6) {
+                this.showError('Password must be at least 6 characters long');
                 return false;
             }
 
@@ -1228,6 +1234,14 @@ class AdminDashboard {
 
     async createInterviewAccount(username, password, selectedQuizzes) {
         try {
+            // Validate username and password length
+            if (username.length < 3) {
+                throw new Error('Username must be at least 3 characters long');
+            }
+            if (password.length < 6) {
+                throw new Error('Password must be at least 6 characters long');
+            }
+
             // Convert selected quizzes to lowercase for consistency
             const allowedQuizzes = selectedQuizzes.map(quiz => quiz.toLowerCase());
             
@@ -1319,19 +1333,21 @@ class AdminDashboard {
                     <h2 style="margin-bottom: 1.5rem;">Create Interview Account</h2>
                     <form id="createInterviewForm">
                         <div class="form-group" style="margin-bottom: 1.5rem;">
-                            <label for="username" style="display: block; margin-bottom: 0.5rem; font-weight: 500;">Username:</label>
+                            <label for="username" style="display: block; margin-bottom: 0.5rem; font-weight: 500;">Username: (min. 3 characters)</label>
                             <input type="text" 
                                    id="username" 
                                    name="username" 
                                    required 
+                                   minlength="3"
                                    style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
                         </div>
                         <div class="form-group" style="margin-bottom: 1.5rem;">
-                            <label for="password" style="display: block; margin-bottom: 0.5rem; font-weight: 500;">Password:</label>
+                            <label for="password" style="display: block; margin-bottom: 0.5rem; font-weight: 500;">Password: (min. 6 characters)</label>
                             <input type="password" 
                                    id="password" 
                                    name="password" 
                                    required 
+                                   minlength="6"
                                    style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
                         </div>
                         <div class="form-group" style="margin-bottom: 1.5rem;">
