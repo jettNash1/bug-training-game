@@ -23,7 +23,7 @@ export class AutomationInterviewQuiz extends BaseQuiz {
         
         // Set the quiz name
         Object.defineProperty(this, 'quizName', {
-            value: 'automationInterview',
+            value: 'Automation Interview',
             writable: false,
             configurable: false,
             enumerable: true
