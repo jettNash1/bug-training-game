@@ -8,8 +8,8 @@ export class ContentCopyQuiz extends BaseQuiz {
             maxXP: 300,
             levelThresholds: {
                 basic: { questions: 5, minXP: 35 },
-                intermediate: { questions: 10, minXP: 120 },
-                advanced: { questions: 15, minXP: 250 }
+                intermediate: { questions: 10, minXP: 110 },
+                advanced: { questions: 15, minXP: 235 }
             },
             performanceThresholds: [
                 { threshold: 250, message: '🏆 Outstanding! You\'re a content copy expert!' },
