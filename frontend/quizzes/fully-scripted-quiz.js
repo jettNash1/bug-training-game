@@ -2,7 +2,7 @@ import { APIService } from '../api-service.js';
 import { BaseQuiz } from '../quiz-helper.js';
 import { QuizUser } from '../QuizUser.js';
 
-export class TesterMindsetQuiz extends BaseQuiz {
+export class FullyScriptedQuiz extends BaseQuiz {
     constructor() {
         const config = {
             maxXP: 300,
@@ -12,23 +12,23 @@ export class TesterMindsetQuiz extends BaseQuiz {
                 advanced: { questions: 15, minXP: 235 }
             },
             performanceThresholds: [
-                { threshold: 250, message: '🏆 Outstanding! You\'re a testing mindset expert!' },
-                { threshold: 200, message: '👏 Great job! You\'ve shown strong testing instincts!' },
+                { threshold: 250, message: '🏆 Outstanding! You\'re a fully scripted expert!' },
+                { threshold: 200, message: '👏 Great job! You\'ve shown strong fully scripted skills!' },
                 { threshold: 150, message: '👍 Good work! Keep practicing to improve further.' },
-                { threshold: 0, message: '📚 Consider reviewing testing mindset best practices and try again!' }
+                { threshold: 0, message: '📚 Consider reviewing fully scripted best practices and try again!' }
             ]
         };
         
         super(config);
-
-        // Set quiz name
+        
+        // Set the quiz name
         Object.defineProperty(this, 'quizName', {
-            value: 'tester-mindset',
+            value: 'fully-scripted',
             writable: false,
             configurable: false,
             enumerable: true
         });
-
+        
         // Initialize player state
         this.player = {
             name: '',
@@ -65,33 +65,33 @@ export class TesterMindsetQuiz extends BaseQuiz {
             return;
         }
 
-        // Basic Scenarios (Focus on Fundamental Mindset Concepts)
+        // Basic Scenarios (IDs 1-5)
         this.basicScenarios = [
             {
                 id: 1,
                 level: 'Basic',
-                title: 'Project Context',
-                description: "You're starting a new testing project. What's your first priority?",
+                title: 'Primary objective',
+                description: 'What is the main purpose of fully scripted testing?',
                 options: [
                     {
-                        text: 'Review requirements',
-                        outcome: 'Excellent! Understanding context is crucial for effective testing.',
+                        text: 'To provide complete freedom in testing with minimal structure',
+                        outcome: 'This describes exploratory testing and not precision based approach of a fully scripted project',
+                        experience: -10
+                    },
+                    {
+                        text: 'To ensure precision and accuracy through structured, detailed test cases',
+                        outcome: 'Correct! This ensures precision and accuracy, especially for high-risk applications.',
                         experience: 15,
-                        tool: 'Context Analysis Framework'
+                        tool: 'Scripted Testing Fundamentals'
                     },
                     {
-                        text: 'Begin extensive exploratory testing sessions to identify potential issues and document findings for immediate stakeholder review',
-                        outcome: 'Without understanding context, testing may miss critical issues.',
+                        text: 'To reduce testing time by using minimal documentation',
+                        outcome: 'This is not correct, this approach actually requires more documentation.',
                         experience: -5
                     },
                     {
-                        text: 'Create comprehensive test cases based on industry best practices and previous project experience',
-                        outcome: 'Test cases should be based on project context and requirements.',
-                        experience: -5
-                    },
-                    {
-                        text: 'Analyze historical test results',
-                        outcome: 'While helpful, previous results don\'t replace understanding current context.',
+                        text: 'To create a general framework approach for basic testing',
+                        outcome: 'While it creates a framework, it is specifically detailed and comprehensive rather than general.',
                         experience: 5
                     }
                 ]
@@ -99,148 +99,148 @@ export class TesterMindsetQuiz extends BaseQuiz {
             {
                 id: 2,
                 level: 'Basic',
-                title: 'Understanding the Audience',
-                description: 'How do you approach understanding the target audience for a new project?',
+                title: 'Test case estimation',
+                description: 'How many test cases should be planned per day of testing on average?',
                 options: [
                     {
-                        text: 'Research user needs',
-                        outcome: 'Perfect! User-centric thinking is essential for effective testing.',
+                        text: '10-20 test cases',
+                        outcome: 'This is too few to test cases to performed in a days testing activities.',
+                        experience: -5
+                    },
+                    {
+                        text: '50-70 test cases',
+                        outcome: 'Correct! This is the estimate described within the guidelines.',
                         experience: 15,
-                        tool: 'User Persona Template'
+                        tool: 'Test Planning'
                     },
                     {
-                        text: 'Apply personal usage patterns and preferences to determine the most likely user behaviors and testing scenarios',
-                        outcome: 'Users have diverse needs and characteristics that must be considered.',
-                        experience: -5
+                        text: '30-40 test cases',
+                        outcome: 'While this is a reasonable number, it\'s below the recommended range.',
+                        experience: 5
                     },
                     {
-                        text: 'Conduct detailed technical analysis of system architecture and performance metrics to establish testing priorities',
-                        outcome: 'Technical aspects are important but user needs are crucial.',
-                        experience: -5
-                    },
-                    {
-                        text: 'Wait for post-release feedback',
-                        outcome: 'Understanding users before testing helps prevent issues.',
-                        experience: 0
+                        text: '100-120 test cases',
+                        outcome: 'This is too many to execute effectively in one day.',
+                        experience: -10
                     }
                 ]
             },
             {
                 id: 3,
                 level: 'Basic',
-                title: 'Test Environment Setup',
-                description: "The test environment is different from production. What's your approach?",
+                title: 'Writing test cases',
+                description: 'What format is used for writing test cases in fully scripted testing?',
                 options: [
                     {
-                        text: 'Document environment differences',
-                        outcome: 'Excellent! Understanding environment differences is crucial for testing.',
-                        experience: 15,
-                        tool: 'Environment Comparison Tool'
-                    },
-                    {
-                        text: 'Proceed with testing while monitoring for any potential environmental impact on test results',
-                        outcome: 'Environment differences can affect test results and miss issues.',
+                        text: 'Random text format',
+                        outcome: 'This is not a format generally used for writing test case scenarios',
                         experience: -5
                     },
                     {
-                        text: 'Execute test cases in the production environment to ensure accurate results',
-                        outcome: 'Testing in production without proper controls is risky.',
-                        experience: -10
+                        text: 'Gherkin language',
+                        outcome: 'Correct! This is the correct format used for ease of understanding.',
+                        experience: 15,
+                        tool: 'Test Case Writing'
                     },
                     {
-                        text: 'Request environment replication',
-                        outcome: 'Good thinking, but first document current differences.',
-                        experience: 10
+                        text: 'Basic bullet point structure',
+                        outcome: 'While structured lists are used, Gherkin is the required format.',
+                        experience: 5
+                    },
+                    {
+                        text: 'Code snippets only',
+                        outcome: 'Code snippets aren\'t the primary format for test cases',
+                        experience: -10
                     }
                 ]
             },
             {
                 id: 4,
                 level: 'Basic',
-                title: 'Test Documentation',
-                description: "You've found several issues. How do you document them?",
+                title: 'Priority Levels',
+                description: 'What are the priority levels used in fully scripted testing?',
                 options: [
                     {
-                        text: 'Document with steps and results',
-                        outcome: 'Perfect! Clear documentation helps developers fix issues efficiently.',
-                        experience: 15,
-                        tool: 'Issue Documentation Template'
-                    },
-                    {
-                        text: 'Initiate multiple communication channels including chat messages, emails, and verbal discussions for each discovered issue',
-                        outcome: 'Informal communication isn\'t sufficient for tracking issues.',
+                        text: 'Critical, Major, Minor',
+                        outcome: 'These are not the levels described in the guidelines.',
                         experience: -5
                     },
                     {
-                        text: 'Capture and archive comprehensive visual documentation through multiple screenshot angles and screen recordings',
-                        outcome: 'Screenshots alone don\'t provide enough context.',
-                        experience: -10
+                        text: 'High, Medium, Low',
+                        outcome: 'Correct! These are the levels described in the fully scripted approach guidelines.',
+                        experience: 15,
+                        tool: 'Priority Management'
                     },
                     {
-                        text: 'Create brief descriptions only',
-                        outcome: 'More detail would help developers understand and fix issues.',
+                        text: 'Urgent, Normal, Low',
+                        outcome: 'While this describes three levels including low, the other terms aren\'t correct',
                         experience: 5
+                    },
+                    {
+                        text: '1, 2, 3, 4, 5',
+                        outcome: 'Numeric priorities aren\'t used in this system',
+                        experience: -10
                     }
                 ]
             },
             {
                 id: 5,
                 level: 'Basic',
-                title: 'Test Planning',
-                description: 'How do you prepare for a new testing project?',
+                title: 'Smoke Tests',
+                description: 'Where should smoke tests be placed in the test script?',
                 options: [
                     {
-                        text: 'Review requirements, create test strategy, and identify risks',
-                        outcome: 'Excellent! Thorough preparation leads to effective testing.',
+                        text: 'At the end of all the test suites',
+                        outcome: 'This isn\'t the specified location.',
+                        experience: -5
+                    },
+                    {
+                        text: 'In the topmost suite of the primary functional tests tab',
+                        outcome: 'Correct! This is where the guidelines state the smoke tests should be placed.',
                         experience: 15,
-                        tool: 'Test Planning Framework'
+                        tool: 'Test Organization'
                     },
                     {
-                        text: 'Start testing without planning',
-                        outcome: 'Lack of planning can lead to inefficient testing.',
-                        experience: -5
+                        text: 'In a separate document',
+                        outcome: 'They should be in the main test script for ease of use and project metrics',
+                        experience: -10
                     },
                     {
-                        text: 'Copy test plan from previous project',
-                        outcome: 'Each project needs its own tailored test approach.',
-                        experience: -5
-                    },
-                    {
-                        text: 'Ask developers what to test',
-                        outcome: 'Developer input helps but proper planning is needed.',
+                        text: 'Within each test suite in the test script',
+                        outcome: 'While smoke tests are important, they should be in the topmost suite',
                         experience: 5
                     }
                 ]
             }
         ];
 
-        // Intermediate Scenarios (Different Testing Approaches)
+        // Intermediate Scenarios (IDs 6-10)
         this.intermediateScenarios = [
             {
                 id: 6,
                 level: 'Intermediate',
-                title: 'Exploratory Testing',
-                description: "You're conducting exploratory testing. What's your mindset?",
+                title: 'Script differences',
+                description: 'What is the main difference between a standard test script and a fully scripted test?',
                 options: [
                     {
-                        text: 'Be curious, investigative, and think outside the box',
-                        outcome: 'Perfect! Exploratory testing requires creative thinking.',
+                        text: 'The number of test cases is generally larger in a fully scripted test',
+                        outcome: 'Whilst this is generally true, it isn\'t the main differentiator.',
+                        experience: -5
+                    },
+                    {
+                        text: 'The addition of \'Test Steps\' and \'Expected Behaviour\' columns in primary Environments',
+                        outcome: 'Correct! This is a key difference and these columns are not included in a standard test script',
                         experience: 20,
-                        tool: 'Exploratory Testing Guide'
+                        tool: 'Script Management'
                     },
                     {
-                        text: 'Follow a strict test script',
-                        outcome: 'Exploratory testing needs flexibility and creativity.',
+                        text: 'The testing environments used is only reported in one test script',
+                        outcome: 'The test environments that have been covered should always be stated on both types of script',
                         experience: -10
                     },
                     {
-                        text: 'Test only happy paths',
-                        outcome: 'Exploratory testing should cover various scenarios.',
-                        experience: -10
-                    },
-                    {
-                        text: 'Focus only on finding bugs',
-                        outcome: 'Understanding the system is also important.',
+                        text: 'The level of detail in each test case differs between the two types of script',
+                        outcome: 'While this is related, \'Test Steps\' and \'Expected Behaviour\' specific columns included in a full test script are the main difference',
                         experience: 5
                     }
                 ]
@@ -248,271 +248,271 @@ export class TesterMindsetQuiz extends BaseQuiz {
             {
                 id: 7,
                 level: 'Intermediate',
-                title: 'Scripted Testing',
-                description: 'During scripted testing, you notice an issue outside the test cases. What do you do?',
+                title: 'Test case priority',
+                description: 'How should test cases be prioritised in fully scripted testing?',
                 options: [
                     {
-                        text: 'Document the issue and continue with test cases',
-                        outcome: 'Excellent! Balance following scripts while noting other issues.',
+                        text: 'These should be based on tester preference and experience',
+                        outcome: 'This would not be a true test of priority.',
+                        experience: -10
+                    },
+                    {
+                        text: 'These should be based on impact, frequency of use, and potential for critical defects',
+                        outcome: 'Correct! This is the correct criteria used when deciding priority.',
                         experience: 20,
-                        tool: 'Test Case Management'
+                        tool: 'Priority Assessment'
                     },
                     {
-                        text: 'Ignore it as it\'s not in the test cases',
-                        outcome: 'All issues should be documented, even if outside scope.',
-                        experience: -15
+                        text: 'Priority of test cases should be based on system development timeline',
+                        outcome: 'This Is not a main factor when taking priority into consideration',
+                        experience: -5
                     },
                     {
-                        text: 'Stop scripted testing to investigate',
-                        outcome: 'Document the issue but complete planned testing first.',
-                        experience: 0
-                    },
-                    {
-                        text: 'Add new test cases immediately',
-                        outcome: 'Document first, update test cases after current execution.',
-                        experience: 10
+                        text: 'These should be based on complexity',
+                        outcome: 'While complexity is considered, it\'s not the only factor',
+                        experience: 5
                     }
                 ]
             },
             {
                 id: 8,
                 level: 'Intermediate',
-                title: 'Test Support Approach',
-                description: 'You\'re providing ongoing test support. How do you maintain effectiveness?',
+                title: 'Environment Scoping',
+                description: 'What should be done with non-scoped environments in the script?',
                 options: [
                     {
-                        text: 'Stay adaptable and maintain clear communication with the team',
-                        outcome: 'Perfect! Flexibility and communication are key for support.',
-                        experience: 20,
-                        tool: 'Support Communication Template'
-                    },
-                    {
-                        text: 'Stick to initial test plan only',
-                        outcome: 'Support requires adapting to changing needs.',
-                        experience: -10
-                    },
-                    {
-                        text: 'Wait for tasks to be assigned',
-                        outcome: 'Proactive support is more valuable than reactive.',
+                        text: 'These should be deleted out of the script completely',
+                        outcome: 'This approach can affect metrics in a detrimental manner',
                         experience: -5
                     },
                     {
-                        text: 'Focus only on new features',
-                        outcome: 'Support includes both new and existing functionality.',
-                        experience: 0
+                        text: 'Grey them out and remove dashes from results/date columns',
+                        outcome: 'Correct! This is the correct approach to ensure these environments are not included in the metrics.',
+                        experience: 20,
+                        tool: 'Environment Management'
+                    },
+                    {
+                        text: 'Leave all out of scope environments unchanged',
+                        outcome: 'They should be modified, or they will affect the overall metrics',
+                        experience: -10
+                    },
+                    {
+                        text: 'Hide the non-scoped environment from view within the script',
+                        outcome: 'While removing them from view is good, greying out is the specific requirement',
+                        experience: 5
                     }
                 ]
             },
             {
                 id: 9,
                 level: 'Intermediate',
-                title: 'Risk Assessment',
-                description: 'You identify a potential risk in the project. How do you handle it?',
+                title: 'Compatibility testing',
+                description: 'What is the recommended approach for compatibility testing in fully scripted testing?',
                 options: [
                     {
-                        text: 'Document the risk and communicate it to stakeholders promptly',
-                        outcome: 'Excellent! Early risk communication allows better mitigation.',
-                        experience: 20,
-                        tool: 'Risk Assessment Matrix'
+                        text: 'Leave it as a low priority feature to be tested if there is time',
+                        outcome: 'Compatibility testing is required and leaving it out entirely may result in missed issues.',
+                        experience: -15
                     },
                     {
-                        text: 'Wait to see if it becomes an issue',
-                        outcome: 'Early risk identification helps prevent issues.',
+                        text: 'Run it in parallel with primary environment testing',
+                        outcome: 'Correct! This is an approach that can be taken and can maximise time management.',
+                        experience: 20,
+                        tool: 'Compatibility Testing'
+                    },
+                    {
+                        text: 'Do it only after all other testing is completed',
+                        outcome: 'This can be an ineffective time management approach and leave environment testing short',
                         experience: -10
                     },
                     {
-                        text: 'Try to fix it yourself',
-                        outcome: 'Risks should be communicated to appropriate stakeholders.',
+                        text: 'Test one environment at a time after primary environments have fully tested',
+                        outcome: 'While this can work, parallel testing is recommended when possible',
                         experience: -5
-                    },
-                    {
-                        text: 'Mention it in the next meeting',
-                        outcome: 'Risks need prompt communication, not delayed reporting.',
-                        experience: 0
                     }
                 ]
             },
             {
                 id: 10,
                 level: 'Intermediate',
-                title: 'Test Coverage',
-                description: 'How do you ensure adequate test coverage for a feature?',
+                title: 'Document references',
+                description: 'How should document references be handled in test cases?',
                 options: [
                     {
-                        text: 'Implement comprehensive testing methodologies across all possible test scenarios and edge cases with detailed documentation',
-                        outcome: 'Too broad an approach can be inefficient.',
-                        experience: -5
-                    },
-                    {
-                        text: 'Use risk-based testing',
-                        outcome: 'Perfect! Prioritizing based on risk is efficient.',
-                        experience: 20,
-                        tool: 'Risk Assessment Matrix'
-                    },
-                    {
-                        text: 'Execute extensive regression testing protocols while maintaining detailed coverage metrics and trend analysis',
-                        outcome: 'Regression testing alone doesn\'t ensure complete coverage.',
+                        text: 'They are not needed as functionality can generally be solved by the tester',
+                        outcome: 'References are important to assist with testing activities.',
                         experience: -10
                     },
                     {
-                        text: 'Conduct thorough analysis of all system components and their interconnected dependencies',
-                        outcome: 'System analysis should be guided by risk assessment.',
-                        experience: 0
+                        text: 'Include references that aid in creation and execution of tests',
+                        outcome: 'Correct! This is the correct approach to help testers with execution of test cases.',
+                        experience: 20,
+                        tool: 'Documentation Management'
+                    },
+                    {
+                        text: 'Only include technical references within the documentation',
+                        outcome: 'All relevant documentation references should be included, not just technical references',
+                        experience: -5
+                    },
+                    {
+                        text: 'Add references after testing as a certain amount of exploratory testing helps find issues',
+                        outcome: 'While references can be added later, they should ideally be included during creation',
+                        experience: 5
                     }
                 ]
             }
         ];
 
-        // Advanced Scenarios (Complex situations)
+        // Advanced Scenarios (IDs 11-15)
         this.advancedScenarios = [
             {
                 id: 11,
                 level: 'Advanced',
-                title: 'Critical Production Issue',
-                description: 'A critical bug is reported in production affecting user data. What\'s your immediate response?',
+                title: 'Test execution planning',
+                description: 'What are the key considerations when planning test execution timing?',
                 options: [
                     {
-                        text: 'Alert incident team with evidence and begin systematic investigation',
-                        outcome: 'Excellent! Quick escalation and systematic approach is crucial.',
+                        text: 'Consider the number of test cases included within the script',
+                        outcome: 'Other factors have to be considered including complexity and environment coverage.',
+                        experience: -5
+                    },
+                    {
+                        text: 'Consider allocated days, test case complexity, and environment coverage',
+                        outcome: 'Correct! These are all important factors when considering test execution planning',
                         experience: 25,
-                        tool: 'Incident Response Protocol'
+                        tool: 'Test Planning'
                     },
                     {
-                        text: 'Start fixing the bug immediately',
-                        outcome: 'Follow incident response process before attempting fixes.',
-                        experience: -15
-                    },
-                    {
-                        text: 'Document the issue for next sprint',
-                        outcome: 'Critical issues need immediate attention.',
+                        text: 'Environment coverage should be solely focused on as this determines resources required',
+                        outcome: 'This is one factor. However, others need to be taken into consideration including test case complexity',
                         experience: -10
                     },
                     {
-                        text: 'Investigate root cause before alerting anyone',
-                        outcome: 'Alert team first, then investigate systematically.',
-                        experience: -5
+                        text: 'Consider the primary environment testing time',
+                        outcome: 'While important, other factors must be considered including environment coverage',
+                        experience: -15
                     }
                 ]
             },
             {
                 id: 12,
                 level: 'Advanced',
-                title: 'Test Strategy Evolution',
-                description: 'The project scope has significantly changed mid-way. How do you adapt your test strategy?',
+                title: 'Requirements changes',
+                description: 'How should changes to requirements during testing be handled?',
                 options: [
                     {
-                        text: 'Review changes, update strategy, and communicate impacts',
-                        outcome: 'Perfect! Systematic adaptation ensures continued effectiveness.',
-                        experience: 25,
-                        tool: 'Strategy Adaptation Framework'
-                    },
-                    {
-                        text: 'Continue with original strategy',
-                        outcome: 'Strategy must evolve with project changes.',
-                        experience: -15
-                    },
-                    {
-                        text: 'Create entirely new strategy',
-                        outcome: 'Modify existing strategy rather than starting over.',
+                        text: 'Continue with the testing initially set out during planning',
+                        outcome: 'Changes to requirements need to be addressed and factored into testing.',
                         experience: -10
                     },
                     {
-                        text: 'Focus only on new requirements',
-                        outcome: 'Consider both new and existing requirements.',
+                        text: 'Update test cases and document impact on timeline and coverage',
+                        outcome: 'Correct! This addresses both technical and project management needs.',
+                        experience: 25,
+                        tool: 'Change Management'
+                    },
+                    {
+                        text: 'Testing should be started again to compensate for the new requirements',
+                        outcome: 'This is inefficient as test cases need to reflect ongoing changes',
                         experience: -5
+                    },
+                    {
+                        text: 'Update the affected test cases only and continue with testing',
+                        outcome: 'While this is needed, impact assessment and timeline updates are also required',
+                        experience: 5
                     }
                 ]
             },
             {
                 id: 13,
                 level: 'Advanced',
-                title: 'Resource Constraints',
-                description: 'You have limited time and resources for testing. How do you proceed?',
+                title: 'Edge cases',
+                description: 'What is the recommended approach for handling edge cases in fully scripted testing?',
                 options: [
                     {
-                        text: 'Prioritize critical functionality and communicate constraints',
-                        outcome: 'Excellent! Risk-based prioritization maximizes value.',
+                        text: 'All edge cases should be included in the test script for test execution',
+                        outcome: 'Time constraints would make this impossible.',
+                        experience: -5
+                    },
+                    {
+                        text: 'Balance them against core objectives based on risk and time constraints',
+                        outcome: 'Correct! This is a correct risk-based approach.',
                         experience: 25,
-                        tool: 'Test Prioritization Matrix'
+                        tool: 'Risk Assessment'
                     },
                     {
-                        text: 'Try to test everything quickly',
-                        outcome: 'Rushed testing may miss critical issues.',
-                        experience: -15
-                    },
-                    {
-                        text: 'Skip testing lower priority items',
-                        outcome: 'Communicate and agree on scope reduction.',
+                        text: 'Leave edge case inclusion until everything else has been covered completely',
+                        outcome: 'This could miss important test scenarios due to time management',
                         experience: -10
                     },
                     {
-                        text: 'Request deadline extension only',
-                        outcome: 'Prioritization needed even with extended deadline.',
-                        experience: -5
+                        text: 'Test them only in primary environments',
+                        outcome: 'While this is better than nothing, a balanced approach is required',
+                        experience: 5
                     }
                 ]
             },
             {
                 id: 14,
                 level: 'Advanced',
-                title: 'Team Collaboration',
-                description: 'Different team members have conflicting test approaches. How do you handle this?',
+                title: 'User journey',
+                description: 'How should user journey testing be integrated with functional testing?',
                 options: [
                     {
-                        text: 'Facilitate discussion to align on best practices and document agreement',
-                        outcome: 'Perfect! Collaborative alignment improves team effectiveness.',
+                        text: 'These should be kept completely separate',
+                        outcome: 'They should be integrated with functional tests as it forms parity during testing activites.',
+                        experience: -5
+                    },
+                    {
+                        text: 'Create user journeys that align with functional test suites while maintaining distinct objectives',
+                        outcome: 'Correct! This is the correct approach and creates distinct parity with the associated test suites.',
                         experience: 25,
-                        tool: 'Test Approach Alignment Guide'
+                        tool: 'Test Integration'
                     },
                     {
-                        text: 'Let each person use their preferred approach',
-                        outcome: 'Inconsistent approaches can affect quality.',
-                        experience: -15
-                    },
-                    {
-                        text: 'Enforce your preferred approach',
-                        outcome: 'Collaboration is better than enforcement.',
+                        text: 'Functional tests can be replaced with user journeys',
+                        outcome: 'Both scripting approaches are essential to testing activities',
                         experience: -10
                     },
                     {
-                        text: 'Escalate to management immediately',
-                        outcome: 'Try team discussion before escalation.',
-                        experience: -5
+                        text: 'Combine them into single test cases',
+                        outcome: 'While they should be aligned, they serve different purposes',
+                        experience: 5
                     }
                 ]
             },
             {
                 id: 15,
                 level: 'Advanced',
-                title: 'Quality Advocacy',
-                description: 'The team is pressured to reduce testing time. How do you respond?',
+                title: 'Cross platform testing',
+                description: 'What approach should be taken when dealing with cross-platform testing in fully scripted testing?',
                 options: [
                     {
-                        text: 'Present data-driven analysis of risks and quality impacts',
-                        outcome: 'Excellent! Data-driven advocacy helps maintain quality.',
+                        text: 'Use identical test cases for all platforms for consistency',
+                        outcome: 'Platform differences need to be considered and documented as some platforms have specific features.',
+                        experience: -5
+                    },
+                    {
+                        text: 'Adapt test cases for platform-specific features while maintaining core test objectives',
+                        outcome: 'Correct! This is the recommended approach and maintains core coverage.',
                         experience: 25,
-                        tool: 'Quality Impact Analysis'
+                        tool: 'Platform Testing'
                     },
                     {
-                        text: 'Accept the reduced timeline without discussion',
-                        outcome: 'Quality concerns should be raised professionally.',
-                        experience: -15
-                    },
-                    {
-                        text: 'Refuse to reduce testing time',
-                        outcome: 'Collaborate to find balanced solutions.',
+                        text: 'Create completely separate test suites for each platform',
+                        outcome: 'This is inefficient, and test cases should be adapted to suit different platforms',
                         experience: -10
                     },
                     {
-                        text: 'Reduce test coverage without analysis',
-                        outcome: 'Impact analysis needed before reducing coverage.',
-                        experience: -5
+                        text: 'Test platform-specific features only as these areas require priority testing',
+                        outcome: 'While platform-specific features need attention, core functionality must also be tested',
+                        experience: 5
                     }
                 ]
             }
         ];
 
-        // Initialize UI and event listeners
+        // Initialize UI and add event listeners
         this.initializeEventListeners();
 
         this.isLoading = false;
@@ -1101,9 +1101,9 @@ export class TesterMindsetQuiz extends BaseQuiz {
         let recommendationsHTML = '';
 
         if (score >= 95 && weakAreas.length === 0) {
-            recommendationsHTML = '<p>🌟 Outstanding! You have demonstrated mastery in all aspects of tester mindset. You clearly understand the nuances of tester mindset and are well-equipped to handle any tester mindset challenges!</p>';
+            recommendationsHTML = '<p>🌟 Outstanding! You have demonstrated mastery in all aspects of the fully scripted testing approach. You clearly understand the nuances of fully scripted testing and are well-equipped to handle any testing challenges!</p>';
         } else if (score >= 80) {
-            recommendationsHTML = '<p>🌟 Excellent performance! Your tester mindset skills are very strong. To achieve complete mastery, consider focusing on:</p>';
+            recommendationsHTML = '<p>🌟 Excellent performance! Your fully scripted testing skills are very strong. To achieve complete mastery, consider focusing on:</p>';
             recommendationsHTML += '<ul>';
             if (weakAreas.length > 0) {
                 weakAreas.forEach(area => {
@@ -1135,38 +1135,41 @@ export class TesterMindsetQuiz extends BaseQuiz {
         const title = scenario.title.toLowerCase();
         const description = scenario.description.toLowerCase();
 
-        if (title.includes('context') || description.includes('context')) {
-            return 'Project Context Understanding';
+        if (title.includes('test case') || description.includes('test case')) {
+            return 'Test Case Management';
         } else if (title.includes('environment') || description.includes('environment')) {
-            return 'Test Environment Management';
-        } else if (title.includes('documentation') || description.includes('documentation')) {
-            return 'Test Documentation';
-        } else if (title.includes('planning') || description.includes('planning')) {
-            return 'Test Planning';
-        } else if (title.includes('risk') || description.includes('risk')) {
-            return 'Risk Assessment';
-        } else if (title.includes('coverage') || description.includes('coverage')) {
-            return 'Test Coverage';
-        } else if (title.includes('collaboration') || description.includes('collaboration')) {
-            return 'Team Collaboration';
+            return 'Environment Management';
+        } else if (title.includes('script') || description.includes('script')) {
+            return 'Script Organization';
+        } else if (title.includes('priority') || description.includes('priority')) {
+            return 'Priority Management';
+        } else if (title.includes('requirement') || description.includes('requirement')) {
+            return 'Requirements Management';
+        } else if (title.includes('document') || description.includes('document')) {
+            return 'Documentation';
+        } else if (title.includes('platform') || description.includes('platform')) {
+            return 'Cross-platform Testing';
+        } else if (title.includes('user journey') || description.includes('user journey')) {
+            return 'User Journey Testing';
         } else {
-            return 'General Testing Approach';
+            return 'General Scripted Testing';
         }
     }
 
     getRecommendation(area) {
         const recommendations = {
-            'Project Context Understanding': 'Focus on improving requirement analysis and understanding business context before testing.',
-            'Test Environment Management': 'Enhance your ability to identify and document environment differences and their impact on testing.',
-            'Test Documentation': 'Practice creating clear, detailed test documentation that helps track issues and communicate effectively.',
-            'Test Planning': 'Work on developing comprehensive test strategies that consider project scope and risks.',
-            'Risk Assessment': 'Strengthen your ability to identify, prioritize, and communicate potential risks in testing.',
-            'Test Coverage': 'Improve your approach to ensuring adequate test coverage across different testing types and scenarios.',
-            'Team Collaboration': 'Enhance communication with team members and stakeholders during the testing process.',
-            'General Testing Approach': 'Continue developing fundamental testing principles and methodologies.'
+            'Test Case Management': 'Focus on writing clear, detailed test cases using Gherkin format and proper estimation techniques.',
+            'Environment Management': 'Improve handling of environment scoping and compatibility testing across different platforms.',
+            'Script Organization': 'Enhance understanding of test script structure, including smoke tests placement and script differences.',
+            'Priority Management': 'Work on prioritizing test cases based on impact, frequency, and potential for critical defects.',
+            'Requirements Management': 'Strengthen ability to handle requirement changes and maintain test coverage.',
+            'Documentation': 'Develop better documentation practices with proper references and test step details.',
+            'Cross-platform Testing': 'Focus on adapting test cases for platform-specific features while maintaining core objectives.',
+            'User Journey Testing': 'Improve integration of user journeys with functional test suites.',
+            'General Scripted Testing': 'Continue developing fundamental fully scripted testing principles and methodologies.'
         };
 
-        return recommendations[area] || 'Continue practicing core testing mindset principles.';
+        return recommendations[area] || 'Continue practicing core fully scripted testing principles.';
     }
 
     async endGame(failed = false) {
@@ -1223,7 +1226,7 @@ export class TesterMindsetQuiz extends BaseQuiz {
         }
 
         document.getElementById('final-score').textContent = `Final Score: ${finalScore}/${this.maxXP}`;
-        
+
         // Update the quiz complete header based on status
         const quizCompleteHeader = document.querySelector('#end-screen h2');
         if (quizCompleteHeader) {
@@ -1284,6 +1287,6 @@ export class TesterMindsetQuiz extends BaseQuiz {
 
 // Start the quiz when the page loads
 document.addEventListener('DOMContentLoaded', () => {
-    const quiz = new TesterMindsetQuiz();
+    const quiz = new FullyScriptedQuiz();
     quiz.startGame();
 }); 
