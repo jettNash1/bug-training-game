@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fully Scripted Testing Quiz</title>
+    <link rel="icon" type="image/x-icon" href="../assets/favicon.ico">
+    <link rel="stylesheet" href="../styles.css">
+    <script type="module" src="../config.js"></script>
+    <script type="module" src="../QuizUser.js"></script>
+    <script type="module" src="../api-service.js"></script>
+    <script type="module" src="../login.js"></script>
+    <script type="module" src="../auth.js"></script>
+    <script type="module" src="../quiz-helper.js"></script>
+    <script type="module">
+        import { handleLogout } from '../auth.js';
+        window.handleLogout = handleLogout;
+    </script>
+    <script type="module" src="../quizzes/fully-scripted-quiz.js"></script>
+</head>
+<body>
+    <header class="app-header">
+        <div class="logo">
+            <h1>QA Learning Hub</h1>
+        </div>
+        <div class="user-menu">
+            <div class="user-info">
+                <div class="username" id="headerUsername"></div>
+                <div class="user-role">Learner</div>
+            </div>
+            <button class="logout-button" onclick="handleLogout()">Logout</button>
+        </div>
+    </header>
+
+    <div class="quiz-container">
+        <div class="quiz-header">
+            <a href="../index.html" class="back-link">← Back to Hub</a>
+            <div class="quiz-progress">
+                <div class="level-info">
+                    <span id="level-indicator">Level: Basic</span>
+                    <span id="experience-display">XP: 0/300</span>
+                </div>
+                <div class="progress-bar">
+                    <div id="progress-fill"></div>
+                </div>
+                <div id="question-progress" class="question-counter">Question: 0/15</div>
+            </div>
+        </div>
+
+        <!-- Game Screen -->
+        <div id="game-screen" class="quiz-card" role="main" aria-live="polite">
+            <div id="level-transition-container"></div>
+            
+            <div class="question-section">
+                <h2 id="scenario-title" tabindex="0"></h2>
+                <p id="scenario-description" tabindex="0"></p>
+            </div>
+            <form id="options-form" class="options-section">
+                <div id="options-container">
+                    <!-- Options will be dynamically inserted here -->
+                </div>
+                <button type="submit" id="submit-btn" class="submit-button">Submit Answer</button>
+            </form>
+        </div>
+
+        <!-- Outcome Screen -->
+        <div id="outcome-screen" class="quiz-card hidden">
+            <div class="outcome-content">
+                <h3>Outcome</h3>
+                <p id="outcome-text"></p>
+                <div id="rewards">
+                    <p id="xp-gained"></p>
+                    <p id="tool-gained"></p>
+                </div>
+                <button id="continue-btn" class="submit-button">Continue</button>
+            </div>
+        </div>
+
+        <!-- End Screen -->
+        <div id="end-screen" class="quiz-card hidden">
+            <h2>Quiz Complete!</h2>
+            <div id="final-score"></div>
+            <div id="performance-summary"></div>
+            
+            <div class="review-section">
+                <h3>Question Review</h3>
+                <div id="question-review" class="review-list"></div>
+            </div>
+            
+            <div class="recommendations-section">
+                <h3>Recommendations</h3>
+                <div id="recommendations"></div>
+            </div>
+
+            <a href="../index.html" class="back-link">← Back to Hub</a>
+        </div>
+
+        <div id="loading-indicator" class="loading-indicator hidden">
+            <div class="spinner"></div>
+            <span>Loading...</span>
+        </div>
+    </div>
+</body>
+</html> 
