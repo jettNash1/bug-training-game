@@ -65,7 +65,7 @@ export class IssueTrackingToolsQuiz extends BaseQuiz {
             return;
         }
 
-        // Basic Scenarios (IDs 1-5, 75 XP total)
+        // Basic Scenarios (IDs 1-5)
         this.basicScenarios = [
             {
                 id: 1,
@@ -80,18 +80,18 @@ export class IssueTrackingToolsQuiz extends BaseQuiz {
                         tool: 'Issue Creation'
                     },
                     {
-                        text: 'Email the issue details to the developer',
-                        outcome: 'Issues should be logged in the tracking tool.',
+                        text: 'Email the issue details to the developer so they can start debugging straight away',
+                        outcome: 'Issues should be logged in a tracking tool for traceability.',
                         experience: -10
                     },
                     {
-                        text: 'Write the issue in a document',
-                        outcome: 'Issues need to be logged in the tracking tool for visibility.',
+                        text: 'Write the issue in a document for bulk upload at a later date',
+                        outcome: 'Issues need to be logged in the tracking tool straight away for visibility and traceability.',
                         experience: -5
                     },
                     {
-                        text: 'Wait for someone else to log the issue',
-                        outcome: 'Proactive issue logging is essential.',
+                        text: 'Send the issue to a colleague for environment reproduction rates and ask them to log it to the tracker',
+                        outcome: 'Whilst reproduction rates are important, proactive issue logging is essential and relates to coverage and good time management.',
                         experience: 0
                     }
                 ]
@@ -109,18 +109,18 @@ export class IssueTrackingToolsQuiz extends BaseQuiz {
                         tool: 'Project Search'
                     },
                     {
-                        text: 'Scroll through all projects manually',
+                        text: 'Scroll through the projects manually to locate the correct one',
                         outcome: 'Using the search bar is more efficient.',
                         experience: -10
                     },
                     {
-                        text: 'Ask a colleague for the project location',
-                        outcome: 'Using the search bar is the best approach.',
+                        text: 'Ask a colleague who is working on the project for the location',
+                        outcome: 'Using the search bar is the best approach, as to not distract others from project work unless absolutely essential.',
                         experience: -5
                     },
                     {
-                        text: 'Wait for the project to appear in notifications',
-                        outcome: 'Proactive searching is more effective.',
+                        text: 'Navigate to the project when notifications are returned',
+                        outcome: 'Proactive searching is more effective as a notification may not arrive until late in the day if at all.',
                         experience: 0
                     }
                 ]
@@ -138,18 +138,18 @@ export class IssueTrackingToolsQuiz extends BaseQuiz {
                         tool: 'Issue Editing'
                     },
                     {
-                        text: 'Delete the issue and create a new one',
+                        text: 'Delete the issue and create a new one for completeness',
                         outcome: 'Editing is more efficient than recreating.',
                         experience: -10
                     },
                     {
-                        text: 'Email changes to the project manager',
+                        text: 'Email changes to the project manager for them to update',
                         outcome: 'Changes should be made directly in the tool.',
                         experience: -5
                     },
                     {
-                        text: 'Wait for someone else to edit the issue',
-                        outcome: 'Proactive issue management is essential.',
+                        text: 'Message someone in the team with findings so they can edit the issue',
+                        outcome: 'Proactive issue management is essential, and ticket updates should be owned as to not take others away from project work unnecessarily.',
                         experience: 0
                     }
                 ]
@@ -167,18 +167,18 @@ export class IssueTrackingToolsQuiz extends BaseQuiz {
                         tool: 'Issue Filtering'
                     },
                     {
-                        text: 'Manually search through all issues',
+                        text: 'Manually search through all issues to find the required ticket',
                         outcome: 'Using filters is more efficient.',
                         experience: -10
                     },
                     {
-                        text: 'Ask a colleague to find the issues',
-                        outcome: 'Using filters is the best approach.',
+                        text: 'Ask a colleague for assistance to find the issues',
+                        outcome: 'Using filters is the best approach and a colleague should only be asked if they are familiar with the project and if all other avenues have been exhausted.',
                         experience: -5
                     },
                     {
-                        text: 'Wait for issues to be sorted automatically',
-                        outcome: 'Proactive filtering is more effective.',
+                        text: 'Collapse all issues to make it easier to filter through to the required ticket',
+                        outcome: 'Whilst this may make it easier to manually search. Using the filtering feature is more effective.',
                         experience: 0
                     }
                 ]
@@ -196,18 +196,18 @@ export class IssueTrackingToolsQuiz extends BaseQuiz {
                         tool: 'Kanban Understanding'
                     },
                     {
-                        text: 'A tool that only uses lists',
+                        text: 'A tool that uses a list format of submitted tickets',
                         outcome: 'Kanban uses lanes and cards, not just lists.',
                         experience: -10
                     },
                     {
-                        text: 'A tool that tracks time spent on issues',
+                        text: 'A tool that tracks time spent on all issues raised against a project',
                         outcome: 'Kanban focuses on workflow management.',
                         experience: -5
                     },
                     {
-                        text: 'A tool that only tracks bugs',
-                        outcome: 'Kanban can manage various types of issues.',
+                        text: 'A tool that tracks all bugs related to a project',
+                        outcome: 'Kanban can manage various types of tickets, including tasks and stories.',
                         experience: 0
                     }
                 ]
@@ -223,24 +223,24 @@ export class IssueTrackingToolsQuiz extends BaseQuiz {
                 description: 'You need to change the fixer for multiple issues. What\'s the most efficient approach?',
                 options: [
                     {
-                        text: 'Use bulk edit feature, select issues with checkboxes, and change fixer for all selected',
+                        text: 'Use the bulk edit feature, select issues with checkboxes, and change \'fixer\' for all selected',
                         outcome: 'Perfect! This is the most efficient way to edit multiple issues.',
                         experience: 20,
                         tool: 'Bulk Editing'
                     },
                     {
-                        text: 'Edit each issue individually',
+                        text: 'Edit each issue individually and add the \'fixer\' details for each one',
                         outcome: 'Bulk editing is more efficient for multiple changes.',
                         experience: -15
                     },
                     {
-                        text: 'Ask PM to make the changes',
-                        outcome: 'Use available bulk edit features when you have access.',
+                        text: 'Ask the project manager to make the specified changes',
+                        outcome: 'The bulk edit feature should be used if you have correct permissions as to not take focus away from other tasks that are essential to project managers.',
                         experience: -10
                     },
                     {
-                        text: 'Leave comment on each issue',
-                        outcome: 'Direct bulk editing is more effective.',
+                        text: 'Leave a comment on each issue that states the new \'fixer\' details',
+                        outcome: 'Direct bulk editing is more efficient and effective.',
                         experience: 0
                     }
                 ]
@@ -258,18 +258,18 @@ export class IssueTrackingToolsQuiz extends BaseQuiz {
                         tool: 'Reporting'
                     },
                     {
-                        text: 'Manually count all issues',
-                        outcome: 'Using built-in reporting features is more efficient.',
+                        text: 'Manually count all issues and report this back to the client',
+                        outcome: 'Using the built-in reporting features is more efficient and more in depth details are required than just ticket number.',
                         experience: -15
                     },
                     {
-                        text: 'Only report on open issues',
-                        outcome: 'Complete status reporting needs all issues.',
+                        text: 'Report back to the client on open issue count and status',
+                        outcome: 'A complete status report requires all issues to be included for traceability.',
                         experience: -10
                     },
                     {
-                        text: 'Send raw issue list',
-                        outcome: 'Visualized reports are more informative.',
+                        text: 'Send the raw issue list to the client for consideration',
+                        outcome: 'Visualised reports are more informative and helpful for the client to manage.',
                         experience: 0
                     }
                 ]
@@ -278,27 +278,27 @@ export class IssueTrackingToolsQuiz extends BaseQuiz {
                 id: 8,
                 level: 'Intermediate',
                 title: 'Tag Management',
-                description: 'You need to organize issues for better tracking. What\'s the best approach?',
+                description: 'You need to organise issues for better tracking. What\'s the best approach?',
                 options: [
                     {
-                        text: 'Apply relevant tags consistently and link to appropriate epics/parent tickets',
-                        outcome: 'Perfect! This ensures proper issue organization and hierarchy.',
+                        text: 'Apply relevant tags consistently and link to appropriate epics and parent tickets',
+                        outcome: 'Perfect! This ensures proper issue organisation and hierarchy.',
                         experience: 20,
                         tool: 'Issue Organization'
                     },
                     {
-                        text: 'Use random tags',
-                        outcome: 'Tags should be consistent and meaningful.',
+                        text: 'Use personal preference for tags associated with tickets',
+                        outcome: 'Tags should be consistent and meaningful to the specific project.',
                         experience: -15
                     },
                     {
-                        text: 'Skip tagging entirely',
-                        outcome: 'Tags help organize and track issues effectively.',
+                        text: 'Leave tagging for larger projects as this is not necessary',
+                        outcome: 'Tags for larger projects are especially essential as they can help organise and track issues effectively.',
                         experience: -10
                     },
                     {
-                        text: 'Only tag major issues',
-                        outcome: 'Consistent tagging helps track all issues.',
+                        text: 'Tag all major issues for traceability and visual consistency',
+                        outcome: 'Consistent tagging of all tickets regardless of severity helps track all issues.',
                         experience: 0
                     }
                 ]
@@ -316,18 +316,18 @@ export class IssueTrackingToolsQuiz extends BaseQuiz {
                         tool: 'Activity Monitoring'
                     },
                     {
-                        text: 'Ask team members what changed',
-                        outcome: 'Activity logs provide more reliable history.',
+                        text: 'Ask team members what has changed within specified issues',
+                        outcome: 'Activity logs provide a more reliable history as team members may have been working on other projects since the project in question.',
                         experience: -15
                     },
                     {
-                        text: 'Check only recent issues',
-                        outcome: 'Activity logs show all project changes.',
+                        text: 'Check all recent issues that have been raised to the tracking tool',
+                        outcome: 'Activity logs show all project changes and therefore this is the most efficient way of checking issue history.',
                         experience: -10
                     },
                     {
-                        text: 'Rely on memory',
-                        outcome: 'Activity tracking needs systematic logging.',
+                        text: 'Rely on memory for changes made to issues within the project',
+                        outcome: 'Activity tracking is more efficient as remembering changes to all issues on multiple projects is highly unlikely.',
                         experience: 0
                     }
                 ]
@@ -336,27 +336,27 @@ export class IssueTrackingToolsQuiz extends BaseQuiz {
                 id: 10,
                 level: 'Intermediate',
                 title: 'Cross-Tool Migration',
-                description: 'Client wants to switch from DoneDone to Jira. How do you handle issue transfer?',
+                description: 'The client wants to switch from DoneDone to Jira. How do you handle issue transfer?',
                 options: [
                     {
                         text: 'Export data from DoneDone and ensure proper formatting for Jira import',
-                        outcome: 'Perfect! This ensures proper data migration.',
+                        outcome: 'Perfect! This ensures correct data migration.',
                         experience: 20,
                         tool: 'Data Migration'
                     },
                     {
-                        text: 'Manually recreate issues',
-                        outcome: 'Data export/import is more efficient.',
+                        text: 'Manually recreate all the issues in Jira and reference these in the project test script',
+                        outcome: 'Data export and import is more efficient in this instance.',
                         experience: -15
                     },
                     {
-                        text: 'Only transfer open issues',
-                        outcome: 'All issue history should be migrated.',
+                        text: 'Transfer all open issues from DoneDone to Jira',
+                        outcome: 'All issues and ticket history should be migrated for traceability.',
                         experience: -10
                     },
                     {
-                        text: 'Keep using both tools',
-                        outcome: 'Clean migration is better than split tracking.',
+                        text: 'Keep using both tools throughout the project lifecycle',
+                        outcome: 'Clean migration is more efficient and manageable than split tracking.',
                         experience: 0
                     }
                 ]
@@ -378,18 +378,18 @@ export class IssueTrackingToolsQuiz extends BaseQuiz {
                         tool: 'Tool Integration'
                     },
                     {
-                        text: 'Use different formats for each tool',
+                        text: 'Use different formats for tickets within each bug tracking tool',
                         outcome: 'Consistency helps maintain quality across tools.',
                         experience: -15
                     },
                     {
-                        text: 'Only use one preferred tool',
-                        outcome: 'Multiple tools need proper management.',
+                        text: 'Use one preferred tracking tool by the tester working on the project',
+                        outcome: 'If multiple tracking tools are needed for a project, then correct management is essential and they cannot be allowed to move out of sync by using one tool only.',
                         experience: -10
                     },
                     {
-                        text: 'Avoid using certain tools',
-                        outcome: 'All tools need proper utilization.',
+                        text: 'Avoid using certain tools and only use a tool that you are familiar with',
+                        outcome: 'All requested tracking tools require utilisation.',
                         experience: -5
                     }
                 ]
@@ -407,18 +407,18 @@ export class IssueTrackingToolsQuiz extends BaseQuiz {
                         tool: 'Issue Hierarchy'
                     },
                     {
-                        text: 'Keep all issues separate',
-                        outcome: 'Related issues need proper linking.',
+                        text: 'Keep all issues completely separate as to not confuse root cause',
+                        outcome: 'Related issues need correctly linking for traceability.',
                         experience: -15
                     },
                     {
-                        text: 'Create duplicate issues',
-                        outcome: 'Use hierarchy features instead of duplicates.',
+                        text: 'Create tickets with duplicated elements and dependencies within them',
+                        outcome: 'The use of hierarchy features removes the need to create duplicates.',
                         experience: -10
                     },
                     {
-                        text: 'Only track major issues',
-                        outcome: 'All issues need proper organization.',
+                        text: 'Raise the major issues as when these are addressed any dependant issues will be resolved',
+                        outcome: 'All related issues need correct organisation and any dependencies should be documented.',
                         experience: -5
                     }
                 ]
@@ -426,28 +426,28 @@ export class IssueTrackingToolsQuiz extends BaseQuiz {
             {
                 id: 13,
                 level: 'Advanced',
-                title: 'Workflow Optimization',
+                title: 'Workflow Optimisation',
                 description: 'The current issue workflow is inefficient. How do you improve it?',
                 options: [
                     {
-                        text: 'Analyze current process, propose improvements, and implement streamlined workflow with team agreement',
+                        text: 'Analyse the current process, propose improvements, and implement streamlined workflow with team agreement',
                         outcome: 'Excellent! This ensures systematic improvement.',
                         experience: 25,
                         tool: 'Workflow Management'
                     },
                     {
-                        text: 'Change workflow without consultation',
-                        outcome: 'Team agreement is needed for workflow changes.',
+                        text: 'Change the workflow without prior consultation',
+                        outcome: 'Team agreement is required for workflow changes so everybody knows the process.',
                         experience: -15
                     },
                     {
-                        text: 'Keep inefficient workflow',
-                        outcome: 'Workflow optimization is important.',
+                        text: 'Keep the current workflow in favour of situational workarounds',
+                        outcome: 'Workflow optimisation is important and essential in moving forward with improvement and efficiency.',
                         experience: -10
                     },
                     {
-                        text: 'Create personal workflow',
-                        outcome: 'Team-wide consistency is needed.',
+                        text: 'Create a personal workflow and stick to this strategy for projects that you work on',
+                        outcome: 'Team-wide consistency is required and promotes professionalism and workflow improvement.',
                         experience: -5
                     }
                 ]
@@ -465,18 +465,18 @@ export class IssueTrackingToolsQuiz extends BaseQuiz {
                         tool: 'Training'
                     },
                     {
-                        text: 'Let them learn by trial and error',
-                        outcome: 'Proper documentation aids learning.',
+                        text: 'Let them explore the features with the tracking tools and learn by trial and error',
+                        outcome: 'Documentation aids learning on a consistent and affective basis.',
                         experience: -15
                     },
                     {
-                        text: 'Only explain basics',
-                        outcome: 'Complete tool knowledge is important.',
+                        text: 'Explain the basics of each tracking tool in a knowledge transfer session',
+                        outcome: 'Complete tool knowledge is essential and important and reference material is also advised.',
                         experience: -10
                     },
                     {
-                        text: 'Refer to online help only',
-                        outcome: 'Custom documentation helps specific needs.',
+                        text: 'Ask them to refer to online help and guidelines',
+                        outcome: 'Bespoke documentation helps specific company needs and standards.',
                         experience: -5
                     }
                 ]
@@ -488,24 +488,24 @@ export class IssueTrackingToolsQuiz extends BaseQuiz {
                 description: 'A client asks for advice on choosing an issue tracking tool. How do you respond?',
                 options: [
                     {
-                        text: 'Analyze their needs, compare tools\' features, and recommend based on specific requirements',
+                        text: 'Analyse their needs, compare tool features, and recommend based on specific requirements',
                         outcome: 'Excellent! This provides tailored recommendations.',
                         experience: 25,
                         tool: 'Tool Selection'
                     },
                     {
-                        text: 'Recommend only DoneDone',
-                        outcome: 'Different needs may require different tools.',
+                        text: 'Recommend DoneDone issue tracker for use with all their projects',
+                        outcome: 'Different needs may require different tracking tools and this would need to be explored.',
                         experience: -15
                     },
                     {
-                        text: 'Let them choose without input',
-                        outcome: 'Guidance helps make informed decisions.',
+                        text: 'Let them choose without guidance based on their own preference',
+                        outcome: 'Guidance in this type of instance helps make informed decisions.',
                         experience: -10
                     },
                     {
-                        text: 'Suggest the most expensive tool',
-                        outcome: 'Recommendations should match needs.',
+                        text: 'Suggest the most expensive tool as it should cover every need',
+                        outcome: 'Recommendations should match specific needs, not just the most expensive tool on the market.',
                         experience: -5
                     }
                 ]
