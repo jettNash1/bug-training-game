@@ -1480,69 +1480,52 @@ select:disabled {
 
 .panel-header h2 {
     color: var(--primary-color);
-    margin-bottom: 1rem;
+    margin-bottom: 1.5rem;
+    font-size: 1.5rem;
 }
 
 .search-controls {
-    display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    gap: 20px;
-    padding: 1rem 0;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    gap: 1rem;
     width: 100%;
 }
 
 .control-field {
+    flex: 1;
     display: flex;
     flex-direction: column;
-    gap: 8px;
-    width: 100%;
+    gap: 0.5rem;
 }
 
 .control-field label {
-    margin-bottom: 8px;
-    font-weight: 500;
     color: #333;
-    font-size: 14px;
+    font-size: 1rem;
+    font-weight: 500;
 }
 
 .control-field input,
 .control-field select,
 .control-field .action-button {
     width: 100%;
-    height: 40px;
-    padding: 8px 12px;
+    height: 38px;
+    padding: 0.5rem 0.75rem;
     border: 1px solid #ddd;
     border-radius: 4px;
-    font-size: 14px;
+    font-size: 0.875rem;
     background-color: white;
     color: #333;
-    margin: 0;
-}
-
-.control-field input::placeholder {
-    color: #666;
-}
-
-.control-field select {
-    appearance: none;
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23333' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
-    background-repeat: no-repeat;
-    background-position: right 12px center;
-    padding-right: 32px;
 }
 
 .control-field .action-button {
-    margin-top: auto;
     background-color: #2C3E50;
     color: white;
     border: none;
     cursor: pointer;
     font-weight: 500;
-    transition: background-color 0.2s;
-}
-
-.control-field .action-button:hover {
-    background-color: #34495E;
+    height: 38px;
+    margin-top: auto;
 }
 
 @media (max-width: 768px) {
