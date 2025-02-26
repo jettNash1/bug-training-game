@@ -539,113 +539,116 @@ class AdminDashboard {
                             padding: 5px 10px; cursor: pointer; background: none; border: none; font-size: 20px; z-index: 1001;">×</button>
                 </div>
                 <div class="quiz-progress-list" style="margin-top: 20px;">
-                    ${this.quizTypes.map(quizName => {
-                        const quizLower = quizName.toLowerCase();
-                        
-                        // For interview accounts:
-                        //   - Visible (checked) if in allowedQuizzes
-                        //   - Hidden (unchecked) if not in allowedQuizzes
-                        // For regular accounts:
-                        //   - Hidden (unchecked) if in hiddenQuizzes
-                        //   - Visible (checked) if not in hiddenQuizzes
-                        const isInAllowedQuizzes = allowedQuizzes.includes(quizLower);
-                        const isInHiddenQuizzes = hiddenQuizzes.includes(quizLower);
-                        
-                        // Determine visibility based on account type
-                        const isVisible = isInterviewAccount ? isInAllowedQuizzes : !isInHiddenQuizzes;
-                        
-                        console.log('Quiz visibility details:', {
-                            quizName,
-                            quizLower,
-                            isInterviewAccount,
-                            allowedQuizzes,
-                            hiddenQuizzes,
-                            isInAllowedQuizzes,
-                            isInHiddenQuizzes,
-                            isVisible
-                        });
-                        
-                        const progress = user.quizProgress?.[quizLower];
-                        const result = user.quizResults?.find(r => r.quizName.toLowerCase() === quizLower);
-                        
-                        // Prioritize values from quiz results over progress
-                        const questionsAnswered = result?.questionsAnswered || 
-                                                result?.questionHistory?.length ||
-                                                progress?.questionsAnswered || 
-                                                progress?.questionHistory?.length || 0;
-                        const experience = result?.experience || progress?.experience || 0;
-                        const score = result?.score || 0;
-                        const lastActive = result?.completedAt || result?.lastActive || progress?.lastUpdated || 'Never';
-                        
-                        const status = questionsAnswered === 15 ? 'Completed' : 
-                                     questionsAnswered > 0 ? 'In Progress' : 
-                                     'Not Started';
-                        
-                        // Determine background color based on XP and status
-                        let backgroundColor = '#f5f5f5'; // Default gray for not started
-                        if (questionsAnswered > 0) {
-                            if (experience >= 300) {
-                                backgroundColor = '#e8f5e9'; // Light green for perfect score (300/300)
-                            } else if (experience >= 235) {
-                                backgroundColor = '#fff3e0'; // Light yellow for pass (≥235/300)
-                            } else {
-                                backgroundColor = '#ffebee'; // Light red for fail (<235/300)
+                    ${this.quizTypes
+                        .slice()
+                        .sort((a, b) => this.formatQuizName(a).localeCompare(this.formatQuizName(b)))
+                        .map(quizName => {
+                            const quizLower = quizName.toLowerCase();
+                            
+                            // For interview accounts:
+                            //   - Visible (checked) if in allowedQuizzes
+                            //   - Hidden (unchecked) if not in allowedQuizzes
+                            // For regular accounts:
+                            //   - Hidden (unchecked) if in hiddenQuizzes
+                            //   - Visible (checked) if not in hiddenQuizzes
+                            const isInAllowedQuizzes = allowedQuizzes.includes(quizLower);
+                            const isInHiddenQuizzes = hiddenQuizzes.includes(quizLower);
+                            
+                            // Determine visibility based on account type
+                            const isVisible = isInterviewAccount ? isInAllowedQuizzes : !isInHiddenQuizzes;
+                            
+                            console.log('Quiz visibility details:', {
+                                quizName,
+                                quizLower,
+                                isInterviewAccount,
+                                allowedQuizzes,
+                                hiddenQuizzes,
+                                isInAllowedQuizzes,
+                                isInHiddenQuizzes,
+                                isVisible
+                            });
+                            
+                            const progress = user.quizProgress?.[quizLower];
+                            const result = user.quizResults?.find(r => r.quizName.toLowerCase() === quizLower);
+                            
+                            // Prioritize values from quiz results over progress
+                            const questionsAnswered = result?.questionsAnswered || 
+                                                    result?.questionHistory?.length ||
+                                                    progress?.questionsAnswered || 
+                                                    progress?.questionHistory?.length || 0;
+                            const experience = result?.experience || progress?.experience || 0;
+                            const score = result?.score || 0;
+                            const lastActive = result?.completedAt || result?.lastActive || progress?.lastUpdated || 'Never';
+                            
+                            const status = questionsAnswered === 15 ? 'Completed' : 
+                                         questionsAnswered > 0 ? 'In Progress' : 
+                                         'Not Started';
+                            
+                            // Determine background color based on XP and status
+                            let backgroundColor = '#f5f5f5'; // Default gray for not started
+                            if (questionsAnswered > 0) {
+                                if (experience >= 300) {
+                                    backgroundColor = '#e8f5e9'; // Light green for perfect score (300/300)
+                                } else if (experience >= 235) {
+                                    backgroundColor = '#fff3e0'; // Light yellow for pass (≥235/300)
+                                } else {
+                                    backgroundColor = '#ffebee'; // Light red for fail (<235/300)
+                                }
                             }
-                        }
-                        
-                        return `
-                            <div class="quiz-progress-item" style="margin-bottom: 20px; padding: 15px; background: ${backgroundColor}; border-radius: 8px;">
-                                <h4 style="margin: 0 0 10px 0;">${this.formatQuizName(quizName)}</h4>
-                                <div class="progress-details" style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px;">
-                                    <div>
-                                        <strong>Progress:</strong> 
-                                        <span class="${status === 'Completed' ? 'text-success' : 
-                                                     status === 'In Progress' ? 'text-warning' : 
-                                                     'text-muted'}">${status}</span>
+                            
+                            return `
+                                <div class="quiz-progress-item" style="margin-bottom: 20px; padding: 15px; background: ${backgroundColor}; border-radius: 8px;">
+                                    <h4 style="margin: 0 0 10px 0;">${this.formatQuizName(quizName)}</h4>
+                                    <div class="progress-details" style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px;">
+                                        <div>
+                                            <strong>Progress:</strong> 
+                                            <span class="${status === 'Completed' ? 'text-success' : 
+                                                         status === 'In Progress' ? 'text-warning' : 
+                                                         'text-muted'}">${status}</span>
+                                        </div>
+                                        <div>
+                                            <strong>Score:</strong> 
+                                            <span>${score}%</span>
+                                        </div>
+                                        <div>
+                                            <strong>Questions:</strong> 
+                                            <span>${questionsAnswered}/15</span>
+                                        </div>
+                                        <div>
+                                            <strong>XP:</strong> 
+                                            <span>${experience}/300</span>
+                                        </div>
+                                        <div>
+                                            <strong>Last Active:</strong> 
+                                            <span>${this.formatDate(lastActive)}</span>
+                                        </div>
+                                        <div>
+                                            <strong>Visibility:</strong>
+                                            <label class="visibility-toggle" style="display: inline-flex; align-items: center; gap: 5px;">
+                                                <input type="checkbox" 
+                                                    class="quiz-visibility-toggle"
+                                                    data-quiz-name="${quizName}"
+                                                    ${isVisible ? 'checked' : ''}
+                                                    style="margin: 0;">
+                                                <span>${isVisible ? 'Visible' : 'Hidden'}</span>
+                                            </label>
+                                        </div>
                                     </div>
-                                    <div>
-                                        <strong>Score:</strong> 
-                                        <span>${score}%</span>
-                                    </div>
-                                    <div>
-                                        <strong>Questions:</strong> 
-                                        <span>${questionsAnswered}/15</span>
-                                    </div>
-                                    <div>
-                                        <strong>XP:</strong> 
-                                        <span>${experience}/300</span>
-                                    </div>
-                                    <div>
-                                        <strong>Last Active:</strong> 
-                                        <span>${this.formatDate(lastActive)}</span>
-                                    </div>
-                                    <div>
-                                        <strong>Visibility:</strong>
-                                        <label class="visibility-toggle" style="display: inline-flex; align-items: center; gap: 5px;">
-                                            <input type="checkbox" 
-                                                class="quiz-visibility-toggle"
-                                                data-quiz-name="${quizName}"
-                                                ${isVisible ? 'checked' : ''}
-                                                style="margin: 0;">
-                                            <span>${isVisible ? 'Visible' : 'Hidden'}</span>
-                                        </label>
+                                    <div style="display: flex; flex-direction: column; gap: 10px; margin-top: 15px;">
+                                        <button class="reset-quiz-btn"
+                                            data-quiz-name="${quizName}"
+                                            style="padding: 5px 10px; background-color: #ff4444; color: white; border: none; border-radius: 4px; cursor: pointer;">
+                                            Reset Progress
+                                        </button>
+                                        <button class="view-questions-btn"
+                                            data-quiz-name="${quizName}"
+                                            style="padding: 5px 10px; background-color: #4444ff; color: white; border: none; border-radius: 4px; cursor: pointer;">
+                                            View Questions
+                                        </button>
                                     </div>
                                 </div>
-                                <div style="display: flex; flex-direction: column; gap: 10px; margin-top: 15px;">
-                                    <button class="reset-quiz-btn"
-                                        data-quiz-name="${quizName}"
-                                        style="padding: 5px 10px; background-color: #ff4444; color: white; border: none; border-radius: 4px; cursor: pointer;">
-                                        Reset Progress
-                                    </button>
-                                    <button class="view-questions-btn"
-                                        data-quiz-name="${quizName}"
-                                        style="padding: 5px 10px; background-color: #4444ff; color: white; border: none; border-radius: 4px; cursor: pointer;">
-                                        View Questions
-                                    </button>
-                                </div>
-                            </div>
-                        `;
-                    }).join('')}
+                            `;
+                        }).join('')}
                 </div>
                 <div style="margin-top: 20px; padding-top: 20px; border-top: 1px solid #eee; 
                             display: flex; justify-content: center; gap: 20px;">
@@ -1050,6 +1053,13 @@ class AdminDashboard {
             const closeBtn = content.querySelector('.close-btn');
             closeBtn.addEventListener('click', () => {
                 document.body.removeChild(overlay);
+            });
+
+            // Close on click outside
+            overlay.addEventListener('click', (e) => {
+                if (e.target === overlay) {
+                    document.body.removeChild(overlay);
+                }
             });
 
             // Fetch questions data
