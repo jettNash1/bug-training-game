@@ -42,15 +42,15 @@
             <div class="user-management-panel">
                 <div class="panel-header">
                     <h2>User Management</h2>
-                    <div class="search-controls">
-                        <div class="search-field" style="max-width: 300px;">
+                    <div class="search-controls" style="display: flex; gap: 16px; align-items: flex-end;">
+                        <div class="search-field" style="flex: 0 1 250px;">
                             <label for="userSearch">Search Users</label>
                             <input type="text" 
                                    id="userSearch" 
                                    placeholder="Search by username..."
                                    aria-label="Search users">
                         </div>
-                        <div class="sort-field">
+                        <div class="sort-field" style="flex: 0 1 200px;">
                             <label for="sortBy">Sort By</label>
                             <select id="sortBy" aria-label="Sort users by">
                                 <option value="username-asc">Username (A-Z)</option>
