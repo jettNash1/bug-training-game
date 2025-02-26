@@ -107,7 +107,7 @@ export class BaseQuiz {
         // Create a time-up option with 0 experience and include correct answer
         const timeUpOption = {
             text: "Time's up - No answer selected",
-            outcome: `You did not answer in time. The correct answer was:\n"${correctOption.text}"\n\n${correctOption.outcome}`,
+            outcome: `You did not answer in time.\n\nThe correct answer was:\n"${correctOption.text}"\n\n${correctOption.outcome}`,
             experience: 0
         };
 
@@ -124,11 +124,6 @@ export class BaseQuiz {
 
         // Show outcome
         this.showOutcome(timeUpOption);
-
-        // Automatically move to next question after 2 seconds
-        setTimeout(() => {
-            this.nextQuestion();
-        }, 2000);
     }
 
     showQuestion() {
