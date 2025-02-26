@@ -326,32 +326,96 @@ class AdminDashboard {
             return;
         }
 
-        // Update the controls section first
-        const controlsContainer = document.getElementById('userControls');
+        // Create or update the controls section
+        let controlsContainer = document.getElementById('userControls');
         if (!controlsContainer) {
             // Create the controls container if it doesn't exist
-            const controls = document.createElement('div');
-            controls.id = 'userControls';
-            controls.style.cssText = 'display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1rem; margin-bottom: 1rem;';
-            controls.innerHTML = `
-                <div class="search-container">
-                    <input type="text" id="userSearch" placeholder="Search users..." 
-                           style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
-                </div>
-                <select id="sortBy" style="padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
+            controlsContainer = document.createElement('div');
+            controlsContainer.id = 'userControls';
+            controlsContainer.style.cssText = `
+                display: flex;
+                gap: 1rem;
+                margin-bottom: 1rem;
+                align-items: center;
+                justify-content: space-between;
+                flex-wrap: wrap;
+            `;
+            
+            // Create the controls group for filters
+            const filtersGroup = document.createElement('div');
+            filtersGroup.style.cssText = `
+                display: flex;
+                gap: 1rem;
+                flex: 1;
+                min-width: 200px;
+                max-width: 800px;
+            `;
+            
+            // Add search input
+            const searchContainer = document.createElement('div');
+            searchContainer.style.cssText = 'flex: 2; min-width: 200px;';
+            searchContainer.innerHTML = `
+                <input type="text" 
+                       id="userSearch" 
+                       placeholder="Search users..." 
+                       style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
+            `;
+            
+            // Add sort dropdown
+            const sortContainer = document.createElement('div');
+            sortContainer.style.cssText = 'flex: 1; min-width: 150px;';
+            sortContainer.innerHTML = `
+                <select id="sortBy" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
                     <option value="username-asc">Username (A-Z)</option>
                     <option value="username-desc">Username (Z-A)</option>
                     <option value="progress-high">Progress (High-Low)</option>
                     <option value="progress-low">Progress (Low-High)</option>
                     <option value="last-active">Last Active</option>
                 </select>
-                <select id="accountType" style="padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
+            `;
+            
+            // Add account type filter
+            const accountTypeContainer = document.createElement('div');
+            accountTypeContainer.style.cssText = 'flex: 1; min-width: 150px;';
+            accountTypeContainer.innerHTML = `
+                <select id="accountType" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
                     <option value="all">All Accounts</option>
                     <option value="interview">Interview Accounts</option>
                     <option value="regular">Regular Accounts</option>
                 </select>
             `;
-            container.parentNode.insertBefore(controls, container);
+            
+            // Add create interview account button
+            const createButtonContainer = document.createElement('div');
+            createButtonContainer.innerHTML = `
+                <button id="createInterviewBtn" 
+                        style="padding: 8px 16px; 
+                               background-color: var(--primary-color); 
+                               color: white; 
+                               border: none; 
+                               border-radius: 4px; 
+                               cursor: pointer;
+                               white-space: nowrap;">
+                    Create Interview Account
+                </button>
+            `;
+            
+            // Assemble the controls
+            filtersGroup.appendChild(searchContainer);
+            filtersGroup.appendChild(sortContainer);
+            filtersGroup.appendChild(accountTypeContainer);
+            
+            controlsContainer.appendChild(filtersGroup);
+            controlsContainer.appendChild(createButtonContainer);
+            
+            // Insert the controls before the user list
+            container.parentNode.insertBefore(controlsContainer, container);
+            
+            // Add event listener for create interview account button
+            const createInterviewBtn = document.getElementById('createInterviewBtn');
+            if (createInterviewBtn) {
+                createInterviewBtn.addEventListener('click', () => this.showCreateInterviewAccountForm());
+            }
         }
 
         if (!this.users || !this.users.length) {
