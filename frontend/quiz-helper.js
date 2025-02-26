@@ -119,6 +119,11 @@ export class BaseQuiz {
 
         // Show outcome
         this.showOutcome(timeUpOption);
+
+        // Automatically move to next question after 2 seconds
+        setTimeout(() => {
+            this.nextQuestion();
+        }, 2000);
     }
 
     showQuestion() {
