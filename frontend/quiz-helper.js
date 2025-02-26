@@ -99,10 +99,15 @@ export class BaseQuiz {
         // Get current scenario
         const currentScenario = this.getCurrentScenario();
         
-        // Create a time-up option with 0 experience
+        // Find the correct answer (option with highest experience)
+        const correctOption = currentScenario.options.reduce((prev, current) => 
+            (prev.experience > current.experience) ? prev : current
+        );
+        
+        // Create a time-up option with 0 experience and include correct answer
         const timeUpOption = {
             text: "Time's up - No answer selected",
-            outcome: "You ran out of time. No points awarded.",
+            outcome: `You did not answer in time. The correct answer was:\n"${correctOption.text}"\n\n${correctOption.outcome}`,
             experience: 0
         };
 
