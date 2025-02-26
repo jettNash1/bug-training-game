@@ -990,6 +990,7 @@ export class TesterMindsetQuiz extends BaseQuiz {
                 document.getElementById('tool-gained').textContent = '';
             }
 
+            this.updateProgress();
         } catch (error) {
             console.error('Failed to handle answer:', error);
             this.showError('Failed to process your answer. Please try again.');
