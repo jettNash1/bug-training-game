@@ -1485,15 +1485,17 @@ select:disabled {
 
 .search-controls {
     display: grid;
-    grid-template-columns: repeat(4, minmax(0, 1fr));
-    gap: 24px;
-    margin: 24px 0;
-    padding: 0 24px;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 20px;
+    padding: 1rem 0;
+    width: 100%;
 }
 
 .control-field {
     display: flex;
     flex-direction: column;
+    gap: 8px;
+    width: 100%;
 }
 
 .control-field label {
@@ -1514,6 +1516,7 @@ select:disabled {
     font-size: 14px;
     background-color: white;
     color: #333;
+    margin: 0;
 }
 
 .control-field input::placeholder {
@@ -1529,6 +1532,7 @@ select:disabled {
 }
 
 .control-field .action-button {
+    margin-top: auto;
     background-color: #2C3E50;
     color: white;
     border: none;
