@@ -871,6 +871,11 @@ export class AutomationInterviewQuiz extends BaseQuiz {
         if (submitButton) {
             submitButton.disabled = true;
         }
+
+        // Clear the timer when an answer is submitted
+        if (this.questionTimer) {
+            clearInterval(this.questionTimer);
+        }
         
         try {
             this.isLoading = true;
@@ -898,12 +903,17 @@ export class AutomationInterviewQuiz extends BaseQuiz {
             // Update player experience with bounds
             this.player.experience = Math.max(0, Math.min(this.maxXP, newExperience));
             
+            // Calculate time spent on this question
+            const timeSpent = this.questionStartTime ? Date.now() - this.questionStartTime : null;
+
             // Add status to question history
             this.player.questionHistory.push({
                 scenario: scenario,
                 selectedAnswer: selectedAnswer,
                 status: selectedAnswer.experience > 0 ? 'passed' : 'failed',
-                maxPossibleXP: Math.max(...scenario.options.map(o => o.experience))
+                maxPossibleXP: Math.max(...scenario.options.map(o => o.experience)),
+                timeSpent: timeSpent,
+                timedOut: false
             });
 
             // Increment current scenario
@@ -947,7 +957,16 @@ export class AutomationInterviewQuiz extends BaseQuiz {
             }
             
             // Update outcome display
-            document.getElementById('outcome-text').textContent = selectedAnswer.outcome;
+            const correctAnswer = scenario.options.reduce((prev, current) => 
+                (prev.experience > current.experience) ? prev : current
+            );
+
+            let outcomeText = selectedAnswer.outcome;
+            if (selectedAnswer.experience < correctAnswer.experience) {
+                outcomeText += `\n\n\nThe correct answer was: "${correctAnswer.text}"\n${correctAnswer.outcome}`;
+            }
+            document.getElementById('outcome-text').textContent = outcomeText;
+            
             const xpText = selectedAnswer.experience >= 0 ? 
                 `Experience gained: +${selectedAnswer.experience}` : 
                 `Experience: ${selectedAnswer.experience}`;
