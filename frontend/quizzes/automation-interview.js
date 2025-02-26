@@ -683,6 +683,11 @@ export class AutomationInterviewQuiz extends BaseQuiz {
                 transitionContainer.innerHTML = '';
                 transitionContainer.classList.remove('active');
             }
+
+            // Clear any existing timer
+            if (this.questionTimer) {
+                clearInterval(this.questionTimer);
+            }
             
             await this.displayScenario();
         } catch (error) {
@@ -862,6 +867,9 @@ export class AutomationInterviewQuiz extends BaseQuiz {
         });
 
         this.updateProgress();
+
+        // Initialize timer for the new question
+        this.initializeTimer();
     }
 
     async handleAnswer() {
