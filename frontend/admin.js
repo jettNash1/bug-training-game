@@ -235,19 +235,28 @@ class AdminDashboard {
     }
 
     setupEventListeners() {
-        // Set up search, sort, and filter functionality
+        // Search input handler
         const searchInput = document.getElementById('userSearch');
-        const sortSelect = document.getElementById('sortBy');
-        const accountTypeSelect = document.getElementById('accountType');
-        
         if (searchInput) {
-            searchInput.addEventListener('input', () => this.updateUserList());
+            searchInput.addEventListener('input', this.debounce(() => {
+                this.updateUserList();
+            }, 300));
         }
+
+        // Sort select handler
+        const sortSelect = document.getElementById('sortBy');
         if (sortSelect) {
-            sortSelect.addEventListener('change', () => this.updateUserList());
+            sortSelect.addEventListener('change', () => {
+                this.updateUserList();
+            });
         }
+
+        // Account type filter handler
+        const accountTypeSelect = document.getElementById('accountType');
         if (accountTypeSelect) {
-            accountTypeSelect.addEventListener('change', () => this.updateUserList());
+            accountTypeSelect.addEventListener('change', () => {
+                this.updateUserList();
+            });
         }
 
         // Set up quiz reset event delegation
@@ -265,6 +274,113 @@ class AdminDashboard {
             const { quizName } = event.detail;
             await this.showQuizQuestions(quizName);
         });
+    }
+
+    // Debounce helper function
+    debounce(func, wait) {
+        let timeout;
+        return function executedFunction(...args) {
+            const later = () => {
+                clearTimeout(timeout);
+                func(...args);
+            };
+            clearTimeout(timeout);
+            timeout = setTimeout(later, wait);
+        };
+    }
+
+    async updateUserList() {
+        const searchTerm = document.getElementById('userSearch')?.value.toLowerCase() || '';
+        const sortBy = document.getElementById('sortBy')?.value || 'username-asc';
+        const accountType = document.getElementById('accountType')?.value || 'all';
+        
+        const usersList = document.getElementById('usersList');
+        if (!usersList) return;
+
+        try {
+            // Clear existing list
+            usersList.innerHTML = '<div class="loading">Loading users...</div>';
+
+            // Filter users based on search term and account type
+            let filteredUsers = this.users.filter(user => {
+                const matchesSearch = user.username.toLowerCase().includes(searchTerm);
+                const matchesType = accountType === 'all' || 
+                                  (accountType === 'interview' && user.isInterviewAccount) ||
+                                  (accountType === 'regular' && !user.isInterviewAccount);
+                return matchesSearch && matchesType;
+            });
+
+            // Sort users
+            filteredUsers.sort((a, b) => {
+                switch (sortBy) {
+                    case 'username-asc':
+                        return a.username.localeCompare(b.username);
+                    case 'username-desc':
+                        return b.username.localeCompare(a.username);
+                    case 'progress-high':
+                        return this.calculateUserProgress(b) - this.calculateUserProgress(a);
+                    case 'progress-low':
+                        return this.calculateUserProgress(a) - this.calculateUserProgress(b);
+                    case 'last-active':
+                        const dateA = this.getLastActiveDate(a) || 0;
+                        const dateB = this.getLastActiveDate(b) || 0;
+                        return dateB - dateA;
+                    default:
+                        return 0;
+                }
+            });
+
+            // Clear loading state
+            usersList.innerHTML = '';
+
+            // Display filtered and sorted users
+            if (filteredUsers.length === 0) {
+                usersList.innerHTML = `
+                    <div class="no-users">
+                        No users found matching your criteria
+                    </div>
+                `;
+                return;
+            }
+
+            filteredUsers.forEach(user => {
+                const progress = this.calculateUserProgress(user);
+                const lastActive = this.getLastActiveDate(user);
+                
+                const userCard = document.createElement('div');
+                userCard.className = 'user-card';
+                userCard.innerHTML = `
+                    <div class="user-header">
+                        <h4>${user.username}</h4>
+                        <div class="user-stats">
+                            <div class="stat">
+                                <span class="stat-label">Progress</span>
+                                <span class="stat-value">${progress}%</span>
+                            </div>
+                            <div class="stat">
+                                <span class="stat-label">Last Active</span>
+                                <span class="stat-value">${lastActive ? this.formatDate(lastActive) : 'Never'}</span>
+                            </div>
+                            <div class="stat">
+                                <span class="stat-label">Account Type</span>
+                                <span class="stat-value">${user.isInterviewAccount ? 'Interview' : 'Regular'}</span>
+                            </div>
+                        </div>
+                    </div>
+                    <button class="view-details-btn" onclick="window.adminDashboard.showUserDetails('${user.username}')">
+                        View Details
+                    </button>
+                `;
+                usersList.appendChild(userCard);
+            });
+        } catch (error) {
+            console.error('Error updating user list:', error);
+            usersList.innerHTML = `
+                <div class="error">
+                    An error occurred while loading users. Please try again.
+                </div>
+            `;
+        }
     }
 
     async updateDashboard() {
@@ -315,224 +431,21 @@ class AdminDashboard {
         return stats;
     }
 
-    async updateUserList() {
-        const container = document.getElementById('usersList');
-        if (!container) {
-            console.error('User list container not found');
-            return;
+    updateStatisticsDisplay(stats) {
+        // Update the statistics in the UI
+        const totalUsersElement = document.getElementById('totalUsers');
+        const activeUsersElement = document.getElementById('activeUsers');
+        const averageCompletionElement = document.getElementById('averageCompletion');
+
+        if (totalUsersElement) {
+            totalUsersElement.textContent = stats.totalUsers || 0;
         }
-
-        // Get existing search and sort controls
-        const searchInput = document.getElementById('userSearch');
-        const sortSelect = document.getElementById('sortBy');
-        
-        // Add account type filter if it doesn't exist
-        let accountTypeSelect = document.getElementById('accountType');
-        if (!accountTypeSelect) {
-            const sortField = sortSelect.closest('.sort-field');
-            if (sortField) {
-                const accountTypeContainer = document.createElement('div');
-                accountTypeContainer.className = 'sort-field';
-                accountTypeContainer.innerHTML = `
-                    <label for="accountType">Account Type</label>
-                    <select id="accountType" aria-label="Filter by account type">
-                        <option value="all">All Accounts</option>
-                        <option value="interview">Interview Accounts</option>
-                        <option value="regular">Regular Accounts</option>
-                    </select>
-                `;
-                sortField.parentNode.insertBefore(accountTypeContainer, sortField.nextSibling);
-                accountTypeSelect = accountTypeContainer.querySelector('select');
-                
-                // Add event listener for the new account type filter
-                accountTypeSelect.addEventListener('change', () => this.updateUserList());
-            }
+        if (activeUsersElement) {
+            activeUsersElement.textContent = stats.activeUsers || 0;
         }
-
-        if (!this.users || !this.users.length) {
-            console.log('No users to display');
-            container.innerHTML = '<div class="no-users">No users found</div>';
-            return;
+        if (averageCompletionElement) {
+            averageCompletionElement.textContent = `${stats.averageProgress || 0}%`;
         }
-
-        const searchTerm = searchInput?.value.toLowerCase() || '';
-        const sortBy = sortSelect?.value || 'username-asc';
-        const accountType = accountTypeSelect?.value || 'all';
-
-        let filteredUsers = this.users.filter(user => {
-            const matchesSearch = user.username.toLowerCase().includes(searchTerm);
-            const matchesType = accountType === 'all' || 
-                              (accountType === 'interview' && user.userType === 'interview_candidate') ||
-                              (accountType === 'regular' && user.userType !== 'interview_candidate');
-            return matchesSearch && matchesType;
-        });
-
-        // Sort users based on selected criteria
-        filteredUsers.sort((a, b) => {
-            switch (sortBy) {
-                case 'username-asc':
-                    return a.username.localeCompare(b.username);
-                case 'username-desc':
-                    return b.username.localeCompare(a.username);
-                case 'progress-high':
-                    return this.calculateUserProgress(b) - this.calculateUserProgress(a);
-                case 'progress-low':
-                    return this.calculateUserProgress(a) - this.calculateUserProgress(b);
-                case 'last-active':
-                    return this.getLastActiveDate(b) - this.getLastActiveDate(a);
-                default:
-                    return 0;
-            }
-        });
-
-        // Clear existing content
-        container.innerHTML = '';
-
-        // Create and append user cards
-        filteredUsers.forEach(user => {
-            const progress = this.calculateUserProgress(user);
-            const lastActive = this.getLastActiveDate(user);
-            
-            // Calculate total questions answered and XP across all quizzes
-            let totalQuestionsAnswered = 0;
-            let totalXP = 0;
-            
-            this.quizTypes.forEach(quizType => {
-                const progress = user.quizProgress?.[quizType.toLowerCase()];
-                const result = user.quizResults?.find(r => r.quizName.toLowerCase() === quizType.toLowerCase());
-                
-                // Prioritize values from quiz results over progress
-                const questionsAnswered = result?.questionsAnswered || 
-                                        result?.questionHistory?.length ||
-                                        progress?.questionsAnswered || 
-                                        progress?.questionHistory?.length || 0;
-                
-                totalQuestionsAnswered += questionsAnswered;
-                
-                // Get experience and ensure it's a multiple of 5
-                let xp = progress?.experience || result?.experience || 0;
-                xp = Math.round(xp / 5) * 5;
-                totalXP += xp;
-            });
-
-            const card = document.createElement('div');
-            card.className = 'user-card';
-            
-            card.innerHTML = `
-                <div class="user-card-content">
-                    <div class="user-header">
-                        <div style="display: flex; align-items: center; gap: 10px;">
-                            <h4>${user.username}</h4>
-                            <span class="account-type-badge" style="
-                                padding: 4px 8px;
-                                border-radius: 12px;
-                                font-size: 0.8em;
-                                font-weight: 500;
-                                ${user.userType === 'interview_candidate' ? 
-                                    'background-color: #ff9800; color: white;' : 
-                                    'background-color: #4CAF50; color: white;'}">
-                                ${user.userType === 'interview_candidate' ? 'Interview' : 'Regular'}
-                            </span>
-                        </div>
-                        <div class="user-stats">
-                            <div class="stat">
-                                <span class="stat-label">Overall Progress:</span>
-                                <span class="stat-value">${progress.toFixed(1)}%</span>
-                            </div>
-                            <div class="stat">
-                                <span class="stat-label">Questions Answered:</span>
-                                <span class="stat-value">${totalQuestionsAnswered}</span>
-                            </div>
-                            <div class="stat">
-                                <span class="stat-label">Total XP:</span>
-                                <span class="stat-value">${totalXP}</span>
-                            </div>
-                            <div class="stat">
-                                <span class="stat-label">Last Active:</span>
-                                <span class="stat-value">${this.formatDate(lastActive)}</span>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                <button class="view-details-btn" onclick="this.closest('.user-card').dispatchEvent(new CustomEvent('viewDetails'))">
-                    View Details
-                </button>
-            `;
-            
-            // Add event listener for view details button
-            card.addEventListener('viewDetails', () => {
-                this.showUserDetails(user.username);
-            });
-
-            container.appendChild(card);
-        });
-
-        if (filteredUsers.length === 0) {
-            container.innerHTML = '<div class="no-users">No users match your search criteria</div>';
-        }
-
-        // Update statistics display
-        this.updateStatistics();
-    }
-
-    // Helper method to calculate user progress
-    calculateUserProgress(user) {
-        if (!user) return 0;
-
-        let totalQuestionsAnswered = 0;
-        const totalPossibleQuestions = this.quizTypes.length * 15; // 15 questions per quiz
-
-        // Sum up questions answered across all quizzes
-        this.quizTypes.forEach(quizType => {
-            const progress = user.quizProgress?.[quizType.toLowerCase()];
-            const result = user.quizResults?.find(r => r.quizName.toLowerCase() === quizType.toLowerCase());
-            
-            // Prioritize values from quiz results over progress
-            const questionsAnswered = result?.questionsAnswered || 
-                                    result?.questionHistory?.length ||
-                                    progress?.questionsAnswered || 
-                                    progress?.questionHistory?.length || 0;
-            
-            totalQuestionsAnswered += questionsAnswered;
-        });
-
-        // Calculate progress as percentage of total possible questions
-        const progress = (totalQuestionsAnswered / totalPossibleQuestions) * 100;
-
-        /*console.log(`Progress calculation for ${user.username}:`, {
-            totalQuestionsAnswered,
-            totalPossibleQuestions,
-            progress
-        });*/
-
-        return progress;
-    }
-
-    // Helper method to get last active date
-    getLastActiveDate(user) {
-        if (!user) return 0;
-
-        const dates = [];
-
-        // Add lastLogin if exists
-        if (user.lastLogin) {
-            dates.push(new Date(user.lastLogin).getTime());
-        }
-
-        // Add quiz completion dates
-        if (user.quizResults && user.quizResults.length > 0) {
-            user.quizResults.forEach(result => {
-                if (result.completedAt) {
-                    dates.push(new Date(result.completedAt).getTime());
-                }
-                if (result.lastActive) {
-                    dates.push(new Date(result.lastActive).getTime());
-                }
-            });
-        }
-
-        // Return most recent date or 0 if no dates found
-        return dates.length > 0 ? Math.max(...dates) : 0;
     }
 
     async showUserDetails(username) {
@@ -543,7 +456,7 @@ class AdminDashboard {
                 throw new Error('User not found');
             }
 
-            const isInterviewAccount = user.userType === 'interview_candidate';
+            const isInterviewAccount = user.isInterviewAccount;
             // For interview accounts, allowedQuizzes means visible, everything else is hidden
             // For regular accounts, hiddenQuizzes means hidden, everything else is visible
             const allowedQuizzes = (user.allowedQuizzes || []).map(q => q.toLowerCase());
@@ -768,7 +681,7 @@ class AdminDashboard {
                         // Update the user object in memory
                         const updatedUser = this.users.find(u => u.username === username);
                         if (updatedUser) {
-                            const isInterviewAccount = updatedUser.userType === 'interview_candidate';
+                            const isInterviewAccount = updatedUser.isInterviewAccount;
                             const allowedQuizzes = (updatedUser.allowedQuizzes || []).map(q => q.toLowerCase());
                             const hiddenQuizzes = (updatedUser.hiddenQuizzes || []).map(q => q.toLowerCase());
                             
@@ -1010,23 +923,6 @@ class AdminDashboard {
         });
         
         return user;
-    }
-
-    updateStatisticsDisplay(stats) {
-        // Update the statistics in the UI
-        const totalUsersElement = document.getElementById('totalUsers');
-        const activeUsersElement = document.getElementById('activeUsers');
-        const averageCompletionElement = document.getElementById('averageCompletion');
-
-        if (totalUsersElement) {
-            totalUsersElement.textContent = stats.totalUsers || 0;
-        }
-        if (activeUsersElement) {
-            activeUsersElement.textContent = stats.activeUsers || 0;
-        }
-        if (averageCompletionElement) {
-            averageCompletionElement.textContent = `${stats.averageProgress || 0}%`;
-        }
     }
 
     async showQuizQuestions(quizName, username) {
