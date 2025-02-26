@@ -193,23 +193,88 @@ export class BaseQuiz {
     }
 
     showOutcome(option) {
-        const outcomeText = document.getElementById('outcome-text');
-        outcomeText.textContent = option.outcome;
-        
-        const experienceChange = document.getElementById('experience-change');
-        experienceChange.textContent = option.experience >= 0 
-            ? `+${option.experience} XP` 
-            : `${option.experience} XP`;
-        
+        // Hide game screen and show outcome screen
         this.gameScreen.classList.add('hidden');
         this.outcomeScreen.classList.remove('hidden');
+
+        // Update outcome text
+        const outcomeText = document.getElementById('outcome-text');
+        if (outcomeText) {
+            outcomeText.textContent = option.outcome;
+        }
+
+        // Update XP display
+        const xpGained = document.getElementById('xp-gained');
+        if (xpGained) {
+            xpGained.textContent = option.experience >= 0 ? 
+                `Experience gained: +${option.experience}` : 
+                `Experience: ${option.experience}`;
+        }
+
+        // Update tool display if applicable
+        const toolGained = document.getElementById('tool-gained');
+        if (toolGained) {
+            toolGained.textContent = option.tool ? `Tool acquired: ${option.tool}` : '';
+        }
+
+        // Update progress display
+        this.updateProgress();
     }
 
     nextQuestion() {
+        // Increment current scenario
         this.player.currentScenario++;
-        this.gameScreen.classList.remove('hidden');
+
+        // Hide outcome screen and show game screen
         this.outcomeScreen.classList.add('hidden');
-        this.showQuestion();
+        this.gameScreen.classList.remove('hidden');
+
+        // Display next scenario
+        this.displayScenario();
+    }
+
+    displayScenario() {
+        const currentScenarios = this.getCurrentScenarios();
+        const scenario = currentScenarios[this.player.currentScenario];
+
+        if (!scenario) {
+            this.endGame(false);
+            return;
+        }
+
+        // Update UI with current scenario
+        const titleElement = document.getElementById('scenario-title');
+        const descriptionElement = document.getElementById('scenario-description');
+        const optionsContainer = document.getElementById('options-container');
+
+        if (titleElement) titleElement.textContent = scenario.title;
+        if (descriptionElement) descriptionElement.textContent = scenario.description;
+        if (optionsContainer) {
+            optionsContainer.innerHTML = '';
+            scenario.options.forEach((option, index) => {
+                const optionDiv = document.createElement('div');
+                optionDiv.className = 'option';
+                optionDiv.innerHTML = `
+                    <input type="radio" 
+                        name="option" 
+                        value="${index}" 
+                        id="option${index}"
+                        tabindex="0"
+                        aria-label="${option.text}">
+                    <label for="option${index}">${option.text}</label>
+                `;
+                optionsContainer.appendChild(optionDiv);
+            });
+        }
+
+        // Record start time for this question
+        this.questionStartTime = Date.now();
+
+        // Initialize timer for the new question
+        this.initializeTimer();
+
+        // Update progress display
+        this.updateProgress();
     }
 
     async finishQuiz() {
