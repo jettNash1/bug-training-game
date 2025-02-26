@@ -1359,7 +1359,33 @@ class AdminDashboard {
                                 border: 1px solid #ddd;
                                 border-radius: 4px;
                                 background: #f8f9fa;">
-                                ${this.quizTypes.map(quiz => `
+                                <div style="
+                                    padding: 8px;
+                                    margin-bottom: 12px;
+                                    border-radius: 4px;
+                                    background: #e9ecef;
+                                    border-bottom: 2px solid #dee2e6;">
+                                    <label style="
+                                        display: flex;
+                                        align-items: center;
+                                        gap: 12px;
+                                        margin: 0;
+                                        cursor: pointer;
+                                        font-weight: 500;">
+                                        <input type="checkbox" 
+                                               id="selectAllQuizzes"
+                                               style="
+                                                width: 18px;
+                                                height: 18px;
+                                                margin: 0;
+                                                cursor: pointer;">
+                                        <span style="flex: 1; font-size: 0.95rem;">Select All Quizzes</span>
+                                    </label>
+                                </div>
+                                ${this.quizTypes
+                                    .slice()
+                                    .sort((a, b) => this.formatQuizName(a).localeCompare(this.formatQuizName(b)))
+                                    .map(quiz => `
                                     <div style="
                                         padding: 8px;
                                         margin-bottom: 8px;

@@ -658,11 +658,12 @@ router.post('/create-interview-account', auth, async (req, res) => {
 
         // Get all available quiz names
         const allQuizzes = [
-            'tester-mindset', 'communication', 'initiative', 'standard-script-testing',
-            'script-metrics-troubleshooting', 'locale-testing', 'build-verification',
-            'test-types-tricks', 'test-support', 'time-management', 'risk-analysis',
-            'risk-management', 'issue-tracking-tools', 'raising-tickets', 'issue-verification',
-            'reports', 'cms-testing', 'email-testing', 'non-functional', 'content-copy'
+            'communication', 'initiative', 'time-management', 'tester-mindset',
+            'risk-analysis', 'risk-management', 'non-functional', 'test-support',
+            'issue-verification', 'build-verification', 'issue-tracking-tools',
+            'raising-tickets', 'reports', 'cms-testing', 'email-testing', 'content-copy',
+            'locale-testing', 'script-metrics-troubleshooting','standard-script-testing',
+            'test-types-tricks', 'automation-interview', 'fully-scripted'
         ].map(quiz => quiz.toLowerCase());
 
         // Normalize allowed quizzes to lowercase
