@@ -59,11 +59,12 @@ class AdminDashboard {
         // If we have a valid token and we're on the admin panel, load the dashboard
         if (isTokenValid && currentPath.includes('admin.html')) {
             console.log('Valid token on admin panel, loading dashboard');
-            await this.loadUsers();
+            // Set up event listeners first
             this.setupEventListeners();
-            await this.updateDashboard();
+            // Then load data and update UI
+            await this.loadUsers();
             await this.loadAllUserProgress();
-            this.updateDashboard();
+            await this.updateDashboard();
         }
     }
 
@@ -124,11 +125,6 @@ class AdminDashboard {
                 return;
             }
             console.log('Users loaded successfully:', this.users.length, 'users');
-
-            // Set up event listeners
-            console.log('Setting up event listeners...'); // Debug log
-            this.setupEventListeners();
-            console.log('Event listeners set up');
 
             // Load progress for all users
             console.log('Loading user progress...'); // Debug log
