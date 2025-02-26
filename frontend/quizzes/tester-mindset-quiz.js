@@ -966,7 +966,16 @@ export class TesterMindsetQuiz extends BaseQuiz {
             }
             
             // Update outcome display
-            document.getElementById('outcome-text').textContent = selectedAnswer.outcome;
+            const correctAnswer = scenario.options.reduce((prev, current) => 
+                (prev.experience > current.experience) ? prev : current
+            );
+
+            let outcomeText = selectedAnswer.outcome;
+            if (selectedAnswer.experience < correctAnswer.experience) {
+                outcomeText += `\n\nThe correct answer was: "${correctAnswer.text}"\n${correctAnswer.outcome}`;
+            }
+            document.getElementById('outcome-text').textContent = outcomeText;
+            
             const xpText = selectedAnswer.experience >= 0 ? 
                 `Experience gained: +${selectedAnswer.experience}` : 
                 `Experience: ${selectedAnswer.experience}`;
