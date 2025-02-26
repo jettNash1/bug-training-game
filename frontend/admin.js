@@ -581,8 +581,20 @@ class AdminDashboard {
                                      questionsAnswered > 0 ? 'In Progress' : 
                                      'Not Started';
                         
+                        // Determine background color based on XP and status
+                        let backgroundColor = '#f5f5f5'; // Default gray for not started
+                        if (questionsAnswered > 0) {
+                            if (experience >= 300) {
+                                backgroundColor = '#e8f5e9'; // Light green for perfect score (300/300)
+                            } else if (experience >= 235) {
+                                backgroundColor = '#fff3e0'; // Light yellow for pass (≥235/300)
+                            } else {
+                                backgroundColor = '#ffebee'; // Light red for fail (<235/300)
+                            }
+                        }
+                        
                         return `
-                            <div class="quiz-progress-item" style="margin-bottom: 20px; padding: 15px; background: #f5f5f5; border-radius: 8px;">
+                            <div class="quiz-progress-item" style="margin-bottom: 20px; padding: 15px; background: ${backgroundColor}; border-radius: 8px;">
                                 <h4 style="margin: 0 0 10px 0;">${this.formatQuizName(quizName)}</h4>
                                 <div class="progress-details" style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px;">
                                     <div>
