@@ -239,15 +239,19 @@ class AdminDashboard {
     }
 
     setupEventListeners() {
-        // Set up search and sort functionality
+        // Set up search, sort, and filter functionality
         const searchInput = document.getElementById('userSearch');
         const sortSelect = document.getElementById('sortBy');
+        const accountTypeSelect = document.getElementById('accountType');
         
         if (searchInput) {
             searchInput.addEventListener('input', () => this.updateUserList());
         }
         if (sortSelect) {
             sortSelect.addEventListener('change', () => this.updateUserList());
+        }
+        if (accountTypeSelect) {
+            accountTypeSelect.addEventListener('change', () => this.updateUserList());
         }
 
         // Set up quiz reset event delegation
@@ -273,7 +277,7 @@ class AdminDashboard {
             const stats = this.updateStatistics();
             this.updateStatisticsDisplay(stats);
             
-            // Update user list
+            // Update user list with current filters
             await this.updateUserList();
             
         } catch (error) {
@@ -322,6 +326,34 @@ class AdminDashboard {
             return;
         }
 
+        // Update the controls section first
+        const controlsContainer = document.getElementById('userControls');
+        if (!controlsContainer) {
+            // Create the controls container if it doesn't exist
+            const controls = document.createElement('div');
+            controls.id = 'userControls';
+            controls.style.cssText = 'display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1rem; margin-bottom: 1rem;';
+            controls.innerHTML = `
+                <div class="search-container">
+                    <input type="text" id="userSearch" placeholder="Search users..." 
+                           style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
+                </div>
+                <select id="sortBy" style="padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
+                    <option value="username-asc">Username (A-Z)</option>
+                    <option value="username-desc">Username (Z-A)</option>
+                    <option value="progress-high">Progress (High-Low)</option>
+                    <option value="progress-low">Progress (Low-High)</option>
+                    <option value="last-active">Last Active</option>
+                </select>
+                <select id="accountType" style="padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
+                    <option value="all">All Accounts</option>
+                    <option value="interview">Interview Accounts</option>
+                    <option value="regular">Regular Accounts</option>
+                </select>
+            `;
+            container.parentNode.insertBefore(controls, container);
+        }
+
         if (!this.users || !this.users.length) {
             console.log('No users to display');
             container.innerHTML = '<div class="no-users">No users found</div>';
@@ -330,10 +362,15 @@ class AdminDashboard {
 
         const searchTerm = document.getElementById('userSearch')?.value.toLowerCase() || '';
         const sortBy = document.getElementById('sortBy')?.value || 'username-asc';
+        const accountType = document.getElementById('accountType')?.value || 'all';
 
-        let filteredUsers = this.users.filter(user => 
-            user.username.toLowerCase().includes(searchTerm)
-        );
+        let filteredUsers = this.users.filter(user => {
+            const matchesSearch = user.username.toLowerCase().includes(searchTerm);
+            const matchesType = accountType === 'all' || 
+                              (accountType === 'interview' && user.userType === 'interview_candidate') ||
+                              (accountType === 'regular' && user.userType !== 'interview_candidate');
+            return matchesSearch && matchesType;
+        });
 
         // Sort users based on selected criteria
         filteredUsers.sort((a, b) => {
@@ -436,7 +473,7 @@ class AdminDashboard {
         });
 
         if (filteredUsers.length === 0) {
-            container.innerHTML = '<div class="no-users">No users match your search</div>';
+            container.innerHTML = '<div class="no-users">No users match your search criteria</div>';
         }
 
         // Update statistics display
