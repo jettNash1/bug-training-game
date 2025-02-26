@@ -326,95 +326,30 @@ class AdminDashboard {
             return;
         }
 
-        // Create or update the controls section
-        let controlsContainer = document.getElementById('userControls');
-        if (!controlsContainer) {
-            // Create the controls container if it doesn't exist
-            controlsContainer = document.createElement('div');
-            controlsContainer.id = 'userControls';
-            controlsContainer.style.cssText = `
-                display: flex;
-                gap: 1rem;
-                margin-bottom: 1rem;
-                align-items: center;
-                justify-content: space-between;
-                flex-wrap: wrap;
-            `;
-            
-            // Create the controls group for filters
-            const filtersGroup = document.createElement('div');
-            filtersGroup.style.cssText = `
-                display: flex;
-                gap: 1rem;
-                flex: 1;
-                min-width: 200px;
-                max-width: 800px;
-            `;
-            
-            // Add search input
-            const searchContainer = document.createElement('div');
-            searchContainer.style.cssText = 'flex: 2; min-width: 200px;';
-            searchContainer.innerHTML = `
-                <input type="text" 
-                       id="userSearch" 
-                       placeholder="Search users..." 
-                       style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
-            `;
-            
-            // Add sort dropdown
-            const sortContainer = document.createElement('div');
-            sortContainer.style.cssText = 'flex: 1; min-width: 150px;';
-            sortContainer.innerHTML = `
-                <select id="sortBy" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
-                    <option value="username-asc">Username (A-Z)</option>
-                    <option value="username-desc">Username (Z-A)</option>
-                    <option value="progress-high">Progress (High-Low)</option>
-                    <option value="progress-low">Progress (Low-High)</option>
-                    <option value="last-active">Last Active</option>
-                </select>
-            `;
-            
-            // Add account type filter
-            const accountTypeContainer = document.createElement('div');
-            accountTypeContainer.style.cssText = 'flex: 1; min-width: 150px;';
-            accountTypeContainer.innerHTML = `
-                <select id="accountType" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
-                    <option value="all">All Accounts</option>
-                    <option value="interview">Interview Accounts</option>
-                    <option value="regular">Regular Accounts</option>
-                </select>
-            `;
-            
-            // Add create interview account button
-            const createButtonContainer = document.createElement('div');
-            createButtonContainer.innerHTML = `
-                <button id="createInterviewBtn" 
-                        style="padding: 8px 16px; 
-                               background-color: var(--primary-color); 
-                               color: white; 
-                               border: none; 
-                               border-radius: 4px; 
-                               cursor: pointer;
-                               white-space: nowrap;">
-                    Create Interview Account
-                </button>
-            `;
-            
-            // Assemble the controls
-            filtersGroup.appendChild(searchContainer);
-            filtersGroup.appendChild(sortContainer);
-            filtersGroup.appendChild(accountTypeContainer);
-            
-            controlsContainer.appendChild(filtersGroup);
-            controlsContainer.appendChild(createButtonContainer);
-            
-            // Insert the controls before the user list
-            container.parentNode.insertBefore(controlsContainer, container);
-            
-            // Add event listener for create interview account button
-            const createInterviewBtn = document.getElementById('createInterviewBtn');
-            if (createInterviewBtn) {
-                createInterviewBtn.addEventListener('click', () => this.showCreateInterviewAccountForm());
+        // Get existing search and sort controls
+        const searchInput = document.getElementById('userSearch');
+        const sortSelect = document.getElementById('sortBy');
+        
+        // Add account type filter if it doesn't exist
+        let accountTypeSelect = document.getElementById('accountType');
+        if (!accountTypeSelect) {
+            const sortField = sortSelect.closest('.sort-field');
+            if (sortField) {
+                const accountTypeContainer = document.createElement('div');
+                accountTypeContainer.className = 'sort-field';
+                accountTypeContainer.innerHTML = `
+                    <label for="accountType">Account Type</label>
+                    <select id="accountType" aria-label="Filter by account type">
+                        <option value="all">All Accounts</option>
+                        <option value="interview">Interview Accounts</option>
+                        <option value="regular">Regular Accounts</option>
+                    </select>
+                `;
+                sortField.parentNode.insertBefore(accountTypeContainer, sortField.nextSibling);
+                accountTypeSelect = accountTypeContainer.querySelector('select');
+                
+                // Add event listener for the new account type filter
+                accountTypeSelect.addEventListener('change', () => this.updateUserList());
             }
         }
 
@@ -424,9 +359,9 @@ class AdminDashboard {
             return;
         }
 
-        const searchTerm = document.getElementById('userSearch')?.value.toLowerCase() || '';
-        const sortBy = document.getElementById('sortBy')?.value || 'username-asc';
-        const accountType = document.getElementById('accountType')?.value || 'all';
+        const searchTerm = searchInput?.value.toLowerCase() || '';
+        const sortBy = sortSelect?.value || 'username-asc';
+        const accountType = accountTypeSelect?.value || 'all';
 
         let filteredUsers = this.users.filter(user => {
             const matchesSearch = user.username.toLowerCase().includes(searchTerm);
