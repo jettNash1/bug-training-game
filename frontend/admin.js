@@ -1339,6 +1339,7 @@ class AdminDashboard {
                                    name="username" 
                                    required 
                                    minlength="3"
+                                   autocomplete="off"
                                    style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
                         </div>
                         <div class="form-group" style="margin-bottom: 1.5rem;">
@@ -1348,6 +1349,7 @@ class AdminDashboard {
                                    name="password" 
                                    required 
                                    minlength="6"
+                                   autocomplete="off"
                                    style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
                         </div>
                         <div class="form-group" style="margin-bottom: 1.5rem;">
