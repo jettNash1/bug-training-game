@@ -40,8 +40,8 @@ body {
 
 .categories-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(360px, 1fr));
-    gap: 2rem;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 16px;
     padding: 2rem;
     max-width: 1400px;
     margin: 0 auto;
@@ -1348,8 +1348,8 @@ select:disabled {
 /* Add styles for category cards grid */
 .categories-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(360px, 1fr));
-    gap: 2rem;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 16px;
     padding: 2rem;
     max-width: 1400px;
     margin: 0 auto;
