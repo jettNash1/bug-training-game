@@ -420,6 +420,11 @@ export class BaseQuiz {
             
             const selectedAnswer = scenario.options[originalIndex];
 
+            // Find the correct answer (option with highest experience)
+            const correctAnswer = scenario.options.reduce((prev, current) => 
+                (prev.experience > current.experience) ? prev : current
+            );
+
             // Update player state
             this.player.experience = Math.max(0, Math.min(this.maxXP, this.player.experience + selectedAnswer.experience));
             this.player.questionHistory.push({
@@ -538,8 +543,13 @@ export class BaseQuiz {
                 this.outcomeScreen.classList.remove('hidden');
             }
             
-            // Update outcome display
-            document.getElementById('outcome-text').textContent = selectedAnswer.outcome;
+            // Update outcome display with selected answer outcome and correct answer if wrong
+            let outcomeText = selectedAnswer.outcome;
+            if (selectedAnswer.experience < correctAnswer.experience) {
+                outcomeText += `\n\nThe correct answer was: "${correctAnswer.text}"\n${correctAnswer.outcome}`;
+            }
+            document.getElementById('outcome-text').textContent = outcomeText;
+            
             const xpText = selectedAnswer.experience >= 0 ? 
                 `Experience gained: +${selectedAnswer.experience}` : 
                 `Experience: ${selectedAnswer.experience}`;
