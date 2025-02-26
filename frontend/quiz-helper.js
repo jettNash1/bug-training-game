@@ -9,6 +9,10 @@ export class BaseQuiz {
         this.gameScreen = document.getElementById('game-screen');
         this.outcomeScreen = document.getElementById('outcome-screen');
         this.isLoading = false;
+        this.questionTimer = null;
+        this.timePerQuestion = 30000; // 30 seconds in milliseconds
+        this.remainingTime = this.timePerQuestion;
+        this.questionStartTime = null; // Track when each question starts
     }
 
     showError(message) {
@@ -45,6 +49,78 @@ export class BaseQuiz {
         this.showQuestion();
     }
 
+    initializeTimer() {
+        // Create timer UI if it doesn't exist
+        let timerContainer = document.getElementById('timer-container');
+        if (!timerContainer) {
+            timerContainer = document.createElement('div');
+            timerContainer.id = 'timer-container';
+            timerContainer.setAttribute('role', 'timer');
+            timerContainer.setAttribute('aria-label', 'Question timer');
+            this.gameScreen.insertBefore(timerContainer, this.gameScreen.firstChild);
+        }
+
+        // Reset and start timer
+        this.remainingTime = this.timePerQuestion;
+        this.updateTimerDisplay();
+        
+        // Clear any existing timer
+        if (this.questionTimer) {
+            clearInterval(this.questionTimer);
+        }
+
+        // Start new timer
+        this.questionTimer = setInterval(() => {
+            this.remainingTime -= 1000;
+            this.updateTimerDisplay();
+
+            if (this.remainingTime <= 0) {
+                this.handleTimeUp();
+            }
+        }, 1000);
+    }
+
+    updateTimerDisplay() {
+        const timerContainer = document.getElementById('timer-container');
+        const seconds = Math.ceil(this.remainingTime / 1000);
+        timerContainer.textContent = `Time remaining: ${seconds}s`;
+        
+        // Add warning class when time is running low (less than 5 seconds)
+        if (seconds <= 5) {
+            timerContainer.classList.add('timer-warning');
+        } else {
+            timerContainer.classList.remove('timer-warning');
+        }
+    }
+
+    handleTimeUp() {
+        clearInterval(this.questionTimer);
+        
+        // Get current scenario
+        const currentScenario = this.getCurrentScenario();
+        
+        // Create a time-up option with 0 experience
+        const timeUpOption = {
+            text: "Time's up - No answer selected",
+            outcome: "You ran out of time. No points awarded.",
+            experience: 0
+        };
+
+        // Record the choice with timing information
+        const timeSpent = this.questionStartTime ? Date.now() - this.questionStartTime : this.timePerQuestion;
+        this.player.questionHistory.push({
+            scenarioId: currentScenario.id,
+            selectedOption: timeUpOption.text,
+            outcome: timeUpOption.outcome,
+            experience: timeUpOption.experience,
+            timeSpent: timeSpent,
+            timedOut: true
+        });
+
+        // Show outcome
+        this.showOutcome(timeUpOption);
+    }
+
     showQuestion() {
         if (this.isLoading) return;
 
@@ -53,6 +129,9 @@ export class BaseQuiz {
             this.finishQuiz();
             return;
         }
+
+        // Record start time for this question
+        this.questionStartTime = Date.now();
 
         // Update UI with current scenario
         document.getElementById('scenario-title').textContent = currentScenario.title;
@@ -71,18 +150,31 @@ export class BaseQuiz {
 
         // Re-attach event listeners
         this.initializeEventListeners();
+        
+        // Initialize timer for the new question
+        this.initializeTimer();
     }
 
     handleOptionSelect(optionElement) {
+        // Clear the timer when an option is selected
+        if (this.questionTimer) {
+            clearInterval(this.questionTimer);
+        }
+
         const currentScenario = this.getCurrentScenario();
         const selectedOption = currentScenario.options[optionElement.dataset.index];
+        
+        // Calculate time spent on this question
+        const timeSpent = this.questionStartTime ? Date.now() - this.questionStartTime : null;
         
         // Record the choice
         this.player.questionHistory.push({
             scenarioId: currentScenario.id,
             selectedOption: selectedOption.text,
             outcome: selectedOption.outcome,
-            experience: selectedOption.experience
+            experience: selectedOption.experience,
+            timeSpent: timeSpent,
+            timedOut: false
         });
 
         // Update experience
@@ -116,6 +208,11 @@ export class BaseQuiz {
     }
 
     async finishQuiz() {
+        // Clear any running timer
+        if (this.questionTimer) {
+            clearInterval(this.questionTimer);
+        }
+
         this.isLoading = true;
         try {
             if (!this.player.name) {
