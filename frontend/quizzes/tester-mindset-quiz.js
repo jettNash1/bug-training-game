@@ -972,7 +972,7 @@ export class TesterMindsetQuiz extends BaseQuiz {
 
             let outcomeText = selectedAnswer.outcome;
             if (selectedAnswer.experience < correctAnswer.experience) {
-                outcomeText += `\n\nThe correct answer was: "${correctAnswer.text}"\n${correctAnswer.outcome}`;
+                outcomeText += `\n\n\nThe correct answer was: "${correctAnswer.text}"\n${correctAnswer.outcome}`;
             }
             document.getElementById('outcome-text').textContent = outcomeText;
             
