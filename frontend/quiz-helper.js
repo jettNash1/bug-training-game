@@ -107,7 +107,7 @@ export class BaseQuiz {
         // Create a time-up option with 0 experience and include correct answer
         const timeUpOption = {
             text: "Time's up - No answer selected",
-            outcome: `You did not answer in time.\n\n\nThe correct answer was:\n"${correctOption.text}"\n${correctOption.outcome}`,
+            outcome: "You did not answer in time.",
             experience: 0
         };
 
