@@ -197,10 +197,20 @@ export class BaseQuiz {
         this.gameScreen.classList.add('hidden');
         this.outcomeScreen.classList.remove('hidden');
 
+        // Get current scenario and find correct answer
+        const currentScenario = this.getCurrentScenario();
+        const correctAnswer = currentScenario.options.reduce((prev, current) => 
+            (prev.experience > current.experience) ? prev : current
+        );
+
         // Update outcome text
         const outcomeText = document.getElementById('outcome-text');
         if (outcomeText) {
-            outcomeText.textContent = option.outcome;
+            let text = option.outcome;
+            if (option.experience < correctAnswer.experience) {
+                text += `\n\nThe correct answer was: "${correctAnswer.text}"\n${correctAnswer.outcome}`;
+            }
+            outcomeText.textContent = text;
         }
 
         // Update XP display
