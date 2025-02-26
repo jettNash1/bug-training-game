@@ -42,20 +42,20 @@
             <div class="user-management-panel">
                 <div class="panel-header">
                     <h2>User Management</h2>
-                    <div class="search-controls" style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 24px; margin: 24px 0;">
+                    <div class="search-controls" style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 32px; margin: 24px 0; padding: 0 24px;">
                         <div class="search-field" style="display: flex; flex-direction: column;">
-                            <label for="userSearch" style="margin-bottom: 12px; font-weight: 500;">Search Users</label>
+                            <label for="userSearch" style="margin-bottom: 12px; font-weight: 500; color: #333;">Search Users</label>
                             <input type="text" 
                                    id="userSearch" 
                                    placeholder="Search by username..."
                                    aria-label="Search users"
-                                   style="width: 100%; padding: 8px 12px; border: 1px solid #ddd; border-radius: 4px; height: 40px;">
+                                   style="width: 100%; padding: 8px 12px; border: 1px solid #ddd; border-radius: 4px; height: 40px; font-size: 14px;">
                         </div>
                         <div class="sort-field" style="display: flex; flex-direction: column;">
-                            <label for="sortBy" style="margin-bottom: 12px; font-weight: 500;">Sort By</label>
+                            <label for="sortBy" style="margin-bottom: 12px; font-weight: 500; color: #333;">Sort By</label>
                             <select id="sortBy" 
                                     aria-label="Sort users by"
-                                    style="width: 100%; padding: 8px 12px; border: 1px solid #ddd; border-radius: 4px; height: 40px; background-color: white; appearance: none; background-position: right 12px center; background-repeat: no-repeat; background-image: url('data:image/svg+xml,%3Csvg width=%2214%22 height=%228%22 viewBox=%220 0 14 8%22 fill=%22none%22 xmlns=%22http://www.w3.org/2000/svg%22%3E%3Cpath d=%22M1 1L7 7L13 1%22 stroke=%22%23666%22 stroke-width=%222%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22/%3E%3C/svg%3E');">
+                                    style="width: 100%; padding: 8px 12px; border: 1px solid #ddd; border-radius: 4px; height: 40px; background-color: white; appearance: none; background-position: right 12px center; background-repeat: no-repeat; background-image: url('data:image/svg+xml,%3Csvg width=%2214%22 height=%228%22 viewBox=%220 0 14 8%22 fill=%22none%22 xmlns=%22http://www.w3.org/2000/svg%22%3E%3Cpath d=%22M1 1L7 7L13 1%22 stroke=%22%23666%22 stroke-width=%222%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22/%3E%3C/svg%3E'); font-size: 14px;">
                                 <option value="username-asc">Username (A-Z)</option>
                                 <option value="username-desc">Username (Z-A)</option>
                                 <option value="progress-high">Progress (High to Low)</option>
@@ -64,19 +64,20 @@
                             </select>
                         </div>
                         <div class="account-type-field" style="display: flex; flex-direction: column;">
-                            <label for="accountType" style="margin-bottom: 12px; font-weight: 500;">Account Type</label>
+                            <label for="accountType" style="margin-bottom: 12px; font-weight: 500; color: #333;">Account Type</label>
                             <select id="accountType" 
                                     aria-label="Filter by account type"
-                                    style="width: 100%; padding: 8px 12px; border: 1px solid #ddd; border-radius: 4px; height: 40px; background-color: white; appearance: none; background-position: right 12px center; background-repeat: no-repeat; background-image: url('data:image/svg+xml,%3Csvg width=%2214%22 height=%228%22 viewBox=%220 0 14 8%22 fill=%22none%22 xmlns=%22http://www.w3.org/2000/svg%22%3E%3Cpath d=%22M1 1L7 7L13 1%22 stroke=%22%23666%22 stroke-width=%222%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22/%3E%3C/svg%3E');">
+                                    style="width: 100%; padding: 8px 12px; border: 1px solid #ddd; border-radius: 4px; height: 40px; background-color: white; appearance: none; background-position: right 12px center; background-repeat: no-repeat; background-image: url('data:image/svg+xml,%3Csvg width=%2214%22 height=%228%22 viewBox=%220 0 14 8%22 fill=%22none%22 xmlns=%22http://www.w3.org/2000/svg%22%3E%3Cpath d=%22M1 1L7 7L13 1%22 stroke=%22%23666%22 stroke-width=%222%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22/%3E%3C/svg%3E'); font-size: 14px;">
                                 <option value="all">All Accounts</option>
                                 <option value="interview">Interview Accounts</option>
                                 <option value="regular">Regular Accounts</option>
                             </select>
                         </div>
-                        <div style="display: flex; align-items: flex-end;">
+                        <div style="display: flex; flex-direction: column;">
+                            <label style="margin-bottom: 12px; font-weight: 500; visibility: hidden;">Action</label>
                             <button id="createInterviewAccountBtn" 
                                     class="action-button"
-                                    style="width: 100%; padding: 8px 12px; background: var(--primary-color); color: white; border: none; border-radius: 4px; cursor: pointer; height: 40px; font-weight: 500;">
+                                    style="width: 100%; padding: 8px 12px; background: var(--primary-color); color: white; border: none; border-radius: 4px; cursor: pointer; height: 40px; font-weight: 500; font-size: 14px;">
                                 Create Interview Account
                             </button>
                         </div>
