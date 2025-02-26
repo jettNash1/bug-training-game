@@ -74,22 +74,23 @@ export class ScriptMetricsTroubleshootingQuiz extends BaseQuiz {
                 description: 'What is the primary purpose of script metrics?',
                 options: [
                     {
-                        text: 'To create visual presentations for clients only',
+                        text: 'To create visual presentations on projects for clients',
                         outcome: 'While metrics may be shared with clients, this is not their primary purpose',
                         experience: -5
                     },
                     {
                         text: 'To gauge project progress and inform report writing',
-                        outcome: 'Correct - Metrics are used to track progress and help with daily reporting',
-                        experience: 15
+                        outcome: 'Correct! - Metrics are used to track progress and help with daily reporting',
+                        experience: 15,
+                        tool: 'Metrics Fundamentals'
                     },
                     {
-                        text: 'To track employee performance',
+                        text: 'To track employee performance to match individuals with specific projects',
                         outcome: 'Metrics are about project progress, not individual performance',
                         experience: -10
                     },
                     {
-                        text: 'To gauge project progress only',
+                        text: 'To gauge project progress and determine resources required to complete the testing activites',
                         outcome: 'This is true but incomplete as it misses the reporting aspect.',
                         experience: 5
                     }
@@ -108,8 +109,9 @@ export class ScriptMetricsTroubleshootingQuiz extends BaseQuiz {
                     },
                     {
                         text: 'Within the existing table, above the final row',
-                        outcome: 'Correct - This ensures formulas remain intact and metrics update properly.',
-                        experience: 15
+                        outcome: 'Correct! - This ensures formulas remain intact and metrics update properly.',
+                        experience: 15,
+                        tool: 'Table Management'
                     },
                     {
                         text: 'In a new separate table',
@@ -130,22 +132,23 @@ export class ScriptMetricsTroubleshootingQuiz extends BaseQuiz {
                 description: 'What causes missing pie chart labels in the Metrics tab?',
                 options: [
                     {
-                        text: 'Software bugs only',
+                        text: 'Software bugs raised in any of the test scripts',
                         outcome: 'Missing labels are usually due to chart size or data arrangement',
                         experience: -10
                     },
                     {
-                        text: 'Corrupted data',
+                        text: 'Corrupted data within the test script',
                         outcome: 'This is not typically the cause of missing labels.',
                         experience: -5
                     },
                     {
                         text: 'Chart size and data arrangement',
-                        outcome: 'Correct - Labels may be missing due to chart size or how data is arranged in the table.',
-                        experience: 15
+                        outcome: 'Correct! - Labels may be missing due to chart size or how data is arranged in the table.',
+                        experience: 15,
+                        tool: 'Chart Management'
                     },
                     {
-                        text: 'Chart size only',
+                        text: 'Chart size in relation to the rest of the metrics features on the tab',
                         outcome: 'While chart size is a factor, data arrangement also matters',
                         experience: 5
                     }
@@ -158,23 +161,24 @@ export class ScriptMetricsTroubleshootingQuiz extends BaseQuiz {
                 description: 'How should you handle empty environment rows?',
                 options: [
                     {
-                        text: 'Delete them completely',
+                        text: 'Delete the environment rows completely',
                         outcome: 'Deleting rows can break formulas.',
                         experience: -10
                     },
                     {
                         text: 'Copy formulas from existing rows and update environment details',
-                        outcome: 'Correct - This maintains formula integrity while allowing new environment details.',
-                        experience: 15
+                        outcome: 'Correct! - This maintains formula integrity while allowing new environment details.',
+                        experience: 15,
+                        tool: 'Environment Management'
                     },
                     {
-                        text: 'Hide them',
-                        outcome: 'Hiding rows doesn\'t properly address the issue',
+                        text: 'Hide the environment rows within the environment checks tab',
+                        outcome: 'Hiding rows doesn\'t properly address the issue as metrics can still be picked up from hidden rows.',
                         experience: -5
                     },
                     {
-                        text: 'Keep original formulas but clear content',
-                        outcome: 'While maintaining formulas is good, they need to be properly copied',
+                        text: 'Keep original formulas for different environment rows and clear content',
+                        outcome: 'While maintaining formulas is good, they need to be properly copied to assign different rows.',
                         experience: 5
                     }
                 ]
@@ -186,23 +190,24 @@ export class ScriptMetricsTroubleshootingQuiz extends BaseQuiz {
                 description: 'What causes #REF! errors in the Session Totals table?',
                 options: [
                     {
-                        text: 'Insufficient lines for all dates',
-                        outcome: 'Correct - The error appears when there aren\'t enough lines for all testing date.',
-                        experience: 15
+                        text: 'Insufficient lines for all dates in the sessions totals table',
+                        outcome: 'Correct! - The error appears when there aren\'t enough lines for all testing dates.',
+                        experience: 15,
+                        tool: 'Error Handling'
                     },
                     {
-                        text: 'Corrupt spreadsheet',
+                        text: 'Corrupted data within the spreadsheet',
                         outcome: 'This is rarely the cause of #REF! errors in this context.',
                         experience: -5
                     },
                     {
-                        text: 'Wrong date format',
-                        outcome: 'Date formatting is not the cause of #REF! errors',
+                        text: 'Wrong date format inserted into the sessions totals table',
+                        outcome: 'Date formatting is not the cause of #REF! errors.',
                         experience: -10
                     },
                     {
-                        text: 'Too many dates entered',
-                        outcome: 'While related to dates, it\'s specifically about line availability',
+                        text: 'Too many dates entered within the sessions total table',
+                        outcome: 'While related to dates, the issue it\'s specifically related line availability.',
                         experience: 5
                     }
                 ]
@@ -217,24 +222,24 @@ export class ScriptMetricsTroubleshootingQuiz extends BaseQuiz {
                 title: 'Environment Check Tabs',
                 description: 'How should you handle multiple Environment Checks tabs?',
                 options: [
-
                     {
-                        text: 'Create new independent metrics',
+                        text: 'Create new independent metrics for each environment tab',
                         outcome: 'This would not maintain proper tracking across tabs.',
                         experience: -5
                     },
                     {
                         text: 'Copy and update existing table with new tab references',
-                        outcome: 'Correct! This maintains consistency while incorporating new data.',
-                        experience: 20
+                        outcome: 'Correct! - This maintains consistency while incorporating new data.',
+                        experience: 15,
+                        tool: 'Tab Management'
                     },
                     {
-                        text: 'Merge all data into one tab',
+                        text: 'Merge all environment data into one tab',
                         outcome: 'This would make tracking different sessions difficult',
                         experience: -10
                     },
                     {
-                        text: 'Add new columns to existing table',
+                        text: 'Add new columns to existing tables within the environment check tab',
                         outcome: 'While this maintains data connection, it\'s not the optimal solution',
                         experience: 5
                     }
@@ -247,24 +252,25 @@ export class ScriptMetricsTroubleshootingQuiz extends BaseQuiz {
                 description: 'What affects the Compatibility Environments Complete figure?',
                 options: [
                     {
-                        text: 'Primary column and environment count',
-                        outcome: 'While Primary is important, Checked is also needed.',
+                        text: 'The primary column and environment count within the environments table',
+                        outcome: 'While primary column is important, the checked field is also required to report accurate metrics.',
                         experience: 5
                     },
                     {
-                        text: 'Only the Primary Column',
-                        outcome: 'Multiple columns affect this figure.',
+                        text: 'The primary column within the environments table',
+                        outcome: 'Multiple columns affect this figure and the \'Checked\' column is also taken into consideration.',
                         experience: -5
                     },
                     {
-                        text: 'Only the Checked Column',
-                        outcome: 'This alone doesn\'t determine compatibility status',
+                        text: 'The \'Checked\' column within the environments table',
+                        outcome: 'This alone doesn\'t determine compatibility status and the primary column is also taken into consideration.',
                         experience: -10
                     },
                     {
-                        text: 'Both Primary and Checked Columns',
-                        outcome: 'Correct! Both columns together determine the completion status',
-                        experience: 20
+                        text: 'Both primary and \'Checked\' columns within the environments table',
+                        outcome: 'Correct! - Both columns together determine the completion status.',
+                        experience: 15,
+                        tool: 'Compatibility Tracking'
                     }
                 ]
             },
@@ -272,25 +278,26 @@ export class ScriptMetricsTroubleshootingQuiz extends BaseQuiz {
                 id: 8,
                 level: 'Intermediate',
                 title: 'Environment Lists',
-                description: 'How should you modify environment lists across multiple tickets?',
+                description: 'How should you modify environment lists that have multiple tickets?',
                 options: [
                     {
-                        text: 'Update each ticket individually',
-                        outcome: 'This is inefficient and prone to inconsistency',
+                        text: 'Update each list individually to reflect the specific related tickets',
+                        outcome: 'This is inefficient and prone to inconsistency.',
                         experience: -5
                     },
                     {
-                        text: 'Update Environment List tab and remove excess rows',
-                        outcome: 'Correct! This ensures consistent updates across all linked tickets.',
-                        experience: 20
+                        text: 'Update the environment list tab and remove excess rows',
+                        outcome: 'Correct! - This ensures consistent updates across all linked tickets.',
+                        experience: 15,
+                        tool: 'List Management'
                     },
                     {
-                        text: 'Create new environment lists',
-                        outcome: 'This breaks the connection with existing metrics',
+                        text: 'Create new environment lists across multiple tabs',
+                        outcome: 'This breaks the connection with existing metrics.',
                         experience: -10
                     },
                     {
-                        text: 'Update the main tab only',
+                        text: 'Update the main environments list tab only',
                         outcome: 'While updating the main tab is important, excess rows still need handling.',
                         experience: 5
                     }
@@ -303,24 +310,25 @@ export class ScriptMetricsTroubleshootingQuiz extends BaseQuiz {
                 description: 'What should you do when formulas don\'t encompass new rows?',
                 options: [
                     {
-                        text: 'Extend the formula manually',
+                        text: 'Extend the formula manually for each affected metric',
                         outcome: 'While this works, double-clicking is more efficient.',
                         experience: 5
                     },
                     {
-                        text: 'Copy from another sheet',
-                        outcome: 'This might not match the specific needs of your sheet.',
+                        text: 'Copy a formula from another sheet',
+                        outcome: 'This appoach not match the specific needs of your sheet.',
                         experience: -5
                     },
                     {
-                        text: 'Create new formulas',
+                        text: 'Create new formulas for the affected metrics',
                         outcome: 'Creating new formulas may lead to inconsistencies',
                         experience: -10
                     },
                     {
-                        text: 'Double-click and update cell ranges',
-                        outcome: 'Correct! This allows proper adjustment of formula ranges.',
-                        experience: 20
+                        text: 'Double-click and update cell ranges for the affected rows',
+                        outcome: 'Correct! - This allows proper adjustment of formula ranges.',
+                        experience: 15,
+                        tool: 'Formula Management'
                     }
                 ]
             },
@@ -331,23 +339,24 @@ export class ScriptMetricsTroubleshootingQuiz extends BaseQuiz {
                 description: 'How should you handle environment-specific coverage?',
                 options: [
                     {
-                        text: 'Create separate sheets',
-                        outcome: 'This creates unnecessary complexity.',
+                        text: 'Create separate sheets for specific environment testing',
+                        outcome: 'This creates unnecessary complexity within the test script.',
                         experience: -10
                     },
                     {
                         text: 'Combine global and specific environments as needed',
-                        outcome: 'Correct! This allows flexibility while maintaining consistency.',
-                        experience: 20
+                        outcome: 'Correct! - This allows flexibility while maintaining consistency.',
+                        experience: 15,
+                        tool: 'Coverage Management'
                     },
                     {
-                        text: 'Use only global environments',
-                        outcome: 'This doesn\'t account for ticket-specific needs',
+                        text: 'Use only global environments within the test script',
+                        outcome: 'This doesn\'t account for ticket or environment specific needs',
                         experience: -5
                     },
                     {
                         text: 'Use specific environments only',
-                        outcome: 'While this works for some cases, it\'s not flexible enough',
+                        outcome: 'While this works for some projects, it\'s not flexible enough and the exact environment testing may not be achievable',
                         experience: 5
                     }
                 ]
@@ -360,26 +369,26 @@ export class ScriptMetricsTroubleshootingQuiz extends BaseQuiz {
                 id: 11,
                 level: 'Advanced',
                 title: 'Duplicated Environment Checks',
-                description: 'When updating duplicated Environment Checks tabs, what\'s crucial?',
+                description: 'When updating duplicated environment checks tabs, what\'s crucial?',
                 options: [
-
                     {
-                        text: 'Only update cell references',
-                        outcome: 'Multiple aspects need attention',
-                        experience: -5
+                        text: 'Update all cell references within the environment checks tab',
+                        outcome: 'Multiple aspects need attention rather than just this one area, including formula accuracy.',
+                        experience: 5
                     },
                     {
                         text: 'Update all references and verify formula accuracy',
-                        outcome: 'Correct - This ensures complete and accurate metric tracking',
-                        experience: 25
+                        outcome: 'Correct! - This ensures complete and accurate metric tracking',
+                        experience: 15,
+                        tool: 'Reference Management'
                     },
                     {
-                        text: 'Copy all formulas exactly',
-                        outcome: 'Formulas need adjustment for the new context',
+                        text: 'Copy all formulas exactly for the duplicated environments checks tab',
+                        outcome: 'Formula will need adjustment for the new context on the new tab',
                         experience: -5
                     },
                     {
-                        text: 'Update table structure only',
+                        text: 'Update table structure within duplicated environments checks tab',
                         outcome: 'While structure matters, formula updates are also crucial',
                         experience: -10
                     }
@@ -392,23 +401,24 @@ export class ScriptMetricsTroubleshootingQuiz extends BaseQuiz {
                 description: 'How should you handle complex environment table metrics?',
                 options: [
                     {
-                        text: 'Simplify the metrics',
-                        outcome: 'This could lose important tracking details.',
+                        text: 'Simplify the metrics to return the expected outcome',
+                        outcome: 'Simplifying metrics could lose important tracking details.',
                         experience: -10
                     },
                     {
-                        text: 'Use basic counting only',
+                        text: 'Use basic counting for the metrics table only',
                         outcome: 'This wouldn\'t capture all necessary metrics.',
                         experience: -5
                     },
                     {
                         text: 'Verify all formula chains and dependencies',
-                        outcome: 'Correct! This ensures accurate tracking across all dependencies',
-                        experience: 25
+                        outcome: 'Correct! - This ensures accurate tracking across all dependencies',
+                        experience: 15,
+                        tool: 'Dependency Management'
                     },
                     {
-                        text: 'Check individual formulas',
-                        outcome: 'While important, it misses the broader dependencies',
+                        text: 'Check individual formulas that relate to the environment table',
+                        outcome: 'While important, it misses the broader dependencies like formula chains',
                         experience: 5
                     }
                 ]
@@ -421,22 +431,23 @@ export class ScriptMetricsTroubleshootingQuiz extends BaseQuiz {
                 options: [
                     {
                         text: 'Maintain formula relationships while updating references',
-                        outcome: 'Correct! This preserves metric integrity across tabs',
-                        experience: 25
+                        outcome: 'Correct! - This preserves metric integrity across tabs',
+                        experience: 15,
+                        tool: 'Cross-Tab Management'
                     },
                     {
-                        text: 'Update each tab independently',
+                        text: 'Update each tab independently across the test script tabs',
                         outcome: 'This breaks cross-tab relationships.',
                         experience: -10
                     },
                     {
-                        text: 'Update primary metrics only',
-                        outcome: 'While important, secondary metrics also need attention',
+                        text: 'Update the primary metrics across the test script tabs',
+                        outcome: 'While important, secondary metrics also need attention for full reporting details.',
                         experience: 5
                     },
                     {
-                        text: 'Create new metrics',
-                        outcome: 'This loses historical tracking',
+                        text: 'Create new metrics to reflect the current testing references',
+                        outcome: 'This approach can lose historical tracking.',
                         experience: -5
                     }
                 ]
@@ -448,24 +459,25 @@ export class ScriptMetricsTroubleshootingQuiz extends BaseQuiz {
                 description: 'How should you handle metric discrepancies across multiple tabs?',
                 options: [
                     {
-                        text: 'Check individual tab metrics',
-                        outcome: 'While important, cross-tab relationships also matter.',
+                        text: 'Check individual tab metrics throughout the test script',
+                        outcome: 'While important, cross-tab relationships are also taken into consideration.',
                         experience: 5
                     },
                     {
-                        text: 'Average the differences',
-                        outcome: 'This doesn\'t address the root cause.',
+                        text: 'Determine an average from the discrepancies to enter into the metrics tables',
+                        outcome: 'This doesn\'t address the root cause of the metrics issues across the tabs within the test script.',
                         experience: -5
                     },
                     {
-                        text: 'Use the highest values',
-                        outcome: 'This could hide actual issues',
+                        text: 'Use the highest values returned from the tabs within the test script',
+                        outcome: 'This could hide actual issues and actual metrics need to be reported.',
                         experience: -10
                     },
                     {
                         text: 'Trace formula chains and verify all connections',
-                        outcome: 'Correct! This identifies and resolves the source of discrepancies',
-                        experience: 25
+                        outcome: 'Correct! - This identifies and resolves the source of discrepancies.',
+                        experience: 15,
+                        tool: 'Discrepancy Resolution'
                     }
                 ]
             },
@@ -476,27 +488,28 @@ export class ScriptMetricsTroubleshootingQuiz extends BaseQuiz {
                 description: 'What\'s the best approach for maintaining metric integrity during major updates?',
                 options: [
                     {
-                        text: 'Start with fresh metrics',
-                        outcome: 'This loses valuable historical data.',
+                        text: 'Start with fresh metrics when major updates to the test script are required',
+                        outcome: 'This approach can lose valuable historical data.',
                         experience: -10
                     },
                     {
-                        text: 'Copy existing metrics',
-                        outcome: 'This could perpetuate existing issues.',
+                        text: 'Copy existing metrics from across the test script',
+                        outcome: 'This could potentially copy any existing issues within the metrics.',
                         experience: -5
                     },
                     {
                         text: 'Verify all dependencies and update systematically',
-                        outcome: 'Correct! This maintains accuracy while allowing updates',
-                        experience: 25
+                        outcome: 'Correct! - This maintains accuracy while allowing updates.',
+                        experience: 15,
+                        tool: 'Update Management'
                     },
                     {
-                        text: 'Update primary metrics first',
-                        outcome: 'While a good start, it needs more comprehensive attention',
+                        text: 'Update primary metrics across the test script',
+                        outcome: 'While a good start, more comprehensive attention is required to cover all metrics.',
                         experience: 5
                     }
                 ]
-            },
+            }
         ];
 
         // Initialize UI and add event listeners
