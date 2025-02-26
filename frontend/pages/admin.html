@@ -43,19 +43,19 @@
                 <div class="panel-header">
                     <h2>User Management</h2>
                     <div class="search-controls" style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin: 16px 0;">
-                        <div class="search-field">
-                            <label for="userSearch">Search Users</label>
+                        <div class="search-field" style="display: flex; flex-direction: column;">
+                            <label for="userSearch" style="margin-bottom: 8px;">Search Users</label>
                             <input type="text" 
                                    id="userSearch" 
                                    placeholder="Search by username..."
                                    aria-label="Search users"
-                                   style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
+                                   style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; height: 37px;">
                         </div>
-                        <div class="sort-field">
-                            <label for="sortBy">Sort By</label>
+                        <div class="sort-field" style="display: flex; flex-direction: column;">
+                            <label for="sortBy" style="margin-bottom: 8px;">Sort By</label>
                             <select id="sortBy" 
                                     aria-label="Sort users by"
-                                    style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; background-color: white;">
+                                    style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; height: 37px; background-color: white;">
                                 <option value="username-asc">Username (A-Z)</option>
                                 <option value="username-desc">Username (Z-A)</option>
                                 <option value="progress-high">Progress (High to Low)</option>
@@ -63,20 +63,21 @@
                                 <option value="last-active">Last Active</option>
                             </select>
                         </div>
-                        <div class="account-type-field">
-                            <label for="accountType">Account Type</label>
+                        <div class="account-type-field" style="display: flex; flex-direction: column;">
+                            <label for="accountType" style="margin-bottom: 8px;">Account Type</label>
                             <select id="accountType" 
                                     aria-label="Filter by account type"
-                                    style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; background-color: white;">
+                                    style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; height: 37px; background-color: white;">
                                 <option value="all">All Accounts</option>
                                 <option value="interview">Interview Accounts</option>
                                 <option value="regular">Regular Accounts</option>
                             </select>
                         </div>
-                        <div style="display: flex; flex-direction: column; justify-content: flex-end;">
+                        <div style="display: flex; flex-direction: column;">
+                            <label style="margin-bottom: 8px; visibility: hidden;">Action</label>
                             <button id="createInterviewAccountBtn" 
                                     class="action-button"
-                                    style="width: 100%; padding: 8px; margin-top: auto; background: var(--primary-color); color: white; border: none; border-radius: 4px; cursor: pointer; height: 37px;">
+                                    style="width: 100%; padding: 8px; background: var(--primary-color); color: white; border: none; border-radius: 4px; cursor: pointer; height: 37px;">
                                 Create Interview Account
                             </button>
                         </div>
