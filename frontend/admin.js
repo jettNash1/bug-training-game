@@ -1331,25 +1331,27 @@ class AdminDashboard {
                     max-height: 90vh;
                     overflow-y: auto;">
                     <h2 style="margin-bottom: 1.5rem;">Create Interview Account</h2>
-                    <form id="createInterviewForm">
+                    <form id="createInterviewForm" autocomplete="off">
                         <div class="form-group" style="margin-bottom: 1.5rem;">
                             <label for="username" style="display: block; margin-bottom: 0.5rem; font-weight: 500;">Username: (min. 3 characters)</label>
                             <input type="text" 
                                    id="username" 
-                                   name="username" 
+                                   name="username_${Date.now()}" 
                                    required 
                                    minlength="3"
-                                   autocomplete="off"
+                                   autocomplete="new-username"
+                                   autocorrect="off"
+                                   autocapitalize="off"
                                    style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
                         </div>
                         <div class="form-group" style="margin-bottom: 1.5rem;">
                             <label for="password" style="display: block; margin-bottom: 0.5rem; font-weight: 500;">Password: (min. 6 characters)</label>
                             <input type="password" 
                                    id="password" 
-                                   name="password" 
+                                   name="password_${Date.now()}" 
                                    required 
                                    minlength="6"
-                                   autocomplete="off"
+                                   autocomplete="new-password"
                                    style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
                         </div>
                         <div class="form-group" style="margin-bottom: 1.5rem;">
