@@ -369,11 +369,11 @@ class AdminDashboard {
                 const progress = user.quizProgress?.[quizType.toLowerCase()];
                 const result = user.quizResults?.find(r => r.quizName.toLowerCase() === quizType.toLowerCase());
                 
-                // Get questions answered from progress first, then fall back to result
-                const questionsAnswered = progress?.questionsAnswered || 
-                                        progress?.questionHistory?.length || 
-                                        result?.questionsAnswered || 
-                                        result?.questionHistory?.length || 0;
+                // Prioritize values from quiz results over progress
+                const questionsAnswered = result?.questionsAnswered || 
+                                        result?.questionHistory?.length ||
+                                        progress?.questionsAnswered || 
+                                        progress?.questionHistory?.length || 0;
                 
                 totalQuestionsAnswered += questionsAnswered;
                 
@@ -455,11 +455,11 @@ class AdminDashboard {
             const progress = user.quizProgress?.[quizType.toLowerCase()];
             const result = user.quizResults?.find(r => r.quizName.toLowerCase() === quizType.toLowerCase());
             
-            // Get questions answered from progress first, then fall back to result
-            const questionsAnswered = progress?.questionsAnswered || 
-                                    progress?.questionHistory?.length || 
-                                    result?.questionsAnswered || 
-                                    result?.questionHistory?.length || 0;
+            // Prioritize values from quiz results over progress
+            const questionsAnswered = result?.questionsAnswered || 
+                                    result?.questionHistory?.length ||
+                                    progress?.questionsAnswered || 
+                                    progress?.questionHistory?.length || 0;
             
             totalQuestionsAnswered += questionsAnswered;
         });
@@ -568,10 +568,14 @@ class AdminDashboard {
                         const progress = user.quizProgress?.[quizLower];
                         const result = user.quizResults?.find(r => r.quizName.toLowerCase() === quizLower);
                         
-                        const questionsAnswered = progress?.questionsAnswered || result?.questionsAnswered || 0;
-                        const experience = progress?.experience || result?.experience || 0;
+                        // Prioritize values from quiz results over progress
+                        const questionsAnswered = result?.questionsAnswered || 
+                                                result?.questionHistory?.length ||
+                                                progress?.questionsAnswered || 
+                                                progress?.questionHistory?.length || 0;
+                        const experience = result?.experience || progress?.experience || 0;
                         const score = result?.score || 0;
-                        const lastActive = progress?.lastUpdated || result?.lastActive || result?.completedAt || 'Never';
+                        const lastActive = result?.completedAt || result?.lastActive || progress?.lastUpdated || 'Never';
                         
                         const status = questionsAnswered === 15 ? 'Completed' : 
                                      questionsAnswered > 0 ? 'In Progress' : 
