@@ -683,7 +683,13 @@ export class TesterMindsetQuiz extends BaseQuiz {
                 transitionContainer.innerHTML = '';
                 transitionContainer.classList.remove('active');
             }
+
+            // Clear any existing timer
+            if (this.questionTimer) {
+                clearInterval(this.questionTimer);
+            }
             
+            // Display the first scenario and start the timer
             await this.displayScenario();
         } catch (error) {
             console.error('Failed to start game:', error);
@@ -862,6 +868,9 @@ export class TesterMindsetQuiz extends BaseQuiz {
         });
 
         this.updateProgress();
+
+        // Initialize timer for the new question
+        this.initializeTimer();
     }
 
     async handleAnswer() {
@@ -870,6 +879,11 @@ export class TesterMindsetQuiz extends BaseQuiz {
         const submitButton = document.querySelector('.submit-button');
         if (submitButton) {
             submitButton.disabled = true;
+        }
+
+        // Clear the timer when an answer is submitted
+        if (this.questionTimer) {
+            clearInterval(this.questionTimer);
         }
         
         try {
@@ -895,15 +909,20 @@ export class TesterMindsetQuiz extends BaseQuiz {
                 newExperience = Math.max(this.levelThresholds.intermediate.minXP, newExperience);
             }
 
-            // Update player experience with bounds
+            // Update player state
             this.player.experience = Math.max(0, Math.min(this.maxXP, newExperience));
-            
-            // Add status to question history
+
+            // Calculate time spent on this question
+            const timeSpent = this.questionStartTime ? Date.now() - this.questionStartTime : null;
+
+            // Record the answer
             this.player.questionHistory.push({
                 scenario: scenario,
                 selectedAnswer: selectedAnswer,
                 status: selectedAnswer.experience > 0 ? 'passed' : 'failed',
-                maxPossibleXP: Math.max(...scenario.options.map(o => o.experience))
+                maxPossibleXP: Math.max(...scenario.options.map(o => o.experience)),
+                timeSpent: timeSpent,
+                timedOut: false
             });
 
             // Increment current scenario
@@ -962,10 +981,9 @@ export class TesterMindsetQuiz extends BaseQuiz {
                 document.getElementById('tool-gained').textContent = '';
             }
 
-            this.updateProgress();
         } catch (error) {
             console.error('Failed to handle answer:', error);
-            this.showError('Failed to save your answer. Please try again.');
+            this.showError('Failed to process your answer. Please try again.');
         } finally {
             this.isLoading = false;
             if (submitButton) {
