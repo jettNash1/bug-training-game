@@ -536,7 +536,7 @@ class AdminDashboard {
                 <div class="details-header">
                     <h3>${username}'s Progress</h3>
                     <button class="close-btn" style="position: absolute; right: 20px; top: 20px; 
-                            padding: 5px 10px; cursor: pointer; background: none; border: none; font-size: 20px;">×</button>
+                            padding: 5px 10px; cursor: pointer; background: none; border: none; font-size: 20px; z-index: 1001;">×</button>
                 </div>
                 <div class="quiz-progress-list" style="margin-top: 20px;">
                     ${this.quizTypes.map(quizName => {
@@ -653,6 +653,16 @@ class AdminDashboard {
             
             overlay.appendChild(content);
             document.body.appendChild(overlay);
+
+            // Add event listener for close button
+            const closeBtn = content.querySelector('.close-btn');
+            if (closeBtn) {
+                closeBtn.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    overlay.remove();
+                });
+            }
 
             // Add event listeners for buttons
             content.querySelectorAll('.reset-quiz-btn').forEach(button => {
