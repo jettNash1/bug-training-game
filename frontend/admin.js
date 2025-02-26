@@ -1456,6 +1456,24 @@ class AdminDashboard {
         const form = document.getElementById('createInterviewForm');
         const cancelButton = modal.querySelector('.cancel-button');
 
+        // Add event listener for select all checkbox
+        const selectAllCheckbox = form.querySelector('#selectAllQuizzes');
+        selectAllCheckbox.addEventListener('change', (e) => {
+            const quizCheckboxes = form.querySelectorAll('input[name="quizzes"]');
+            quizCheckboxes.forEach(checkbox => {
+                checkbox.checked = e.target.checked;
+            });
+        });
+
+        // Update select all checkbox when individual checkboxes change
+        const quizCheckboxes = form.querySelectorAll('input[name="quizzes"]');
+        quizCheckboxes.forEach(checkbox => {
+            checkbox.addEventListener('change', () => {
+                const allChecked = Array.from(quizCheckboxes).every(cb => cb.checked);
+                selectAllCheckbox.checked = allChecked;
+            });
+        });
+
         cancelButton.addEventListener('click', () => {
             modal.remove();
         });
