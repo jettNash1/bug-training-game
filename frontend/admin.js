@@ -1586,6 +1586,140 @@ class AdminDashboard {
             }
         });
     }
+
+    exportUserDataToCSV() {
+        try {
+            // Create CSV header row
+            let csvContent = "Username,";
+            
+            // Add quiz names to header
+            this.quizTypes.forEach(quizName => {
+                csvContent += `${this.formatQuizName(quizName)} Questions,${this.formatQuizName(quizName)} Score%,${this.formatQuizName(quizName)} Status,`;
+            });
+            
+            // Add overall stats
+            csvContent += "Overall Progress%,Total Questions,Last Active\n";
+            
+            // Add data for each user
+            this.users.forEach(user => {
+                // Add username
+                csvContent += `${user.username},`;
+                
+                // Add data for each quiz
+                this.quizTypes.forEach(quizType => {
+                    const quizLower = quizType.toLowerCase();
+                    const progress = user.quizProgress?.[quizLower];
+                    const result = user.quizResults?.find(r => r.quizName.toLowerCase() === quizLower);
+                    
+                    // Prioritize values from quiz results over progress
+                    const questionsAnswered = result?.questionsAnswered || 
+                                            result?.questionHistory?.length ||
+                                            progress?.questionsAnswered || 
+                                            progress?.questionHistory?.length || 0;
+                    const score = result?.score || 0;
+                    
+                    // Determine status
+                    let status = "Not Started";
+                    if (questionsAnswered === 15) {
+                        status = score >= 70 ? "Pass" : "Fail";
+                    } else if (questionsAnswered > 0) {
+                        status = "Incomplete";
+                    }
+                    
+                    // Add quiz data to CSV
+                    csvContent += `${questionsAnswered}/15,${score}%,${status},`;
+                });
+                
+                // Add overall stats
+                const overallProgress = this.calculateUserProgress(user).toFixed(1);
+                const totalQuestions = this.quizTypes.reduce((total, quizType) => {
+                    const quizLower = quizType.toLowerCase();
+                    const progress = user.quizProgress?.[quizLower];
+                    const result = user.quizResults?.find(r => r.quizName.toLowerCase() === quizLower);
+                    
+                    const questionsAnswered = result?.questionsAnswered || 
+                                            result?.questionHistory?.length ||
+                                            progress?.questionsAnswered || 
+                                            progress?.questionHistory?.length || 0;
+                    
+                    return total + questionsAnswered;
+                }, 0);
+                
+                const lastActive = this.formatDate(this.getLastActiveDate(user));
+                
+                csvContent += `${overallProgress}%,${totalQuestions}/${this.quizTypes.length * 15},${lastActive}\n`;
+            });
+            
+            // Create a download link for the CSV file
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.setAttribute('href', url);
+            link.setAttribute('download', `user_quiz_data_${new Date().toISOString().slice(0, 10)}.csv`);
+            link.style.visibility = 'hidden';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            
+            this.showSuccess('CSV file downloaded successfully');
+        } catch (error) {
+            console.error('Error exporting CSV:', error);
+            this.showError('Failed to export CSV file');
+        }
+    }
+
+    exportSimpleCSV() {
+        try {
+            // Create CSV header row
+            let csvContent = "Name,Quiz,Questions,Score%,Status\n";
+            
+            // Add data for each user and their quizzes
+            this.users.forEach(user => {
+                // For each quiz, create a row
+                this.quizTypes.forEach(quizType => {
+                    const quizLower = quizType.toLowerCase();
+                    const progress = user.quizProgress?.[quizLower];
+                    const result = user.quizResults?.find(r => r.quizName.toLowerCase() === quizLower);
+                    
+                    // Prioritize values from quiz results over progress
+                    const questionsAnswered = result?.questionsAnswered || 
+                                            result?.questionHistory?.length ||
+                                            progress?.questionsAnswered || 
+                                            progress?.questionHistory?.length || 0;
+                    const score = result?.score || 0;
+                    
+                    // Determine status
+                    let status = "Not Started";
+                    if (questionsAnswered === 15) {
+                        status = score >= 70 ? "Pass" : "Fail";
+                    } else if (questionsAnswered > 0) {
+                        status = "Incomplete";
+                    }
+                    
+                    // Only add rows for quizzes that have been started
+                    if (questionsAnswered > 0) {
+                        csvContent += `${user.username},${this.formatQuizName(quizType)},${questionsAnswered}/15,${score}%,${status}\n`;
+                    }
+                });
+            });
+            
+            // Create a download link for the CSV file
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.setAttribute('href', url);
+            link.setAttribute('download', `simple_quiz_data_${new Date().toISOString().slice(0, 10)}.csv`);
+            link.style.visibility = 'hidden';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            
+            this.showSuccess('Simple CSV file downloaded successfully');
+        } catch (error) {
+            console.error('Error exporting simple CSV:', error);
+            this.showError('Failed to export simple CSV file');
+        }
+    }
 }
 
 // Export the AdminDashboard class directly
