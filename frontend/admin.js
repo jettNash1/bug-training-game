@@ -581,8 +581,8 @@ class AdminDashboard {
                             //   - Visible (checked) if in allowedQuizzes
                             //   - Hidden (unchecked) if not in allowedQuizzes
                             // For regular accounts:
-                            //   - Hidden (unchecked) if in hiddenQuizzes
                             //   - Visible (checked) if not in hiddenQuizzes
+                            //   - Hidden (unchecked) if in hiddenQuizzes
                             const isInAllowedQuizzes = allowedQuizzes.includes(quizLower);
                             const isInHiddenQuizzes = hiddenQuizzes.includes(quizLower);
                             
@@ -662,7 +662,7 @@ class AdminDashboard {
                                                     data-quiz-name="${quizName}"
                                                     ${isVisible ? 'checked' : ''}
                                                     style="margin: 0;">
-                                                <span>${isVisible ? 'Visible' : 'Hidden'}</span>
+                                                <span>Make visible to user</span>
                                             </label>
                                         </div>
                                     </div>
@@ -740,6 +740,8 @@ class AdminDashboard {
                     const quizName = e.target.dataset.quizName;
                     const isVisible = e.target.checked;
                     
+                    console.log(`Visibility toggle changed for ${quizName}: isVisible=${isVisible}`);
+                    
                     try {
                         const response = await this.apiService.fetchWithAdminAuth(
                             `${this.apiService.baseUrl}/admin/users/${username}/quiz-visibility/${quizName}`,
@@ -759,7 +761,7 @@ class AdminDashboard {
                         // Update the toggle label
                         const label = e.target.nextElementSibling;
                         if (label) {
-                            label.textContent = isVisible ? 'Visible' : 'Hidden';
+                            label.textContent = "Make visible to user";
                         }
 
                         // Refresh user data without closing the overlay
@@ -782,7 +784,7 @@ class AdminDashboard {
                                 otherToggle.checked = shouldBeVisible;
                                 const otherLabel = otherToggle.nextElementSibling;
                                 if (otherLabel) {
-                                    otherLabel.textContent = shouldBeVisible ? 'Visible' : 'Hidden';
+                                    otherLabel.textContent = "Make visible to user";
                                 }
                             });
                         }

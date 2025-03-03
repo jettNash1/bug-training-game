@@ -564,6 +564,8 @@ router.post('/users/:username/quiz-visibility/:quizName', auth, async (req, res)
             });
         }
 
+        console.log(`Updating visibility for ${username}'s quiz ${quizName}: isVisible=${isVisible}`);
+
         // Find the user
         const user = await User.findOne({ username });
         if (!user) {
