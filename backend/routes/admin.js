@@ -293,27 +293,6 @@ router.post('/users/:username/quiz-progress/:quizName/reset', auth, async (req, 
             user.quizProgress = new Map();
         }
 
-        // Initialize previousQuizScores if it doesn't exist
-        if (!user.previousQuizScores) {
-            user.previousQuizScores = [];
-        }
-
-        // Store quiz results in previousQuizScores before removing them
-        if (user.quizResults) {
-            const resultsToStore = user.quizResults.filter(result => {
-                if (!result || !result.quizName) return false;
-                return quizVariations.includes(result.quizName);
-            });
-
-            // Add timestamp to identify when the quiz was reset
-            resultsToStore.forEach(result => {
-                result.resetAt = new Date();
-                user.previousQuizScores.push(result);
-            });
-
-            console.log(`Stored ${resultsToStore.length} quiz results in previousQuizScores`);
-        }
-
         // Delete all variations from quiz progress
         quizVariations.forEach(variant => {
             user.quizProgress.delete(variant);
@@ -370,32 +349,6 @@ router.post('/users/:username/quiz-scores/reset', auth, async (req, res) => {
                 success: false,
                 message: 'User not found'
             });
-        }
-
-        // Initialize previousQuizScores if it doesn't exist
-        if (!user.previousQuizScores) {
-            user.previousQuizScores = [];
-        }
-
-        // Store quiz results in previousQuizScores before removing them
-        if (user.quizResults) {
-            const resultsToStore = user.quizResults.filter(result => {
-                // Handle both camelCase and hyphenated formats
-                const normalizedQuizName = result.quizName
-                    .replace(/([A-Z])/g, '-$1')
-                    .toLowerCase()
-                    .replace(/^-/, '');
-                return normalizedQuizName === quizName.toLowerCase() ||
-                       result.quizName === quizName;
-            });
-
-            // Add timestamp to identify when the quiz was reset
-            resultsToStore.forEach(result => {
-                result.resetAt = new Date();
-                user.previousQuizScores.push(result);
-            });
-
-            console.log(`Stored ${resultsToStore.length} quiz results in previousQuizScores`);
         }
 
         // Remove quiz result if it exists
@@ -808,65 +761,6 @@ router.post('/register-user', auth, async (req, res) => {
         res.status(500).json({
             success: false,
             message: 'Failed to register user',
-            error: error.message
-        });
-    }
-});
-
-// Get a user's previous quiz scores
-router.get('/users/:username/previous-quiz-scores', auth, async (req, res) => {
-    try {
-        if (!req.user.isAdmin) {
-            return res.status(403).json({
-                success: false,
-                message: 'Admin access required'
-            });
-        }
-
-        const { username } = req.params;
-        console.log('Fetching previous quiz scores for:', username);
-
-        const user = await User.findOne({ username });
-        if (!user) {
-            console.log('User not found:', username);
-            return res.status(404).json({
-                success: false,
-                message: 'User not found'
-            });
-        }
-
-        // Format and return the previous quiz scores
-        const previousScores = user.previousQuizScores || [];
-        
-        // Group by quiz name and sort by resetAt (most recent first)
-        const groupedScores = {};
-        previousScores.forEach(score => {
-            const quizName = score.quizName.toLowerCase();
-            if (!groupedScores[quizName]) {
-                groupedScores[quizName] = [];
-            }
-            groupedScores[quizName].push({
-                ...score.toObject(),
-                resetAt: score.resetAt || score.completedAt || new Date()
-            });
-        });
-        
-        // Sort each group by resetAt (most recent first)
-        Object.keys(groupedScores).forEach(quizName => {
-            groupedScores[quizName].sort((a, b) => 
-                new Date(b.resetAt).getTime() - new Date(a.resetAt).getTime()
-            );
-        });
-
-        res.json({
-            success: true,
-            data: groupedScores
-        });
-    } catch (error) {
-        console.error('Error fetching previous quiz scores:', error);
-        res.status(500).json({
-            success: false,
-            message: 'Failed to fetch previous quiz scores',
             error: error.message
         });
     }

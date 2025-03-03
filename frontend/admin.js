@@ -543,10 +543,6 @@ class AdminDashboard {
                 throw new Error('User not found');
             }
 
-            // Fetch previous quiz scores
-            const previousQuizScores = await this.fetchPreviousQuizScores(username);
-            const hasPreviousScores = Object.keys(previousQuizScores).length > 0;
-
             const isInterviewAccount = user.userType === 'interview_candidate';
             // For interview accounts, allowedQuizzes means visible, everything else is hidden
             // For regular accounts, hiddenQuizzes means hidden, everything else is visible
@@ -558,8 +554,7 @@ class AdminDashboard {
                 isInterviewAccount,
                 userType: user.userType,
                 allowedQuizzes,
-                hiddenQuizzes,
-                hasPreviousScores
+                hiddenQuizzes
             });
 
             // Create the overlay
@@ -688,29 +683,21 @@ class AdminDashboard {
                         }).join('')}
                 </div>
                 <div style="margin-top: 20px; padding-top: 20px; border-top: 1px solid #eee; 
-                            display: flex; justify-content: space-between; gap: 20px;">
-                    <div style="display: flex; gap: 20px;">
-                        <button class="reset-all-btn" 
-                            style="padding: 10px 20px; background-color: #dc3545; color: white; border: none; 
-                                   border-radius: 4px; cursor: pointer; font-weight: 500;">
-                            Reset All Progress
-                        </button>
-                        <button class="reset-password-btn" 
-                            style="padding: 10px 20px; background-color: var(--secondary-color); color: white; 
-                                   border: none; border-radius: 4px; cursor: pointer; font-weight: 500;">
-                            Reset Password
-                        </button>
-                        <button class="delete-user-btn" 
-                            style="padding: 10px 20px; background-color: #dc3545; color: white; 
-                                   border: 2px solid #dc3545; border-radius: 4px; cursor: pointer; font-weight: 500;">
-                            Delete User
-                        </button>
-                    </div>
-                    <button class="view-previous-scores-btn" 
-                        style="padding: 10px 20px; background-color: ${hasPreviousScores ? '#4444ff' : '#cccccc'}; color: white; 
-                               border: none; border-radius: 4px; cursor: ${hasPreviousScores ? 'pointer' : 'not-allowed'}; font-weight: 500;"
-                        ${hasPreviousScores ? '' : 'disabled'}>
-                        View Previous Scores
+                            display: flex; justify-content: center; gap: 20px;">
+                    <button class="reset-all-btn" 
+                        style="padding: 10px 20px; background-color: #dc3545; color: white; border: none; 
+                               border-radius: 4px; cursor: pointer; font-weight: 500;">
+                        Reset All Progress
+                    </button>
+                    <button class="reset-password-btn" 
+                        style="padding: 10px 20px; background-color: var(--secondary-color); color: white; 
+                               border: none; border-radius: 4px; cursor: pointer; font-weight: 500;">
+                        Reset Password
+                    </button>
+                    <button class="delete-user-btn" 
+                        style="padding: 10px 20px; background-color: #dc3545; color: white; 
+                               border: 2px solid #dc3545; border-radius: 4px; cursor: pointer; font-weight: 500;">
+                        Delete User
                     </button>
                 </div>
             `;
@@ -746,21 +733,6 @@ class AdminDashboard {
                     }
                 });
             });
-
-            // Add event listener for view previous scores button
-            const viewPreviousScoresBtn = content.querySelector('.view-previous-scores-btn');
-            if (viewPreviousScoresBtn) {
-                viewPreviousScoresBtn.addEventListener('click', async (e) => {
-                    if (!hasPreviousScores) return;
-                    
-                    try {
-                        this.showPreviousQuizScores(username, previousQuizScores);
-                    } catch (error) {
-                        console.error('Failed to show previous quiz scores:', error);
-                        this.showError('Failed to show previous quiz scores');
-                    }
-                });
-            }
 
             // Add event listeners for quiz visibility toggles
             content.querySelectorAll('.quiz-visibility-toggle').forEach(toggle => {
@@ -818,7 +790,9 @@ class AdminDashboard {
                         }
                     } catch (error) {
                         console.error('Failed to update quiz visibility:', error);
-                        this.showError('Failed to update quiz visibility');
+                        this.showError(`Failed to update visibility for ${this.formatQuizName(quizName)}`);
+                        // Revert the toggle
+                        e.target.checked = !isVisible;
                     }
                 });
             });
@@ -827,69 +801,54 @@ class AdminDashboard {
             content.querySelectorAll('.view-questions-btn').forEach(button => {
                 button.addEventListener('click', async (e) => {
                     const quizName = e.target.dataset.quizName;
-                    try {
-                        await this.showQuizQuestions(quizName, username);
-                    } catch (error) {
-                        console.error('Failed to view questions:', error);
-                        this.showError(`Failed to view questions for ${this.formatQuizName(quizName)}`);
-                    }
+                    console.log('View questions clicked for:', { quizName, username });
+                    await this.showQuizQuestions(quizName, username);
                 });
             });
 
             // Add event listener for reset all button
-            const resetAllBtn = content.querySelector('.reset-all-btn');
-            if (resetAllBtn) {
-                resetAllBtn.addEventListener('click', async (e) => {
-                    if (confirm(`Are you sure you want to reset ALL progress for ${username}?`)) {
-                        try {
-                            await this.resetAllProgress(username);
-                            // Close the overlay and refresh
-                            overlay.remove();
-                            this.showSuccess(`All progress reset for ${username}`);
-                        } catch (error) {
-                            console.error('Failed to reset all progress:', error);
-                            this.showError('Failed to reset all progress');
-                        }
+            content.querySelector('.reset-all-btn').addEventListener('click', async () => {
+                if (confirm(`Are you sure you want to reset ALL quiz progress for ${username}? This action cannot be undone.`)) {
+                    try {
+                        await this.resetAllProgress(username);
+                        // Close the overlay after successful reset
+                        overlay.remove();
+                    } catch (error) {
+                        console.error('Failed to reset all progress:', error);
                     }
-                });
-            }
+                }
+            });
 
             // Add event listener for reset password button
-            const resetPasswordBtn = content.querySelector('.reset-password-btn');
-            if (resetPasswordBtn) {
-                resetPasswordBtn.addEventListener('click', async (e) => {
-                    if (confirm(`Are you sure you want to reset the password for ${username}?`)) {
-                        try {
-                            await this.resetUserPassword(username);
-                            // Close the overlay
-                            overlay.remove();
-                        } catch (error) {
-                            console.error('Failed to reset password:', error);
-                            this.showError('Failed to reset password');
-                        }
+            content.querySelector('.reset-password-btn').addEventListener('click', async () => {
+                if (confirm(`Are you sure you want to change the password for ${username}?`)) {
+                    try {
+                        await this.resetUserPassword(username);
+                    } catch (error) {
+                        console.error('Failed to reset password:', error);
                     }
-                });
-            }
+                }
+            });
 
             // Add event listener for delete user button
-            const deleteUserBtn = content.querySelector('.delete-user-btn');
-            if (deleteUserBtn) {
-                deleteUserBtn.addEventListener('click', async (e) => {
-                    if (confirm(`Are you sure you want to DELETE the user ${username}? This action cannot be undone.`)) {
-                        try {
-                            await this.deleteUser(username);
-                            // Close the overlay
-                            overlay.remove();
-                        } catch (error) {
-                            console.error('Failed to delete user:', error);
-                            this.showError('Failed to delete user');
-                        }
-                    }
-                });
-            }
+            content.querySelector('.delete-user-btn').addEventListener('click', async () => {
+                try {
+                    await this.deleteUser(username);
+                } catch (error) {
+                    console.error('Failed to delete user:', error);
+                }
+            });
+
+            // Close on click outside
+            overlay.addEventListener('click', (e) => {
+                if (e.target === overlay) {
+                    overlay.remove();
+                }
+            });
+
         } catch (error) {
             console.error('Error showing user details:', error);
-            this.showError('Failed to show user details');
+            this.showError('Failed to load user details');
         }
     }
 
@@ -1626,149 +1585,6 @@ class AdminDashboard {
                 this.showError(error.message || 'Failed to create interview account');
             }
         });
-    }
-
-    async fetchPreviousQuizScores(username) {
-        try {
-            console.log('Fetching previous quiz scores for:', username);
-            
-            const response = await this.apiService.fetchWithAdminAuth(
-                `${this.apiService.baseUrl}/admin/users/${username}/previous-quiz-scores`,
-                {
-                    method: 'GET',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    }
-                }
-            );
-
-            if (!response.success) {
-                throw new Error(response.message || 'Failed to fetch previous quiz scores');
-            }
-
-            return response.data || {};
-        } catch (error) {
-            console.error('Error fetching previous quiz scores:', error);
-            this.showError('Failed to fetch previous quiz scores');
-            return {};
-        }
-    }
-
-    showPreviousQuizScores(username, previousQuizScores) {
-        try {
-            // Create the overlay
-            const overlay = document.createElement('div');
-            overlay.className = 'previous-scores-overlay';
-            overlay.style.cssText = `
-                position: fixed;
-                top: 0;
-                left: 0;
-                width: 100%;
-                height: 100%;
-                background-color: rgba(0, 0, 0, 0.7);
-                display: flex;
-                justify-content: center;
-                align-items: center;
-                z-index: 1002;
-            `;
-            
-            const content = document.createElement('div');
-            content.className = 'previous-scores-content';
-            content.style.cssText = `
-                background-color: white;
-                padding: 30px;
-                border-radius: 8px;
-                width: 80%;
-                max-width: 800px;
-                max-height: 80vh;
-                overflow-y: auto;
-                position: relative;
-            `;
-            
-            // Check if there are any previous scores
-            const quizNames = Object.keys(previousQuizScores);
-            if (quizNames.length === 0) {
-                content.innerHTML = `
-                    <div class="details-header">
-                        <h3>${username}'s Previous Quiz Scores</h3>
-                        <button class="close-btn" style="position: absolute; right: 20px; top: 20px; 
-                                padding: 5px 10px; cursor: pointer; background: none; border: none; font-size: 20px; z-index: 1001;">×</button>
-                    </div>
-                    <div style="text-align: center; margin-top: 20px;">
-                        <p>No previous quiz scores found.</p>
-                    </div>
-                `;
-            } else {
-                // Build the HTML for each quiz
-                const quizScoresHtml = quizNames
-                    .sort((a, b) => this.formatQuizName(a).localeCompare(this.formatQuizName(b)))
-                    .map(quizName => {
-                        // Get the most recent score for this quiz
-                        const scores = previousQuizScores[quizName];
-                        if (!scores || scores.length === 0) return '';
-                        
-                        const mostRecentScore = scores[0];
-                        const questionsAnswered = mostRecentScore.questionsAnswered || 
-                                                mostRecentScore.questionHistory?.length || 0;
-                        const score = mostRecentScore.score || 0;
-                        const resetDate = this.formatDate(mostRecentScore.resetAt || mostRecentScore.completedAt);
-                        
-                        return `
-                            <div class="previous-score-item" style="margin-bottom: 15px; padding: 15px; background: #f5f5f5; border-radius: 8px;">
-                                <h4 style="margin: 0 0 10px 0;">${this.formatQuizName(quizName)}</h4>
-                                <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px;">
-                                    <div>
-                                        <strong>Score:</strong> 
-                                        <span>${score}%</span>
-                                    </div>
-                                    <div>
-                                        <strong>Questions:</strong> 
-                                        <span>${questionsAnswered}/15</span>
-                                    </div>
-                                    <div>
-                                        <strong>Reset Date:</strong> 
-                                        <span>${resetDate}</span>
-                                    </div>
-                                </div>
-                            </div>
-                        `;
-                    }).join('');
-                
-                content.innerHTML = `
-                    <div class="details-header">
-                        <h3>${username}'s Previous Quiz Scores</h3>
-                        <button class="close-btn" style="position: absolute; right: 20px; top: 20px; 
-                                padding: 5px 10px; cursor: pointer; background: none; border: none; font-size: 20px; z-index: 1001;">×</button>
-                    </div>
-                    <div class="previous-scores-list" style="margin-top: 20px;">
-                        ${quizScoresHtml}
-                    </div>
-                `;
-            }
-            
-            overlay.appendChild(content);
-            document.body.appendChild(overlay);
-
-            // Add event listener for close button
-            const closeBtn = content.querySelector('.close-btn');
-            if (closeBtn) {
-                closeBtn.addEventListener('click', (e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    overlay.remove();
-                });
-            }
-
-            // Close on click outside
-            overlay.addEventListener('click', (e) => {
-                if (e.target === overlay) {
-                    overlay.remove();
-                }
-            });
-        } catch (error) {
-            console.error('Error showing previous quiz scores:', error);
-            this.showError('Failed to show previous quiz scores');
-        }
     }
 }
 
