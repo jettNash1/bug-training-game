@@ -24,7 +24,12 @@ const port = process.env.PORT || 10000;
 // Middleware
 const corsOptions = {
   origin: process.env.NODE_ENV === 'production'
-    ? [process.env.ALLOWED_ORIGINS || 'https://bug-training-game.onrender.com']
+    ? [
+        process.env.ALLOWED_ORIGINS || 'https://bug-training-game.onrender.com',
+        process.env.AWS_FRONTEND_URL || 'https://your-cloudfront-distribution.cloudfront.net',
+        /\.amazonaws\.com$/,
+        /\.cloudfront\.net$/
+      ]
     : ['http://localhost:3000', 'http://127.0.0.1:3000', 'http://localhost:5500', 'http://127.0.0.1:5500'],
   credentials: true,
   optionsSuccessStatus: 200,

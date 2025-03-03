@@ -683,6 +683,11 @@ export class CommunicationQuiz extends BaseQuiz {
                 transitionContainer.innerHTML = '';
                 transitionContainer.classList.remove('active');
             }
+
+            // Clear any existing timer
+            if (this.questionTimer) {
+                clearInterval(this.questionTimer);
+            }
             
             await this.displayScenario();
         } catch (error) {
@@ -862,6 +867,9 @@ export class CommunicationQuiz extends BaseQuiz {
         });
 
         this.updateProgress();
+
+        // Initialize timer for the new question
+        this.initializeTimer();
     }
 
     async handleAnswer() {
@@ -870,6 +878,11 @@ export class CommunicationQuiz extends BaseQuiz {
         const submitButton = document.querySelector('.submit-button');
         if (submitButton) {
             submitButton.disabled = true;
+        }
+
+        // Clear the timer when an answer is submitted
+        if (this.questionTimer) {
+            clearInterval(this.questionTimer);
         }
         
         try {
@@ -886,6 +899,9 @@ export class CommunicationQuiz extends BaseQuiz {
             // Calculate new experience with level-based minimum thresholds
             let newExperience = this.player.experience + selectedAnswer.experience;
             
+            // Calculate time spent on this question
+            const timeSpent = this.questionStartTime ? Date.now() - this.questionStartTime : null;
+
             // Apply minimum thresholds based on current level
             const questionCount = this.player.questionHistory.length;
             if (questionCount >= 5) { // Intermediate level
@@ -903,7 +919,9 @@ export class CommunicationQuiz extends BaseQuiz {
                 scenario: scenario,
                 selectedAnswer: selectedAnswer,
                 status: selectedAnswer.experience > 0 ? 'passed' : 'failed',
-                maxPossibleXP: Math.max(...scenario.options.map(o => o.experience))
+                maxPossibleXP: Math.max(...scenario.options.map(o => o.experience)),
+                timeSpent: timeSpent,
+                timedOut: false
             });
 
             // Increment current scenario
@@ -947,7 +965,16 @@ export class CommunicationQuiz extends BaseQuiz {
             }
             
             // Update outcome display
-            document.getElementById('outcome-text').textContent = selectedAnswer.outcome;
+            const correctAnswer = scenario.options.reduce((prev, current) => 
+                (prev.experience > current.experience) ? prev : current
+            );
+
+            let outcomeText = selectedAnswer.outcome;
+            if (selectedAnswer.experience < correctAnswer.experience) {
+                outcomeText += `\n\n\nThe correct answer was: "${correctAnswer.text}"\n${correctAnswer.outcome}`;
+            }
+            document.getElementById('outcome-text').textContent = outcomeText;
+            
             const xpText = selectedAnswer.experience >= 0 ? 
                 `Experience gained: +${selectedAnswer.experience}` : 
                 `Experience: ${selectedAnswer.experience}`;
