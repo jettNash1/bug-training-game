@@ -10,16 +10,71 @@ console.log('Environment check:', {
     hasJwtSecret: !!process.env.JWT_SECRET,
     hasJwtRefreshSecret: !!process.env.JWT_REFRESH_SECRET,
     port: process.env.PORT,
-    mongoUri: process.env.MONGODB_URI ? process.env.MONGODB_URI.split('@')[1] : 'not set'
+    mongoUri: process.env.MONGODB_URI ? process.env.MONGODB_URI.split('@')[1] : 'not set',
+    allowedOrigins: process.env.ALLOWED_ORIGINS
 });
 
 const express = require('express');
 const cors = require('cors');
 const mongoose = require('mongoose');
 const path = require('path');
+const helmet = require('helmet');
 
 const app = express();
 const port = process.env.PORT || 10000;
+/*
+const port = process.env.PORT || 3000;
+
+// Security middleware
+app.use(helmet({
+    contentSecurityPolicy: {
+        directives: {
+            defaultSrc: ["'self'"],
+            scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'"],
+            styleSrc: ["'self'", "'unsafe-inline'"],
+            imgSrc: ["'self'", "data:", "https:"],
+            connectSrc: ["'self'", "https:", "wss:"],
+            fontSrc: ["'self'", "https:", "data:"],
+            objectSrc: ["'none'"],
+            mediaSrc: ["'self'"],
+            frameSrc: ["'none'"]
+        }
+    }
+}));
+
+// Parse JSON payloads
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+
+// CORS configuration
+const getAllowedOrigins = () => {
+    const origins = [];
+    
+    // Add configured origins
+    if (process.env.ALLOWED_ORIGINS) {
+        origins.push(...process.env.ALLOWED_ORIGINS.split(','));
+    }
+    
+    // Add default origins based on environment
+    if (process.env.NODE_ENV === 'production') {
+        origins.push(
+            'https://bug-training-game.onrender.com',
+            process.env.AWS_FRONTEND_URL || 'https://your-cloudfront-distribution.cloudfront.net'
+        );
+        
+        // Add AWS domain patterns
+        origins.push(/\.amazonaws\.com$/, /\.cloudfront\.net$/);
+    } else {
+        origins.push(
+            'http://localhost:3000',
+            'http://127.0.0.1:3000',
+            'http://localhost:5500',
+            'http://127.0.0.1:5500'
+        );
+    }
+    
+    return origins;
+};*/
 
 // Middleware
 const corsOptions = {
@@ -36,6 +91,14 @@ const corsOptions = {
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
   exposedHeaders: ['Authorization']
+  /*
+      origin: getAllowedOrigins(),
+    credentials: true,
+    optionsSuccessStatus: 200,
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
+    exposedHeaders: ['Authorization']
+  */
 };
 
 app.use(cors(corsOptions));
@@ -43,13 +106,16 @@ app.use(cors(corsOptions));
 // Add CORS preflight
 app.options('*', cors(corsOptions));
 
-// Set additional security headers
+// Additional security headers
 app.use((req, res, next) => {
     res.header('Access-Control-Allow-Credentials', 'true');
+    res.header('X-Content-Type-Options', 'nosniff');
+    res.header('X-Frame-Options', 'DENY');
+    res.header('X-XSS-Protection', '1; mode=block');
     next();
 });
 
-// Parse JSON bodies
+// Parse JSON bodies (Remove once ready)
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
