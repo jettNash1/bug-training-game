@@ -42,6 +42,7 @@ const userSchema = new mongoose.Schema({
         minlength: 6
     },
     quizResults: [quizResultSchema],
+    previousQuizScores: [quizResultSchema],
     refreshToken: {
         type: String
     },
