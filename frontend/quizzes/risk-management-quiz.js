@@ -878,6 +878,11 @@ export class RiskManagementQuiz extends BaseQuiz {
         if (submitButton) {
             submitButton.disabled = true;
         }
+
+        // Clear the timer when an answer is submitted
+        if (this.questionTimer) {
+            clearInterval(this.questionTimer);
+        }
         
         try {
             this.isLoading = true;
