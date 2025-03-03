@@ -10,7 +10,7 @@ export class BaseQuiz {
         this.outcomeScreen = document.getElementById('outcome-screen');
         this.isLoading = false;
         this.questionTimer = null;
-        this.timePerQuestion = 30000; // 30 seconds in milliseconds
+        this.timePerQuestion = 60000; // 60 seconds in milliseconds
         this.remainingTime = this.timePerQuestion;
         this.questionStartTime = null; // Track when each question starts
     }
