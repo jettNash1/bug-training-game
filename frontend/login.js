@@ -101,7 +101,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // Handle registration
+    /* Handle registration
     const registerButton = document.getElementById('registerButton');
     if (registerButton) {
         registerButton.addEventListener('click', async () => {
@@ -150,7 +150,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 showError('Registration failed. Please try a different username.');
             }
         });
-    }
+    }*/
 
     // Add enter key support for both forms
     document.getElementById('loginPassword').addEventListener('keypress', (e) => {
@@ -159,9 +159,9 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    document.getElementById('registerPassword').addEventListener('keypress', (e) => {
+    /*document.getElementById('registerPassword').addEventListener('keypress', (e) => {
         if (e.key === 'Enter') {
             document.getElementById('registerButton').click();
         }
-    });
+    });*/
 }); 
