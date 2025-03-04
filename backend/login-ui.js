@@ -1,9 +1,9 @@
 // UI Helper Functions
 function showLoginForm() {
     document.getElementById('loginFormContent').style.display = 'block';
-    document.getElementById('registerFormContent').style.display = 'none';
+    //document.getElementById('registerFormContent').style.display = 'none';
     document.getElementById('loginTab').classList.add('active');
-    document.getElementById('registerTab').classList.remove('active');
+    //document.getElementById('registerTab').classList.remove('active');
 }
 
 /*function showRegisterForm() {

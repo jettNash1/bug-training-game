@@ -28,7 +28,7 @@ document.addEventListener('DOMContentLoaded', () => {
         return;
     }
 
-    // Tab switching
+    /* Tab switching
     const tabs = document.querySelectorAll('.auth-tab');
     const forms = document.querySelectorAll('.auth-form');
 
@@ -48,7 +48,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             });
         });
-    });
+    });*/
 
     // Handle login
     const loginButton = document.getElementById('loginButton');
