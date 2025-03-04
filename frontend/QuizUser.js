@@ -46,7 +46,7 @@ export class QuizUser {
             'issue-verification', 'build-verification', 'issue-tracking-tools',
             'raising-tickets', 'reports', 'cms-testing', 'email-testing', 'content-copy',
             'locale-testing', 'script-metrics-troubleshooting','standard-script-testing',
-            'test-types-tricks'
+            'test-types-tricks', 'exploratory'
         ];
 
         quizTypes.forEach(quizName => {
@@ -316,7 +316,8 @@ export class QuizUser {
                 'tester-mindset',
                 'communication',
                 'initiative',
-                'standard-script-testing'
+                'standard-script-testing',
+                'exploratory'
             ]);
             
             this.updateCategoryProgress('Technical Testing', [
