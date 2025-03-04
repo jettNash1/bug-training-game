@@ -6,12 +6,12 @@ function showLoginForm() {
     document.getElementById('registerTab').classList.remove('active');
 }
 
-function showRegisterForm() {
+/*function showRegisterForm() {
     document.getElementById('loginFormContent').style.display = 'none';
     document.getElementById('registerFormContent').style.display = 'block';
     document.getElementById('loginTab').classList.remove('active');
     document.getElementById('registerTab').classList.add('active');
-}
+}*/
 
 async function handleLogin() {
     const username = document.getElementById('loginUsername').value;
@@ -28,7 +28,7 @@ async function handleLogin() {
     }
 }
 
-async function handleRegister() {
+/*async function handleRegister() {
     const username = document.getElementById('registerUsername').value;
     const password = document.getElementById('registerPassword').value;
     
@@ -41,7 +41,7 @@ async function handleRegister() {
     } catch (error) {
         alert(error.message || 'Registration failed. Please try again.');
     }
-}
+}*/
 
 // Check if user is already logged in
 document.addEventListener('DOMContentLoaded', async () => {
