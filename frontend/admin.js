@@ -1207,15 +1207,38 @@ class AdminDashboard {
                                 }).join('')}
                             </tbody>
                         </table>` :
-                        `<div class="completed-no-history">
-                            <p>This user has ${questionsAnswered === 15 ? 'completed all' : 'answered'} ${questionsAnswered} questions in this quiz ${questionsAnswered === 15 ? 'with a score of ' + quizScore + '%' : 'so far'}.</p>
-                            <p>Status: <strong>${quizStatus}</strong></p>
-                            <p>Score: <strong>${quizScore}%</strong></p>
-                            <p>Experience earned: <strong>${result?.experience || progress?.experience || 0}</strong></p>
-                            <p>Last active: <strong>${this.formatDate(result?.completedAt || progress?.lastUpdated || '')}</strong></p>
-                            
-                            <div class="history-note">
+                        `<div>
+                            <table class="questions-table">
+                                <thead>
+                                    <tr>
+                                        <th style="width: 10%;">Question ID</th>
+                                        <th style="width: 30%;">Question</th>
+                                        <th style="width: 20%;">Selected Answer</th>
+                                        <th style="width: 15%;">Status</th>
+                                        <th style="width: 25%;">Correct Answer</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    ${Array.from({ length: questionsAnswered }, (_, i) => {
+                                        // For quizzes with progress but no detailed history, we show a basic table
+                                        return `
+                                            <tr>
+                                                <td>${i + 1}</td>
+                                                <td>Question ${i + 1}</td>
+                                                <td>Answer data not available</td>
+                                                <td>Status not available</td>
+                                                <td>Correct answer not available</td>
+                                            </tr>
+                                        `;
+                                    }).join('')}
+                                </tbody>
+                            </table>
+                            <div class="history-note" style="margin-top: 1rem;">
                                 <p><em>Note: The detailed question history for this quiz is not available. This may happen for quizzes completed before the question history feature was implemented.</em></p>
+                                <p>Status: <strong>${quizStatus}</strong></p>
+                                <p>Score: <strong>${quizScore}%</strong></p>
+                                <p>Experience earned: <strong>${result?.experience || progress?.experience || 0}</strong></p>
+                                <p>Last active: <strong>${this.formatDate(result?.completedAt || progress?.lastUpdated || '')}</strong></p>
                             </div>
                         </div>`
                     }
