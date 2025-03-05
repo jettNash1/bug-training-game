@@ -724,8 +724,8 @@ class AdminDashboard {
                 // Add keyboard support for close button
                 closeBtn.addEventListener('keydown', (e) => {
                     if (e.key === 'Enter' || e.key === ' ') {
-                        e.preventDefault();
-                        overlay.remove();
+                    e.preventDefault();
+                    overlay.remove();
                     }
                 });
             }
@@ -848,7 +848,7 @@ class AdminDashboard {
                         console.error('Failed to reset all progress:', error);
                     }
                 }
-                });
+            });
 
             // Add event listener for reset password button
             content.querySelector('.reset-password-btn').addEventListener('click', async () => {
@@ -1082,11 +1082,33 @@ class AdminDashboard {
                     const apiQuestionHistory = response.data.questionHistory || [];
                     const questionHistory = apiQuestionHistory.map(item => {
                         const isPassed = item.status === 'passed';
+                        
+                        // Get the correct answer
+                        let correctAnswer = '';
+                        if (item.correctAnswer && item.correctAnswer.text) {
+                            // If the API provides the correct answer directly, use it
+                            correctAnswer = item.correctAnswer.text;
+                        } else if (!isPassed && item.selectedAnswer?.outcome) {
+                            // Otherwise try to extract from outcome text
+                            const outcomeText = item.selectedAnswer.outcome;
+                            const match = outcomeText.match(/The correct answer was: "([^"]+)"/);
+                            if (match && match[1]) {
+                                correctAnswer = match[1];
+                            } else {
+                                // If we can't extract from outcome, use the tool field
+                                // The tool field often contains the name of the correct answer for incorrect responses
+                                correctAnswer = item.selectedAnswer?.tool || 'Correct answer not available';
+                            }
+                        } else if (isPassed) {
+                            // For correct answers, the selected answer is the correct answer
+                            correctAnswer = item.selectedAnswer?.text || '';
+                        }
+                        
                         return {
                             question: item.scenario?.title || 'Question text not available',
                             scenario: item.scenario?.description || '',
                             selectedAnswer: item.selectedAnswer?.text || 'No answer selected',
-                            correctAnswer: isPassed ? item.selectedAnswer?.text : (item.selectedAnswer?.tool || 'Correct answer not available'),
+                            correctAnswer: correctAnswer || 'Correct answer not available',
                             isCorrect: isPassed
                         };
                     });
@@ -1292,13 +1314,75 @@ class AdminDashboard {
             // First check if we have question history in either result or progress
             if (result && Array.isArray(result.questionHistory) && result.questionHistory.length > 0) {
                 console.log('Using question history from quiz results');
-                questionHistory = result.questionHistory;
+                
+                // Process the question history to extract correct answers
+                questionHistory = result.questionHistory.map(item => {
+                    const isPassed = item.isCorrect;
+                    
+                    // Get the correct answer
+                    let correctAnswer = '';
+                    if (item.correctAnswer && typeof item.correctAnswer === 'string') {
+                        // If the item already has a correctAnswer field, use it
+                        correctAnswer = item.correctAnswer;
+                    } else if (item.correctAnswer && item.correctAnswer.text) {
+                        // If the item has a correctAnswer object with a text field, use it
+                        correctAnswer = item.correctAnswer.text;
+                    } else if (!isPassed && item.explanation) {
+                        // Otherwise try to extract from explanation text
+                        const match = item.explanation.match(/The correct answer was: "([^"]+)"/);
+                        if (match && match[1]) {
+                            correctAnswer = match[1];
+                        } else {
+                            correctAnswer = 'Correct answer not available';
+                        }
+                    } else if (isPassed) {
+                        // For correct answers, the selected answer is the correct answer
+                        correctAnswer = item.selectedAnswer || '';
+                    }
+                    
+                    return {
+                        ...item,
+                        correctAnswer: correctAnswer || 'Correct answer not available'
+                    };
+                });
+                
                 questionsAnswered = result.questionsAnswered || questionHistory.length;
                 quizScore = result.score || 0;
                 quizStatus = 'Completed';
             } else if (progress && Array.isArray(progress.questionHistory) && progress.questionHistory.length > 0) {
                 console.log('Using question history from quiz progress');
-                questionHistory = progress.questionHistory;
+                
+                // Process the question history to extract correct answers
+                questionHistory = progress.questionHistory.map(item => {
+                    const isPassed = item.isCorrect;
+                    
+                    // Get the correct answer
+                    let correctAnswer = '';
+                    if (item.correctAnswer && typeof item.correctAnswer === 'string') {
+                        // If the item already has a correctAnswer field, use it
+                        correctAnswer = item.correctAnswer;
+                    } else if (item.correctAnswer && item.correctAnswer.text) {
+                        // If the item has a correctAnswer object with a text field, use it
+                        correctAnswer = item.correctAnswer.text;
+                    } else if (!isPassed && item.explanation) {
+                        // Otherwise try to extract from explanation text
+                        const match = item.explanation.match(/The correct answer was: "([^"]+)"/);
+                        if (match && match[1]) {
+                            correctAnswer = match[1];
+                        } else {
+                            correctAnswer = 'Correct answer not available';
+                        }
+                    } else if (isPassed) {
+                        // For correct answers, the selected answer is the correct answer
+                        correctAnswer = item.selectedAnswer || '';
+                    }
+                    
+                    return {
+                        ...item,
+                        correctAnswer: correctAnswer || 'Correct answer not available'
+                    };
+                });
+                
                 questionsAnswered = progress.questionsAnswered || questionHistory.length;
                 quizStatus = questionsAnswered >= 15 ? 'Completed' : 'In Progress';
             } else {
@@ -1362,7 +1446,7 @@ class AdminDashboard {
                 <div class="details-header">
                     <h3 id="questions-details-title">${this.formatQuizName(quizName)} - ${username}'s Answers</h3>
                     <button class="close-btn" aria-label="Close questions view" tabindex="0">×</button>
-                </div>
+                        </div>
                 <div class="questions-content">
                     ${!hasCompletedQuestions ? 
                         `<div class="not-attempted">
@@ -1394,11 +1478,11 @@ class AdminDashboard {
                                                 ${question.scenario ? `<p>${question.scenario}</p>` : ''}
                                             </td>
                                             <td class="answer-content">
-                                                <div>
+                        <div>
                                                     <strong>Selected:</strong> ${question.selectedAnswer || 'No answer selected'}
-                                                </div>
+                        </div>
                                                 ${!question.isCorrect ? `
-                                                <div>
+                        <div>
                                                     <strong>Correct:</strong> ${question.correctAnswer || 'Correct answer not available'}
                                                 </div>` : ''}
                                             </td>
@@ -1409,30 +1493,30 @@ class AdminDashboard {
                         </table>` :
                         `<div>
                             <table class="questions-table">
-                                <thead>
+                        <thead>
                                     <tr>
                                         <th style="width: 10%;">Question ID</th>
                                         <th style="width: 30%;">Question</th>
                                         <th style="width: 20%;">Selected Answer</th>
                                         <th style="width: 15%;">Status</th>
                                         <th style="width: 25%;">Correct Answer</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
+                            </tr>
+                        </thead>
+                        <tbody>
                                     ${Array.from({ length: questionsAnswered }, (_, i) => {
                                         // For quizzes with progress but no detailed history, we show a basic table
-                                        return `
+                                return `
                                             <tr>
                                                 <td>${i + 1}</td>
                                                 <td>Question ${i + 1}</td>
                                                 <td>Answer data not available</td>
                                                 <td>Status not available</td>
                                                 <td>Correct answer not available</td>
-                                            </tr>
-                                        `;
-                                    }).join('')}
-                                </tbody>
-                            </table>
+                                    </tr>
+                                `;
+                            }).join('')}
+                        </tbody>
+                    </table>
                             <div class="history-note" style="margin-top: 1rem;">
                                 <p><em>Note: The detailed question history for this quiz is not available. This may happen for quizzes completed before the question history feature was implemented.</em></p>
                                 <p>Status: <strong>${quizStatus}</strong></p>

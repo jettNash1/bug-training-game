@@ -459,6 +459,15 @@ router.get('/users/:username/quiz-questions/:quizName', auth, async (req, res) =
                     return null;
                 }
 
+                // Find the correct answer (the one with the highest experience)
+                let correctAnswer = null;
+                if (record.scenario.options && Array.isArray(record.scenario.options)) {
+                    correctAnswer = record.scenario.options.reduce((prev, current) => 
+                        (prev.experience > current.experience) ? prev : current, 
+                        { experience: -Infinity }
+                    );
+                }
+
                 return {
                     id: record.scenario.id || index + 1,
                     scenario: {
@@ -472,6 +481,10 @@ router.get('/users/:username/quiz-questions/:quizName', auth, async (req, res) =
                         experience: Number(record.selectedAnswer.experience) || 0,
                         tool: record.selectedAnswer.tool || ''
                     },
+                    correctAnswer: correctAnswer ? {
+                        text: correctAnswer.text || '',
+                        experience: Number(correctAnswer.experience) || 0
+                    } : null,
                     status: record.selectedAnswer.experience > 0 ? 'passed' : 'failed'
                 };
             } catch (error) {
