@@ -1150,6 +1150,50 @@ class AdminDashboard {
                             .questions-table tr.failed td {
                                 border-bottom: 1px solid rgba(255, 68, 68, 0.2);
                             }
+                            .questions-table tr {
+                                border-left: 4px solid transparent;
+                                height: auto;
+                                min-height: 60px;
+                            }
+                            .questions-table tr.passed {
+                                border-left: 4px solid #4bb543;
+                            }
+                            .questions-table tr.failed {
+                                border-left: 4px solid #ff4444;
+                            }
+                            .questions-table tbody tr:not(:last-child) {
+                                border-bottom: 1px solid #e9ecef;
+                            }
+                            .questions-table td {
+                                padding: 12px 15px;
+                                vertical-align: top;
+                                line-height: 1.5;
+                            }
+                            .questions-table th {
+                                padding: 12px 15px;
+                                background-color: #f8f9fa;
+                                border-bottom: 2px solid #dee2e6;
+                                font-weight: 600;
+                            }
+                            .questions-table {
+                                width: 100%;
+                                border-collapse: separate;
+                                border-spacing: 0;
+                                margin-bottom: 1rem;
+                                box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+                            }
+                            .questions-table strong {
+                                font-weight: 600;
+                                display: block;
+                                margin-bottom: 6px;
+                            }
+                            .answer-content div {
+                                margin-bottom: 8px;
+                            }
+                            .answer-content strong {
+                                display: inline-block;
+                                min-width: 80px;
+                            }
                             .status-badge {
                                 padding: 4px 8px;
                                 border-radius: 4px;
@@ -1428,6 +1472,50 @@ class AdminDashboard {
                     .questions-table tr.failed td {
                         border-bottom: 1px solid rgba(255, 68, 68, 0.2);
                     }
+                    .questions-table tr {
+                        border-left: 4px solid transparent;
+                        height: auto;
+                        min-height: 60px;
+                    }
+                    .questions-table tr.passed {
+                        border-left: 4px solid #4bb543;
+                    }
+                    .questions-table tr.failed {
+                        border-left: 4px solid #ff4444;
+                    }
+                    .questions-table tbody tr:not(:last-child) {
+                        border-bottom: 1px solid #e9ecef;
+                    }
+                    .questions-table td {
+                        padding: 12px 15px;
+                        vertical-align: top;
+                        line-height: 1.5;
+                    }
+                    .questions-table th {
+                        padding: 12px 15px;
+                        background-color: #f8f9fa;
+                        border-bottom: 2px solid #dee2e6;
+                        font-weight: 600;
+                    }
+                    .questions-table {
+                        width: 100%;
+                        border-collapse: separate;
+                        border-spacing: 0;
+                        margin-bottom: 1rem;
+                        box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+                    }
+                    .questions-table strong {
+                        font-weight: 600;
+                        display: block;
+                        margin-bottom: 6px;
+                    }
+                    .answer-content div {
+                        margin-bottom: 8px;
+                    }
+                    .answer-content strong {
+                        display: inline-block;
+                        min-width: 80px;
+                    }
                     .status-badge {
                         padding: 4px 8px;
                         border-radius: 4px;
@@ -1446,7 +1534,7 @@ class AdminDashboard {
                 <div class="details-header">
                     <h3 id="questions-details-title">${this.formatQuizName(quizName)} - ${username}'s Answers</h3>
                     <button class="close-btn" aria-label="Close questions view" tabindex="0">×</button>
-                        </div>
+                </div>
                 <div class="questions-content">
                     ${!hasCompletedQuestions ? 
                         `<div class="not-attempted">
