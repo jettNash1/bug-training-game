@@ -560,17 +560,19 @@ class AdminDashboard {
             // Create the overlay
             const overlay = document.createElement('div');
             overlay.className = 'user-details-overlay';
+            overlay.setAttribute('role', 'dialog');
+            overlay.setAttribute('aria-modal', 'true');
+            overlay.setAttribute('aria-labelledby', 'user-details-title');
             
             const content = document.createElement('div');
             content.className = 'user-details-content';
             
             content.innerHTML = `
                 <div class="details-header">
-                    <h3>${username}'s Progress</h3>
-                    <button class="close-btn" style="position: absolute; right: 20px; top: 20px; 
-                            padding: 5px 10px; cursor: pointer; background: none; border: none; font-size: 20px; z-index: 1001;">×</button>
+                    <h3 id="user-details-title">${username}'s Progress</h3>
+                    <button class="close-btn" aria-label="Close details" tabindex="0">×</button>
                 </div>
-                <div class="quiz-progress-list" style="margin-top: 20px;">
+                <div class="quiz-progress-list">
                     ${this.quizTypes
                         .slice()
                         .sort((a, b) => this.formatQuizName(a).localeCompare(this.formatQuizName(b)))
@@ -629,9 +631,9 @@ class AdminDashboard {
                             }
                             
                             return `
-                                <div class="quiz-progress-item" style="margin-bottom: 20px; padding: 15px; background: ${backgroundColor}; border-radius: 8px;">
+                                <div class="quiz-progress-item" style="background: ${backgroundColor};">
                                     <h4 style="margin: 0 0 10px 0;">${this.formatQuizName(quizName)}</h4>
-                                    <div class="progress-details" style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px;">
+                                    <div class="progress-details">
                                         <div>
                                             <strong>Progress:</strong> 
                                             <span class="${status === 'Completed' ? 'text-success' : 
@@ -656,25 +658,28 @@ class AdminDashboard {
                                         </div>
                                         <div>
                                             <strong>Visibility:</strong>
-                                            <label class="visibility-toggle" style="display: inline-flex; align-items: center; gap: 5px;">
+                                            <label class="visibility-toggle">
                                                 <input type="checkbox" 
                                                     class="quiz-visibility-toggle"
                                                     data-quiz-name="${quizName}"
                                                     ${isVisible ? 'checked' : ''}
-                                                    style="margin: 0;">
+                                                    aria-label="Toggle visibility for ${this.formatQuizName(quizName)}"
+                                                    tabindex="0">
                                                 <span>Make visible to user</span>
                                             </label>
                                         </div>
                                     </div>
-                                    <div style="display: flex; flex-direction: column; gap: 10px; margin-top: 15px;">
+                                    <div class="quiz-actions">
                                         <button class="reset-quiz-btn"
                                             data-quiz-name="${quizName}"
-                                            style="padding: 5px 10px; background-color: #ff4444; color: white; border: none; border-radius: 4px; cursor: pointer;">
+                                            aria-label="Reset progress for ${this.formatQuizName(quizName)}"
+                                            tabindex="0">
                                             Reset Progress
                                         </button>
                                         <button class="view-questions-btn"
                                             data-quiz-name="${quizName}"
-                                            style="padding: 5px 10px; background-color: #4444ff; color: white; border: none; border-radius: 4px; cursor: pointer;">
+                                            aria-label="View questions for ${this.formatQuizName(quizName)}"
+                                            tabindex="0">
                                             View Questions
                                         </button>
                                     </div>
@@ -682,21 +687,23 @@ class AdminDashboard {
                             `;
                         }).join('')}
                 </div>
-                <div style="margin-top: 20px; padding-top: 20px; border-top: 1px solid #eee; 
-                            display: flex; justify-content: center; gap: 20px;">
+                <div class="user-actions">
                     <button class="reset-all-btn" 
-                        style="padding: 10px 20px; background-color: #dc3545; color: white; border: none; 
-                               border-radius: 4px; cursor: pointer; font-weight: 500;">
+                        style="background-color: #dc3545; color: white;"
+                        aria-label="Reset all progress for ${username}"
+                        tabindex="0">
                         Reset All Progress
                     </button>
                     <button class="reset-password-btn" 
-                        style="padding: 10px 20px; background-color: var(--secondary-color); color: white; 
-                               border: none; border-radius: 4px; cursor: pointer; font-weight: 500;">
+                        style="background-color: var(--secondary-color); color: white;"
+                        aria-label="Reset password for ${username}"
+                        tabindex="0">
                         Reset Password
                     </button>
                     <button class="delete-user-btn" 
-                        style="padding: 10px 20px; background-color: #dc3545; color: white; 
-                               border: 2px solid #dc3545; border-radius: 4px; cursor: pointer; font-weight: 500;">
+                        style="background-color: #dc3545; color: white; border: 2px solid #dc3545;"
+                        aria-label="Delete user ${username}"
+                        tabindex="0">
                         Delete User
                     </button>
                 </div>
@@ -713,7 +720,26 @@ class AdminDashboard {
                     e.stopPropagation();
                     overlay.remove();
                 });
+                
+                // Add keyboard support for close button
+                closeBtn.addEventListener('keydown', (e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        overlay.remove();
+                    }
+                });
             }
+            
+            // Add event listener for Escape key to close the overlay
+            const handleEscapeKey = (e) => {
+                if (e.key === 'Escape') {
+                    overlay.remove();
+                    document.removeEventListener('keydown', handleEscapeKey);
+                }
+            };
+            
+            document.addEventListener('keydown', handleEscapeKey);
 
             // Add event listeners for buttons
             content.querySelectorAll('.reset-quiz-btn').forEach(button => {
@@ -1033,10 +1059,27 @@ class AdminDashboard {
 
     async showQuizQuestions(quizName, username) {
         try {
+            // Get user data
+            const user = this.users.find(u => u.username === username);
+            if (!user) {
+                throw new Error('User not found');
+            }
+
+            // Get quiz results
+            const quizLower = quizName.toLowerCase();
+            const result = user.quizResults?.find(r => r.quizName.toLowerCase() === quizLower);
+            const progress = user.quizProgress?.[quizLower];
+            
+            // Get question history
+            const questionHistory = result?.questionHistory || progress?.questionHistory || [];
+            
             // Create overlay container
             const overlay = document.createElement('div');
             overlay.className = 'user-details-overlay';
             overlay.style.zIndex = '1002'; // Ensure it's above other overlays
+            overlay.setAttribute('role', 'dialog');
+            overlay.setAttribute('aria-modal', 'true');
+            overlay.setAttribute('aria-labelledby', 'questions-details-title');
 
             // Create content container
             const content = document.createElement('div');
@@ -1061,120 +1104,100 @@ class AdminDashboard {
                         font-weight: bold;
                         font-size: 0.9em;
                     }
-                    .status-badge.passed {
-                        background-color: #4BB543;
-                        color: white;
+                    .status-badge.pass {
+                        background-color: rgba(75, 181, 67, 0.2);
+                        color: #2e7d32;
                     }
-                    .status-badge.failed {
-                        background-color: #FF4444;
-                        color: white;
+                    .status-badge.fail {
+                        background-color: rgba(255, 68, 68, 0.2);
+                        color: #c62828;
                     }
                 </style>
                 <div class="details-header">
-                    <h3>Questions for ${this.formatQuizName(quizName)}</h3>
-                    <button class="close-btn" aria-label="Close questions overlay">&times;</button>
+                    <h3 id="questions-details-title">${this.formatQuizName(quizName)} - ${username}'s Answers</h3>
+                    <button class="close-btn" aria-label="Close questions view" tabindex="0">×</button>
                 </div>
-                <div class="questions-list">
-                    <div class="loading">Loading questions...</div>
+                <div class="questions-content">
+                    ${questionHistory.length === 0 ? 
+                        `<div class="not-attempted">
+                            <p>This user has not attempted any questions in this quiz yet.</p>
+                        </div>` : 
+                        `<table class="questions-table">
+                            <thead>
+                                <tr>
+                                    <th style="width: 5%;">#</th>
+                                    <th style="width: 15%;">Status</th>
+                                    <th style="width: 40%;">Question</th>
+                                    <th style="width: 40%;">Answer</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${questionHistory.map((question, index) => {
+                                    const isPassed = question.isCorrect;
+                                    return `
+                                        <tr class="${isPassed ? 'passed' : 'failed'}">
+                                            <td>${index + 1}</td>
+                                            <td>
+                                                <span class="status-badge ${isPassed ? 'pass' : 'fail'}">
+                                                    ${isPassed ? 'CORRECT' : 'INCORRECT'}
+                                                </span>
+                                            </td>
+                                            <td>
+                                                <strong>${question.question}</strong>
+                                                ${question.scenario ? `<p>${question.scenario}</p>` : ''}
+                                            </td>
+                                            <td class="answer-content">
+                                                <div>
+                                                    <strong>Selected:</strong> ${question.selectedAnswer || 'No answer selected'}
+                                                </div>
+                                                <div>
+                                                    <strong>Correct:</strong> ${question.correctAnswer}
+                                                </div>
+                                                <div class="outcome">
+                                                    ${question.explanation || ''}
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    `;
+                                }).join('')}
+                            </tbody>
+                        </table>`
+                    }
                 </div>
             `;
-
-            // Add content to overlay and overlay to body
+            
             overlay.appendChild(content);
             document.body.appendChild(overlay);
 
-            // Add close button functionality
+            // Add event listener for close button
             const closeBtn = content.querySelector('.close-btn');
-            closeBtn.addEventListener('click', () => {
-                document.body.removeChild(overlay);
-            });
-
-            // Close on click outside
-            overlay.addEventListener('click', (e) => {
-                if (e.target === overlay) {
-                    document.body.removeChild(overlay);
-                }
-            });
-
-            // Fetch questions data
-            console.log('Fetching questions for:', { username, quizName });
-            const response = await this.apiService.getQuizQuestions(username, quizName);
-            console.log('Questions response:', response);
+            if (closeBtn) {
+                closeBtn.addEventListener('click', () => {
+                    overlay.remove();
+                });
+                
+                // Add keyboard support for close button
+                closeBtn.addEventListener('keydown', (e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault();
+                        overlay.remove();
+                    }
+                });
+            }
             
-            const questionsList = content.querySelector('.questions-list');
-
-            if (!response.success || !response.data) {
-                questionsList.innerHTML = '<p class="error">Failed to load questions data.</p>';
-                return;
-            }
-
-            const { questionHistory = [], totalQuestions = 0, score = 0, experience = 0 } = response.data;
-            console.log('Question history:', questionHistory);
-
-            if (!Array.isArray(questionHistory) || questionHistory.length === 0) {
-                questionsList.innerHTML = '<p>No questions have been answered in this quiz yet.</p>';
-                return;
-            }
-
-            // Display quiz summary
-            questionsList.innerHTML = `
-                <div class="quiz-summary" style="margin-bottom: 20px; padding: 15px; background: #f5f5f5; border-radius: 8px;">
-                    <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px;">
-                        <div>
-                            <strong>Questions Answered:</strong> 
-                            <span>${totalQuestions}/15</span>
-                        </div>
-                        <div>
-                            <strong>Score:</strong> 
-                            <span>${score}%</span>
-                        </div>
-                        <div>
-                            <strong>Experience:</strong> 
-                            <span>${experience}/300</span>
-                        </div>
-                    </div>
-                </div>
-                <div class="questions-table-container" style="overflow-x: auto;">
-                    <table class="questions-table" style="width: 100%; border-collapse: collapse; border-spacing: 0;">
-                        <thead>
-                            <tr style="background-color: #f8f9fa;">
-                                <th style="width: 5%; padding: 12px; border-bottom: 2px solid #dee2e6;">ID</th>
-                                <th style="width: 35%; padding: 12px; border-bottom: 2px solid #dee2e6;">Description</th>
-                                <th style="width: 35%; padding: 12px; border-bottom: 2px solid #dee2e6;">Selected Answer</th>
-                                <th style="width: 10%; padding: 12px; border-bottom: 2px solid #dee2e6;">Status</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            ${questionHistory.map(record => {
-                                const status = record.status || 
-                                    (record.selectedAnswer.experience > 0 ? 'passed' : 'failed');
-
-                                return `
-                                    <tr class="${status}">
-                                        <td style="text-align: center; padding: 12px;">${record.id}</td>
-                                        <td style="padding: 12px;">${record.scenario.description}</td>
-                                        <td style="padding: 12px;">${record.selectedAnswer.text}</td>
-                                        <td style="padding: 12px; text-align: center;">
-                                            <span class="status-badge ${status}">
-                                                ${status.toUpperCase()}
-                                            </span>
-                                        </td>
-                                    </tr>
-                                `;
-                            }).join('')}
-                        </tbody>
-                    </table>
-                </div>
-            `;
-
-        } catch (error) {
-            console.error('Error showing quiz questions:', error);
-            if (content) {
-                const questionsList = content.querySelector('.questions-list');
-                if (questionsList) {
-                    questionsList.innerHTML = '<p class="error">An error occurred while loading questions.</p>';
+            // Add event listener for Escape key to close the overlay
+            const handleEscapeKey = (e) => {
+                if (e.key === 'Escape') {
+                    overlay.remove();
+                    document.removeEventListener('keydown', handleEscapeKey);
                 }
-            }
+            };
+            
+            document.addEventListener('keydown', handleEscapeKey);
+            
+        } catch (error) {
+            console.error('Failed to show quiz questions:', error);
+            this.showError('Failed to load quiz questions');
         }
     }
 
