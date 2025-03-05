@@ -1086,16 +1086,34 @@ class AdminDashboard {
             
             // Get question history - check both result and progress objects
             let questionHistory = [];
+            let questionsAnswered = 0;
+            let quizScore = 0;
+            let quizStatus = 'Not Started';
             
             if (result && Array.isArray(result.questionHistory) && result.questionHistory.length > 0) {
                 console.log('Using question history from quiz results');
                 questionHistory = result.questionHistory;
+                questionsAnswered = result.questionsAnswered || questionHistory.length;
+                quizScore = result.score || 0;
+                quizStatus = 'Completed';
             } else if (progress && Array.isArray(progress.questionHistory) && progress.questionHistory.length > 0) {
                 console.log('Using question history from quiz progress');
                 questionHistory = progress.questionHistory;
+                questionsAnswered = progress.questionsAnswered || questionHistory.length;
+                quizStatus = questionsAnswered >= 15 ? 'Completed' : 'In Progress';
+            } else {
+                // If we don't have question history but we know questions were answered
+                questionsAnswered = result?.questionsAnswered || progress?.questionsAnswered || 0;
+                quizScore = result?.score || 0;
+                
+                if (questionsAnswered > 0) {
+                    quizStatus = questionsAnswered >= 15 ? 'Completed' : 'In Progress';
+                }
             }
             
             console.log('Question history:', questionHistory);
+            console.log('Questions answered:', questionsAnswered);
+            console.log('Quiz status:', quizStatus);
             
             // Create overlay container
             const overlay = document.createElement('div');
@@ -1108,6 +1126,11 @@ class AdminDashboard {
             // Create content container
             const content = document.createElement('div');
             content.className = 'user-details-content';
+            
+            // Determine if we should show the questions table or the "no questions" message
+            const hasCompletedQuestions = questionHistory.length > 0 || questionsAnswered > 0;
+            const isQuizCompleted = quizStatus === 'Completed' || questionsAnswered >= 15;
+            
             content.innerHTML = `
                 <style>
                     .questions-table tr.passed {
@@ -1142,10 +1165,11 @@ class AdminDashboard {
                     <button class="close-btn" aria-label="Close questions view" tabindex="0">×</button>
                 </div>
                 <div class="questions-content">
-                    ${!questionHistory || questionHistory.length === 0 ? 
+                    ${!hasCompletedQuestions ? 
                         `<div class="not-attempted">
                             <p>This user has not attempted any questions in this quiz yet.</p>
                         </div>` : 
+                        questionHistory.length > 0 ?
                         `<table class="questions-table">
                             <thead>
                                 <tr>
@@ -1186,7 +1210,21 @@ class AdminDashboard {
                                     `;
                                 }).join('')}
                             </tbody>
-                        </table>`
+                        </table>` :
+                        `<div class="completed-no-history">
+                            <p>${isQuizCompleted ? 
+                                `This user has completed all ${questionsAnswered} questions in this quiz with a score of ${quizScore}%.` : 
+                                `This user has answered ${questionsAnswered} questions in this quiz so far.`}
+                            </p>
+                            <p>Status: <strong>${quizStatus}</strong></p>
+                            <p>Score: <strong>${quizScore}%</strong></p>
+                            <p>Experience earned: <strong>${result?.experience || progress?.experience || 0}</strong></p>
+                            <p>Last active: <strong>${this.formatDate(result?.completedAt || progress?.lastUpdated || '')}</strong></p>
+                            
+                            <div class="history-note">
+                                <p><em>Note: The detailed question history for this quiz is not available. This may happen for quizzes completed before the question history feature was implemented.</em></p>
+                            </div>
+                        </div>`
                     }
                 </div>
             `;
