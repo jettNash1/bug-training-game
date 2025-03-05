@@ -558,11 +558,9 @@ export class BaseQuiz {
                 this.outcomeScreen.classList.remove('hidden');
             }
             
-            // Update outcome display with selected answer outcome and correct answer if wrong
+            // Update outcome display with only the selected answer outcome
             let outcomeText = selectedAnswer.outcome;
-            if (selectedAnswer.experience < correctAnswer.experience) {
-                outcomeText += `\n\nThe correct answer was: "${correctAnswer.text}"\n${correctAnswer.outcome}`;
-            }
+            // No longer showing the correct answer text
             document.getElementById('outcome-text').textContent = outcomeText;
             
             const xpText = selectedAnswer.experience >= 0 ? 
