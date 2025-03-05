@@ -108,7 +108,8 @@ export class BaseQuiz {
         const timeUpOption = {
             text: "Time's up - No answer selected",
             outcome: "You did not answer in time.",
-            experience: 0
+            experience: 0,
+            isTimeout: true  // Add a flag to identify this as a timeout option
         };
 
         // Record the choice with timing information
@@ -206,11 +207,18 @@ export class BaseQuiz {
         // Update outcome text
         const outcomeText = document.getElementById('outcome-text');
         if (outcomeText) {
-            let text = option.outcome;
-            if (option.experience < correctAnswer.experience) {
-                text += `\n\nThe correct answer was: "${correctAnswer.text}"\n${correctAnswer.outcome}`;
+            // Check if this is a timeout scenario using the isTimeout flag
+            if (option.isTimeout) {
+                // Only show the timeout message and correct answer without additional feedback
+                outcomeText.textContent = `You did not answer in time. The correct answer was: "${correctAnswer.text}"`;
+            } else {
+                // Normal scenario - user selected an answer
+                let text = option.outcome;
+                if (option.experience < correctAnswer.experience) {
+                    text += `\n\nThe correct answer was: "${correctAnswer.text}"\n${correctAnswer.outcome}`;
+                }
+                outcomeText.textContent = text;
             }
-            outcomeText.textContent = text;
         }
 
         // Update XP display
