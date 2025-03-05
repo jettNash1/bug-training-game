@@ -631,7 +631,9 @@ class AdminDashboard {
                             }
                             
                             return `
-                                <div class="quiz-progress-item" style="background: ${backgroundColor};">
+                                <div class="quiz-progress-item ${status === 'Completed' ? 'completed' : 
+                                                              status === 'In Progress' ? 'in-progress' : 
+                                                              'not-started'}">
                                     <h4>${this.formatQuizName(quizName)}</h4>
                                     <div class="progress-details">
                                         <div>
