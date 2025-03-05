@@ -624,7 +624,7 @@ class AdminDashboard {
                             if (questionsAnswered > 0) {
                                 if (questionsAnswered === 15) {
                                     // All questions completed
-                                    if (experience >= 300 || score === 100) {
+                                    if (experience >= 300 || score >= 100) {
                                         backgroundColor = '#e8f5e9'; // Light green for perfect score (300/300 or 100%)
                                     } else {
                                         backgroundColor = '#fff3e0'; // Light yellow for completed but not perfect score
@@ -639,10 +639,20 @@ class AdminDashboard {
                                 }
                             }
                             
+                            // Determine quiz status class
+                            let statusClass = 'not-started';
+                            if (questionsAnswered === 15) {
+                                if (experience >= 300 || score >= 100) {
+                                    statusClass = 'completed-perfect'; // Perfect score
+                                } else {
+                                    statusClass = 'completed-partial'; // Completed but not perfect
+                                }
+                            } else if (questionsAnswered > 0) {
+                                statusClass = 'in-progress';
+                            }
+                            
                             return `
-                                <div class="quiz-progress-item ${status === 'Completed' ? 'completed' : 
-                                                              status === 'In Progress' ? 'in-progress' : 
-                                                              'not-started'}">
+                                <div class="quiz-progress-item ${statusClass}" style="background-color: ${backgroundColor}">
                                     <h4>${this.formatQuizName(quizName)}</h4>
                                     <div class="progress-details">
                                         <div>
