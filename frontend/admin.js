@@ -1081,13 +1081,13 @@ class AdminDashboard {
                     // Map the API response to the format expected by the UI
                     const apiQuestionHistory = response.data.questionHistory || [];
                     const questionHistory = apiQuestionHistory.map(item => {
+                        const isPassed = item.status === 'passed';
                         return {
                             question: item.scenario?.title || 'Question text not available',
                             scenario: item.scenario?.description || '',
                             selectedAnswer: item.selectedAnswer?.text || 'No answer selected',
-                            correctAnswer: item.selectedAnswer?.tool || 'Correct answer not available',
-                            isCorrect: item.status === 'passed',
-                            explanation: item.selectedAnswer?.outcome || ''
+                            correctAnswer: isPassed ? item.selectedAnswer?.text : (item.selectedAnswer?.tool || 'Correct answer not available'),
+                            isCorrect: isPassed
                         };
                     });
                     
@@ -1181,12 +1181,9 @@ class AdminDashboard {
                                                         <div>
                                                             <strong>Selected:</strong> ${question.selectedAnswer || 'No answer selected'}
                                                         </div>
+                                                        ${!question.isCorrect ? `
                                                         <div>
                                                             <strong>Correct:</strong> ${question.correctAnswer || 'Correct answer not available'}
-                                                        </div>
-                                                        ${question.explanation ? `
-                                                        <div class="outcome">
-                                                            ${question.explanation}
                                                         </div>` : ''}
                                                     </td>
                                                 </tr>
@@ -1400,12 +1397,9 @@ class AdminDashboard {
                                                 <div>
                                                     <strong>Selected:</strong> ${question.selectedAnswer || 'No answer selected'}
                                                 </div>
+                                                ${!question.isCorrect ? `
                                                 <div>
                                                     <strong>Correct:</strong> ${question.correctAnswer || 'Correct answer not available'}
-                                                </div>
-                                                ${question.explanation ? `
-                                                <div class="outcome">
-                                                    ${question.explanation}
                                                 </div>` : ''}
                                             </td>
                                         </tr>
