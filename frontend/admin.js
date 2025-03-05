@@ -1072,13 +1072,219 @@ class AdminDashboard {
 
             console.log('Showing quiz questions for:', { username, quizName });
             
+            // Get quiz results from API
+            try {
+                const response = await this.apiService.getQuizQuestions(username, quizName);
+                console.log('Quiz questions API response:', response);
+                
+                if (response.success && response.data) {
+                    // Map the API response to the format expected by the UI
+                    const apiQuestionHistory = response.data.questionHistory || [];
+                    const questionHistory = apiQuestionHistory.map(item => {
+                        return {
+                            question: item.scenario?.title || 'Question text not available',
+                            scenario: item.scenario?.description || '',
+                            selectedAnswer: item.selectedAnswer?.text || 'No answer selected',
+                            correctAnswer: item.selectedAnswer?.tool || 'Correct answer not available',
+                            isCorrect: item.status === 'passed',
+                            explanation: item.selectedAnswer?.outcome || ''
+                        };
+                    });
+                    
+                    const questionsAnswered = response.data.totalQuestions || 0;
+                    const quizScore = response.data.score || 0;
+                    const quizStatus = questionsAnswered >= 15 ? 'Completed' : (questionsAnswered > 0 ? 'In Progress' : 'Not Started');
+                    
+                    console.log('Mapped question history:', questionHistory);
+                    console.log('Questions answered:', questionsAnswered);
+                    console.log('Quiz status:', quizStatus);
+                    
+                    // Create overlay container
+                    const overlay = document.createElement('div');
+                    overlay.className = 'user-details-overlay';
+                    overlay.style.zIndex = '1002'; // Ensure it's above other overlays
+                    overlay.setAttribute('role', 'dialog');
+                    overlay.setAttribute('aria-modal', 'true');
+                    overlay.setAttribute('aria-labelledby', 'questions-details-title');
+
+                    // Create content container
+                    const content = document.createElement('div');
+                    content.className = 'user-details-content';
+                    
+                    // Determine if we should show the questions table or the "no questions" message
+                    const hasCompletedQuestions = questionHistory.length > 0 || questionsAnswered > 0;
+                    
+                    content.innerHTML = `
+                        <style>
+                            .questions-table tr.passed {
+                                background-color: rgba(75, 181, 67, 0.1);
+                            }
+                            .questions-table tr.failed {
+                                background-color: rgba(255, 68, 68, 0.1);
+                            }
+                            .questions-table tr.passed td {
+                                border-bottom: 1px solid rgba(75, 181, 67, 0.2);
+                            }
+                            .questions-table tr.failed td {
+                                border-bottom: 1px solid rgba(255, 68, 68, 0.2);
+                            }
+                            .status-badge {
+                                padding: 4px 8px;
+                                border-radius: 4px;
+                                font-weight: bold;
+                                font-size: 0.9em;
+                            }
+                            .status-badge.pass {
+                                background-color: rgba(75, 181, 67, 0.2);
+                                color: #2e7d32;
+                            }
+                            .status-badge.fail {
+                                background-color: rgba(255, 68, 68, 0.2);
+                                color: #c62828;
+                            }
+                        </style>
+                        <div class="details-header">
+                            <h3 id="questions-details-title">${this.formatQuizName(quizName)} - ${username}'s Answers</h3>
+                            <button class="close-btn" aria-label="Close questions view" tabindex="0">×</button>
+                        </div>
+                        <div class="questions-content">
+                            ${!hasCompletedQuestions ? 
+                                `<div class="not-attempted">
+                                    <p>This user has not attempted any questions in this quiz yet.</p>
+                                </div>` : 
+                                questionHistory.length > 0 ?
+                                `<table class="questions-table">
+                                    <thead>
+                                        <tr>
+                                            <th style="width: 5%;">#</th>
+                                            <th style="width: 15%;">Status</th>
+                                            <th style="width: 40%;">Question</th>
+                                            <th style="width: 40%;">Answer</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        ${questionHistory.map((question, index) => {
+                                            const isPassed = question.isCorrect;
+                                            return `
+                                                <tr class="${isPassed ? 'passed' : 'failed'}">
+                                                    <td>${index + 1}</td>
+                                                    <td>
+                                                        <span class="status-badge ${isPassed ? 'pass' : 'fail'}">
+                                                            ${isPassed ? 'CORRECT' : 'INCORRECT'}
+                                                        </span>
+                                                    </td>
+                                                    <td>
+                                                        <strong>${question.question || 'Question text not available'}</strong>
+                                                        ${question.scenario ? `<p>${question.scenario}</p>` : ''}
+                                                    </td>
+                                                    <td class="answer-content">
+                                                        <div>
+                                                            <strong>Selected:</strong> ${question.selectedAnswer || 'No answer selected'}
+                                                        </div>
+                                                        <div>
+                                                            <strong>Correct:</strong> ${question.correctAnswer || 'Correct answer not available'}
+                                                        </div>
+                                                        ${question.explanation ? `
+                                                        <div class="outcome">
+                                                            ${question.explanation}
+                                                        </div>` : ''}
+                                                    </td>
+                                                </tr>
+                                            `;
+                                        }).join('')}
+                                    </tbody>
+                                </table>` :
+                                `<div>
+                                    <table class="questions-table">
+                                        <thead>
+                                            <tr>
+                                                <th style="width: 10%;">Question ID</th>
+                                                <th style="width: 30%;">Question</th>
+                                                <th style="width: 20%;">Selected Answer</th>
+                                                <th style="width: 15%;">Status</th>
+                                                <th style="width: 25%;">Correct Answer</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            ${Array.from({ length: questionsAnswered }, (_, i) => {
+                                                // For quizzes with progress but no detailed history, we show a basic table
+                                                return `
+                                                    <tr>
+                                                        <td>${i + 1}</td>
+                                                        <td>Question ${i + 1}</td>
+                                                        <td>Answer data not available</td>
+                                                        <td>Status not available</td>
+                                                        <td>Correct answer not available</td>
+                                                    </tr>
+                                                `;
+                                            }).join('')}
+                                        </tbody>
+                                    </table>
+                                    <div class="history-note" style="margin-top: 1rem;">
+                                        <p><em>Note: The detailed question history for this quiz is not available. This may happen for quizzes completed before the question history feature was implemented.</em></p>
+                                        <p>Status: <strong>${quizStatus}</strong></p>
+                                        <p>Score: <strong>${quizScore}%</strong></p>
+                                        <p>Experience earned: <strong>${response.data.experience || 0}</strong></p>
+                                        <p>Last active: <strong>${this.formatDate(response.data.lastActive || '')}</strong></p>
+                                    </div>
+                                </div>`
+                            }
+                        </div>
+                    `;
+
+                    overlay.appendChild(content);
+                    document.body.appendChild(overlay);
+
+                    // Add event listener for close button
+                    const closeBtn = content.querySelector('.close-btn');
+                    if (closeBtn) {
+                        closeBtn.addEventListener('click', () => {
+                            overlay.remove();
+                        });
+                        
+                        // Add keyboard support for close button
+                        closeBtn.addEventListener('keydown', (e) => {
+                            if (e.key === 'Enter' || e.key === ' ') {
+                                e.preventDefault();
+                                overlay.remove();
+                            }
+                        });
+                    }
+                    
+                    // Add escape key handler
+                    const handleEscapeKey = (e) => {
+                        if (e.key === 'Escape') {
+                            overlay.remove();
+                            document.removeEventListener('keydown', handleEscapeKey);
+                        }
+                    };
+                    
+                    document.addEventListener('keydown', handleEscapeKey);
+                } else {
+                    throw new Error('Failed to get quiz questions from API');
+                }
+            } catch (apiError) {
+                console.error('API error when fetching quiz questions:', apiError);
+                
+                // Fallback to local data if API fails
+                this.showQuizQuestionsFromLocalData(quizName, username, user);
+            }
+        } catch (error) {
+            console.error('Failed to show quiz questions:', error);
+            this.showError(`Failed to show quiz questions: ${error.message}`);
+        }
+    }
+    
+    // Fallback method to show quiz questions from local data
+    showQuizQuestionsFromLocalData(quizName, username, user) {
+        try {
             // Get quiz results
             const quizLower = quizName.toLowerCase();
             const result = user.quizResults?.find(r => r.quizName.toLowerCase() === quizLower);
             const progress = user.quizProgress?.[quizLower];
             
-            console.log('Quiz result:', result);
-            console.log('Quiz progress:', progress);
+            console.log('Fallback - Quiz result:', result);
+            console.log('Fallback - Quiz progress:', progress);
             
             // Get question history - check both result and progress objects
             let questionHistory = [];
@@ -1108,9 +1314,9 @@ class AdminDashboard {
                 }
             }
             
-            console.log('Question history:', questionHistory);
-            console.log('Questions answered:', questionsAnswered);
-            console.log('Quiz status:', quizStatus);
+            console.log('Fallback - Question history:', questionHistory);
+            console.log('Fallback - Questions answered:', questionsAnswered);
+            console.log('Fallback - Quiz status:', quizStatus);
             
             // Create overlay container
             const overlay = document.createElement('div');
@@ -1273,10 +1479,9 @@ class AdminDashboard {
             };
             
             document.addEventListener('keydown', handleEscapeKey);
-
         } catch (error) {
-            console.error('Failed to show quiz questions:', error);
-            this.showError('Failed to load quiz questions');
+            console.error('Failed to show quiz questions from local data:', error);
+            this.showError(`Failed to show quiz questions: ${error.message}`);
         }
     }
 
