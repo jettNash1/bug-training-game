@@ -209,15 +209,12 @@ export class BaseQuiz {
         if (outcomeText) {
             // Check if this is a timeout scenario using the isTimeout flag
             if (option.isTimeout) {
-                // Only show the timeout message and correct answer without additional feedback
-                outcomeText.textContent = `You did not answer in time. The correct answer was: "${correctAnswer.text}"`;
+                // Only show the timeout message without the correct answer
+                outcomeText.textContent = `You did not answer in time.`;
             } else {
                 // Normal scenario - user selected an answer
-                let text = option.outcome;
-                if (option.experience < correctAnswer.experience) {
-                    text += `\n\nThe correct answer was: "${correctAnswer.text}"\n${correctAnswer.outcome}`;
-                }
-                outcomeText.textContent = text;
+                // Only show the user's selected answer outcome, not the correct answer
+                outcomeText.textContent = option.outcome;
             }
         }
 
