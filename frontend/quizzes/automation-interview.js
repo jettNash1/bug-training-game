@@ -90,9 +90,9 @@ export class AutomationInterviewQuiz extends BaseQuiz {
                         experience: -10
                     },
                     {
-                        text: 'Convert all manual tests to automated tests without reviewing their suitability',
-                        outcome: 'Strategic selection of test cases is important.',
-                        experience: -5
+                        text: 'Create automated scripts covering the main user journeys',
+                        outcome: 'Ideally a plan should be created first, but on a very small project, this could be a viable approach.',
+                        experience: 0
                     }
                 ]
             },
