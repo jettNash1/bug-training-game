@@ -451,7 +451,6 @@ body {
 
 .nav-button:hover {
     background-color: var(--text-secondary);
-    transform: translateY(-2px);
 }
 
 .nav-button.logout {
