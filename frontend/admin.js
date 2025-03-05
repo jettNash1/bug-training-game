@@ -622,12 +622,20 @@ class AdminDashboard {
                             // Determine background color based on XP and status
                             let backgroundColor = '#f5f5f5'; // Default gray for not started
                             if (questionsAnswered > 0) {
-                                if (experience >= 300) {
-                                    backgroundColor = '#e8f5e9'; // Light green for perfect score (300/300)
-                                } else if (experience >= 235) {
-                                    backgroundColor = '#fff3e0'; // Light yellow for pass (≥235/300)
+                                if (questionsAnswered === 15) {
+                                    // All questions completed
+                                    if (experience >= 300 || score === 100) {
+                                        backgroundColor = '#e8f5e9'; // Light green for perfect score (300/300 or 100%)
+                                    } else {
+                                        backgroundColor = '#fff3e0'; // Light yellow for completed but not perfect score
+                                    }
                                 } else {
-                                    backgroundColor = '#ffebee'; // Light red for fail (<235/300)
+                                    // Not all questions completed
+                                    if (experience >= 235) {
+                                        backgroundColor = '#fff3e0'; // Light yellow for pass (≥235/300)
+                                    } else {
+                                        backgroundColor = '#ffebee'; // Light red for fail (<235/300)
+                                    }
                                 }
                             }
                             
