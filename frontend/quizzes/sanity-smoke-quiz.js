@@ -2,7 +2,7 @@ import { APIService } from '../api-service.js';
 import { BaseQuiz } from '../quiz-helper.js';
 import { QuizUser } from '../QuizUser.js';
 
-export class RaisingTicketsQuiz extends BaseQuiz {
+export class SanitySmokeQuiz extends BaseQuiz {
     constructor() {
         const config = {
             maxXP: 300,
@@ -12,22 +12,23 @@ export class RaisingTicketsQuiz extends BaseQuiz {
                 advanced: { questions: 15, minXP: 235 }
             },
             performanceThresholds: [
-                { threshold: 250, message: '🏆 Outstanding! You\'re a ticket management expert!' },
-                { threshold: 200, message: '👏 Great job! You\'ve shown strong ticket handling skills!' },
+                { threshold: 250, message: '🏆 Outstanding! You\'re a sanity and smoke testing expert!' },
+                { threshold: 200, message: '👏 Great job! You\'ve shown strong sanity and smoke testing skills!' },
                 { threshold: 150, message: '👍 Good work! Keep practicing to improve further.' },
-                { threshold: 0, message: '📚 Consider reviewing ticket management best practices and try again!' }
+                { threshold: 0, message: '📚 Consider reviewing sanity and smoke testing best practices and try again!' }
             ]
         };
         
         super(config);
         
-        // Set quiz name
+        // Set the quiz name
         Object.defineProperty(this, 'quizName', {
-            value: 'raising-tickets',
+            value: 'sanity-smoke-quiz',
             writable: false,
-            configurable: false
+            configurable: false,
+            enumerable: true
         });
-
+        
         // Initialize player state
         this.player = {
             name: '',
@@ -64,33 +65,33 @@ export class RaisingTicketsQuiz extends BaseQuiz {
             return;
         }
 
-        // Basic Scenarios (IDs 1-5, 75 XP total)
+        // Basic Scenarios (IDs 1-5)
         this.basicScenarios = [
             {
                 id: 1,
                 level: 'Basic',
-                title: 'Understanding Ticket Types',
-                description: 'What are the main types of tickets that should be raised?',
+                title: 'Understanding Sanity Testing',
+                description: 'What is Sanity Testing?',
                 options: [
                     {
-                        text: 'Bugs, Queries, Suggestions/Improvements, and Reference tickets',
-                        outcome: 'Perfect! These are the main ticket types used for different purposes.',
+                        text: 'Sanity testing is a subset of regression testing that validates specific code changes',
+                        outcome: 'Correct! Sanity testing is a subset of regression testing that focuses on verifying specific code changes and their intended functionality.',
                         experience: 15,
-                        tool: 'Ticket Classification'
+                        tool: 'Sanity Testing Framework'
                     },
                     {
-                        text: 'Bug reports should be raised as this is the primary objective of quality assurance',
-                        outcome: 'Multiple ticket types are required including queries and suggestions as they serve different purposes.',
+                        text: 'A comprehensive testing method that checks all system functionality',
+                        outcome: 'While it checks functionality, it\'s not comprehensive and focus remains on major functionality.',
                         experience: -5
                     },
                     {
-                        text: 'Tasks should be raised by the tester for clients to assign to developers',
-                        outcome: 'Whilst this is a valid ticket type in some but tracking systems, tasks are generally entered by developers or client project managers themselves.',
+                        text: 'A testing approach that requires extensive documentation on the application under test',
+                        outcome: 'Sanity testing is typically undocumented as it is generally performed on a build where the production deployment is required immediately.',
                         experience: -10
                     },
                     {
-                        text: 'User stories should be raised by the tester for full feature coverage',
-                        outcome: 'Whilst this is a valid ticket type. User stories are generally entered by developers or client project managers themselves.',
+                        text: 'Sanity testing is a method to completely replace smoke testing',
+                        outcome: 'Sanity testing is performed after smoke testing, not as a replacement, as smoke testing confirms that the QA team can continue with further testing.',
                         experience: 0
                     }
                 ]
@@ -98,28 +99,28 @@ export class RaisingTicketsQuiz extends BaseQuiz {
             {
                 id: 2,
                 level: 'Basic',
-                title: 'Ticket Title Creation',
-                description: 'How should you format a ticket title?',
+                title: 'Sanity Test Execution',
+                description: 'When is Sanity Testing typically performed?',
                 options: [
                     {
-                        text: 'Concise, clear, and specific with environment prefix if applicable',
-                        outcome: 'Excellent! Clear titles help identify issues quickly.',
-                        experience: 15,
-                        tool: 'Title Formatting'
-                    },
-                    {
-                        text: 'A full sentence to give all details of the issue raised',
-                        outcome: 'Ticket titles should be concise and specific. Full details can be included in the ticket description and steps.',
+                        text: 'At the beginning of the software development lifecycle.',
+                        outcome: 'It occurs during the development process, but not at the very beginning.',
                         experience: -5
                     },
                     {
-                        text: 'A clear and specific description along with bug severity',
-                        outcome: 'Whilst a clear and specific description is required. The bug severity should be included in its own field in the ticket and in the severity field of the bug tracking system',
+                        text: 'During the final user acceptance testing stage of an application',
+                        outcome: 'This type of testing would be performed before user acceptance testing as all critical functional bugs should be resolved before that stage.',
                         experience: -10
                     },
                     {
-                        text: 'Observed and expected outcomes should be included.',
-                        outcome: 'Whilst titles should describe the issue clearly, they need to be concise. Full information can be included in the description and steps of the ticket',
+                        text: 'After smoke testing, typically to check critical bug fixes',
+                        outcome: 'Correct! Sanity testing is performed after smoke tests, usually for critical bug fixes or before immediate production deployment.',
+                        experience: 15,
+                        tool: 'Sanity Test Execution'
+                    },
+                    {
+                        text: 'Sanity testing should be performed during the initial design phase of the project',
+                        outcome: 'This should occur during implementation, not during initial design as functionality of the system cannot be tested during the design stage.',
                         experience: 0
                     }
                 ]
@@ -127,28 +128,28 @@ export class RaisingTicketsQuiz extends BaseQuiz {
             {
                 id: 3,
                 level: 'Basic',
-                title: 'Issue Description',
-                description: 'What should be included in the issue description?',
+                title: 'Understanding Smoke Testing',
+                description: 'What is the primary purpose of Smoke Testing?',
                 options: [
                     {
-                        text: 'Observed behaviour, expected behaviour, and reference to specifications if available',
-                        outcome: 'Perfect! This provides clear context for the client and developer to debug the issue.',
+                        text: 'To verify that critical features are working and there are no blocking issues that prevent further testing',
+                        outcome: 'Perfect! Smoke testing is a minimal set of tests run on each build to confirm the critical features of a system are working and there are no blocking issues that would prevent further testing.',
                         experience: 15,
-                        tool: 'Description Template'
+                        tool: 'Smoke Test Characteristics'
                     },
                     {
-                        text: 'Only the error message should be included in the issue description',
-                        outcome: 'More context is needed in descriptions including observed and expected behaviour.',
+                        text: 'To completely test all software functionality within the system under test',
+                        outcome: 'Smoke testing is not comprehensive and does not aim to test all functionality in depth.',
                         experience: -10
                     },
                     {
-                        text: 'The testers opinion on how the behaviour of the feature or process should perform',
-                        outcome: 'Whilst in some cases this may be of benefit, any behaviour of the expected outcome should come from client documentation.',
+                        text: 'To replace functional testing within the system under test entirely',
+                        outcome: 'Smoke testing is a preliminary step that precedes functional testing to identify critical issues in core functionality, not a replacement for it.',
                         experience: -5
                     },
                     {
-                        text: 'Technical information should be included in the ticket description',
-                        outcome: 'Technical information should be avoided if possible, as clear, accessible language is required for ease of understanding to all stakeholders.',
+                        text: 'To add additional steps to the detailed test scenarios already set out in the planning process',
+                        outcome: 'While some might view it as an additional step, smoke testing is actually a crucial method to quickly identify critical issues early in the development process',
                         experience: 0
                     }
                 ]
@@ -156,28 +157,28 @@ export class RaisingTicketsQuiz extends BaseQuiz {
             {
                 id: 4,
                 level: 'Basic',
-                title: 'Steps to Recreate',
-                description: 'How should you document steps to recreate an issue?',
+                title: 'Smoke Testing Execution',
+                description: 'When is Smoke Testing typically performed?',
                 options: [
                     {
-                        text: 'Clear, numbered steps with specific actions and component names in order',
-                        outcome: 'Excellent! This helps others reproduce the issue reliably.',
+                        text: 'At the start of every new software release or when new functionality is developed and integrated',
+                        outcome: 'Excellent! Smoke Testing is completed at the start of every new software release to ensure that all critical functionalities are working correctly or not.',
                         experience: 15,
-                        tool: 'Steps Documentation'
+                        tool: 'Smoke Test Execution'
                     },
                     {
-                        text: 'A general description on the area in question for developers to investigate and debug',
-                        outcome: 'Specific numbered steps are required for bug reproduction.',
+                        text: 'Smoke testing is typically carried out during final software release',
+                        outcome: 'This misunderstands the purpose of smoke testing. Waiting until the final release would defeat the purpose of early issue detection.',
                         experience: -10
                     },
                     {
-                        text: 'Steps are not needed as long as the description has enough detail for reproduction',
-                        outcome: 'Steps are essential for issue verification and should accompany a bug description.',
+                        text: 'At random points throughout the development process and software releases',
+                        outcome: 'Smoke testing is not random but systematically performed at specific points in the development cycle, typically at the beginning of testing a new software release.',
                         experience: -5
                     },
                     {
-                        text: 'Steps should written in first person format when documenting an issue',
-                        outcome: 'Steps should always be documented in an instructional manner, as first person format can suggest a one only type issue.',
+                        text: 'At the preference of the tester, depending on past experience of similar projects.',
+                        outcome: 'Smoke testing is not based on preference but on a structured process of verifying build stability after changes.',
                         experience: 0
                     }
                 ]
@@ -185,61 +186,60 @@ export class RaisingTicketsQuiz extends BaseQuiz {
             {
                 id: 5,
                 level: 'Basic',
-                title: 'Environment Documentation',
-                description: 'What should you include in the environment section?',
+                title: 'Performing Smoke Tests',
+                description: 'Who typically performs Smoke Testing?',
                 options: [
                     {
-                        text: 'Primary environment details and any additional environments where the issue occurs',
-                        outcome: 'Perfect! This helps identify environment-specific issues.',
+                        text: 'Both development and QA teams should perform smoke testing',
+                        outcome: 'Perfect! Smoke testing is normally completed by both the development team and the quality assurance team, with each playing a specific roles in identifying issues',
                         experience: 15,
-                        tool: 'Environment Tracking'
+                        tool: 'Performing Smoke Tests'
                     },
                     {
-                        text: 'Details of the environment the issue was initially found on',
-                        outcome: 'Details of all environments the issue occurs on should be listed here.',
+                        text: 'Only developers should perform smoke tests',
+                        outcome: 'While developers play a role, smoke testing is not exclusively their responsibility and QA teams should also perform these type of tests.',
                         experience: -10
                     },
                     {
-                        text: 'Hardware details of all environments the issue occurs on',
-                        outcome: 'Whilst the hardware details are needed, operating system and browser version details are also required.',
+                        text: 'Only quality assurance (QA) team should perform smoke tests',
+                        outcome: 'QA is involved, but they are not the sole performers of smoke testing and developers should also be involved.',
                         experience: -5
                     },
                     {
-                        text: 'Browser specific version numbers should be included in the environment section',
-                        outcome: 'Whilst the browser version details are needed, operating system and hardware version details are also required.',
+                        text: 'External consultants should perform smoke tests',
+                        outcome: 'External consultants are typically not involved in routine smoke testing processes.',
                         experience: 0
                     }
                 ]
             }
         ];
-
-        // Intermediate Scenarios (IDs 6-10, 125 XP total)
+        // Intermediate Scenarios (IDs 6-10, 100 XP total, 20 XP each)
         this.intermediateScenarios = [
             {
                 id: 6,
                 level: 'Intermediate',
-                title: 'Reproduction Rate',
-                description: 'How do you determine and document reproduction rate?',
+                title: 'Sanity Test Features',
+                description: 'What are the key features of Sanity Testing?',
                 options: [
                     {
-                        text: 'Test multiple times and calculate percentage based on successful reproductions',
-                        outcome: 'Excellent! This provides accurate reproduction statistics.',
+                        text: 'A narrow and deep approach with limited, in-depth functionality testing',
+                        outcome: 'Excellent! Sanity testing is characterised by a narrow and deep approach, focusing on limited functionality in depth.',
                         experience: 20,
-                        tool: 'Reproduction Calculator'
+                        tool: 'Focus Area Validation'
                     },
                     {
-                        text: 'Test multiple times on one environment to ensure accurate reproduction rate',
-                        outcome: 'To ensure accurate reproduction rates, tests should be carried out on multiple environments.',
+                        text: 'Sanity testing is characterised by a scripted and extensively documented approach',
+                        outcome: 'Sanity testing is typically unscripted and undocumented as it is generally performed on a build where the production deployment is required immediately.',
                         experience: -15
                     },
                     {
-                        text: 'Test with one set of data to ensure conditions do not affect outcome',
-                        outcome: 'Whilst this is initially important, testing under different conditions contribute to the reproduction rate, for example, using different types of data for a mailing list form.',
+                        text: 'Sanity testing is characterised by comprehensive coverage of all system functionality',
+                        outcome: 'While it checks functionality, it\'s not comprehensive and focus remains on major functionality.',
                         experience: -10
                     },
                     {
-                        text: 'Test once on each supported environment',
-                        outcome: 'While testing other environments is important, multiple attempts of recreating the issue is required for accuracy.',
+                        text: 'Sanity testing is characterised as being designed to replace full regression testing',
+                        outcome: 'This is generally a subset of regression testing that focus on critical areas of the system and not a replacement.',
                         experience: -5
                     }
                 ]
@@ -247,28 +247,28 @@ export class RaisingTicketsQuiz extends BaseQuiz {
             {
                 id: 7,
                 level: 'Intermediate',
-                title: 'Supporting Material',
-                description: 'What supporting material should you include with tickets?',
+                title: 'Sanity Check Risks',
+                description: 'What is a key disadvantage of Sanity Testing?',
                 options: [
                     {
-                        text: 'Clear videos and images showing the issue, crash logs, and highlighted problem areas',
-                        outcome: 'Perfect! Visual evidence helps stakeholders and developers understand issues.',
+                        text: 'It covers only a few areas and can miss issues in unchecked system functionality',
+                        outcome: 'Sanity testing focuses on a narrow range of functionalities, which means potential issues in unchecked areas might go undetected.',
                         experience: 20,
-                        tool: 'Evidence Collection'
+                        tool: 'Sanity Check Risk'
                     },
                     {
-                        text: 'Supporting material can be omitted if the description has enough detail',
-                        outcome: 'Evidence should always be included, if possible, as this helps demonstrate issues for developers and subsequent issue verification.',
+                        text: 'It can be too time-consuming and expensive to execute the tests',
+                        outcome: 'It\'s actually less time-consuming and less expensive as it only focus\' on limited functionality.',
                         experience: -15
                     },
                     {
-                        text: 'Low resolution unlabelled screenshots should be included as supported evidence',
-                        outcome: 'Screenshots should be clear and legible to promote clarity and instruction on issues.',
+                        text: 'This type of approach can require too much documentation',
+                        outcome: 'Exploratory testing requires less documentation than scripted testing.',
                         experience: -10
                     },
                     {
-                        text: 'Steps to reproduce with URL links to affected pages and areas',
-                        outcome: 'While steps to reproduce can help pinpoint an issue. Visual evidence often helps with clarity even more so.',
+                        text: 'Sanity testing requires extensive documentation during planning',
+                        outcome: 'Sanity testing is typically undocumented as it is generally performed on a build where the production deployment is required immediately.',
                         experience: -5
                     }
                 ]
@@ -276,28 +276,28 @@ export class RaisingTicketsQuiz extends BaseQuiz {
             {
                 id: 8,
                 level: 'Intermediate',
-                title: 'Version Information',
-                description: 'How should you document version information?',
+                title: 'Failed Smoke Test Process',
+                description: 'What is the general process if a Smoke Test fails?',
                 options: [
                     {
-                        text: 'Include environment URL, build version and date for accurate tracking',
-                        outcome: 'Excellent! Version information is essential for traceability helps track issue timeline.',
+                        text: 'Testing is halted for that area of functionality, and the build is returned to development',
+                        outcome: 'If a smoke test fails, it typically results in testing being halted for that area of functionality. The system would be handed back to the development team for correction, whilst functional testing on other areas can still be performed.',
                         experience: 20,
-                        tool: 'Version Tracker'
+                        tool: 'Smoke Test Failure Process'
                     },
                     {
-                        text: 'Include build version and date the issue was raised on for documentation',
-                        outcome: 'Version information and date are essential. However, in the case of website testing the URL provided by the client must also be included.',
+                        text: 'The software can be released as smoke tests generally don\'t detect issues in critical functionality',
+                        outcome: 'A failed smoke test prevents the software from proceeding to further testing or release as an issue in this area would relate to critical functionality.',
                         experience: -15
                     },
                     {
-                        text: 'Use versioning in descending numerical order relating to the number of days under test',
-                        outcome: 'The specific version of the release under test as supplied by the client or the URL and date needs to be stated.',
+                        text: 'Testing can continue as normal if a smoke test has failed as critical functionality will remain unaffected',
+                        outcome: 'Testing cannot continue normally if critical functionalities are not working and smoke tests are designed to be carried out on critical functionality.',
                         experience: -10
                     },
                     {
-                        text: 'State the version number as \'latest\' with the date that issue was raised on',
-                        outcome: 'Exact version numbers must be specified for traceability.',
+                        text: 'Smoke test failures can be left out of documentation if they are only minor issues',
+                        outcome: 'All failures must be documented if they are related to critical functionality.',
                         experience: -5
                     }
                 ]
@@ -305,28 +305,28 @@ export class RaisingTicketsQuiz extends BaseQuiz {
             {
                 id: 9,
                 level: 'Intermediate',
-                title: 'Severity Assessment',
-                description: 'How do you determine ticket severity?',
+                title: 'Smoke Testing Benefits',
+                description: 'How does Smoke Testing benefit the software development process?',
                 options: [
                     {
-                        text: 'Assess impact on functionality, user experience, and business requirements',
-                        outcome: 'Perfect! This ensures appropriate prioritisation.',
+                        text: 'It helps identify critical bugs early and aligns teams on the software\'s current state',
+                        outcome: 'Perfect! Smoke testing plays a crucial role by capturing the state of the software early, saving test effort, and bringing teams to a known state.',
                         experience: 20,
-                        tool: 'Severity Matrix'
+                        tool: 'Smoke Test Benefit'
                     },
                     {
-                        text: 'Mark issue severity as high, as all bugs require addressing and fixing',
-                        outcome: 'Accurate severity assessment needed for clients to prioritise issues that need fixing and ones that can be left in the code for release.',
+                        text: 'It increases development time, therefore decreasing testing activity time',
+                        outcome: 'While smoke testing takes some time, it actually helps prevent longer delays by catching critical issues early in the process.',
                         experience: -15
                     },
                     {
-                        text: 'Prioritise multiple minor cosmetic issues over bugs in system functionality detailed in business requirements',
-                        outcome: 'Minor cosmetic issues need to be addressed, although anything detailed in the business requirements must take a higher severity status.',
+                        text: 'It has no significant impact on the software cycle development process',
+                        outcome: 'Smoke testing plays a crucial role in identifying and preventing potential issues early in the development process.',
                         experience: -10
                     },
                     {
-                        text: 'Raise the issues with the intention of developers adding their own severity status, as they understand the system under test',
-                        outcome: 'Severity must match impact on functionality, user experience, and business requirements.',
+                        text: 'It completely eliminates the need for other testing methods within the software development lifecycle process',
+                        outcome: 'While valuable, smoke testing does not replace other testing methods but is an important preliminary step.',
                         experience: -5
                     }
                 ]
@@ -334,61 +334,61 @@ export class RaisingTicketsQuiz extends BaseQuiz {
             {
                 id: 10,
                 level: 'Intermediate',
-                title: 'Client Communication',
-                description: 'How should you handle client-specific ticket requirements?',
+                title: 'Smoke And Functional Testing',
+                description: 'What is the relationship between Smoke Testing and Functional Testing?',
                 options: [
                     {
-                        text: 'Follow client instructions from operational project details and maintain clear communication',
-                        outcome: 'Excellent! Client preferences are important for their established work flow.',
+                        text: 'Smoke testing is a prerequisite for comprehensive functional testing',
+                        outcome: 'Excellent! Smoke testing is a confirmation for the QA team to proceed with further software testing. Only after smoke tests pass can the team move on to comprehensive functional testing.',
                         experience: 20,
-                        tool: 'Client Requirements'
+                        tool: 'Smoke And Functional Test Relationship'
                     },
                     {
-                        text: 'Make sure client ticket assigning requirements only are followed',
-                        outcome: 'While this is important, all client ticket requirements must be followed, for example how to update statuses and which lanes to move tickets into for a kanban style bug tracker.',
+                        text: 'Smoke testing and functional testing are completely unrelated testing methods',
+                        outcome: 'Smoke testing and functional testing are closely related in the software testing process and share many of the same approaches.',
                         experience: -15
                     },
                     {
-                        text: 'Use the standard ticket reporting format to keep consistency throughout all projects',
-                        outcome: 'Client-specific needs should always be adhered to and cross referenced with the project manager if need be.',
+                        text: 'Functional testing always replaces smoke testing within the system under test',
+                        outcome: 'Functional testing builds upon smoke testing and doesn\'t replace it.',
                         experience: -10
                     },
                     {
-                        text: 'Follow some of the client requirements in accordance with tester preference and experience',
-                        outcome: 'All client requirements should be followed and on the occasion that a potential improvement can be utilised, this should be communicated with the client first as a suggestion.',
+                        text: 'These terms can be used interchangeably for a testing approach to a system under test',
+                        outcome: 'While related, these are distinct testing methodologies with different purposes and scopes.',
                         experience: -5
                     }
                 ]
             }
         ];
 
-        // Advanced Scenarios (IDs 11-15, 100 XP total)
+        // Advanced Scenarios (IDs 11-15, 125 XP total, 25 XP each)
         this.advancedScenarios = [
             {
                 id: 11,
                 level: 'Advanced',
-                title: 'Stakeholder Impact',
-                description: 'How do you communicate ticket impact to stakeholders?',
+                title: 'Sanity And Smoke Testing',
+                description: 'How does Sanity Testing differ from Smoke Testing?',
                 options: [
                     {
-                        text: 'Provide clear, factual information about business impact and user experience effects',
-                        outcome: 'Perfect! This helps stakeholders make informed decisions.',
+                        text: 'Sanity testing is performed after smoke testing to verify specific code changes',
+                        outcome: 'Perfect! Sanity testing focuses on verifying a specific code change/critical bug fix and its intended functionality. Smoke testing is performed at the beginning of every new release and focus is on all critical functionality.',
                         experience: 25,
-                        tool: 'Impact Assessment'
+                        tool: 'Sanity and Smoke Test Validator'
                     },
                     {
-                        text: 'Use technical terms where possible along with a description of how the issue behaves',
-                        outcome: 'Technical terms should be avoided if possible, as clear, accessible language is required for stakeholders of all technical ability.',
+                        text: 'Both sanity and smoke testing employ exactly the same testing methodology',
+                        outcome: 'They are distinct testing methodologies with different purposes.',
                         experience: -15
                     },
                     {
-                        text: 'Give a brief description of the issue and how to recreate it',
-                        outcome: 'When dealing with bug impact, stakeholders will generally require the actual impact the issue has on the user or the system under test and not how to recreate the issue.',
+                        text: 'Smoke testing is more detailed and covers all system functionalities',
+                        outcome: 'Smoke testing is actually less detailed compared to sanity testing.',
                         experience: -10
                     },
                     {
-                        text: 'Emphasise the impact severity as high, as all bugs should be addressed and fixed',
-                        outcome: 'Accurate impact assessment is required for stakeholders to form the correct strategy.',
+                        text: 'Sanity testing requires more resources and time than smoke testing does',
+                        outcome: 'Sanity testing is less resource-intensive compared to other testing methods.',
                         experience: -5
                     }
                 ]
@@ -396,28 +396,28 @@ export class RaisingTicketsQuiz extends BaseQuiz {
             {
                 id: 12,
                 level: 'Advanced',
-                title: 'Quality Assurance',
-                description: 'How do you ensure ticket quality before submission?',
+                title: 'Sanity Check Primary Goal',
+                description: 'In the context of software development, what is the primary goal of Sanity Testing?',
                 options: [
                     {
-                        text: 'Double-check all information, verify steps, and ensure clear documentation',
-                        outcome: 'Excellent! Quality checks prevent confusion.',
+                        text: 'Sanity testing is a stoppage to check whether testing for the build can proceed or not',
+                        outcome: 'Excellent! The primary goal is to quickly identify critical defects in core functionalities, helping teams decide whether further testing is worthwhile',
                         experience: 25,
-                        tool: 'Quality Checklist'
+                        tool: 'Exploratory Test Skills'
                     },
                     {
-                        text: 'Review the title and description fields of the ticket before submission',
-                        outcome: 'All information with a ticket requires a review before submission.',
+                        text: 'To completely eliminate all software bugs within the system under test',
+                        outcome: 'Testing can help identify defects but it does noy eliminate all bugs',
                         experience: -15
                     },
                     {
-                        text: 'Run a spell checker program on the ticket before submission',
-                        outcome: 'While spelling and grammar is important, all elements of the ticket are equally essential.',
+                        text: 'To help to create comprehensive test documentation for the system under test',
+                        outcome: 'Sanity testing is typically undocumented as it is generally performed on a build where the production deployment is required immediately.',
                         experience: -10
                     },
                     {
-                        text: 'Ensure all environment information is correct by double checking devices under test',
-                        outcome: 'Whilst an important factor in bug submission for traceability, all elements of the ticket need to be reviewed and not just environment information.',
+                        text: 'Sanity testing helps to replace the need for developer fixes through thorough testing',
+                        outcome: 'Sanity testing complements developer efforts, not replaces them, as testers do not fix defects and only report on them.',
                         experience: -5
                     }
                 ]
@@ -425,28 +425,28 @@ export class RaisingTicketsQuiz extends BaseQuiz {
             {
                 id: 13,
                 level: 'Advanced',
-                title: 'Time Management',
-                description: 'When should tickets be raised during testing?',
+                title: 'Smoke Test Characteristics',
+                description: 'What are the key characteristics of an effective smoke test?',
                 options: [
                     {
-                        text: 'Tickets should be raise immediately when issues are observed to maintain accuracy',
-                        outcome: 'Perfect! Immediate reporting ensures accuracy.',
+                        text: 'A minimal set of tests focusing on critical functionality within the system under test',
+                        outcome: 'Perfect! Effective smoke tests are characterised by being a minimal set of tests that focus on critical functionalities.',
                         experience: 25,
-                        tool: 'Issue Tracker'
+                        tool: 'JavaScript Checker'
                     },
                     {
-                        text: 'Raise tickets in parallel with daily reports for familiarity when writing the report',
-                        outcome: 'Immediate reporting is the best approach, as raising all tickets towards the end of the day can potentially lead to issues not being reported due to time constraints.',
+                        text: 'Long and detailed test cases that focus on critical functionality within the system under test',
+                        outcome: 'Effective smoke tests are minimal and focused, not exhaustive.',
                         experience: -15
                     },
                     {
-                        text: 'Batch multiple issues together to make sure testing coverage is not affected',
-                        outcome: 'Issues should be reported as soon as they are discovered as this gives the client visibility of project status.',
+                        text: 'Tests that cover every possible user scenario within the system under test',
+                        outcome: 'Comprehensive scenario testing is part of functional testing, not smoke testing.',
                         experience: -10
                     },
                     {
-                        text: 'During stand up meetings to get the opinion of everyone involved in the project',
-                        outcome: 'Any major issues can be highlighted in stand up meetings, but full tickets should not be written whilst in those meetings at the risk of taking work time away from colleagues.',
+                        text: 'Random testing areas without a specific focus to gain the most coverage within the project time frame',
+                        outcome: 'While not completely random, smoke tests do require strategic selection of critical test cases.',
                         experience: -5
                     }
                 ]
@@ -454,28 +454,28 @@ export class RaisingTicketsQuiz extends BaseQuiz {
             {
                 id: 14,
                 level: 'Advanced',
-                title: 'Evidence Quality',
-                description: 'How do you ensure high-quality supporting evidence?',
+                title: 'Smoke Test Team Approach',
+                description: 'How do development and QA teams typically approach smoke testing differently?',
                 options: [
                     {
-                        text: 'Capture clear videos and images, repeat issues in recordings, and highlight key areas',
-                        outcome: 'Excellent! Quality evidence aids understanding.',
+                        text: 'Development teams conduct initial sanity checks, while QA teams determine major functionality to verify the build\'s stability',
+                        outcome: 'Excellent! Developers use smoke tests to verify basic functionality (sanity checks) during the development phase, while QA teams determine and test the major functionalities to ensure the build\'s overall stability before proceeding with further testing.',
                         experience: 25,
-                        tool: 'Evidence Tools'
+                        tool: 'Smoke test Definition'
                     },
                     {
-                        text: 'Use a device to record video evidence of the issue occurring on another device',
-                        outcome: 'This approach should only be utilised with older devices that don\'t have the capability of native recording functionailty.',
+                        text: 'Developers use smoke tests for basic sanity checks during code development',
+                        outcome: 'While developers do perform initial sanity checks, this is just a part of their smoke testing approach when verifying basic functionality before submitting the build.',
                         experience: -15
                     },
                     {
-                        text: 'Ensure bug description and steps to reproduce have sufficient and concise information',
-                        outcome: 'While these are important areas to include when raising a bug. Evidence provides even more clarity',
+                        text: 'A QA teams smoke test is comprehensive and covers all possible scenarios whilst developers only use minimal sanity checks',
+                        outcome: 'QA smoke testing focuses on critical functionalities, not exhaustive testing. This approach would defeat the purpose of a quick, preliminary test.',
                         experience: -10
                     },
                     {
-                        text: 'Use evidence from previous releases if the issue still occurs on the current release.',
-                        outcome: 'Evidence from the current release version of a system or application under test is always required for product accuracy.',
+                        text: 'Developers perform detailed functional testing before QA involvement',
+                        outcome: 'Developers focus on basic functionality verification, not comprehensive functional testing. This misunderstands the roles of development and QA teams in the testing process.',
                         experience: -5
                     }
                 ]
@@ -483,28 +483,28 @@ export class RaisingTicketsQuiz extends BaseQuiz {
             {
                 id: 15,
                 level: 'Advanced',
-                title: 'Consistency Management',
-                description: 'How do you maintain consistency across multiple tickets?',
+                title: 'Smoke Test Inclusion',
+                description: 'What are the potential consequences of skipping smoke testing in the software development process?',
                 options: [
                     {
-                        text: 'Use templates, follow standards, and maintain consistent formatting across all tickets',
-                        outcome: 'Perfect! Consistency helps track and resolve issues.',
+                        text: 'Major defects may be encountered in later stages, affecting project timelines and resource allocation',
+                        outcome: 'Perfect! Without smoke testing, critical issues might only be discovered during later stages of development or testing, which can substantially impact project timelines, resource allocation, and overall project efficiency.',
                         experience: 25,
-                        tool: 'Template System'
+                        tool: 'Smoke Test Inclusion'
                     },
                     {
-                        text: 'Use a format based on what type of issue is being raised',
-                        outcome: 'A consistent format is required as it represents professionalism and good business standard.',
+                        text: 'There should be no significant impact on the software development timeline',
+                        outcome: 'Skipping smoke testing can lead to major defects being discovered late in the development process, potentially causing significant delays and increased costs.',
                         experience: -15
                     },
                     {
-                        text: 'Ensure bug description and steps to reproduce are always stated in the same format and same place',
-                        outcome: 'While keeping this consistent is the correct approach, all other details and positioning of information within tickets should also be kept the same.',
+                        text: 'Project timelines are kept on schedule and deliverables can be met ahead of time',
+                        outcome: 'While this approach could reduce testing time, it could also prolong them if critical issues are missed earlier in testing activites',
                         experience: -10
                     },
                     {
-                        text: 'Use templates and follow standards to maintain consistency',
-                        outcome: 'This is a good approach. However, formatting also needs to be consistent through all tickets submitted to maintain professionalism.',
+                        text: 'Other testing methodologies become more efficient in detecting critical issues',
+                        outcome: 'Alternative testing methods might catch some issues, but not with the same efficiency and early-stage intervention.',
                         experience: -5
                     }
                 ]
@@ -879,7 +879,7 @@ export class RaisingTicketsQuiz extends BaseQuiz {
             submitButton.disabled = true;
         }
 
-        // Clear the timer when an answer is submitted
+        // Clear any existing timer
         if (this.questionTimer) {
             clearInterval(this.questionTimer);
         }
@@ -1127,9 +1127,9 @@ export class RaisingTicketsQuiz extends BaseQuiz {
         let recommendationsHTML = '';
 
         if (score >= 95 && weakAreas.length === 0) {
-            recommendationsHTML = '<p>🌟 Outstanding! You have demonstrated mastery in all aspects of raising tickets. You clearly understand the nuances of raising tickets and are well-equipped to handle any raising tickets challenges!</p>';
+            recommendationsHTML = '<p>🌟 Outstanding! You have demonstrated mastery in all aspects of sanity and smoke testing. You clearly understand the differences between these testing approaches and are well-equipped to implement them effectively!</p>';
         } else if (score >= 80) {
-            recommendationsHTML = '<p>🌟 Excellent performance! Your raising tickets skills are very strong. To achieve complete mastery, consider focusing on:</p>';
+            recommendationsHTML = '<p>🌟 Excellent performance! Your sanity and smoke testing skills are very strong. To achieve complete mastery, consider focusing on:</p>';
             recommendationsHTML += '<ul>';
             if (weakAreas.length > 0) {
                 weakAreas.forEach(area => {
@@ -1161,38 +1161,44 @@ export class RaisingTicketsQuiz extends BaseQuiz {
         const title = scenario.title.toLowerCase();
         const description = scenario.description.toLowerCase();
 
-        if (title.includes('type') || description.includes('type')) {
-            return 'Ticket Classification';
-        } else if (title.includes('title') || description.includes('title')) {
-            return 'Title Creation';
-        } else if (title.includes('version') || description.includes('version')) {
-            return 'Version Documentation';
-        } else if (title.includes('severity') || description.includes('severity')) {
-            return 'Severity Assessment';
-        } else if (title.includes('quality') || description.includes('quality')) {
-            return 'Quality Assurance';
-        } else if (title.includes('evidence') || description.includes('evidence')) {
-            return 'Evidence Management';
-        } else if (title.includes('consistency') || description.includes('consistency')) {
-            return 'Consistency Standards';
+        if (title.includes('sanity testing') || title.includes('sanity test') || title.includes('sanity check')) {
+            return 'Sanity Testing Concepts';
+        } else if (title.includes('smoke testing') || title.includes('smoke test')) {
+            return 'Smoke Testing Concepts';
+        } else if (title.includes('execution') || description.includes('performed')) {
+            return 'Test Execution Timing';
+        } else if (title.includes('process') || description.includes('process')) {
+            return 'Testing Process';
+        } else if (title.includes('features') || description.includes('features') || description.includes('characteristics')) {
+            return 'Testing Characteristics';
+        } else if (title.includes('risks') || description.includes('risks') || description.includes('disadvantage')) {
+            return 'Testing Risks';
+        } else if (title.includes('benefits') || description.includes('benefit')) {
+            return 'Testing Benefits';
+        } else if (title.includes('team') || description.includes('who')) {
+            return 'Team Responsibilities';
+        } else if (title.includes('inclusion') || description.includes('consequences')) {
+            return 'Testing Strategy';
         } else {
-            return 'General Ticket Management';
+            return 'General Testing Concepts';
         }
     }
 
     getRecommendation(area) {
         const recommendations = {
-            'Ticket Classification': 'Focus on understanding different ticket types and when to use each category appropriately.',
-            'Title Creation': 'Practice writing clear, concise titles that effectively communicate the issue at hand.',
-            'Version Documentation': 'Improve accuracy in documenting environment details and version information.',
-            'Severity Assessment': 'Enhance ability to evaluate and assign appropriate severity levels based on impact.',
-            'Quality Assurance': 'Strengthen pre-submission quality checks and verification processes.',
-            'Evidence Management': 'Work on capturing and organizing clear, relevant supporting evidence.',
-            'Consistency Standards': 'Focus on maintaining consistent formatting and following documentation standards.',
-            'General Ticket Management': 'Continue developing fundamental ticket creation and management skills.'
+            'Sanity Testing Concepts': 'Strengthen understanding of sanity testing as a subset of regression testing focused on specific code changes and critical bug fixes.',
+            'Smoke Testing Concepts': 'Improve knowledge of smoke testing as a preliminary verification of critical functionality before proceeding with further testing.',
+            'Test Execution Timing': 'Focus on the correct timing and sequence of sanity and smoke testing within the software development lifecycle.',
+            'Testing Process': 'Develop a better understanding of the processes to follow when tests fail, particularly for critical functionality.',
+            'Testing Characteristics': 'Enhance knowledge of the key characteristics that distinguish effective sanity and smoke tests.',
+            'Testing Risks': 'Improve awareness of the limitations and potential risks associated with sanity and smoke testing approaches.',
+            'Testing Benefits': 'Strengthen understanding of how sanity and smoke testing contribute to the overall software development process.',
+            'Team Responsibilities': 'Clarify the distinct roles and responsibilities of development and QA teams in sanity and smoke testing.',
+            'Testing Strategy': 'Focus on strategic implementation of sanity and smoke testing to maximize their effectiveness in the testing process.',
+            'General Testing Concepts': 'Continue developing fundamental understanding of sanity and smoke testing principles and methodologies.'
         };
 
-        return recommendations[area] || 'Continue practicing core ticket management principles.';
+        return recommendations[area] || 'Continue practicing core sanity and smoke testing principles.';
     }
 
     async endGame(failed = false) {
@@ -1310,6 +1316,6 @@ export class RaisingTicketsQuiz extends BaseQuiz {
 
 // Start the quiz when the page loads
 document.addEventListener('DOMContentLoaded', () => {
-    const quiz = new RaisingTicketsQuiz();
+    const quiz = new SanitySmokeQuiz();
     quiz.startGame();
 }); 

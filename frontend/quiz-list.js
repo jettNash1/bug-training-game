@@ -7,7 +7,8 @@ class QuizList {
             'issue-verification', 'build-verification', 'issue-tracking-tools',
             'raising-tickets', 'reports', 'cms-testing', 'email-testing', 'content-copy',
             'locale-testing', 'script-metrics-troubleshooting', 'standard-script-testing',
-            'test-types-tricks'
+            'test-types-tricks', 'automation-interview', 'fully-scripted', 'exploratory',
+            'sanity-smoke'
         ];
         this.init();
     }
@@ -87,7 +88,25 @@ class QuizList {
             'initiative': 'Learn to take initiative in testing scenarios',
             'time-management': 'Optimize your testing workflow',
             'tester-mindset': 'Develop critical thinking skills',
-            // Add descriptions for other quizzes as needed
+            'risk-analysis': 'Analyze risks in testing scenarios',
+            'risk-management': 'Manage risks in testing scenarios',
+            'non-functional': 'Test non-functional requirements',
+            'test-support': 'Learn to support testing activities',
+            'issue-verification': 'Verify issues in testing scenarios',
+            'build-verification': 'Verify builds in testing scenarios',
+            'issue-tracking-tools': 'Use issue tracking tools effectively',
+            'reports': 'Create and analyze reports',
+            'cms-testing': 'Test CMS systems',
+            'email-testing': 'Test email functionality',
+            'content-copy': 'Test content copying',
+            'locale-testing': 'Test localization',
+            'script-metrics-troubleshooting': 'Analyze script metrics and troubleshoot issues',
+            'standard-script-testing': 'Test standard script',
+            'test-types-tricks': 'Learn test types and tricks',
+            'automation-interview': 'Prepare for automation interviews',
+            'fully-scripted': 'Test fully scripted scenarios',
+            'exploratory': 'Explore and test without predefined scripts',
+            'sanity-smoke': 'Learn sanity and smoke testing'
         };
         return descriptions[quizName] || 'Master essential testing skills';
     }

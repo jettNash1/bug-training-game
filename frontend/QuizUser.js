@@ -317,6 +317,7 @@ export class QuizUser {
                 'communication',
                 'initiative',
                 'standard-script-testing',
+                'fully-scripted',
                 'exploratory'
             ]);
             
@@ -325,7 +326,8 @@ export class QuizUser {
                 'locale-testing',
                 'build-verification',
                 'test-types-tricks',
-                'test-support'
+                'test-support',
+                'sanity-smoke'
             ]);
             
             this.updateCategoryProgress('Project Management', [

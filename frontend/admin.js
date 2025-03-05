@@ -12,7 +12,8 @@ class AdminDashboard {
             'issue-verification', 'build-verification', 'issue-tracking-tools',
             'raising-tickets', 'reports', 'cms-testing', 'email-testing', 'content-copy',
             'locale-testing', 'script-metrics-troubleshooting','standard-script-testing',
-            'test-types-tricks', 'automation-interview', 'fully-scripted', 'exploratory'
+            'test-types-tricks', 'automation-interview', 'fully-scripted', 'exploratory',
+            'sanity-smoke'
         ];
         
         // Initialize immediately if we're on an admin page
