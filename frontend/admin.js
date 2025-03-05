@@ -717,9 +717,7 @@ class AdminDashboard {
             // Add event listener for close button
             const closeBtn = content.querySelector('.close-btn');
             if (closeBtn) {
-                closeBtn.addEventListener('click', (e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
+                closeBtn.addEventListener('click', () => {
                     overlay.remove();
                 });
                 
@@ -727,13 +725,12 @@ class AdminDashboard {
                 closeBtn.addEventListener('keydown', (e) => {
                     if (e.key === 'Enter' || e.key === ' ') {
                         e.preventDefault();
-                        e.stopPropagation();
                         overlay.remove();
                     }
                 });
             }
             
-            // Add event listener for Escape key to close the overlay
+            // Add escape key handler
             const handleEscapeKey = (e) => {
                 if (e.key === 'Escape') {
                     overlay.remove();
@@ -851,7 +848,7 @@ class AdminDashboard {
                         console.error('Failed to reset all progress:', error);
                     }
                 }
-            });
+                });
 
             // Add event listener for reset password button
             content.querySelector('.reset-password-btn').addEventListener('click', async () => {
@@ -1074,8 +1071,7 @@ class AdminDashboard {
             }
 
             console.log('Showing quiz questions for:', { username, quizName });
-            console.log('User data:', user);
-
+            
             // Get quiz results
             const quizLower = quizName.toLowerCase();
             const result = user.quizResults?.find(r => r.quizName.toLowerCase() === quizLower);
@@ -1090,6 +1086,7 @@ class AdminDashboard {
             let quizScore = 0;
             let quizStatus = 'Not Started';
             
+            // First check if we have question history in either result or progress
             if (result && Array.isArray(result.questionHistory) && result.questionHistory.length > 0) {
                 console.log('Using question history from quiz results');
                 questionHistory = result.questionHistory;
@@ -1129,7 +1126,6 @@ class AdminDashboard {
             
             // Determine if we should show the questions table or the "no questions" message
             const hasCompletedQuestions = questionHistory.length > 0 || questionsAnswered > 0;
-            const isQuizCompleted = quizStatus === 'Completed' || questionsAnswered >= 15;
             
             content.innerHTML = `
                 <style>
@@ -1212,10 +1208,7 @@ class AdminDashboard {
                             </tbody>
                         </table>` :
                         `<div class="completed-no-history">
-                            <p>${isQuizCompleted ? 
-                                `This user has completed all ${questionsAnswered} questions in this quiz with a score of ${quizScore}%.` : 
-                                `This user has answered ${questionsAnswered} questions in this quiz so far.`}
-                            </p>
+                            <p>This user has ${questionsAnswered === 15 ? 'completed all' : 'answered'} ${questionsAnswered} questions in this quiz ${questionsAnswered === 15 ? 'with a score of ' + quizScore + '%' : 'so far'}.</p>
                             <p>Status: <strong>${quizStatus}</strong></p>
                             <p>Score: <strong>${quizScore}%</strong></p>
                             <p>Experience earned: <strong>${result?.experience || progress?.experience || 0}</strong></p>
@@ -1235,7 +1228,7 @@ class AdminDashboard {
             // Add event listener for close button
             const closeBtn = content.querySelector('.close-btn');
             if (closeBtn) {
-            closeBtn.addEventListener('click', () => {
+                closeBtn.addEventListener('click', () => {
                     overlay.remove();
                 });
                 
@@ -1248,7 +1241,7 @@ class AdminDashboard {
                 });
             }
             
-            // Add event listener for Escape key to close the overlay
+            // Add escape key handler
             const handleEscapeKey = (e) => {
                 if (e.key === 'Escape') {
                     overlay.remove();
