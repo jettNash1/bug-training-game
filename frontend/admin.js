@@ -830,6 +830,12 @@ class AdminDashboard {
                 button.addEventListener('click', async (e) => {
                     const quizName = e.target.dataset.quizName;
                     console.log('View questions clicked for:', { quizName, username });
+                    
+                    if (!quizName) {
+                        console.error('Missing quiz name for view questions button');
+                        return;
+                    }
+                    
                     await this.showQuizQuestions(quizName, username);
                 });
             });
@@ -1067,13 +1073,29 @@ class AdminDashboard {
                 throw new Error('User not found');
             }
 
+            console.log('Showing quiz questions for:', { username, quizName });
+            console.log('User data:', user);
+
             // Get quiz results
             const quizLower = quizName.toLowerCase();
             const result = user.quizResults?.find(r => r.quizName.toLowerCase() === quizLower);
             const progress = user.quizProgress?.[quizLower];
             
-            // Get question history
-            const questionHistory = result?.questionHistory || progress?.questionHistory || [];
+            console.log('Quiz result:', result);
+            console.log('Quiz progress:', progress);
+            
+            // Get question history - check both result and progress objects
+            let questionHistory = [];
+            
+            if (result && Array.isArray(result.questionHistory) && result.questionHistory.length > 0) {
+                console.log('Using question history from quiz results');
+                questionHistory = result.questionHistory;
+            } else if (progress && Array.isArray(progress.questionHistory) && progress.questionHistory.length > 0) {
+                console.log('Using question history from quiz progress');
+                questionHistory = progress.questionHistory;
+            }
+            
+            console.log('Question history:', questionHistory);
             
             // Create overlay container
             const overlay = document.createElement('div');
@@ -1120,7 +1142,7 @@ class AdminDashboard {
                     <button class="close-btn" aria-label="Close questions view" tabindex="0">×</button>
                 </div>
                 <div class="questions-content">
-                    ${questionHistory.length === 0 ? 
+                    ${!questionHistory || questionHistory.length === 0 ? 
                         `<div class="not-attempted">
                             <p>This user has not attempted any questions in this quiz yet.</p>
                         </div>` : 
@@ -1145,7 +1167,7 @@ class AdminDashboard {
                                                 </span>
                                             </td>
                                             <td>
-                                                <strong>${question.question}</strong>
+                                                <strong>${question.question || 'Question text not available'}</strong>
                                                 ${question.scenario ? `<p>${question.scenario}</p>` : ''}
                                             </td>
                                             <td class="answer-content">
@@ -1153,7 +1175,7 @@ class AdminDashboard {
                                                     <strong>Selected:</strong> ${question.selectedAnswer || 'No answer selected'}
                                                 </div>
                                                 <div>
-                                                    <strong>Correct:</strong> ${question.correctAnswer}
+                                                    <strong>Correct:</strong> ${question.correctAnswer || 'Correct answer not available'}
                                                 </div>
                                                 ${question.explanation ? `
                                                 <div class="outcome">
