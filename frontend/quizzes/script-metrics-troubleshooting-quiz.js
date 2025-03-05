@@ -965,9 +965,6 @@ export class ScriptMetricsTroubleshootingQuiz extends BaseQuiz {
             );
 
             let outcomeText = selectedAnswer.outcome;
-            if (selectedAnswer.experience < correctAnswer.experience) {
-                outcomeText += `\n\n\nThe correct answer was: "${correctAnswer.text}"\n${correctAnswer.outcome}`;
-            }
             document.getElementById('outcome-text').textContent = outcomeText;
             
             const xpText = selectedAnswer.experience >= 0 ? 

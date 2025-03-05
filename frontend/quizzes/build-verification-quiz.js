@@ -965,7 +965,8 @@ export class BuildVerificationQuiz extends BaseQuiz {
             }
             
             // Update outcome display
-            document.getElementById('outcome-text').textContent = selectedAnswer.outcome;
+            let outcomeText = selectedAnswer.outcome;
+            document.getElementById('outcome-text').textContent = outcomeText;
             const xpText = selectedAnswer.experience >= 0 ? 
                 `Experience gained: +${selectedAnswer.experience}` : 
                 `Experience: ${selectedAnswer.experience}`;
