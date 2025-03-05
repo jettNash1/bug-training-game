@@ -450,7 +450,7 @@ body {
 }
 
 .nav-button:hover {
-    background-color: var(--text-secondary);
+    background-color: #1a2530;
 }
 
 .nav-button.logout {
@@ -458,7 +458,7 @@ body {
 }
 
 .nav-button.logout:hover {
-    background-color: var(--danger-color);
+    background-color: #c0392b;
 }
 
 .user-menu {
