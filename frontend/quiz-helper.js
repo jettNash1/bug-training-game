@@ -540,13 +540,17 @@ export class BaseQuiz {
                             quizItem.classList.remove('completed', 'completed-perfect', 'completed-partial', 'in-progress');
                             if (this.player.questionHistory.length === 15) {
                                 if (this.player.score === 100 && this.player.experience >= 300) {
+                                    // Perfect score - Green with black border
                                     quizItem.classList.add('completed-perfect');
                                 } else {
+                                    // Not perfect - Dark Yellow with no border
                                     quizItem.classList.add('completed-partial');
                                 }
                             } else if (this.player.questionHistory.length > 0) {
+                                // In progress - Yellow with no border
                                 quizItem.classList.add('in-progress');
                             }
+                            // Not started - White with no border (default)
                         }
                     }
                 }

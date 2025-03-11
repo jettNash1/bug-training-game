@@ -177,40 +177,40 @@ body {
 
 /* Background colors for different states */
 .quiz-completion.completed-perfect {
-    background: green; /* Green for perfect score */
+    background-color: #4CAF50 !important; /* Green */
 }
 
 .quiz-completion.completed-partial {
-    background: #b58105; /* Dark Yellow for not perfect score */
+    background-color: #b58105 !important; /* Dark Yellow */
 }
 
 .quiz-completion.in-progress {
-    background: yellow; /* Yellow for in progress */
+    background-color: #FFEB3B !important; /* Yellow */
 }
 
 .quiz-completion.failed {
-    background: rgba(231, 76, 60, 0.3);
+    background-color: rgba(231, 76, 60, 0.3) !important;
 }
 
 /* Quiz states */
 .quiz-item.completed-perfect {
-    background: green !important; /* Green for perfect score */
-    border: 2px solid black !important; /* Black border for perfect score */
+    background-color: #4CAF50 !important; /* Green */
+    border: 2px solid black !important;
 }
 
 .quiz-item.completed-partial {
-    background: #b58105 !important; /* Dark Yellow for not perfect score */
-    border: none !important; /* No border for not perfect */
+    background-color: #b58105 !important; /* Dark Yellow */
+    border: none !important;
 }
 
 .quiz-item.in-progress {
-    background: yellow !important; /* Yellow for in progress */
-    border: none !important; /* No border for in progress */
+    background-color: #FFEB3B !important; /* Yellow */
+    border: none !important;
 }
 
 .quiz-item:not(.completed-perfect):not(.completed-partial):not(.in-progress) {
-    background: white !important; /* White for not started */
-    border: none !important; /* No border for not started */
+    background-color: white !important; /* White */
+    border: none !important;
 }
 
 /* Remove old conflicting styles */
@@ -1277,50 +1277,6 @@ select:disabled {
     pointer-events: none;
 }
 
-.quiz-item {
-    display: flex;
-    align-items: center;
-    padding: 1.25rem;
-    margin: 0.75rem 0;
-    border-radius: 12px;
-    background: var(--card-background);
-    color: var(--text-primary);
-    text-decoration: none;
-    transition: all 0.2s ease;
-    border: 1px solid transparent;
-    position: relative;
-}
-
-.quiz-item:hover {
-    background: white;
-    border-color: var(--secondary-color);
-    transform: translateX(4px);
-}
-
-/* Add these completion state styles */
-.quiz-item.in-progress {
-    background: yellow !important; /* Yellow for in progress */
-    border: none !important; /* No border for in progress */
-}
-
-.quiz-completion {
-    position: absolute;
-    top: 0.5rem;
-    right: 0.5rem;
-    padding: 0.25rem 0.75rem;
-    border-radius: 12px;
-    font-size: 0.8rem;
-    font-weight: 600;
-    color: var(--text-primary);
-    border: none !important;
-}
-
-/* Remove conflicting style */
-
-.quiz-completion.in-progress {
-    background: yellow; /* Yellow for in progress */
-}
-
 /* Add hover effect for quiz items */
 .quiz-item:hover .quiz-icon {
     background: rgba(52, 152, 219, 0.2);
@@ -1364,6 +1320,7 @@ select:disabled {
         padding: 1rem;
     }
 
+    /* Only adjust padding, don't override background or border */
     .quiz-item {
         padding: 1.25rem;
     }
