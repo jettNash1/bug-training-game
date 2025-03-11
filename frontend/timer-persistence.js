@@ -8,21 +8,9 @@
 // Function to save the current quiz timer state
 function saveQuizTimerState() {
     // Find the active quiz instance
-    if (window.activeQuiz) {
-        // Pause the timer if it's running
-        if (window.activeQuiz.questionTimer) {
-            clearInterval(window.activeQuiz.questionTimer);
-            window.activeQuiz.questionTimer = null;
-        }
-        
-        // Save the timer state
-        if (typeof window.activeQuiz.saveQuizState === 'function') {
-            window.activeQuiz.saveQuizState();
-            console.log('Quiz timer state saved before navigation');
-        } else if (typeof window.activeQuiz.saveTimerState === 'function') {
-            window.activeQuiz.saveTimerState();
-            console.log('Quiz timer state saved directly before navigation');
-        }
+    if (window.activeQuiz && typeof window.activeQuiz.saveQuizState === 'function') {
+        window.activeQuiz.saveQuizState();
+        console.log('Quiz timer state saved before navigation');
     }
 }
 
@@ -41,7 +29,6 @@ function setupNavigationInterception() {
             // Add new event listener
             newLink.addEventListener('click', (e) => {
                 console.log('Navigation link clicked:', newLink.getAttribute('href'));
-                // Save state before navigation
                 saveQuizTimerState();
             });
         }
@@ -65,13 +52,6 @@ function setupNavigationInterception() {
     // Also handle browser back/forward buttons and manual URL changes
     window.addEventListener('beforeunload', () => {
         saveQuizTimerState();
-    });
-    
-    // Handle page visibility changes
-    document.addEventListener('visibilitychange', () => {
-        if (document.visibilityState === 'hidden') {
-            saveQuizTimerState();
-        }
     });
     
     console.log('Navigation interception set up for timer persistence');

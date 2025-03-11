@@ -62,37 +62,14 @@ export class BaseQuiz {
         // Save timer state when page is hidden or unloaded
         document.addEventListener('visibilitychange', () => {
             if (document.visibilityState === 'hidden') {
-                // Pause the timer when the page is hidden
-                if (this.questionTimer) {
-                    clearInterval(this.questionTimer);
-                    this.questionTimer = null;
-                }
                 this.saveTimerState();
             } else if (document.visibilityState === 'visible') {
-                // Resume the timer when the page is visible again
                 this.restoreTimerState();
-                
-                // If there's no active timer but we have remaining time, restart the timer
-                if (!this.questionTimer && this.remainingTime > 0) {
-                    this.questionTimer = setInterval(() => {
-                        this.remainingTime -= 1000;
-                        this.updateTimerDisplay();
-
-                        if (this.remainingTime <= 0) {
-                            this.handleTimeUp();
-                        }
-                    }, 1000);
-                }
             }
         });
 
         // Save timer state when page is about to be unloaded
         window.addEventListener('beforeunload', () => {
-            // Pause the timer when the page is unloaded
-            if (this.questionTimer) {
-                clearInterval(this.questionTimer);
-                this.questionTimer = null;
-            }
             this.saveTimerState();
         });
     }
@@ -117,8 +94,8 @@ export class BaseQuiz {
     }
 
     saveTimerState() {
-        // Only save if we're in an active question with a timer running or paused
-        if (this.remainingTime > 0) {
+        // Only save if we're in an active question with a timer running
+        if (this.questionTimer) {
             const username = localStorage.getItem('username');
             if (!username) return;
 
@@ -160,11 +137,14 @@ export class BaseQuiz {
                 
                 // Only restore if it's for the current quiz
                 if (timerState.quizName === quizIdentifier) {
-                    // Use the exact saved time without subtracting elapsed time
-                    this.remainingTime = timerState.remainingTime;
-                    console.log('Timer restored with exact saved time:', this.remainingTime);
+                    // Calculate how much time has passed since the state was saved
+                    const elapsedSinceExit = Date.now() - timerState.timestamp;
                     
-                    // Update the timer display immediately to prevent visual toggle
+                    // Subtract elapsed time from the remaining time (don't go below 0)
+                    this.remainingTime = Math.max(0, timerState.remainingTime - elapsedSinceExit);
+                    console.log('Timer restored with remaining time:', this.remainingTime);
+                    
+                    // Update the timer display
                     this.updateTimerDisplay();
                     
                     // If timer was running and there's still time left, restart it
@@ -227,10 +207,12 @@ export class BaseQuiz {
                     
                     // Only restore if it's for the current quiz
                     if (timerState.quizName === quizIdentifier) {
-                        // Don't subtract elapsed time - we'll use the exact saved time
-                        // This prevents the timer from counting down when the user is away
-                        this.remainingTime = timerState.remainingTime;
-                        console.log('Initializing timer with exact saved time:', this.remainingTime);
+                        // Calculate how much time has passed since the state was saved
+                        const elapsedSinceExit = Date.now() - timerState.timestamp;
+                        
+                        // Subtract elapsed time from the remaining time (don't go below 0)
+                        this.remainingTime = Math.max(0, timerState.remainingTime - elapsedSinceExit);
+                        console.log('Initializing timer with remaining time:', this.remainingTime);
                         
                         // Clear the saved state
                         localStorage.removeItem(timerStateKey);
@@ -254,7 +236,6 @@ export class BaseQuiz {
             console.log('No user found, resetting timer');
         }
 
-        // Update the timer display immediately to prevent visual toggle
         this.updateTimerDisplay();
         
         // Clear any existing timer
@@ -275,8 +256,6 @@ export class BaseQuiz {
 
     updateTimerDisplay() {
         const timerContainer = document.getElementById('timer-container');
-        if (!timerContainer) return;
-        
         const seconds = Math.ceil(this.remainingTime / 1000);
         timerContainer.textContent = `Time remaining: ${seconds}s`;
         
@@ -285,12 +264,6 @@ export class BaseQuiz {
             timerContainer.classList.add('timer-warning');
         } else {
             timerContainer.classList.remove('timer-warning');
-        }
-        
-        // Also update the timer display element if it exists
-        const timerDisplay = document.getElementById('timer-display');
-        if (timerDisplay) {
-            timerDisplay.textContent = seconds;
         }
     }
 
