@@ -23,16 +23,6 @@ function saveQuizTimerState() {
             window.activeQuiz.saveTimerState();
             console.log('Quiz timer state saved directly before navigation');
         }
-        
-        // Log the current timer state for debugging
-        const username = localStorage.getItem('username');
-        if (username && window.activeQuiz.quizName) {
-            const timerStateKey = `timer_state_${username}_${window.activeQuiz.quizName}`;
-            const savedState = localStorage.getItem(timerStateKey);
-            if (savedState) {
-                console.log('Saved timer state before navigation:', JSON.parse(savedState));
-            }
-        }
     }
 }
 
