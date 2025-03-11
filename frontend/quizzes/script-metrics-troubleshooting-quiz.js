@@ -225,12 +225,12 @@ export class ScriptMetricsTroubleshootingQuiz extends BaseQuiz {
                     {
                         text: 'Create new independent metrics for each environment tab',
                         outcome: 'This would not maintain proper tracking across tabs.',
-                        experience: -5
+                        experience: -15
                     },
                     {
                         text: 'Copy and update existing table with new tab references',
                         outcome: 'Correct! - This maintains consistency while incorporating new data.',
-                        experience: 15,
+                        experience: 20,
                         tool: 'Tab Management'
                     },
                     {
@@ -259,7 +259,7 @@ export class ScriptMetricsTroubleshootingQuiz extends BaseQuiz {
                     {
                         text: 'The primary column within the environments table',
                         outcome: 'Multiple columns affect this figure and the \'Checked\' column is also taken into consideration.',
-                        experience: -5
+                        experience: -15
                     },
                     {
                         text: 'The \'Checked\' column within the environments table',
@@ -269,7 +269,7 @@ export class ScriptMetricsTroubleshootingQuiz extends BaseQuiz {
                     {
                         text: 'Both primary and \'Checked\' columns within the environments table',
                         outcome: 'Correct! - Both columns together determine the completion status.',
-                        experience: 15,
+                        experience: 20,
                         tool: 'Compatibility Tracking'
                     }
                 ]
@@ -379,7 +379,7 @@ export class ScriptMetricsTroubleshootingQuiz extends BaseQuiz {
                     {
                         text: 'Update all references and verify formula accuracy',
                         outcome: 'Correct! - This ensures complete and accurate metric tracking',
-                        experience: 15,
+                        experience: 25,
                         tool: 'Reference Management'
                     },
                     {
@@ -403,17 +403,17 @@ export class ScriptMetricsTroubleshootingQuiz extends BaseQuiz {
                     {
                         text: 'Simplify the metrics to return the expected outcome',
                         outcome: 'Simplifying metrics could lose important tracking details.',
-                        experience: -10
+                        experience: -15
                     },
                     {
                         text: 'Use basic counting for the metrics table only',
                         outcome: 'This wouldn\'t capture all necessary metrics.',
-                        experience: -5
+                        experience: -10
                     },
                     {
                         text: 'Verify all formula chains and dependencies',
                         outcome: 'Correct! - This ensures accurate tracking across all dependencies',
-                        experience: 15,
+                        experience: 25,
                         tool: 'Dependency Management'
                     },
                     {

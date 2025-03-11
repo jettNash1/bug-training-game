@@ -225,7 +225,7 @@ export class EmailTestingQuiz extends BaseQuiz {
                     {
                         text: 'Check if the issue exists across other environments',
                         outcome: 'Correct! Other environments must be checked to determine if the issue is global.',
-                        experience: 15
+                        experience: 20
                     },
                     {
                         text: 'Only report it if it affects functionality of any features relating to the email',
@@ -253,7 +253,7 @@ export class EmailTestingQuiz extends BaseQuiz {
                     {
                         text: 'Using the Result Key options against each test',
                         outcome: 'Correct! This is the recommended way of reporting issues.',
-                        experience: 15
+                        experience: 20
                     },
                     {
                         text: 'With detailed written descriptions',
@@ -281,7 +281,7 @@ export class EmailTestingQuiz extends BaseQuiz {
                     {
                         text: 'Image placement, alignment, quality, label, and display in both light and dark modes',
                         outcome: 'Correct! These are all necessary checks for images within emails.',
-                        experience: 15
+                        experience: 20
                     },
                     {
                         text: 'Whether images load and display correctly',
@@ -314,7 +314,7 @@ export class EmailTestingQuiz extends BaseQuiz {
                     {
                         text: 'Match details to the target market (e.g., UK address for UK market)',
                         outcome: 'Correct! Details should be checked against target markets',
-                        experience: 15
+                        experience: 20
                     },
                     {
                         text: 'Use company information as related to any project correspondence',
@@ -337,7 +337,7 @@ export class EmailTestingQuiz extends BaseQuiz {
                     {
                         text: 'Session totals, ticket resolution totals, and project burndown',
                         outcome: 'Correct! All these metrics should be included unless otherwise specified.',
-                        experience: 15
+                        experience: 20
                     },
                     {
                         text: 'Test completion percentage should be stated in the metrics report',
@@ -374,7 +374,7 @@ export class EmailTestingQuiz extends BaseQuiz {
                     {
                         text: 'For guided timeframe planning with adjustable fields for setup, copy check, link check, rendering check, and reporting',
                         outcome: 'Correct! This is used for multiple adjustable testing activities',
-                        experience: 15
+                        experience: 25
                     },
                     {
                         text: 'This is used for billing purposes in relation to time frame and resources',
@@ -402,7 +402,7 @@ export class EmailTestingQuiz extends BaseQuiz {
                     {
                         text: 'Understand that unsubscribe links may error due to test distribution differences from live environment',
                         outcome: 'Correct! This is potentially expected behaviour in a test environment, as a live environment may yet not be set up. These details should be provided by the client',
-                        experience: 15
+                        experience: 25
                     },
                     {
                         text: 'Test unsubscribe functionality in production environments',
@@ -425,7 +425,7 @@ export class EmailTestingQuiz extends BaseQuiz {
                     {
                         text: 'Compare against design specifications for consistent text flow across all devices',
                         outcome: 'Correct! Checking consistency with design across all platforms is recommended.',
-                        experience: 15
+                        experience: 25
                     },
                     {
                         text: 'Check headings as these are generally where text wrapping issues occur',
@@ -463,7 +463,7 @@ export class EmailTestingQuiz extends BaseQuiz {
                     {
                         text: 'The entire range of tests including any newly added environments',
                         outcome: 'Correct! All test ranges should be updated including updating formulas to include any new environments',
-                        experience: 15
+                        experience: 25
                     }
                 ]
             },
@@ -486,7 +486,7 @@ export class EmailTestingQuiz extends BaseQuiz {
                     {
                         text: 'Coordinate system settings and individual app preferences, understanding that some clients follow system settings while others need manual configuration',
                         outcome: 'Correct! The relationship between system and app-specific settings should be tested.',
-                        experience: 15
+                        experience: 25
                     },
                     {
                         text: 'Use only default settings when testing light & dark mode',
