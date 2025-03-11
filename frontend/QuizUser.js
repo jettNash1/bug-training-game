@@ -363,6 +363,7 @@ export class QuizUser {
                 if (result) {
                     const questionsAnswered = result.questionsAnswered || 0;
                     const experience = result.experience || 0;
+                    const score = result.score || 0;
                     progressElement.textContent = `${questionsAnswered}/15`;
                     
                     // Remove any existing classes first
@@ -370,12 +371,12 @@ export class QuizUser {
                     quizItem.classList.remove('completed', 'completed-perfect', 'completed-partial', 'in-progress', 'failed');
                     
                     if (questionsAnswered === 15) {
-                        if (experience >= 300) {
-                            // Perfect score (15/15 with 300+ XP) - white background
+                        if (score === 100 && experience >= 300) {
+                            // Perfect score (100% with 300+ XP) - white background
                             progressElement.classList.add('completed', 'completed-perfect');
                             quizItem.classList.add('completed', 'completed-perfect');
                         } else {
-                            // Completed but not perfect (15/15 with less than 300 XP) - red background
+                            // Completed but not perfect (less than 100% or less than 300 XP) - red background
                             progressElement.classList.add('completed', 'completed-partial');
                             quizItem.classList.add('completed', 'completed-partial');
                         }
