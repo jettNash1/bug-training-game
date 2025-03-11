@@ -74,19 +74,19 @@ export class AutomationInterviewQuiz extends BaseQuiz {
                 description: 'You\'re starting to automate tests for a new web application. What\'s the most effective first step?',
                 options: [
                     {
-                        text: 'Create a test plan with prioritized automation candidates',
+                        text: 'Create a test plan with prioritised automation candidates',
                         outcome: 'Perfect! This provides a structured approach to test automation.',
                         experience: 15,
                         tool: 'Test Planning'
                     },
                     {
                         text: 'Start writing automation scripts for all existing manual test cases immediately without analysis',
-                        outcome: 'Planning is crucial before implementation.',
+                        outcome: 'Thorough planning is crucial before starting implementation for automation tests.',
                         experience: -5
                     },
                     {
                         text: 'Wait for the development team to complete all features before planning automation',
-                        outcome: 'Test automation requires early planning.',
+                        outcome: 'Test automation requires early planning to identify the most valuable areas to automate.',
                         experience: -10
                     },
                     {
@@ -110,17 +110,17 @@ export class AutomationInterviewQuiz extends BaseQuiz {
                     },
                     {
                         text: 'Select multiple frameworks and let each team member use their preferred tool for different features',
-                        outcome: 'Framework consistency is important for maintenance.',
+                        outcome: 'Framework consistency is essential for maintenance moving forward with a project.',
                         experience: -10
                     },
                     {
                         text: 'Choose the newest framework with the most GitHub stars',
-                        outcome: 'Framework selection should be based on project needs.',
+                        outcome: 'Framework selection should be based on project needs and not the latest on the market.',
                         experience: -5
                     },
                     {
                         text: 'Pick whatever framework the developers are using for unit tests',
-                        outcome: 'Consider end-to-end testing requirements separately.',
+                        outcome: 'End-to-end testing requirements should be considered separately to meet application needs.',
                         experience: -5
                     }
                 ]
@@ -132,24 +132,24 @@ export class AutomationInterviewQuiz extends BaseQuiz {
                 description: 'You\'re writing a test script and need to locate elements on a web page. What\'s the best approach?',
                 options: [
                     {
-                        text: 'Use unique IDs and data attributes',
+                        text: 'The approach should include the use unique IDs and data attributes',
                         outcome: 'Perfect! This creates reliable and maintainable tests.',
                         experience: 15,
                         tool: 'Element Location'
                     },
                     {
                         text: 'Create complex CSS selectors that chain multiple classes and attributes together for maximum specificity',
-                        outcome: 'Simple, unique locators are more reliable.',
+                        outcome: 'Simple, unique locators are more reliable and usable.',
                         experience: -10
                     },
                     {
                         text: 'Generate full XPath expressions from the browser\'s copy selector feature',
-                        outcome: 'Absolute XPaths are fragile and hard to maintain.',
+                        outcome: 'Absolute XPaths can be fragile and hard to maintain.',
                         experience: -10
                     },
                     {
                         text: 'Locate elements by their displayed text content and position on the page',
-                        outcome: 'Position and text content can change frequently.',
+                        outcome: 'Position and text content can change frequently and make it difficult locate elements.',
                         experience: -5
                     }
                 ]
@@ -157,28 +157,28 @@ export class AutomationInterviewQuiz extends BaseQuiz {
             {
                 id: 4,
                 level: 'Basic',
-                title: 'Test Script Organization',
+                title: 'Test Script Organisation',
                 description: 'How should you structure your automated test scripts?',
                 options: [
                     {
-                        text: 'Use Page Object Model with clear separation of concerns',
+                        text: 'Use page object model with clear separation of concerns',
                         outcome: 'Excellent! This promotes reusability and maintainability.',
                         experience: 15,
                         tool: 'Code Organization'
                     },
                     {
                         text: 'Write long, detailed test scripts that cover multiple scenarios in a single file',
-                        outcome: 'Tests should be organized logically and modularly.',
+                        outcome: 'Tests should be organised logically and modularly for ease of use.',
                         experience: -10
                     },
                     {
                         text: 'Duplicate similar test code to ensure each test is independent',
-                        outcome: 'Code duplication should be avoided.',
+                        outcome: 'Code duplication should be avoided if possible as it makes it harder to update tests when the underlying system changes.',
                         experience: -5
                     },
                     {
                         text: 'Place test code alongside application code for easy access',
-                        outcome: 'Test code should be separate from application code.',
+                        outcome: 'Test code should be separate from application code to provide flexibility on maintenance.',
                         experience: -10
                     }
                 ]
@@ -197,17 +197,17 @@ export class AutomationInterviewQuiz extends BaseQuiz {
                     },
                     {
                         text: 'Add Thread.sleep() or fixed delays throughout the test scripts',
-                        outcome: 'Fixed delays make tests slow and unreliable.',
+                        outcome: 'Fixed delays can make tests slow and unreliable.',
                         experience: -5
                     },
                     {
                         text: 'Configure the CI system to automatically retry failed tests multiple times',
-                        outcome: 'Root causes should be addressed.',
+                        outcome: 'Root causes should be addressed instead of retrying failed tests.',
                         experience: -10
                     },
                     {
-                        text: 'Mark flaky tests as known issues in the test report',
-                        outcome: 'Intermittent failures need investigation.',
+                        text: 'Mark intermittent tests as known issues in the test report',
+                        outcome: 'Intermittent failures require thorough investigation.',
                         experience: -10
                     }
                 ]
@@ -234,13 +234,13 @@ export class AutomationInterviewQuiz extends BaseQuiz {
                         experience: -5
                     },
                     {
-                        text: 'Copy and sanitize production data for testing purposes',
+                        text: 'Copy and sanitise production data for testing purposes',
                         outcome: 'Test data should be controlled and secure.',
                         experience: -10
                     },
                     {
                         text: 'Maintain test data directly in the test scripts',
-                        outcome: 'Test data should be externalized.',
+                        outcome: 'Test data should be externalised.',
                         experience: -15
                     }
                 ]
@@ -252,14 +252,14 @@ export class AutomationInterviewQuiz extends BaseQuiz {
                 description: 'How do you integrate automated tests into the CI/CD pipeline?',
                 options: [
                     {
-                        text: 'Organize tests in stages with appropriate triggers',
+                        text: 'Organise tests in stages with appropriate triggers',
                         outcome: 'Perfect! This enables continuous testing.',
                         experience: 20,
                         tool: 'CI/CD Integration'
                     },
                     {
                         text: 'Execute the complete test suite sequentially after every code change',
-                        outcome: 'Tests should be organized in appropriate stages.',
+                        outcome: 'Tests should be organised in appropriate stages.',
                         experience: -10
                     },
                     {
@@ -293,12 +293,12 @@ export class AutomationInterviewQuiz extends BaseQuiz {
                     },
                     {
                         text: 'Focus testing on the most popular browser only',
-                        outcome: 'Multiple browsers should be tested.',
+                        outcome: 'Multiple browsers should be tested for comprehensive coverage.',
                         experience: -5
                     },
                     {
-                        text: 'Test manually in different browsers',
-                        outcome: 'Browser testing should be automated.',
+                        text: 'Test all browsers supported by the application under test manually',
+                        outcome: 'Browser testing should be automated if including in tests in the automation framework.',
                         experience: -15
                     }
                 ]
@@ -311,13 +311,13 @@ export class AutomationInterviewQuiz extends BaseQuiz {
                 options: [
                     {
                         text: 'Implement custom exception handlers with retry logic',
-                        outcome: 'Perfect! This enables better error diagnosis.',
+                        outcome: 'Perfect! This enables good error diagnosis.',
                         experience: 20,
                         tool: 'Error Handling'
                     },
                     {
                         text: 'Write extensive try-catch blocks around every possible point of failure in the test scripts',
-                        outcome: 'Error handling should be strategic.',
+                        outcome: 'Error handling should be strategic and efficient.',
                         experience: -15
                     },
                     {
@@ -326,8 +326,8 @@ export class AutomationInterviewQuiz extends BaseQuiz {
                         experience: -10
                     },
                     {
-                        text: 'Skip error handling in tests',
-                        outcome: 'Error handling is crucial.',
+                        text: 'Skip error handling within automation tests',
+                        outcome: 'Error handling is crucial for prompt identification of issues.',
                         experience: -5
                     }
                 ]
@@ -346,17 +346,17 @@ export class AutomationInterviewQuiz extends BaseQuiz {
                     },
                     {
                         text: 'Create extensive custom reporting solutions that track every possible test metric and generate multiple report formats',
-                        outcome: 'Reports should be focused and useful.',
+                        outcome: 'This approach could be too extensive as reports should be focused and useful.',
                         experience: -10
                     },
                     {
                         text: 'Use basic console output',
-                        outcome: 'Proper reporting tools should be used.',
+                        outcome: 'Proper reporting tools should be used as critical details could be missed.',
                         experience: -5
                     },
                     {
                         text: 'Rely on CI/CD platform logs',
-                        outcome: 'Dedicated test reporting is needed.',
+                        outcome: 'Dedicated test reporting is required for automation reports.',
                         experience: -15
                     }
                 ]
@@ -379,7 +379,7 @@ export class AutomationInterviewQuiz extends BaseQuiz {
                     },
                     {
                         text: 'Create complex performance test scenarios that simulate every possible user interaction simultaneously',
-                        outcome: 'Focus on key performance indicators.',
+                        outcome: 'Focus should be on key performance indicators.',
                         experience: -10
                     },
                     {
@@ -408,17 +408,17 @@ export class AutomationInterviewQuiz extends BaseQuiz {
                     },
                     {
                         text: 'Write exhaustive tests covering every possible combination of API parameters and headers',
-                        outcome: 'Focus on meaningful test scenarios.',
+                        outcome: 'Focus should be on meaningful test scenarios.',
                         experience: -20
                     },
                     {
-                        text: 'Test only success scenarios',
-                        outcome: 'Edge cases must be tested.',
+                        text: 'Focus tests only on success scenarios to ensure the application under test meets requirements',
+                        outcome: 'Edge cases must also be tested for comprehensive coverage.',
                         experience: -10
                     },
                     {
-                        text: 'Manual API testing only',
-                        outcome: 'APIs should be automatically tested.',
+                        text: 'The testing approach for API should be manual in nature',
+                        outcome: 'APIs should be automatically tested as this improves efficiency in faster testing cycles.',
                         experience: -15
                     }
                 ]
@@ -437,17 +437,17 @@ export class AutomationInterviewQuiz extends BaseQuiz {
                     },
                     {
                         text: 'Create separate test suites for every possible device-OS combination in your target market',
-                        outcome: 'Focus on representative devices.',
+                        outcome: 'Focus should be on representative devices.',
                         experience: -20
                     },
                     {
-                        text: 'Use desktop automation tools',
+                        text: 'Mobile automation testing should be approached with desktop automation tools',
                         outcome: 'Mobile-specific tools needed.',
                         experience: -15
                     },
                     {
-                        text: 'Test on latest devices only',
-                        outcome: 'Consider device diversity.',
+                        text: 'Focus testing on the latest supported devices only',
+                        outcome: 'Device diversity should be considered for comprehensive coverage.',
                         experience: -10
                     }
                 ]
@@ -466,17 +466,17 @@ export class AutomationInterviewQuiz extends BaseQuiz {
                     },
                     {
                         text: 'Implement extensive penetration testing scripts that attempt every known security vulnerability',
-                        outcome: 'Focus on relevant security risks.',
+                        outcome: 'Focus should be security risks relevant to the application.',
                         experience: -20
                     },
                     {
-                        text: 'Test authentication only',
-                        outcome: 'Multiple aspects need testing.',
+                        text: 'Test authentication for the application under test',
+                        outcome: 'Multiple aspects require testing like vulnerability and SQL injection testing.',
                         experience: -15
                     },
                     {
-                        text: 'Skip security automation',
-                        outcome: 'Security tests are essential.',
+                        text: 'Incorporate SAST testing into the automation framework',
+                        outcome: 'While this is important, this alone should not form the basis of security checks.',
                         experience: -10
                     }
                 ]
@@ -488,24 +488,24 @@ export class AutomationInterviewQuiz extends BaseQuiz {
                 description: 'How do you manage test automation infrastructure?',
                 options: [
                     {
-                        text: 'Use containerization with infrastructure as code',
+                        text: 'Use containerisation with infrastructure as code',
                         outcome: 'Perfect! This enables reliable execution.',
                         experience: 25,
                         tool: 'Infrastructure Management'
                     },
                     {
                         text: 'Set up elaborate testing environments with redundant systems for every possible configuration',
-                        outcome: 'Focus on essential configurations.',
+                        outcome: 'Focus should be on essential configurations relevant to the application under test.',
                         experience: -10
                     },
                     {
-                        text: 'Use shared test environments',
-                        outcome: 'Isolated environments needed.',
+                        text: 'Use shared test environments for easier team access to all projects',
+                        outcome: 'Isolated environments are required as they provide a controlled space to test and deploy changes.',
                         experience: -15
                     },
                     {
-                        text: 'Rely on local machines',
-                        outcome: 'Proper infrastructure required.',
+                        text: 'Use local machines where you can for automated infrastructure',
+                        outcome: 'Proper infrastructure is required as local machines can be susceptible to hardware failures.',
                         experience: -20
                     }
                 ]
