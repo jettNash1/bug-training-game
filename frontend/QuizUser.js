@@ -360,26 +360,31 @@ export class QuizUser {
 
                 const result = this.quizResults.find(r => r.quizName === quizName);
                 
-                // Remove any existing classes
-                progressElement.classList.remove('hidden', 'completed', 'completed-perfect', 'completed-partial', 'in-progress', 'failed');
-                quizItem.classList.remove('completed', 'completed-perfect', 'completed-partial', 'in-progress', 'failed');
-
                 if (result) {
                     const questionsAnswered = result.questionsAnswered || 0;
                     const experience = result.experience || 0;
                     progressElement.textContent = `${questionsAnswered}/15`;
                     
+                    // Remove any existing classes first
+                    progressElement.classList.remove('hidden', 'completed', 'completed-perfect', 'completed-partial', 'in-progress', 'failed');
+                    quizItem.classList.remove('completed', 'completed-perfect', 'completed-partial', 'in-progress', 'failed');
+                    
                     if (questionsAnswered === 15) {
+                        // Quiz is completed
+                        progressElement.classList.add('completed');
+                        quizItem.classList.add('completed');
+                        
                         if (experience >= 300) {
-                            // Perfect score
-                            progressElement.classList.add('completed', 'completed-perfect');
-                            quizItem.classList.add('completed', 'completed-perfect');
+                            // Perfect score (300+ XP)
+                            progressElement.classList.add('completed-perfect');
+                            quizItem.classList.add('completed-perfect');
                         } else {
                             // Completed but not perfect
-                            progressElement.classList.add('completed', 'completed-partial');
-                            quizItem.classList.add('completed', 'completed-partial');
+                            progressElement.classList.add('completed-partial');
+                            quizItem.classList.add('completed-partial');
                         }
                     } else if (questionsAnswered > 0) {
+                        // In progress
                         progressElement.classList.add('in-progress');
                         quizItem.classList.add('in-progress');
                     }
