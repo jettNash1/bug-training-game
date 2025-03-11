@@ -203,6 +203,13 @@ body {
     pointer-events: none;
 }
 
+/* Updated styles for completed but not perfect score */
+.quiz-item[data-progress="100"]:not(.completed),
+.quiz-item.completed:not([data-progress="100"]) {
+    background: rgba(241, 196, 15, 0.35) !important; /* Darker yellow for completed but not perfect */
+    border: 2px solid #f1c40f !important;
+}
+
 .quiz-item[data-progress]:not([data-progress="0"]):not([data-progress="100"]),
 .quiz-item.in-progress {
     background: rgba(241, 196, 15, 0.15);
