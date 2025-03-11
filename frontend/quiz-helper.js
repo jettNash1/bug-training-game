@@ -68,9 +68,33 @@ export class BaseQuiz {
                     this.questionTimer = null;
                 }
                 this.saveTimerState();
+                console.log('Page hidden, timer paused and state saved');
             } else if (document.visibilityState === 'visible') {
                 // Resume the timer when the page is visible again
-                this.restoreTimerState();
+                console.log('Page visible, restoring timer state');
+                
+                // Restore the timer state without updating the display yet
+                const username = localStorage.getItem('username');
+                if (username) {
+                    const quizIdentifier = this.quizName || this.constructor.name;
+                    const timerStateKey = `timer_state_${username}_${quizIdentifier}`;
+                    const savedState = localStorage.getItem(timerStateKey);
+                    
+                    if (savedState) {
+                        try {
+                            const timerState = JSON.parse(savedState);
+                            // Use the exact saved time
+                            this.remainingTime = timerState.remainingTime;
+                            // Clear the saved state
+                            localStorage.removeItem(timerStateKey);
+                        } catch (error) {
+                            console.error('Failed to restore timer state:', error);
+                        }
+                    }
+                }
+                
+                // Update the display and restart the timer
+                this.updateTimerDisplay();
                 
                 // If there's no active timer but we have remaining time, restart the timer
                 if (!this.questionTimer && this.remainingTime > 0) {
@@ -82,6 +106,7 @@ export class BaseQuiz {
                             this.handleTimeUp();
                         }
                     }, 1000);
+                    console.log('Timer restarted with remaining time:', this.remainingTime);
                 }
             }
         });
@@ -94,6 +119,7 @@ export class BaseQuiz {
                 this.questionTimer = null;
             }
             this.saveTimerState();
+            console.log('Page unloading, timer paused and state saved');
         });
     }
 
@@ -128,15 +154,24 @@ export class BaseQuiz {
             
             if (!questionId) return;
 
+            // Create a timestamp to track when the state was saved
+            const timestamp = Date.now();
+
             const timerState = {
                 questionId: questionId,
                 remainingTime: this.remainingTime,
-                timestamp: Date.now(),
+                timestamp: timestamp,
                 quizName: this.quizName || this.constructor.name
             };
 
-            localStorage.setItem(`timer_state_${username}_${this.quizName || this.constructor.name}`, JSON.stringify(timerState));
-            console.log('Timer state saved:', timerState);
+            const timerStateKey = `timer_state_${username}_${this.quizName || this.constructor.name}`;
+            
+            // Remove any existing timer state before saving
+            localStorage.removeItem(timerStateKey);
+            
+            // Save the new timer state
+            localStorage.setItem(timerStateKey, JSON.stringify(timerState));
+            console.log('Timer state saved at', new Date(timestamp).toISOString(), ':', timerState);
         }
     }
 
@@ -210,6 +245,9 @@ export class BaseQuiz {
             this.gameScreen.insertBefore(timerContainer, this.gameScreen.firstChild);
         }
 
+        // Set a flag to track if we're restoring a saved timer state
+        let isRestoringState = false;
+
         // Check if there's a saved timer state for this quiz
         const username = localStorage.getItem('username');
         if (username) {
@@ -230,6 +268,7 @@ export class BaseQuiz {
                         // Don't subtract elapsed time - we'll use the exact saved time
                         // This prevents the timer from counting down when the user is away
                         this.remainingTime = timerState.remainingTime;
+                        isRestoringState = true;
                         console.log('Initializing timer with exact saved time:', this.remainingTime);
                         
                         // Clear the saved state
@@ -271,27 +310,40 @@ export class BaseQuiz {
                 this.handleTimeUp();
             }
         }, 1000);
+
+        // Return whether we restored a saved state (for use by child classes)
+        return isRestoringState;
     }
 
     updateTimerDisplay() {
-        const timerContainer = document.getElementById('timer-container');
-        if (!timerContainer) return;
-        
         const seconds = Math.ceil(this.remainingTime / 1000);
-        timerContainer.textContent = `Time remaining: ${seconds}s`;
         
-        // Add warning class when time is running low (less than 5 seconds)
-        if (seconds <= 5) {
-            timerContainer.classList.add('timer-warning');
-        } else {
-            timerContainer.classList.remove('timer-warning');
+        // Update the main timer container
+        const timerContainer = document.getElementById('timer-container');
+        if (timerContainer) {
+            timerContainer.textContent = `Time remaining: ${seconds}s`;
+            
+            // Add warning class when time is running low (less than 5 seconds)
+            if (seconds <= 5) {
+                timerContainer.classList.add('timer-warning');
+            } else {
+                timerContainer.classList.remove('timer-warning');
+            }
         }
         
-        // Also update the timer display element if it exists
+        // Update the timer display element if it exists (used in some quiz templates)
         const timerDisplay = document.getElementById('timer-display');
         if (timerDisplay) {
             timerDisplay.textContent = seconds;
         }
+        
+        // Update any other timer elements that might exist
+        const allTimerElements = document.querySelectorAll('[role="timer"]');
+        allTimerElements.forEach(element => {
+            if (element !== timerContainer && element !== timerDisplay) {
+                element.textContent = `${seconds}s`;
+            }
+        });
     }
 
     handleTimeUp() {
