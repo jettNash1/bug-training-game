@@ -142,7 +142,7 @@ export class IssueVerificationQuiz extends BaseQuiz {
                         experience: -10
                     },
                     {
-                        text: 'Update the ticket by stating \"fixed\" or \"not fixed\" as further details are not required',
+                        text: 'Update the ticket by stating "fixed" or "not fixed" as further details are not required',
                         outcome: 'More detailed documentation is required for developer and stakeholder information.',
                         experience: -5
                     },
@@ -464,18 +464,18 @@ export class IssueVerificationQuiz extends BaseQuiz {
                         tool: 'Reporting'
                     },
                     {
-                        text: 'List fixed issues only',
-                        outcome: 'All aspects need reporting.',
+                        text: 'List all issues fixed by the client within the application release',
+                        outcome: 'All aspects need reporting not just fixed issues.',
                         experience: -15
                     },
                     {
-                        text: 'Basic status update',
-                        outcome: 'Comprehensive reporting needed.',
+                        text: 'Document a basic status update of each existing issue within the release',
+                        outcome: 'Comprehensive reporting needed is required including new issues and regression details.',
                         experience: -10
                     },
                     {
-                        text: 'Skip reporting',
-                        outcome: 'Verification needs proper documentation.',
+                        text: 'Document all details surrounding regression testing of the new release',
+                        outcome: 'Verification needs full documentation not just regression test reporting.',
                         experience: -5
                     }
                 ]
@@ -487,24 +487,24 @@ export class IssueVerificationQuiz extends BaseQuiz {
                 description: 'How do you assess if additional testing is needed after verification?',
                 options: [
                     {
-                        text: 'Analyze fix impact, regression findings, and new issues to recommend next steps',
+                        text: 'Analyse fix impact, regression findings, and new issues to recommend next steps',
                         outcome: 'Perfect! This provides informed testing recommendations.',
                         experience: 25,
                         tool: 'Quality Assessment'
                     },
                     {
-                        text: 'Check fix count only',
-                        outcome: 'Multiple factors need consideration.',
+                        text: 'Check that all open issues within the release have been fixed',
+                        outcome: 'Other factors also need to be taken into consideration like regression findings and new issues raised.',
                         experience: -15
                     },
                     {
-                        text: 'Wait for client decision',
-                        outcome: 'Proactive assessment needed.',
+                        text: 'Rely on client feedback so they can make a decision on additional testing',
+                        outcome: 'Proactive assessment required and additional testing can be judged on regression findings and new issues raised.',
                         experience: -10
                     },
                     {
-                        text: 'Skip assessment',
-                        outcome: 'Quality assessment is crucial.',
+                        text: 'Await feedback from the project manager on issue verification findings to decide on additional testing',
+                        outcome: 'Quality assessment is crucial and initiative should be taken on additional testing as well as informing the project manager of the outcome.',
                         experience: -5
                     }
                 ]
