@@ -780,4 +780,52 @@ router.post('/register-user', auth, async (req, res) => {
     }
 });
 
+// Reset user password
+router.put('/users/:username/reset-password', auth, async (req, res) => {
+    try {
+        // Verify admin status
+        if (!req.user.isAdmin) {
+            return res.status(403).json({
+                success: false,
+                message: 'Admin access required'
+            });
+        }
+
+        const { username } = req.params;
+        const { password } = req.body;
+
+        if (!password) {
+            return res.status(400).json({
+                success: false,
+                message: 'New password is required'
+            });
+        }
+
+        // Find the user
+        const user = await User.findOne({ username });
+        if (!user) {
+            return res.status(404).json({
+                success: false,
+                message: 'User not found'
+            });
+        }
+
+        // Update password
+        user.password = password;
+        await user.save();
+
+        res.json({
+            success: true,
+            message: 'Password reset successfully'
+        });
+    } catch (error) {
+        console.error('Error resetting password:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Failed to reset password',
+            error: error.message
+        });
+    }
+});
+
 module.exports = router; 
