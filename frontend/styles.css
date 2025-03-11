@@ -1210,6 +1210,7 @@ select:disabled {
     overflow: hidden;
     transition: height 0.3s ease-in-out;
     background: white;
+    margin-top: 60px;
 }
 
 #level-transition-container.active {
@@ -1227,6 +1228,8 @@ select:disabled {
     font-weight: bold;
     box-shadow: 0 4px 8px rgba(0,0,0,0.2);
     animation: fadeInOut 3s ease-in-out forwards;
+    position: relative;
+    z-index: 1;
 }
 
 @keyframes fadeInOut {
