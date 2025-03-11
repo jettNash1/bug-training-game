@@ -196,43 +196,36 @@ body {
 
 /* Quiz states */
 .quiz-item.completed.completed-perfect {
-    background: var(--card-background) !important;
-    border: 1px solid rgba(0, 0, 0, 0.08) !important;
+    background: rgba(46, 204, 113, 0.2) !important;
+    border: 2px solid var(--success-color) !important;
 }
 
 .quiz-item.completed.completed-partial {
-    background: rgba(231, 76, 60, 0.2) !important;
-    border: 2px solid var(--danger-color) !important;
+    background: rgba(241, 196, 15, 0.35) !important;
+    border: 2px solid var(--warning-color) !important;
 }
 
-.quiz-item.failed,
-.quiz-item[data-status="failed"] {
-    background: rgba(231, 76, 60, 0.2) !important;
-    border: 2px solid var(--danger-color) !important;
-    opacity: 0.7;
-    pointer-events: none;
+.quiz-item.in-progress {
+    background: rgba(241, 196, 15, 0.15) !important;
+    border: 2px solid var(--warning-color) !important;
+}
+
+.quiz-item:not(.completed):not(.in-progress) {
+    background: var(--card-background) !important;
+    border: 1px solid rgba(0, 0, 0, 0.08) !important;
 }
 
 /* Remove old conflicting styles */
 .quiz-item[data-progress="100"]:not(.completed-perfect),
 .quiz-item.completed:not(.completed-perfect) {
-    /* Remove these styles as they're causing conflicts */
     background: initial;
     border-color: initial;
 }
 
-.quiz-item[data-progress]:not([data-progress="0"]):not([data-progress="100"]),
-.quiz-item.in-progress {
-    background: rgba(241, 196, 15, 0.15);
-    border-color: var(--warning-color);
-}
-
-/* Remove old conflicting styles */
 .quiz-item[data-progress="0"],
 .quiz-item[data-progress="100"],
 .quiz-item[data-progress="0"] .quiz-completion,
 .quiz-item[data-progress="100"] .quiz-completion {
-    /* Reset these styles as we're using classes instead */
     background: initial;
     border-color: initial;
 }

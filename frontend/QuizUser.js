@@ -367,30 +367,30 @@ export class QuizUser {
                     progressElement.textContent = `${questionsAnswered}/15`;
                     
                     // Remove any existing classes first
-                    progressElement.classList.remove('hidden', 'completed', 'completed-perfect', 'completed-partial', 'in-progress', 'failed');
-                    quizItem.classList.remove('completed', 'completed-perfect', 'completed-partial', 'in-progress', 'failed');
+                    progressElement.classList.remove('hidden', 'completed', 'completed-perfect', 'completed-partial', 'in-progress');
+                    quizItem.classList.remove('completed', 'completed-perfect', 'completed-partial', 'in-progress');
                     
                     if (questionsAnswered === 15) {
                         if (score === 100 && experience >= 300) {
-                            // Perfect score (100% with 300+ XP) - white background
+                            // Perfect score (100% with 300+ XP) - Green background
                             progressElement.classList.add('completed', 'completed-perfect');
                             quizItem.classList.add('completed', 'completed-perfect');
                         } else {
-                            // Completed but not perfect (less than 100% or less than 300 XP) - red background
+                            // Completed but not perfect (less than 100% or less than 300 XP) - Dark yellow background
                             progressElement.classList.add('completed', 'completed-partial');
                             quizItem.classList.add('completed', 'completed-partial');
                         }
                     } else if (questionsAnswered > 0) {
-                        // In progress - yellow background
+                        // In progress - Light yellow background
                         progressElement.classList.add('in-progress');
                         quizItem.classList.add('in-progress');
                     } else {
-                        // Not started - white background
+                        // Not started - White background (default state)
                         progressElement.textContent = '';
                         progressElement.classList.add('hidden');
                     }
                 } else {
-                    // Not started - white background
+                    // Not started - White background (default state)
                     progressElement.textContent = '';
                     progressElement.classList.add('hidden');
                 }
