@@ -1,4 +1,5 @@
 import { QuizUser } from './QuizUser.js';
+import { saveTimerState, getTimerState, clearTimerState, setupTimerPersistenceListeners } from '../src/utils/TimerPersistence.js';
 
 export class BaseQuiz {
     constructor(config) {
@@ -13,6 +14,9 @@ export class BaseQuiz {
         this.timePerQuestion = 60000; // 60 seconds in milliseconds
         this.remainingTime = this.timePerQuestion;
         this.questionStartTime = null; // Track when each question starts
+
+        // Set up timer persistence
+        this.setupTimerPersistence();
     }
 
     showError(message) {
@@ -49,6 +53,14 @@ export class BaseQuiz {
         this.showQuestion();
     }
 
+    setupTimerPersistence() {
+        setupTimerPersistenceListeners(
+            () => !this.isLoading && this.getCurrentScenario() !== null,
+            () => this.getCurrentScenario()?.id,
+            () => this.remainingTime
+        );
+    }
+
     initializeTimer() {
         // Create timer UI if it doesn't exist
         let timerContainer = document.getElementById('timer-container');
@@ -60,8 +72,20 @@ export class BaseQuiz {
             this.gameScreen.insertBefore(timerContainer, this.gameScreen.firstChild);
         }
 
-        // Reset and start timer
-        this.remainingTime = this.timePerQuestion;
+        // Check for saved timer state
+        const currentScenario = this.getCurrentScenario();
+        const timerData = getTimerState();
+        
+        if (timerData && timerData.scenarioId === currentScenario?.id) {
+            // Restore saved time
+            this.remainingTime = timerData.timeRemaining;
+            // Show notification
+            this.showNotification('Timer restored from your previous session');
+        } else {
+            // Reset timer
+            this.remainingTime = this.timePerQuestion;
+        }
+
         this.updateTimerDisplay();
         
         // Clear any existing timer
@@ -93,8 +117,18 @@ export class BaseQuiz {
         }
     }
 
+    showNotification(message) {
+        const notification = document.createElement('div');
+        notification.className = 'notification';
+        notification.setAttribute('role', 'alert');
+        notification.textContent = message;
+        document.body.appendChild(notification);
+        setTimeout(() => notification.remove(), 3000);
+    }
+
     handleTimeUp() {
         clearInterval(this.questionTimer);
+        clearTimerState(); // Clear saved timer state
         
         // Get current scenario
         const currentScenario = this.getCurrentScenario();
@@ -166,6 +200,7 @@ export class BaseQuiz {
         if (this.questionTimer) {
             clearInterval(this.questionTimer);
         }
+        clearTimerState(); // Clear saved timer state
 
         const currentScenario = this.getCurrentScenario();
         const selectedOption = currentScenario.options[optionElement.dataset.index];
