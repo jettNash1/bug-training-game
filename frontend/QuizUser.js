@@ -375,32 +375,58 @@ export class QuizUser {
                         if (score === 100 && experience >= 300) {
                             // Perfect score (100% with 300+ XP) - Green background with black border
                             console.log(`Perfect score for ${quizName}: score=${score}, experience=${experience}`);
-                            progressElement.classList.add('completed-perfect');
-                            quizItem.classList.add('completed-perfect');
+                            
+                            // Apply inline styles directly
+                            quizItem.style.backgroundColor = '#00FF00'; // Bright Green
+                            quizItem.style.border = '2px solid #000000'; // Black border
+                            quizItem.style.color = '#000000';
+                            
+                            progressElement.style.backgroundColor = '#00FF00'; // Bright Green
+                            progressElement.style.color = '#000000';
                             progressElement.textContent = '15/15';
+                            progressElement.style.display = 'block';
                         } else {
                             // Completed but not perfect (less than 100% or less than 300 XP) - Dark yellow background
                             console.log(`Not perfect score for ${quizName}: score=${score}, experience=${experience}`);
-                            progressElement.classList.add('completed-partial');
-                            quizItem.classList.add('completed-partial');
+                            
+                            // Apply inline styles directly
+                            quizItem.style.backgroundColor = '#DAA520'; // Dark Yellow/Goldenrod
+                            quizItem.style.border = 'none';
+                            quizItem.style.color = '#000000';
+                            
+                            progressElement.style.backgroundColor = '#DAA520'; // Dark Yellow/Goldenrod
+                            progressElement.style.color = '#000000';
                             progressElement.textContent = '15/15';
+                            progressElement.style.display = 'block';
                         }
                     } else if (questionsAnswered > 0 && questionsAnswered < 15) {
                         // In progress - Yellow background
                         console.log(`In progress for ${quizName}: questionsAnswered=${questionsAnswered}`);
-                        progressElement.classList.add('in-progress');
-                        quizItem.classList.add('in-progress');
+                        
+                        // Apply inline styles directly
+                        quizItem.style.backgroundColor = '#FFFF00'; // Bright Yellow
+                        quizItem.style.border = 'none';
+                        quizItem.style.color = '#000000';
+                        
+                        progressElement.style.backgroundColor = '#FFFF00'; // Bright Yellow
+                        progressElement.style.color = '#000000';
                         progressElement.textContent = `${questionsAnswered}/15`;
+                        progressElement.style.display = 'block';
                     } else {
                         // Not started - White background (default state)
                         console.log(`Not started for ${quizName}: questionsAnswered=${questionsAnswered}`);
+                        
+                        // Apply inline styles directly
+                        quizItem.style.backgroundColor = '#FFFFFF'; // White
+                        quizItem.style.border = 'none';
+                        
                         progressElement.textContent = '';
-                        progressElement.classList.add('hidden');
+                        progressElement.style.display = 'none';
                     }
                 } else {
                     // Not started - White background (default state)
                     progressElement.textContent = '';
-                    progressElement.classList.add('hidden');
+                    progressElement.style.display = 'none';
                 }
             });
 

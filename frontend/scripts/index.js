@@ -222,45 +222,75 @@ class IndexPage {
             item.setAttribute('data-progress', quizScore.score);
 
             // Handle the four different states
-            if (quizScore.questionsAnswered === 0) {
-                // No questions answered - white background
-                item.classList.add('not-started');
-                progressElement.classList.add('not-started');
-                progressElement.textContent = ''; // Remove the 0/15 text
+            if (quizScore.locked) {
+                // Locked state - gray background with striped pattern
+                item.classList.add('locked-quiz');
                 progressElement.style.display = 'none'; // Hide the progress element completely
             } else if (quizScore.status === 'failed') {
                 // Failed state - red background
-                item.classList.add('failed');
-                progressElement.classList.add('failed');
-                progressElement.textContent = `${quizScore.questionsAnswered}/15`;
-                progressElement.style.removeProperty('display'); // Remove the display property
+                console.log(`Failed quiz: ${quizId}`);
+                
+                // Apply inline styles directly
+                item.style.backgroundColor = '#FF0000'; // Red
+                item.style.border = 'none';
+                item.style.color = '#FFFFFF';
                 item.style.pointerEvents = 'none';
                 item.setAttribute('aria-disabled', 'true');
+                
+                progressElement.style.backgroundColor = '#FF0000'; // Red
+                progressElement.style.color = '#FFFFFF';
+                progressElement.textContent = `${quizScore.questionsAnswered}/15`;
+                progressElement.style.display = 'block';
             } else if (quizScore.status === 'completed' && quizScore.questionsAnswered === 15) {
                 // Completed state
                 if (quizScore.score === 100 && quizScore.experience >= 300) {
                     // Perfect score - Green background
                     console.log(`Perfect score in index.js: score=${quizScore.score}, experience=${quizScore.experience}`);
-                    item.classList.add('completed-perfect');
-                    progressElement.classList.add('completed-perfect');
+                    
+                    // Apply inline styles directly
+                    item.style.backgroundColor = '#00FF00'; // Bright Green
+                    item.style.border = '2px solid #000000'; // Black border
+                    item.style.color = '#000000';
+                    
+                    progressElement.style.backgroundColor = '#00FF00'; // Bright Green
+                    progressElement.style.color = '#000000';
                 } else {
                     // Not perfect - Dark Yellow background
                     console.log(`Not perfect score in index.js: score=${quizScore.score}, experience=${quizScore.experience}`);
-                    item.classList.add('completed-partial');
-                    progressElement.classList.add('completed-partial');
+                    
+                    // Apply inline styles directly
+                    item.style.backgroundColor = '#DAA520'; // Dark Yellow/Goldenrod
+                    item.style.border = 'none';
+                    item.style.color = '#000000';
+                    
+                    progressElement.style.backgroundColor = '#DAA520'; // Dark Yellow/Goldenrod
+                    progressElement.style.color = '#000000';
                 }
                 progressElement.textContent = '15/15';
-                progressElement.style.removeProperty('display'); // Remove the display property
+                progressElement.style.display = 'block';
             } else if (quizScore.questionsAnswered > 0) {
                 // In progress - Yellow background
                 console.log(`In progress in index.js: questions=${quizScore.questionsAnswered}`);
-                item.classList.add('in-progress');
-                progressElement.classList.add('in-progress');
+                
+                // Apply inline styles directly
+                item.style.backgroundColor = '#FFFF00'; // Bright Yellow
+                item.style.border = 'none';
+                item.style.color = '#000000';
+                
+                progressElement.style.backgroundColor = '#FFFF00'; // Bright Yellow
+                progressElement.style.color = '#000000';
                 progressElement.textContent = `${quizScore.questionsAnswered}/15`;
-                progressElement.style.removeProperty('display'); // Remove the display property
+                progressElement.style.display = 'block';
             } else {
                 // Not started - White background (default)
                 console.log(`Not started in index.js: questions=${quizScore.questionsAnswered}`);
+                
+                // Apply inline styles directly
+                item.style.backgroundColor = '#FFFFFF'; // White
+                item.style.border = 'none';
+                
+                progressElement.textContent = '';
+                progressElement.style.display = 'none';
             }
         });
     }
