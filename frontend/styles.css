@@ -139,15 +139,52 @@ body {
     color: var(--text-muted);
 }
 
+/* Base quiz completion style */
 .quiz-completion {
     position: absolute;
     top: 0.5rem;
     right: 0.5rem;
-    padding: 0.5rem 1rem;
-    font-size: 0.9rem;
-    font-weight: 600;
-    border-radius: 8px;
+    padding: 0.25rem 0.75rem;
+    border-radius: 12px;
+    font-size: 0.8rem;
+    font-weight: 500;
+    color: black;
+    border: none !important;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
     z-index: 1;
+}
+
+/* Quiz completion badge specific states */
+.quiz-completion.completed,
+.quiz-completion.failed,
+.quiz-completion.in-progress {
+    display: block !important;
+}
+
+/* Ensure not-started quiz completion elements are never visible */
+.quiz-completion.not-started,
+.quiz-item.not-started .quiz-completion,
+.quiz-item[data-progress="0"] .quiz-completion {
+    display: none !important;
+}
+
+/* Ensure not-started quiz completion elements remain hidden on hover */
+.quiz-item.not-started:hover .quiz-completion,
+.quiz-item[data-progress="0"]:hover .quiz-completion {
+    display: none !important;
+}
+
+/* Background colors for different states */
+.quiz-completion.completed {
+    background: rgba(46, 204, 113, 0.3);
+}
+
+.quiz-completion.failed {
+    background: rgba(231, 76, 60, 0.3);
+}
+
+.quiz-completion.in-progress {
+    background: rgba(241, 196, 15, 0.3);
 }
 
 /* Quiz states */
@@ -168,44 +205,7 @@ body {
 .quiz-item[data-progress]:not([data-progress="0"]):not([data-progress="100"]),
 .quiz-item.in-progress {
     background: rgba(241, 196, 15, 0.15);
-    border: 1px solid var(--warning-color);
-}
-
-/* Quiz completion badge */
-.quiz-completion.completed,
-.quiz-completion.failed,
-.quiz-completion.in-progress {
-    display: block !important;
-    color: black;
-    border: 1px solid black;
-    padding: 0.5rem 1rem;
-    border-radius: 8px;
-    font-weight: 600;
-}
-
-/* Ensure not-started quiz completion elements are never visible */
-.quiz-completion.not-started,
-.quiz-item.not-started .quiz-completion,
-.quiz-item[data-progress="0"] .quiz-completion {
-    display: none !important;
-}
-
-/* Ensure not-started quiz completion elements remain hidden on hover */
-.quiz-item.not-started:hover .quiz-completion,
-.quiz-item[data-progress="0"]:hover .quiz-completion {
-    display: none !important;
-}
-
-.quiz-completion.completed {
-    background: rgba(46, 204, 113, 0.3);
-}
-
-.quiz-completion.failed {
-    background: rgba(231, 76, 60, 0.3);
-}
-
-.quiz-completion.in-progress {
-    background: rgba(241, 196, 15, 0.3);
+    border-color: var(--warning-color);
 }
 
 /* Remove old conflicting styles */
@@ -1139,25 +1139,6 @@ body {
     box-shadow: 0 6px 8px rgba(0, 0, 0, 0.15);
 }
 
-.quiz-completion {
-    position: absolute;
-    top: 0.5rem;
-    right: 0.5rem;
-    padding: 0.25rem 0.75rem;
-    border-radius: 12px;
-    font-size: 0.8rem;
-    font-weight: 500;
-    color: white;
-}
-
-.quiz-completion.completed {
-    background: var(--success-color);
-}
-
-.quiz-completion.in-progress {
-    background: var(--warning-color);
-}
-
 .logo {
     display: flex;
     align-items: center;
@@ -1328,6 +1309,7 @@ select:disabled {
     font-size: 0.8rem;
     font-weight: 500;
     color: white;
+    border: none !important;
 }
 
 .quiz-completion.completed {
