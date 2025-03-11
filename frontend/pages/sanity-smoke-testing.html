@@ -13,9 +13,19 @@
     <script type="module" src="../login.js"></script>
     <script type="module" src="../auth.js"></script>
     <script type="module" src="../quiz-helper.js"></script>
+    <script type="module" src="../timer-persistence.js"></script>
     <script type="module">
         import { handleLogout } from '../auth.js';
+        import { SanitySmokeQuiz } from '../quizzes/sanity-smoke-quiz.js';
+        
         window.handleLogout = handleLogout;
+        
+        // Initialize the quiz and make it globally accessible
+        document.addEventListener('DOMContentLoaded', () => {
+            const quiz = new SanitySmokeQuiz();
+            window.activeQuiz = quiz;
+            quiz.startGame();
+        });
     </script>
     <script type="module" src="../quizzes/sanity-smoke-quiz.js"></script>
 </head>

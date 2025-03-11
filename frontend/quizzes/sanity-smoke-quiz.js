@@ -46,6 +46,9 @@ export class SanitySmokeQuiz extends BaseQuiz {
         this.outcomeScreen = document.getElementById('outcome-screen');
         this.endScreen = document.getElementById('end-screen');
         
+        // Store a reference to this quiz instance in the window object for global access
+        window.activeQuiz = this;
+        
         // Verify all required elements exist
         if (!this.gameScreen) {
             console.error('Game screen element not found');
@@ -778,6 +781,9 @@ export class SanitySmokeQuiz extends BaseQuiz {
 
         // Store current question number for consistency
         this.currentQuestionNumber = questionCount + 1;
+        
+        // Set the current question ID for timer persistence
+        this.currentQuestionId = scenario.id || `question_${this.currentQuestionNumber}`;
         
         // Show level transition message at the start of each level or when level changes
         const currentLevel = this.getCurrentLevel();
