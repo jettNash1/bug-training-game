@@ -110,6 +110,7 @@ body {
     border: 1px solid rgba(0, 0, 0, 0.08);
     gap: 1.25rem;
     cursor: pointer;
+    margin: 0.75rem 0;
 }
 
 .quiz-item:hover {
@@ -155,9 +156,10 @@ body {
 }
 
 /* Quiz completion badge specific states */
-.quiz-completion.completed,
-.quiz-completion.failed,
-.quiz-completion.in-progress {
+.quiz-completion.completed-perfect,
+.quiz-completion.completed-partial,
+.quiz-completion.in-progress,
+.quiz-completion.failed {
     display: block !important;
     color: var(--text-primary);
 }
@@ -176,16 +178,20 @@ body {
 }
 
 /* Background colors for different states */
-.quiz-completion.completed {
+.quiz-completion.completed-perfect {
     background: rgba(46, 204, 113, 0.3);
+}
+
+.quiz-completion.completed-partial {
+    background: rgba(241, 196, 15, 0.35);
+}
+
+.quiz-completion.in-progress {
+    background: rgba(241, 196, 15, 0.15);
 }
 
 .quiz-completion.failed {
     background: rgba(231, 76, 60, 0.3);
-}
-
-.quiz-completion.in-progress {
-    background: rgba(241, 196, 15, 0.3);
 }
 
 /* Quiz states */
@@ -196,7 +202,7 @@ body {
 
 .quiz-item.completed.completed-partial {
     background: rgba(241, 196, 15, 0.35) !important;
-    border: 2px solid #f1c40f !important;
+    border: 2px solid var(--warning-color) !important;
 }
 
 .quiz-item.failed,
