@@ -234,7 +234,7 @@ export class StandardScriptTestingQuiz extends BaseQuiz {
                     {
                         text: 'The impact of the feature being tested and frequency of use',
                         outcome: 'Correct! These are key factors in determining priority of test cases',
-                        experience: 15,
+                        experience: 20,
                         tool: 'Priority Management'
                     },
                     {
@@ -268,7 +268,7 @@ export class StandardScriptTestingQuiz extends BaseQuiz {
                     {
                         text: 'These sections should be greyed out and the dashes removed from the result and date columns',
                         outcome: 'Correct! This is the recommended approach for environments that are not in scope for the project',
-                        experience: 15,
+                        experience: 20,
                         tool: 'Environment Management'
                     }
                 ]
@@ -292,7 +292,7 @@ export class StandardScriptTestingQuiz extends BaseQuiz {
                     {
                         text: 'By complexity and risk factors using high, medium, and low priorities',
                         outcome: 'Correct! Suites should be prioritised by complexity and risk factors',
-                        experience: 15,
+                        experience: 20,
                         tool: 'Suite Organization'
                     },
                     {
@@ -316,7 +316,7 @@ export class StandardScriptTestingQuiz extends BaseQuiz {
                     {
                         text: 'Information that aided in creating the test case and which will help during execution',
                         outcome: 'Correct! References should include anything that aided creation and that will help with execution of the test case.',
-                        experience: 15,
+                        experience: 20,
                         tool: 'Documentation Management'
                     },
                     {
@@ -345,7 +345,7 @@ export class StandardScriptTestingQuiz extends BaseQuiz {
                     {
                         text: 'These should be performed first, before other test cases',
                         outcome: 'Correct! Smoke tests should be run first as these are devised from the highest priority test cases.',
-                        experience: 15,
+                        experience: 20,
                         tool: 'Smoke Testing'
                     },
                     {
@@ -378,7 +378,7 @@ export class StandardScriptTestingQuiz extends BaseQuiz {
                     {
                         text: 'Copy and modify test suites as needed, adjusting for environment-specific differences',
                         outcome: 'Correct! Test suites can be copied and modified for different environments',
-                        experience: 15,
+                        experience: 25,
                         tool: 'Environment Testing'
                     },
                     {
@@ -412,7 +412,7 @@ export class StandardScriptTestingQuiz extends BaseQuiz {
                     {
                         text: 'This can be started alongside primary testing in parallel, depending on project scheduling',
                         outcome: 'Correct! Compatibility testing can be done in parallel with primary environment testing',
-                        experience: 15,
+                        experience: 25,
                         tool: 'Compatibility Testing'
                     },
                     {
@@ -436,7 +436,7 @@ export class StandardScriptTestingQuiz extends BaseQuiz {
                     {
                         text: 'Mark test cases where expected behaviour is in question, add comments for clarification, and remove comments once clarified',
                         outcome: 'Correct! This is the process for handling requirement changes.',
-                        experience: 15,
+                        experience: 25,
                         tool: 'Requirements Management'
                     },
                     {
@@ -465,7 +465,7 @@ export class StandardScriptTestingQuiz extends BaseQuiz {
                     {
                         text: 'These don\'t require Gherkin format but should contain logical step processes',
                         outcome: 'Correct! User journeys don\'t require Gherkin but should be stated in logical steps.',
-                        experience: 15,
+                        experience: 25,
                         tool: 'Journey Testing'
                     },
                     {
@@ -494,7 +494,7 @@ export class StandardScriptTestingQuiz extends BaseQuiz {
                     {
                         text: 'A combination of target audience, project timing, risk assessment, and client requirements',
                         outcome: 'Correct! These are all factors for important considerations.',
-                        experience: 15,
+                        experience: 25,
                         tool: 'Test Structure'
                     },
                     {

@@ -288,7 +288,7 @@ export class ScriptMetricsTroubleshootingQuiz extends BaseQuiz {
                     {
                         text: 'Update the environment list tab and remove excess rows',
                         outcome: 'Correct! - This ensures consistent updates across all linked tickets.',
-                        experience: 15,
+                        experience: 20,
                         tool: 'List Management'
                     },
                     {
@@ -327,7 +327,7 @@ export class ScriptMetricsTroubleshootingQuiz extends BaseQuiz {
                     {
                         text: 'Double-click and update cell ranges for the affected rows',
                         outcome: 'Correct! - This allows proper adjustment of formula ranges.',
-                        experience: 15,
+                        experience: 20,
                         tool: 'Formula Management'
                     }
                 ]
@@ -346,7 +346,7 @@ export class ScriptMetricsTroubleshootingQuiz extends BaseQuiz {
                     {
                         text: 'Combine global and specific environments as needed',
                         outcome: 'Correct! - This allows flexibility while maintaining consistency.',
-                        experience: 15,
+                        experience: 20,
                         tool: 'Coverage Management'
                     },
                     {
@@ -432,7 +432,7 @@ export class ScriptMetricsTroubleshootingQuiz extends BaseQuiz {
                     {
                         text: 'Maintain formula relationships while updating references',
                         outcome: 'Correct! - This preserves metric integrity across tabs',
-                        experience: 15,
+                        experience: 25,
                         tool: 'Cross-Tab Management'
                     },
                     {
@@ -476,7 +476,7 @@ export class ScriptMetricsTroubleshootingQuiz extends BaseQuiz {
                     {
                         text: 'Trace formula chains and verify all connections',
                         outcome: 'Correct! - This identifies and resolves the source of discrepancies.',
-                        experience: 15,
+                        experience: 25,
                         tool: 'Discrepancy Resolution'
                     }
                 ]
@@ -500,7 +500,7 @@ export class ScriptMetricsTroubleshootingQuiz extends BaseQuiz {
                     {
                         text: 'Verify all dependencies and update systematically',
                         outcome: 'Correct! - This maintains accuracy while allowing updates.',
-                        experience: 15,
+                        experience: 25,
                         tool: 'Update Management'
                     },
                     {

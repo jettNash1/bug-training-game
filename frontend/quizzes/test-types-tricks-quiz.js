@@ -368,7 +368,7 @@ export class TestTypesTricksQuiz extends BaseQuiz {
                     {
                         text: 'Understanding endpoints and access methods is important',
                         outcome: 'Correct! Knowing URLs, access methods, and having a point of contact with developers before Application Program Interface testing is recommended',
-                        experience: 15
+                        experience: 25
                     },
                     {
                         text: 'Knowing all possible user interactions is most important',
@@ -396,7 +396,7 @@ export class TestTypesTricksQuiz extends BaseQuiz {
                     {
                         text: 'Flexibility, autonomy, ethics and safety should be considered for intelligent system testing',
                         outcome: 'Correct! Characteristics like Flexibility, Autonomy, Evolution, Bias, Ethics, Transparency, and Safety for AI testing are recommended practices',
-                        experience: 15
+                        experience: 25
                     },
                     {
                         text: 'Memory and processing power should be considered for intelligent system testing',
@@ -424,7 +424,7 @@ export class TestTypesTricksQuiz extends BaseQuiz {
                     {
                         text: 'fsutil file createnew',
                         outcome: 'Correct! The fsutil command is used to generate large test files of specific sizes.',
-                        experience: 15
+                        experience: 25
                     },
                     {
                         text: 'touch',
@@ -452,7 +452,7 @@ export class TestTypesTricksQuiz extends BaseQuiz {
                     {
                         text: 'Default font size setting should be checked during application or website testing',
                         outcome: 'Correct! Checking that font size is set to default on Samsung devices can expose rendering issues.',
-                        experience: 15
+                        experience: 25
                     },
                     {
                         text: 'Accounts & Back Up should be checked during application or website testing',
@@ -480,7 +480,7 @@ export class TestTypesTricksQuiz extends BaseQuiz {
                     {
                         text: 'Compress using tools like HandBrake or convert to GIF when capturing large screen recordings',
                         outcome: 'Correct! Using tools like HandBrake or converting to a lower-fps GIF to reduce file size for ticket uploads is recommended.',
-                        experience: 15
+                        experience: 25
                     },
                     {
                         text: 'Split the video manually when capturing large screen recordings',
