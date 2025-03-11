@@ -13,6 +13,10 @@ export class BaseQuiz {
         this.timePerQuestion = 60000; // 60 seconds in milliseconds
         this.remainingTime = this.timePerQuestion;
         this.questionStartTime = null; // Track when each question starts
+        this.currentQuestionId = null; // Track the current question ID
+        
+        // Add event listeners for page visibility and beforeunload
+        this.setupVisibilityListeners();
     }
 
     showError(message) {
@@ -49,6 +53,91 @@ export class BaseQuiz {
         this.showQuestion();
     }
 
+    setupVisibilityListeners() {
+        // Save timer state when page is hidden or unloaded
+        document.addEventListener('visibilitychange', () => {
+            if (document.visibilityState === 'hidden') {
+                this.saveTimerState();
+            } else if (document.visibilityState === 'visible') {
+                this.restoreTimerState();
+            }
+        });
+
+        // Save timer state when page is about to be unloaded
+        window.addEventListener('beforeunload', () => {
+            this.saveTimerState();
+        });
+    }
+
+    saveTimerState() {
+        // Only save if we're in an active question with a timer running
+        if (this.questionTimer && this.currentQuestionId) {
+            const username = localStorage.getItem('username');
+            if (!username) return;
+
+            const timerState = {
+                questionId: this.currentQuestionId,
+                remainingTime: this.remainingTime,
+                timestamp: Date.now()
+            };
+
+            localStorage.setItem(`timer_state_${username}_${this.constructor.name}`, JSON.stringify(timerState));
+        }
+    }
+
+    restoreTimerState() {
+        // Check if there's a saved timer state
+        const username = localStorage.getItem('username');
+        if (!username) return;
+
+        const timerStateKey = `timer_state_${username}_${this.constructor.name}`;
+        const savedState = localStorage.getItem(timerStateKey);
+        
+        if (savedState) {
+            try {
+                const timerState = JSON.parse(savedState);
+                
+                // Only restore if it's for the current question
+                if (timerState.questionId === this.currentQuestionId) {
+                    // Calculate how much time has passed since the state was saved
+                    const elapsedSinceExit = Date.now() - timerState.timestamp;
+                    
+                    // Subtract elapsed time from the remaining time (don't go below 0)
+                    this.remainingTime = Math.max(0, timerState.remainingTime - elapsedSinceExit);
+                    
+                    // Update the timer display
+                    this.updateTimerDisplay();
+                    
+                    // If timer was running and there's still time left, restart it
+                    if (this.remainingTime > 0) {
+                        // Clear any existing timer
+                        if (this.questionTimer) {
+                            clearInterval(this.questionTimer);
+                        }
+                        
+                        // Start new timer
+                        this.questionTimer = setInterval(() => {
+                            this.remainingTime -= 1000;
+                            this.updateTimerDisplay();
+
+                            if (this.remainingTime <= 0) {
+                                this.handleTimeUp();
+                            }
+                        }, 1000);
+                    } else {
+                        // If time ran out while away, handle time up
+                        this.handleTimeUp();
+                    }
+                }
+                
+                // Clear the saved state
+                localStorage.removeItem(timerStateKey);
+            } catch (error) {
+                console.error('Failed to restore timer state:', error);
+            }
+        }
+    }
+
     initializeTimer() {
         // Create timer UI if it doesn't exist
         let timerContainer = document.getElementById('timer-container');
@@ -60,8 +149,43 @@ export class BaseQuiz {
             this.gameScreen.insertBefore(timerContainer, this.gameScreen.firstChild);
         }
 
-        // Reset and start timer
-        this.remainingTime = this.timePerQuestion;
+        // Check if there's a saved timer state for this question
+        const username = localStorage.getItem('username');
+        if (username) {
+            const timerStateKey = `timer_state_${username}_${this.constructor.name}`;
+            const savedState = localStorage.getItem(timerStateKey);
+            
+            if (savedState) {
+                try {
+                    const timerState = JSON.parse(savedState);
+                    
+                    // Only restore if it's for the current question
+                    if (timerState.questionId === this.currentQuestionId) {
+                        // Calculate how much time has passed since the state was saved
+                        const elapsedSinceExit = Date.now() - timerState.timestamp;
+                        
+                        // Subtract elapsed time from the remaining time (don't go below 0)
+                        this.remainingTime = Math.max(0, timerState.remainingTime - elapsedSinceExit);
+                        
+                        // Clear the saved state
+                        localStorage.removeItem(timerStateKey);
+                    } else {
+                        // Different question, reset timer
+                        this.remainingTime = this.timePerQuestion;
+                    }
+                } catch (error) {
+                    console.error('Failed to restore timer state:', error);
+                    this.remainingTime = this.timePerQuestion;
+                }
+            } else {
+                // No saved state, reset timer
+                this.remainingTime = this.timePerQuestion;
+            }
+        } else {
+            // No user, reset timer
+            this.remainingTime = this.timePerQuestion;
+        }
+
         this.updateTimerDisplay();
         
         // Clear any existing timer
@@ -95,6 +219,12 @@ export class BaseQuiz {
 
     handleTimeUp() {
         clearInterval(this.questionTimer);
+        
+        // Clear any saved timer state
+        const username = localStorage.getItem('username');
+        if (username) {
+            localStorage.removeItem(`timer_state_${username}_${this.constructor.name}`);
+        }
         
         // Get current scenario
         const currentScenario = this.getCurrentScenario();
@@ -136,6 +266,9 @@ export class BaseQuiz {
             return;
         }
 
+        // Set the current question ID
+        this.currentQuestionId = currentScenario.id;
+
         // Record start time for this question
         this.questionStartTime = Date.now();
 
@@ -165,6 +298,12 @@ export class BaseQuiz {
         // Clear the timer when an option is selected
         if (this.questionTimer) {
             clearInterval(this.questionTimer);
+        }
+
+        // Clear any saved timer state
+        const username = localStorage.getItem('username');
+        if (username) {
+            localStorage.removeItem(`timer_state_${username}_${this.constructor.name}`);
         }
 
         const currentScenario = this.getCurrentScenario();
@@ -237,6 +376,12 @@ export class BaseQuiz {
     }
 
     nextQuestion() {
+        // Clear any saved timer state
+        const username = localStorage.getItem('username');
+        if (username) {
+            localStorage.removeItem(`timer_state_${username}_${this.constructor.name}`);
+        }
+
         // Increment current scenario
         this.player.currentScenario++;
 
@@ -296,6 +441,12 @@ export class BaseQuiz {
         // Clear any running timer
         if (this.questionTimer) {
             clearInterval(this.questionTimer);
+        }
+
+        // Clear any saved timer state
+        const username = localStorage.getItem('username');
+        if (username) {
+            localStorage.removeItem(`timer_state_${username}_${this.constructor.name}`);
         }
 
         this.isLoading = true;
