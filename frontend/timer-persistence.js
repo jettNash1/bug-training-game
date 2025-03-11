@@ -28,8 +28,6 @@ function saveQuizTimerState() {
 
 // Add event listeners to all navigation links
 function setupNavigationInterception() {
-    console.log('Setting up navigation interception for timer persistence');
-    
     // Find all links that navigate away from the quiz
     const navigationLinks = document.querySelectorAll('a');
     
@@ -75,27 +73,6 @@ function setupNavigationInterception() {
             saveQuizTimerState();
         }
     });
-    
-    // Set up a MutationObserver to handle dynamically added links
-    const observer = new MutationObserver((mutations) => {
-        mutations.forEach((mutation) => {
-            if (mutation.addedNodes && mutation.addedNodes.length > 0) {
-                // Check for new links in the added nodes
-                mutation.addedNodes.forEach((node) => {
-                    if (node.nodeType === 1) { // ELEMENT_NODE
-                        const newLinks = node.querySelectorAll('a');
-                        if (newLinks.length > 0) {
-                            console.log('New links detected, adding event listeners');
-                            setupNavigationInterception();
-                        }
-                    }
-                });
-            }
-        });
-    });
-    
-    // Start observing the document with the configured parameters
-    observer.observe(document.body, { childList: true, subtree: true });
     
     console.log('Navigation interception set up for timer persistence');
 }
