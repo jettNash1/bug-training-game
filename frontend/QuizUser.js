@@ -371,14 +371,18 @@ export class QuizUser {
                     quizItem.classList.remove('completed', 'completed-perfect', 'completed-partial', 'in-progress');
                     
                     if (questionsAnswered === 15) {
+                        // Always add completed class first for completed quizzes
+                        progressElement.classList.add('completed');
+                        quizItem.classList.add('completed');
+                        
                         if (score === 100 && experience >= 300) {
                             // Perfect score (100% with 300+ XP) - Green background
-                            progressElement.classList.add('completed', 'completed-perfect');
-                            quizItem.classList.add('completed', 'completed-perfect');
+                            progressElement.classList.add('completed-perfect');
+                            quizItem.classList.add('completed-perfect');
                         } else {
                             // Completed but not perfect (less than 100% or less than 300 XP) - Dark yellow background
-                            progressElement.classList.add('completed', 'completed-partial');
-                            quizItem.classList.add('completed', 'completed-partial');
+                            progressElement.classList.add('completed-partial');
+                            quizItem.classList.add('completed-partial');
                         }
                     } else if (questionsAnswered > 0) {
                         // In progress - Light yellow background

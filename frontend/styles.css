@@ -217,11 +217,7 @@ body {
 
 /* Remove old conflicting styles */
 .quiz-item[data-progress="100"]:not(.completed-perfect),
-.quiz-item.completed:not(.completed-perfect) {
-    background: initial;
-    border-color: initial;
-}
-
+.quiz-item.completed:not(.completed-perfect),
 .quiz-item[data-progress="0"],
 .quiz-item[data-progress="100"],
 .quiz-item[data-progress="0"] .quiz-completion,
@@ -233,8 +229,7 @@ body {
 /* Ensure quizzes with progress show their completion badges */
 .quiz-item:not([data-progress="0"]) .quiz-completion,
 .quiz-item.in-progress .quiz-completion,
-.quiz-item.completed .quiz-completion,
-.quiz-item.failed .quiz-completion {
+.quiz-item.completed .quiz-completion {
     display: block !important;
 }
 
