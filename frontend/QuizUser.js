@@ -514,11 +514,11 @@ export class QuizUser {
             
             if (questionsAnswered === 15) {
                 if (score === 100 && experience >= 300) {
-                    // Perfect score - Green with black border
+                    // Perfect score - Light Green with black border
                     console.log(`${quizName} is perfect`);
-                    quizItem.setAttribute('style', 'background-color: #00FF00 !important; border: 2px solid #000000 !important; color: #000000 !important;');
+                    quizItem.setAttribute('style', 'background-color: #90EE90 !important; border: 2px solid #000000 !important; color: #000000 !important;');
                     if (progressElement) {
-                        progressElement.setAttribute('style', 'background-color: #00FF00 !important; color: #000000 !important; display: block !important;');
+                        progressElement.setAttribute('style', 'background-color: #90EE90 !important; color: #000000 !important; display: block !important;');
                         progressElement.textContent = '15/15';
                     }
                 } else {
@@ -533,9 +533,9 @@ export class QuizUser {
             } else if (questionsAnswered > 0) {
                 // In progress - Yellow
                 console.log(`${quizName} is in progress`);
-                quizItem.setAttribute('style', 'background-color: #FFFF00 !important; border: none !important; color: #000000 !important;');
+                quizItem.setAttribute('style', 'background-color: #FFFF99 !important; border: none !important; color: #000000 !important;');
                 if (progressElement) {
-                    progressElement.setAttribute('style', 'background-color: #FFFF00 !important; color: #000000 !important; display: block !important;');
+                    progressElement.setAttribute('style', 'background-color: #FFFF99 !important; color: #000000 !important; display: block !important;');
                     progressElement.textContent = `${questionsAnswered}/15`;
                 }
             } else {

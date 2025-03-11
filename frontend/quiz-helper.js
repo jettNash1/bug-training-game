@@ -544,14 +544,14 @@ export class BaseQuiz {
                             
                             if (this.player.questionHistory.length === 15) {
                                 if (this.player.score === 100 && this.player.experience >= 300) {
-                                    // Perfect score - Green with black border
+                                    // Perfect score - Light Green with black border
                                     console.log(`Perfect score in quiz-helper: score=${this.player.score}, experience=${this.player.experience}`);
                                     
                                     // Apply styles directly with setAttribute
-                                    quizItem.setAttribute('style', 'background-color: #00FF00 !important; border: 2px solid #000000 !important; color: #000000 !important;');
+                                    quizItem.setAttribute('style', 'background-color: #90EE90 !important; border: 2px solid #000000 !important; color: #000000 !important;');
                                     
                                     if (progressElement) {
-                                        progressElement.setAttribute('style', 'background-color: #00FF00 !important; color: #000000 !important; display: block !important;');
+                                        progressElement.setAttribute('style', 'background-color: #90EE90 !important; color: #000000 !important; display: block !important;');
                                         progressElement.textContent = '15/15';
                                     }
                                 } else {
@@ -571,10 +571,10 @@ export class BaseQuiz {
                                 console.log(`In progress in quiz-helper: questions=${this.player.questionHistory.length}`);
                                 
                                 // Apply styles directly with setAttribute
-                                quizItem.setAttribute('style', 'background-color: #FFFF00 !important; border: none !important; color: #000000 !important;');
+                                quizItem.setAttribute('style', 'background-color: #FFFF99 !important; border: none !important; color: #000000 !important;');
                                 
                                 if (progressElement) {
-                                    progressElement.setAttribute('style', 'background-color: #FFFF00 !important; color: #000000 !important; display: block !important;');
+                                    progressElement.setAttribute('style', 'background-color: #FFFF99 !important; color: #000000 !important; display: block !important;');
                                     progressElement.textContent = `${this.player.questionHistory.length}/15`;
                                 }
                             } else {
