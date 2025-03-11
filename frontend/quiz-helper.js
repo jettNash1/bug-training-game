@@ -543,6 +543,10 @@ export class BaseQuiz {
                             const progressElement = document.getElementById(`${this.quizName}-progress`);
                             
                             if (this.player.questionHistory.length === 15) {
+                                // Debug: Check if this should be a perfect score
+                                const isPerfect = this.player.score === 100 && this.player.experience >= 300;
+                                console.log(`${this.quizName} isPerfect=${isPerfect}, conditions: score=${this.player.score}===100, experience=${this.player.experience}>=300`);
+                                
                                 if (this.player.score === 100 && this.player.experience >= 300) {
                                     // Perfect score - Light Green with black border
                                     console.log(`Perfect score in quiz-helper: score=${this.player.score}, experience=${this.player.experience}`);

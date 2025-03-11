@@ -205,22 +205,30 @@ class IndexPage {
 
     updateQuizProgress() {
         if (!this.quizScores) return;
-
+        
+        console.log("All quiz scores:", JSON.stringify(this.quizScores, null, 2));
+        
         this.quizItems.forEach(item => {
             const quizId = item.dataset.quiz;
+            if (!quizId) return;
+            
             const progressElement = document.getElementById(`${quizId}-progress`);
             if (!progressElement) return;
-
+            
             const quizScore = this.quizScores.find(score => score.quizName === quizId);
-            if (!quizScore) return;
-
-            // First remove all existing state classes
-            item.classList.remove('failed', 'completed', 'in-progress', 'not-started');
-            progressElement.classList.remove('failed', 'completed', 'in-progress', 'not-started');
-
-            // Set the progress data attribute
-            item.setAttribute('data-progress', quizScore.score);
-
+            if (!quizScore) {
+                // No score data - white background
+                item.setAttribute('style', 'background-color: #FFFFFF !important; border: none !important;');
+                progressElement.setAttribute('style', 'display: none !important;');
+                return;
+            }
+            
+            console.log(`Quiz ${quizId}: status=${quizScore.status}, questions=${quizScore.questionsAnswered}, score=${quizScore.score}, exp=${quizScore.experience}`);
+            
+            // Debug: Check if this should be a perfect score
+            const isPerfect = quizScore.questionsAnswered === 15 && quizScore.score === 100 && quizScore.experience >= 300;
+            console.log(`${quizId} isPerfect=${isPerfect}, conditions: questionsAnswered=${quizScore.questionsAnswered}===15, score=${quizScore.score}===100, experience=${quizScore.experience}>=300`);
+            
             // Handle the four different states
             if (quizScore.locked) {
                 // Locked state - gray background with striped pattern
