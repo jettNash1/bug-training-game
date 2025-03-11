@@ -664,6 +664,10 @@ export class SanitySmokeQuiz extends BaseQuiz {
                 return;
             }
 
+            // Check for saved timer state
+            const hasSavedTimerState = this.checkForSavedTimerState();
+            console.log('Has saved timer state on game start:', hasSavedTimerState);
+
             // Initialize event listeners
             this.initializeEventListeners();
 
@@ -784,6 +788,22 @@ export class SanitySmokeQuiz extends BaseQuiz {
         
         // Set the current question ID for timer persistence
         this.currentQuestionId = scenario.id || `question_${this.currentQuestionNumber}`;
+        console.log('Set current question ID:', this.currentQuestionId);
+        
+        // Check for saved timer state for this specific question
+        const username = localStorage.getItem('username');
+        if (username) {
+            const timerStateKey = `timer_state_${username}_${this.quizName}`;
+            const savedState = localStorage.getItem(timerStateKey);
+            if (savedState) {
+                try {
+                    const timerState = JSON.parse(savedState);
+                    console.log('Found saved timer state for question:', timerState);
+                } catch (error) {
+                    console.error('Failed to parse saved timer state:', error);
+                }
+            }
+        }
         
         // Show level transition message at the start of each level or when level changes
         const currentLevel = this.getCurrentLevel();

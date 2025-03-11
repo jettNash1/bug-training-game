@@ -49,12 +49,41 @@ export class BaseQuiz {
         document.getElementById('finish-button')?.addEventListener('click', () => this.finishQuiz());
     }
 
+    // This method should be called when the quiz starts
+    checkForSavedTimerState() {
+        const username = localStorage.getItem('username');
+        if (!username) return false;
+
+        const quizIdentifier = this.quizName || this.constructor.name;
+        const timerStateKey = `timer_state_${username}_${quizIdentifier}`;
+        const savedState = localStorage.getItem(timerStateKey);
+        
+        if (savedState) {
+            try {
+                const timerState = JSON.parse(savedState);
+                console.log('Found saved timer state on quiz start:', timerState);
+                return true;
+            } catch (error) {
+                console.error('Failed to parse saved timer state:', error);
+                return false;
+            }
+        }
+        
+        return false;
+    }
+
+    // This method should be called when the quiz starts
     startGame() {
         this.player.name = localStorage.getItem('username');
         if (!this.player.name) {
             window.location.href = '/login.html';
             return;
         }
+        
+        // Check for saved timer state
+        const hasSavedTimerState = this.checkForSavedTimerState();
+        console.log('Has saved timer state:', hasSavedTimerState);
+        
         this.showQuestion();
     }
 
@@ -85,8 +114,9 @@ export class BaseQuiz {
                             const timerState = JSON.parse(savedState);
                             // Use the exact saved time
                             this.remainingTime = timerState.remainingTime;
-                            // Clear the saved state
-                            localStorage.removeItem(timerStateKey);
+                            console.log('Restored timer with remaining time:', this.remainingTime);
+                            
+                            // Don't remove the saved state yet - it will be needed if the page is reloaded
                         } catch (error) {
                             console.error('Failed to restore timer state:', error);
                         }
@@ -166,10 +196,7 @@ export class BaseQuiz {
 
             const timerStateKey = `timer_state_${username}_${this.quizName || this.constructor.name}`;
             
-            // Remove any existing timer state before saving
-            localStorage.removeItem(timerStateKey);
-            
-            // Save the new timer state
+            // Save the timer state
             localStorage.setItem(timerStateKey, JSON.stringify(timerState));
             console.log('Timer state saved at', new Date(timestamp).toISOString(), ':', timerState);
         }
@@ -222,10 +249,16 @@ export class BaseQuiz {
                         // If time ran out while away, handle time up
                         this.handleTimeUp();
                     }
+                    
+                    // Only remove the saved state if we're sure we've successfully restored it
+                    // and we're in the correct question context
+                    if (currentId && currentId === timerState.questionId) {
+                        localStorage.removeItem(timerStateKey);
+                        console.log('Removed saved timer state after successful restoration');
+                    } else {
+                        console.log('Keeping saved timer state for potential page reload');
+                    }
                 }
-                
-                // Clear the saved state
-                localStorage.removeItem(timerStateKey);
             } catch (error) {
                 console.error('Failed to restore timer state:', error);
             }
@@ -271,8 +304,14 @@ export class BaseQuiz {
                         isRestoringState = true;
                         console.log('Initializing timer with exact saved time:', this.remainingTime);
                         
-                        // Clear the saved state
-                        localStorage.removeItem(timerStateKey);
+                        // Only remove the saved state if we're sure we've successfully restored it
+                        // and we're in the correct question context
+                        if (this.currentQuestionId && this.currentQuestionId === timerState.questionId) {
+                            localStorage.removeItem(timerStateKey);
+                            console.log('Removed saved timer state after successful restoration');
+                        } else {
+                            console.log('Keeping saved timer state for potential page reload');
+                        }
                     } else {
                         // Different quiz, reset timer
                         this.remainingTime = this.timePerQuestion;

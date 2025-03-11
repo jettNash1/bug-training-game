@@ -22,13 +22,6 @@
         
         // Initialize the quiz and make it globally accessible
         document.addEventListener('DOMContentLoaded', () => {
-            // Clear any existing timer states to prevent conflicts
-            const username = localStorage.getItem('username');
-            if (username) {
-                const timerStateKey = `timer_state_${username}_sanity-smoke-quiz`;
-                localStorage.removeItem(timerStateKey);
-            }
-            
             // Initialize the quiz
             const quiz = new SanitySmokeQuiz();
             window.activeQuiz = quiz;
