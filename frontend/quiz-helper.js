@@ -17,11 +17,6 @@ export class BaseQuiz {
         
         // Add event listeners for page visibility and beforeunload
         this.setupVisibilityListeners();
-        
-        // Add event listeners to back links after a short delay to ensure DOM is fully loaded
-        setTimeout(() => {
-            this.setupBackLinkListeners();
-        }, 500);
     }
 
     showError(message) {
@@ -74,46 +69,19 @@ export class BaseQuiz {
         });
     }
 
-    setupBackLinkListeners() {
-        // Find all back links
-        const backLinks = document.querySelectorAll('a.back-link, a[href="../index.html"]');
-        
-        // Add click event listener to each back link
-        backLinks.forEach(link => {
-            // Remove any existing event listeners
-            const newLink = link.cloneNode(true);
-            link.parentNode.replaceChild(newLink, link);
-            
-            // Add new event listener
-            newLink.addEventListener('click', (e) => {
-                // Save the timer state before navigating away
-                this.saveQuizState();
-                console.log('Back link clicked, quiz state saved');
-            });
-        });
-    }
-
     saveTimerState() {
         // Only save if we're in an active question with a timer running
-        if (this.questionTimer) {
+        if (this.questionTimer && this.currentQuestionId) {
             const username = localStorage.getItem('username');
             if (!username) return;
 
-            // Use the current question number as the ID if currentQuestionId is not set
-            const questionId = this.currentQuestionId || 
-                               (this.currentQuestionNumber ? `question_${this.currentQuestionNumber}` : null);
-            
-            if (!questionId) return;
-
             const timerState = {
-                questionId: questionId,
+                questionId: this.currentQuestionId,
                 remainingTime: this.remainingTime,
-                timestamp: Date.now(),
-                quizName: this.quizName || this.constructor.name
+                timestamp: Date.now()
             };
 
-            localStorage.setItem(`timer_state_${username}_${this.quizName || this.constructor.name}`, JSON.stringify(timerState));
-            console.log('Timer state saved:', timerState);
+            localStorage.setItem(`timer_state_${username}_${this.constructor.name}`, JSON.stringify(timerState));
         }
     }
 
@@ -122,27 +90,20 @@ export class BaseQuiz {
         const username = localStorage.getItem('username');
         if (!username) return;
 
-        const quizIdentifier = this.quizName || this.constructor.name;
-        const timerStateKey = `timer_state_${username}_${quizIdentifier}`;
+        const timerStateKey = `timer_state_${username}_${this.constructor.name}`;
         const savedState = localStorage.getItem(timerStateKey);
         
         if (savedState) {
             try {
                 const timerState = JSON.parse(savedState);
-                console.log('Attempting to restore timer state:', timerState);
                 
-                // Get the current question ID or number for comparison
-                const currentId = this.currentQuestionId || 
-                                 (this.currentQuestionNumber ? `question_${this.currentQuestionNumber}` : null);
-                
-                // Only restore if it's for the current quiz
-                if (timerState.quizName === quizIdentifier) {
+                // Only restore if it's for the current question
+                if (timerState.questionId === this.currentQuestionId) {
                     // Calculate how much time has passed since the state was saved
                     const elapsedSinceExit = Date.now() - timerState.timestamp;
                     
                     // Subtract elapsed time from the remaining time (don't go below 0)
                     this.remainingTime = Math.max(0, timerState.remainingTime - elapsedSinceExit);
-                    console.log('Timer restored with remaining time:', this.remainingTime);
                     
                     // Update the timer display
                     this.updateTimerDisplay();
@@ -178,8 +139,6 @@ export class BaseQuiz {
     }
 
     initializeTimer() {
-        console.log('Initializing timer for quiz:', this.quizName || this.constructor.name);
-        
         // Create timer UI if it doesn't exist
         let timerContainer = document.getElementById('timer-container');
         if (!timerContainer) {
@@ -190,36 +149,29 @@ export class BaseQuiz {
             this.gameScreen.insertBefore(timerContainer, this.gameScreen.firstChild);
         }
 
-        // Check if there's a saved timer state for this quiz
+        // Check if there's a saved timer state for this question
         const username = localStorage.getItem('username');
         if (username) {
-            const quizIdentifier = this.quizName || this.constructor.name;
-            const timerStateKey = `timer_state_${username}_${quizIdentifier}`;
+            const timerStateKey = `timer_state_${username}_${this.constructor.name}`;
             const savedState = localStorage.getItem(timerStateKey);
-            
-            console.log('Current question ID:', this.currentQuestionId);
-            console.log('Looking for saved timer state with key:', timerStateKey);
             
             if (savedState) {
                 try {
                     const timerState = JSON.parse(savedState);
-                    console.log('Found saved timer state:', timerState);
                     
-                    // Only restore if it's for the current quiz
-                    if (timerState.quizName === quizIdentifier) {
+                    // Only restore if it's for the current question
+                    if (timerState.questionId === this.currentQuestionId) {
                         // Calculate how much time has passed since the state was saved
                         const elapsedSinceExit = Date.now() - timerState.timestamp;
                         
                         // Subtract elapsed time from the remaining time (don't go below 0)
                         this.remainingTime = Math.max(0, timerState.remainingTime - elapsedSinceExit);
-                        console.log('Initializing timer with remaining time:', this.remainingTime);
                         
                         // Clear the saved state
                         localStorage.removeItem(timerStateKey);
                     } else {
-                        // Different quiz, reset timer
+                        // Different question, reset timer
                         this.remainingTime = this.timePerQuestion;
-                        console.log('Different quiz, resetting timer');
                     }
                 } catch (error) {
                     console.error('Failed to restore timer state:', error);
@@ -228,12 +180,10 @@ export class BaseQuiz {
             } else {
                 // No saved state, reset timer
                 this.remainingTime = this.timePerQuestion;
-                console.log('No saved timer state found, resetting timer');
             }
         } else {
             // No user, reset timer
             this.remainingTime = this.timePerQuestion;
-            console.log('No user found, resetting timer');
         }
 
         this.updateTimerDisplay();
@@ -273,8 +223,7 @@ export class BaseQuiz {
         // Clear any saved timer state
         const username = localStorage.getItem('username');
         if (username) {
-            const quizIdentifier = this.quizName || this.constructor.name;
-            localStorage.removeItem(`timer_state_${username}_${quizIdentifier}`);
+            localStorage.removeItem(`timer_state_${username}_${this.constructor.name}`);
         }
         
         // Get current scenario
@@ -354,8 +303,7 @@ export class BaseQuiz {
         // Clear any saved timer state
         const username = localStorage.getItem('username');
         if (username) {
-            const quizIdentifier = this.quizName || this.constructor.name;
-            localStorage.removeItem(`timer_state_${username}_${quizIdentifier}`);
+            localStorage.removeItem(`timer_state_${username}_${this.constructor.name}`);
         }
 
         const currentScenario = this.getCurrentScenario();
@@ -431,8 +379,7 @@ export class BaseQuiz {
         // Clear any saved timer state
         const username = localStorage.getItem('username');
         if (username) {
-            const quizIdentifier = this.quizName || this.constructor.name;
-            localStorage.removeItem(`timer_state_${username}_${quizIdentifier}`);
+            localStorage.removeItem(`timer_state_${username}_${this.constructor.name}`);
         }
 
         // Increment current scenario
@@ -499,8 +446,7 @@ export class BaseQuiz {
         // Clear any saved timer state
         const username = localStorage.getItem('username');
         if (username) {
-            const quizIdentifier = this.quizName || this.constructor.name;
-            localStorage.removeItem(`timer_state_${username}_${quizIdentifier}`);
+            localStorage.removeItem(`timer_state_${username}_${this.constructor.name}`);
         }
 
         this.isLoading = true;
@@ -791,15 +737,6 @@ export class BaseQuiz {
             if (submitButton) {
                 submitButton.disabled = false;
             }
-        }
-    }
-
-    // This method should be called when the user is about to leave the quiz
-    saveQuizState() {
-        // Save the timer state if a question is active
-        if (this.questionTimer) {
-            this.saveTimerState();
-            console.log('Quiz state saved before navigation');
         }
     }
 } 
