@@ -233,7 +233,7 @@ class IndexPage {
                 item.classList.add('failed');
                 progressElement.classList.add('failed');
                 progressElement.textContent = `${quizScore.questionsAnswered}/15`;
-                progressElement.style.display = 'block'; // Ensure it's visible
+                progressElement.style.removeProperty('display'); // Remove the display property
                 item.style.pointerEvents = 'none';
                 item.setAttribute('aria-disabled', 'true');
             } else if (quizScore.status === 'completed' && quizScore.questionsAnswered === 15) {
@@ -241,13 +241,13 @@ class IndexPage {
                 item.classList.add('completed');
                 progressElement.classList.add('completed');
                 progressElement.textContent = '15/15';
-                progressElement.style.display = 'block'; // Ensure it's visible
+                progressElement.style.removeProperty('display'); // Remove the display property
             } else if (quizScore.questionsAnswered > 0) {
                 // In progress - pale yellow background
                 item.classList.add('in-progress');
                 progressElement.classList.add('in-progress');
                 progressElement.textContent = `${quizScore.questionsAnswered}/15`;
-                progressElement.style.display = 'block'; // Ensure it's visible
+                progressElement.style.removeProperty('display'); // Remove the display property
             }
         });
     }

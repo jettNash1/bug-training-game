@@ -175,7 +175,7 @@ body {
 .quiz-completion.completed,
 .quiz-completion.failed,
 .quiz-completion.in-progress {
-    display: block;
+    display: block !important;
     color: black;
     border: 1px solid black;
     padding: 0.5rem 1rem;
@@ -216,7 +216,14 @@ body {
     /* Reset these styles as we're using classes instead */
     background: initial;
     border-color: initial;
-    display: initial;
+}
+
+/* Ensure quizzes with progress show their completion badges */
+.quiz-item:not([data-progress="0"]) .quiz-completion,
+.quiz-item.in-progress .quiz-completion,
+.quiz-item.completed .quiz-completion,
+.quiz-item.failed .quiz-completion {
+    display: block !important;
 }
 
 .category-progress {
