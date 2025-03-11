@@ -544,12 +544,12 @@ export class BaseQuiz {
                             
                             if (this.player.questionHistory.length === 15) {
                                 // Debug: Check if this should be a perfect score
-                                const isPerfect = this.player.score === 100 && this.player.experience >= 300;
-                                console.log(`${this.quizName} isPerfect=${isPerfect}, conditions: score=${this.player.score}===100, experience=${this.player.experience}>=300`);
+                                const isPerfect = this.player.experience >= 300;
+                                console.log(`${this.quizName} isPerfect=${isPerfect}, conditions: experience=${this.player.experience}>=300`);
                                 
-                                if (this.player.score === 100 && this.player.experience >= 300) {
-                                    // Perfect score - Light Green with black border
-                                    console.log(`Perfect score in quiz-helper: score=${this.player.score}, experience=${this.player.experience}`);
+                                if (this.player.experience >= 300) {
+                                    // Perfect score - Light Green with black border (only need 300+ XP)
+                                    console.log(`Perfect score in quiz-helper: experience=${this.player.experience}`);
                                     
                                     // Apply styles directly with setAttribute
                                     quizItem.setAttribute('style', 'background-color: #90EE90 !important; border: 2px solid #000000 !important; color: #000000 !important;');
@@ -560,7 +560,7 @@ export class BaseQuiz {
                                     }
                                 } else {
                                     // Not perfect - Dark Yellow with no border
-                                    console.log(`Not perfect score in quiz-helper: score=${this.player.score}, experience=${this.player.experience}`);
+                                    console.log(`Not perfect score in quiz-helper: experience=${this.player.experience}`);
                                     
                                     // Apply styles directly with setAttribute
                                     quizItem.setAttribute('style', 'background-color: #DAA520 !important; border: none !important; color: #000000 !important;');

@@ -234,8 +234,8 @@ class IndexPage {
                 // Locked state - gray background with striped pattern
                 item.classList.add('locked-quiz');
                 progressElement.setAttribute('style', 'display: none !important;');
-            } else if (quizScore.status === 'failed') {
-                // Failed state - Red background
+            } else if (quizScore.status === 'failed' && quizScore.questionsAnswered < 15) {
+                // Failed state - Red background (only if not completed all questions)
                 console.log(`Failed quiz: ${quizId}`);
                 
                 // Apply styles directly with setAttribute
@@ -244,11 +244,11 @@ class IndexPage {
                 
                 progressElement.setAttribute('style', 'background-color: #FF6666 !important; color: #000000 !important; display: block !important;');
                 progressElement.textContent = `${quizScore.questionsAnswered}/15`;
-            } else if (quizScore.status === 'completed' && quizScore.questionsAnswered === 15) {
-                // Completed state
-                if (quizScore.score === 100 && quizScore.experience >= 300) {
-                    // Perfect score - Light Green background
-                    console.log(`Perfect score in index.js: score=${quizScore.score}, experience=${quizScore.experience}`);
+            } else if (quizScore.questionsAnswered === 15) {
+                // Completed all questions
+                if (quizScore.experience >= 300) {
+                    // Perfect score - Light Green background (only need 300+ XP)
+                    console.log(`Perfect score in index.js: experience=${quizScore.experience} >= 300`);
                     
                     // Apply styles directly with setAttribute
                     item.setAttribute('style', 'background-color: #90EE90 !important; border: 2px solid #000000 !important; color: #000000 !important;');
@@ -256,7 +256,7 @@ class IndexPage {
                     progressElement.setAttribute('style', 'background-color: #90EE90 !important; color: #000000 !important; display: block !important;');
                 } else {
                     // Not perfect - Dark Yellow background
-                    console.log(`Not perfect score in index.js: score=${quizScore.score}, experience=${quizScore.experience}`);
+                    console.log(`Not perfect score in index.js: experience=${quizScore.experience} < 300`);
                     
                     // Apply styles directly with setAttribute
                     item.setAttribute('style', 'background-color: #DAA520 !important; border: none !important; color: #000000 !important;');
