@@ -350,85 +350,8 @@ export class QuizUser {
                 'content-copy'
             ]);
 
-            // Update individual quiz progress indicators
-            document.querySelectorAll('.quiz-item').forEach(quizItem => {
-                const quizName = quizItem.dataset.quiz;
-                if (!quizName) return;
-
-                const progressElement = document.getElementById(`${quizName}-progress`);
-                if (!progressElement) return;
-
-                const result = this.quizResults.find(r => r.quizName === quizName);
-                
-                if (result) {
-                    const questionsAnswered = result.questionsAnswered || 0;
-                    const experience = result.experience || 0;
-                    const score = result.score || 0;
-                    progressElement.textContent = `${questionsAnswered}/15`;
-                    
-                    // Remove any existing classes first
-                    progressElement.classList.remove('hidden', 'completed', 'completed-perfect', 'completed-partial', 'in-progress');
-                    quizItem.classList.remove('completed', 'completed-perfect', 'completed-partial', 'in-progress');
-                    
-                    if (questionsAnswered === 15) {
-                        // Completed quiz
-                        if (score === 100 && experience >= 300) {
-                            // Perfect score (100% with 300+ XP) - Green background with black border
-                            console.log(`Perfect score for ${quizName}: score=${score}, experience=${experience}`);
-                            
-                            // Apply inline styles directly
-                            quizItem.style.backgroundColor = '#00FF00'; // Bright Green
-                            quizItem.style.border = '2px solid #000000'; // Black border
-                            quizItem.style.color = '#000000';
-                            
-                            progressElement.style.backgroundColor = '#00FF00'; // Bright Green
-                            progressElement.style.color = '#000000';
-                            progressElement.textContent = '15/15';
-                            progressElement.style.display = 'block';
-                        } else {
-                            // Completed but not perfect (less than 100% or less than 300 XP) - Dark yellow background
-                            console.log(`Not perfect score for ${quizName}: score=${score}, experience=${experience}`);
-                            
-                            // Apply inline styles directly
-                            quizItem.style.backgroundColor = '#DAA520'; // Dark Yellow/Goldenrod
-                            quizItem.style.border = 'none';
-                            quizItem.style.color = '#000000';
-                            
-                            progressElement.style.backgroundColor = '#DAA520'; // Dark Yellow/Goldenrod
-                            progressElement.style.color = '#000000';
-                            progressElement.textContent = '15/15';
-                            progressElement.style.display = 'block';
-                        }
-                    } else if (questionsAnswered > 0 && questionsAnswered < 15) {
-                        // In progress - Yellow background
-                        console.log(`In progress for ${quizName}: questionsAnswered=${questionsAnswered}`);
-                        
-                        // Apply inline styles directly
-                        quizItem.style.backgroundColor = '#FFFF00'; // Bright Yellow
-                        quizItem.style.border = 'none';
-                        quizItem.style.color = '#000000';
-                        
-                        progressElement.style.backgroundColor = '#FFFF00'; // Bright Yellow
-                        progressElement.style.color = '#000000';
-                        progressElement.textContent = `${questionsAnswered}/15`;
-                        progressElement.style.display = 'block';
-                    } else {
-                        // Not started - White background (default state)
-                        console.log(`Not started for ${quizName}: questionsAnswered=${questionsAnswered}`);
-                        
-                        // Apply inline styles directly
-                        quizItem.style.backgroundColor = '#FFFFFF'; // White
-                        quizItem.style.border = 'none';
-                        
-                        progressElement.textContent = '';
-                        progressElement.style.display = 'none';
-                    }
-                } else {
-                    // Not started - White background (default state)
-                    progressElement.textContent = '';
-                    progressElement.style.display = 'none';
-                }
-            });
+            // Call our new function to apply styles directly
+            this.applyQuizStyles();
 
         } catch (error) {
             console.error('Failed to load user progress:', error);
@@ -560,6 +483,71 @@ export class QuizUser {
             console.error('Failed to finish quiz:', error);
             throw error;
         }
+    }
+
+    // Add this new function to directly modify the HTML
+    applyQuizStyles() {
+        console.log("Applying quiz styles directly to HTML");
+        
+        document.querySelectorAll('.quiz-item').forEach(quizItem => {
+            const quizName = quizItem.dataset.quiz;
+            if (!quizName) return;
+            
+            const result = this.quizResults.find(r => r.quizName === quizName);
+            const progressElement = document.getElementById(`${quizName}-progress`);
+            
+            if (!result) {
+                // Not started - White
+                quizItem.setAttribute('style', 'background-color: #FFFFFF !important; border: none !important;');
+                if (progressElement) {
+                    progressElement.setAttribute('style', 'display: none !important;');
+                    progressElement.textContent = '';
+                }
+                return;
+            }
+            
+            const questionsAnswered = result.questionsAnswered || 0;
+            const experience = result.experience || 0;
+            const score = result.score || 0;
+            
+            console.log(`Quiz ${quizName}: questions=${questionsAnswered}, score=${score}, exp=${experience}`);
+            
+            if (questionsAnswered === 15) {
+                if (score === 100 && experience >= 300) {
+                    // Perfect score - Green with black border
+                    console.log(`${quizName} is perfect`);
+                    quizItem.setAttribute('style', 'background-color: #00FF00 !important; border: 2px solid #000000 !important; color: #000000 !important;');
+                    if (progressElement) {
+                        progressElement.setAttribute('style', 'background-color: #00FF00 !important; color: #000000 !important; display: block !important;');
+                        progressElement.textContent = '15/15';
+                    }
+                } else {
+                    // Not perfect - Dark Yellow
+                    console.log(`${quizName} is completed but not perfect`);
+                    quizItem.setAttribute('style', 'background-color: #DAA520 !important; border: none !important; color: #000000 !important;');
+                    if (progressElement) {
+                        progressElement.setAttribute('style', 'background-color: #DAA520 !important; color: #000000 !important; display: block !important;');
+                        progressElement.textContent = '15/15';
+                    }
+                }
+            } else if (questionsAnswered > 0) {
+                // In progress - Yellow
+                console.log(`${quizName} is in progress`);
+                quizItem.setAttribute('style', 'background-color: #FFFF00 !important; border: none !important; color: #000000 !important;');
+                if (progressElement) {
+                    progressElement.setAttribute('style', 'background-color: #FFFF00 !important; color: #000000 !important; display: block !important;');
+                    progressElement.textContent = `${questionsAnswered}/15`;
+                }
+            } else {
+                // Not started - White
+                console.log(`${quizName} is not started`);
+                quizItem.setAttribute('style', 'background-color: #FFFFFF !important; border: none !important;');
+                if (progressElement) {
+                    progressElement.setAttribute('style', 'display: none !important;');
+                    progressElement.textContent = '';
+                }
+            }
+        });
     }
 }
 

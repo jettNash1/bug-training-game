@@ -540,68 +540,53 @@ export class BaseQuiz {
                             // Remove any existing classes
                             quizItem.classList.remove('completed', 'completed-perfect', 'completed-partial', 'in-progress');
                             
+                            const progressElement = document.getElementById(`${this.quizName}-progress`);
+                            
                             if (this.player.questionHistory.length === 15) {
                                 if (this.player.score === 100 && this.player.experience >= 300) {
                                     // Perfect score - Green with black border
                                     console.log(`Perfect score in quiz-helper: score=${this.player.score}, experience=${this.player.experience}`);
                                     
-                                    // Apply inline styles directly
-                                    quizItem.style.backgroundColor = '#00FF00'; // Bright Green
-                                    quizItem.style.border = '2px solid #000000'; // Black border
-                                    quizItem.style.color = '#000000';
+                                    // Apply styles directly with setAttribute
+                                    quizItem.setAttribute('style', 'background-color: #00FF00 !important; border: 2px solid #000000 !important; color: #000000 !important;');
                                     
-                                    const progressElement = document.getElementById(`${this.quizName}-progress`);
                                     if (progressElement) {
-                                        progressElement.style.backgroundColor = '#00FF00'; // Bright Green
-                                        progressElement.style.color = '#000000';
+                                        progressElement.setAttribute('style', 'background-color: #00FF00 !important; color: #000000 !important; display: block !important;');
                                         progressElement.textContent = '15/15';
-                                        progressElement.style.display = 'block';
                                     }
                                 } else {
                                     // Not perfect - Dark Yellow with no border
                                     console.log(`Not perfect score in quiz-helper: score=${this.player.score}, experience=${this.player.experience}`);
                                     
-                                    // Apply inline styles directly
-                                    quizItem.style.backgroundColor = '#DAA520'; // Dark Yellow/Goldenrod
-                                    quizItem.style.border = 'none';
-                                    quizItem.style.color = '#000000';
+                                    // Apply styles directly with setAttribute
+                                    quizItem.setAttribute('style', 'background-color: #DAA520 !important; border: none !important; color: #000000 !important;');
                                     
-                                    const progressElement = document.getElementById(`${this.quizName}-progress`);
                                     if (progressElement) {
-                                        progressElement.style.backgroundColor = '#DAA520'; // Dark Yellow/Goldenrod
-                                        progressElement.style.color = '#000000';
+                                        progressElement.setAttribute('style', 'background-color: #DAA520 !important; color: #000000 !important; display: block !important;');
                                         progressElement.textContent = '15/15';
-                                        progressElement.style.display = 'block';
                                     }
                                 }
                             } else if (this.player.questionHistory.length > 0) {
                                 // In progress - Yellow with no border
                                 console.log(`In progress in quiz-helper: questions=${this.player.questionHistory.length}`);
                                 
-                                // Apply inline styles directly
-                                quizItem.style.backgroundColor = '#FFFF00'; // Bright Yellow
-                                quizItem.style.border = 'none';
-                                quizItem.style.color = '#000000';
+                                // Apply styles directly with setAttribute
+                                quizItem.setAttribute('style', 'background-color: #FFFF00 !important; border: none !important; color: #000000 !important;');
                                 
-                                const progressElement = document.getElementById(`${this.quizName}-progress`);
                                 if (progressElement) {
-                                    progressElement.style.backgroundColor = '#FFFF00'; // Bright Yellow
-                                    progressElement.style.color = '#000000';
+                                    progressElement.setAttribute('style', 'background-color: #FFFF00 !important; color: #000000 !important; display: block !important;');
                                     progressElement.textContent = `${this.player.questionHistory.length}/15`;
-                                    progressElement.style.display = 'block';
                                 }
                             } else {
                                 // Not started - White with no border (default)
                                 console.log(`Not started in quiz-helper: questions=${this.player.questionHistory.length}`);
                                 
-                                // Apply inline styles directly
-                                quizItem.style.backgroundColor = '#FFFFFF'; // White
-                                quizItem.style.border = 'none';
+                                // Apply styles directly with setAttribute
+                                quizItem.setAttribute('style', 'background-color: #FFFFFF !important; border: none !important;');
                                 
-                                const progressElement = document.getElementById(`${this.quizName}-progress`);
                                 if (progressElement) {
+                                    progressElement.setAttribute('style', 'display: none !important;');
                                     progressElement.textContent = '';
-                                    progressElement.style.display = 'none';
                                 }
                             }
                         }
