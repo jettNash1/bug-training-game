@@ -183,6 +183,19 @@ body {
     font-weight: 600;
 }
 
+/* Ensure not-started quiz completion elements are never visible */
+.quiz-completion.not-started,
+.quiz-item.not-started .quiz-completion,
+.quiz-item[data-progress="0"] .quiz-completion {
+    display: none !important;
+}
+
+/* Ensure not-started quiz completion elements remain hidden on hover */
+.quiz-item.not-started:hover .quiz-completion,
+.quiz-item[data-progress="0"]:hover .quiz-completion {
+    display: none !important;
+}
+
 .quiz-completion.completed {
     background: rgba(46, 204, 113, 0.3);
 }

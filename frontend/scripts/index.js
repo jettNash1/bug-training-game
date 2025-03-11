@@ -226,12 +226,14 @@ class IndexPage {
                 // No questions answered - white background
                 item.classList.add('not-started');
                 progressElement.classList.add('not-started');
-                progressElement.textContent = '0/15';
+                progressElement.textContent = ''; // Remove the 0/15 text
+                progressElement.style.display = 'none'; // Hide the progress element completely
             } else if (quizScore.status === 'failed') {
                 // Failed state - red background
                 item.classList.add('failed');
                 progressElement.classList.add('failed');
                 progressElement.textContent = `${quizScore.questionsAnswered}/15`;
+                progressElement.style.display = 'block'; // Ensure it's visible
                 item.style.pointerEvents = 'none';
                 item.setAttribute('aria-disabled', 'true');
             } else if (quizScore.status === 'completed' && quizScore.questionsAnswered === 15) {
@@ -239,11 +241,13 @@ class IndexPage {
                 item.classList.add('completed');
                 progressElement.classList.add('completed');
                 progressElement.textContent = '15/15';
+                progressElement.style.display = 'block'; // Ensure it's visible
             } else if (quizScore.questionsAnswered > 0) {
                 // In progress - pale yellow background
                 item.classList.add('in-progress');
                 progressElement.classList.add('in-progress');
                 progressElement.textContent = `${quizScore.questionsAnswered}/15`;
+                progressElement.style.display = 'block'; // Ensure it's visible
             }
         });
     }
