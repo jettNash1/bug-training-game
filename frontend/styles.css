@@ -196,13 +196,13 @@ body {
 
 /* Quiz states */
 .quiz-item.completed.completed-perfect {
-    background: rgba(46, 204, 113, 0.2) !important;
-    border: 2px solid var(--success-color) !important;
+    background: var(--card-background) !important;
+    border: 1px solid rgba(0, 0, 0, 0.08) !important;
 }
 
 .quiz-item.completed.completed-partial {
-    background: rgba(241, 196, 15, 0.35) !important;
-    border: 2px solid var(--warning-color) !important;
+    background: rgba(231, 76, 60, 0.2) !important;
+    border: 2px solid var(--danger-color) !important;
 }
 
 .quiz-item.failed,
