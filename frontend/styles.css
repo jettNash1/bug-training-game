@@ -151,8 +151,6 @@ body {
     font-weight: 600;
     color: var(--text-primary);
     border: none !important;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-    z-index: 1;
 }
 
 /* Quiz completion badge specific states */
@@ -179,15 +177,15 @@ body {
 
 /* Background colors for different states */
 .quiz-completion.completed-perfect {
-    background: rgba(46, 204, 113, 0.3);
+    background: green; /* Green for perfect score */
 }
 
 .quiz-completion.completed-partial {
-    background: rgba(241, 196, 15, 0.35);
+    background: #b58105; /* Dark Yellow for not perfect score */
 }
 
 .quiz-completion.in-progress {
-    background: rgba(241, 196, 15, 0.15);
+    background: yellow; /* Yellow for in progress */
 }
 
 .quiz-completion.failed {
@@ -195,29 +193,28 @@ body {
 }
 
 /* Quiz states */
-.quiz-item.completed.completed-perfect {
-    background: rgba(46, 204, 113, 0.2) !important;
-    border: 2px solid var(--success-color) !important;
+.quiz-item.completed-perfect {
+    background: green !important; /* Green for perfect score */
+    border: 2px solid black !important; /* Black border for perfect score */
 }
 
-.quiz-item.completed.completed-partial {
-    background: rgba(241, 196, 15, 0.35) !important;
-    border: 2px solid var(--warning-color) !important;
+.quiz-item.completed-partial {
+    background: #b58105 !important; /* Dark Yellow for not perfect score */
+    border: none !important; /* No border for not perfect */
 }
 
 .quiz-item.in-progress {
-    background: rgba(241, 196, 15, 0.15) !important;
-    border: 2px solid var(--warning-color) !important;
+    background: yellow !important; /* Yellow for in progress */
+    border: none !important; /* No border for in progress */
 }
 
-.quiz-item:not(.completed):not(.in-progress) {
-    background: var(--card-background) !important;
-    border: 1px solid rgba(0, 0, 0, 0.08) !important;
+.quiz-item:not(.completed-perfect):not(.completed-partial):not(.in-progress) {
+    background: white !important; /* White for not started */
+    border: none !important; /* No border for not started */
 }
 
 /* Remove old conflicting styles */
 .quiz-item[data-progress="100"]:not(.completed-perfect),
-.quiz-item.completed:not(.completed-perfect),
 .quiz-item[data-progress="0"],
 .quiz-item[data-progress="100"],
 .quiz-item[data-progress="0"] .quiz-completion,
@@ -229,7 +226,8 @@ body {
 /* Ensure quizzes with progress show their completion badges */
 .quiz-item:not([data-progress="0"]) .quiz-completion,
 .quiz-item.in-progress .quiz-completion,
-.quiz-item.completed .quiz-completion {
+.quiz-item.completed-perfect .quiz-completion,
+.quiz-item.completed-partial .quiz-completion {
     display: block !important;
 }
 
@@ -1300,14 +1298,9 @@ select:disabled {
 }
 
 /* Add these completion state styles */
-.quiz-item.completed {
-    background: rgba(46, 204, 113, 0.1);
-    border-color: var(--success-color);
-}
-
 .quiz-item.in-progress {
-    background: rgba(241, 196, 15, 0.1);
-    border-color: var(--warning-color);
+    background: yellow !important; /* Yellow for in progress */
+    border: none !important; /* No border for in progress */
 }
 
 .quiz-completion {
@@ -1322,12 +1315,10 @@ select:disabled {
     border: none !important;
 }
 
-.quiz-completion.completed {
-    background: var(--success-color);
-}
+/* Remove conflicting style */
 
 .quiz-completion.in-progress {
-    background: var(--warning-color);
+    background: yellow; /* Yellow for in progress */
 }
 
 /* Add hover effect for quiz items */

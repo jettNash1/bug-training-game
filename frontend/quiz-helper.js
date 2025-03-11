@@ -539,10 +539,10 @@ export class BaseQuiz {
                         if (quizItem) {
                             quizItem.classList.remove('completed', 'completed-perfect', 'completed-partial', 'in-progress');
                             if (this.player.questionHistory.length === 15) {
-                                if (this.player.experience >= 300) {
-                                    quizItem.classList.add('completed', 'completed-perfect');
+                                if (this.player.score === 100 && this.player.experience >= 300) {
+                                    quizItem.classList.add('completed-perfect');
                                 } else {
-                                    quizItem.classList.add('completed', 'completed-partial');
+                                    quizItem.classList.add('completed-partial');
                                 }
                             } else if (this.player.questionHistory.length > 0) {
                                 quizItem.classList.add('in-progress');

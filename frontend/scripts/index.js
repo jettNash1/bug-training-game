@@ -237,13 +237,20 @@ class IndexPage {
                 item.style.pointerEvents = 'none';
                 item.setAttribute('aria-disabled', 'true');
             } else if (quizScore.status === 'completed' && quizScore.questionsAnswered === 15) {
-                // Completed state - green background
-                item.classList.add('completed');
-                progressElement.classList.add('completed');
+                // Completed state
+                if (quizScore.score === 100 && quizScore.experience >= 300) {
+                    // Perfect score - Green background
+                    item.classList.add('completed-perfect');
+                    progressElement.classList.add('completed-perfect');
+                } else {
+                    // Not perfect - Dark Yellow background
+                    item.classList.add('completed-partial');
+                    progressElement.classList.add('completed-partial');
+                }
                 progressElement.textContent = '15/15';
                 progressElement.style.removeProperty('display'); // Remove the display property
             } else if (quizScore.questionsAnswered > 0) {
-                // In progress - pale yellow background
+                // In progress - Yellow background
                 item.classList.add('in-progress');
                 progressElement.classList.add('in-progress');
                 progressElement.textContent = `${quizScore.questionsAnswered}/15`;
