@@ -46,7 +46,7 @@ export class QuizUser {
             'issue-verification', 'build-verification', 'issue-tracking-tools',
             'raising-tickets', 'reports', 'cms-testing', 'email-testing', 'content-copy',
             'locale-testing', 'script-metrics-troubleshooting','standard-script-testing',
-            'test-types-tricks', 'exploratory'
+            'test-types-tricks', 'exploratory', 'automation-interview', 'sanity-smoke'
         ];
 
         quizTypes.forEach(quizName => {
@@ -351,6 +351,10 @@ export class QuizUser {
                 'email-testing',
                 'non-functional',
                 'content-copy'
+            ]);
+            
+            this.updateCategoryProgress('Automation Training', [
+                'automation-interview'
             ]);
 
             // Call our new function to apply styles directly
