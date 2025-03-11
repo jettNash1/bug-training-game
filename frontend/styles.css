@@ -147,8 +147,8 @@ body {
     padding: 0.25rem 0.75rem;
     border-radius: 12px;
     font-size: 0.8rem;
-    font-weight: 500;
-    color: black;
+    font-weight: 600;
+    color: var(--text-primary);
     border: none !important;
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
     z-index: 1;
@@ -159,6 +159,7 @@ body {
 .quiz-completion.failed,
 .quiz-completion.in-progress {
     display: block !important;
+    color: var(--text-primary);
 }
 
 /* Ensure not-started quiz completion elements are never visible */
@@ -1307,8 +1308,8 @@ select:disabled {
     padding: 0.25rem 0.75rem;
     border-radius: 12px;
     font-size: 0.8rem;
-    font-weight: 500;
-    color: white;
+    font-weight: 600;
+    color: var(--text-primary);
     border: none !important;
 }
 
