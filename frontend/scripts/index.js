@@ -240,10 +240,12 @@ class IndexPage {
                 // Completed state
                 if (quizScore.score === 100 && quizScore.experience >= 300) {
                     // Perfect score - Green background
+                    console.log(`Perfect score in index.js: score=${quizScore.score}, experience=${quizScore.experience}`);
                     item.classList.add('completed-perfect');
                     progressElement.classList.add('completed-perfect');
                 } else {
                     // Not perfect - Dark Yellow background
+                    console.log(`Not perfect score in index.js: score=${quizScore.score}, experience=${quizScore.experience}`);
                     item.classList.add('completed-partial');
                     progressElement.classList.add('completed-partial');
                 }
@@ -251,10 +253,14 @@ class IndexPage {
                 progressElement.style.removeProperty('display'); // Remove the display property
             } else if (quizScore.questionsAnswered > 0) {
                 // In progress - Yellow background
+                console.log(`In progress in index.js: questions=${quizScore.questionsAnswered}`);
                 item.classList.add('in-progress');
                 progressElement.classList.add('in-progress');
                 progressElement.textContent = `${quizScore.questionsAnswered}/15`;
                 progressElement.style.removeProperty('display'); // Remove the display property
+            } else {
+                // Not started - White background (default)
+                console.log(`Not started in index.js: questions=${quizScore.questionsAnswered}`);
             }
         });
     }

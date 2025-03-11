@@ -103,11 +103,9 @@ body {
     align-items: flex-start;
     padding: 1.5rem;
     border-radius: 12px;
-    background: var(--card-background);
     color: var(--text-primary);
     text-decoration: none;
     transition: all 0.2s ease;
-    border: 1px solid rgba(0, 0, 0, 0.08);
     gap: 1.25rem;
     cursor: pointer;
     margin: 0.75rem 0;
@@ -175,41 +173,73 @@ body {
     display: none !important;
 }
 
-/* Background colors for different states */
-.quiz-completion.completed-perfect {
-    background-color: #4CAF50 !important; /* Green */
-}
-
-.quiz-completion.completed-partial {
-    background-color: #b58105 !important; /* Dark Yellow */
-}
-
-.quiz-completion.in-progress {
-    background-color: #FFEB3B !important; /* Yellow */
-}
-
-.quiz-completion.failed {
-    background-color: rgba(231, 76, 60, 0.3) !important;
-}
-
-/* Quiz states */
+/* Quiz states - with exact colors as specified */
 .quiz-item.completed-perfect {
-    background-color: #4CAF50 !important; /* Green */
-    border: 2px solid black !important;
+    background-color: #00FF00 !important; /* Bright Green */
+    border: 2px solid #000000 !important; /* Black border */
+    color: #000000 !important;
 }
 
 .quiz-item.completed-partial {
-    background-color: #b58105 !important; /* Dark Yellow */
+    background-color: #DAA520 !important; /* Dark Yellow/Goldenrod */
+    border: none !important;
+    color: #000000 !important;
+}
+
+.quiz-item.in-progress {
+    background-color: #FFFF00 !important; /* Bright Yellow */
+    border: none !important;
+    color: #000000 !important;
+}
+
+.quiz-item:not(.completed-perfect):not(.completed-partial):not(.in-progress) {
+    background-color: #FFFFFF !important; /* White */
+    border: none !important;
+}
+
+/* Background colors for different states */
+.quiz-completion.completed-perfect {
+    background-color: #00FF00 !important; /* Bright Green */
+    color: #000000 !important;
+}
+
+.quiz-completion.completed-partial {
+    background-color: #DAA520 !important; /* Dark Yellow/Goldenrod */
+    color: #000000 !important;
+}
+
+.quiz-completion.in-progress {
+    background-color: #FFFF00 !important; /* Bright Yellow */
+    color: #000000 !important;
+}
+
+.quiz-completion.failed {
+    background-color: #FF0000 !important; /* Red */
+    color: #FFFFFF !important;
+}
+
+/* Override any other styles that might be interfering */
+.quiz-item[data-progress="100"],
+.quiz-item[data-progress="0"],
+.quiz-item.completed,
+.quiz-item.failed {
+    background-color: initial !important;
+    border-color: initial !important;
+}
+
+/* Ensure our specific classes take precedence */
+.quiz-item.completed-perfect {
+    background-color: #00FF00 !important; /* Bright Green */
+    border: 2px solid #000000 !important; /* Black border */
+}
+
+.quiz-item.completed-partial {
+    background-color: #DAA520 !important; /* Dark Yellow/Goldenrod */
     border: none !important;
 }
 
 .quiz-item.in-progress {
-    background-color: #FFEB3B !important; /* Yellow */
-    border: none !important;
-}
-
-.quiz-item:not(.completed-perfect):not(.completed-partial):not(.in-progress) {
-    background-color: white !important; /* White */
+    background-color: #FFFF00 !important; /* Bright Yellow */
     border: none !important;
 }
 
@@ -1720,4 +1750,20 @@ select:disabled {
     to {
         transform: rotate(360deg);
     }
+}
+
+/* Add specific hover styles for each state */
+.quiz-item.completed-perfect:hover {
+    background-color: #00FF00 !important; /* Keep Bright Green */
+    border: 2px solid #000000 !important; /* Keep Black border */
+}
+
+.quiz-item.completed-partial:hover {
+    background-color: #DAA520 !important; /* Keep Dark Yellow/Goldenrod */
+    border: none !important;
+}
+
+.quiz-item.in-progress:hover {
+    background-color: #FFFF00 !important; /* Keep Bright Yellow */
+    border: none !important;
 }

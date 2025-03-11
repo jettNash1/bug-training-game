@@ -374,22 +374,26 @@ export class QuizUser {
                         // Completed quiz
                         if (score === 100 && experience >= 300) {
                             // Perfect score (100% with 300+ XP) - Green background with black border
+                            console.log(`Perfect score for ${quizName}: score=${score}, experience=${experience}`);
                             progressElement.classList.add('completed-perfect');
                             quizItem.classList.add('completed-perfect');
                             progressElement.textContent = '15/15';
                         } else {
                             // Completed but not perfect (less than 100% or less than 300 XP) - Dark yellow background
+                            console.log(`Not perfect score for ${quizName}: score=${score}, experience=${experience}`);
                             progressElement.classList.add('completed-partial');
                             quizItem.classList.add('completed-partial');
                             progressElement.textContent = '15/15';
                         }
                     } else if (questionsAnswered > 0 && questionsAnswered < 15) {
                         // In progress - Yellow background
+                        console.log(`In progress for ${quizName}: questionsAnswered=${questionsAnswered}`);
                         progressElement.classList.add('in-progress');
                         quizItem.classList.add('in-progress');
                         progressElement.textContent = `${questionsAnswered}/15`;
                     } else {
                         // Not started - White background (default state)
+                        console.log(`Not started for ${quizName}: questionsAnswered=${questionsAnswered}`);
                         progressElement.textContent = '';
                         progressElement.classList.add('hidden');
                     }
