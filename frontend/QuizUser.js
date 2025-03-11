@@ -361,23 +361,32 @@ export class QuizUser {
                 const result = this.quizResults.find(r => r.quizName === quizName);
                 
                 // Remove any existing classes
-                progressElement.classList.remove('hidden', 'completed', 'in-progress');
-                quizItem.classList.remove('completed', 'in-progress');
+                progressElement.classList.remove('hidden', 'completed', 'completed-perfect', 'completed-partial', 'in-progress', 'failed');
+                quizItem.classList.remove('completed', 'completed-perfect', 'completed-partial', 'in-progress', 'failed');
 
                 if (result) {
-                    const score = result.score || 0;
-                    progressElement.textContent = `${score}%`;
+                    const questionsAnswered = result.questionsAnswered || 0;
+                    const experience = result.experience || 0;
+                    progressElement.textContent = `${questionsAnswered}/15`;
                     
-                    if (score === 100) {
-                        progressElement.classList.add('completed');
-                        quizItem.classList.add('completed');
-                    } else {
+                    if (questionsAnswered === 15) {
+                        if (experience >= 300) {
+                            // Perfect score
+                            progressElement.classList.add('completed', 'completed-perfect');
+                            quizItem.classList.add('completed', 'completed-perfect');
+                        } else {
+                            // Completed but not perfect
+                            progressElement.classList.add('completed', 'completed-partial');
+                            quizItem.classList.add('completed', 'completed-partial');
+                        }
+                    } else if (questionsAnswered > 0) {
                         progressElement.classList.add('in-progress');
                         quizItem.classList.add('in-progress');
                     }
                 } else {
                     // Not started
-                    progressElement.textContent = '0%';
+                    progressElement.textContent = '';
+                    progressElement.classList.add('hidden');
                 }
             });
 

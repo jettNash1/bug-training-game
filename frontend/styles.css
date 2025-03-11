@@ -189,8 +189,8 @@ body {
 }
 
 /* Quiz states */
-.quiz-item[data-progress="100"],
-.quiz-item.completed {
+.quiz-item[data-progress="100"].completed-perfect,
+.quiz-item.completed.completed-perfect {
     background: rgba(46, 204, 113, 0.2) !important;
     border: 2px solid var(--success-color) !important;
 }
@@ -204,8 +204,8 @@ body {
 }
 
 /* Updated styles for completed but not perfect score */
-.quiz-item[data-progress="100"]:not(.completed),
-.quiz-item.completed:not([data-progress="100"]) {
+.quiz-item[data-progress="100"]:not(.completed-perfect),
+.quiz-item.completed:not(.completed-perfect) {
     background: rgba(241, 196, 15, 0.35) !important; /* Darker yellow for completed but not perfect */
     border: 2px solid #f1c40f !important;
 }

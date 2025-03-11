@@ -537,15 +537,15 @@ export class BaseQuiz {
                         // Update quiz item styling
                         const quizItem = document.querySelector(`[data-quiz="${this.quizName}"]`);
                         if (quizItem) {
-                            quizItem.classList.remove('completed', 'in-progress');
-                            if (percentComplete === 100) {
-                                quizItem.classList.add('completed');
-                                progressElement.classList.add('completed');
-                                progressElement.classList.remove('in-progress');
-                            } else if (percentComplete > 0) {
+                            quizItem.classList.remove('completed', 'completed-perfect', 'completed-partial', 'in-progress');
+                            if (this.player.questionHistory.length === 15) {
+                                if (this.player.experience >= 300) {
+                                    quizItem.classList.add('completed', 'completed-perfect');
+                                } else {
+                                    quizItem.classList.add('completed', 'completed-partial');
+                                }
+                            } else if (this.player.questionHistory.length > 0) {
                                 quizItem.classList.add('in-progress');
-                                progressElement.classList.add('in-progress');
-                                progressElement.classList.remove('completed');
                             }
                         }
                     }
