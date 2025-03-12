@@ -7,9 +7,9 @@ export class AutomationInterviewQuiz extends BaseQuiz {
         const config = {
             maxXP: 300,
             levelThresholds: {
-                basic: { questions: 5, minXP: 35 },
-                intermediate: { questions: 10, minXP: 110 },
-                advanced: { questions: 15, minXP: 235 }
+                basic: { questions: 5, minXP: 0 }, //35
+                intermediate: { questions: 10, minXP: 0 }, //110
+                advanced: { questions: 15, minXP: 0 } //235
             },
             performanceThresholds: [
                 { threshold: 250, message: '🏆 Outstanding! You\'re an automation expert!' },
