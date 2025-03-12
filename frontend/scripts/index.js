@@ -134,6 +134,14 @@ class IndexPage {
             // If allowedQuizzes has entries, only show those quizzes
             const useWhitelist = allowedQuizzes.length > 0;
 
+            // First, hide all quizzes and categories
+            document.querySelectorAll('.category-card').forEach(card => {
+                card.setAttribute('style', 'display: none !important');
+            });
+            this.quizItems.forEach(item => {
+                item.setAttribute('style', 'display: none !important');
+            });
+
             // Track visible quizzes per category
             const categoryVisibility = new Map();
 
@@ -157,21 +165,20 @@ class IndexPage {
                 // If using whitelist (allowedQuizzes has entries), only show allowed quizzes
                 if (useWhitelist) {
                     isVisible = allowedQuizzes.includes(quizLower);
-                    if (!isVisible) {
-                        console.log(`Hiding quiz ${quizId} - not in allowed list`);
-                        item.style.display = 'none';
-                    }
                 } else {
                     isVisible = !hiddenQuizzes.includes(quizLower);
-                    if (!isVisible) {
-                        console.log(`Hiding quiz ${quizId} - in hidden list`);
-                        item.style.display = 'none';
-                    }
                 }
 
+                // Apply visibility with !important to override any existing styles
                 if (isVisible) {
                     console.log(`Showing quiz ${quizId}`);
-                    item.style.display = '';
+                    item.setAttribute('style', 'display: flex !important');
+                    if (categoryCard) {
+                        categoryCard.setAttribute('style', 'display: block !important');
+                    }
+                } else {
+                    console.log(`Hiding quiz ${quizId} - ${useWhitelist ? 'not in allowed list' : 'in hidden list'}`);
+                    item.setAttribute('style', 'display: none !important');
                 }
 
                 // Track category visibility
@@ -232,10 +239,7 @@ class IndexPage {
 
                 if (!hasVisibleQuizzes) {
                     console.log(`Hiding category: ${categoryName}`);
-                    categoryCard.style.display = 'none';
-                } else {
-                    console.log(`Showing category: ${categoryName}`);
-                    categoryCard.style.display = '';
+                    categoryCard.setAttribute('style', 'display: none !important');
                 }
             });
 
