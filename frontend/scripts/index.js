@@ -134,34 +134,56 @@ class IndexPage {
             // If allowedQuizzes has entries, only show those quizzes
             const useWhitelist = allowedQuizzes.length > 0;
 
-            // Batch all quiz progress requests
+            // Track visible quizzes per category
+            const categoryVisibility = new Map();
+
+            // First pass: Check quiz visibility and track per category
             const progressPromises = Array.from(this.quizItems).map(async item => {
                 const quizId = item.dataset.quiz;
                 const quizLower = quizId.toLowerCase();
+                const categoryCard = item.closest('.category-card');
+                const categoryName = categoryCard ? categoryCard.querySelector('.category-header').textContent.trim() : null;
 
                 // Debug each quiz visibility decision
                 console.log(`Checking visibility for quiz ${quizId}:`, {
                     quizLower,
                     useWhitelist,
                     isAllowed: allowedQuizzes.includes(quizLower),
-                    isHidden: hiddenQuizzes.includes(quizLower)
+                    isHidden: hiddenQuizzes.includes(quizLower),
+                    category: categoryName
                 });
 
+                let isVisible = false;
                 // If using whitelist (allowedQuizzes has entries), only show allowed quizzes
                 if (useWhitelist) {
-                    if (!allowedQuizzes.includes(quizLower)) {
+                    isVisible = allowedQuizzes.includes(quizLower);
+                    if (!isVisible) {
                         console.log(`Hiding quiz ${quizId} - not in allowed list`);
                         item.style.display = 'none';
-                        return null;
                     }
-                } else if (hiddenQuizzes.includes(quizLower)) { // Otherwise use blacklist
-                    console.log(`Hiding quiz ${quizId} - in hidden list`);
-                    item.style.display = 'none';
-                    return null;
+                } else {
+                    isVisible = !hiddenQuizzes.includes(quizLower);
+                    if (!isVisible) {
+                        console.log(`Hiding quiz ${quizId} - in hidden list`);
+                        item.style.display = 'none';
+                    }
                 }
-                
-                console.log(`Showing quiz ${quizId}`);
-                item.style.display = '';
+
+                if (isVisible) {
+                    console.log(`Showing quiz ${quizId}`);
+                    item.style.display = '';
+                }
+
+                // Track category visibility
+                if (categoryName) {
+                    if (!categoryVisibility.has(categoryName)) {
+                        categoryVisibility.set(categoryName, []);
+                    }
+                    categoryVisibility.get(categoryName).push(isVisible);
+                }
+
+                // Continue with progress checking only for visible quizzes
+                if (!isVisible) return null;
 
                 try {
                     // Get the saved progress
@@ -178,7 +200,6 @@ class IndexPage {
                         };
                     }
 
-                    // Use the status directly from the saved progress
                     return {
                         quizName: quizId,
                         score: progress.score || 0,
@@ -198,12 +219,29 @@ class IndexPage {
                 }
             });
 
+            // Second pass: Hide categories with no visible quizzes
+            document.querySelectorAll('.category-card').forEach(categoryCard => {
+                const categoryName = categoryCard.querySelector('.category-header').textContent.trim();
+                const visibleQuizzes = categoryVisibility.get(categoryName) || [];
+                const hasVisibleQuizzes = visibleQuizzes.some(isVisible => isVisible);
+                
+                console.log(`Category visibility check: ${categoryName}`, {
+                    visibleQuizzes,
+                    hasVisibleQuizzes
+                });
+
+                if (!hasVisibleQuizzes) {
+                    console.log(`Hiding category: ${categoryName}`);
+                    categoryCard.style.display = 'none';
+                } else {
+                    console.log(`Showing category: ${categoryName}`);
+                    categoryCard.style.display = '';
+                }
+            });
+
             // Wait for all progress data to load
             this.quizScores = (await Promise.all(progressPromises)).filter(Boolean);
-            console.log('Loaded quiz scores:', this.quizScores); // Debug log
-
-            // Update category progress after hiding quizzes
-            this.updateCategoryProgress();
+            console.log('Loaded quiz scores:', this.quizScores);
 
             return true;
         } catch (error) {
