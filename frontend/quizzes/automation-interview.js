@@ -70,58 +70,58 @@ export class AutomationInterviewQuiz extends BaseQuiz {
             {
                 id: 1,
                 level: 'Basic',
-                title: 'Test Case Design',
-                description: 'You\'re starting to automate tests for a new web application. What\'s the most effective first step?',
+                title: 'Team Mentoring',
+                description: 'How do you mentor and guide a team in automation testing?',
                 options: [
                     {
-                        text: 'Create a test plan with prioritised automation candidates',
-                        outcome: 'Perfect! This provides a structured approach to test automation.',
+                        text: 'Introduce standard practices, encourage collaboration, and provide workshops on different automation topics',
+                        outcome: 'Perfect! This provides a comprehensive approach to team development.',
                         experience: 15,
-                        tool: 'Test Planning'
+                        tool: 'Team Development'
                     },
                     {
-                        text: 'Start writing automation scripts for all existing manual test cases immediately without analysis',
-                        outcome: 'Thorough planning is crucial before starting implementation for automation tests.',
-                        experience: -5
-                    },
-                    {
-                        text: 'Wait for the development team to complete all features before planning automation',
-                        outcome: 'Test automation requires early planning to identify the most valuable areas to automate.',
+                        text: 'Take an unguided approach and allow them to do their own research',
+                        outcome: 'Teams need structured guidance and support for effective learning.',
                         experience: -10
                     },
                     {
-                        text: 'Create automated scripts covering the main user journeys',
-                        outcome: 'Ideally a plan should be created first, but on a very small project, this could be a viable approach.',
-                        experience: 0
+                        text: 'Ensure team members only learn a specific framework/set of technologies',
+                        outcome: 'Teams benefit from broader knowledge across different automation tools and approaches.',
+                        experience: -5
+                    },
+                    {
+                        text: 'Prioritise team members that show a greater understanding of automation',
+                        outcome: 'All team members should receive equal opportunity for growth and development.',
+                        experience: -10
                     }
                 ]
             },
             {
                 id: 2,
                 level: 'Basic',
-                title: 'Automation Framework Selection',
-                description: 'You need to choose an automation framework for a web application. How should you approach this decision?',
+                title: 'Documentation Handover',
+                description: 'What kind of documentation would you record once an automation project had been passed over to a client to maintain?',
                 options: [
                     {
-                        text: 'Match framework capabilities to project needs and team expertise',
-                        outcome: 'Excellent! This ensures a sustainable automation solution.',
+                        text: 'Handover document/read me file containing set up details',
+                        outcome: 'Excellent! This ensures the client has all necessary information for maintenance.',
                         experience: 15,
-                        tool: 'Framework Selection'
+                        tool: 'Documentation'
                     },
                     {
-                        text: 'Select multiple frameworks and let each team member use their preferred tool for different features',
-                        outcome: 'Framework consistency is essential for maintenance moving forward with a project.',
+                        text: 'Hand them the code and a run command',
+                        outcome: 'Proper documentation is essential for successful project handover.',
                         experience: -10
                     },
                     {
-                        text: 'Choose the newest framework with the most GitHub stars',
-                        outcome: 'Framework selection should be based on project needs and not the latest on the market.',
+                        text: 'Only provide the client with the reports from previous testing/tests',
+                        outcome: 'Setup and maintenance documentation is crucial for project continuity.',
                         experience: -5
                     },
                     {
-                        text: 'Pick whatever framework the developers are using for unit tests',
-                        outcome: 'End-to-end testing requirements should be considered separately to meet application needs.',
-                        experience: -5
+                        text: 'Provide a call/presentation of how to maintain the project',
+                        outcome: 'Written documentation is necessary for future reference.',
+                        experience: -10
                     }
                 ]
             },
@@ -277,34 +277,63 @@ export class AutomationInterviewQuiz extends BaseQuiz {
             {
                 id: 8,
                 level: 'Intermediate',
-                title: 'Cross-browser Testing',
-                description: 'How do you implement cross-browser testing in your automation framework?',
+                title: 'Version Control Approach',
+                description: 'What is an effective version control approach for adding new features to an automation project?',
                 options: [
                     {
-                        text: 'Use browser factories with cloud testing platforms',
-                        outcome: 'Excellent! This ensures comprehensive coverage.',
+                        text: 'Create branches for each new test feature',
+                        outcome: 'Perfect! This enables organized and controlled development.',
                         experience: 20,
-                        tool: 'Browser Testing'
+                        tool: 'Version Control'
                     },
                     {
-                        text: 'Maintain separate test suites and configurations for each supported browser version',
-                        outcome: 'Framework should handle multiple browsers efficiently.',
+                        text: 'Keep a single, main branch, and push all changes',
+                        outcome: 'Feature branches help manage changes more effectively.',
                         experience: -10
                     },
                     {
-                        text: 'Focus testing on the most popular browser only',
-                        outcome: 'Multiple browsers should be tested for comprehensive coverage.',
-                        experience: -5
+                        text: 'Avoid using version control, it slows down development',
+                        outcome: 'Version control is essential for managing test code effectively.',
+                        experience: -15
                     },
                     {
-                        text: 'Test all browsers supported by the application under test manually',
-                        outcome: 'Browser testing should be automated if including in tests in the automation framework.',
-                        experience: -15
+                        text: 'Skip reviews of pull requests to increase test development speed',
+                        outcome: 'Code reviews are crucial for maintaining quality.',
+                        experience: -10
                     }
                 ]
             },
             {
                 id: 9,
+                level: 'Intermediate',
+                title: 'Version Control Importance',
+                description: 'Why is proper use of version control important for an automation project?',
+                options: [
+                    {
+                        text: 'Allows for efficient collaboration and auditability',
+                        outcome: 'Excellent! Version control is crucial for team collaboration.',
+                        experience: 20,
+                        tool: 'Collaboration'
+                    },
+                    {
+                        text: 'Usage should be avoided, as this slows down the development and coverage of tests',
+                        outcome: 'Version control is essential for managing changes effectively.',
+                        experience: -15
+                    },
+                    {
+                        text: 'Its only useful for historical changes',
+                        outcome: 'Version control provides many benefits beyond history tracking.',
+                        experience: -10
+                    },
+                    {
+                        text: 'Avoids conflicts in code',
+                        outcome: 'While true, version control offers many more benefits.',
+                        experience: -5
+                    }
+                ]
+            },
+            {
+                id: 10,
                 level: 'Intermediate',
                 title: 'Error Handling',
                 description: 'How do you handle errors and exceptions in your test automation framework?',
@@ -329,35 +358,6 @@ export class AutomationInterviewQuiz extends BaseQuiz {
                         text: 'Skip error handling within automation tests',
                         outcome: 'Error handling is crucial for prompt identification of issues.',
                         experience: -5
-                    }
-                ]
-            },
-            {
-                id: 10,
-                level: 'Intermediate',
-                title: 'Test Reporting',
-                description: 'What\'s the best approach to implement test reporting in your framework?',
-                options: [
-                    {
-                        text: 'Generate detailed reports with failure analysis',
-                        outcome: 'Excellent! This provides valuable insights.',
-                        experience: 20,
-                        tool: 'Test Reporting'
-                    },
-                    {
-                        text: 'Create extensive custom reporting solutions that track every possible test metric and generate multiple report formats',
-                        outcome: 'This approach could be too extensive as reports should be focused and useful.',
-                        experience: -10
-                    },
-                    {
-                        text: 'Use basic console output',
-                        outcome: 'Proper reporting tools should be used as critical details could be missed.',
-                        experience: -5
-                    },
-                    {
-                        text: 'Rely on CI/CD platform logs',
-                        outcome: 'Dedicated test reporting is required for automation reports.',
-                        experience: -15
                     }
                 ]
             }
@@ -426,57 +426,57 @@ export class AutomationInterviewQuiz extends BaseQuiz {
             {
                 id: 13,
                 level: 'Advanced',
-                title: 'Mobile Testing',
-                description: 'How do you implement mobile test automation?',
+                title: 'Framework Selection Discussion',
+                description: 'A potential client is wanting to ensure use of a particular testing framework. But you believe they could benefit from using something else. How would you handle this?',
                 options: [
                     {
-                        text: 'Combine real devices and emulators strategically',
-                        outcome: 'Perfect! This ensures comprehensive testing.',
+                        text: 'Outlining the advantages of the recommended framework',
+                        outcome: 'Perfect! This promotes informed decision-making.',
                         experience: 25,
-                        tool: 'Mobile Testing'
+                        tool: 'Framework Analysis'
                     },
                     {
-                        text: 'Create separate test suites for every possible device-OS combination in your target market',
-                        outcome: 'Focus should be on representative devices.',
+                        text: 'Agree with their requirement and use their framework of choice',
+                        outcome: 'Professional recommendations should be made when beneficial.',
+                        experience: -10
+                    },
+                    {
+                        text: 'Disregard their choice and implement your own testing framework',
+                        outcome: 'Client requirements should be respected and discussed professionally.',
                         experience: -20
                     },
                     {
-                        text: 'Mobile automation testing should be approached with desktop automation tools',
-                        outcome: 'Mobile-specific tools needed.',
+                        text: 'Refuse to work with the client unless they agree to use your suggestions',
+                        outcome: 'Collaboration and professional discussion is essential.',
                         experience: -15
-                    },
-                    {
-                        text: 'Focus testing on the latest supported devices only',
-                        outcome: 'Device diversity should be considered for comprehensive coverage.',
-                        experience: -10
                     }
                 ]
             },
             {
                 id: 14,
                 level: 'Advanced',
-                title: 'Security Testing',
-                description: 'How do you incorporate security testing in your automation framework?',
+                title: 'Automation Project Candidacy',
+                description: 'What is a poor candidate for an automation project?',
                 options: [
                     {
-                        text: 'Integrate SAST/DAST tools with custom security checks',
-                        outcome: 'Excellent! This ensures security coverage.',
+                        text: 'A client whose budget is limited, and the project\'s scope is small',
+                        outcome: 'Excellent! Automation should be cost-effective.',
                         experience: 25,
-                        tool: 'Security Testing'
+                        tool: 'Project Assessment'
                     },
                     {
-                        text: 'Implement extensive penetration testing scripts that attempt every known security vulnerability',
-                        outcome: 'Focus should be security risks relevant to the application.',
+                        text: 'A client with repetitive and time-consuming manual tests',
+                        outcome: 'This is actually a good candidate for automation.',
                         experience: -20
                     },
                     {
-                        text: 'Test authentication for the application under test',
-                        outcome: 'Multiple aspects require testing like vulnerability and SQL injection testing.',
+                        text: 'When implementing automation would be more cost-effective than a manual approach',
+                        outcome: 'This would be an ideal candidate for automation.',
                         experience: -15
                     },
                     {
-                        text: 'Incorporate SAST testing into the automation framework',
-                        outcome: 'While this is important, this alone should not form the basis of security checks.',
+                        text: 'Client whose project features numerous forms and fields',
+                        outcome: 'Form testing is often a good candidate for automation.',
                         experience: -10
                     }
                 ]
@@ -484,29 +484,29 @@ export class AutomationInterviewQuiz extends BaseQuiz {
             {
                 id: 15,
                 level: 'Advanced',
-                title: 'Test Infrastructure',
-                description: 'How do you manage test automation infrastructure?',
+                title: 'Critical Bug Handling',
+                description: 'A critical bug slipped into production despite automation coverage. How do you handle it?',
                 options: [
                     {
-                        text: 'Use containerisation with infrastructure as code',
-                        outcome: 'Perfect! This enables reliable execution.',
+                        text: 'Investigate the root cause to improve the automation for the next run',
+                        outcome: 'Perfect! This ensures continuous improvement.',
                         experience: 25,
-                        tool: 'Infrastructure Management'
+                        tool: 'Root Cause Analysis'
                     },
                     {
-                        text: 'Set up elaborate testing environments with redundant systems for every possible configuration',
-                        outcome: 'Focus should be on essential configurations relevant to the application under test.',
-                        experience: -10
+                        text: 'Ignore the error as it\'s not part of the original scope',
+                        outcome: 'Critical bugs require immediate attention and investigation.',
+                        experience: -20
                     },
                     {
-                        text: 'Use shared test environments for easier team access to all projects',
-                        outcome: 'Isolated environments are required as they provide a controlled space to test and deploy changes.',
+                        text: 'Get the client to roll back all changes without finding the root cause',
+                        outcome: 'Understanding the root cause is crucial for prevention.',
                         experience: -15
                     },
                     {
-                        text: 'Use local machines where you can for automated infrastructure',
-                        outcome: 'Proper infrastructure is required as local machines can be susceptible to hardware failures.',
-                        experience: -20
+                        text: 'See if the automation team are responsible for the code not being robust',
+                        outcome: 'Focus should be on solution and prevention rather than blame.',
+                        experience: -10
                     }
                 ]
             }
