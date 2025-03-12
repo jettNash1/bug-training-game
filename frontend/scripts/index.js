@@ -136,10 +136,10 @@ class IndexPage {
 
             // First, hide all quizzes and categories
             document.querySelectorAll('.category-card').forEach(card => {
-                card.setAttribute('style', 'display: none !important');
+                card.classList.add('quiz-hidden');
             });
             this.quizItems.forEach(item => {
-                item.setAttribute('style', 'display: none !important');
+                item.classList.add('quiz-hidden');
             });
 
             // Track visible quizzes per category
@@ -169,16 +169,16 @@ class IndexPage {
                     isVisible = !hiddenQuizzes.includes(quizLower);
                 }
 
-                // Apply visibility with !important to override any existing styles
+                // Apply visibility using CSS classes
                 if (isVisible) {
                     console.log(`Showing quiz ${quizId}`);
-                    item.setAttribute('style', 'display: flex !important');
+                    item.classList.remove('quiz-hidden');
                     if (categoryCard) {
-                        categoryCard.setAttribute('style', 'display: block !important');
+                        categoryCard.classList.remove('quiz-hidden');
                     }
                 } else {
                     console.log(`Hiding quiz ${quizId} - ${useWhitelist ? 'not in allowed list' : 'in hidden list'}`);
-                    item.setAttribute('style', 'display: none !important');
+                    item.classList.add('quiz-hidden');
                 }
 
                 // Track category visibility
@@ -239,13 +239,18 @@ class IndexPage {
 
                 if (!hasVisibleQuizzes) {
                     console.log(`Hiding category: ${categoryName}`);
-                    categoryCard.setAttribute('style', 'display: none !important');
+                    categoryCard.classList.add('quiz-hidden');
                 }
             });
 
             // Wait for all progress data to load
             this.quizScores = (await Promise.all(progressPromises)).filter(Boolean);
             console.log('Loaded quiz scores:', this.quizScores);
+
+            // Force a repaint to ensure visibility changes are applied
+            document.body.style.display = 'none';
+            document.body.offsetHeight; // Force reflow
+            document.body.style.display = '';
 
             return true;
         } catch (error) {
@@ -346,7 +351,7 @@ class IndexPage {
         
         document.querySelectorAll('.category-card').forEach(category => {
             const quizItems = category.querySelectorAll('.quiz-item:not(.locked-quiz)');
-            const visibleQuizItems = Array.from(quizItems).filter(item => item.style.display !== 'none');
+            const visibleQuizItems = Array.from(quizItems).filter(item => item.classList.contains('quiz-hidden') === false);
             const progressBar = category.querySelector('.progress-fill');
             const progressText = category.querySelector('.progress-text');
             
