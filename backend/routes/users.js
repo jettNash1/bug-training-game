@@ -531,14 +531,14 @@ router.post('/quiz-scores', auth, async (req, res) => {
     }
 });
 
-// Get user data including hidden quizzes
+// Get user data (protected route)
 router.get('/data', auth, async (req, res) => {
     try {
         const user = await User.findById(req.user.id);
         if (!user) {
-            return res.status(404).json({
-                success: false,
-                message: 'User not found'
+            return res.status(404).json({ 
+                success: false, 
+                message: 'User not found' 
             });
         }
 
@@ -546,7 +546,7 @@ router.get('/data', auth, async (req, res) => {
         const allowedQuizzes = (user.allowedQuizzes || []).map(quiz => quiz.toLowerCase());
         const hiddenQuizzes = (user.hiddenQuizzes || []).map(quiz => quiz.toLowerCase());
 
-        console.log('Sending user data:', {
+        console.log('User data being sent:', {
             username: user.username,
             userType: user.userType,
             allowedQuizzes,
@@ -557,20 +557,20 @@ router.get('/data', auth, async (req, res) => {
             success: true,
             data: {
                 username: user.username,
-                userType: user.userType || 'regular', // Default to regular if not set
-                allowedQuizzes,
-                hiddenQuizzes,
-                lastLogin: user.lastLogin,
+                userType: user.userType,
+                allowedQuizzes: allowedQuizzes,
+                hiddenQuizzes: hiddenQuizzes,
                 quizResults: user.quizResults || [],
-                quizProgress: user.quizProgress || {}
+                quizProgress: user.quizProgress || {},
+                lastLogin: user.lastLogin || null
             }
         });
     } catch (error) {
-        console.error('Error fetching user data:', error);
-        res.status(500).json({
-            success: false,
-            message: 'Failed to fetch user data',
-            error: error.message
+        console.error('Error getting user data:', error);
+        res.status(500).json({ 
+            success: false, 
+            message: 'Failed to get user data',
+            error: process.env.NODE_ENV === 'production' ? null : error.message
         });
     }
 });

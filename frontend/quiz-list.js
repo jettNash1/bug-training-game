@@ -28,16 +28,44 @@ class QuizList {
             const { userType, allowedQuizzes = [], hiddenQuizzes = [] } = userData.data;
             const isInterviewAccount = userType === 'interview_candidate';
 
+            // Debug logging
+            console.log('Quiz visibility debug:', {
+                userType,
+                isInterviewAccount,
+                allowedQuizzes,
+                hiddenQuizzes,
+                totalQuizTypes: this.quizTypes.length
+            });
+
             // Filter quizzes based on user type and visibility
             const visibleQuizzes = this.quizTypes.filter(quiz => {
                 const quizLower = quiz.toLowerCase();
                 if (isInterviewAccount) {
                     // For interview accounts, only show quizzes that are explicitly allowed
-                    return allowedQuizzes.includes(quizLower);
+                    const isVisible = allowedQuizzes.includes(quizLower);
+                    console.log(`Quiz visibility check for ${quiz}:`, {
+                        isInterviewAccount: true,
+                        quizLower,
+                        isAllowed: isVisible,
+                        allowedQuizzes
+                    });
+                    return isVisible;
                 } else {
                     // For regular accounts, show all quizzes that aren't explicitly hidden
-                    return !hiddenQuizzes.includes(quizLower);
+                    const isVisible = !hiddenQuizzes.includes(quizLower);
+                    console.log(`Quiz visibility check for ${quiz}:`, {
+                        isInterviewAccount: false,
+                        quizLower,
+                        isHidden: !isVisible,
+                        hiddenQuizzes
+                    });
+                    return isVisible;
                 }
+            });
+
+            console.log('Visible quizzes:', {
+                count: visibleQuizzes.length,
+                quizzes: visibleQuizzes
             });
 
             // Create quiz list HTML

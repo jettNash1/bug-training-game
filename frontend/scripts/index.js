@@ -122,11 +122,13 @@ class IndexPage {
             const allowedQuizzes = userData.data.allowedQuizzes || [];
             const hiddenQuizzes = userData.data.hiddenQuizzes || [];
 
-            console.log('Visibility settings:', {
+            console.log('Quiz visibility check:', {
+                username,
                 isInterviewAccount,
+                userType: userData.data.userType,
                 allowedQuizzes,
                 hiddenQuizzes,
-                userType: userData.data.userType
+                totalQuizzes: this.quizItems.length
             });
 
             // If allowedQuizzes has entries, only show those quizzes
@@ -136,6 +138,14 @@ class IndexPage {
             const progressPromises = Array.from(this.quizItems).map(async item => {
                 const quizId = item.dataset.quiz;
                 const quizLower = quizId.toLowerCase();
+
+                // Debug each quiz visibility decision
+                console.log(`Checking visibility for quiz ${quizId}:`, {
+                    quizLower,
+                    useWhitelist,
+                    isAllowed: allowedQuizzes.includes(quizLower),
+                    isHidden: hiddenQuizzes.includes(quizLower)
+                });
 
                 // If using whitelist (allowedQuizzes has entries), only show allowed quizzes
                 if (useWhitelist) {
