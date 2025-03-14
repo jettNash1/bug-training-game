@@ -1990,13 +1990,18 @@ class AdminDashboard {
                         </div>
                         <div class="form-group" style="margin-bottom: 1.5rem;">
                             <label for="password" style="display: block; margin-bottom: 0.5rem; font-weight: 500;">Password: (min. 6 characters)</label>
-                            <input type="password" 
-                                   id="password" 
-                                   name="password_${Date.now()}" 
-                                   required 
-                                   minlength="6"
-                                   autocomplete="new-password"
-                                   style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
+                            <div class="password-input-container">
+                                <input type="password" 
+                                       id="password" 
+                                       name="password_${Date.now()}" 
+                                       required 
+                                       minlength="6"
+                                       autocomplete="new-password"
+                                       style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
+                                <button type="button" class="password-toggle" aria-label="Toggle password visibility">
+                                    <i class="fas fa-eye"></i>
+                                </button>
+                            </div>
                         </div>
                         <div class="form-group" style="margin-bottom: 1.5rem;">
                             <label style="display: block; margin-bottom: 0.5rem; font-weight: 500;">Select Quizzes:</label>
@@ -2023,10 +2028,10 @@ class AdminDashboard {
                                         <input type="checkbox" 
                                                id="selectAllQuizzes"
                                                style="
-                                                width: 18px;
-                                                height: 18px;
-                                                margin: 0;
-                                                cursor: pointer;">
+                                                 width: 18px;
+                                                 height: 18px;
+                                                 margin: 0;
+                                                 cursor: pointer;">
                                         <span style="flex: 1; font-size: 0.95rem;">Select All Quizzes</span>
                                     </label>
                                 </div>
@@ -2050,10 +2055,10 @@ class AdminDashboard {
                                                    name="quizzes" 
                                                    value="${quiz}" 
                                                    style="
-                                                    width: 18px;
-                                                    height: 18px;
-                                                    margin: 0;
-                                                    cursor: pointer;">
+                                                     width: 18px;
+                                                     height: 18px;
+                                                     margin: 0;
+                                                     cursor: pointer;">
                                             <span style="flex: 1; font-size: 0.95rem;">${this.formatQuizName(quiz)}</span>
                                         </label>
                                     </div>
@@ -2104,6 +2109,25 @@ class AdminDashboard {
         const form = document.getElementById('createInterviewForm');
         const cancelButton = modal.querySelector('.cancel-button');
 
+        // Add password visibility toggle functionality
+        const passwordToggle = modal.querySelector('.password-toggle');
+        if (passwordToggle) {
+            passwordToggle.addEventListener('click', () => {
+                const input = passwordToggle.previousElementSibling;
+                const icon = passwordToggle.querySelector('i');
+                
+                if (input.type === 'password') {
+                    input.type = 'text';
+                    icon.classList.remove('fa-eye');
+                    icon.classList.add('fa-eye-slash');
+                } else {
+                    input.type = 'password';
+                    icon.classList.remove('fa-eye-slash');
+                    icon.classList.add('fa-eye');
+                }
+            });
+        }
+
         // Add event listener for select all checkbox
         const selectAllCheckbox = form.querySelector('#selectAllQuizzes');
         selectAllCheckbox.addEventListener('change', (e) => {
@@ -2134,8 +2158,13 @@ class AdminDashboard {
             const selectedQuizzes = Array.from(form.querySelectorAll('input[name="quizzes"]:checked'))
                 .map(checkbox => checkbox.value);
 
-            if (!username || !password) {
-                this.showError('Username and password are required');
+            if (username.length < 3) {
+                this.showError('Username must be at least 3 characters long');
+                return;
+            }
+
+            if (password.length < 6) {
+                this.showError('Password must be at least 6 characters long');
                 return;
             }
 
@@ -2145,17 +2174,11 @@ class AdminDashboard {
             }
 
             try {
-                const response = await this.createInterviewAccount(username, password, selectedQuizzes);
-                if (response.success) {
-                    modal.remove();
-                    this.showSuccess(`Interview account created for ${username}`);
-                    await this.loadUsers();
-                    await this.updateDashboard();
-                } else {
-                    this.showError(response.message || 'Failed to create interview account');
-                }
+                await this.createInterviewAccount(username, password, selectedQuizzes);
+                modal.remove();
+                this.showSuccess('Interview account created successfully');
+                this.updateUserList();
             } catch (error) {
-                console.error('Error creating interview account:', error);
                 this.showError(error.message || 'Failed to create interview account');
             }
         });

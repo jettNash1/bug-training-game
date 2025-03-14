@@ -7,6 +7,7 @@
     <title>QA Learning Hub - Admin Login</title>
     <link rel="icon" type="image/x-icon" href="../assets/favicon.ico">
     <link rel="stylesheet" href="../styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 </head>
 <body class="auth-page">
     <main class="auth-container" role="main">
@@ -32,13 +33,18 @@
                 </div>
                 <div class="form-group">
                     <label for="adminPassword">Password</label>
-                    <input type="password" 
-                           id="adminPassword" 
-                           name="password"
-                           placeholder="Enter password" 
-                           required 
-                           aria-required="true"
-                           autocomplete="current-password">
+                    <div class="password-input-container">
+                        <input type="password" 
+                               id="adminPassword" 
+                               name="password"
+                               placeholder="Enter password" 
+                               required 
+                               aria-required="true"
+                               autocomplete="current-password">
+                        <button type="button" class="password-toggle" aria-label="Toggle password visibility">
+                            <i class="fas fa-eye"></i>
+                        </button>
+                    </div>
                 </div>
                 <button type="submit" class="auth-button" aria-label="Login to admin panel">Login to Admin Panel</button>
             </form>
@@ -55,6 +61,25 @@
         
         document.addEventListener('DOMContentLoaded', () => {
             const dashboard = new AdminDashboard();
+            
+            // Add password visibility toggle functionality
+            const passwordToggle = document.querySelector('.password-toggle');
+            if (passwordToggle) {
+                passwordToggle.addEventListener('click', () => {
+                    const input = passwordToggle.previousElementSibling;
+                    const icon = passwordToggle.querySelector('i');
+                    
+                    if (input.type === 'password') {
+                        input.type = 'text';
+                        icon.classList.remove('fa-eye');
+                        icon.classList.add('fa-eye-slash');
+                    } else {
+                        input.type = 'password';
+                        icon.classList.remove('fa-eye-slash');
+                        icon.classList.add('fa-eye');
+                    }
+                });
+            }
             
             // Add form submit handler
             document.getElementById('adminLoginForm').addEventListener('submit', async (e) => {
