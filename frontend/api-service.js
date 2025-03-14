@@ -33,11 +33,19 @@ export class APIService {
                 ...options.headers
             };
 
-            const response = await fetch(url, {
+            // Create fetch options with headers and any other options
+            const fetchOptions = {
                 ...options,
                 credentials: 'include',
                 headers
-            });
+            };
+
+            // Add signal if provided
+            if (options.signal) {
+                fetchOptions.signal = options.signal;
+            }
+
+            const response = await fetch(url, fetchOptions);
 
             // Try to parse response as JSON
             let text;
@@ -85,6 +93,11 @@ export class APIService {
                 throw error;
             }
         } catch (error) {
+            // If this is an AbortError, just pass it through
+            if (error.name === 'AbortError') {
+                throw error;
+            }
+            
             console.error('Admin request failed:', error);
             
             // Only redirect on authentication errors
@@ -250,41 +263,79 @@ export class APIService {
     async fetchWithAuth(url, options = {}) {
         const token = getAuthToken();
         if (!token) {
-            throw new Error('No auth token available');
+            throw new Error('No authentication token found');
         }
 
-        const response = await fetch(url, {
-            ...options,
-            credentials: 'include',
-            headers: {
-                ...options.headers,
-                'Authorization': `Bearer ${token}`
-            }
-        });
+        // Create AbortController for timeout
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 second timeout
+        
+        try {
+            // Add signal to options if not already present
+            const fetchOptions = {
+                ...options,
+                credentials: 'include',
+                headers: {
+                    ...options.headers,
+                    'Authorization': `Bearer ${token}`
+                },
+                signal: options.signal || controller.signal
+            };
+            
+            const response = await fetch(url, fetchOptions);
+            
+            // Clear timeout since fetch completed
+            clearTimeout(timeoutId);
+            
+            if (!response.ok) {
+                if (response.status === 401) {
+                    // Token expired, try to refresh
+                    try {
+                        const refreshToken = localStorage.getItem('refreshToken');
+                        if (!refreshToken) {
+                            throw new Error('No refresh token available');
+                        }
+                        
+                        const refreshData = await this.refreshToken(refreshToken);
+                        if (!refreshData.token) {
+                            throw new Error('Failed to refresh token');
+                        }
 
-        if (response.status === 401) {
-            // Token expired, try to refresh
-            try {
-                const refreshToken = localStorage.getItem('refreshToken');
-                if (!refreshToken) {
-                    throw new Error('No refresh token available');
+                        // Retry original request with new token
+                        return await this.fetchWithAuth(url, options);
+                    } catch (refreshError) {
+                        // If refresh fails, clear tokens and redirect to login
+                        clearTokens();
+                        console.error('Authentication failed. Redirecting to login...');
+                        setTimeout(() => {
+                            window.location.href = '/login.html';
+                        }, 1000);
+                        throw new Error('Authentication failed. Please log in again.');
+                    }
                 }
-
-                const refreshData = await this.refreshToken(refreshToken);
-                if (!refreshData.token) {
-                    throw new Error('Failed to refresh token');
-                }
-
-                // Retry original request with new token
-                return await this.fetchWithAuth(url, options);
-            } catch (error) {
-                clearTokens();
-                window.location.href = '/login.html';
-                throw error;
+                
+                const errorText = await response.text();
+                throw new Error(`API error (${response.status}): ${errorText || response.statusText}`);
             }
+            
+            return await response.json();
+        } catch (error) {
+            // Clear timeout in case of error
+            clearTimeout(timeoutId);
+            
+            // Special handling for abort errors (timeouts)
+            if (error.name === 'AbortError') {
+                throw new Error('Request timed out. Server may be busy, please try again later.');
+            }
+            
+            // Network errors
+            if (error.message && error.message.includes('Failed to fetch')) {
+                throw new Error('Network error. Please check your internet connection and try again.');
+            }
+            
+            console.error('API request failed:', error);
+            throw error;
         }
-
-        return response;
     }
 
     async getQuizProgress(quizName) {
@@ -702,21 +753,56 @@ export class APIService {
     async getQuizScenarios(quizName) {
         try {
             console.log(`Fetching scenarios for quiz: ${quizName}`);
-            const response = await this.fetchWithAdminAuth(`${this.baseUrl}/admin/quizzes/${quizName}/scenarios`);
             
-            if (!response.success) {
-                console.error('Failed to fetch quiz scenarios:', response);
-                throw new Error(response.message || 'Failed to fetch quiz scenarios');
-            }
-
-            return {
-                success: true,
-                data: response.data || {
-                    basic: [],
-                    intermediate: [],
-                    advanced: []
+            // Create a controller for the fetch request
+            const controller = new AbortController();
+            const signal = controller.signal;
+            
+            // Set a timeout to abort the fetch after 4 seconds
+            const timeoutId = setTimeout(() => {
+                controller.abort();
+                console.warn(`Fetch for quiz scenarios timed out after 4 seconds: ${quizName}`);
+            }, 4000);
+            
+            try {
+                const response = await this.fetchWithAdminAuth(
+                    `${this.baseUrl}/admin/quizzes/${quizName}/scenarios`,
+                    {
+                        method: 'GET',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        signal
+                    }
+                );
+                
+                // Clear the timeout since the request completed
+                clearTimeout(timeoutId);
+                
+                if (!response.success) {
+                    console.error('Failed to fetch quiz scenarios:', response);
+                    throw new Error(response.message || 'Failed to fetch quiz scenarios');
                 }
-            };
+
+                return {
+                    success: true,
+                    data: response.data || {
+                        basic: [],
+                        intermediate: [],
+                        advanced: []
+                    }
+                };
+            } catch (fetchError) {
+                // Clear the timeout to prevent memory leaks
+                clearTimeout(timeoutId);
+                
+                // Check if this was an abort error
+                if (fetchError.name === 'AbortError') {
+                    throw new Error(`Request for quiz scenarios timed out: ${quizName}`);
+                }
+                
+                throw fetchError;
+            }
         } catch (error) {
             console.error(`Failed to fetch scenarios for quiz ${quizName}:`, error);
             throw error;

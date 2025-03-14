@@ -2234,132 +2234,65 @@ class AdminDashboard {
     }
 
     async fetchQuizScenarios(quizName) {
+        console.log(`Fetching scenarios for quiz: ${quizName}`);
+        
         try {
-            console.log(`Starting to fetch scenarios for quiz: ${quizName}`);
-            
-            // First try to fetch from API
+            // First try to get scenarios from the API
             try {
-                console.log(`Attempting to fetch scenarios from API for: ${quizName}`);
-                const response = await this.apiService.getQuizScenarios(quizName);
-                
-                if (response.success && response.data) {
-                    console.log(`Successfully fetched scenarios from API for: ${quizName}`);
-                    return response.data;
-                }
+                const scenarios = await this.apiService.getQuizScenarios(quizName);
+                console.log(`Successfully fetched scenarios for ${quizName} from API`, scenarios);
+                return scenarios;
             } catch (apiError) {
-                console.warn('API fetch failed, falling back to client-side data:', apiError);
-                // Continue to fallback method
+                // Check if it's a timeout error
+                if (apiError.message && apiError.message.includes('timeout')) {
+                    console.warn(`API request timed out for ${quizName}. Falling back to client-side data.`);
+                    throw new Error(`Request timed out. Server may be busy, please try again later.`);
+                }
+                
+                // Check if it's a network error
+                if (apiError.message && apiError.message.includes('network')) {
+                    console.warn(`Network error for ${quizName}. Falling back to client-side data.`);
+                    throw new Error(`Network error. Please check your internet connection and try again.`);
+                }
+                
+                // For other API errors, log and continue to fallback
+                console.warn(`API error for ${quizName}: ${apiError.message}. Falling back to client-side data.`);
             }
-
-            // Fallback: Dynamically import the quiz module to get scenarios
+            
+            // Fallback: Try to dynamically import the quiz module
             try {
-                console.log(`Falling back to client-side import for: ${quizName}`);
+                console.log(`Attempting to load quiz module for ${quizName}`);
+                const quizModule = await import(`../quizzes/${quizName}.js`);
                 
-                // Convert quiz name to proper format for import
-                const formattedQuizName = quizName.toLowerCase().replace(/\s+/g, '-');
-                console.log(`Formatted quiz name for import: ${formattedQuizName}`);
-                
-                // Handle special cases for quiz names
-                let importPath;
-                if (formattedQuizName === 'cms-testing') {
-                    importPath = '../quizzes/CMS-Testing-quiz.js';
-                } else if (formattedQuizName === 'email-testing') {
-                    importPath = '../quizzes/email-testing-quiz.js';
-                } else if (formattedQuizName === 'content-copy') {
-                    importPath = '../quizzes/content-copy-quiz.js';
-                } else if (formattedQuizName === 'issue-tracking-tools') {
-                    importPath = '../quizzes/issue-tracking-tools-quiz.js';
-                } else if (formattedQuizName === 'build-verification') {
-                    importPath = '../quizzes/build-verification-quiz.js';
-                } else if (formattedQuizName === 'issue-verification') {
-                    importPath = '../quizzes/issue-verification-quiz.js';
-                } else if (formattedQuizName === 'test-support') {
-                    importPath = '../quizzes/test-support-quiz.js';
-                } else if (formattedQuizName === 'non-functional') {
-                    importPath = '../quizzes/non-functional-quiz.js';
-                } else if (formattedQuizName === 'risk-management') {
-                    importPath = '../quizzes/risk-management-quiz.js';
-                } else if (formattedQuizName === 'risk-analysis') {
-                    importPath = '../quizzes/risk-analysis-quiz.js';
-                } else if (formattedQuizName === 'tester-mindset') {
-                    importPath = '../quizzes/tester-mindset-quiz.js';
-                } else if (formattedQuizName === 'time-management') {
-                    importPath = '../quizzes/time-management-quiz.js';
-                } else if (formattedQuizName === 'initiative') {
-                    importPath = '../quizzes/initiative-quiz.js';
-                } else if (formattedQuizName === 'communication') {
-                    importPath = '../quizzes/communication-quiz.js';
-                } else if (formattedQuizName === 'automation-interview') {
-                    importPath = '../quizzes/automation-interview-quiz.js';
-                } else if (formattedQuizName === 'fully-scripted') {
-                    importPath = '../quizzes/fully-scripted-quiz.js';
-                } else if (formattedQuizName === 'exploratory') {
-                    importPath = '../quizzes/exploratory-quiz.js';
-                } else if (formattedQuizName === 'sanity-smoke') {
-                    importPath = '../quizzes/sanity-smoke-quiz.js';
-                } else if (formattedQuizName === 'locale-testing') {
-                    importPath = '../quizzes/locale-testing-quiz.js';
-                } else if (formattedQuizName === 'script-metrics-troubleshooting') {
-                    importPath = '../quizzes/script-metrics-troubleshooting-quiz.js';
-                } else if (formattedQuizName === 'standard-script-testing') {
-                    importPath = '../quizzes/standard-script-testing-quiz.js';
-                } else if (formattedQuizName === 'test-types-tricks') {
-                    importPath = '../quizzes/test-types-tricks-quiz.js';
-                } else if (formattedQuizName === 'raising-tickets') {
-                    importPath = '../quizzes/raising-tickets-quiz.js';
-                } else if (formattedQuizName === 'reports') {
-                    importPath = '../quizzes/reports-quiz.js';
-                } else {
-                    // Default path format
-                    importPath = `../quizzes/${formattedQuizName}-quiz.js`;
+                if (!quizModule || !quizModule.default) {
+                    throw new Error(`Quiz module for ${quizName} does not have a default export`);
                 }
                 
-                console.log(`Attempting to import from path: ${importPath}`);
+                const quiz = quizModule.default;
                 
-                // Try to import the module
-                const quizModule = await import(importPath);
-                console.log('Quiz module imported successfully:', quizModule);
-                
-                // Get the class name based on the quiz name
-                const className = Object.keys(quizModule).find(key => {
-                    const keyLower = key.toLowerCase();
-                    const formattedNameNoHyphens = formattedQuizName.replace(/-/g, '');
-                    
-                    return keyLower.includes(formattedNameNoHyphens) || 
-                           keyLower.includes(formattedQuizName) ||
-                           keyLower.replace(/_/g, '').includes(formattedNameNoHyphens);
-                });
-                
-                console.log(`Found class name in module: ${className}`);
-                
-                if (!className) {
-                    throw new Error(`Could not find quiz class for ${quizName} in module: ${JSON.stringify(Object.keys(quizModule))}`);
+                if (!quiz || !quiz.scenarios) {
+                    throw new Error(`Quiz module for ${quizName} does not contain scenarios`);
                 }
                 
-                // Instantiate the quiz class
-                console.log(`Instantiating class: ${className}`);
-                const quizInstance = new quizModule[className]();
-                
-                // Extract scenarios from the quiz instance
-                const basicScenarios = quizInstance.basicScenarios || [];
-                const intermediateScenarios = quizInstance.intermediateScenarios || [];
-                const advancedScenarios = quizInstance.advancedScenarios || [];
-                
-                console.log(`Extracted scenarios - Basic: ${basicScenarios.length}, Intermediate: ${intermediateScenarios.length}, Advanced: ${advancedScenarios.length}`);
-                
-                // Combine all scenarios
-                return {
-                    basic: basicScenarios,
-                    intermediate: intermediateScenarios,
-                    advanced: advancedScenarios
-                };
+                console.log(`Successfully loaded scenarios for ${quizName} from client-side module`);
+                return quiz.scenarios;
             } catch (importError) {
-                console.error('Failed to import quiz module:', importError);
-                throw new Error(`Could not load scenarios for ${quizName}: ${importError.message}`);
+                console.error(`Failed to import quiz module for ${quizName}:`, importError);
+                
+                // Provide a more specific error message based on the error type
+                if (importError.message && importError.message.includes('Cannot find module')) {
+                    throw new Error(`Quiz "${this.formatQuizName(quizName)}" not found. Please check the quiz name and try again.`);
+                } else if (importError.message && importError.message.includes('does not have a default export')) {
+                    throw new Error(`Quiz "${this.formatQuizName(quizName)}" has an invalid format. Please contact support.`);
+                } else if (importError.message && importError.message.includes('does not contain scenarios')) {
+                    throw new Error(`Quiz "${this.formatQuizName(quizName)}" does not contain any scenarios. Please contact support.`);
+                }
+                
+                throw new Error(`Failed to load scenarios for "${this.formatQuizName(quizName)}". ${importError.message}`);
             }
         } catch (error) {
-            console.error(`Error fetching scenarios for ${quizName}:`, error);
-            throw error;
+            console.error(`Error in fetchQuizScenarios for ${quizName}:`, error);
+            throw error; // Re-throw the error to be handled by the caller
         }
     }
 
@@ -2376,6 +2309,7 @@ class AdminDashboard {
                     text-align: center;">
                     <h3>Loading Scenarios...</h3>
                     <div class="loading-spinner"></div>
+                    <p style="margin-top: 1rem; color: #6c757d;">This may take a few seconds...</p>
                 </div>
             `;
             document.body.appendChild(loadingOverlay);
@@ -2397,7 +2331,16 @@ class AdminDashboard {
                         max-width: 500px;">
                         <h3 style="color: #dc3545;">Error Loading Scenarios</h3>
                         <p>${fetchError.message || `Failed to load scenarios for ${this.formatQuizName(quizName)}`}</p>
-                        <div style="margin-top: 20px;">
+                        <div style="margin-top: 20px; display: flex; gap: 10px; justify-content: center;">
+                            <button id="retryBtn" class="action-button" style="
+                                background: var(--primary-color);
+                                color: white;
+                                border: none;
+                                padding: 8px 16px;
+                                border-radius: 4px;
+                                cursor: pointer;">
+                                Retry
+                            </button>
                             <button id="closeErrorBtn" class="action-button" style="
                                 background: #6c757d;
                                 color: white;
@@ -2416,6 +2359,15 @@ class AdminDashboard {
                 if (closeErrorBtn) {
                     closeErrorBtn.addEventListener('click', () => {
                         loadingOverlay.remove();
+                    });
+                }
+                
+                // Add event listener for retry button
+                const retryBtn = document.getElementById('retryBtn');
+                if (retryBtn) {
+                    retryBtn.addEventListener('click', () => {
+                        loadingOverlay.remove();
+                        this.showQuizScenarios(quizName);
                     });
                 }
                 
