@@ -699,6 +699,30 @@ export class APIService {
         }
     }
 
+    async getQuizScenarios(quizName) {
+        try {
+            console.log(`Fetching scenarios for quiz: ${quizName}`);
+            const response = await this.fetchWithAdminAuth(`${this.baseUrl}/admin/quizzes/${quizName}/scenarios`);
+            
+            if (!response.success) {
+                console.error('Failed to fetch quiz scenarios:', response);
+                throw new Error(response.message || 'Failed to fetch quiz scenarios');
+            }
+
+            return {
+                success: true,
+                data: response.data || {
+                    basic: [],
+                    intermediate: [],
+                    advanced: []
+                }
+            };
+        } catch (error) {
+            console.error(`Failed to fetch scenarios for quiz ${quizName}:`, error);
+            throw error;
+        }
+    }
+
     // Add resetUserPassword method
     async resetUserPassword(username, newPassword) {
         try {

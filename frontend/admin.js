@@ -266,6 +266,26 @@ class AdminDashboard {
             const { quizName } = event.detail;
             await this.showQuizQuestions(quizName);
         });
+
+        // Add View Quiz Scenarios button to the admin panel
+        const controlsContainer = document.querySelector('.search-controls');
+        if (controlsContainer) {
+            const viewScenariosContainer = document.createElement('div');
+            viewScenariosContainer.className = 'control-field';
+            viewScenariosContainer.innerHTML = `
+                <label class="visually-hidden">View Quiz Scenarios</label>
+                <button id="viewQuizScenariosBtn" class="action-button">
+                    View Quiz Scenarios
+                </button>
+            `;
+            controlsContainer.appendChild(viewScenariosContainer);
+            
+            // Add event listener for the new button
+            const viewScenariosBtn = document.getElementById('viewQuizScenariosBtn');
+            if (viewScenariosBtn) {
+                viewScenariosBtn.addEventListener('click', () => this.showQuizScenariosSelector());
+            }
+        }
     }
 
     async updateDashboard() {
@@ -2211,6 +2231,420 @@ class AdminDashboard {
             console.error('Error exporting simple CSV:', error);
             this.showError('Failed to export simple CSV file');
         }
+    }
+
+    async showQuizScenariosSelector() {
+        try {
+            // Create the overlay
+            const overlay = document.createElement('div');
+            overlay.className = 'modal-overlay';
+            overlay.setAttribute('role', 'dialog');
+            overlay.setAttribute('aria-modal', 'true');
+            overlay.setAttribute('aria-labelledby', 'quiz-selector-title');
+            
+            const content = document.createElement('div');
+            content.className = 'modal-content';
+            content.style.maxWidth = '500px';
+            
+            content.innerHTML = `
+                <div class="details-header">
+                    <h3 id="quiz-selector-title">Select Quiz to View Scenarios</h3>
+                    <button class="close-btn" aria-label="Close quiz selector" tabindex="0">×</button>
+                </div>
+                <div class="quiz-selection" style="
+                    max-height: 400px;
+                    overflow-y: auto;
+                    padding: 1rem;
+                    margin-top: 1rem;">
+                    ${this.quizTypes
+                        .slice()
+                        .sort((a, b) => this.formatQuizName(a).localeCompare(this.formatQuizName(b)))
+                        .map(quiz => `
+                        <div class="quiz-item" style="
+                            padding: 12px;
+                            margin-bottom: 10px;
+                            border-radius: 6px;
+                            background: white;
+                            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+                            cursor: pointer;
+                            transition: all 0.2s ease;">
+                            <div style="
+                                display: flex;
+                                align-items: center;
+                                justify-content: space-between;">
+                                <span style="font-weight: 500;">${this.formatQuizName(quiz)}</span>
+                                <button class="view-scenarios-btn" 
+                                    data-quiz-name="${quiz}"
+                                    style="
+                                        background: var(--primary-color);
+                                        color: white;
+                                        border: none;
+                                        padding: 6px 12px;
+                                        border-radius: 4px;
+                                        cursor: pointer;
+                                        font-weight: 500;">
+                                    View Scenarios
+                                </button>
+                            </div>
+                        </div>
+                    `).join('')}
+                </div>
+            `;
+            
+            overlay.appendChild(content);
+            document.body.appendChild(overlay);
+
+            // Add event listener for close button
+            const closeBtn = content.querySelector('.close-btn');
+            if (closeBtn) {
+                closeBtn.addEventListener('click', () => {
+                    overlay.remove();
+                });
+                
+                // Add keyboard support for close button
+                closeBtn.addEventListener('keydown', (e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault();
+                        overlay.remove();
+                    }
+                });
+            }
+            
+            // Add escape key handler
+            const handleEscapeKey = (e) => {
+                if (e.key === 'Escape') {
+                    overlay.remove();
+                    document.removeEventListener('keydown', handleEscapeKey);
+                }
+            };
+            
+            document.addEventListener('keydown', handleEscapeKey);
+
+            // Add event listeners for view scenarios buttons
+            content.querySelectorAll('.view-scenarios-btn').forEach(button => {
+                button.addEventListener('click', (e) => {
+                    const quizName = e.target.dataset.quizName;
+                    overlay.remove();
+                    this.showQuizScenarios(quizName);
+                });
+            });
+
+            // Close on click outside
+            overlay.addEventListener('click', (e) => {
+                if (e.target === overlay) {
+                    overlay.remove();
+                }
+            });
+        } catch (error) {
+            console.error('Error showing quiz selector:', error);
+            this.showError('Failed to load quiz selector');
+        }
+    }
+
+    async fetchQuizScenarios(quizName) {
+        try {
+            // First try to fetch from API
+            try {
+                const response = await this.apiService.getQuizScenarios(quizName);
+                
+                if (response.success && response.data) {
+                    return response.data;
+                }
+            } catch (apiError) {
+                console.warn('API fetch failed, falling back to client-side data:', apiError);
+                // Continue to fallback method
+            }
+
+            // Fallback: Dynamically import the quiz module to get scenarios
+            try {
+                // Convert quiz name to proper format for import
+                const formattedQuizName = quizName.toLowerCase().replace(/\s+/g, '-');
+                
+                // Handle special case for CMS-Testing
+                const importPath = formattedQuizName === 'cms-testing' 
+                    ? '../quizzes/CMS-Testing-quiz.js'
+                    : `../quizzes/${formattedQuizName}-quiz.js`;
+                
+                const quizModule = await import(importPath);
+                
+                // Get the class name based on the quiz name
+                const className = Object.keys(quizModule).find(key => 
+                    key.toLowerCase().includes(formattedQuizName.replace(/-/g, '')) || 
+                    key.toLowerCase().includes(formattedQuizName)
+                );
+                
+                if (!className) {
+                    throw new Error(`Could not find quiz class for ${quizName}`);
+                }
+                
+                // Instantiate the quiz class
+                const quizInstance = new quizModule[className]();
+                
+                // Extract scenarios from the quiz instance
+                const basicScenarios = quizInstance.basicScenarios || [];
+                const intermediateScenarios = quizInstance.intermediateScenarios || [];
+                const advancedScenarios = quizInstance.advancedScenarios || [];
+                
+                // Combine all scenarios
+                return {
+                    basic: basicScenarios,
+                    intermediate: intermediateScenarios,
+                    advanced: advancedScenarios
+                };
+            } catch (importError) {
+                console.error('Failed to import quiz module:', importError);
+                throw new Error(`Could not load scenarios for ${quizName}`);
+            }
+        } catch (error) {
+            console.error(`Error fetching scenarios for ${quizName}:`, error);
+            throw error;
+        }
+    }
+
+    async showQuizScenarios(quizName) {
+        try {
+            // Show loading indicator
+            const loadingOverlay = document.createElement('div');
+            loadingOverlay.className = 'modal-overlay';
+            loadingOverlay.innerHTML = `
+                <div style="
+                    background: white;
+                    padding: 2rem;
+                    border-radius: 8px;
+                    text-align: center;">
+                    <h3>Loading Scenarios...</h3>
+                    <div class="loading-spinner"></div>
+                </div>
+            `;
+            document.body.appendChild(loadingOverlay);
+
+            // Fetch quiz scenarios
+            const scenarios = await this.fetchQuizScenarios(quizName);
+            
+            // Remove loading indicator
+            loadingOverlay.remove();
+            
+            if (!scenarios) {
+                throw new Error(`No scenarios found for ${quizName}`);
+            }
+
+            // Create the overlay
+            const overlay = document.createElement('div');
+            overlay.className = 'user-details-overlay';
+            overlay.setAttribute('role', 'dialog');
+            overlay.setAttribute('aria-modal', 'true');
+            overlay.setAttribute('aria-labelledby', 'scenarios-title');
+            
+            const content = document.createElement('div');
+            content.className = 'user-details-content';
+            content.style.maxWidth = '90%';
+            content.style.width = '1200px';
+            
+            // Prepare the HTML for scenarios
+            let scenariosHTML = '';
+            
+            // Add basic scenarios
+            if (scenarios.basic && scenarios.basic.length > 0) {
+                scenariosHTML += `
+                    <div class="scenario-section">
+                        <h3 class="scenario-level-title">Basic Level</h3>
+                        <div class="scenarios-list">
+                            ${this.generateScenariosHTML(scenarios.basic)}
+                        </div>
+                    </div>
+                `;
+            }
+            
+            // Add intermediate scenarios
+            if (scenarios.intermediate && scenarios.intermediate.length > 0) {
+                scenariosHTML += `
+                    <div class="scenario-section">
+                        <h3 class="scenario-level-title">Intermediate Level</h3>
+                        <div class="scenarios-list">
+                            ${this.generateScenariosHTML(scenarios.intermediate)}
+                        </div>
+                    </div>
+                `;
+            }
+            
+            // Add advanced scenarios
+            if (scenarios.advanced && scenarios.advanced.length > 0) {
+                scenariosHTML += `
+                    <div class="scenario-section">
+                        <h3 class="scenario-level-title">Advanced Level</h3>
+                        <div class="scenarios-list">
+                            ${this.generateScenariosHTML(scenarios.advanced)}
+                        </div>
+                    </div>
+                `;
+            }
+            
+            content.innerHTML = `
+                <style>
+                    .scenario-section {
+                        margin-bottom: 2rem;
+                    }
+                    .scenario-level-title {
+                        font-size: 1.5rem;
+                        margin-bottom: 1rem;
+                        padding-bottom: 0.5rem;
+                        border-bottom: 2px solid var(--primary-color);
+                    }
+                    .scenario-card {
+                        background: white;
+                        border-radius: 8px;
+                        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+                        margin-bottom: 1.5rem;
+                        overflow: hidden;
+                    }
+                    .scenario-header {
+                        background: #f8f9fa;
+                        padding: 1rem;
+                        border-bottom: 1px solid #e9ecef;
+                    }
+                    .scenario-title {
+                        font-size: 1.2rem;
+                        font-weight: 600;
+                        margin: 0;
+                    }
+                    .scenario-body {
+                        padding: 1rem;
+                    }
+                    .scenario-description {
+                        margin-bottom: 1rem;
+                        line-height: 1.5;
+                    }
+                    .options-list {
+                        list-style: none;
+                        padding: 0;
+                        margin: 0;
+                    }
+                    .option-item {
+                        padding: 1rem;
+                        margin-bottom: 0.5rem;
+                        border-radius: 4px;
+                        border-left: 4px solid transparent;
+                    }
+                    .option-item.correct {
+                        background-color: rgba(75, 181, 67, 0.1);
+                        border-left-color: #4bb543;
+                    }
+                    .option-item.incorrect {
+                        background-color: rgba(255, 68, 68, 0.05);
+                        border-left-color: #ff4444;
+                    }
+                    .option-text {
+                        font-weight: 500;
+                        margin-bottom: 0.5rem;
+                    }
+                    .option-outcome {
+                        font-style: italic;
+                        color: #6c757d;
+                    }
+                    .option-experience {
+                        margin-top: 0.5rem;
+                        font-weight: 500;
+                    }
+                    .option-experience.positive {
+                        color: #28a745;
+                    }
+                    .option-experience.negative {
+                        color: #dc3545;
+                    }
+                    .option-experience.neutral {
+                        color: #6c757d;
+                    }
+                </style>
+                <div class="details-header">
+                    <h3 id="scenarios-title">${this.formatQuizName(quizName)} Quiz Scenarios</h3>
+                    <button class="close-btn" aria-label="Close scenarios view" tabindex="0">×</button>
+                </div>
+                <div class="scenarios-content">
+                    ${scenariosHTML || '<p>No scenarios found for this quiz.</p>'}
+                </div>
+            `;
+            
+            overlay.appendChild(content);
+            document.body.appendChild(overlay);
+
+            // Add event listener for close button
+            const closeBtn = content.querySelector('.close-btn');
+            if (closeBtn) {
+                closeBtn.addEventListener('click', () => {
+                    overlay.remove();
+                });
+                
+                // Add keyboard support for close button
+                closeBtn.addEventListener('keydown', (e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault();
+                        overlay.remove();
+                    }
+                });
+            }
+            
+            // Add escape key handler
+            const handleEscapeKey = (e) => {
+                if (e.key === 'Escape') {
+                    overlay.remove();
+                    document.removeEventListener('keydown', handleEscapeKey);
+                }
+            };
+            
+            document.addEventListener('keydown', handleEscapeKey);
+
+            // Close on click outside
+            overlay.addEventListener('click', (e) => {
+                if (e.target === overlay) {
+                    overlay.remove();
+                }
+            });
+        } catch (error) {
+            console.error(`Error showing scenarios for ${quizName}:`, error);
+            this.showError(`Failed to load scenarios for ${this.formatQuizName(quizName)}`);
+        }
+    }
+
+    generateScenariosHTML(scenarios) {
+        return scenarios.map(scenario => {
+            // Find the correct option (the one with the highest experience)
+            const correctOption = [...scenario.options].sort((a, b) => 
+                (b.experience || 0) - (a.experience || 0)
+            )[0];
+            
+            return `
+                <div class="scenario-card">
+                    <div class="scenario-header">
+                        <h4 class="scenario-title">${scenario.title || 'Untitled Scenario'}</h4>
+                        ${scenario.id ? `<div class="scenario-id">ID: ${scenario.id}</div>` : ''}
+                    </div>
+                    <div class="scenario-body">
+                        <div class="scenario-description">
+                            ${scenario.description || 'No description available'}
+                        </div>
+                        <h5>Answer Options:</h5>
+                        <ul class="options-list">
+                            ${scenario.options.map(option => {
+                                const isCorrect = option === correctOption;
+                                const experienceClass = (option.experience || 0) > 0 ? 'positive' : 
+                                                      (option.experience || 0) < 0 ? 'negative' : 'neutral';
+                                
+                                return `
+                                    <li class="option-item ${isCorrect ? 'correct' : 'incorrect'}">
+                                        <div class="option-text">${option.text || 'No text available'}</div>
+                                        <div class="option-outcome">${option.outcome || 'No outcome description'}</div>
+                                        <div class="option-experience ${experienceClass}">
+                                            Experience: ${option.experience || 0} XP
+                                            ${isCorrect ? ' (Correct Answer)' : ''}
+                                        </div>
+                                    </li>
+                                `;
+                            }).join('')}
+                        </ul>
+                    </div>
+                </div>
+            `;
+        }).join('');
     }
 }
 
