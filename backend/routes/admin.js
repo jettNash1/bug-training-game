@@ -899,11 +899,54 @@ router.get('/quizzes/:quizName/scenarios', auth, async (req, res) => {
                         const match = fileContent.match(regex);
                         if (match && match[1]) {
                             console.log(`Found match for ${prefix} using pattern: ${regex}`);
+                            
                             try {
                                 // Try to parse as JSON
                                 return JSON.parse(`[${match[1]}]`);
                             } catch (e) {
-                                console.warn(`Could not parse ${prefix} from source: ${e.message}`);
+                                console.warn(`Could not parse ${prefix} from source as JSON: ${e.message}`);
+                                
+                                // If JSON parsing fails, try to extract the basic structure
+                                try {
+                                    // Extract scenario objects using a more lenient approach
+                                    const scenarioText = match[1];
+                                    const scenarios = [];
+                                    
+                                    // Use regex to find individual scenario objects
+                                    const scenarioRegex = /\{\s*id:\s*(\d+),\s*level:\s*['"]([^'"]+)['"]/g;
+                                    let scenarioMatch;
+                                    
+                                    while ((scenarioMatch = scenarioRegex.exec(scenarioText)) !== null) {
+                                        const id = parseInt(scenarioMatch[1]);
+                                        const level = scenarioMatch[2];
+                                        
+                                        // Find the title and description
+                                        const titleMatch = /title:\s*['"]([^'"]+)['"]/g.exec(scenarioText.substring(scenarioMatch.index));
+                                        const descriptionMatch = /description:\s*['"]([^'"]+)['"]/g.exec(scenarioText.substring(scenarioMatch.index));
+                                        
+                                        const title = titleMatch ? titleMatch[1] : 'Unknown Title';
+                                        const description = descriptionMatch ? descriptionMatch[1] : 'Unknown Description';
+                                        
+                                        // Create a simplified scenario object
+                                        scenarios.push({
+                                            id,
+                                            level,
+                                            title,
+                                            description,
+                                            options: [
+                                                { text: 'Option details not available in simplified view', outcome: 'View the quiz file directly to see all options and outcomes' }
+                                            ],
+                                            note: 'This is a simplified view. Some JavaScript features in the quiz file prevented full parsing.'
+                                        });
+                                    }
+                                    
+                                    if (scenarios.length > 0) {
+                                        console.log(`Extracted ${scenarios.length} scenarios using simplified approach for ${prefix}`);
+                                        return scenarios;
+                                    }
+                                } catch (extractError) {
+                                    console.warn(`Failed to extract scenarios using simplified approach: ${extractError.message}`);
+                                }
                             }
                         }
                     }
@@ -938,7 +981,7 @@ router.get('/quizzes/:quizName/scenarios', auth, async (req, res) => {
                 });
             }
             
-            throw new Error(`Could not extract scenarios from source code for ${quizName}`);
+            throw new Error(`Could not extract scenarios from source code for ${quizName}. The quiz file may contain complex JavaScript objects that cannot be parsed as JSON.`);
         } catch (error) {
             console.error(`Error loading quiz file for ${quizName}:`, error);
             return res.status(500).json({

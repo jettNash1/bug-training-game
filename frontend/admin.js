@@ -2324,7 +2324,14 @@ class AdminDashboard {
             
             if (!response.ok) {
                 const errorData = await response.json().catch(() => ({}));
-                throw new Error(errorData.message || `Failed to fetch scenarios: ${response.status}`);
+                const errorMessage = errorData.message || `Failed to fetch scenarios: ${response.status}`;
+                
+                // Check for specific error about extracting scenarios
+                if (errorMessage.includes('Could not extract scenarios from source code')) {
+                    throw new Error(`The quiz file format for ${this.formatQuizName(quizName)} is not compatible with the scenario viewer. This is likely due to the quiz file using JavaScript objects that cannot be parsed as JSON.`);
+                }
+                
+                throw new Error(errorMessage);
             }
             
             const data = await response.json();
@@ -2404,6 +2411,10 @@ class AdminDashboard {
             } catch (fetchError) {
                 console.error(`Error fetching scenarios for ${quizName}:`, fetchError);
                 
+                // Determine if this is a parsing error
+                const isParsingError = fetchError.message.includes('not compatible with the scenario viewer') || 
+                                      fetchError.message.includes('Could not extract scenarios');
+                
                 // Show error message in the loading overlay
                 loadingOverlay.innerHTML = `
                     <div style="
@@ -2411,16 +2422,29 @@ class AdminDashboard {
                         padding: 2rem;
                         border-radius: 8px;
                         text-align: center;
-                        max-width: 500px;">
+                        max-width: 600px;">
                         <h3 style="color: #dc3545;">Error</h3>
                         <p>${fetchError.message || `Failed to load scenarios for ${this.formatQuizName(quizName)}`}</p>
                         <p style="margin-top: 0.5rem; font-size: 0.9rem; color: #6c757d;">
-                            This could be due to network issues or the quiz file not being available.
-                            Please try again later or contact the administrator.
+                            ${isParsingError ? 
+                              `The quiz file structure may be using JavaScript features that cannot be automatically extracted.
+                               You can still view the quiz file directly to see the scenarios.` : 
+                              `This could be due to network issues or the quiz file not being available.
+                               Please try again later or contact the administrator.`}
                         </p>
-                        <div style="margin-top: 20px; display: flex; gap: 10px; justify-content: center;">
+                        <div style="margin-top: 20px; display: flex; gap: 10px; justify-content: center; flex-wrap: wrap;">
+                            ${isParsingError ? 
+                              `<button id="viewFileBtn" class="action-button" style="
+                                  background: var(--primary-color);
+                                  color: white;
+                                  border: none;
+                                  padding: 8px 16px;
+                                  border-radius: 4px;
+                                  cursor: pointer;">
+                                  View Quiz File
+                              </button>` : ''}
                             <button id="retryBtn" class="action-button" style="
-                                background: var(--primary-color);
+                                background: ${isParsingError ? '#6c757d' : 'var(--primary-color)'};
                                 color: white;
                                 border: none;
                                 padding: 8px 16px;
@@ -2455,6 +2479,62 @@ class AdminDashboard {
                     retryBtn.addEventListener('click', () => {
                         loadingOverlay.remove();
                         this.showQuizScenarios(quizName);
+                    });
+                }
+                
+                // Add event listener for view file button if it exists
+                const viewFileBtn = document.getElementById('viewFileBtn');
+                if (viewFileBtn) {
+                    viewFileBtn.addEventListener('click', () => {
+                        loadingOverlay.remove();
+                        
+                        // Open the quiz file in a new tab/window
+                        const quizFileName = `${quizName.toLowerCase()}-quiz.js`;
+                        const quizFileUrl = `/quizzes/${quizFileName}`;
+                        
+                        // Create a modal to show the file path
+                        const filePathModal = document.createElement('div');
+                        filePathModal.className = 'modal-overlay';
+                        filePathModal.innerHTML = `
+                            <div style="
+                                background: white;
+                                padding: 2rem;
+                                border-radius: 8px;
+                                text-align: center;
+                                max-width: 600px;">
+                                <h3>Quiz File Information</h3>
+                                <p>To view the quiz file, you can navigate to:</p>
+                                <code style="
+                                    display: block;
+                                    background: #f8f9fa;
+                                    padding: 1rem;
+                                    border-radius: 4px;
+                                    margin: 1rem 0;
+                                    text-align: left;
+                                    overflow-x: auto;">
+                                    frontend/quizzes/${quizName.toLowerCase()}-quiz.js
+                                </code>
+                                <p>This file contains the scenarios for the ${this.formatQuizName(quizName)} quiz.</p>
+                                <button id="closeFilePathBtn" class="action-button" style="
+                                    background: var(--primary-color);
+                                    color: white;
+                                    border: none;
+                                    padding: 8px 16px;
+                                    border-radius: 4px;
+                                    cursor: pointer;">
+                                    Close
+                                </button>
+                            </div>
+                        `;
+                        document.body.appendChild(filePathModal);
+                        
+                        // Add event listener for close button
+                        const closeFilePathBtn = document.getElementById('closeFilePathBtn');
+                        if (closeFilePathBtn) {
+                            closeFilePathBtn.addEventListener('click', () => {
+                                filePathModal.remove();
+                            });
+                        }
                     });
                 }
                 
