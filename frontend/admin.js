@@ -1668,12 +1668,12 @@ class AdminDashboard {
                                             </td>
                                             <td class="answer-content">
                         <div>
-                                                <strong>Selected:</strong> ${question.selectedAnswer || 'No answer selected'}
+                                                    <strong>Selected:</strong> ${question.selectedAnswer || 'No answer selected'}
                         </div>
                                                 ${!question.isCorrect ? `
                         <div>
-                                                <strong>Correct:</strong> ${question.correctAnswer || 'Correct answer not available'}
-                                            </div>` : ''}
+                                                    <strong>Correct:</strong> ${question.correctAnswer || 'Correct answer not available'}
+                                                </div>` : ''}
                                             </td>
                                         </tr>
                                     `;
@@ -2388,7 +2388,7 @@ class AdminDashboard {
                             // If static properties don't exist, try to safely instantiate the class
                             try {
                                 // Create mock DOM elements to prevent errors
-                                const originalDocument = document;
+                                const originalDocument = global.document;
                                 const mockDocument = {
                                     getElementById: (id) => {
                                         // Return a mock element that does nothing but doesn't throw errors
@@ -2420,8 +2420,11 @@ class AdminDashboard {
                                 };
                                 
                                 // Temporarily replace document with our mock
-                                // In browser environments, we use window.document
-                                window.document = mockDocument;
+                                if (typeof global !== 'undefined') {
+                                    global.document = mockDocument;
+                                } else if (typeof window !== 'undefined') {
+                                    window.document = mockDocument;
+                                }
                                 
                                 // Try to extract scenarios directly from the prototype
                                 const prototype = quizModule[className].prototype;
@@ -2430,7 +2433,11 @@ class AdminDashboard {
                                     console.log(`Found scenarios in ${className} prototype`);
                                     
                                     // Restore original document
-                                    window.document = originalDocument;
+                                    if (typeof global !== 'undefined') {
+                                        global.document = originalDocument;
+                                    } else if (typeof window !== 'undefined') {
+                                        window.document = originalDocument;
+                                    }
                                     
                                     return {
                                         basic: prototype.basicScenarios || [],
@@ -2444,7 +2451,11 @@ class AdminDashboard {
                                 const quizInstance = new quizModule[className]();
                                 
                                 // Restore original document
-                                window.document = originalDocument;
+                                if (typeof global !== 'undefined') {
+                                    global.document = originalDocument;
+                                } else if (typeof window !== 'undefined') {
+                                    window.document = originalDocument;
+                                }
                                 
                                 // Extract scenarios from the instance
                                 if (quizInstance.basicScenarios || quizInstance.intermediateScenarios || quizInstance.advancedScenarios) {
@@ -2465,115 +2476,108 @@ class AdminDashboard {
                                 
                                 // Make a request to get the raw source code
                                 try {
-                                    // Use a relative path that works in the browser
-                                    const relativePath = modulePath.startsWith('../') ? 
-                                        modulePath.substring(3) : modulePath;
-                                    
-                                    console.log(`Fetching source code from: ${relativePath}`);
-                                    const response = await fetch(relativePath);
-                                    
-                                    if (!response.ok) {
-                                        throw new Error(`Failed to fetch source code: ${response.status} ${response.statusText}`);
-                                    }
-                                    
+                                    const response = await fetch(modulePath);
                                     const sourceCode = await response.text();
-                                    console.log(`Source code fetched, length: ${sourceCode.length} characters`);
                                     
                                     // Use regex to extract scenario arrays
                                     const extractScenarios = (prefix) => {
-                                        try {
-                                            // Try different regex patterns to match the scenarios
-                                            const patterns = [
-                                                // Standard pattern with this.prefix = [...]
-                                                new RegExp(`${prefix}\\s*=\\s*\\[(.*?)\\];`, 's'),
-                                                // Alternative pattern with this.prefix = [ ... ]
-                                                new RegExp(`${prefix}\\s*=\\s*\\[(.*?)\\]`, 's'),
-                                                // Pattern for static class properties
-                                                new RegExp(`static\\s+${prefix.replace('this.', '')}\\s*=\\s*\\[(.*?)\\];`, 's')
-                                            ];
-                                            
-                                            for (const regex of patterns) {
-                                                const match = sourceCode.match(regex);
-                                                if (match && match[1]) {
-                                                    console.log(`Found match for ${prefix} using pattern: ${regex}`);
-                                                    try {
-                                                        // Try to parse as JSON
-                                                        return JSON.parse(`[${match[1]}]`);
-                                                    } catch (e) {
-                                                        console.warn(`Could not parse ${prefix} from source: ${e.message}`);
-                                                    }
-                                                }
+                                        const regex = new RegExp(`${prefix}\\s*=\\s*\\[(.*?)\\];`, 's');
+                                        const match = sourceCode.match(regex);
+                                        if (match && match[1]) {
+                                            try {
+                                                // This is not ideal but might work in some cases
+                                                return JSON.parse(`[${match[1]}]`);
+                                            } catch (e) {
+                                                console.warn(`Could not parse ${prefix} from source`);
+                                                return [];
                                             }
-                                            
-                                            console.warn(`No regex match found for ${prefix}`);
-                                            return [];
-                                        } catch (e) {
-                                            console.warn(`Error extracting ${prefix}: ${e.message}`);
-                                            return [];
                                         }
+                                        return [];
                                     };
-                                    
-                                    // Try different prefixes for the scenarios
-                                    const prefixes = [
-                                        'this.basicScenarios',
-                                        'basicScenarios',
-                                        'this.intermediateScenarios',
-                                        'intermediateScenarios',
-                                        'this.advancedScenarios',
-                                        'advancedScenarios'
-                                    ];
                                     
                                     const scenarios = {
-                                        basic: extractScenarios('this.basicScenarios') || [],
-                                        intermediate: extractScenarios('this.intermediateScenarios') || [],
-                                        advanced: extractScenarios('this.advancedScenarios') || []
+                                        basic: extractScenarios('this.basicScenarios'),
+                                        intermediate: extractScenarios('this.intermediateScenarios'),
+                                        advanced: extractScenarios('this.advancedScenarios')
                                     };
-                                    
-                                    // If we didn't find any scenarios with the standard prefixes, try alternatives
-                                    if (!scenarios.basic.length && !scenarios.intermediate.length && !scenarios.advanced.length) {
-                                        console.log('Trying alternative scenario prefixes...');
-                                        scenarios.basic = extractScenarios('basicScenarios') || [];
-                                        scenarios.intermediate = extractScenarios('intermediateScenarios') || [];
-                                        scenarios.advanced = extractScenarios('advancedScenarios') || [];
-                                    }
                                     
                                     if (scenarios.basic.length || scenarios.intermediate.length || scenarios.advanced.length) {
                                         console.log(`Successfully extracted scenarios from source code for ${quizName}`);
                                         return scenarios;
                                     }
                                     
-                                    // If we still don't have scenarios, look for any array in the source that might be scenarios
-                                    console.log('Looking for any arrays that might be scenarios...');
-                                    const arrayPattern = /\[\s*\{\s*id\s*:\s*\d+/g;
-                                    const arrayMatches = sourceCode.match(arrayPattern);
-                                    
-                                    if (arrayMatches && arrayMatches.length > 0) {
-                                        console.log(`Found ${arrayMatches.length} potential scenario arrays`);
-                                        // Just use the first three arrays as basic, intermediate, and advanced
-                                        // This is a last resort and might not be accurate
-                                        return {
-                                            basic: [],
-                                            intermediate: [],
-                                            advanced: []
-                                        };
-                                    }
-                                    
                                     throw new Error(`Could not extract scenarios from source code for ${quizName}`);
                                 } catch (sourceError) {
-                                    console.error(`Error extracting from source: ${sourceError.message}`);
-                                    throw new Error(`Could not load scenarios for ${this.formatQuizName(quizName)}. The quiz file may not exist or may have a different structure.`);
+                                    console.error(`Error extracting from source:`, sourceError);
+                                    throw instantiationError; // Throw the original error
                                 }
-                            } catch (instantiationError) {
-                                console.error(`Error instantiating ${className}:`, instantiationError);
-                                throw instantiationError;
                             }
-                        } catch (importError) {
-                            console.error(`Failed to import quiz module for ${quizName}: ${importError}`);
-                            throw new Error(`Could not load quiz scenarios for "${this.formatQuizName(quizName)}". The quiz file may not exist or may have errors.`);
+                        } else {
+                            console.error(`Module loaded but class ${className} not found. Available exports:`, Object.keys(quizModule));
+                            
+                            // Try to find any class that extends BaseQuiz
+                            for (const exportName of Object.keys(quizModule)) {
+                                if (typeof quizModule[exportName] === 'function') {
+                                    try {
+                                        // Create a safer instantiation with mock DOM
+                                        const mockDocument = {
+                                            getElementById: () => ({
+                                                addEventListener: () => {},
+                                                appendChild: () => {},
+                                                classList: { add: () => {}, remove: () => {} },
+                                                style: {}
+                                            }),
+                                            createElement: () => ({
+                                                className: '',
+                                                setAttribute: () => {},
+                                                style: {},
+                                                appendChild: () => {}
+                                            }),
+                                            body: { appendChild: () => {} },
+                                            addEventListener: () => {}
+                                        };
+                                        
+                                        // Temporarily replace document
+                                        const originalDocument = global.document;
+                                        if (typeof global !== 'undefined') {
+                                            global.document = mockDocument;
+                                        } else if (typeof window !== 'undefined') {
+                                            window.document = mockDocument;
+                                        }
+                                        
+                                        const instance = new quizModule[exportName]();
+                                        
+                                        // Restore original document
+                                        if (typeof global !== 'undefined') {
+                                            global.document = originalDocument;
+                                        } else if (typeof window !== 'undefined') {
+                                            window.document = originalDocument;
+                                        }
+                                        
+                                        if (instance.basicScenarios && instance.intermediateScenarios && instance.advancedScenarios) {
+                                            console.log(`Found alternative class ${exportName} with scenarios`);
+                                            
+                                            // Extract scenarios from the instance
+                                            const scenarios = {
+                                                basic: instance.basicScenarios || [],
+                                                intermediate: instance.intermediateScenarios || [],
+                                                advanced: instance.advancedScenarios || []
+                                            };
+                                            
+                                            console.log(`Successfully extracted scenarios from ${exportName} instance`);
+                                            return scenarios;
+                                        }
+                                    } catch (e) {
+                                        console.warn(`Failed to instantiate ${exportName}:`, e);
+                                    }
+                                }
+                            }
+                            
+                            throw new Error(`Quiz class ${className} not found in module`);
                         }
-                    } catch (moduleError) {
-                        console.error(`Module loading error for ${quizName}: ${moduleError.message}`);
-                        throw moduleError;
+                    } catch (importError) {
+                        console.error(`Failed to import quiz module for ${quizName}: ${importError}`);
+                        throw new Error(`Could not load quiz scenarios for "${this.formatQuizName(quizName)}". The quiz file may not exist or may have errors.`);
                     }
                 } catch (moduleError) {
                     console.error(`Module loading error for ${quizName}: ${moduleError.message}`);
