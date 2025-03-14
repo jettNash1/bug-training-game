@@ -2387,16 +2387,17 @@ class AdminDashboard {
                             
                             // If static properties don't exist, try to safely instantiate the class
                             try {
-                                // Create mock DOM elements to prevent errors
-                                const originalDocument = window.document;
-                                const mockDocument = {
-                                    getElementById: (id) => {
-                                        // Return a mock element that does nothing but doesn't throw errors
-                                        return {
+                                // Instead of replacing document, we'll create a mock environment
+                                // and pass it to the constructor if possible
+                                
+                                // Create a mock environment with all the DOM methods
+                                const mockEnv = {
+                                    document: {
+                                        getElementById: (id) => ({
                                             addEventListener: () => {},
                                             appendChild: () => {},
-                                            classList: {
-                                                add: () => {},
+                                            classList: { 
+                                                add: () => {}, 
                                                 remove: () => {},
                                                 contains: () => false
                                             },
@@ -2404,32 +2405,26 @@ class AdminDashboard {
                                             innerHTML: '',
                                             querySelectorAll: () => [],
                                             querySelector: () => null
-                                        };
-                                    },
-                                    createElement: () => ({
-                                        className: '',
-                                        setAttribute: () => {},
-                                        style: {},
-                                        appendChild: () => {},
+                                        }),
+                                        createElement: () => ({
+                                            className: '',
+                                            setAttribute: () => {},
+                                            style: {},
+                                            appendChild: () => {},
+                                            addEventListener: () => {}
+                                        }),
+                                        body: {
+                                            appendChild: () => {}
+                                        },
                                         addEventListener: () => {}
-                                    }),
-                                    body: {
-                                        appendChild: () => {}
-                                    },
-                                    addEventListener: () => {}
+                                    }
                                 };
-                                
-                                // Temporarily replace document with our mock
-                                window.document = mockDocument;
                                 
                                 // Try to extract scenarios directly from the prototype
                                 const prototype = quizModule[className].prototype;
                                 if (prototype && 
                                     (prototype.basicScenarios || prototype.intermediateScenarios || prototype.advancedScenarios)) {
                                     console.log(`Found scenarios in ${className} prototype`);
-                                    
-                                    // Restore original document
-                                    window.document = originalDocument;
                                     
                                     return {
                                         basic: prototype.basicScenarios || [],
@@ -2438,23 +2433,46 @@ class AdminDashboard {
                                     };
                                 }
                                 
-                                // If that doesn't work, try to instantiate with our mock document
-                                console.log(`Attempting to safely instantiate ${className} with mock DOM`);
-                                const quizInstance = new quizModule[className]();
+                                // If that doesn't work, try to instantiate with our mock environment
+                                // We'll try different approaches since we can't modify window.document
                                 
-                                // Restore original document
-                                window.document = originalDocument;
+                                console.log(`Attempting to safely instantiate ${className}`);
                                 
-                                // Extract scenarios from the instance
-                                if (quizInstance.basicScenarios || quizInstance.intermediateScenarios || quizInstance.advancedScenarios) {
-                                    console.log(`Successfully extracted scenarios from ${className} instance`);
-                                    return {
-                                        basic: quizInstance.basicScenarios || [],
-                                        intermediate: quizInstance.intermediateScenarios || [],
-                                        advanced: quizInstance.advancedScenarios || []
-                                    };
-                                } else {
-                                    throw new Error(`No scenarios found in ${className} instance`);
+                                // First try: See if the constructor accepts an environment parameter
+                                try {
+                                    const quizInstance = new quizModule[className](mockEnv);
+                                    
+                                    // Extract scenarios from the instance
+                                    if (quizInstance.basicScenarios || quizInstance.intermediateScenarios || quizInstance.advancedScenarios) {
+                                        console.log(`Successfully extracted scenarios from ${className} instance with mock env`);
+                                        return {
+                                            basic: quizInstance.basicScenarios || [],
+                                            intermediate: quizInstance.intermediateScenarios || [],
+                                            advanced: quizInstance.advancedScenarios || []
+                                        };
+                                    }
+                                } catch (envError) {
+                                    console.log(`Could not instantiate with environment parameter: ${envError.message}`);
+                                }
+                                
+                                // Second try: Use a regular instantiation and hope it doesn't access DOM
+                                try {
+                                    const quizInstance = new quizModule[className]();
+                                    
+                                    // Extract scenarios from the instance
+                                    if (quizInstance.basicScenarios || quizInstance.intermediateScenarios || quizInstance.advancedScenarios) {
+                                        console.log(`Successfully extracted scenarios from ${className} instance`);
+                                        return {
+                                            basic: quizInstance.basicScenarios || [],
+                                            intermediate: quizInstance.intermediateScenarios || [],
+                                            advanced: quizInstance.advancedScenarios || []
+                                        };
+                                    } else {
+                                        throw new Error(`No scenarios found in ${className} instance`);
+                                    }
+                                } catch (directError) {
+                                    console.log(`Could not instantiate directly: ${directError.message}`);
+                                    throw new Error(`Could not instantiate ${className}: ${directError.message}`);
                                 }
                             } catch (instantiationError) {
                                 console.error(`Error instantiating ${className}:`, instantiationError);
@@ -2465,18 +2483,51 @@ class AdminDashboard {
                                 // Make a request to get the raw source code
                                 try {
                                     // Use a relative path that works in the browser
-                                    const relativePath = modulePath.startsWith('../') ? 
-                                        modulePath.substring(3) : modulePath;
+                                    let relativePath = '';
                                     
-                                    console.log(`Fetching source code from: ${relativePath}`);
-                                    const response = await fetch(relativePath);
-                                    
-                                    if (!response.ok) {
-                                        throw new Error(`Failed to fetch source code: ${response.status} ${response.statusText}`);
+                                    // Try different path formats
+                                    if (modulePath.startsWith('../')) {
+                                        // Remove the leading '../'
+                                        relativePath = modulePath.substring(3);
+                                    } else if (modulePath.startsWith('./')) {
+                                        // Remove the leading './'
+                                        relativePath = modulePath.substring(2);
+                                    } else {
+                                        relativePath = modulePath;
                                     }
                                     
-                                    const sourceCode = await response.text();
-                                    console.log(`Source code fetched, length: ${sourceCode.length} characters`);
+                                    // Try different possible locations
+                                    const possiblePaths = [
+                                        relativePath,
+                                        `/quizzes/${quizName}-quiz.js`,
+                                        `/frontend/quizzes/${quizName}-quiz.js`
+                                    ];
+                                    
+                                    let sourceCode = '';
+                                    let fetchSuccess = false;
+                                    
+                                    // Try each path until one works
+                                    for (const path of possiblePaths) {
+                                        try {
+                                            console.log(`Trying to fetch source code from: ${path}`);
+                                            const response = await fetch(path);
+                                            
+                                            if (response.ok) {
+                                                sourceCode = await response.text();
+                                                console.log(`Source code fetched from ${path}, length: ${sourceCode.length} characters`);
+                                                fetchSuccess = true;
+                                                break;
+                                            } else {
+                                                console.log(`Failed to fetch from ${path}: ${response.status} ${response.statusText}`);
+                                            }
+                                        } catch (fetchError) {
+                                            console.log(`Error fetching from ${path}: ${fetchError.message}`);
+                                        }
+                                    }
+                                    
+                                    if (!fetchSuccess) {
+                                        throw new Error(`Failed to fetch source code from any of the attempted paths`);
+                                    }
                                     
                                     // Use regex to extract scenario arrays
                                     const extractScenarios = (prefix) => {
@@ -2544,32 +2595,49 @@ class AdminDashboard {
                             for (const exportName of Object.keys(quizModule)) {
                                 if (typeof quizModule[exportName] === 'function') {
                                     try {
-                                        // Create a safer instantiation with mock DOM
-                                        const mockDocument = {
-                                            getElementById: () => ({
-                                                addEventListener: () => {},
-                                                appendChild: () => {},
-                                                classList: { add: () => {}, remove: () => {} },
-                                                style: {}
-                                            }),
-                                            createElement: () => ({
-                                                className: '',
-                                                setAttribute: () => {},
-                                                style: {},
-                                                appendChild: () => {}
-                                            }),
-                                            body: { appendChild: () => {} },
-                                            addEventListener: () => {}
+                                        // Create a mock environment with all the DOM methods
+                                        const mockEnv = {
+                                            document: {
+                                                getElementById: () => ({
+                                                    addEventListener: () => {},
+                                                    appendChild: () => {},
+                                                    classList: { add: () => {}, remove: () => {} },
+                                                    style: {}
+                                                }),
+                                                createElement: () => ({
+                                                    className: '',
+                                                    setAttribute: () => {},
+                                                    style: {},
+                                                    appendChild: () => {}
+                                                }),
+                                                body: { appendChild: () => {} },
+                                                addEventListener: () => {}
+                                            }
                                         };
                                         
-                                        // Temporarily replace document
-                                        const originalDocument = window.document;
-                                        window.document = mockDocument;
+                                        // First try: See if the constructor accepts an environment parameter
+                                        try {
+                                            const instance = new quizModule[exportName](mockEnv);
+                                            
+                                            if (instance.basicScenarios && instance.intermediateScenarios && instance.advancedScenarios) {
+                                                console.log(`Found alternative class ${exportName} with scenarios using mock env`);
+                                                
+                                                // Extract scenarios from the instance
+                                                const scenarios = {
+                                                    basic: instance.basicScenarios || [],
+                                                    intermediate: instance.intermediateScenarios || [],
+                                                    advanced: instance.advancedScenarios || []
+                                                };
+                                                
+                                                console.log(`Successfully extracted scenarios from ${exportName} instance`);
+                                                return scenarios;
+                                            }
+                                        } catch (envError) {
+                                            console.log(`Could not instantiate ${exportName} with environment parameter: ${envError.message}`);
+                                        }
                                         
+                                        // Second try: Direct instantiation
                                         const instance = new quizModule[exportName]();
-                                        
-                                        // Restore original document
-                                        window.document = originalDocument;
                                         
                                         if (instance.basicScenarios && instance.intermediateScenarios && instance.advancedScenarios) {
                                             console.log(`Found alternative class ${exportName} with scenarios`);
