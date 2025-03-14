@@ -921,11 +921,11 @@ router.get('/quizzes/:quizName/scenarios', auth, async (req, res) => {
                                         const level = scenarioMatch[2];
                                         
                                         // Find the title and description
-                                        const titleMatch = /title:\s*['"]([^'"]+)['"]/g.exec(scenarioText.substring(scenarioMatch.index));
-                                        const descriptionMatch = /description:\s*['"]([^'"]+)['"]/g.exec(scenarioText.substring(scenarioMatch.index));
+                                        const titleMatch = /title:\s*['"]((\\['"]|[^'"])+)['"]/g.exec(scenarioText.substring(scenarioMatch.index));
+                                        const descriptionMatch = /description:\s*['"]((\\['"]|[^'"])+)['"]/g.exec(scenarioText.substring(scenarioMatch.index));
                                         
-                                        const title = titleMatch ? titleMatch[1] : 'Unknown Title';
-                                        const description = descriptionMatch ? descriptionMatch[1] : 'Unknown Description';
+                                        const title = titleMatch ? titleMatch[1].replace(/\\/g, '') : 'Unknown Title';
+                                        const description = descriptionMatch ? descriptionMatch[1].replace(/\\/g, '') : 'Unknown Description';
                                         
                                         // Extract options array
                                         let optionsText = '';
@@ -952,24 +952,24 @@ router.get('/quizzes/:quizName/scenarios', auth, async (req, res) => {
                                         
                                         // Extract individual options
                                         const options = [];
-                                        const optionRegex = /\{\s*text:\s*['"]([^'"]+)['"]/g;
+                                        const optionRegex = /\{\s*text:\s*['"]((\\['"]|[^'"])+)['"]/g;
                                         let optionMatch;
                                         let optionIndex = 0;
                                         
                                         while ((optionMatch = optionRegex.exec(optionsText)) !== null) {
-                                            const optionText = optionMatch[1];
+                                            const optionText = optionMatch[1].replace(/\\/g, '');
                                             
                                             // Find outcome
-                                            const outcomeMatch = /outcome:\s*['"]([^'"]+)['"]/g.exec(optionsText.substring(optionMatch.index));
-                                            const outcome = outcomeMatch ? outcomeMatch[1] : '';
+                                            const outcomeMatch = /outcome:\s*['"]((\\['"]|[^'"])+)['"]/g.exec(optionsText.substring(optionMatch.index));
+                                            const outcome = outcomeMatch ? outcomeMatch[1].replace(/\\/g, '') : '';
                                             
                                             // Find experience
                                             const experienceMatch = /experience:\s*(-?\d+)/g.exec(optionsText.substring(optionMatch.index));
                                             const experience = experienceMatch ? parseInt(experienceMatch[1]) : 0;
                                             
                                             // Find tool if available
-                                            const toolMatch = /tool:\s*['"]([^'"]+)['"]/g.exec(optionsText.substring(optionMatch.index));
-                                            const tool = toolMatch ? toolMatch[1] : '';
+                                            const toolMatch = /tool:\s*['"]((\\['"]|[^'"])+)['"]/g.exec(optionsText.substring(optionMatch.index));
+                                            const tool = toolMatch ? toolMatch[1].replace(/\\/g, '') : '';
                                             
                                             options.push({
                                                 text: optionText,

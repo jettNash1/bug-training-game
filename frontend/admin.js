@@ -2786,6 +2786,17 @@ class AdminDashboard {
     }
 
     generateScenariosHTML(scenarios) {
+        // Helper function to safely escape HTML
+        const escapeHTML = (str) => {
+            if (!str) return '';
+            return String(str)
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#039;');
+        };
+        
         return scenarios.map(scenario => {
             // Sort options to show correct answers first
             const sortedOptions = [...scenario.options].sort((a, b) => {
@@ -2800,24 +2811,24 @@ class AdminDashboard {
             return `
                 <div class="scenario-card">
                     <div class="scenario-header">
-                        <h4 class="scenario-title">${scenario.title}</h4>
+                        <h4 class="scenario-title">${escapeHTML(scenario.title)}</h4>
                         <div class="scenario-meta">
                             <span class="scenario-id">ID: ${scenario.id}</span>
-                            <span class="scenario-level">Level: ${scenario.level}</span>
+                            <span class="scenario-level">Level: ${escapeHTML(scenario.level)}</span>
                         </div>
                     </div>
                     <div class="scenario-body">
-                        <p class="scenario-description">${scenario.description}</p>
-                        ${scenario.note ? `<p class="scenario-note" style="font-style: italic; color: #6c757d;">${scenario.note}</p>` : ''}
+                        <p class="scenario-description">${escapeHTML(scenario.description)}</p>
+                        ${scenario.note ? `<p class="scenario-note" style="font-style: italic; color: #6c757d;">${escapeHTML(scenario.note)}</p>` : ''}
                         <ul class="options-list">
                             ${sortedOptions.map(option => `
                                 <li class="option-item ${option.experience > 0 ? 'correct' : 'incorrect'}">
-                                    <div class="option-text">${option.text}</div>
-                                    <div class="option-outcome">${option.outcome}</div>
+                                    <div class="option-text">${escapeHTML(option.text)}</div>
+                                    <div class="option-outcome">${escapeHTML(option.outcome)}</div>
                                     <div class="option-experience ${option.experience > 0 ? 'positive' : option.experience < 0 ? 'negative' : 'neutral'}">
                                         Experience: ${option.experience > 0 ? '+' : ''}${option.experience}
                                     </div>
-                                    ${option.tool ? `<div class="option-tool">Tool: ${option.tool}</div>` : ''}
+                                    ${option.tool ? `<div class="option-tool">Tool: ${escapeHTML(option.tool)}</div>` : ''}
                                 </li>
                             `).join('')}
                         </ul>
