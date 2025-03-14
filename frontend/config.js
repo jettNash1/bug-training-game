@@ -2,7 +2,9 @@
 const isProd = window.location.hostname.includes('render.com') || 
                window.location.hostname === 'bug-training-game.onrender.com' ||
                window.location.hostname.includes('amazonaws.com') ||
-               window.location.hostname.includes('cloudfront.net');
+               window.location.hostname.includes('cloudfront.net') ||
+               window.location.hostname.includes('s3-website') ||
+               window.location.hostname.includes('learning-hub');
 
 // Get the API endpoint based on environment
 const getApiEndpoint = () => {
@@ -10,8 +12,10 @@ const getApiEndpoint = () => {
         return `https://${window.location.hostname.replace('bug-training-game', 'bug-training-game-api')}`;
     }
     
-    if (window.location.hostname.includes('amazonaws.com')) {
-        // Direct S3 website hosting
+    if (window.location.hostname.includes('amazonaws.com') || 
+        window.location.hostname.includes('s3-website') ||
+        window.location.hostname.includes('learning-hub')) {
+        // Direct S3 website hosting - use the EC2 instance IP or domain
         return 'http://13.42.151.152';
     }
     
@@ -26,12 +30,10 @@ export const config = {
     isProduction: isProd
 };
 
-// Log configuration in non-production environments
-if (!isProd) {
-    console.log('App configuration:', {
-        environment: isProd ? 'production' : 'development',
-        hostname: window.location.hostname,
-        apiUrl: config.apiUrl,
-        wsUrl: config.wsUrl
-    });
-} 
+// Log configuration in all environments to help with debugging
+console.log('App configuration:', {
+    environment: isProd ? 'production' : 'development',
+    hostname: window.location.hostname,
+    apiUrl: config.apiUrl,
+    wsUrl: config.wsUrl
+}); 

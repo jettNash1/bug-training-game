@@ -2325,17 +2325,39 @@ class AdminDashboard {
             // Normalize the quiz name to match API expectations
             const normalizedQuizName = quizName.toLowerCase();
             
-            // Call the new API endpoint with the full URL
+            // Get the token
             const token = localStorage.getItem('adminToken');
             
             if (!token) {
                 throw new Error('No admin token found. Please log in again.');
             }
             
-            // Use the full API URL from the server
-            const apiUrl = window.location.hostname.includes('render.com') || 
-                           window.location.hostname === 'bug-training-game.onrender.com' ?
-                           'https://bug-training-game-api.onrender.com/api' : '/api';
+            // Get the API URL from config or use a fallback
+            let apiUrl;
+            try {
+                // Try to import the config
+                const { config } = await import('./config.js');
+                apiUrl = config.apiUrl;
+                console.log(`Using API URL from config: ${apiUrl}`);
+            } catch (importError) {
+                console.warn('Failed to import config.js, using fallback API URL', importError);
+                
+                // Fallback logic to determine API URL
+                if (window.location.hostname.includes('render.com') || 
+                    window.location.hostname === 'bug-training-game.onrender.com') {
+                    apiUrl = 'https://bug-training-game-api.onrender.com/api';
+                } 
+                else if (window.location.hostname.includes('amazonaws.com') || 
+                         window.location.hostname.includes('s3-website') ||
+                         window.location.hostname.includes('learning-hub')) {
+                    apiUrl = 'http://13.42.151.152/api';
+                }
+                else {
+                    apiUrl = '/api'; // Local development
+                }
+                
+                console.log(`Using fallback API URL: ${apiUrl}`);
+            }
             
             const response = await fetch(`${apiUrl}/admin/quizzes/${normalizedQuizName}/scenarios`, {
                 method: 'GET',
