@@ -2388,7 +2388,7 @@ class AdminDashboard {
                             // If static properties don't exist, try to safely instantiate the class
                             try {
                                 // Create mock DOM elements to prevent errors
-                                const originalDocument = global.document;
+                                const originalDocument = window.document;
                                 const mockDocument = {
                                     getElementById: (id) => {
                                         // Return a mock element that does nothing but doesn't throw errors
@@ -2420,11 +2420,7 @@ class AdminDashboard {
                                 };
                                 
                                 // Temporarily replace document with our mock
-                                if (typeof global !== 'undefined') {
-                                    global.document = mockDocument;
-                                } else if (typeof window !== 'undefined') {
-                                    window.document = mockDocument;
-                                }
+                                window.document = mockDocument;
                                 
                                 // Try to extract scenarios directly from the prototype
                                 const prototype = quizModule[className].prototype;
@@ -2433,11 +2429,7 @@ class AdminDashboard {
                                     console.log(`Found scenarios in ${className} prototype`);
                                     
                                     // Restore original document
-                                    if (typeof global !== 'undefined') {
-                                        global.document = originalDocument;
-                                    } else if (typeof window !== 'undefined') {
-                                        window.document = originalDocument;
-                                    }
+                                    window.document = originalDocument;
                                     
                                     return {
                                         basic: prototype.basicScenarios || [],
@@ -2451,11 +2443,7 @@ class AdminDashboard {
                                 const quizInstance = new quizModule[className]();
                                 
                                 // Restore original document
-                                if (typeof global !== 'undefined') {
-                                    global.document = originalDocument;
-                                } else if (typeof window !== 'undefined') {
-                                    window.document = originalDocument;
-                                }
+                                window.document = originalDocument;
                                 
                                 // Extract scenarios from the instance
                                 if (quizInstance.basicScenarios || quizInstance.intermediateScenarios || quizInstance.advancedScenarios) {
@@ -2476,30 +2464,67 @@ class AdminDashboard {
                                 
                                 // Make a request to get the raw source code
                                 try {
-                                    const response = await fetch(modulePath);
+                                    // Use a relative path that works in the browser
+                                    const relativePath = modulePath.startsWith('../') ? 
+                                        modulePath.substring(3) : modulePath;
+                                    
+                                    console.log(`Fetching source code from: ${relativePath}`);
+                                    const response = await fetch(relativePath);
+                                    
+                                    if (!response.ok) {
+                                        throw new Error(`Failed to fetch source code: ${response.status} ${response.statusText}`);
+                                    }
+                                    
                                     const sourceCode = await response.text();
+                                    console.log(`Source code fetched, length: ${sourceCode.length} characters`);
                                     
                                     // Use regex to extract scenario arrays
                                     const extractScenarios = (prefix) => {
-                                        const regex = new RegExp(`${prefix}\\s*=\\s*\\[(.*?)\\];`, 's');
-                                        const match = sourceCode.match(regex);
-                                        if (match && match[1]) {
-                                            try {
-                                                // This is not ideal but might work in some cases
-                                                return JSON.parse(`[${match[1]}]`);
-                                            } catch (e) {
-                                                console.warn(`Could not parse ${prefix} from source`);
-                                                return [];
+                                        try {
+                                            // Try different regex patterns to match the scenarios
+                                            const patterns = [
+                                                // Standard pattern with this.prefix = [...]
+                                                new RegExp(`${prefix}\\s*=\\s*\\[(.*?)\\];`, 's'),
+                                                // Alternative pattern with this.prefix = [ ... ]
+                                                new RegExp(`${prefix}\\s*=\\s*\\[(.*?)\\]`, 's'),
+                                                // Pattern for static class properties
+                                                new RegExp(`static\\s+${prefix.replace('this.', '')}\\s*=\\s*\\[(.*?)\\];`, 's')
+                                            ];
+                                            
+                                            for (const regex of patterns) {
+                                                const match = sourceCode.match(regex);
+                                                if (match && match[1]) {
+                                                    console.log(`Found match for ${prefix} using pattern: ${regex}`);
+                                                    try {
+                                                        // Try to parse as JSON
+                                                        return JSON.parse(`[${match[1]}]`);
+                                                    } catch (e) {
+                                                        console.warn(`Could not parse ${prefix} from source: ${e.message}`);
+                                                    }
+                                                }
                                             }
+                                            
+                                            console.warn(`No regex match found for ${prefix}`);
+                                            return [];
+                                        } catch (e) {
+                                            console.warn(`Error extracting ${prefix}: ${e.message}`);
+                                            return [];
                                         }
-                                        return [];
                                     };
                                     
                                     const scenarios = {
-                                        basic: extractScenarios('this.basicScenarios'),
-                                        intermediate: extractScenarios('this.intermediateScenarios'),
-                                        advanced: extractScenarios('this.advancedScenarios')
+                                        basic: extractScenarios('this.basicScenarios') || [],
+                                        intermediate: extractScenarios('this.intermediateScenarios') || [],
+                                        advanced: extractScenarios('this.advancedScenarios') || []
                                     };
+                                    
+                                    // If we didn't find any scenarios with the standard prefixes, try alternatives
+                                    if (!scenarios.basic.length && !scenarios.intermediate.length && !scenarios.advanced.length) {
+                                        console.log('Trying alternative scenario prefixes...');
+                                        scenarios.basic = extractScenarios('basicScenarios') || [];
+                                        scenarios.intermediate = extractScenarios('intermediateScenarios') || [];
+                                        scenarios.advanced = extractScenarios('advancedScenarios') || [];
+                                    }
                                     
                                     if (scenarios.basic.length || scenarios.intermediate.length || scenarios.advanced.length) {
                                         console.log(`Successfully extracted scenarios from source code for ${quizName}`);
@@ -2538,21 +2563,13 @@ class AdminDashboard {
                                         };
                                         
                                         // Temporarily replace document
-                                        const originalDocument = global.document;
-                                        if (typeof global !== 'undefined') {
-                                            global.document = mockDocument;
-                                        } else if (typeof window !== 'undefined') {
-                                            window.document = mockDocument;
-                                        }
+                                        const originalDocument = window.document;
+                                        window.document = mockDocument;
                                         
                                         const instance = new quizModule[exportName]();
                                         
                                         // Restore original document
-                                        if (typeof global !== 'undefined') {
-                                            global.document = originalDocument;
-                                        } else if (typeof window !== 'undefined') {
-                                            window.document = originalDocument;
-                                        }
+                                        window.document = originalDocument;
                                         
                                         if (instance.basicScenarios && instance.intermediateScenarios && instance.advancedScenarios) {
                                             console.log(`Found alternative class ${exportName} with scenarios`);
