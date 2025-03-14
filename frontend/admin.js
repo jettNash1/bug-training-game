@@ -2233,121 +2233,17 @@ class AdminDashboard {
         }
     }
 
-    async showQuizScenariosSelector() {
-        try {
-            // Create the overlay
-            const overlay = document.createElement('div');
-            overlay.className = 'modal-overlay';
-            overlay.setAttribute('role', 'dialog');
-            overlay.setAttribute('aria-modal', 'true');
-            overlay.setAttribute('aria-labelledby', 'quiz-selector-title');
-            
-            const content = document.createElement('div');
-            content.className = 'modal-content';
-            content.style.maxWidth = '500px';
-            
-            content.innerHTML = `
-                <div class="details-header">
-                    <h3 id="quiz-selector-title">Select Quiz to View Scenarios</h3>
-                    <button class="close-btn" aria-label="Close quiz selector" tabindex="0">×</button>
-                </div>
-                <div class="quiz-selection" style="
-                    max-height: 400px;
-                    overflow-y: auto;
-                    padding: 1rem;
-                    margin-top: 1rem;">
-                    ${this.quizTypes
-                        .slice()
-                        .sort((a, b) => this.formatQuizName(a).localeCompare(this.formatQuizName(b)))
-                        .map(quiz => `
-                        <div class="quiz-item" style="
-                            padding: 12px;
-                            margin-bottom: 10px;
-                            border-radius: 6px;
-                            background: white;
-                            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-                            cursor: pointer;
-                            transition: all 0.2s ease;">
-                            <div style="
-                                display: flex;
-                                align-items: center;
-                                justify-content: space-between;">
-                                <span style="font-weight: 500;">${this.formatQuizName(quiz)}</span>
-                                <button class="view-scenarios-btn" 
-                                    data-quiz-name="${quiz}"
-                                    style="
-                                        background: var(--primary-color);
-                                        color: white;
-                                        border: none;
-                                        padding: 6px 12px;
-                                        border-radius: 4px;
-                                        cursor: pointer;
-                                        font-weight: 500;">
-                                    View Scenarios
-                                </button>
-                            </div>
-                        </div>
-                    `).join('')}
-                </div>
-            `;
-            
-            overlay.appendChild(content);
-            document.body.appendChild(overlay);
-
-            // Add event listener for close button
-            const closeBtn = content.querySelector('.close-btn');
-            if (closeBtn) {
-                closeBtn.addEventListener('click', () => {
-                    overlay.remove();
-                });
-                
-                // Add keyboard support for close button
-                closeBtn.addEventListener('keydown', (e) => {
-                    if (e.key === 'Enter' || e.key === ' ') {
-                        e.preventDefault();
-                        overlay.remove();
-                    }
-                });
-            }
-            
-            // Add escape key handler
-            const handleEscapeKey = (e) => {
-                if (e.key === 'Escape') {
-                    overlay.remove();
-                    document.removeEventListener('keydown', handleEscapeKey);
-                }
-            };
-            
-            document.addEventListener('keydown', handleEscapeKey);
-
-            // Add event listeners for view scenarios buttons
-            content.querySelectorAll('.view-scenarios-btn').forEach(button => {
-                button.addEventListener('click', (e) => {
-                    const quizName = e.target.dataset.quizName;
-                    overlay.remove();
-                    this.showQuizScenarios(quizName);
-                });
-            });
-
-            // Close on click outside
-            overlay.addEventListener('click', (e) => {
-                if (e.target === overlay) {
-                    overlay.remove();
-                }
-            });
-        } catch (error) {
-            console.error('Error showing quiz selector:', error);
-            this.showError('Failed to load quiz selector');
-        }
-    }
-
     async fetchQuizScenarios(quizName) {
         try {
+            console.log(`Starting to fetch scenarios for quiz: ${quizName}`);
+            
             // First try to fetch from API
             try {
+                console.log(`Attempting to fetch scenarios from API for: ${quizName}`);
                 const response = await this.apiService.getQuizScenarios(quizName);
                 
                 if (response.success && response.data) {
+                    console.log(`Successfully fetched scenarios from API for: ${quizName}`);
                     return response.data;
                 }
             } catch (apiError) {
@@ -2357,33 +2253,99 @@ class AdminDashboard {
 
             // Fallback: Dynamically import the quiz module to get scenarios
             try {
+                console.log(`Falling back to client-side import for: ${quizName}`);
+                
                 // Convert quiz name to proper format for import
                 const formattedQuizName = quizName.toLowerCase().replace(/\s+/g, '-');
+                console.log(`Formatted quiz name for import: ${formattedQuizName}`);
                 
-                // Handle special case for CMS-Testing
-                const importPath = formattedQuizName === 'cms-testing' 
-                    ? '../quizzes/CMS-Testing-quiz.js'
-                    : `../quizzes/${formattedQuizName}-quiz.js`;
+                // Handle special cases for quiz names
+                let importPath;
+                if (formattedQuizName === 'cms-testing') {
+                    importPath = '../quizzes/CMS-Testing-quiz.js';
+                } else if (formattedQuizName === 'email-testing') {
+                    importPath = '../quizzes/email-testing-quiz.js';
+                } else if (formattedQuizName === 'content-copy') {
+                    importPath = '../quizzes/content-copy-quiz.js';
+                } else if (formattedQuizName === 'issue-tracking-tools') {
+                    importPath = '../quizzes/issue-tracking-tools-quiz.js';
+                } else if (formattedQuizName === 'build-verification') {
+                    importPath = '../quizzes/build-verification-quiz.js';
+                } else if (formattedQuizName === 'issue-verification') {
+                    importPath = '../quizzes/issue-verification-quiz.js';
+                } else if (formattedQuizName === 'test-support') {
+                    importPath = '../quizzes/test-support-quiz.js';
+                } else if (formattedQuizName === 'non-functional') {
+                    importPath = '../quizzes/non-functional-quiz.js';
+                } else if (formattedQuizName === 'risk-management') {
+                    importPath = '../quizzes/risk-management-quiz.js';
+                } else if (formattedQuizName === 'risk-analysis') {
+                    importPath = '../quizzes/risk-analysis-quiz.js';
+                } else if (formattedQuizName === 'tester-mindset') {
+                    importPath = '../quizzes/tester-mindset-quiz.js';
+                } else if (formattedQuizName === 'time-management') {
+                    importPath = '../quizzes/time-management-quiz.js';
+                } else if (formattedQuizName === 'initiative') {
+                    importPath = '../quizzes/initiative-quiz.js';
+                } else if (formattedQuizName === 'communication') {
+                    importPath = '../quizzes/communication-quiz.js';
+                } else if (formattedQuizName === 'automation-interview') {
+                    importPath = '../quizzes/automation-interview-quiz.js';
+                } else if (formattedQuizName === 'fully-scripted') {
+                    importPath = '../quizzes/fully-scripted-quiz.js';
+                } else if (formattedQuizName === 'exploratory') {
+                    importPath = '../quizzes/exploratory-quiz.js';
+                } else if (formattedQuizName === 'sanity-smoke') {
+                    importPath = '../quizzes/sanity-smoke-quiz.js';
+                } else if (formattedQuizName === 'locale-testing') {
+                    importPath = '../quizzes/locale-testing-quiz.js';
+                } else if (formattedQuizName === 'script-metrics-troubleshooting') {
+                    importPath = '../quizzes/script-metrics-troubleshooting-quiz.js';
+                } else if (formattedQuizName === 'standard-script-testing') {
+                    importPath = '../quizzes/standard-script-testing-quiz.js';
+                } else if (formattedQuizName === 'test-types-tricks') {
+                    importPath = '../quizzes/test-types-tricks-quiz.js';
+                } else if (formattedQuizName === 'raising-tickets') {
+                    importPath = '../quizzes/raising-tickets-quiz.js';
+                } else if (formattedQuizName === 'reports') {
+                    importPath = '../quizzes/reports-quiz.js';
+                } else {
+                    // Default path format
+                    importPath = `../quizzes/${formattedQuizName}-quiz.js`;
+                }
                 
+                console.log(`Attempting to import from path: ${importPath}`);
+                
+                // Try to import the module
                 const quizModule = await import(importPath);
+                console.log('Quiz module imported successfully:', quizModule);
                 
                 // Get the class name based on the quiz name
-                const className = Object.keys(quizModule).find(key => 
-                    key.toLowerCase().includes(formattedQuizName.replace(/-/g, '')) || 
-                    key.toLowerCase().includes(formattedQuizName)
-                );
+                const className = Object.keys(quizModule).find(key => {
+                    const keyLower = key.toLowerCase();
+                    const formattedNameNoHyphens = formattedQuizName.replace(/-/g, '');
+                    
+                    return keyLower.includes(formattedNameNoHyphens) || 
+                           keyLower.includes(formattedQuizName) ||
+                           keyLower.replace(/_/g, '').includes(formattedNameNoHyphens);
+                });
+                
+                console.log(`Found class name in module: ${className}`);
                 
                 if (!className) {
-                    throw new Error(`Could not find quiz class for ${quizName}`);
+                    throw new Error(`Could not find quiz class for ${quizName} in module: ${JSON.stringify(Object.keys(quizModule))}`);
                 }
                 
                 // Instantiate the quiz class
+                console.log(`Instantiating class: ${className}`);
                 const quizInstance = new quizModule[className]();
                 
                 // Extract scenarios from the quiz instance
                 const basicScenarios = quizInstance.basicScenarios || [];
                 const intermediateScenarios = quizInstance.intermediateScenarios || [];
                 const advancedScenarios = quizInstance.advancedScenarios || [];
+                
+                console.log(`Extracted scenarios - Basic: ${basicScenarios.length}, Intermediate: ${intermediateScenarios.length}, Advanced: ${advancedScenarios.length}`);
                 
                 // Combine all scenarios
                 return {
@@ -2393,7 +2355,7 @@ class AdminDashboard {
                 };
             } catch (importError) {
                 console.error('Failed to import quiz module:', importError);
-                throw new Error(`Could not load scenarios for ${quizName}`);
+                throw new Error(`Could not load scenarios for ${quizName}: ${importError.message}`);
             }
         } catch (error) {
             console.error(`Error fetching scenarios for ${quizName}:`, error);
@@ -2419,13 +2381,53 @@ class AdminDashboard {
             document.body.appendChild(loadingOverlay);
 
             // Fetch quiz scenarios
-            const scenarios = await this.fetchQuizScenarios(quizName);
+            let scenarios;
+            try {
+                scenarios = await this.fetchQuizScenarios(quizName);
+            } catch (fetchError) {
+                console.error(`Error fetching scenarios for ${quizName}:`, fetchError);
+                
+                // Show error message in the loading overlay
+                loadingOverlay.innerHTML = `
+                    <div style="
+                        background: white;
+                        padding: 2rem;
+                        border-radius: 8px;
+                        text-align: center;
+                        max-width: 500px;">
+                        <h3 style="color: #dc3545;">Error Loading Scenarios</h3>
+                        <p>${fetchError.message || `Failed to load scenarios for ${this.formatQuizName(quizName)}`}</p>
+                        <div style="margin-top: 20px;">
+                            <button id="closeErrorBtn" class="action-button" style="
+                                background: #6c757d;
+                                color: white;
+                                border: none;
+                                padding: 8px 16px;
+                                border-radius: 4px;
+                                cursor: pointer;">
+                                Close
+                            </button>
+                        </div>
+                    </div>
+                `;
+                
+                // Add event listener for close button
+                const closeErrorBtn = document.getElementById('closeErrorBtn');
+                if (closeErrorBtn) {
+                    closeErrorBtn.addEventListener('click', () => {
+                        loadingOverlay.remove();
+                    });
+                }
+                
+                return; // Exit the function early
+            }
             
             // Remove loading indicator
             loadingOverlay.remove();
             
             if (!scenarios) {
-                throw new Error(`No scenarios found for ${quizName}`);
+                this.showError(`No scenarios found for ${this.formatQuizName(quizName)}`);
+                return;
             }
 
             // Create the overlay
@@ -2601,7 +2603,7 @@ class AdminDashboard {
             });
         } catch (error) {
             console.error(`Error showing scenarios for ${quizName}:`, error);
-            this.showError(`Failed to load scenarios for ${this.formatQuizName(quizName)}`);
+            this.showError(`Failed to load scenarios for ${this.formatQuizName(quizName)}: ${error.message}`);
         }
     }
 
@@ -2645,6 +2647,144 @@ class AdminDashboard {
                 </div>
             `;
         }).join('');
+    }
+
+    async showQuizScenariosSelector() {
+        try {
+            // Create the overlay
+            const overlay = document.createElement('div');
+            overlay.className = 'modal-overlay';
+            overlay.setAttribute('role', 'dialog');
+            overlay.setAttribute('aria-modal', 'true');
+            overlay.setAttribute('aria-labelledby', 'quiz-selector-title');
+            
+            const content = document.createElement('div');
+            content.className = 'modal-content';
+            content.style.maxWidth = '700px'; // Increased width for two columns
+            
+            content.innerHTML = `
+                <style>
+                    .quiz-grid {
+                        display: grid;
+                        grid-template-columns: repeat(2, 1fr);
+                        gap: 12px;
+                    }
+                    
+                    @media (max-width: 600px) {
+                        .quiz-grid {
+                            grid-template-columns: 1fr;
+                        }
+                    }
+                    
+                    .quiz-item {
+                        padding: 12px;
+                        margin-bottom: 0;
+                        border-radius: 6px;
+                        background: white;
+                        box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+                        cursor: pointer;
+                        transition: all 0.2s ease;
+                    }
+                    
+                    .quiz-item-content {
+                        display: flex;
+                        align-items: center;
+                        justify-content: space-between;
+                    }
+                    
+                    .quiz-name {
+                        font-weight: 500;
+                        flex: 1;
+                        padding-right: 10px;
+                    }
+                    
+                    .view-scenarios-btn {
+                        background: var(--primary-color);
+                        color: white;
+                        border: none;
+                        padding: 6px 12px;
+                        border-radius: 4px;
+                        cursor: pointer;
+                        font-weight: 500;
+                        white-space: nowrap;
+                    }
+                </style>
+                <div class="details-header">
+                    <h3 id="quiz-selector-title">Select Quiz to View Scenarios</h3>
+                    <button class="close-btn" aria-label="Close quiz selector" tabindex="0">×</button>
+                </div>
+                <div class="quiz-selection" style="
+                    max-height: 400px;
+                    overflow-y: auto;
+                    padding: 1rem;
+                    margin-top: 1rem;">
+                    <div class="quiz-grid">
+                        ${this.quizTypes
+                            .slice()
+                            .sort((a, b) => this.formatQuizName(a).localeCompare(this.formatQuizName(b)))
+                            .map(quiz => `
+                            <div class="quiz-item">
+                                <div class="quiz-item-content">
+                                    <span class="quiz-name">${this.formatQuizName(quiz)}</span>
+                                    <button class="view-scenarios-btn" 
+                                        data-quiz-name="${quiz}">
+                                        View Scenarios
+                                    </button>
+                                </div>
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+            `;
+            
+            overlay.appendChild(content);
+            document.body.appendChild(overlay);
+
+            // Add event listener for close button
+            const closeBtn = content.querySelector('.close-btn');
+            if (closeBtn) {
+                closeBtn.addEventListener('click', () => {
+                    overlay.remove();
+                });
+                
+                // Add keyboard support for close button
+                closeBtn.addEventListener('keydown', (e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault();
+                        overlay.remove();
+                    }
+                });
+            }
+            
+            // Add escape key handler
+            const handleEscapeKey = (e) => {
+                if (e.key === 'Escape') {
+                    overlay.remove();
+                    document.removeEventListener('keydown', handleEscapeKey);
+                }
+            };
+            
+            document.addEventListener('keydown', handleEscapeKey);
+
+            // Add event listeners for view scenarios buttons
+            content.querySelectorAll('.view-scenarios-btn').forEach(button => {
+                button.addEventListener('click', (e) => {
+                    const quizName = e.target.dataset.quizName;
+                    overlay.remove();
+                    this.showQuizScenarios(quizName);
+                });
+            });
+
+            // Close on click outside
+            overlay.addEventListener('click', (e) => {
+                if (e.target === overlay) {
+                    overlay.remove();
+                }
+            });
+        } catch (error) {
+            console.error('Error showing quiz selector:', error);
+            this.showError('Failed to load quiz selector');
+        }
     }
 }
 
