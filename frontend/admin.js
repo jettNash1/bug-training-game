@@ -2312,39 +2312,47 @@ class AdminDashboard {
                 try {
                     console.log(`Attempting to load quiz module for ${quizName}`);
                     
-                    // Normalize the path based on the quiz name
-                    let modulePath;
-                    if (quizName === 'communication-quiz') {
-                        modulePath = '../quizzes/communication-quiz.js';
-                    } else if (quizName === 'automation-interview') {
-                        modulePath = '../quizzes/automation-interview.js';
-                    } else if (quizName === 'api-testing') {
-                        modulePath = '../quizzes/api-testing.js';
-                    } else if (quizName === 'bug-reporting') {
-                        modulePath = '../quizzes/bug-reporting.js';
-                    } else if (quizName === 'test-planning') {
-                        modulePath = '../quizzes/test-planning.js';
-                    } else if (quizName === 'test-design') {
-                        modulePath = '../quizzes/test-design.js';
-                    } else if (quizName === 'cms-testing') {
-                        modulePath = '../quizzes/cms-testing.js';
-                    } else if (quizName === 'security-testing') {
-                        modulePath = '../quizzes/security-testing.js';
+                    // Normalize the path and class name based on the quiz name
+                    let modulePath, className;
+                    
+                    // Convert kebab-case to PascalCase for class name
+                    const pascalCase = quizName.split('-')
+                        .map(part => part.charAt(0).toUpperCase() + part.slice(1))
+                        .join('');
+                    
+                    // Special case for CMS-Testing-quiz.js which has a different filename
+                    if (quizName === 'cms-testing') {
+                        modulePath = '../quizzes/CMS-Testing-quiz.js';
+                        className = 'CMSTestingQuiz';
                     } else {
+                        // Handle other quiz files
                         modulePath = `../quizzes/${quizName}.js`;
+                        className = `${pascalCase}Quiz`;
                     }
+                    
+                    console.log(`Loading module from ${modulePath}, expecting class ${className}`);
                     
                     const quizModule = await import(modulePath);
                     
-                    // Check if the module has scenarios or a default export
-                    if (quizModule.scenarios) {
-                        console.log(`Successfully loaded scenarios from ${quizName} module`);
-                        return quizModule.scenarios;
-                    } else if (quizModule.default) {
-                        console.log(`Successfully loaded default export from ${quizName} module`);
-                        return quizModule.default;
+                    // Check if the module has the expected class
+                    if (quizModule[className]) {
+                        console.log(`Found class ${className} in module`);
+                        
+                        // Instantiate the quiz class
+                        const quizInstance = new quizModule[className]();
+                        
+                        // Extract scenarios from the instance
+                        const scenarios = {
+                            basic: quizInstance.basicScenarios || [],
+                            intermediate: quizInstance.intermediateScenarios || [],
+                            advanced: quizInstance.advancedScenarios || []
+                        };
+                        
+                        console.log(`Successfully extracted scenarios from ${className} instance`);
+                        return scenarios;
                     } else {
-                        throw new Error(`Quiz module for ${quizName} does not have scenarios or a default export`);
+                        console.error(`Module loaded but class ${className} not found`);
+                        throw new Error(`Quiz class ${className} not found in module`);
                     }
                 } catch (importError) {
                     console.error(`Failed to import quiz module for ${quizName}: ${importError}`);
@@ -2964,68 +2972,156 @@ class AdminDashboard {
         document.body.appendChild(overlay);
         
         // Get the list of available quizzes
-        let quizzes = [];
-        try {
-            // Try to import the quiz list
-            try {
-                const quizList = await import('../quizzes/quiz-list.js');
-                quizzes = quizList.default || [];
-                console.log('Successfully loaded quiz list from module');
-            } catch (importError) {
-                console.warn('Failed to import quiz-list.js, using fallback quiz list:', importError);
-                // Fallback list of common quizzes
-                quizzes = [
-                    {
-                        id: 'communication-quiz',
-                        name: 'Communication Skills',
-                        description: 'Test your communication skills in a professional environment',
-                        category: 'Soft Skills'
-                    },
-                    {
-                        id: 'automation-interview',
-                        name: 'Automation Interview',
-                        description: 'Test your knowledge of automation concepts and practices',
-                        category: 'Technical'
-                    },
-                    {
-                        id: 'api-testing',
-                        name: 'API Testing',
-                        description: 'Test your knowledge of API testing concepts',
-                        category: 'Technical'
-                    },
-                    {
-                        id: 'bug-reporting',
-                        name: 'Bug Reporting',
-                        description: 'Test your skills in effective bug reporting',
-                        category: 'QA'
-                    },
-                    {
-                        id: 'test-planning',
-                        name: 'Test Planning',
-                        description: 'Test your knowledge of test planning methodologies',
-                        category: 'QA'
-                    },
-                    {
-                        id: 'test-design',
-                        name: 'Test Design',
-                        description: 'Test your skills in designing effective test cases',
-                        category: 'QA'
-                    },
-                    {
-                        id: 'cms-testing',
-                        name: 'CMS Testing',
-                        description: 'Test your knowledge of Content Management Systems',
-                        category: 'Technical'
-                    },
-                    {
-                        id: 'security-testing',
-                        name: 'Security Testing',
-                        description: 'Test your knowledge of security testing principles',
-                        category: 'Security'
-                    }
-                ];
+        let quizzes = [
+            // Core quizzes
+            {
+                id: 'automation-interview',
+                name: 'Automation Interview',
+                description: 'Test your knowledge of automation concepts and practices',
+                category: 'Technical'
+            },
+            {
+                id: 'communication-quiz',
+                name: 'Communication Skills',
+                description: 'Test your communication skills in a professional environment',
+                category: 'Soft Skills'
+            },
+            {
+                id: 'cms-testing',
+                name: 'CMS Testing',
+                description: 'Test your knowledge of Content Management Systems',
+                category: 'Technical'
+            },
+            // Additional quizzes from the directory
+            {
+                id: 'build-verification-quiz',
+                name: 'Build Verification',
+                description: 'Test your knowledge of build verification processes',
+                category: 'QA'
+            },
+            {
+                id: 'content-copy-quiz',
+                name: 'Content & Copy',
+                description: 'Test your skills in content and copy testing',
+                category: 'QA'
+            },
+            {
+                id: 'email-testing-quiz',
+                name: 'Email Testing',
+                description: 'Test your knowledge of email testing techniques',
+                category: 'Technical'
+            },
+            {
+                id: 'exploratory-quiz',
+                name: 'Exploratory Testing',
+                description: 'Test your exploratory testing skills',
+                category: 'QA'
+            },
+            {
+                id: 'fully-scripted-quiz',
+                name: 'Fully Scripted Testing',
+                description: 'Test your knowledge of scripted testing approaches',
+                category: 'QA'
+            },
+            {
+                id: 'initiative-quiz',
+                name: 'Initiative',
+                description: 'Test your ability to take initiative in testing',
+                category: 'Soft Skills'
+            },
+            {
+                id: 'issue-tracking-tools-quiz',
+                name: 'Issue Tracking Tools',
+                description: 'Test your knowledge of issue tracking tools',
+                category: 'Technical'
+            },
+            {
+                id: 'issue-verification-quiz',
+                name: 'Issue Verification',
+                description: 'Test your skills in verifying and validating issues',
+                category: 'QA'
+            },
+            {
+                id: 'locale-testing-quiz',
+                name: 'Locale Testing',
+                description: 'Test your knowledge of localization testing',
+                category: 'Technical'
+            },
+            {
+                id: 'non-functional-quiz',
+                name: 'Non-Functional Testing',
+                description: 'Test your knowledge of non-functional testing',
+                category: 'QA'
+            },
+            {
+                id: 'raising-tickets-quiz',
+                name: 'Raising Tickets',
+                description: 'Test your skills in creating effective bug tickets',
+                category: 'QA'
+            },
+            {
+                id: 'reports-quiz',
+                name: 'Testing Reports',
+                description: 'Test your knowledge of testing reports',
+                category: 'QA'
+            },
+            {
+                id: 'risk-analysis-quiz',
+                name: 'Risk Analysis',
+                description: 'Test your skills in risk analysis for testing',
+                category: 'QA'
+            },
+            {
+                id: 'risk-management-quiz',
+                name: 'Risk Management',
+                description: 'Test your knowledge of risk management in testing',
+                category: 'QA'
+            },
+            {
+                id: 'sanity-smoke-quiz',
+                name: 'Sanity & Smoke Testing',
+                description: 'Test your knowledge of sanity and smoke testing',
+                category: 'QA'
+            },
+            {
+                id: 'script-metrics-troubleshooting-quiz',
+                name: 'Script Metrics & Troubleshooting',
+                description: 'Test your skills in script metrics and troubleshooting',
+                category: 'Technical'
+            },
+            {
+                id: 'standard-script-testing',
+                name: 'Standard Script Testing',
+                description: 'Test your knowledge of standard script testing',
+                category: 'Technical'
+            },
+            {
+                id: 'test-support-quiz',
+                name: 'Test Support',
+                description: 'Test your knowledge of test support activities',
+                category: 'QA'
+            },
+            {
+                id: 'test-types-tricks-quiz',
+                name: 'Test Types & Tricks',
+                description: 'Test your knowledge of different test types and tricks',
+                category: 'QA'
+            },
+            {
+                id: 'tester-mindset-quiz',
+                name: 'Tester Mindset',
+                description: 'Test your understanding of the tester mindset',
+                category: 'Soft Skills'
+            },
+            {
+                id: 'time-management-quiz',
+                name: 'Time Management',
+                description: 'Test your time management skills in testing',
+                category: 'Soft Skills'
             }
-            
+        ];
+        
+        try {
             // Create the content with quizzes
             const content = document.createElement('div');
             content.className = 'modal-content';
@@ -3150,10 +3246,48 @@ class AdminDashboard {
                     .view-btn:hover {
                         background-color: var(--primary-color-dark, #0056b3);
                     }
+                    .search-container {
+                        margin-bottom: 1rem;
+                    }
+                    .search-input {
+                        width: 100%;
+                        padding: 0.5rem;
+                        border: 1px solid #ced4da;
+                        border-radius: 4px;
+                        font-size: 1rem;
+                    }
+                    .category-filters {
+                        display: flex;
+                        flex-wrap: wrap;
+                        gap: 0.5rem;
+                        margin-bottom: 1rem;
+                    }
+                    .category-filter {
+                        background: #e9ecef;
+                        border: none;
+                        padding: 0.3rem 0.8rem;
+                        border-radius: 20px;
+                        cursor: pointer;
+                        font-size: 0.9rem;
+                        transition: all 0.2s ease;
+                    }
+                    .category-filter.active {
+                        background: var(--primary-color);
+                        color: white;
+                    }
                 </style>
                 <div class="selector-header">
                     <h3 id="quiz-selector-title" class="selector-title">Select a Quiz to View Scenarios</h3>
                     <button class="close-btn" aria-label="Close quiz selector" tabindex="0">×</button>
+                </div>
+                <div class="search-container">
+                    <input type="text" class="search-input" placeholder="Search quizzes..." aria-label="Search quizzes">
+                </div>
+                <div class="category-filters">
+                    <button class="category-filter active" data-category="all">All</button>
+                    <button class="category-filter" data-category="QA">QA</button>
+                    <button class="category-filter" data-category="Technical">Technical</button>
+                    <button class="category-filter" data-category="Soft Skills">Soft Skills</button>
                 </div>
                 <div class="quiz-grid">
                     ${quizCardsHTML}
@@ -3184,6 +3318,49 @@ class AdminDashboard {
                     }
                 });
             });
+            
+            // Add search functionality
+            const searchInput = content.querySelector('.search-input');
+            if (searchInput) {
+                searchInput.addEventListener('input', () => {
+                    const searchTerm = searchInput.value.toLowerCase();
+                    quizCards.forEach(card => {
+                        const quizName = card.querySelector('.quiz-name').textContent.toLowerCase();
+                        const quizDescription = card.querySelector('.quiz-description').textContent.toLowerCase();
+                        const quizCategory = card.querySelector('.quiz-category').textContent.toLowerCase();
+                        
+                        const matches = quizName.includes(searchTerm) || 
+                                       quizDescription.includes(searchTerm) || 
+                                       quizCategory.includes(searchTerm);
+                        
+                        card.style.display = matches ? 'flex' : 'none';
+                    });
+                });
+            }
+            
+            // Add category filter functionality
+            const categoryFilters = content.querySelectorAll('.category-filter');
+            if (categoryFilters.length > 0) {
+                categoryFilters.forEach(filter => {
+                    filter.addEventListener('click', () => {
+                        // Update active state
+                        categoryFilters.forEach(f => f.classList.remove('active'));
+                        filter.classList.add('active');
+                        
+                        const category = filter.getAttribute('data-category');
+                        
+                        quizCards.forEach(card => {
+                            const cardCategory = card.querySelector('.quiz-category').textContent;
+                            
+                            if (category === 'all' || cardCategory === category) {
+                                card.style.display = 'flex';
+                            } else {
+                                card.style.display = 'none';
+                            }
+                        });
+                    });
+                });
+            }
             
             // Add event listener for close button
             const closeBtn = content.querySelector('.close-btn');
