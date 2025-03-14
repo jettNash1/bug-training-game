@@ -2315,56 +2315,110 @@ class AdminDashboard {
                     // Normalize the path and class name based on the quiz name
                     let modulePath, className;
                     
-                    // Convert kebab-case to PascalCase for class name
-                    const pascalCase = quizName.split('-')
-                        .map(part => part.charAt(0).toUpperCase() + part.slice(1))
-                        .join('');
+                    // Map of quiz names to their actual class names
+                    const classNameMap = {
+                        'communication': 'CommunicationQuiz',
+                        'automation-interview': 'AutomationInterviewQuiz',
+                        'cms-testing': 'CMSTestingQuiz',
+                        'build-verification': 'BuildVerificationQuiz',
+                        'content-copy': 'ContentCopyQuiz',
+                        'email-testing': 'EmailTestingQuiz',
+                        'exploratory': 'ExploratoryQuiz',
+                        'fully-scripted': 'FullyScriptedQuiz',
+                        'initiative': 'InitiativeQuiz',
+                        'issue-tracking-tools': 'IssueTrackingToolsQuiz',
+                        'issue-verification': 'IssueVerificationQuiz',
+                        'locale-testing': 'LocaleTestingQuiz',
+                        'non-functional': 'NonFunctionalQuiz',
+                        'raising-tickets': 'RaisingTicketsQuiz',
+                        'reports': 'ReportsQuiz',
+                        'risk-analysis': 'RiskAnalysisQuiz',
+                        'risk-management': 'RiskManagementQuiz',
+                        'sanity-smoke': 'SanitySmokeQuiz',
+                        'script-metrics-troubleshooting': 'ScriptMetricsTroubleshootingQuiz',
+                        'standard-script-testing': 'StandardScriptTestingQuiz',
+                        'test-support': 'TestSupportQuiz',
+                        'test-types-tricks': 'TestTypesTricksQuiz',
+                        'tester-mindset': 'TesterMindsetQuiz',
+                        'time-management': 'TimeManagementQuiz'
+                    };
                     
+                    // Get the class name from the map or generate it
+                    className = classNameMap[quizName];
+                    
+                    // If class name is not in the map, generate it from the quiz name
+                    if (!className) {
+                        // Convert kebab-case to PascalCase for class name
+                        className = quizName.split('-')
+                            .map(part => part.charAt(0).toUpperCase() + part.slice(1))
+                            .join('') + 'Quiz';
+                    }
+                    
+                    // Determine the module path
                     // Special case for CMS-Testing-quiz.js which has a different filename
                     if (quizName === 'cms-testing') {
                         modulePath = '../quizzes/CMS-Testing-quiz.js';
-                        className = 'CMSTestingQuiz';
                     } else {
-                        // Handle other quiz files
-                        modulePath = `../quizzes/${quizName}.js`;
-                        className = `${pascalCase}Quiz`;
+                        modulePath = `../quizzes/${quizName}-quiz.js`;
                     }
                     
                     console.log(`Loading module from ${modulePath}, expecting class ${className}`);
                     
-                    const quizModule = await import(modulePath);
-                    
-                    // Check if the module has the expected class
-                    if (quizModule[className]) {
-                        console.log(`Found class ${className} in module`);
+                    try {
+                        const quizModule = await import(modulePath);
                         
-                        // Instantiate the quiz class
-                        const quizInstance = new quizModule[className]();
-                        
-                        // Extract scenarios from the instance
-                        const scenarios = {
-                            basic: quizInstance.basicScenarios || [],
-                            intermediate: quizInstance.intermediateScenarios || [],
-                            advanced: quizInstance.advancedScenarios || []
-                        };
-                        
-                        console.log(`Successfully extracted scenarios from ${className} instance`);
-                        return scenarios;
-                    } else {
-                        console.error(`Module loaded but class ${className} not found`);
-                        throw new Error(`Quiz class ${className} not found in module`);
+                        // Check if the module has the expected class
+                        if (quizModule[className]) {
+                            console.log(`Found class ${className} in module`);
+                            
+                            // Instantiate the quiz class
+                            const quizInstance = new quizModule[className]();
+                            
+                            // Extract scenarios from the instance
+                            const scenarios = {
+                                basic: quizInstance.basicScenarios || [],
+                                intermediate: quizInstance.intermediateScenarios || [],
+                                advanced: quizInstance.advancedScenarios || []
+                            };
+                            
+                            console.log(`Successfully extracted scenarios from ${className} instance`);
+                            return scenarios;
+                        } else {
+                            console.error(`Module loaded but class ${className} not found. Available exports:`, Object.keys(quizModule));
+                            
+                            // Try to find any class that extends BaseQuiz
+                            for (const exportName of Object.keys(quizModule)) {
+                                if (typeof quizModule[exportName] === 'function') {
+                                    try {
+                                        const instance = new quizModule[exportName]();
+                                        if (instance.basicScenarios && instance.intermediateScenarios && instance.advancedScenarios) {
+                                            console.log(`Found alternative class ${exportName} with scenarios`);
+                                            
+                                            // Extract scenarios from the instance
+                                            const scenarios = {
+                                                basic: instance.basicScenarios || [],
+                                                intermediate: instance.intermediateScenarios || [],
+                                                advanced: instance.advancedScenarios || []
+                                            };
+                                            
+                                            console.log(`Successfully extracted scenarios from ${exportName} instance`);
+                                            return scenarios;
+                                        }
+                                    } catch (e) {
+                                        console.warn(`Failed to instantiate ${exportName}:`, e);
+                                    }
+                                }
+                            }
+                            
+                            throw new Error(`Quiz class ${className} not found in module`);
+                        }
+                    } catch (importError) {
+                        console.error(`Failed to import quiz module for ${quizName}: ${importError}`);
+                        throw new Error(`Could not load quiz scenarios for "${this.formatQuizName(quizName)}". The quiz file may not exist or may have errors.`);
                     }
-                } catch (importError) {
-                    console.error(`Failed to import quiz module for ${quizName}: ${importError}`);
-                    
-                    // As a last resort, try to use mock data
-                    const mockScenarios = this.getMockScenariosForQuiz(quizName);
-                    if (mockScenarios) {
-                        console.log(`Using mock data for ${quizName}`);
-                        return mockScenarios;
-                    }
-                    
-                    throw new Error(`Quiz scenarios for "${this.formatQuizName(quizName)}" could not be loaded. Please try again later.`);
+                } catch (moduleError) {
+                    console.error(`Module loading error for ${quizName}: ${moduleError.message}`);
+                    throw moduleError;
                 }
             }
         } catch (error) {
@@ -2373,185 +2427,6 @@ class AdminDashboard {
         }
     }
     
-    // Helper method to provide mock data for CMS Testing quiz
-    getMockScenariosForCmsTesting() {
-        console.log('Generating mock scenarios for CMS Testing quiz');
-        
-        // Create mock scenarios with proper structure
-        const mockScenarios = {
-            basic: [
-                {
-                    id: 'cms-basic-1',
-                    question: 'You need to update content on the company website. What should you do first?',
-                    options: [
-                        {
-                            id: 'cms-basic-1-a',
-                            text: 'Make changes directly in the production environment',
-                            outcome: 'This is risky as it could introduce errors to the live site.',
-                            experience: -10,
-                            correct: false
-                        },
-                        {
-                            id: 'cms-basic-1-b',
-                            text: 'Create a backup before making any changes',
-                            outcome: 'Good practice! Always back up before making changes.',
-                            experience: 20,
-                            correct: true
-                        },
-                        {
-                            id: 'cms-basic-1-c',
-                            text: 'Ask a colleague to make the changes for you',
-                            outcome: 'Delegating without proper instruction could lead to miscommunication.',
-                            experience: 0,
-                            correct: false
-                        }
-                    ]
-                },
-                {
-                    id: 'cms-basic-2',
-                    question: 'What is the best practice for managing media files in a CMS?',
-                    options: [
-                        {
-                            id: 'cms-basic-2-a',
-                            text: 'Upload all media files to a single folder',
-                            outcome: 'This makes organization difficult as the library grows.',
-                            experience: -5,
-                            correct: false
-                        },
-                        {
-                            id: 'cms-basic-2-b',
-                            text: 'Organize media files in a structured folder system',
-                            outcome: 'Good organization makes files easier to find and manage.',
-                            experience: 15,
-                            correct: true
-                        },
-                        {
-                            id: 'cms-basic-2-c',
-                            text: 'Store media files outside the CMS',
-                            outcome: 'This disconnects media from content and makes management harder.',
-                            experience: -10,
-                            correct: false
-                        }
-                    ]
-                }
-            ],
-            intermediate: [
-                {
-                    id: 'cms-int-1',
-                    question: 'You need to implement a content workflow. What approach should you take?',
-                    options: [
-                        {
-                            id: 'cms-int-1-a',
-                            text: 'Allow all content editors to publish directly',
-                            outcome: 'This lacks quality control and oversight.',
-                            experience: -15,
-                            correct: false
-                        },
-                        {
-                            id: 'cms-int-1-b',
-                            text: 'Implement a review and approval process',
-                            outcome: 'This ensures content quality and consistency before publishing.',
-                            experience: 25,
-                            correct: true
-                        },
-                        {
-                            id: 'cms-int-1-c',
-                            text: 'Restrict publishing to administrators only',
-                            outcome: 'This creates bottlenecks in the content process.',
-                            experience: 5,
-                            correct: false
-                        }
-                    ]
-                },
-                {
-                    id: 'cms-int-2',
-                    question: 'How should you handle content versioning?',
-                    options: [
-                        {
-                            id: 'cms-int-2-a',
-                            text: 'Keep only the current version to save space',
-                            outcome: 'This prevents you from reverting changes if needed.',
-                            experience: -20,
-                            correct: false
-                        },
-                        {
-                            id: 'cms-int-2-b',
-                            text: 'Maintain a reasonable history of content versions',
-                            outcome: 'This allows you to track changes and revert if necessary.',
-                            experience: 20,
-                            correct: true
-                        },
-                        {
-                            id: 'cms-int-2-c',
-                            text: 'Manually create backups of important content',
-                            outcome: 'This is time-consuming and prone to human error.',
-                            experience: 0,
-                            correct: false
-                        }
-                    ]
-                }
-            ],
-            advanced: [
-                {
-                    id: 'cms-adv-1',
-                    question: 'You need to migrate content from one CMS to another. What approach should you take?',
-                    options: [
-                        {
-                            id: 'cms-adv-1-a',
-                            text: 'Manually recreate all content in the new system',
-                            outcome: 'This is time-consuming and error-prone for large sites.',
-                            experience: -10,
-                            correct: false
-                        },
-                        {
-                            id: 'cms-adv-1-b',
-                            text: 'Use an automated migration tool without testing',
-                            outcome: 'Automated tools need verification to ensure proper migration.',
-                            experience: -25,
-                            correct: false
-                        },
-                        {
-                            id: 'cms-adv-1-c',
-                            text: 'Create a migration plan with content mapping and testing',
-                            outcome: 'A structured approach ensures successful migration with minimal issues.',
-                            experience: 30,
-                            correct: true
-                        }
-                    ]
-                },
-                {
-                    id: 'cms-adv-2',
-                    question: 'How should you handle custom content types in a CMS?',
-                    options: [
-                        {
-                            id: 'cms-adv-2-a',
-                            text: 'Avoid custom types and use generic content types for everything',
-                            outcome: 'This limits content flexibility and structure.',
-                            experience: -15,
-                            correct: false
-                        },
-                        {
-                            id: 'cms-adv-2-b',
-                            text: 'Create custom content types with well-defined fields and relationships',
-                            outcome: 'This provides structure and consistency for specialized content.',
-                            experience: 25,
-                            correct: true
-                        },
-                        {
-                            id: 'cms-adv-2-c',
-                            text: 'Store specialized content as unstructured data',
-                            outcome: 'Unstructured data is harder to query, display, and maintain.',
-                            experience: -10,
-                            correct: false
-                        }
-                    ]
-                }
-            ]
-        };
-        
-        // Return in the format expected by the showQuizScenarios method
-        return mockScenarios;
-    }
 
     async showQuizScenarios(quizName) {
         try {
@@ -2574,6 +2449,7 @@ class AdminDashboard {
 
             // Fetch quiz scenarios
             let scenarios;
+            
             try {
                 scenarios = await this.fetchQuizScenarios(quizName);
                 
@@ -2606,7 +2482,7 @@ class AdminDashboard {
                         max-width: 500px;">
                         <h3 style="color: #dc3545;">Unable to Load Quiz Scenarios</h3>
                         <p>${fetchError.message || `Failed to load scenarios for ${this.formatQuizName(quizName)}`}</p>
-                        <p style="margin-top: 1rem; color: #6c757d;">The actual quiz scenarios could not be loaded. This may be due to network issues or because the quiz file is not available.</p>
+                        <p style="margin-top: 1rem; color: #6c757d;">The quiz scenarios could not be loaded. This may be because the quiz file doesn't exist or contains errors.</p>
                         <div style="margin-top: 20px; display: flex; gap: 10px; justify-content: center;">
                             <button id="retryBtn" class="action-button" style="
                                 background: var(--primary-color);
@@ -2971,1410 +2847,279 @@ class AdminDashboard {
         overlay.appendChild(loadingContent);
         document.body.appendChild(overlay);
         
-        // Get the list of available quizzes
-        let quizzes = [
-            // Core quizzes
-            {
-                id: 'automation-interview',
-                name: 'Automation Interview',
-                description: 'Test your knowledge of automation concepts and practices',
-                category: 'Technical'
-            },
-            {
-                id: 'communication-quiz',
-                name: 'Communication Skills',
-                description: 'Test your communication skills in a professional environment',
-                category: 'Soft Skills'
-            },
-            {
-                id: 'cms-testing',
-                name: 'CMS Testing',
-                description: 'Test your knowledge of Content Management Systems',
-                category: 'Technical'
-            },
-            // Additional quizzes from the directory
-            {
-                id: 'build-verification-quiz',
-                name: 'Build Verification',
-                description: 'Test your knowledge of build verification processes',
-                category: 'QA'
-            },
-            {
-                id: 'content-copy-quiz',
-                name: 'Content & Copy',
-                description: 'Test your skills in content and copy testing',
-                category: 'QA'
-            },
-            {
-                id: 'email-testing-quiz',
-                name: 'Email Testing',
-                description: 'Test your knowledge of email testing techniques',
-                category: 'Technical'
-            },
-            {
-                id: 'exploratory-quiz',
-                name: 'Exploratory Testing',
-                description: 'Test your exploratory testing skills',
-                category: 'QA'
-            },
-            {
-                id: 'fully-scripted-quiz',
-                name: 'Fully Scripted Testing',
-                description: 'Test your knowledge of scripted testing approaches',
-                category: 'QA'
-            },
-            {
-                id: 'initiative-quiz',
-                name: 'Initiative',
-                description: 'Test your ability to take initiative in testing',
-                category: 'Soft Skills'
-            },
-            {
-                id: 'issue-tracking-tools-quiz',
-                name: 'Issue Tracking Tools',
-                description: 'Test your knowledge of issue tracking tools',
-                category: 'Technical'
-            },
-            {
-                id: 'issue-verification-quiz',
-                name: 'Issue Verification',
-                description: 'Test your skills in verifying and validating issues',
-                category: 'QA'
-            },
-            {
-                id: 'locale-testing-quiz',
-                name: 'Locale Testing',
-                description: 'Test your knowledge of localization testing',
-                category: 'Technical'
-            },
-            {
-                id: 'non-functional-quiz',
-                name: 'Non-Functional Testing',
-                description: 'Test your knowledge of non-functional testing',
-                category: 'QA'
-            },
-            {
-                id: 'raising-tickets-quiz',
-                name: 'Raising Tickets',
-                description: 'Test your skills in creating effective bug tickets',
-                category: 'QA'
-            },
-            {
-                id: 'reports-quiz',
-                name: 'Testing Reports',
-                description: 'Test your knowledge of testing reports',
-                category: 'QA'
-            },
-            {
-                id: 'risk-analysis-quiz',
-                name: 'Risk Analysis',
-                description: 'Test your skills in risk analysis for testing',
-                category: 'QA'
-            },
-            {
-                id: 'risk-management-quiz',
-                name: 'Risk Management',
-                description: 'Test your knowledge of risk management in testing',
-                category: 'QA'
-            },
-            {
-                id: 'sanity-smoke-quiz',
-                name: 'Sanity & Smoke Testing',
-                description: 'Test your knowledge of sanity and smoke testing',
-                category: 'QA'
-            },
-            {
-                id: 'script-metrics-troubleshooting-quiz',
-                name: 'Script Metrics & Troubleshooting',
-                description: 'Test your skills in script metrics and troubleshooting',
-                category: 'Technical'
-            },
-            {
-                id: 'standard-script-testing',
-                name: 'Standard Script Testing',
-                description: 'Test your knowledge of standard script testing',
-                category: 'Technical'
-            },
-            {
-                id: 'test-support-quiz',
-                name: 'Test Support',
-                description: 'Test your knowledge of test support activities',
-                category: 'QA'
-            },
-            {
-                id: 'test-types-tricks-quiz',
-                name: 'Test Types & Tricks',
-                description: 'Test your knowledge of different test types and tricks',
-                category: 'QA'
-            },
-            {
-                id: 'tester-mindset-quiz',
-                name: 'Tester Mindset',
-                description: 'Test your understanding of the tester mindset',
-                category: 'Soft Skills'
-            },
-            {
-                id: 'time-management-quiz',
-                name: 'Time Management',
-                description: 'Test your time management skills in testing',
-                category: 'Soft Skills'
+        // Get the list of available quizzes from the quizTypes array
+        const quizzes = this.quizTypes.map(quizType => {
+            return {
+                id: quizType,
+                name: this.formatQuizName(quizType),
+                description: `View scenarios for the ${this.formatQuizName(quizType)} quiz`,
+                category: this.categorizeQuiz(quizType)
+            };
+        });
+        
+        // Create the content for the quiz selector
+        const content = document.createElement('div');
+        content.className = 'modal-content';
+        content.style.maxWidth = '800px';
+        content.style.width = '90%';
+        
+        // Group quizzes by category
+        const quizzesByCategory = {};
+        quizzes.forEach(quiz => {
+            if (!quizzesByCategory[quiz.category]) {
+                quizzesByCategory[quiz.category] = [];
             }
+            quizzesByCategory[quiz.category].push(quiz);
+        });
+        
+        // Sort categories alphabetically
+        const sortedCategories = Object.keys(quizzesByCategory).sort();
+        
+        // Create HTML for each category
+        let quizzesHTML = '';
+        sortedCategories.forEach(category => {
+            // Sort quizzes within each category alphabetically by name
+            const sortedQuizzes = quizzesByCategory[category].sort((a, b) => 
+                a.name.localeCompare(b.name)
+            );
+            
+            quizzesHTML += `
+                <div class="quiz-category">
+                    <h3 class="category-title">${category}</h3>
+                    <div class="quiz-grid">
+                        ${sortedQuizzes.map(quiz => `
+                            <div class="quiz-card" data-quiz-id="${quiz.id}">
+                                <h4>${quiz.name}</h4>
+                                <p>${quiz.description}</p>
+                                <button class="view-scenarios-btn" data-quiz-id="${quiz.id}">
+                                    View Scenarios
+                                </button>
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+            `;
+        });
+        
+        content.innerHTML = `
+            <style>
+                .modal-content {
+                    background: white;
+                    border-radius: 8px;
+                    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+                    padding: 2rem;
+                    max-height: 85vh;
+                    overflow-y: auto;
+                    position: relative;
+                }
+                .modal-header {
+                    display: flex;
+                    justify-content: space-between;
+                    align-items: center;
+                    margin-bottom: 1.5rem;
+                    padding-bottom: 1rem;
+                    border-bottom: 1px solid #eee;
+                }
+                .modal-header h2 {
+                    margin: 0;
+                    font-size: 1.5rem;
+                }
+                .close-btn {
+                    background: none;
+                    border: none;
+                    font-size: 1.5rem;
+                    cursor: pointer;
+                    padding: 0.5rem;
+                    line-height: 1;
+                }
+                .quiz-category {
+                    margin-bottom: 2rem;
+                }
+                .category-title {
+                    margin-bottom: 1rem;
+                    padding-bottom: 0.5rem;
+                    border-bottom: 1px solid #eee;
+                    color: var(--text-primary);
+                }
+                .quiz-grid {
+                    display: grid;
+                    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+                    gap: 1rem;
+                }
+                .quiz-card {
+                    background: #f8f9fa;
+                    border-radius: 8px;
+                    padding: 1.25rem;
+                    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+                    display: flex;
+                    flex-direction: column;
+                    height: 100%;
+                    transition: transform 0.2s ease, box-shadow 0.2s ease;
+                }
+                .quiz-card:hover {
+                    transform: translateY(-2px);
+                    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+                }
+                .quiz-card h4 {
+                    margin-top: 0;
+                    margin-bottom: 0.5rem;
+                    color: var(--text-primary);
+                }
+                .quiz-card p {
+                    margin-bottom: 1rem;
+                    flex-grow: 1;
+                    color: var(--text-secondary);
+                    font-size: 0.9rem;
+                }
+                .view-scenarios-btn {
+                    background: var(--primary-color);
+                    color: white;
+                    border: none;
+                    padding: 0.5rem 1rem;
+                    border-radius: 4px;
+                    cursor: pointer;
+                    font-weight: 500;
+                    transition: background-color 0.2s ease;
+                    align-self: flex-start;
+                    margin-top: auto;
+                }
+                .view-scenarios-btn:hover {
+                    background: var(--primary-dark);
+                }
+                .search-box {
+                    margin-bottom: 1.5rem;
+                    width: 100%;
+                }
+                .search-input {
+                    width: 100%;
+                    padding: 0.75rem 1rem;
+                    border: 1px solid #ddd;
+                    border-radius: 4px;
+                    font-size: 1rem;
+                }
+                .search-input:focus {
+                    outline: none;
+                    border-color: var(--primary-color);
+                    box-shadow: 0 0 0 2px rgba(var(--primary-rgb), 0.2);
+                }
+                @media (max-width: 768px) {
+                    .quiz-grid {
+                        grid-template-columns: 1fr;
+                    }
+                }
+            </style>
+            <div class="modal-header">
+                <h2 id="quiz-selector-title">Select a Quiz to View Scenarios</h2>
+                <button class="close-btn" aria-label="Close quiz selector">×</button>
+            </div>
+            <div class="search-box">
+                <input type="text" 
+                       class="search-input" 
+                       placeholder="Search quizzes..." 
+                       aria-label="Search quizzes">
+            </div>
+            <div class="quizzes-container">
+                ${quizzesHTML}
+            </div>
+        `;
+        
+        // Replace the loading content with the actual content
+        overlay.innerHTML = '';
+        overlay.appendChild(content);
+        
+        // Add event listener for close button
+        const closeBtn = content.querySelector('.close-btn');
+        if (closeBtn) {
+            closeBtn.addEventListener('click', () => {
+                overlay.remove();
+            });
+        }
+        
+        // Add event listeners for view scenarios buttons
+        const viewButtons = content.querySelectorAll('.view-scenarios-btn');
+        viewButtons.forEach(button => {
+            button.addEventListener('click', async () => {
+                const quizId = button.dataset.quizId;
+                overlay.remove();
+                await this.showQuizScenarios(quizId);
+            });
+        });
+        
+        // Add search functionality
+        const searchInput = content.querySelector('.search-input');
+        if (searchInput) {
+            searchInput.addEventListener('input', () => {
+                const searchTerm = searchInput.value.toLowerCase();
+                const quizCards = content.querySelectorAll('.quiz-card');
+                
+                quizCards.forEach(card => {
+                    const quizName = card.querySelector('h4').textContent.toLowerCase();
+                    const quizDescription = card.querySelector('p').textContent.toLowerCase();
+                    
+                    if (quizName.includes(searchTerm) || quizDescription.includes(searchTerm)) {
+                        card.style.display = '';
+                    } else {
+                        card.style.display = 'none';
+                    }
+                });
+                
+                // Show/hide category headers based on visible cards
+                const categories = content.querySelectorAll('.quiz-category');
+                categories.forEach(category => {
+                    const visibleCards = category.querySelectorAll('.quiz-card[style=""]').length;
+                    if (visibleCards === 0) {
+                        category.style.display = 'none';
+                    } else {
+                        category.style.display = '';
+                    }
+                });
+            });
+        }
+        
+        // Add escape key handler
+        const handleEscapeKey = (e) => {
+            if (e.key === 'Escape') {
+                overlay.remove();
+                document.removeEventListener('keydown', handleEscapeKey);
+            }
+        };
+        
+        document.addEventListener('keydown', handleEscapeKey);
+    }
+    
+    // Helper method to categorize quizzes
+    categorizeQuiz(quizName) {
+        const technicalQuizzes = [
+            'automation-interview', 'cms-testing', 'email-testing', 
+            'script-metrics-troubleshooting', 'standard-script-testing'
         ];
         
-        try {
-            // Create the content with quizzes
-            const content = document.createElement('div');
-            content.className = 'modal-content';
-            content.style.maxWidth = '800px';
-            content.style.width = '90%';
-            
-            // Sort quizzes alphabetically by name
-            quizzes.sort((a, b) => a.name.localeCompare(b.name));
-            
-            // Generate HTML for quiz cards
-            let quizCardsHTML = '';
-            
-            if (quizzes.length === 0) {
-                quizCardsHTML = '<p>No quizzes available.</p>';
-            } else {
-                quizzes.forEach(quiz => {
-                    quizCardsHTML += `
-                        <div class="quiz-card" data-quiz="${quiz.id}">
-                            <div class="quiz-name">${quiz.name}</div>
-                            <div class="quiz-description">${quiz.description || ''}</div>
-                            <div class="quiz-category">${quiz.category || ''}</div>
-                            <button class="view-btn">View Scenarios</button>
-                        </div>
-                    `;
-                });
-            }
-            
-            content.innerHTML = `
-                <style>
-                    .modal-content {
-                        background: white;
-                        border-radius: 8px;
-                        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-                        padding: 2rem;
-                        position: relative;
-                    }
-                    .selector-header {
-                        margin-bottom: 1.5rem;
-                        padding-bottom: 1rem;
-                        border-bottom: 1px solid #e9ecef;
-                        position: relative;
-                    }
-                    .selector-title {
-                        font-size: 1.5rem;
-                        margin: 0;
-                    }
-                    .close-btn {
-                        position: absolute;
-                        top: 0;
-                        right: 0;
-                        font-size: 1.5rem;
-                        background: none;
-                        border: none;
-                        cursor: pointer;
-                        padding: 0.5rem;
-                        line-height: 1;
-                    }
-                    .close-btn:hover {
-                        color: var(--primary-color);
-                    }
-                    .quiz-grid {
-                        display: grid;
-                        grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-                        gap: 1rem;
-                        max-height: 60vh;
-                        overflow-y: auto;
-                        padding-right: 0.5rem;
-                    }
-                    @media (max-width: 640px) {
-                        .quiz-grid {
-                            grid-template-columns: 1fr;
-                        }
-                    }
-                    .quiz-card {
-                        background: #f8f9fa;
-                        border-radius: 8px;
-                        padding: 1.5rem;
-                        text-align: center;
-                        transition: transform 0.2s ease, box-shadow 0.2s ease;
-                        cursor: pointer;
-                        border: 2px solid transparent;
-                        display: flex;
-                        flex-direction: column;
-                    }
-                    .quiz-card:hover {
-                        transform: translateY(-3px);
-                        box-shadow: 0 4px 8px rgba(0,0,0,0.1);
-                        border-color: var(--primary-color);
-                    }
-                    .quiz-name {
-                        font-size: 1.2rem;
-                        font-weight: 600;
-                        margin-bottom: 0.5rem;
-                        color: var(--primary-color);
-                    }
-                    .quiz-description {
-                        font-size: 0.9rem;
-                        color: #6c757d;
-                        margin-bottom: 0.5rem;
-                        flex-grow: 1;
-                    }
-                    .quiz-category {
-                        font-size: 0.8rem;
-                        color: #495057;
-                        background-color: #e9ecef;
-                        padding: 0.2rem 0.5rem;
-                        border-radius: 4px;
-                        display: inline-block;
-                        margin-bottom: 1rem;
-                    }
-                    .view-btn {
-                        background: var(--primary-color);
-                        color: white;
-                        border: none;
-                        padding: 0.5rem 1rem;
-                        border-radius: 4px;
-                        cursor: pointer;
-                        font-weight: 500;
-                        transition: background-color 0.2s ease;
-                        margin-top: auto;
-                    }
-                    .view-btn:hover {
-                        background-color: var(--primary-color-dark, #0056b3);
-                    }
-                    .search-container {
-                        margin-bottom: 1rem;
-                    }
-                    .search-input {
-                        width: 100%;
-                        padding: 0.5rem;
-                        border: 1px solid #ced4da;
-                        border-radius: 4px;
-                        font-size: 1rem;
-                    }
-                    .category-filters {
-                        display: flex;
-                        flex-wrap: wrap;
-                        gap: 0.5rem;
-                        margin-bottom: 1rem;
-                    }
-                    .category-filter {
-                        background: #e9ecef;
-                        border: none;
-                        padding: 0.3rem 0.8rem;
-                        border-radius: 20px;
-                        cursor: pointer;
-                        font-size: 0.9rem;
-                        transition: all 0.2s ease;
-                    }
-                    .category-filter.active {
-                        background: var(--primary-color);
-                        color: white;
-                    }
-                </style>
-                <div class="selector-header">
-                    <h3 id="quiz-selector-title" class="selector-title">Select a Quiz to View Scenarios</h3>
-                    <button class="close-btn" aria-label="Close quiz selector" tabindex="0">×</button>
-                </div>
-                <div class="search-container">
-                    <input type="text" class="search-input" placeholder="Search quizzes..." aria-label="Search quizzes">
-                </div>
-                <div class="category-filters">
-                    <button class="category-filter active" data-category="all">All</button>
-                    <button class="category-filter" data-category="QA">QA</button>
-                    <button class="category-filter" data-category="Technical">Technical</button>
-                    <button class="category-filter" data-category="Soft Skills">Soft Skills</button>
-                </div>
-                <div class="quiz-grid">
-                    ${quizCardsHTML}
-                </div>
-            `;
-            
-            // Replace loading content with actual content
-            overlay.removeChild(loadingContent);
-            overlay.appendChild(content);
-            
-            // Add event listeners for quiz cards
-            const quizCards = content.querySelectorAll('.quiz-card');
-            quizCards.forEach(card => {
-                card.addEventListener('click', () => {
-                    const quizName = card.getAttribute('data-quiz');
-                    overlay.remove();
-                    this.showQuizScenarios(quizName);
-                });
-                
-                // Add keyboard support
-                card.setAttribute('tabindex', '0');
-                card.addEventListener('keydown', (e) => {
-                    if (e.key === 'Enter' || e.key === ' ') {
-                        e.preventDefault();
-                        const quizName = card.getAttribute('data-quiz');
-                        overlay.remove();
-                        this.showQuizScenarios(quizName);
-                    }
-                });
-            });
-            
-            // Add search functionality
-            const searchInput = content.querySelector('.search-input');
-            if (searchInput) {
-                searchInput.addEventListener('input', () => {
-                    const searchTerm = searchInput.value.toLowerCase();
-                    quizCards.forEach(card => {
-                        const quizName = card.querySelector('.quiz-name').textContent.toLowerCase();
-                        const quizDescription = card.querySelector('.quiz-description').textContent.toLowerCase();
-                        const quizCategory = card.querySelector('.quiz-category').textContent.toLowerCase();
-                        
-                        const matches = quizName.includes(searchTerm) || 
-                                       quizDescription.includes(searchTerm) || 
-                                       quizCategory.includes(searchTerm);
-                        
-                        card.style.display = matches ? 'flex' : 'none';
-                    });
-                });
-            }
-            
-            // Add category filter functionality
-            const categoryFilters = content.querySelectorAll('.category-filter');
-            if (categoryFilters.length > 0) {
-                categoryFilters.forEach(filter => {
-                    filter.addEventListener('click', () => {
-                        // Update active state
-                        categoryFilters.forEach(f => f.classList.remove('active'));
-                        filter.classList.add('active');
-                        
-                        const category = filter.getAttribute('data-category');
-                        
-                        quizCards.forEach(card => {
-                            const cardCategory = card.querySelector('.quiz-category').textContent;
-                            
-                            if (category === 'all' || cardCategory === category) {
-                                card.style.display = 'flex';
-                            } else {
-                                card.style.display = 'none';
-                            }
-                        });
-                    });
-                });
-            }
-            
-            // Add event listener for close button
-            const closeBtn = content.querySelector('.close-btn');
-            if (closeBtn) {
-                closeBtn.addEventListener('click', () => {
-                    overlay.remove();
-                });
-                
-                // Add keyboard support for close button
-                closeBtn.addEventListener('keydown', (e) => {
-                    if (e.key === 'Enter' || e.key === ' ') {
-                        e.preventDefault();
-                        overlay.remove();
-                    }
-                });
-            }
-            
-            // Add escape key handler
-            const handleEscapeKey = (e) => {
-                if (e.key === 'Escape') {
-                    overlay.remove();
-                    document.removeEventListener('keydown', handleEscapeKey);
-                }
-            };
-            
-            document.addEventListener('keydown', handleEscapeKey);
-            
-            // Close on click outside
-            overlay.addEventListener('click', (e) => {
-                if (e.target === overlay) {
-                    overlay.remove();
-                }
-            });
-        } catch (error) {
-            console.error('Error showing quiz scenarios selector:', error);
-            
-            // Update the loading content to show error
-            loadingContent.innerHTML = `
-                <div style="
-                    background: white;
-                    padding: 2rem;
-                    border-radius: 8px;
-                    text-align: center;">
-                    <h3 style="color: #dc3545;">Error Loading Quizzes</h3>
-                    <p>${error.message || 'Failed to load available quizzes'}</p>
-                    <button id="closeErrorBtn" class="action-button" style="
-                        margin-top: 20px;
-                        background: #6c757d;
-                        color: white;
-                        border: none;
-                        padding: 8px 16px;
-                        border-radius: 4px;
-                        cursor: pointer;">
-                        Close
-                    </button>
-                </div>
-            `;
-            
-            // Add event listener for close button
-            const closeErrorBtn = document.getElementById('closeErrorBtn');
-            if (closeErrorBtn) {
-                closeErrorBtn.addEventListener('click', () => {
-                    overlay.remove();
-                });
-            }
-        }
-    }
-
-    // Helper method to get mock scenarios for a specific quiz
-    getMockScenariosForQuiz(quizName) {
-        console.log(`Getting mock scenarios for ${quizName}`);
+        const qaProcessQuizzes = [
+            'build-verification', 'exploratory', 'fully-scripted', 
+            'issue-verification', 'non-functional', 'sanity-smoke', 
+            'test-types-tricks', 'test-support'
+        ];
         
-        // Map quiz names to their respective mock data methods
-        const mockDataMap = {
-            'communication-quiz': this.getMockScenariosForCommunication.bind(this),
-            'automation-interview': this.getMockScenariosForAutomation.bind(this),
-            'bug-reporting': this.getMockScenariosForBugReporting.bind(this),
-            'api-testing': this.getMockScenariosForApiTesting.bind(this),
-            'cms-testing': this.getMockScenariosForCmsTesting.bind(this),
-            'security-testing': this.getMockScenariosForSecurityTesting.bind(this),
-            'test-planning': this.getGenericMockScenarios.bind(this, 'Test Planning'),
-            'test-design': this.getGenericMockScenarios.bind(this, 'Test Design')
-        };
+        const contentQuizzes = [
+            'content-copy', 'locale-testing'
+        ];
         
-        // Get the appropriate mock data function or use the generic one
-        const mockDataFunction = mockDataMap[quizName] || this.getGenericMockScenarios.bind(this, this.formatQuizName(quizName));
+        const toolsQuizzes = [
+            'issue-tracking-tools', 'raising-tickets', 'reports'
+        ];
         
-        // Call the function to get the mock data
-        return mockDataFunction();
-    }
-    
-    // Helper method to provide mock data for Communication quiz
-    getMockScenariosForCommunication() {
-        return {
-            basic: [
-                {
-                    id: 'comm-basic-1',
-                    question: 'A colleague sends you an urgent message late at night. What should you do?',
-                    options: [
-                        {
-                            id: 'comm-basic-1-a',
-                            text: 'Ignore it until working hours',
-                            outcome: 'This could delay critical work, but maintains work-life boundaries.',
-                            experience: 5,
-                            correct: false
-                        },
-                        {
-                            id: 'comm-basic-1-b',
-                            text: 'Respond immediately regardless of the time',
-                            outcome: 'This shows dedication but sets unhealthy expectations.',
-                            experience: 0,
-                            correct: false
-                        },
-                        {
-                            id: 'comm-basic-1-c',
-                            text: 'Briefly assess the urgency and respond accordingly',
-                            outcome: 'This balances responsiveness with appropriate boundaries.',
-                            experience: 20,
-                            correct: true
-                        }
-                    ]
-                },
-                {
-                    id: 'comm-basic-2',
-                    question: 'What is the best way to handle disagreements in a team meeting?',
-                    options: [
-                        {
-                            id: 'comm-basic-2-a',
-                            text: 'Avoid disagreeing to maintain harmony',
-                            outcome: 'This prevents healthy debate and can lead to poor decisions.',
-                            experience: -10,
-                            correct: false
-                        },
-                        {
-                            id: 'comm-basic-2-b',
-                            text: 'Express your perspective respectfully with supporting evidence',
-                            outcome: 'This contributes to productive discussion while maintaining respect.',
-                            experience: 20,
-                            correct: true
-                        },
-                        {
-                            id: 'comm-basic-2-c',
-                            text: 'Strongly argue your point until others agree',
-                            outcome: 'This can create tension and shut down collaborative discussion.',
-                            experience: -15,
-                            correct: false
-                        }
-                    ]
-                }
-            ],
-            intermediate: [
-                {
-                    id: 'comm-int-1',
-                    question: 'A client is unhappy with a deliverable. How should you respond?',
-                    options: [
-                        {
-                            id: 'comm-int-1-a',
-                            text: 'Defend your work and explain why they should be satisfied',
-                            outcome: 'This dismisses the client\'s concerns and may damage the relationship.',
-                            experience: -20,
-                            correct: false
-                        },
-                        {
-                            id: 'comm-int-1-b',
-                            text: 'Listen to their concerns, acknowledge them, and propose solutions',
-                            outcome: 'This shows respect and a commitment to client satisfaction.',
-                            experience: 25,
-                            correct: true
-                        },
-                        {
-                            id: 'comm-int-1-c',
-                            text: 'Immediately offer to redo the work without understanding the issues',
-                            outcome: 'This may waste time and resources without addressing the real concerns.',
-                            experience: 0,
-                            correct: false
-                        }
-                    ]
-                }
-            ],
-            advanced: [
-                {
-                    id: 'comm-adv-1',
-                    question: 'You need to deliver negative feedback to a team member. What approach should you take?',
-                    options: [
-                        {
-                            id: 'comm-adv-1-a',
-                            text: 'Send detailed written feedback in an email',
-                            outcome: 'Written feedback for sensitive issues can be misinterpreted.',
-                            experience: -10,
-                            correct: false
-                        },
-                        {
-                            id: 'comm-adv-1-b',
-                            text: 'Schedule a private meeting, be specific, and focus on improvement',
-                            outcome: 'This approach is respectful and constructive.',
-                            experience: 30,
-                            correct: true
-                        },
-                        {
-                            id: 'comm-adv-1-c',
-                            text: 'Mention the issues during a team meeting for transparency',
-                            outcome: 'Public criticism can be humiliating and counterproductive.',
-                            experience: -25,
-                            correct: false
-                        }
-                    ]
-                }
-            ]
-        };
-    }
-    
-    // Helper method to provide mock data for Automation Interview quiz
-    getMockScenariosForAutomation() {
-        return {
-            basic: [
-                {
-                    id: 'auto-basic-1',
-                    question: 'What is the primary benefit of test automation?',
-                    options: [
-                        {
-                            id: 'auto-basic-1-a',
-                            text: 'It eliminates the need for manual testing completely',
-                            outcome: 'Automation complements but doesn\'t replace all manual testing.',
-                            experience: -10,
-                            correct: false
-                        },
-                        {
-                            id: 'auto-basic-1-b',
-                            text: 'It allows repetitive tests to be executed efficiently and consistently',
-                            outcome: 'This is a key benefit of automation.',
-                            experience: 20,
-                            correct: true
-                        },
-                        {
-                            id: 'auto-basic-1-c',
-                            text: 'It guarantees bug-free software',
-                            outcome: 'No testing method can guarantee completely bug-free software.',
-                            experience: -15,
-                            correct: false
-                        }
-                    ]
-                }
-            ],
-            intermediate: [
-                {
-                    id: 'auto-int-1',
-                    question: 'Which tests should be prioritized for automation?',
-                    options: [
-                        {
-                            id: 'auto-int-1-a',
-                            text: 'Tests that are run frequently and have stable requirements',
-                            outcome: 'These tests provide the best return on investment for automation.',
-                            experience: 25,
-                            correct: true
-                        },
-                        {
-                            id: 'auto-int-1-b',
-                            text: 'Exploratory tests that require creative thinking',
-                            outcome: 'Exploratory tests are better suited for manual testing.',
-                            experience: -15,
-                            correct: false
-                        },
-                        {
-                            id: 'auto-int-1-c',
-                            text: 'Tests for features that are still in development',
-                            outcome: 'Automating unstable features leads to high maintenance costs.',
-                            experience: -10,
-                            correct: false
-                        }
-                    ]
-                }
-            ],
-            advanced: [
-                {
-                    id: 'auto-adv-1',
-                    question: 'How should you handle flaky automated tests?',
-                    options: [
-                        {
-                            id: 'auto-adv-1-a',
-                            text: 'Ignore them as they sometimes pass',
-                            outcome: 'Ignoring flaky tests undermines confidence in the test suite.',
-                            experience: -25,
-                            correct: false
-                        },
-                        {
-                            id: 'auto-adv-1-b',
-                            text: 'Analyze root causes and fix the underlying issues',
-                            outcome: 'This approach improves test reliability and application quality.',
-                            experience: 30,
-                            correct: true
-                        },
-                        {
-                            id: 'auto-adv-1-c',
-                            text: 'Run the tests multiple times until they pass',
-                            outcome: 'This masks problems rather than solving them.',
-                            experience: -15,
-                            correct: false
-                        }
-                    ]
-                }
-            ]
-        };
-    }
-    
-    // Helper method to provide mock data for Bug Reporting quiz
-    getMockScenariosForBugReporting() {
-        return {
-            basic: [
-                {
-                    id: 'bug-basic-1',
-                    question: 'What should you include in a bug report?',
-                    options: [
-                        {
-                            id: 'bug-basic-1-a',
-                            text: 'Only a description of the problem',
-                            outcome: 'This lacks critical information needed to reproduce and fix the issue.',
-                            experience: -15,
-                            correct: false
-                        },
-                        {
-                            id: 'bug-basic-1-b',
-                            text: 'Steps to reproduce, expected vs. actual results, and environment details',
-                            outcome: 'This provides comprehensive information for debugging.',
-                            experience: 20,
-                            correct: true
-                        },
-                        {
-                            id: 'bug-basic-1-c',
-                            text: 'Your opinion on how to fix the bug',
-                            outcome: 'While sometimes helpful, suggesting fixes isn\'t essential and may not be accurate.',
-                            experience: 0,
-                            correct: false
-                        }
-                    ]
-                }
-            ],
-            intermediate: [
-                {
-                    id: 'bug-int-1',
-                    question: 'How should you prioritize bug reports?',
-                    options: [
-                        {
-                            id: 'bug-int-1-a',
-                            text: 'Based on how recently they were found',
-                            outcome: 'Recency isn\'t a good indicator of importance.',
-                            experience: -10,
-                            correct: false
-                        },
-                        {
-                            id: 'bug-int-1-b',
-                            text: 'Based on severity, impact on users, and business priorities',
-                            outcome: 'This approach focuses resources on the most important issues.',
-                            experience: 25,
-                            correct: true
-                        },
-                        {
-                            id: 'bug-int-1-c',
-                            text: 'All bugs should have equal priority',
-                            outcome: 'Not all bugs have equal impact or urgency.',
-                            experience: -15,
-                            correct: false
-                        }
-                    ]
-                }
-            ],
-            advanced: [
-                {
-                    id: 'bug-adv-1',
-                    question: 'A developer says they can\'t reproduce a bug you reported. What should you do?',
-                    options: [
-                        {
-                            id: 'bug-adv-1-a',
-                            text: 'Close the bug report as "not reproducible"',
-                            outcome: 'This may leave a real issue unresolved.',
-                            experience: -20,
-                            correct: false
-                        },
-                        {
-                            id: 'bug-adv-1-b',
-                            text: 'Provide more detailed reproduction steps and offer to demonstrate the issue',
-                            outcome: 'This collaborative approach helps resolve the discrepancy.',
-                            experience: 30,
-                            correct: true
-                        },
-                        {
-                            id: 'bug-adv-1-c',
-                            text: 'Insist that the bug exists and the developer should try harder',
-                            outcome: 'This creates conflict rather than collaboration.',
-                            experience: -25,
-                            correct: false
-                        }
-                    ]
-                }
-            ]
-        };
-    }
-    
-    // Helper method to provide mock data for API Testing quiz
-    getMockScenariosForApiTesting() {
-        return {
-            basic: [
-                {
-                    id: 'api-basic-1',
-                    title: 'API Verification Fundamentals',
-                    question: 'What should you verify when testing a REST API?',
-                    options: [
-                        {
-                            id: 'api-basic-1-a',
-                            text: 'Only that the API returns a 200 status code',
-                            outcome: 'Status code alone is insufficient for thorough testing.',
-                            experience: -10,
-                            correct: false
-                        },
-                        {
-                            id: 'api-basic-1-b',
-                            text: 'Status codes, response format, data validity, and error handling',
-                            outcome: 'This covers the essential aspects of API testing.',
-                            experience: 20,
-                            correct: true
-                        },
-                        {
-                            id: 'api-basic-1-c',
-                            text: 'The visual appearance of the API documentation',
-                            outcome: 'Documentation appearance isn\'t relevant to API functionality.',
-                            experience: -15,
-                            correct: false
-                        }
-                    ]
-                },
-                {
-                    id: 'api-basic-2',
-                    title: 'API Testing Tools',
-                    question: 'Which tool is most appropriate for API testing?',
-                    options: [
-                        {
-                            id: 'api-basic-2-a',
-                            text: 'Selenium WebDriver',
-                            outcome: 'Selenium is primarily for UI testing, not API testing.',
-                            experience: -10,
-                            correct: false
-                        },
-                        {
-                            id: 'api-basic-2-b',
-                            text: 'Postman, REST Assured, or similar API testing tools',
-                            outcome: 'These tools are specifically designed for API testing.',
-                            experience: 20,
-                            correct: true
-                        },
-                        {
-                            id: 'api-basic-2-c',
-                            text: 'Manual testing using a web browser',
-                            outcome: 'Browsers are not efficient for direct API testing.',
-                            experience: -15,
-                            correct: false
-                        }
-                    ]
-                },
-                {
-                    id: 'api-basic-3',
-                    title: 'API Response Validation',
-                    question: 'What should you validate in an API response?',
-                    options: [
-                        {
-                            id: 'api-basic-3-a',
-                            text: 'Only check if the response contains data',
-                            outcome: 'This is insufficient for thorough validation.',
-                            experience: -10,
-                            correct: false
-                        },
-                        {
-                            id: 'api-basic-3-b',
-                            text: 'Status code, response time, headers, and payload structure/content',
-                            outcome: 'This provides comprehensive validation of the response.',
-                            experience: 20,
-                            correct: true
-                        },
-                        {
-                            id: 'api-basic-3-c',
-                            text: 'Just verify the API doesn\'t return an error',
-                            outcome: 'Absence of errors doesn\'t mean the response is correct.',
-                            experience: -5,
-                            correct: false
-                        }
-                    ]
-                },
-                {
-                    id: 'api-basic-4',
-                    title: 'API Documentation',
-                    question: 'What is the purpose of API documentation in testing?',
-                    options: [
-                        {
-                            id: 'api-basic-4-a',
-                            text: 'It\'s not relevant for testing',
-                            outcome: 'Documentation is crucial for understanding API behavior and requirements.',
-                            experience: -15,
-                            correct: false
-                        },
-                        {
-                            id: 'api-basic-4-b',
-                            text: 'To understand endpoints, parameters, expected responses, and authentication requirements',
-                            outcome: 'Documentation provides essential information for effective testing.',
-                            experience: 20,
-                            correct: true
-                        },
-                        {
-                            id: 'api-basic-4-c',
-                            text: 'Only to check the API version',
-                            outcome: 'Version information is just one small aspect of API documentation.',
-                            experience: -5,
-                            correct: false
-                        }
-                    ]
-                },
-                {
-                    id: 'api-basic-5',
-                    title: 'API Testing Types',
-                    question: 'Which types of testing are important for APIs?',
-                    options: [
-                        {
-                            id: 'api-basic-5-a',
-                            text: 'Only functional testing',
-                            outcome: 'APIs require multiple testing types beyond just functional testing.',
-                            experience: -10,
-                            correct: false
-                        },
-                        {
-                            id: 'api-basic-5-b',
-                            text: 'Functional, security, performance, and integration testing',
-                            outcome: 'This comprehensive approach covers the key aspects of API quality.',
-                            experience: 20,
-                            correct: true
-                        },
-                        {
-                            id: 'api-basic-5-c',
-                            text: 'UI testing is sufficient for APIs',
-                            outcome: 'UI testing doesn\'t directly test API functionality.',
-                            experience: -15,
-                            correct: false
-                        }
-                    ]
-                }
-            ],
-            intermediate: [
-                {
-                    id: 'api-int-1',
-                    title: 'API Security Testing',
-                    question: 'How should you test API security?',
-                    options: [
-                        {
-                            id: 'api-int-1-a',
-                            text: 'Focus only on authentication mechanisms',
-                            outcome: 'Authentication is important but not the only security concern.',
-                            experience: 0,
-                            correct: false
-                        },
-                        {
-                            id: 'api-int-1-b',
-                            text: 'Test authentication, authorization, input validation, and data protection',
-                            outcome: 'This comprehensive approach addresses multiple security aspects.',
-                            experience: 25,
-                            correct: true
-                        },
-                        {
-                            id: 'api-int-1-c',
-                            text: 'Security testing isn\'t necessary for internal APIs',
-                            outcome: 'Internal APIs also need security testing to prevent vulnerabilities.',
-                            experience: -20,
-                            correct: false
-                        }
-                    ]
-                },
-                {
-                    id: 'api-int-2',
-                    title: 'API Contract Testing',
-                    question: 'What is the purpose of API contract testing?',
-                    options: [
-                        {
-                            id: 'api-int-2-a',
-                            text: 'To test the visual design of the API documentation',
-                            outcome: 'Contract testing is not about documentation design.',
-                            experience: -15,
-                            correct: false
-                        },
-                        {
-                            id: 'api-int-2-b',
-                            text: 'To verify that the API implementation adheres to its specification',
-                            outcome: 'Contract testing ensures the API meets its defined contract.',
-                            experience: 25,
-                            correct: true
-                        },
-                        {
-                            id: 'api-int-2-c',
-                            text: 'To test the legal terms of using the API',
-                            outcome: 'Contract testing refers to technical contracts, not legal agreements.',
-                            experience: -10,
-                            correct: false
-                        }
-                    ]
-                },
-                {
-                    id: 'api-int-3',
-                    title: 'API Mocking',
-                    question: 'When should you use API mocking in testing?',
-                    options: [
-                        {
-                            id: 'api-int-3-a',
-                            text: 'Never, always test against real APIs',
-                            outcome: 'This approach is impractical and can slow down development.',
-                            experience: -15,
-                            correct: false
-                        },
-                        {
-                            id: 'api-int-3-b',
-                            text: 'When dependent APIs are unavailable, unstable, or to simulate specific scenarios',
-                            outcome: 'Mocking enables testing in controlled conditions and without dependencies.',
-                            experience: 25,
-                            correct: true
-                        },
-                        {
-                            id: 'api-int-3-c',
-                            text: 'Only when you don\'t have access to the API documentation',
-                            outcome: 'Lack of documentation is not a primary reason for mocking.',
-                            experience: -5,
-                            correct: false
-                        }
-                    ]
-                },
-                {
-                    id: 'api-int-4',
-                    title: 'API Versioning',
-                    question: 'How should API versioning be handled in testing?',
-                    options: [
-                        {
-                            id: 'api-int-4-a',
-                            text: 'Only test the latest version',
-                            outcome: 'This ignores backward compatibility requirements.',
-                            experience: -10,
-                            correct: false
-                        },
-                        {
-                            id: 'api-int-4-b',
-                            text: 'Test all supported versions and version upgrade paths',
-                            outcome: 'This ensures all versions work correctly and upgrades are smooth.',
-                            experience: 25,
-                            correct: true
-                        },
-                        {
-                            id: 'api-int-4-c',
-                            text: 'Versioning doesn\'t need specific testing',
-                            outcome: 'Ignoring version-specific testing can lead to compatibility issues.',
-                            experience: -15,
-                            correct: false
-                        }
-                    ]
-                },
-                {
-                    id: 'api-int-5',
-                    title: 'API Error Handling',
-                    question: 'What should you verify when testing API error handling?',
-                    options: [
-                        {
-                            id: 'api-int-5-a',
-                            text: 'Just check that errors return a non-200 status code',
-                            outcome: 'This is insufficient for thorough error handling testing.',
-                            experience: -10,
-                            correct: false
-                        },
-                        {
-                            id: 'api-int-5-b',
-                            text: 'Verify appropriate status codes, error messages, and consistent error response format',
-                            outcome: 'This ensures errors are handled properly and provide useful information.',
-                            experience: 25,
-                            correct: true
-                        },
-                        {
-                            id: 'api-int-5-c',
-                            text: 'Error handling doesn\'t need specific testing',
-                            outcome: 'Proper error handling is crucial for API robustness.',
-                            experience: -20,
-                            correct: false
-                        }
-                    ]
-                }
-            ],
-            advanced: [
-                {
-                    id: 'api-adv-1',
-                    title: 'API Performance Testing',
-                    question: 'What approach should you take for API performance testing?',
-                    options: [
-                        {
-                            id: 'api-adv-1-a',
-                            text: 'Test with a single user to establish a baseline',
-                            outcome: 'Single-user testing doesn\'t reveal scaling issues.',
-                            experience: -10,
-                            correct: false
-                        },
-                        {
-                            id: 'api-adv-1-b',
-                            text: 'Test with various load patterns, monitor response times and resource usage',
-                            outcome: 'This approach identifies performance bottlenecks under different conditions.',
-                            experience: 30,
-                            correct: true
-                        },
-                        {
-                            id: 'api-adv-1-c',
-                            text: 'Focus only on maximum load testing',
-                            outcome: 'Maximum load is important but not the only performance consideration.',
-                            experience: 0,
-                            correct: false
-                        }
-                    ]
-                },
-                {
-                    id: 'api-adv-2',
-                    title: 'API Automation Strategy',
-                    question: 'What is the best approach for API test automation?',
-                    options: [
-                        {
-                            id: 'api-adv-2-a',
-                            text: 'Automate all API tests without prioritization',
-                            outcome: 'This is inefficient and may waste resources on low-value tests.',
-                            experience: -15,
-                            correct: false
-                        },
-                        {
-                            id: 'api-adv-2-b',
-                            text: 'Prioritize critical paths, high-risk areas, and regression tests for automation',
-                            outcome: 'This strategic approach maximizes the value of automation efforts.',
-                            experience: 30,
-                            correct: true
-                        },
-                        {
-                            id: 'api-adv-2-c',
-                            text: 'Rely primarily on manual API testing',
-                            outcome: 'Manual testing alone is insufficient for thorough API testing.',
-                            experience: -20,
-                            correct: false
-                        }
-                    ]
-                },
-                {
-                    id: 'api-adv-3',
-                    title: 'API Testing in CI/CD',
-                    question: 'How should API testing be integrated into CI/CD pipelines?',
-                    options: [
-                        {
-                            id: 'api-adv-3-a',
-                            text: 'Run all API tests in production after deployment',
-                            outcome: 'Testing after production deployment is too late to prevent issues.',
-                            experience: -25,
-                            correct: false
-                        },
-                        {
-                            id: 'api-adv-3-b',
-                            text: 'Integrate different levels of API tests at appropriate pipeline stages',
-                            outcome: 'This ensures issues are caught early while maintaining pipeline efficiency.',
-                            experience: 30,
-                            correct: true
-                        },
-                        {
-                            id: 'api-adv-3-c',
-                            text: 'API tests should be run separately from the CI/CD pipeline',
-                            outcome: 'This disconnects testing from the delivery process.',
-                            experience: -15,
-                            correct: false
-                        }
-                    ]
-                },
-                {
-                    id: 'api-adv-4',
-                    title: 'API Virtualization',
-                    question: 'What are the benefits of service virtualization in API testing?',
-                    options: [
-                        {
-                            id: 'api-adv-4-a',
-                            text: 'It eliminates the need for actual API testing',
-                            outcome: 'Virtualization complements but doesn\'t replace actual API testing.',
-                            experience: -20,
-                            correct: false
-                        },
-                        {
-                            id: 'api-adv-4-b',
-                            text: 'It enables testing of unavailable dependencies and specific edge cases',
-                            outcome: 'Virtualization provides controlled conditions for comprehensive testing.',
-                            experience: 30,
-                            correct: true
-                        },
-                        {
-                            id: 'api-adv-4-c',
-                            text: 'It\'s only useful for UI testing, not API testing',
-                            outcome: 'Service virtualization is particularly valuable for API testing.',
-                            experience: -15,
-                            correct: false
-                        }
-                    ]
-                },
-                {
-                    id: 'api-adv-5',
-                    title: 'GraphQL API Testing',
-                    question: 'How does testing GraphQL APIs differ from REST APIs?',
-                    options: [
-                        {
-                            id: 'api-adv-5-a',
-                            text: 'GraphQL doesn\'t require testing since it\'s self-documenting',
-                            outcome: 'All APIs require testing, regardless of documentation quality.',
-                            experience: -25,
-                            correct: false
-                        },
-                        {
-                            id: 'api-adv-5-b',
-                            text: 'GraphQL requires testing query complexity, resolver functions, and schema validation',
-                            outcome: 'This addresses the unique aspects of GraphQL architecture.',
-                            experience: 30,
-                            correct: true
-                        },
-                        {
-                            id: 'api-adv-5-c',
-                            text: 'GraphQL and REST APIs should be tested exactly the same way',
-                            outcome: 'This ignores the fundamental differences between these API types.',
-                            experience: -10,
-                            correct: false
-                        }
-                    ]
-                }
-            ]
-        };
-    }
-    
-    // Helper method to provide mock data for Security Testing quiz
-    getMockScenariosForSecurityTesting() {
-        return {
-            basic: [
-                {
-                    id: 'sec-basic-1',
-                    question: 'What is the purpose of security testing?',
-                    options: [
-                        {
-                            id: 'sec-basic-1-a',
-                            text: 'To make the application completely secure against all attacks',
-                            outcome: 'No testing can guarantee complete security against all possible attacks.',
-                            experience: -15,
-                            correct: false
-                        },
-                        {
-                            id: 'sec-basic-1-b',
-                            text: 'To identify vulnerabilities and assess the risk they pose',
-                            outcome: 'This accurately describes the purpose of security testing.',
-                            experience: 20,
-                            correct: true
-                        },
-                        {
-                            id: 'sec-basic-1-c',
-                            text: 'To comply with regulations only',
-                            outcome: 'Compliance is important but not the only purpose of security testing.',
-                            experience: -5,
-                            correct: false
-                        }
-                    ]
-                }
-            ],
-            intermediate: [
-                {
-                    id: 'sec-int-1',
-                    question: 'What is SQL injection and how should it be prevented?',
-                    options: [
-                        {
-                            id: 'sec-int-1-a',
-                            text: 'A virus that affects databases; install antivirus software',
-                            outcome: 'This shows a fundamental misunderstanding of SQL injection.',
-                            experience: -25,
-                            correct: false
-                        },
-                        {
-                            id: 'sec-int-1-b',
-                            text: 'An attack where malicious SQL is inserted into inputs; use parameterized queries',
-                            outcome: 'This correctly identifies the vulnerability and a key prevention method.',
-                            experience: 25,
-                            correct: true
-                        },
-                        {
-                            id: 'sec-int-1-c',
-                            text: 'A database performance issue; optimize database queries',
-                            outcome: 'This confuses a security vulnerability with performance optimization.',
-                            experience: -20,
-                            correct: false
-                        }
-                    ]
-                }
-            ],
-            advanced: [
-                {
-                    id: 'sec-adv-1',
-                    question: 'How should you approach security testing in a CI/CD pipeline?',
-                    options: [
-                        {
-                            id: 'sec-adv-1-a',
-                            text: 'Run comprehensive security tests only before major releases',
-                            outcome: 'This approach may allow vulnerabilities to persist in the codebase.',
-                            experience: -10,
-                            correct: false
-                        },
-                        {
-                            id: 'sec-adv-1-b',
-                            text: 'Integrate automated security testing at multiple stages with different depths',
-                            outcome: 'This "shift-left" approach catches issues early while maintaining efficiency.',
-                            experience: 30,
-                            correct: true
-                        },
-                        {
-                            id: 'sec-adv-1-c',
-                            text: 'Security testing slows down CI/CD and should be done separately',
-                            outcome: 'Separating security testing from CI/CD contradicts DevSecOps principles.',
-                            experience: -20,
-                            correct: false
-                        }
-                    ]
-                }
-            ]
-        };
-    }
-    
-    // Helper method to provide generic mock data for any quiz
-    getGenericMockScenarios(quizName) {
-        const formattedName = this.formatQuizName(quizName);
-        return {
-            basic: [
-                {
-                    id: `${quizName}-basic-1`,
-                    question: `Basic ${formattedName} Scenario 1`,
-                    options: [
-                        {
-                            id: `${quizName}-basic-1-a`,
-                            text: 'Option A - Incorrect approach',
-                            outcome: 'This approach is not recommended.',
-                            experience: -10,
-                            correct: false
-                        },
-                        {
-                            id: `${quizName}-basic-1-b`,
-                            text: 'Option B - Best practice approach',
-                            outcome: 'This follows industry best practices.',
-                            experience: 20,
-                            correct: true
-                        },
-                        {
-                            id: `${quizName}-basic-1-c`,
-                            text: 'Option C - Neutral approach',
-                            outcome: 'This approach works but is not optimal.',
-                            experience: 5,
-                            correct: false
-                        }
-                    ]
-                }
-            ],
-            intermediate: [
-                {
-                    id: `${quizName}-int-1`,
-                    question: `Intermediate ${formattedName} Scenario 1`,
-                    options: [
-                        {
-                            id: `${quizName}-int-1-a`,
-                            text: 'Option A - Incorrect approach',
-                            outcome: 'This approach may cause problems.',
-                            experience: -15,
-                            correct: false
-                        },
-                        {
-                            id: `${quizName}-int-1-b`,
-                            text: 'Option B - Best practice approach',
-                            outcome: 'This is the recommended approach.',
-                            experience: 25,
-                            correct: true
-                        },
-                        {
-                            id: `${quizName}-int-1-c`,
-                            text: 'Option C - Neutral approach',
-                            outcome: 'This approach is acceptable but not ideal.',
-                            experience: 5,
-                            correct: false
-                        }
-                    ]
-                }
-            ],
-            advanced: [
-                {
-                    id: `${quizName}-adv-1`,
-                    question: `Advanced ${formattedName} Scenario 1`,
-                    options: [
-                        {
-                            id: `${quizName}-adv-1-a`,
-                            text: 'Option A - Incorrect approach',
-                            outcome: 'This approach is problematic in complex situations.',
-                            experience: -20,
-                            correct: false
-                        },
-                        {
-                            id: `${quizName}-adv-1-b`,
-                            text: 'Option B - Best practice approach',
-                            outcome: 'This approach handles complexity effectively.',
-                            experience: 30,
-                            correct: true
-                        },
-                        {
-                            id: `${quizName}-adv-1-c`,
-                            text: 'Option C - Neutral approach',
-                            outcome: 'This approach works in some cases but lacks flexibility.',
-                            experience: 10,
-                            correct: false
-                        }
-                    ]
-                }
-            ]
-        };
+        const softSkillsQuizzes = [
+            'communication', 'initiative', 'time-management', 
+            'tester-mindset', 'risk-analysis', 'risk-management'
+        ];
+        
+        if (technicalQuizzes.includes(quizName)) return 'Technical Skills';
+        if (qaProcessQuizzes.includes(quizName)) return 'QA Processes';
+        if (contentQuizzes.includes(quizName)) return 'Content Testing';
+        if (toolsQuizzes.includes(quizName)) return 'Tools & Documentation';
+        if (softSkillsQuizzes.includes(quizName)) return 'Soft Skills';
+        
+        return 'Other Quizzes';
     }
 }
 
