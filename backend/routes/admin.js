@@ -927,16 +927,81 @@ router.get('/quizzes/:quizName/scenarios', auth, async (req, res) => {
                                         const title = titleMatch ? titleMatch[1] : 'Unknown Title';
                                         const description = descriptionMatch ? descriptionMatch[1] : 'Unknown Description';
                                         
-                                        // Create a simplified scenario object
+                                        // Extract options array
+                                        let optionsText = '';
+                                        const optionsStartIndex = scenarioText.indexOf('options:', scenarioMatch.index);
+                                        if (optionsStartIndex !== -1) {
+                                            // Find the opening bracket of the options array
+                                            const optionsArrayStart = scenarioText.indexOf('[', optionsStartIndex);
+                                            if (optionsArrayStart !== -1) {
+                                                // Find the closing bracket of the options array by counting brackets
+                                                let bracketCount = 1;
+                                                let optionsArrayEnd = optionsArrayStart + 1;
+                                                
+                                                while (bracketCount > 0 && optionsArrayEnd < scenarioText.length) {
+                                                    if (scenarioText[optionsArrayEnd] === '[') bracketCount++;
+                                                    if (scenarioText[optionsArrayEnd] === ']') bracketCount--;
+                                                    optionsArrayEnd++;
+                                                }
+                                                
+                                                if (bracketCount === 0) {
+                                                    optionsText = scenarioText.substring(optionsArrayStart + 1, optionsArrayEnd - 1);
+                                                }
+                                            }
+                                        }
+                                        
+                                        // Extract individual options
+                                        const options = [];
+                                        const optionRegex = /\{\s*text:\s*['"]([^'"]+)['"]/g;
+                                        let optionMatch;
+                                        let optionIndex = 0;
+                                        
+                                        while ((optionMatch = optionRegex.exec(optionsText)) !== null) {
+                                            const optionText = optionMatch[1];
+                                            
+                                            // Find outcome
+                                            const outcomeMatch = /outcome:\s*['"]([^'"]+)['"]/g.exec(optionsText.substring(optionMatch.index));
+                                            const outcome = outcomeMatch ? outcomeMatch[1] : '';
+                                            
+                                            // Find experience
+                                            const experienceMatch = /experience:\s*(-?\d+)/g.exec(optionsText.substring(optionMatch.index));
+                                            const experience = experienceMatch ? parseInt(experienceMatch[1]) : 0;
+                                            
+                                            // Find tool if available
+                                            const toolMatch = /tool:\s*['"]([^'"]+)['"]/g.exec(optionsText.substring(optionMatch.index));
+                                            const tool = toolMatch ? toolMatch[1] : '';
+                                            
+                                            options.push({
+                                                text: optionText,
+                                                outcome: outcome,
+                                                experience: experience,
+                                                tool: tool,
+                                                isCorrect: experience > 0
+                                            });
+                                            
+                                            optionIndex++;
+                                        }
+                                        
+                                        // If we couldn't extract options, provide a placeholder
+                                        if (options.length === 0) {
+                                            options.push({
+                                                text: 'Option details not available in simplified view',
+                                                outcome: 'View the quiz file directly to see all options and outcomes',
+                                                experience: 0,
+                                                isCorrect: false
+                                            });
+                                        }
+                                        
+                                        // Create a scenario object with the extracted data
                                         scenarios.push({
                                             id,
                                             level,
                                             title,
                                             description,
-                                            options: [
-                                                { text: 'Option details not available in simplified view', outcome: 'View the quiz file directly to see all options and outcomes' }
-                                            ],
-                                            note: 'This is a simplified view. Some JavaScript features in the quiz file prevented full parsing.'
+                                            options: options,
+                                            note: options.length > 0 && options[0].text !== 'Option details not available in simplified view' ? 
+                                                  undefined : 
+                                                  'This is a simplified view. Some JavaScript features in the quiz file prevented full parsing.'
                                         });
                                     }
                                     

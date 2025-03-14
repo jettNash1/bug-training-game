@@ -2672,6 +2672,7 @@ class AdminDashboard {
                     .option-outcome {
                         font-style: italic;
                         color: #6c757d;
+                        margin-bottom: 0.5rem;
                     }
                     .option-experience {
                         margin-top: 0.5rem;
@@ -2685,6 +2686,18 @@ class AdminDashboard {
                     }
                     .option-experience.neutral {
                         color: #6c757d;
+                    }
+                    .option-tool {
+                        margin-top: 0.5rem;
+                        font-size: 0.9rem;
+                        color: #6c757d;
+                    }
+                    .scenario-meta {
+                        display: flex;
+                        gap: 1rem;
+                        font-size: 0.9rem;
+                        color: #6c757d;
+                        margin-top: 0.5rem;
                     }
                     .user-details-content {
                         max-height: 85vh;
@@ -2774,50 +2787,39 @@ class AdminDashboard {
 
     generateScenariosHTML(scenarios) {
         return scenarios.map(scenario => {
-            // Find the correct option (the one with the highest experience)
-            const correctOption = [...scenario.options].sort((a, b) => 
-                (b.experience || 0) - (a.experience || 0)
-            )[0];
-            
-            // Use question as title if title is not available
-            const scenarioTitle = scenario.title || scenario.question || 'Untitled Scenario';
-            
-            // Use question as description if description is not available and it's different from title
-            let scenarioDescription = scenario.description || '';
-            if (!scenarioDescription && scenario.question && scenario.question !== scenarioTitle) {
-                scenarioDescription = scenario.question;
-            } else if (!scenarioDescription) {
-                scenarioDescription = 'No description available';
-            }
+            // Sort options to show correct answers first
+            const sortedOptions = [...scenario.options].sort((a, b) => {
+                // First by correctness (correct first)
+                if ((a.experience > 0) !== (b.experience > 0)) {
+                    return (a.experience > 0) ? -1 : 1;
+                }
+                // Then by experience value (higher first)
+                return b.experience - a.experience;
+            });
             
             return `
                 <div class="scenario-card">
                     <div class="scenario-header">
-                        <h4 class="scenario-title">${scenarioTitle}</h4>
-                        ${scenario.id ? `<div class="scenario-id">ID: ${scenario.id}</div>` : ''}
+                        <h4 class="scenario-title">${scenario.title}</h4>
+                        <div class="scenario-meta">
+                            <span class="scenario-id">ID: ${scenario.id}</span>
+                            <span class="scenario-level">Level: ${scenario.level}</span>
+                        </div>
                     </div>
                     <div class="scenario-body">
-                        <div class="scenario-description">
-                            ${scenarioDescription}
-                        </div>
-                        <h5>Answer Options:</h5>
+                        <p class="scenario-description">${scenario.description}</p>
+                        ${scenario.note ? `<p class="scenario-note" style="font-style: italic; color: #6c757d;">${scenario.note}</p>` : ''}
                         <ul class="options-list">
-                            ${scenario.options.map(option => {
-                                const isCorrect = option.correct || option === correctOption;
-                                const experienceClass = (option.experience || 0) > 0 ? 'positive' : 
-                                                      (option.experience || 0) < 0 ? 'negative' : 'neutral';
-                                
-                                return `
-                                    <li class="option-item ${isCorrect ? 'correct' : 'incorrect'}">
-                                        <div class="option-text">${option.text || 'No text available'}</div>
-                                        <div class="option-outcome">${option.outcome || 'No outcome description'}</div>
-                                        <div class="option-experience ${experienceClass}">
-                                            Experience: ${option.experience || 0} XP
-                                            ${isCorrect ? ' (Correct Answer)' : ''}
-                                        </div>
-                                    </li>
-                                `;
-                            }).join('')}
+                            ${sortedOptions.map(option => `
+                                <li class="option-item ${option.experience > 0 ? 'correct' : 'incorrect'}">
+                                    <div class="option-text">${option.text}</div>
+                                    <div class="option-outcome">${option.outcome}</div>
+                                    <div class="option-experience ${option.experience > 0 ? 'positive' : option.experience < 0 ? 'negative' : 'neutral'}">
+                                        Experience: ${option.experience > 0 ? '+' : ''}${option.experience}
+                                    </div>
+                                    ${option.tool ? `<div class="option-tool">Tool: ${option.tool}</div>` : ''}
+                                </li>
+                            `).join('')}
                         </ul>
                     </div>
                 </div>
