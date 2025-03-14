@@ -3,6 +3,8 @@ const router = express.Router();
 const User = require('../models/user.model');
 const jwt = require('jsonwebtoken');
 const auth = require('../middleware/auth');
+const fs = require('fs').promises;
+const path = require('path');
 
 // Admin token verification
 router.get('/verify-token', async (req, res) => {
@@ -854,148 +856,94 @@ router.get('/quizzes/:quizName/scenarios', auth, async (req, res) => {
             // Normalize the quiz name to match file naming conventions
             let normalizedQuizName = quizName.toLowerCase();
             
-            // Determine the module path
-            let modulePath;
+            // Determine the file path
+            let filePath;
             
             // Special case for CMS-Testing-quiz.js which has a different filename
             if (normalizedQuizName === 'cms-testing') {
-                modulePath = `../../frontend/quizzes/CMS-Testing-quiz.js`;
+                filePath = path.resolve(__dirname, '../../frontend/quizzes/CMS-Testing-quiz.js');
             } else {
-                modulePath = `../../frontend/quizzes/${normalizedQuizName}-quiz.js`;
+                filePath = path.resolve(__dirname, `../../frontend/quizzes/${normalizedQuizName}-quiz.js`);
             }
             
-            console.log(`Attempting to load quiz module from: ${modulePath}`);
+            console.log(`Attempting to read quiz file from: ${filePath}`);
             
-            // Dynamically import the quiz module
-            const quizModule = await import(modulePath);
-            
-            // Determine the class name (convert kebab-case to PascalCase + 'Quiz')
-            const className = normalizedQuizName
-                .split('-')
-                .map(part => part.charAt(0).toUpperCase() + part.slice(1))
-                .join('') + 'Quiz';
-                
-            console.log(`Looking for class: ${className}`);
-            
-            if (!quizModule[className]) {
-                // Try to find any exported class that might contain scenarios
-                const exportedClasses = Object.keys(quizModule).filter(
-                    key => typeof quizModule[key] === 'function'
-                );
-                
-                if (exportedClasses.length === 0) {
-                    throw new Error(`No classes found in module for ${quizName}`);
-                }
-                
-                console.log(`Class ${className} not found. Available exports:`, exportedClasses);
-                
-                // Try each exported class
-                for (const exportName of exportedClasses) {
-                    try {
-                        // Check if this class has scenarios as static properties
-                        if (quizModule[exportName].basicScenarios && 
-                            quizModule[exportName].intermediateScenarios && 
-                            quizModule[exportName].advancedScenarios) {
-                            
-                            console.log(`Found scenarios in static properties of ${exportName}`);
-                            return res.json({
-                                success: true,
-                                data: {
-                                    basic: quizModule[exportName].basicScenarios || [],
-                                    intermediate: quizModule[exportName].intermediateScenarios || [],
-                                    advanced: quizModule[exportName].advancedScenarios || []
-                                }
-                            });
-                        }
-                        
-                        // Try to instantiate the class
-                        const instance = new quizModule[exportName]();
-                        
-                        if (instance.basicScenarios && 
-                            instance.intermediateScenarios && 
-                            instance.advancedScenarios) {
-                            
-                            console.log(`Found scenarios in instance of ${exportName}`);
-                            return res.json({
-                                success: true,
-                                data: {
-                                    basic: instance.basicScenarios || [],
-                                    intermediate: instance.intermediateScenarios || [],
-                                    advanced: instance.advancedScenarios || []
-                                }
-                            });
-                        }
-                    } catch (e) {
-                        console.log(`Error checking ${exportName}:`, e.message);
-                        // Continue to the next export
-                    }
-                }
-                
-                throw new Error(`No scenarios found in any exported class for ${quizName}`);
-            }
-            
-            // Check if the class has scenarios as static properties
-            if (quizModule[className].basicScenarios && 
-                quizModule[className].intermediateScenarios && 
-                quizModule[className].advancedScenarios) {
-                
-                console.log(`Found scenarios in static properties of ${className}`);
-                return res.json({
-                    success: true,
-                    data: {
-                        basic: quizModule[className].basicScenarios || [],
-                        intermediate: quizModule[className].intermediateScenarios || [],
-                        advanced: quizModule[className].advancedScenarios || []
-                    }
+            // Check if file exists
+            try {
+                await fs.access(filePath);
+            } catch (error) {
+                console.error(`File not found: ${filePath}`);
+                return res.status(404).json({
+                    success: false,
+                    message: `Quiz file not found: ${normalizedQuizName}-quiz.js`
                 });
             }
             
-            // Try to instantiate the class
-            try {
-                const instance = new quizModule[className]();
-                
-                if (instance.basicScenarios && 
-                    instance.intermediateScenarios && 
-                    instance.advancedScenarios) {
+            // Read the file content
+            const fileContent = await fs.readFile(filePath, 'utf8');
+            
+            // Extract scenarios using regex
+            const extractScenarios = (prefix) => {
+                try {
+                    // Try different regex patterns to match the scenarios
+                    const patterns = [
+                        // Standard pattern with this.prefix = [...]
+                        new RegExp(`${prefix}\\s*=\\s*\\[(.*?)\\];`, 's'),
+                        // Alternative pattern with this.prefix = [ ... ]
+                        new RegExp(`${prefix}\\s*=\\s*\\[(.*?)\\]`, 's'),
+                        // Pattern for static class properties
+                        new RegExp(`static\\s+${prefix.replace('this.', '')}\\s*=\\s*\\[(.*?)\\];`, 's')
+                    ];
                     
-                    console.log(`Found scenarios in instance of ${className}`);
-                    return res.json({
-                        success: true,
-                        data: {
-                            basic: instance.basicScenarios || [],
-                            intermediate: instance.intermediateScenarios || [],
-                            advanced: instance.advancedScenarios || []
+                    for (const regex of patterns) {
+                        const match = fileContent.match(regex);
+                        if (match && match[1]) {
+                            console.log(`Found match for ${prefix} using pattern: ${regex}`);
+                            try {
+                                // Try to parse as JSON
+                                return JSON.parse(`[${match[1]}]`);
+                            } catch (e) {
+                                console.warn(`Could not parse ${prefix} from source: ${e.message}`);
+                            }
                         }
-                    });
-                } else {
-                    throw new Error(`No scenarios found in instance of ${className}`);
-                }
-            } catch (instantiationError) {
-                console.error(`Error instantiating ${className}:`, instantiationError);
-                
-                // Try to access the prototype
-                const prototype = quizModule[className].prototype;
-                if (prototype && 
-                    (prototype.basicScenarios || prototype.intermediateScenarios || prototype.advancedScenarios)) {
+                    }
                     
-                    console.log(`Found scenarios in prototype of ${className}`);
-                    return res.json({
-                        success: true,
-                        data: {
-                            basic: prototype.basicScenarios || [],
-                            intermediate: prototype.intermediateScenarios || [],
-                            advanced: prototype.advancedScenarios || []
-                        }
-                    });
+                    console.warn(`No regex match found for ${prefix}`);
+                    return [];
+                } catch (e) {
+                    console.warn(`Error extracting ${prefix}: ${e.message}`);
+                    return [];
                 }
-                
-                throw new Error(`Could not extract scenarios from ${className}: ${instantiationError.message}`);
+            };
+            
+            const scenarios = {
+                basic: extractScenarios('this.basicScenarios') || [],
+                intermediate: extractScenarios('this.intermediateScenarios') || [],
+                advanced: extractScenarios('this.advancedScenarios') || []
+            };
+            
+            // If we didn't find any scenarios with the standard prefixes, try alternatives
+            if (!scenarios.basic.length && !scenarios.intermediate.length && !scenarios.advanced.length) {
+                console.log('Trying alternative scenario prefixes...');
+                scenarios.basic = extractScenarios('basicScenarios') || [];
+                scenarios.intermediate = extractScenarios('intermediateScenarios') || [];
+                scenarios.advanced = extractScenarios('advancedScenarios') || [];
             }
-        } catch (moduleError) {
-            console.error(`Error loading quiz module for ${quizName}:`, moduleError);
-            return res.status(404).json({
+            
+            if (scenarios.basic.length || scenarios.intermediate.length || scenarios.advanced.length) {
+                console.log(`Successfully extracted scenarios from source code for ${quizName}`);
+                return res.json({
+                    success: true,
+                    data: scenarios
+                });
+            }
+            
+            throw new Error(`Could not extract scenarios from source code for ${quizName}`);
+        } catch (error) {
+            console.error(`Error loading quiz file for ${quizName}:`, error);
+            return res.status(500).json({
                 success: false,
-                message: `Could not load scenarios for ${quizName}: ${moduleError.message}`
+                message: `Could not load scenarios for ${quizName}: ${error.message}`
             });
         }
     } catch (error) {
