@@ -2302,18 +2302,29 @@ class AdminDashboard {
             // Normalize the quiz name to match API expectations
             const normalizedQuizName = quizName.toLowerCase();
             
-            // Call the new API endpoint
-            const response = await fetch(`/api/admin/quizzes/${normalizedQuizName}/scenarios`, {
+            // Call the new API endpoint with the full URL
+            const token = localStorage.getItem('adminToken');
+            
+            if (!token) {
+                throw new Error('No admin token found. Please log in again.');
+            }
+            
+            // Use the full API URL from the server
+            const apiUrl = window.location.hostname.includes('render.com') || 
+                           window.location.hostname === 'bug-training-game.onrender.com' ?
+                           'https://bug-training-game-api.onrender.com/api' : '/api';
+            
+            const response = await fetch(`${apiUrl}/admin/quizzes/${normalizedQuizName}/scenarios`, {
                 method: 'GET',
                 headers: {
                     'Content-Type': 'application/json',
-                    'x-auth-token': localStorage.getItem('token')
+                    'Authorization': `Bearer ${token}`
                 }
             });
             
             if (!response.ok) {
                 const errorData = await response.json().catch(() => ({}));
-                throw new Error(errorData.message || `Failed to fetch scenarios: ${response.status} ${response.statusText}`);
+                throw new Error(errorData.message || `Failed to fetch scenarios: ${response.status}`);
             }
             
             const data = await response.json();
@@ -2353,7 +2364,16 @@ class AdminDashboard {
             let scenarios;
             
             try {
-                scenarios = await this.fetchQuizScenarios(quizName);
+                // Set a timeout for the fetch operation
+                const timeoutPromise = new Promise((_, reject) => {
+                    setTimeout(() => reject(new Error('Request timed out after 10 seconds')), 10000);
+                });
+                
+                // Race the fetch against the timeout
+                scenarios = await Promise.race([
+                    this.fetchQuizScenarios(quizName),
+                    timeoutPromise
+                ]);
                 
                 // Check if scenarios data is valid
                 if (!scenarios) {
@@ -2394,7 +2414,20 @@ class AdminDashboard {
                         max-width: 500px;">
                         <h3 style="color: #dc3545;">Error</h3>
                         <p>${fetchError.message || `Failed to load scenarios for ${this.formatQuizName(quizName)}`}</p>
+                        <p style="margin-top: 0.5rem; font-size: 0.9rem; color: #6c757d;">
+                            This could be due to network issues or the quiz file not being available.
+                            Please try again later or contact the administrator.
+                        </p>
                         <div style="margin-top: 20px; display: flex; gap: 10px; justify-content: center;">
+                            <button id="retryBtn" class="action-button" style="
+                                background: var(--primary-color);
+                                color: white;
+                                border: none;
+                                padding: 8px 16px;
+                                border-radius: 4px;
+                                cursor: pointer;">
+                                Retry
+                            </button>
                             <button id="closeErrorBtn" class="action-button" style="
                                 background: #6c757d;
                                 color: white;
@@ -2413,6 +2446,15 @@ class AdminDashboard {
                 if (closeErrorBtn) {
                     closeErrorBtn.addEventListener('click', () => {
                         loadingOverlay.remove();
+                    });
+                }
+                
+                // Add event listener for retry button
+                const retryBtn = document.getElementById('retryBtn');
+                if (retryBtn) {
+                    retryBtn.addEventListener('click', () => {
+                        loadingOverlay.remove();
+                        this.showQuizScenarios(quizName);
                     });
                 }
                 
