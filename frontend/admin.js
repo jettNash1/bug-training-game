@@ -2774,20 +2774,31 @@ class AdminDashboard {
                 (b.experience || 0) - (a.experience || 0)
             )[0];
             
+            // Use question as title if title is not available
+            const scenarioTitle = scenario.title || scenario.question || 'Untitled Scenario';
+            
+            // Use question as description if description is not available and it's different from title
+            let scenarioDescription = scenario.description || '';
+            if (!scenarioDescription && scenario.question && scenario.question !== scenarioTitle) {
+                scenarioDescription = scenario.question;
+            } else if (!scenarioDescription) {
+                scenarioDescription = 'No description available';
+            }
+            
             return `
                 <div class="scenario-card">
                     <div class="scenario-header">
-                        <h4 class="scenario-title">${scenario.title || 'Untitled Scenario'}</h4>
+                        <h4 class="scenario-title">${scenarioTitle}</h4>
                         ${scenario.id ? `<div class="scenario-id">ID: ${scenario.id}</div>` : ''}
                     </div>
                     <div class="scenario-body">
                         <div class="scenario-description">
-                            ${scenario.description || 'No description available'}
+                            ${scenarioDescription}
                         </div>
                         <h5>Answer Options:</h5>
                         <ul class="options-list">
                             ${scenario.options.map(option => {
-                                const isCorrect = option === correctOption;
+                                const isCorrect = option.correct || option === correctOption;
                                 const experienceClass = (option.experience || 0) > 0 ? 'positive' : 
                                                       (option.experience || 0) < 0 ? 'negative' : 'neutral';
                                 
@@ -3375,6 +3386,7 @@ class AdminDashboard {
             basic: [
                 {
                     id: 'api-basic-1',
+                    title: 'API Verification Fundamentals',
                     question: 'What should you verify when testing a REST API?',
                     options: [
                         {
@@ -3399,11 +3411,124 @@ class AdminDashboard {
                             correct: false
                         }
                     ]
+                },
+                {
+                    id: 'api-basic-2',
+                    title: 'API Testing Tools',
+                    question: 'Which tool is most appropriate for API testing?',
+                    options: [
+                        {
+                            id: 'api-basic-2-a',
+                            text: 'Selenium WebDriver',
+                            outcome: 'Selenium is primarily for UI testing, not API testing.',
+                            experience: -10,
+                            correct: false
+                        },
+                        {
+                            id: 'api-basic-2-b',
+                            text: 'Postman, REST Assured, or similar API testing tools',
+                            outcome: 'These tools are specifically designed for API testing.',
+                            experience: 20,
+                            correct: true
+                        },
+                        {
+                            id: 'api-basic-2-c',
+                            text: 'Manual testing using a web browser',
+                            outcome: 'Browsers are not efficient for direct API testing.',
+                            experience: -15,
+                            correct: false
+                        }
+                    ]
+                },
+                {
+                    id: 'api-basic-3',
+                    title: 'API Response Validation',
+                    question: 'What should you validate in an API response?',
+                    options: [
+                        {
+                            id: 'api-basic-3-a',
+                            text: 'Only check if the response contains data',
+                            outcome: 'This is insufficient for thorough validation.',
+                            experience: -10,
+                            correct: false
+                        },
+                        {
+                            id: 'api-basic-3-b',
+                            text: 'Status code, response time, headers, and payload structure/content',
+                            outcome: 'This provides comprehensive validation of the response.',
+                            experience: 20,
+                            correct: true
+                        },
+                        {
+                            id: 'api-basic-3-c',
+                            text: 'Just verify the API doesn\'t return an error',
+                            outcome: 'Absence of errors doesn\'t mean the response is correct.',
+                            experience: -5,
+                            correct: false
+                        }
+                    ]
+                },
+                {
+                    id: 'api-basic-4',
+                    title: 'API Documentation',
+                    question: 'What is the purpose of API documentation in testing?',
+                    options: [
+                        {
+                            id: 'api-basic-4-a',
+                            text: 'It\'s not relevant for testing',
+                            outcome: 'Documentation is crucial for understanding API behavior and requirements.',
+                            experience: -15,
+                            correct: false
+                        },
+                        {
+                            id: 'api-basic-4-b',
+                            text: 'To understand endpoints, parameters, expected responses, and authentication requirements',
+                            outcome: 'Documentation provides essential information for effective testing.',
+                            experience: 20,
+                            correct: true
+                        },
+                        {
+                            id: 'api-basic-4-c',
+                            text: 'Only to check the API version',
+                            outcome: 'Version information is just one small aspect of API documentation.',
+                            experience: -5,
+                            correct: false
+                        }
+                    ]
+                },
+                {
+                    id: 'api-basic-5',
+                    title: 'API Testing Types',
+                    question: 'Which types of testing are important for APIs?',
+                    options: [
+                        {
+                            id: 'api-basic-5-a',
+                            text: 'Only functional testing',
+                            outcome: 'APIs require multiple testing types beyond just functional testing.',
+                            experience: -10,
+                            correct: false
+                        },
+                        {
+                            id: 'api-basic-5-b',
+                            text: 'Functional, security, performance, and integration testing',
+                            outcome: 'This comprehensive approach covers the key aspects of API quality.',
+                            experience: 20,
+                            correct: true
+                        },
+                        {
+                            id: 'api-basic-5-c',
+                            text: 'UI testing is sufficient for APIs',
+                            outcome: 'UI testing doesn\'t directly test API functionality.',
+                            experience: -15,
+                            correct: false
+                        }
+                    ]
                 }
             ],
             intermediate: [
                 {
                     id: 'api-int-1',
+                    title: 'API Security Testing',
                     question: 'How should you test API security?',
                     options: [
                         {
@@ -3428,11 +3553,124 @@ class AdminDashboard {
                             correct: false
                         }
                     ]
+                },
+                {
+                    id: 'api-int-2',
+                    title: 'API Contract Testing',
+                    question: 'What is the purpose of API contract testing?',
+                    options: [
+                        {
+                            id: 'api-int-2-a',
+                            text: 'To test the visual design of the API documentation',
+                            outcome: 'Contract testing is not about documentation design.',
+                            experience: -15,
+                            correct: false
+                        },
+                        {
+                            id: 'api-int-2-b',
+                            text: 'To verify that the API implementation adheres to its specification',
+                            outcome: 'Contract testing ensures the API meets its defined contract.',
+                            experience: 25,
+                            correct: true
+                        },
+                        {
+                            id: 'api-int-2-c',
+                            text: 'To test the legal terms of using the API',
+                            outcome: 'Contract testing refers to technical contracts, not legal agreements.',
+                            experience: -10,
+                            correct: false
+                        }
+                    ]
+                },
+                {
+                    id: 'api-int-3',
+                    title: 'API Mocking',
+                    question: 'When should you use API mocking in testing?',
+                    options: [
+                        {
+                            id: 'api-int-3-a',
+                            text: 'Never, always test against real APIs',
+                            outcome: 'This approach is impractical and can slow down development.',
+                            experience: -15,
+                            correct: false
+                        },
+                        {
+                            id: 'api-int-3-b',
+                            text: 'When dependent APIs are unavailable, unstable, or to simulate specific scenarios',
+                            outcome: 'Mocking enables testing in controlled conditions and without dependencies.',
+                            experience: 25,
+                            correct: true
+                        },
+                        {
+                            id: 'api-int-3-c',
+                            text: 'Only when you don\'t have access to the API documentation',
+                            outcome: 'Lack of documentation is not a primary reason for mocking.',
+                            experience: -5,
+                            correct: false
+                        }
+                    ]
+                },
+                {
+                    id: 'api-int-4',
+                    title: 'API Versioning',
+                    question: 'How should API versioning be handled in testing?',
+                    options: [
+                        {
+                            id: 'api-int-4-a',
+                            text: 'Only test the latest version',
+                            outcome: 'This ignores backward compatibility requirements.',
+                            experience: -10,
+                            correct: false
+                        },
+                        {
+                            id: 'api-int-4-b',
+                            text: 'Test all supported versions and version upgrade paths',
+                            outcome: 'This ensures all versions work correctly and upgrades are smooth.',
+                            experience: 25,
+                            correct: true
+                        },
+                        {
+                            id: 'api-int-4-c',
+                            text: 'Versioning doesn\'t need specific testing',
+                            outcome: 'Ignoring version-specific testing can lead to compatibility issues.',
+                            experience: -15,
+                            correct: false
+                        }
+                    ]
+                },
+                {
+                    id: 'api-int-5',
+                    title: 'API Error Handling',
+                    question: 'What should you verify when testing API error handling?',
+                    options: [
+                        {
+                            id: 'api-int-5-a',
+                            text: 'Just check that errors return a non-200 status code',
+                            outcome: 'This is insufficient for thorough error handling testing.',
+                            experience: -10,
+                            correct: false
+                        },
+                        {
+                            id: 'api-int-5-b',
+                            text: 'Verify appropriate status codes, error messages, and consistent error response format',
+                            outcome: 'This ensures errors are handled properly and provide useful information.',
+                            experience: 25,
+                            correct: true
+                        },
+                        {
+                            id: 'api-int-5-c',
+                            text: 'Error handling doesn\'t need specific testing',
+                            outcome: 'Proper error handling is crucial for API robustness.',
+                            experience: -20,
+                            correct: false
+                        }
+                    ]
                 }
             ],
             advanced: [
                 {
                     id: 'api-adv-1',
+                    title: 'API Performance Testing',
                     question: 'What approach should you take for API performance testing?',
                     options: [
                         {
@@ -3454,6 +3692,118 @@ class AdminDashboard {
                             text: 'Focus only on maximum load testing',
                             outcome: 'Maximum load is important but not the only performance consideration.',
                             experience: 0,
+                            correct: false
+                        }
+                    ]
+                },
+                {
+                    id: 'api-adv-2',
+                    title: 'API Automation Strategy',
+                    question: 'What is the best approach for API test automation?',
+                    options: [
+                        {
+                            id: 'api-adv-2-a',
+                            text: 'Automate all API tests without prioritization',
+                            outcome: 'This is inefficient and may waste resources on low-value tests.',
+                            experience: -15,
+                            correct: false
+                        },
+                        {
+                            id: 'api-adv-2-b',
+                            text: 'Prioritize critical paths, high-risk areas, and regression tests for automation',
+                            outcome: 'This strategic approach maximizes the value of automation efforts.',
+                            experience: 30,
+                            correct: true
+                        },
+                        {
+                            id: 'api-adv-2-c',
+                            text: 'Rely primarily on manual API testing',
+                            outcome: 'Manual testing alone is insufficient for thorough API testing.',
+                            experience: -20,
+                            correct: false
+                        }
+                    ]
+                },
+                {
+                    id: 'api-adv-3',
+                    title: 'API Testing in CI/CD',
+                    question: 'How should API testing be integrated into CI/CD pipelines?',
+                    options: [
+                        {
+                            id: 'api-adv-3-a',
+                            text: 'Run all API tests in production after deployment',
+                            outcome: 'Testing after production deployment is too late to prevent issues.',
+                            experience: -25,
+                            correct: false
+                        },
+                        {
+                            id: 'api-adv-3-b',
+                            text: 'Integrate different levels of API tests at appropriate pipeline stages',
+                            outcome: 'This ensures issues are caught early while maintaining pipeline efficiency.',
+                            experience: 30,
+                            correct: true
+                        },
+                        {
+                            id: 'api-adv-3-c',
+                            text: 'API tests should be run separately from the CI/CD pipeline',
+                            outcome: 'This disconnects testing from the delivery process.',
+                            experience: -15,
+                            correct: false
+                        }
+                    ]
+                },
+                {
+                    id: 'api-adv-4',
+                    title: 'API Virtualization',
+                    question: 'What are the benefits of service virtualization in API testing?',
+                    options: [
+                        {
+                            id: 'api-adv-4-a',
+                            text: 'It eliminates the need for actual API testing',
+                            outcome: 'Virtualization complements but doesn\'t replace actual API testing.',
+                            experience: -20,
+                            correct: false
+                        },
+                        {
+                            id: 'api-adv-4-b',
+                            text: 'It enables testing of unavailable dependencies and specific edge cases',
+                            outcome: 'Virtualization provides controlled conditions for comprehensive testing.',
+                            experience: 30,
+                            correct: true
+                        },
+                        {
+                            id: 'api-adv-4-c',
+                            text: 'It\'s only useful for UI testing, not API testing',
+                            outcome: 'Service virtualization is particularly valuable for API testing.',
+                            experience: -15,
+                            correct: false
+                        }
+                    ]
+                },
+                {
+                    id: 'api-adv-5',
+                    title: 'GraphQL API Testing',
+                    question: 'How does testing GraphQL APIs differ from REST APIs?',
+                    options: [
+                        {
+                            id: 'api-adv-5-a',
+                            text: 'GraphQL doesn\'t require testing since it\'s self-documenting',
+                            outcome: 'All APIs require testing, regardless of documentation quality.',
+                            experience: -25,
+                            correct: false
+                        },
+                        {
+                            id: 'api-adv-5-b',
+                            text: 'GraphQL requires testing query complexity, resolver functions, and schema validation',
+                            outcome: 'This addresses the unique aspects of GraphQL architecture.',
+                            experience: 30,
+                            correct: true
+                        },
+                        {
+                            id: 'api-adv-5-c',
+                            text: 'GraphQL and REST APIs should be tested exactly the same way',
+                            outcome: 'This ignores the fundamental differences between these API types.',
+                            experience: -10,
                             correct: false
                         }
                     ]
