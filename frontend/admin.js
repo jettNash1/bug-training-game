@@ -2296,55 +2296,72 @@ class AdminDashboard {
     }
 
     async fetchQuizScenarios(quizName) {
-        console.log(`Fetching scenarios for quiz: ${quizName}`);
-        
         try {
+            console.log(`Fetching scenarios for quiz: ${quizName}`);
+            
             // First try to get scenarios from the API
             try {
-                const scenarios = await this.apiService.getQuizScenarios(quizName);
-                console.log(`Successfully fetched scenarios for ${quizName} from API`, scenarios);
+                const apiService = new APIService();
+                const scenarios = await apiService.getQuizScenarios(quizName);
+                console.log(`Successfully fetched scenarios for ${quizName} from API`);
                 return scenarios;
             } catch (apiError) {
-                // Check if it's a timeout error
-                if (apiError.message && apiError.message.includes('timeout')) {
-                    console.warn(`API request timed out for ${quizName}. Falling back to client-side data.`);
-                }
-                
-                // Check if it's a network error
-                if (apiError.message && apiError.message.includes('network')) {
-                    console.warn(`Network error for ${quizName}. Falling back to client-side data.`);
-                }
-                
-                // For other API errors, log and continue to fallback
                 console.warn(`API error for ${quizName}: ${apiError.message}. Falling back to client-side data.`);
-            }
-            
-            // Fallback: Try to dynamically import the quiz module
-            try {
-                console.log(`Attempting to load quiz module for ${quizName}`);
-                const quizModule = await import(`../quizzes/${quizName}.js`);
                 
-                if (!quizModule || !quizModule.default) {
-                    throw new Error(`Quiz module for ${quizName} does not have a default export`);
+                // If API fails, try to load the quiz module directly
+                try {
+                    console.log(`Attempting to load quiz module for ${quizName}`);
+                    
+                    // Normalize the path based on the quiz name
+                    let modulePath;
+                    if (quizName === 'communication-quiz') {
+                        modulePath = '../quizzes/communication-quiz.js';
+                    } else if (quizName === 'automation-interview') {
+                        modulePath = '../quizzes/automation-interview.js';
+                    } else if (quizName === 'api-testing') {
+                        modulePath = '../quizzes/api-testing.js';
+                    } else if (quizName === 'bug-reporting') {
+                        modulePath = '../quizzes/bug-reporting.js';
+                    } else if (quizName === 'test-planning') {
+                        modulePath = '../quizzes/test-planning.js';
+                    } else if (quizName === 'test-design') {
+                        modulePath = '../quizzes/test-design.js';
+                    } else if (quizName === 'cms-testing') {
+                        modulePath = '../quizzes/cms-testing.js';
+                    } else if (quizName === 'security-testing') {
+                        modulePath = '../quizzes/security-testing.js';
+                    } else {
+                        modulePath = `../quizzes/${quizName}.js`;
+                    }
+                    
+                    const quizModule = await import(modulePath);
+                    
+                    // Check if the module has scenarios or a default export
+                    if (quizModule.scenarios) {
+                        console.log(`Successfully loaded scenarios from ${quizName} module`);
+                        return quizModule.scenarios;
+                    } else if (quizModule.default) {
+                        console.log(`Successfully loaded default export from ${quizName} module`);
+                        return quizModule.default;
+                    } else {
+                        throw new Error(`Quiz module for ${quizName} does not have scenarios or a default export`);
+                    }
+                } catch (importError) {
+                    console.error(`Failed to import quiz module for ${quizName}: ${importError}`);
+                    
+                    // As a last resort, try to use mock data
+                    const mockScenarios = this.getMockScenariosForQuiz(quizName);
+                    if (mockScenarios) {
+                        console.log(`Using mock data for ${quizName}`);
+                        return mockScenarios;
+                    }
+                    
+                    throw new Error(`Quiz scenarios for "${this.formatQuizName(quizName)}" could not be loaded. Please try again later.`);
                 }
-                
-                const quiz = quizModule.default;
-                
-                if (!quiz || !quiz.scenarios) {
-                    throw new Error(`Quiz module for ${quizName} does not contain scenarios`);
-                }
-                
-                console.log(`Successfully loaded scenarios for ${quizName} from client-side module`);
-                return quiz.scenarios;
-            } catch (importError) {
-                console.error(`Failed to import quiz module for ${quizName}:`, importError);
-                
-                // Instead of using mock data, throw an error to indicate scenarios couldn't be loaded
-                throw new Error(`Quiz scenarios for "${this.formatQuizName(quizName)}" could not be loaded. Please try again later.`);
             }
         } catch (error) {
-            console.error(`Error in fetchQuizScenarios for ${quizName}:`, error);
-            throw error; // Re-throw the error to be handled by the caller
+            console.error(`Error in fetchQuizScenarios for ${quizName}: ${error}`);
+            throw error;
         }
     }
     
@@ -2920,7 +2937,7 @@ class AdminDashboard {
         }).join('');
     }
 
-    showQuizScenariosSelector() {
+    async showQuizScenariosSelector() {
         // Create the overlay
         const overlay = document.createElement('div');
         overlay.className = 'modal-overlay';
@@ -2928,199 +2945,334 @@ class AdminDashboard {
         overlay.setAttribute('aria-modal', 'true');
         overlay.setAttribute('aria-labelledby', 'quiz-selector-title');
         
-        const content = document.createElement('div');
-        content.className = 'modal-content';
-        content.style.maxWidth = '800px';
-        content.style.width = '90%';
-        
-        content.innerHTML = `
-            <style>
-                .modal-content {
-                    background: white;
-                    border-radius: 8px;
-                    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-                    padding: 2rem;
-                    position: relative;
-                }
-                .selector-header {
-                    margin-bottom: 1.5rem;
-                    padding-bottom: 1rem;
-                    border-bottom: 1px solid #e9ecef;
-                    position: relative;
-                }
-                .selector-title {
-                    font-size: 1.5rem;
-                    margin: 0;
-                }
-                .close-btn {
-                    position: absolute;
-                    top: 0;
-                    right: 0;
-                    font-size: 1.5rem;
-                    background: none;
-                    border: none;
-                    cursor: pointer;
-                    padding: 0.5rem;
-                    line-height: 1;
-                }
-                .close-btn:hover {
-                    color: var(--primary-color);
-                }
-                .quiz-grid {
-                    display: grid;
-                    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-                    gap: 1rem;
-                }
-                @media (max-width: 640px) {
-                    .quiz-grid {
-                        grid-template-columns: 1fr;
-                    }
-                }
-                .quiz-card {
-                    background: #f8f9fa;
-                    border-radius: 8px;
-                    padding: 1.5rem;
-                    text-align: center;
-                    transition: transform 0.2s ease, box-shadow 0.2s ease;
-                    cursor: pointer;
-                    border: 2px solid transparent;
-                }
-                .quiz-card:hover {
-                    transform: translateY(-3px);
-                    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
-                    border-color: var(--primary-color);
-                }
-                .quiz-name {
-                    font-size: 1.2rem;
-                    font-weight: 600;
-                    margin-bottom: 1rem;
-                }
-                .view-btn {
-                    background: var(--primary-color);
-                    color: white;
-                    border: none;
-                    padding: 0.5rem 1rem;
-                    border-radius: 4px;
-                    cursor: pointer;
-                    font-weight: 500;
-                    transition: background-color 0.2s ease;
-                }
-                .view-btn:hover {
-                    background-color: var(--primary-color-dark, #0056b3);
-                }
-            </style>
-            <div class="selector-header">
-                <h3 id="quiz-selector-title" class="selector-title">Select a Quiz to View Scenarios</h3>
-                <button class="close-btn" aria-label="Close quiz selector" tabindex="0">×</button>
-            </div>
-            <div class="quiz-grid">
-                <div class="quiz-card" data-quiz="api-testing">
-                    <div class="quiz-name">API Testing</div>
-                    <button class="view-btn">View Scenarios</button>
-                </div>
-                <div class="quiz-card" data-quiz="automation-interview">
-                    <div class="quiz-name">Automation Interview</div>
-                    <button class="view-btn">View Scenarios</button>
-                </div>
-                <div class="quiz-card" data-quiz="bug-reporting">
-                    <div class="quiz-name">Bug Reporting</div>
-                    <button class="view-btn">View Scenarios</button>
-                </div>
-                <div class="quiz-card" data-quiz="communication-quiz">
-                    <div class="quiz-name">Communication Skills</div>
-                    <button class="view-btn">View Scenarios</button>
-                </div>
-                <div class="quiz-card" data-quiz="test-planning">
-                    <div class="quiz-name">Test Planning</div>
-                    <button class="view-btn">View Scenarios</button>
-                </div>
-                <div class="quiz-card" data-quiz="test-design">
-                    <div class="quiz-name">Test Design</div>
-                    <button class="view-btn">View Scenarios</button>
-                </div>
+        // Show loading indicator first
+        const loadingContent = document.createElement('div');
+        loadingContent.className = 'modal-content';
+        loadingContent.style.maxWidth = '400px';
+        loadingContent.style.width = '90%';
+        loadingContent.innerHTML = `
+            <div style="
+                background: white;
+                padding: 2rem;
+                border-radius: 8px;
+                text-align: center;">
+                <h3>Loading Available Quizzes...</h3>
+                <div class="loading-spinner"></div>
             </div>
         `;
-        
-        overlay.appendChild(content);
+        overlay.appendChild(loadingContent);
         document.body.appendChild(overlay);
         
-        // Add event listeners for quiz cards
-        const quizCards = content.querySelectorAll('.quiz-card');
-        quizCards.forEach(card => {
-            card.addEventListener('click', () => {
-                const quizName = card.getAttribute('data-quiz');
-                overlay.remove();
-                this.showQuizScenarios(quizName);
-            });
+        // Get the list of available quizzes
+        let quizzes = [];
+        try {
+            // Try to import the quiz list
+            try {
+                const quizList = await import('../quizzes/quiz-list.js');
+                quizzes = quizList.default || [];
+                console.log('Successfully loaded quiz list from module');
+            } catch (importError) {
+                console.warn('Failed to import quiz-list.js, using fallback quiz list:', importError);
+                // Fallback list of common quizzes
+                quizzes = [
+                    {
+                        id: 'communication-quiz',
+                        name: 'Communication Skills',
+                        description: 'Test your communication skills in a professional environment',
+                        category: 'Soft Skills'
+                    },
+                    {
+                        id: 'automation-interview',
+                        name: 'Automation Interview',
+                        description: 'Test your knowledge of automation concepts and practices',
+                        category: 'Technical'
+                    },
+                    {
+                        id: 'api-testing',
+                        name: 'API Testing',
+                        description: 'Test your knowledge of API testing concepts',
+                        category: 'Technical'
+                    },
+                    {
+                        id: 'bug-reporting',
+                        name: 'Bug Reporting',
+                        description: 'Test your skills in effective bug reporting',
+                        category: 'QA'
+                    },
+                    {
+                        id: 'test-planning',
+                        name: 'Test Planning',
+                        description: 'Test your knowledge of test planning methodologies',
+                        category: 'QA'
+                    },
+                    {
+                        id: 'test-design',
+                        name: 'Test Design',
+                        description: 'Test your skills in designing effective test cases',
+                        category: 'QA'
+                    },
+                    {
+                        id: 'cms-testing',
+                        name: 'CMS Testing',
+                        description: 'Test your knowledge of Content Management Systems',
+                        category: 'Technical'
+                    },
+                    {
+                        id: 'security-testing',
+                        name: 'Security Testing',
+                        description: 'Test your knowledge of security testing principles',
+                        category: 'Security'
+                    }
+                ];
+            }
             
-            // Add keyboard support
-            card.setAttribute('tabindex', '0');
-            card.addEventListener('keydown', (e) => {
-                if (e.key === 'Enter' || e.key === ' ') {
-                    e.preventDefault();
+            // Create the content with quizzes
+            const content = document.createElement('div');
+            content.className = 'modal-content';
+            content.style.maxWidth = '800px';
+            content.style.width = '90%';
+            
+            // Sort quizzes alphabetically by name
+            quizzes.sort((a, b) => a.name.localeCompare(b.name));
+            
+            // Generate HTML for quiz cards
+            let quizCardsHTML = '';
+            
+            if (quizzes.length === 0) {
+                quizCardsHTML = '<p>No quizzes available.</p>';
+            } else {
+                quizzes.forEach(quiz => {
+                    quizCardsHTML += `
+                        <div class="quiz-card" data-quiz="${quiz.id}">
+                            <div class="quiz-name">${quiz.name}</div>
+                            <div class="quiz-description">${quiz.description || ''}</div>
+                            <div class="quiz-category">${quiz.category || ''}</div>
+                            <button class="view-btn">View Scenarios</button>
+                        </div>
+                    `;
+                });
+            }
+            
+            content.innerHTML = `
+                <style>
+                    .modal-content {
+                        background: white;
+                        border-radius: 8px;
+                        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+                        padding: 2rem;
+                        position: relative;
+                    }
+                    .selector-header {
+                        margin-bottom: 1.5rem;
+                        padding-bottom: 1rem;
+                        border-bottom: 1px solid #e9ecef;
+                        position: relative;
+                    }
+                    .selector-title {
+                        font-size: 1.5rem;
+                        margin: 0;
+                    }
+                    .close-btn {
+                        position: absolute;
+                        top: 0;
+                        right: 0;
+                        font-size: 1.5rem;
+                        background: none;
+                        border: none;
+                        cursor: pointer;
+                        padding: 0.5rem;
+                        line-height: 1;
+                    }
+                    .close-btn:hover {
+                        color: var(--primary-color);
+                    }
+                    .quiz-grid {
+                        display: grid;
+                        grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+                        gap: 1rem;
+                        max-height: 60vh;
+                        overflow-y: auto;
+                        padding-right: 0.5rem;
+                    }
+                    @media (max-width: 640px) {
+                        .quiz-grid {
+                            grid-template-columns: 1fr;
+                        }
+                    }
+                    .quiz-card {
+                        background: #f8f9fa;
+                        border-radius: 8px;
+                        padding: 1.5rem;
+                        text-align: center;
+                        transition: transform 0.2s ease, box-shadow 0.2s ease;
+                        cursor: pointer;
+                        border: 2px solid transparent;
+                        display: flex;
+                        flex-direction: column;
+                    }
+                    .quiz-card:hover {
+                        transform: translateY(-3px);
+                        box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+                        border-color: var(--primary-color);
+                    }
+                    .quiz-name {
+                        font-size: 1.2rem;
+                        font-weight: 600;
+                        margin-bottom: 0.5rem;
+                        color: var(--primary-color);
+                    }
+                    .quiz-description {
+                        font-size: 0.9rem;
+                        color: #6c757d;
+                        margin-bottom: 0.5rem;
+                        flex-grow: 1;
+                    }
+                    .quiz-category {
+                        font-size: 0.8rem;
+                        color: #495057;
+                        background-color: #e9ecef;
+                        padding: 0.2rem 0.5rem;
+                        border-radius: 4px;
+                        display: inline-block;
+                        margin-bottom: 1rem;
+                    }
+                    .view-btn {
+                        background: var(--primary-color);
+                        color: white;
+                        border: none;
+                        padding: 0.5rem 1rem;
+                        border-radius: 4px;
+                        cursor: pointer;
+                        font-weight: 500;
+                        transition: background-color 0.2s ease;
+                        margin-top: auto;
+                    }
+                    .view-btn:hover {
+                        background-color: var(--primary-color-dark, #0056b3);
+                    }
+                </style>
+                <div class="selector-header">
+                    <h3 id="quiz-selector-title" class="selector-title">Select a Quiz to View Scenarios</h3>
+                    <button class="close-btn" aria-label="Close quiz selector" tabindex="0">×</button>
+                </div>
+                <div class="quiz-grid">
+                    ${quizCardsHTML}
+                </div>
+            `;
+            
+            // Replace loading content with actual content
+            overlay.removeChild(loadingContent);
+            overlay.appendChild(content);
+            
+            // Add event listeners for quiz cards
+            const quizCards = content.querySelectorAll('.quiz-card');
+            quizCards.forEach(card => {
+                card.addEventListener('click', () => {
                     const quizName = card.getAttribute('data-quiz');
                     overlay.remove();
                     this.showQuizScenarios(quizName);
-                }
-            });
-        });
-        
-        // Add event listener for close button
-        const closeBtn = content.querySelector('.close-btn');
-        if (closeBtn) {
-            closeBtn.addEventListener('click', () => {
-                overlay.remove();
+                });
+                
+                // Add keyboard support
+                card.setAttribute('tabindex', '0');
+                card.addEventListener('keydown', (e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault();
+                        const quizName = card.getAttribute('data-quiz');
+                        overlay.remove();
+                        this.showQuizScenarios(quizName);
+                    }
+                });
             });
             
-            // Add keyboard support for close button
-            closeBtn.addEventListener('keydown', (e) => {
-                if (e.key === 'Enter' || e.key === ' ') {
-                    e.preventDefault();
+            // Add event listener for close button
+            const closeBtn = content.querySelector('.close-btn');
+            if (closeBtn) {
+                closeBtn.addEventListener('click', () => {
+                    overlay.remove();
+                });
+                
+                // Add keyboard support for close button
+                closeBtn.addEventListener('keydown', (e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault();
+                        overlay.remove();
+                    }
+                });
+            }
+            
+            // Add escape key handler
+            const handleEscapeKey = (e) => {
+                if (e.key === 'Escape') {
+                    overlay.remove();
+                    document.removeEventListener('keydown', handleEscapeKey);
+                }
+            };
+            
+            document.addEventListener('keydown', handleEscapeKey);
+            
+            // Close on click outside
+            overlay.addEventListener('click', (e) => {
+                if (e.target === overlay) {
                     overlay.remove();
                 }
             });
+        } catch (error) {
+            console.error('Error showing quiz scenarios selector:', error);
+            
+            // Update the loading content to show error
+            loadingContent.innerHTML = `
+                <div style="
+                    background: white;
+                    padding: 2rem;
+                    border-radius: 8px;
+                    text-align: center;">
+                    <h3 style="color: #dc3545;">Error Loading Quizzes</h3>
+                    <p>${error.message || 'Failed to load available quizzes'}</p>
+                    <button id="closeErrorBtn" class="action-button" style="
+                        margin-top: 20px;
+                        background: #6c757d;
+                        color: white;
+                        border: none;
+                        padding: 8px 16px;
+                        border-radius: 4px;
+                        cursor: pointer;">
+                        Close
+                    </button>
+                </div>
+            `;
+            
+            // Add event listener for close button
+            const closeErrorBtn = document.getElementById('closeErrorBtn');
+            if (closeErrorBtn) {
+                closeErrorBtn.addEventListener('click', () => {
+                    overlay.remove();
+                });
+            }
         }
-        
-        // Add escape key handler
-        const handleEscapeKey = (e) => {
-            if (e.key === 'Escape') {
-                overlay.remove();
-                document.removeEventListener('keydown', handleEscapeKey);
-            }
-        };
-        
-        document.addEventListener('keydown', handleEscapeKey);
-        
-        // Close on click outside
-        overlay.addEventListener('click', (e) => {
-            if (e.target === overlay) {
-                overlay.remove();
-            }
-        });
     }
 
     // Helper method to get mock scenarios for a specific quiz
     getMockScenariosForQuiz(quizName) {
-        console.log(`Generating mock scenarios for ${quizName} quiz`);
+        console.log(`Getting mock scenarios for ${quizName}`);
         
-        // Check which quiz we need to generate mock data for
-        switch(quizName) {
-            case 'cms-testing':
-                return this.getMockScenariosForCmsTesting();
-            case 'communication-quiz':
-                return this.getMockScenariosForCommunication();
-            case 'automation-interview':
-                return this.getMockScenariosForAutomation();
-            case 'bug-reporting':
-                return this.getMockScenariosForBugReporting();
-            case 'api-testing':
-                return this.getMockScenariosForApiTesting();
-            case 'security-testing':
-                return this.getMockScenariosForSecurityTesting();
-            default:
-                // Generic mock data for any other quiz
-                return this.getGenericMockScenarios(quizName);
-        }
+        // Map quiz names to their respective mock data methods
+        const mockDataMap = {
+            'communication-quiz': this.getMockScenariosForCommunication.bind(this),
+            'automation-interview': this.getMockScenariosForAutomation.bind(this),
+            'bug-reporting': this.getMockScenariosForBugReporting.bind(this),
+            'api-testing': this.getMockScenariosForApiTesting.bind(this),
+            'cms-testing': this.getMockScenariosForCmsTesting.bind(this),
+            'security-testing': this.getMockScenariosForSecurityTesting.bind(this),
+            'test-planning': this.getGenericMockScenarios.bind(this, 'Test Planning'),
+            'test-design': this.getGenericMockScenarios.bind(this, 'Test Design')
+        };
+        
+        // Get the appropriate mock data function or use the generic one
+        const mockDataFunction = mockDataMap[quizName] || this.getGenericMockScenarios.bind(this, this.formatQuizName(quizName));
+        
+        // Call the function to get the mock data
+        return mockDataFunction();
     }
     
     // Helper method to provide mock data for Communication quiz
