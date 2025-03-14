@@ -993,8 +993,25 @@ class AdminDashboard {
         return lastActiveDates.length > 0 ? Math.max(...lastActiveDates) : 0;
     }
 
-    formatQuizName(name) {
-        return name
+    formatQuizName(quizName) {
+        if (!quizName) return 'Unknown Quiz';
+        
+        // Handle special cases
+        const specialCases = {
+            'api-testing': 'API Testing',
+            'automation-interview': 'Automation Interview',
+            'communication-quiz': 'Communication Skills',
+            'bug-reporting': 'Bug Reporting',
+            'test-planning': 'Test Planning',
+            'test-design': 'Test Design'
+        };
+        
+        if (specialCases[quizName]) {
+            return specialCases[quizName];
+        }
+        
+        // General formatting: capitalize each word and replace hyphens with spaces
+        return quizName
             .split('-')
             .map(word => word.charAt(0).toUpperCase() + word.slice(1))
             .join(' ');
@@ -1020,11 +1037,56 @@ class AdminDashboard {
     }
 
     showError(message) {
-        const errorDiv = document.createElement('div');
-        errorDiv.className = 'error-notification';
-        errorDiv.textContent = message;
-        document.body.appendChild(errorDiv);
-        setTimeout(() => errorDiv.remove(), 5000);
+        // Create error overlay
+        const errorOverlay = document.createElement('div');
+        errorOverlay.className = 'modal-overlay';
+        errorOverlay.innerHTML = `
+            <div style="
+                background: white;
+                padding: 2rem;
+                border-radius: 8px;
+                text-align: center;
+                max-width: 500px;">
+                <h3 style="color: #dc3545;">Error</h3>
+                <p>${message}</p>
+                <button id="closeErrorBtn" class="action-button" style="
+                    margin-top: 20px;
+                    background: #6c757d;
+                    color: white;
+                    border: none;
+                    padding: 8px 16px;
+                    border-radius: 4px;
+                    cursor: pointer;">
+                    Close
+                </button>
+            </div>
+        `;
+        document.body.appendChild(errorOverlay);
+        
+        // Add event listener for close button
+        const closeErrorBtn = document.getElementById('closeErrorBtn');
+        if (closeErrorBtn) {
+            closeErrorBtn.addEventListener('click', () => {
+                errorOverlay.remove();
+            });
+        }
+        
+        // Add escape key handler
+        const handleEscapeKey = (e) => {
+            if (e.key === 'Escape') {
+                errorOverlay.remove();
+                document.removeEventListener('keydown', handleEscapeKey);
+            }
+        };
+        
+        document.addEventListener('keydown', handleEscapeKey);
+        
+        // Close on click outside
+        errorOverlay.addEventListener('click', (e) => {
+            if (e.target === errorOverlay) {
+                errorOverlay.remove();
+            }
+        });
     }
 
     showSuccess(message) {
@@ -2236,12 +2298,6 @@ class AdminDashboard {
     async fetchQuizScenarios(quizName) {
         console.log(`Fetching scenarios for quiz: ${quizName}`);
         
-        // Special handling for problematic quizzes with mock data
-        if (quizName === 'cms-testing') {
-            console.log('Using mock data for cms-testing quiz');
-            return this.getMockScenariosForQuiz(quizName);
-        }
-        
         try {
             // First try to get scenarios from the API
             try {
@@ -2283,9 +2339,8 @@ class AdminDashboard {
             } catch (importError) {
                 console.error(`Failed to import quiz module for ${quizName}:`, importError);
                 
-                // If both API and import fail, use mock data as a last resort
-                console.log(`Using mock data as fallback for ${quizName}`);
-                return this.getMockScenariosForQuiz(quizName);
+                // Instead of using mock data, throw an error to indicate scenarios couldn't be loaded
+                throw new Error(`Quiz scenarios for "${this.formatQuizName(quizName)}" could not be loaded. Please try again later.`);
             }
         } catch (error) {
             console.error(`Error in fetchQuizScenarios for ${quizName}:`, error);
@@ -2524,8 +2579,9 @@ class AdminDashboard {
                         border-radius: 8px;
                         text-align: center;
                         max-width: 500px;">
-                        <h3 style="color: #dc3545;">Error Loading Scenarios</h3>
+                        <h3 style="color: #dc3545;">Unable to Load Quiz Scenarios</h3>
                         <p>${fetchError.message || `Failed to load scenarios for ${this.formatQuizName(quizName)}`}</p>
+                        <p style="margin-top: 1rem; color: #6c757d;">The actual quiz scenarios could not be loaded. This may be due to network issues or because the quiz file is not available.</p>
                         <div style="margin-top: 20px; display: flex; gap: 10px; justify-content: center;">
                             <button id="retryBtn" class="action-button" style="
                                 background: var(--primary-color);
@@ -2645,12 +2701,23 @@ class AdminDashboard {
                         padding-bottom: 0.5rem;
                         border-bottom: 2px solid var(--primary-color);
                     }
+                    .scenarios-list {
+                        display: grid;
+                        grid-template-columns: repeat(auto-fill, minmax(450px, 1fr));
+                        gap: 1.5rem;
+                    }
+                    @media (max-width: 768px) {
+                        .scenarios-list {
+                            grid-template-columns: 1fr;
+                        }
+                    }
                     .scenario-card {
                         background: white;
                         border-radius: 8px;
                         box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-                        margin-bottom: 1.5rem;
-                        overflow: hidden;
+                        height: 100%;
+                        display: flex;
+                        flex-direction: column;
                     }
                     .scenario-header {
                         background: #f8f9fa;
@@ -2664,6 +2731,9 @@ class AdminDashboard {
                     }
                     .scenario-body {
                         padding: 1rem;
+                        flex: 1;
+                        display: flex;
+                        flex-direction: column;
                     }
                     .scenario-description {
                         margin-bottom: 1rem;
@@ -2673,12 +2743,14 @@ class AdminDashboard {
                         list-style: none;
                         padding: 0;
                         margin: 0;
+                        flex: 1;
                     }
                     .option-item {
                         padding: 1rem;
                         margin-bottom: 0.5rem;
                         border-radius: 4px;
                         border-left: 4px solid transparent;
+                        transition: background-color 0.2s ease;
                     }
                     .option-item.correct {
                         background-color: rgba(75, 181, 67, 0.1);
@@ -2708,6 +2780,34 @@ class AdminDashboard {
                     }
                     .option-experience.neutral {
                         color: #6c757d;
+                    }
+                    .user-details-content {
+                        max-height: 85vh;
+                        overflow-y: auto;
+                        padding: 1.5rem;
+                    }
+                    .details-header {
+                        position: sticky;
+                        top: 0;
+                        background: white;
+                        padding-bottom: 1rem;
+                        margin-bottom: 1rem;
+                        border-bottom: 1px solid #e9ecef;
+                        z-index: 10;
+                    }
+                    .close-btn {
+                        position: absolute;
+                        top: 0;
+                        right: 0;
+                        font-size: 1.5rem;
+                        background: none;
+                        border: none;
+                        cursor: pointer;
+                        padding: 0.5rem;
+                        line-height: 1;
+                    }
+                    .close-btn:hover {
+                        color: var(--primary-color);
                     }
                 </style>
                 <div class="details-header">
@@ -2820,234 +2920,183 @@ class AdminDashboard {
         }).join('');
     }
 
-    async showQuizScenariosSelector() {
-        try {
-            // Create the overlay
-            const overlay = document.createElement('div');
-            overlay.className = 'user-details-overlay';
-            overlay.setAttribute('role', 'dialog');
-            overlay.setAttribute('aria-modal', 'true');
-            overlay.setAttribute('aria-labelledby', 'quiz-selector-title');
-            
-            const content = document.createElement('div');
-            content.className = 'user-details-content';
-            content.style.maxWidth = '800px';
-            
-            // Get the list of available quizzes
-            let quizzes = [];
-            try {
-                // Try to import the quiz list
-                const quizList = await import('../quizzes/quiz-list.js');
-                quizzes = quizList.default || [];
-                console.log('Successfully loaded quiz list from module');
-            } catch (importError) {
-                console.warn('Failed to import quiz-list.js, using fallback quiz list:', importError);
-                // Fallback list of common quizzes
-                quizzes = [
-                    {
-                        id: 'communication-quiz',
-                        name: 'Communication',
-                        description: 'Test your communication skills in a professional environment',
-                        category: 'Soft Skills'
-                    },
-                    {
-                        id: 'automation-interview',
-                        name: 'Automation Interview',
-                        description: 'Test your knowledge of automation concepts and practices',
-                        category: 'Technical'
-                    },
-                    {
-                        id: 'cms-testing',
-                        name: 'CMS Testing',
-                        description: 'Test your knowledge of Content Management Systems',
-                        category: 'Technical'
-                    },
-                    {
-                        id: 'bug-reporting',
-                        name: 'Bug Reporting',
-                        description: 'Test your skills in effective bug reporting',
-                        category: 'QA'
-                    },
-                    {
-                        id: 'api-testing',
-                        name: 'API Testing',
-                        description: 'Test your knowledge of API testing concepts',
-                        category: 'Technical'
-                    },
-                    {
-                        id: 'security-testing',
-                        name: 'Security Testing',
-                        description: 'Test your knowledge of security testing principles',
-                        category: 'Security'
-                    }
-                ];
-            }
-            
-            // Add cms-testing to the list if it's not already there
-            if (!quizzes.find(quiz => quiz.id === 'cms-testing')) {
-                quizzes.push({
-                    id: 'cms-testing',
-                    name: 'CMS Testing',
-                    description: 'Test your knowledge of Content Management Systems',
-                    category: 'Technical'
-                });
-            }
-            
-            // Sort quizzes alphabetically by name
-            quizzes.sort((a, b) => a.name.localeCompare(b.name));
-            
-            // Generate HTML for quiz buttons
-            let quizButtonsHTML = '';
-            
-            if (quizzes.length === 0) {
-                quizButtonsHTML = '<p>No quizzes available.</p>';
-            } else {
-                quizButtonsHTML = `
-                    <div class="quiz-grid">
-                        ${quizzes.map(quiz => `
-                            <div class="quiz-item">
-                                <button class="quiz-button" data-quiz-id="${quiz.id}">
-                                    <div class="quiz-name">${quiz.name}</div>
-                                    <div class="quiz-description">${quiz.description || ''}</div>
-                                    <div class="quiz-category">${quiz.category || 'Uncategorized'}</div>
-                                </button>
-                            </div>
-                        `).join('')}
-                    </div>
-                `;
-            }
-            
-            content.innerHTML = `
-                <style>
+    showQuizScenariosSelector() {
+        // Create the overlay
+        const overlay = document.createElement('div');
+        overlay.className = 'modal-overlay';
+        overlay.setAttribute('role', 'dialog');
+        overlay.setAttribute('aria-modal', 'true');
+        overlay.setAttribute('aria-labelledby', 'quiz-selector-title');
+        
+        const content = document.createElement('div');
+        content.className = 'modal-content';
+        content.style.maxWidth = '800px';
+        content.style.width = '90%';
+        
+        content.innerHTML = `
+            <style>
+                .modal-content {
+                    background: white;
+                    border-radius: 8px;
+                    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+                    padding: 2rem;
+                    position: relative;
+                }
+                .selector-header {
+                    margin-bottom: 1.5rem;
+                    padding-bottom: 1rem;
+                    border-bottom: 1px solid #e9ecef;
+                    position: relative;
+                }
+                .selector-title {
+                    font-size: 1.5rem;
+                    margin: 0;
+                }
+                .close-btn {
+                    position: absolute;
+                    top: 0;
+                    right: 0;
+                    font-size: 1.5rem;
+                    background: none;
+                    border: none;
+                    cursor: pointer;
+                    padding: 0.5rem;
+                    line-height: 1;
+                }
+                .close-btn:hover {
+                    color: var(--primary-color);
+                }
+                .quiz-grid {
+                    display: grid;
+                    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+                    gap: 1rem;
+                }
+                @media (max-width: 640px) {
                     .quiz-grid {
-                        display: grid;
-                        grid-template-columns: repeat(2, 1fr);
-                        gap: 1rem;
-                        margin-top: 1rem;
+                        grid-template-columns: 1fr;
                     }
-                    
-                    @media (max-width: 768px) {
-                        .quiz-grid {
-                            grid-template-columns: 1fr;
-                        }
-                    }
-                    
-                    .quiz-item {
-                        display: flex;
-                    }
-                    
-                    .quiz-button {
-                        display: flex;
-                        flex-direction: column;
-                        width: 100%;
-                        text-align: left;
-                        padding: 1rem;
-                        border: 1px solid #e0e0e0;
-                        border-radius: 8px;
-                        background-color: #f8f9fa;
-                        cursor: pointer;
-                        transition: all 0.2s ease;
-                    }
-                    
-                    .quiz-button:hover {
-                        background-color: #e9ecef;
-                        border-color: #ced4da;
-                        transform: translateY(-2px);
-                        box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-                    }
-                    
-                    .quiz-name {
-                        font-weight: bold;
-                        font-size: 1.1rem;
-                        margin-bottom: 0.5rem;
-                        color: var(--primary-color);
-                    }
-                    
-                    .quiz-description {
-                        font-size: 0.9rem;
-                        color: #6c757d;
-                        margin-bottom: 0.5rem;
-                        flex-grow: 1;
-                    }
-                    
-                    .quiz-category {
-                        font-size: 0.8rem;
-                        color: #495057;
-                        background-color: #e9ecef;
-                        padding: 0.2rem 0.5rem;
-                        border-radius: 4px;
-                        display: inline-block;
-                        margin-top: 0.5rem;
-                    }
-                </style>
-                <div class="details-header">
-                    <h3 id="quiz-selector-title">Select a Quiz to View Scenarios</h3>
-                    <button class="close-btn" aria-label="Close quiz selector" tabindex="0">×</button>
+                }
+                .quiz-card {
+                    background: #f8f9fa;
+                    border-radius: 8px;
+                    padding: 1.5rem;
+                    text-align: center;
+                    transition: transform 0.2s ease, box-shadow 0.2s ease;
+                    cursor: pointer;
+                    border: 2px solid transparent;
+                }
+                .quiz-card:hover {
+                    transform: translateY(-3px);
+                    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+                    border-color: var(--primary-color);
+                }
+                .quiz-name {
+                    font-size: 1.2rem;
+                    font-weight: 600;
+                    margin-bottom: 1rem;
+                }
+                .view-btn {
+                    background: var(--primary-color);
+                    color: white;
+                    border: none;
+                    padding: 0.5rem 1rem;
+                    border-radius: 4px;
+                    cursor: pointer;
+                    font-weight: 500;
+                    transition: background-color 0.2s ease;
+                }
+                .view-btn:hover {
+                    background-color: var(--primary-color-dark, #0056b3);
+                }
+            </style>
+            <div class="selector-header">
+                <h3 id="quiz-selector-title" class="selector-title">Select a Quiz to View Scenarios</h3>
+                <button class="close-btn" aria-label="Close quiz selector" tabindex="0">×</button>
+            </div>
+            <div class="quiz-grid">
+                <div class="quiz-card" data-quiz="api-testing">
+                    <div class="quiz-name">API Testing</div>
+                    <button class="view-btn">View Scenarios</button>
                 </div>
-                <div class="quiz-selector-content">
-                    ${quizButtonsHTML}
+                <div class="quiz-card" data-quiz="automation-interview">
+                    <div class="quiz-name">Automation Interview</div>
+                    <button class="view-btn">View Scenarios</button>
                 </div>
-            `;
-            
-            overlay.appendChild(content);
-            document.body.appendChild(overlay);
-            
-            // Add event listeners to quiz buttons
-            const quizButtons = content.querySelectorAll('.quiz-button');
-            quizButtons.forEach(button => {
-                button.addEventListener('click', () => {
-                    const quizId = button.getAttribute('data-quiz-id');
-                    overlay.remove();
-                    this.showQuizScenarios(quizId);
-                });
-                
-                // Add keyboard support
-                button.addEventListener('keydown', (e) => {
-                    if (e.key === 'Enter' || e.key === ' ') {
-                        e.preventDefault();
-                        const quizId = button.getAttribute('data-quiz-id');
-                        overlay.remove();
-                        this.showQuizScenarios(quizId);
-                    }
-                });
+                <div class="quiz-card" data-quiz="bug-reporting">
+                    <div class="quiz-name">Bug Reporting</div>
+                    <button class="view-btn">View Scenarios</button>
+                </div>
+                <div class="quiz-card" data-quiz="communication-quiz">
+                    <div class="quiz-name">Communication Skills</div>
+                    <button class="view-btn">View Scenarios</button>
+                </div>
+                <div class="quiz-card" data-quiz="test-planning">
+                    <div class="quiz-name">Test Planning</div>
+                    <button class="view-btn">View Scenarios</button>
+                </div>
+                <div class="quiz-card" data-quiz="test-design">
+                    <div class="quiz-name">Test Design</div>
+                    <button class="view-btn">View Scenarios</button>
+                </div>
+            </div>
+        `;
+        
+        overlay.appendChild(content);
+        document.body.appendChild(overlay);
+        
+        // Add event listeners for quiz cards
+        const quizCards = content.querySelectorAll('.quiz-card');
+        quizCards.forEach(card => {
+            card.addEventListener('click', () => {
+                const quizName = card.getAttribute('data-quiz');
+                overlay.remove();
+                this.showQuizScenarios(quizName);
             });
             
-            // Add event listener for close button
-            const closeBtn = content.querySelector('.close-btn');
-            if (closeBtn) {
-                closeBtn.addEventListener('click', () => {
+            // Add keyboard support
+            card.setAttribute('tabindex', '0');
+            card.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    const quizName = card.getAttribute('data-quiz');
                     overlay.remove();
-                });
-                
-                // Add keyboard support for close button
-                closeBtn.addEventListener('keydown', (e) => {
-                    if (e.key === 'Enter' || e.key === ' ') {
-                        e.preventDefault();
-                        overlay.remove();
-                    }
-                });
-            }
-            
-            // Add escape key handler
-            const handleEscapeKey = (e) => {
-                if (e.key === 'Escape') {
-                    overlay.remove();
-                    document.removeEventListener('keydown', handleEscapeKey);
+                    this.showQuizScenarios(quizName);
                 }
-            };
+            });
+        });
+        
+        // Add event listener for close button
+        const closeBtn = content.querySelector('.close-btn');
+        if (closeBtn) {
+            closeBtn.addEventListener('click', () => {
+                overlay.remove();
+            });
             
-            document.addEventListener('keydown', handleEscapeKey);
-            
-            // Close on click outside
-            overlay.addEventListener('click', (e) => {
-                if (e.target === overlay) {
+            // Add keyboard support for close button
+            closeBtn.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
                     overlay.remove();
                 }
             });
-        } catch (error) {
-            console.error('Error showing quiz scenarios selector:', error);
-            this.showError(`Failed to load quiz selector: ${error.message}`);
         }
+        
+        // Add escape key handler
+        const handleEscapeKey = (e) => {
+            if (e.key === 'Escape') {
+                overlay.remove();
+                document.removeEventListener('keydown', handleEscapeKey);
+            }
+        };
+        
+        document.addEventListener('keydown', handleEscapeKey);
+        
+        // Close on click outside
+        overlay.addEventListener('click', (e) => {
+            if (e.target === overlay) {
+                overlay.remove();
+            }
+        });
     }
 
     // Helper method to get mock scenarios for a specific quiz
