@@ -3,7 +3,35 @@ import { getAuthToken, setAuthToken, clearTokens } from './auth.js';
 
 export class APIService {
     constructor() {
-        this.baseUrl = config.apiUrl;
+        // Set the base URL with fallback logic
+        this.baseUrl = this.getApiBaseUrl();
+        console.log('APIService initialized with baseUrl:', this.baseUrl);
+    }
+    
+    // Helper method to get the API base URL with fallback logic
+    getApiBaseUrl() {
+        try {
+            // First try to use the config
+            if (config && config.apiUrl) {
+                return config.apiUrl;
+            }
+        } catch (error) {
+            console.warn('Error accessing config.apiUrl:', error);
+        }
+        
+        // Fallback logic if config is not available
+        if (window.location.hostname.includes('render.com') || 
+            window.location.hostname === 'bug-training-game.onrender.com') {
+            return 'https://bug-training-game-api.onrender.com/api';
+        } 
+        else if (window.location.hostname.includes('amazonaws.com') || 
+                 window.location.hostname.includes('s3-website') ||
+                 window.location.hostname.includes('learning-hub')) {
+            return 'http://13.42.151.152/api';
+        }
+        
+        // Local development
+        return '/api';
     }
 
     // Helper method to get admin auth header
@@ -16,8 +44,14 @@ export class APIService {
     async fetchWithAdminAuth(url, options = {}) {
         try {
             const adminToken = localStorage.getItem('adminToken');
+            
+            // Ensure we have the correct URL (handle both absolute and relative URLs)
+            const fullUrl = url.startsWith('http') ? url : url.startsWith('/') ? 
+                `${this.baseUrl.replace(/\/api$/, '')}${url}` : 
+                `${this.baseUrl}/${url.replace(/^api\//, '')}`;
+            
             console.log('Fetching with admin auth:', { 
-                url, 
+                url: fullUrl, 
                 hasToken: !!adminToken,
                 method: options.method || 'GET'
             });
@@ -45,7 +79,7 @@ export class APIService {
                 fetchOptions.signal = options.signal;
             }
 
-            const response = await fetch(url, fetchOptions);
+            const response = await fetch(fullUrl, fetchOptions);
 
             // Try to parse response as JSON
             let text;
@@ -271,6 +305,13 @@ export class APIService {
         const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 second timeout
         
         try {
+            // Ensure we have the correct URL (handle both absolute and relative URLs)
+            const fullUrl = url.startsWith('http') ? url : url.startsWith('/') ? 
+                `${this.baseUrl.replace(/\/api$/, '')}${url}` : 
+                `${this.baseUrl}/${url.replace(/^api\//, '')}`;
+            
+            console.log(`Fetching with auth: ${fullUrl}`);
+            
             // Add signal to options if not already present
             const fetchOptions = {
                 ...options,
@@ -282,7 +323,7 @@ export class APIService {
                 signal: options.signal || controller.signal
             };
             
-            const response = await fetch(url, fetchOptions);
+            const response = await fetch(fullUrl, fetchOptions);
             
             // Clear timeout since fetch completed
             clearTimeout(timeoutId);
@@ -832,12 +873,20 @@ export class APIService {
 
     async getUserData() {
         try {
+            console.log('Fetching user data from:', `${this.baseUrl}/users/data`);
+            
             const response = await this.fetchWithAuth(`${this.baseUrl}/users/data`);
+            
             if (!response.ok) {
-                throw new Error('Failed to fetch user data');
+                console.error('User data fetch failed with status:', response.status, response.statusText);
+                throw new Error(`Failed to fetch user data: ${response.status} ${response.statusText}`);
             }
+            
             const data = await response.json();
+            console.log('User data response:', data);
+            
             if (!data.success || !data.data) {
+                console.error('User data response indicates failure:', data);
                 throw new Error(data.message || 'Failed to get user data');
             }
 
@@ -865,6 +914,24 @@ export class APIService {
             };
         } catch (error) {
             console.error('Error fetching user data:', error);
+            
+            // Add fallback behavior for development/testing
+            if (window.location.hostname.includes('localhost') || 
+                window.location.hostname.includes('127.0.0.1')) {
+                console.warn('Using fallback user data for development');
+                return {
+                    success: true,
+                    data: {
+                        username: 'test_user',
+                        userType: 'regular',
+                        allowedQuizzes: [],
+                        hiddenQuizzes: [],
+                        quizResults: [],
+                        quizProgress: {}
+                    }
+                };
+            }
+            
             throw error;
         }
     }
