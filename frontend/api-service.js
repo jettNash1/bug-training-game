@@ -381,14 +381,10 @@ export class APIService {
 
     async getQuizProgress(quizName) {
         try {
-            const response = await this.fetchWithAuth(`${this.baseUrl}/users/quiz-progress/${quizName}`);
-            if (!response.ok) {
-                throw new Error('Failed to get quiz progress');
-            }
-            const data = await response.json();
+            const data = await this.fetchWithAuth(`${this.baseUrl}/users/quiz-progress/${quizName}`);
             
             // If data is missing status, determine it based on the progress
-            if (data.data && !data.data.status) {
+            if (data && data.data && !data.data.status) {
                 const progress = data.data;
                 if (progress.questionsAnswered >= 15) {
                     progress.status = progress.experience >= 300 ? 'completed' : 'failed';
@@ -425,7 +421,7 @@ export class APIService {
             }
 
             console.log('Saving quiz progress to API:', { quizName, progress });
-            const response = await this.fetchWithAuth(`${this.baseUrl}/users/quiz-progress`, {
+            const data = await this.fetchWithAuth(`${this.baseUrl}/users/quiz-progress`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
@@ -439,10 +435,6 @@ export class APIService {
                 })
             });
 
-            if (!response.ok) {
-                throw new Error('Failed to save quiz progress');
-            }
-            const data = await response.json();
             console.log('Quiz progress saved successfully:', { quizName, data });
             return data;
         } catch (error) {
@@ -453,7 +445,7 @@ export class APIService {
 
     async updateQuizScore(quizName, score) {
         try {
-            const response = await this.fetchWithAuth(`${this.baseUrl}/users/quiz-scores`, {
+            const data = await this.fetchWithAuth(`${this.baseUrl}/users/quiz-scores`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
@@ -461,19 +453,8 @@ export class APIService {
                 body: JSON.stringify({ quizName, score })
             });
 
-            const text = await response.text();
-            console.log('Update quiz score response:', text);
-
-            let data;
-            try {
-                data = JSON.parse(text);
-            } catch (e) {
-                console.error('Failed to parse response as JSON:', e);
-                throw new Error('Invalid response from server');
-            }
-
-            if (!response.ok) {
-                throw new Error(data.message || 'Failed to update quiz score');
+            if (!data || !data.success) {
+                throw new Error(data?.message || 'Failed to update quiz score');
             }
 
             return data;
@@ -875,19 +856,12 @@ export class APIService {
         try {
             console.log('Fetching user data from:', `${this.baseUrl}/users/data`);
             
-            const response = await this.fetchWithAuth(`${this.baseUrl}/users/data`);
-            
-            if (!response.ok) {
-                console.error('User data fetch failed with status:', response.status, response.statusText);
-                throw new Error(`Failed to fetch user data: ${response.status} ${response.statusText}`);
-            }
-            
-            const data = await response.json();
+            const data = await this.fetchWithAuth(`${this.baseUrl}/users/data`);
             console.log('User data response:', data);
             
-            if (!data.success || !data.data) {
+            if (!data || !data.success || !data.data) {
                 console.error('User data response indicates failure:', data);
-                throw new Error(data.message || 'Failed to get user data');
+                throw new Error(data?.message || 'Failed to get user data');
             }
 
             // Ensure quiz arrays are lowercase for consistent comparison
