@@ -369,8 +369,8 @@ class IndexPage {
                 const quizId = item.dataset.quiz;
                 const quizScore = this.quizScores.find(score => score.quizName === quizId);
                 
-                // Count as completed only if status is 'completed'
-                const isCompleted = quizScore && quizScore.status === 'completed';
+                // Count as completed if all 15 questions are answered, regardless of status
+                const isCompleted = quizScore && quizScore.questionsAnswered >= 15;
                 
                 return {
                     completedQuizzes: stats.completedQuizzes + (isCompleted ? 1 : 0),
