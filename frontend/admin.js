@@ -358,7 +358,6 @@ class AdminDashboard {
                     <label for="accountType">Account Type</label>
                     <select id="accountType" aria-label="Filter by account type">
                         <option value="all">All Accounts</option>
-                        <option value="interview">Interview Accounts</option>
                         <option value="regular">Regular Accounts</option>
                     </select>
                 `;
@@ -450,9 +449,9 @@ class AdminDashboard {
                                 font-size: 0.8em;
                                 font-weight: 500;
                                 ${user.userType === 'interview_candidate' ? 
-                                    'background-color: #ff9800; color: white;' : 
+                                    'background-color: #4CAF50; color: white;' : 
                                     'background-color: #4CAF50; color: white;'}">
-                                ${user.userType === 'interview_candidate' ? 'Interview' : 'Regular'}
+                                ${user.userType === 'interview_candidate' ? 'Regular' : 'Regular'}
                             </span>
                         </div>
                         <div class="user-stats">
@@ -1894,7 +1893,7 @@ class AdminDashboard {
                 .map(quiz => quiz.toLowerCase())
                 .filter(quiz => !allowedQuizzes.includes(quiz));
 
-            console.log('Creating interview account with:', {
+            console.log('Creating account with:', {
                 username,
                 allowedQuizzes,
                 hiddenQuizzes
@@ -1918,11 +1917,11 @@ class AdminDashboard {
             );
 
             if (!response.success) {
-                throw new Error(response.message || 'Failed to create interview account');
+                throw new Error(response.message || 'Failed to create account');
             }
 
             // Show success message
-            this.showSuccess(`Interview account created for ${username}`);
+            this.showSuccess(`Account created for ${username}`);
             
             // Wait for a moment to ensure the backend has processed the new account
             await new Promise(resolve => setTimeout(resolve, 500));
@@ -1947,8 +1946,8 @@ class AdminDashboard {
             
             return response;
         } catch (error) {
-            console.error('Failed to create interview account:', error);
-            this.showError(error.message || 'Failed to create interview account');
+            console.error('Failed to create account:', error);
+            this.showError(error.message || 'Failed to create account');
             throw error;
         }
     }
@@ -1974,7 +1973,7 @@ class AdminDashboard {
                     width: 90%;
                     max-height: 90vh;
                     overflow-y: auto;">
-                    <h2 style="margin-bottom: 1.5rem;">Create Interview Account</h2>
+                    <h2 style="margin-bottom: 1.5rem;">Create Account</h2>
                     <form id="createInterviewForm" autocomplete="off">
                         <div class="form-group" style="margin-bottom: 1.5rem;">
                             <label for="username" style="display: block; margin-bottom: 0.5rem; font-weight: 500;">Username: (min. 3 characters)</label>
@@ -2176,10 +2175,10 @@ class AdminDashboard {
             try {
                 await this.createInterviewAccount(username, password, selectedQuizzes);
                 modal.remove();
-                this.showSuccess('Interview account created successfully');
+                this.showSuccess('Account created successfully');
                 this.updateUserList();
             } catch (error) {
-                this.showError(error.message || 'Failed to create interview account');
+                this.showError(error.message || 'Failed to create account');
             }
         });
     }
