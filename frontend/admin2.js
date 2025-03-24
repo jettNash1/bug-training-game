@@ -525,8 +525,26 @@ class Admin2Dashboard extends AdminDashboard {
             </div>
         `;
         
+        // Set a timeout to ensure the UI updates even if the quiz types fetch hangs
+        let timeoutId = setTimeout(() => {
+            console.warn('Quiz types fetch timeout - using fallback');
+            renderForm(this.getHardcodedQuizTypes());
+        }, 5000);
+        
         // Fetch the latest quiz types before setting up the form
-        this.fetchQuizTypes().then((quizTypes) => {
+        this.fetchQuizTypes()
+            .then(quizTypes => {
+                clearTimeout(timeoutId); // Clear the timeout since we got a response
+                renderForm(quizTypes);
+            })
+            .catch(error => {
+                clearTimeout(timeoutId); // Clear the timeout if there's an error
+                console.error('Error loading quiz types:', error);
+                renderForm(this.getHardcodedQuizTypes());
+            });
+            
+        // Function to render the form with quiz types
+        const renderForm = (quizTypes) => {
             // Sort quiz types by category for better organization
             const categorizedQuizzes = this.categorizeQuizzesForForm(quizTypes);
             
@@ -597,182 +615,59 @@ class Admin2Dashboard extends AdminDashboard {
                 </div>
             `;
             
-            // Add quiz category styles
-            const styleElement = document.createElement('style');
-            styleElement.textContent = `
-                .quiz-category {
-                    margin-bottom: 1.5rem;
-                }
-                .category-header {
-                    display: flex;
-                    justify-content: space-between;
-                    align-items: center;
-                    margin-bottom: 0.75rem;
-                    padding-bottom: 0.5rem;
-                    border-bottom: 1px solid #eee;
-                }
-                .category-header h4 {
-                    margin: 0;
-                    font-size: 1rem;
-                    color: #2c3e50;
-                }
-                .select-category-btn {
-                    background: none;
-                    border: none;
-                    color: #3498db;
-                    font-size: 0.9rem;
-                    cursor: pointer;
-                    padding: 4px 8px;
-                    border-radius: 4px;
-                    transition: background-color 0.2s;
-                }
-                .select-category-btn:hover {
-                    background-color: #f0f7fc;
-                }
-                .category-quizzes {
-                    display: grid;
-                    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-                    gap: 0.5rem;
-                }
-            `;
-            document.head.appendChild(styleElement);
-            
-            // Add password visibility toggle functionality
-            const passwordToggle = createAccountContainer.querySelector('.password-toggle');
-            if (passwordToggle) {
-                passwordToggle.addEventListener('click', () => {
-                    const input = passwordToggle.previousElementSibling;
-                    const icon = passwordToggle.querySelector('i');
-                    
-                    if (input.type === 'password') {
-                        input.type = 'text';
-                        icon.classList.remove('fa-eye');
-                        icon.classList.add('fa-eye-slash');
-                    } else {
-                        input.type = 'password';
-                        icon.classList.remove('fa-eye-slash');
-                        icon.classList.add('fa-eye');
-                    }
-                });
-            }
-
-            // Add event listener for select all checkbox
-            const selectAllCheckbox = createAccountContainer.querySelector('#selectAllQuizzes');
-            if (selectAllCheckbox) {
-                selectAllCheckbox.addEventListener('change', (e) => {
-                    const quizCheckboxes = createAccountContainer.querySelectorAll('input[name="quizzes"]');
-                    quizCheckboxes.forEach(checkbox => {
-                        checkbox.checked = e.target.checked;
-                    });
-                });
-                
-                // Update select all checkbox when individual checkboxes change
-                const quizCheckboxes = createAccountContainer.querySelectorAll('input[name="quizzes"]');
-                quizCheckboxes.forEach(checkbox => {
-                    checkbox.addEventListener('change', () => {
-                        const allChecked = Array.from(quizCheckboxes).every(cb => cb.checked);
-                        selectAllCheckbox.checked = allChecked;
-                    });
-                });
-            }
-            
-            // Add event listeners for category select buttons
-            const categoryButtons = createAccountContainer.querySelectorAll('.select-category-btn');
-            categoryButtons.forEach(button => {
-                button.addEventListener('click', (e) => {
-                    e.preventDefault();
+            // Add event listeners
+            // For the category buttons
+            const selectCategoryButtons = document.querySelectorAll('.select-category-btn');
+            selectCategoryButtons.forEach(button => {
+                button.addEventListener('click', () => {
                     const category = button.dataset.category;
-                    const categoryCheckboxes = createAccountContainer.querySelectorAll(`input[name="quizzes"][data-category="${category}"]`);
+                    const categoryCheckboxes = document.querySelectorAll(`input[data-category="${category}"]`);
+                    const allChecked = Array.from(categoryCheckboxes).every(checkbox => checkbox.checked);
                     
-                    // Check if all are already checked
-                    const allChecked = Array.from(categoryCheckboxes).every(cb => cb.checked);
-                    
-                    // Toggle all checkboxes in this category
                     categoryCheckboxes.forEach(checkbox => {
                         checkbox.checked = !allChecked;
                     });
                     
-                    // Update "Select All" button text
-                    button.textContent = allChecked ? 'Select All' : 'Deselect All';
-                    
-                    // Update main select all checkbox
-                    const allQuizCheckboxes = createAccountContainer.querySelectorAll('input[name="quizzes"]');
-                    const allQuizzesChecked = Array.from(allQuizCheckboxes).every(cb => cb.checked);
-                    selectAllCheckbox.checked = allQuizzesChecked;
+                    this.updateSelectAllCheckbox();
                 });
             });
             
-            // Add event listener for form submission
-            const form = createAccountContainer.querySelector('#createInterviewForm');
-            if (form) {
-                form.addEventListener('submit', async (e) => {
-                    e.preventDefault();
-                    
-                    const username = form.querySelector('#username').value.trim();
-                    const password = form.querySelector('#password').value.trim();
-                    const selectedQuizzes = Array.from(form.querySelectorAll('input[name="quizzes"]:checked'))
-                        .map(checkbox => checkbox.value);
-
-                    if (username.length < 3) {
-                        this.showError('Username must be at least 3 characters long');
-                        return;
-                    }
-
-                    if (password.length < 6) {
-                        this.showError('Password must be at least 6 characters long');
-                        return;
-                    }
-
-                    if (selectedQuizzes.length === 0) {
-                        this.showError('Please select at least one quiz');
-                        return;
-                    }
-
-                    try {
-                        const submitButton = form.querySelector('button[type="submit"]');
-                        submitButton.disabled = true;
-                        submitButton.textContent = 'Creating Account...';
-                        
-                        await this.createInterviewAccount(username, password, selectedQuizzes);
-                        this.showSuccess('Account created successfully');
-                        
-                        // Reset form
-                        form.reset();
-                        
-                        // Reset button
-                        submitButton.disabled = false;
-                        submitButton.textContent = 'Create Account';
-                        
-                        // Switch to users view
-                        document.querySelector('.menu-item[data-section="users"]').click();
-                        
-                        // Update user list
-                        this.updateUsersList();
-                    } catch (error) {
-                        const submitButton = form.querySelector('button[type="submit"]');
-                        submitButton.disabled = false;
-                        submitButton.textContent = 'Create Account';
-                        
-                        this.showError(error.message || 'Failed to create account');
-                    }
+            // For the select all checkbox
+            const selectAllCheckbox = document.getElementById('selectAllQuizzes');
+            if (selectAllCheckbox) {
+                selectAllCheckbox.addEventListener('change', () => {
+                    const allCheckboxes = document.querySelectorAll('input[name="quizzes"]');
+                    allCheckboxes.forEach(checkbox => {
+                        checkbox.checked = selectAllCheckbox.checked;
+                    });
                 });
             }
-        }).catch(error => {
-            console.error('Error setting up create account form:', error);
-            createAccountContainer.innerHTML = `
-                <div class="error-message">
-                    <p>Failed to set up create account form: ${error.message}</p>
-                    <button class="retry-button">Retry</button>
-                </div>
-            `;
             
-            const retryButton = createAccountContainer.querySelector('.retry-button');
-            if (retryButton) {
-                retryButton.addEventListener('click', () => {
-                    this.setupCreateAccountForm();
+            // For individual checkboxes to update select all state
+            const quizCheckboxes = document.querySelectorAll('input[name="quizzes"]');
+            quizCheckboxes.forEach(checkbox => {
+                checkbox.addEventListener('change', () => {
+                    this.updateSelectAllCheckbox();
+                });
+            });
+            
+            // For the form submission
+            const createAccountForm = document.getElementById('createInterviewForm');
+            if (createAccountForm) {
+                createAccountForm.addEventListener('submit', this.handleCreateAccount.bind(this));
+            }
+            
+            // For password toggling
+            const passwordToggle = document.querySelector('.password-toggle');
+            const passwordInput = document.getElementById('password');
+            if (passwordToggle && passwordInput) {
+                passwordToggle.addEventListener('click', () => {
+                    const type = passwordInput.getAttribute('type') === 'password' ? 'text' : 'password';
+                    passwordInput.setAttribute('type', type);
+                    passwordToggle.querySelector('i').className = type === 'password' ? 'fas fa-eye' : 'fas fa-eye-slash';
                 });
             }
-        });
+        };
     }
     
     // Set up the scenarios list in the scenarios section
@@ -791,113 +686,176 @@ class Admin2Dashboard extends AdminDashboard {
             </div>
         `;
         
+        // Set a timeout to ensure the UI updates even if the quiz types fetch hangs
+        let timeoutId = setTimeout(() => {
+            console.warn('Quiz types fetch timeout - using fallback for scenarios');
+            renderScenarios(this.getHardcodedQuizTypes());
+        }, 5000);
+        
         // Get quiz types using the fixed fetchQuizTypes method
         this.fetchQuizTypes()
             .then(quizTypes => {
-                if (!quizTypes || quizTypes.length === 0) {
-                    throw new Error('No quiz types available');
-                }
-                
-                console.log(`Successfully loaded ${quizTypes.length} quiz types for scenarios list`);
-                
-                // Create matching structure to standard admin page
-                scenariosList.innerHTML = `
-                    <div class="scenarios-wrapper">
-                        <p class="scenarios-intro">Select a quiz type to view its scenarios:</p>
-                        <div class="scenario-categories"></div>
-                    </div>
-                `;
-                
-                const categoriesContainer = scenariosList.querySelector('.scenario-categories');
-                
-                // Define the same categories as in standard admin page
-                const categories = {
-                    'Technical Skills': [],
-                    'Soft Skills': [],
-                    'QA Processes': [],
-                    'Content Testing': [],
-                    'Tools & Documentation': [],
-                    'Interview Quizzes': [],
-                    'Other Quizzes': []
-                };
-                
-                // Categorize quizzes
-                quizTypes.forEach(quiz => {
-                    const category = this.categorizeQuiz(quiz);
-                    if (categories[category]) {
-                        categories[category].push(quiz);
-                    } else {
-                        categories['Other Quizzes'].push(quiz);
-                    }
-                });
-                
-                // Create HTML for each category
-                Object.keys(categories).forEach(category => {
-                    // Skip empty categories
-                    if (!categories[category] || categories[category].length === 0) return;
-                    
-                    const categoryDiv = document.createElement('div');
-                    categoryDiv.className = 'scenario-category';
-                    
-                    // Add heading
-                    const heading = document.createElement('h3');
-                    heading.className = 'category-heading';
-                    heading.textContent = category;
-                    categoryDiv.appendChild(heading);
-                    
-                    // Add quizzes container
-                    const quizzesGrid = document.createElement('div');
-                    quizzesGrid.className = 'category-quizzes';
-                    
-                    // Add quiz cards
-                    categories[category].forEach(quiz => {
-                        const quizCard = document.createElement('div');
-                        quizCard.className = 'quiz-type-card';
-                        quizCard.dataset.quizType = quiz;
-                        
-                        const quizName = document.createElement('h3');
-                        quizName.textContent = this.formatQuizName(quiz);
-                        
-                        const viewButton = document.createElement('button');
-                        viewButton.className = 'view-scenarios-btn';
-                        viewButton.dataset.quizId = quiz;
-                        viewButton.textContent = 'View Scenarios';
-                        viewButton.setAttribute('tabindex', '0');
-                        viewButton.setAttribute('aria-label', `View scenarios for ${this.formatQuizName(quiz)}`);
-                        
-                        // Add event listener to button
-                        viewButton.addEventListener('click', async (e) => {
-                            e.preventDefault();
-                            const quizId = viewButton.dataset.quizId;
-                            console.log(`View Scenarios button clicked for quiz: ${quizId}`);
-                            await this.showQuizScenarios(quizId);
-                        });
-                        
-                        quizCard.appendChild(quizName);
-                        quizCard.appendChild(viewButton);
-                        quizzesGrid.appendChild(quizCard);
-                    });
-                    
-                    categoryDiv.appendChild(quizzesGrid);
-                    categoriesContainer.appendChild(categoryDiv);
-                });
+                clearTimeout(timeoutId); // Clear the timeout since we got a response
+                renderScenarios(quizTypes);
             })
             .catch(error => {
-                console.error('Error setting up scenarios list:', error);
-                scenariosList.innerHTML = `
-                    <div class="error-message">
-                        <p>Failed to load quiz types: ${error.message}</p>
-                        <button class="retry-button">Retry</button>
-                    </div>
-                `;
-                
-                const retryButton = scenariosList.querySelector('.retry-button');
-                if (retryButton) {
-                    retryButton.addEventListener('click', () => {
-                        this.setupScenariosList();
-                    });
+                clearTimeout(timeoutId); // Clear the timeout if there's an error
+                console.error('Error loading quiz types for scenarios:', error);
+                renderScenarios(this.getHardcodedQuizTypes());
+            });
+            
+        // Function to render the scenarios list with quiz types
+        const renderScenarios = (quizTypes) => {
+            if (!quizTypes || quizTypes.length === 0) {
+                scenariosList.innerHTML = `<div class="error-message">No quiz types available</div>`;
+                return;
+            }
+            
+            console.log(`Successfully loaded ${quizTypes.length} quiz types for scenarios list`);
+            
+            // Create matching structure to standard admin page
+            scenariosList.innerHTML = `
+                <div class="scenarios-wrapper">
+                    <p class="scenarios-intro">Select a quiz type to view its scenarios:</p>
+                    <div class="scenario-categories"></div>
+                </div>
+            `;
+            
+            const categoriesContainer = scenariosList.querySelector('.scenario-categories');
+            
+            // Define the same categories as in standard admin page
+            const categories = {
+                'Technical Skills': [],
+                'Soft Skills': [],
+                'QA Processes': [],
+                'Content Testing': [],
+                'Tools & Documentation': [],
+                'Interview Quizzes': [],
+                'Other Quizzes': []
+            };
+            
+            // Categorize quizzes
+            quizTypes.forEach(quiz => {
+                const category = this.categorizeQuiz(quiz);
+                if (categories[category]) {
+                    categories[category].push(quiz);
+                } else {
+                    categories['Other Quizzes'].push(quiz);
                 }
             });
+            
+            // Create HTML for each category
+            Object.keys(categories).forEach(category => {
+                // Skip empty categories
+                if (!categories[category] || categories[category].length === 0) return;
+                
+                const categoryDiv = document.createElement('div');
+                categoryDiv.className = 'scenario-category';
+                
+                // Add heading
+                const heading = document.createElement('h3');
+                heading.className = 'category-heading';
+                heading.textContent = category;
+                categoryDiv.appendChild(heading);
+                
+                // Add quizzes container
+                const quizzesGrid = document.createElement('div');
+                quizzesGrid.className = 'category-quizzes';
+                
+                // Add quiz cards
+                categories[category].forEach(quiz => {
+                    const quizCard = document.createElement('div');
+                    quizCard.className = 'quiz-type-card';
+                    quizCard.dataset.quizType = quiz;
+                    
+                    const quizName = document.createElement('h3');
+                    quizName.textContent = this.formatQuizName(quiz);
+                    
+                    const viewButton = document.createElement('button');
+                    viewButton.className = 'view-scenarios-btn';
+                    viewButton.dataset.quizId = quiz;
+                    viewButton.textContent = 'View Scenarios';
+                    viewButton.setAttribute('tabindex', '0');
+                    viewButton.setAttribute('aria-label', `View scenarios for ${this.formatQuizName(quiz)}`);
+                    
+                    // Add event listener to button
+                    viewButton.addEventListener('click', async (e) => {
+                        e.preventDefault();
+                        await this.showQuizScenarios(quiz);
+                    });
+                    
+                    quizCard.appendChild(quizName);
+                    quizCard.appendChild(viewButton);
+                    quizzesGrid.appendChild(quizCard);
+                });
+                
+                categoryDiv.appendChild(quizzesGrid);
+                categoriesContainer.appendChild(categoryDiv);
+            });
+            
+            // Add custom CSS for quiz cards
+            const styleElement = document.createElement('style');
+            styleElement.textContent = `
+                .scenarios-wrapper {
+                    padding: 1rem;
+                }
+                .scenarios-intro {
+                    margin-bottom: 1.5rem;
+                    color: #666;
+                }
+                .scenario-category {
+                    margin-bottom: 2rem;
+                }
+                .category-heading {
+                    margin-bottom: 1rem;
+                    padding-bottom: 0.5rem;
+                    border-bottom: 1px solid #eee;
+                    color: #2c3e50;
+                }
+                .category-quizzes {
+                    display: grid;
+                    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+                    gap: 1rem;
+                }
+                .quiz-type-card {
+                    background-color: #f8f9fa;
+                    border-radius: 8px;
+                    padding: 1rem;
+                    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+                    transition: transform 0.2s, box-shadow 0.2s;
+                }
+                .quiz-type-card:hover {
+                    transform: translateY(-2px);
+                    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+                }
+                .quiz-type-card h3 {
+                    margin-top: 0;
+                    margin-bottom: 0.75rem;
+                    font-size: 1.1rem;
+                    color: #2c3e50;
+                }
+                .view-scenarios-btn {
+                    background-color: #3498db;
+                    color: white;
+                    border: none;
+                    border-radius: 4px;
+                    padding: 0.5rem 1rem;
+                    font-size: 0.9rem;
+                    cursor: pointer;
+                    transition: background-color 0.2s;
+                    width: 100%;
+                }
+                .view-scenarios-btn:hover {
+                    background-color: #2980b9;
+                }
+            `;
+            
+            // Only append style if it doesn't exist already
+            if (!document.querySelector('style[data-type="scenarios-styles"]')) {
+                styleElement.setAttribute('data-type', 'scenarios-styles');
+                document.head.appendChild(styleElement);
+            }
+        };
     }
 
     // Override categorizeQuiz to match standard admin page
@@ -1975,6 +1933,75 @@ class Admin2Dashboard extends AdminDashboard {
     formatQuestionType(type) {
         if (!type) return 'Question';
         return type.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+    }
+
+    // Helper method to update the "Select All" checkbox state based on individual checkboxes
+    updateSelectAllCheckbox() {
+        const selectAllCheckbox = document.getElementById('selectAllQuizzes');
+        const quizCheckboxes = document.querySelectorAll('input[name="quizzes"]');
+        
+        if (selectAllCheckbox && quizCheckboxes.length > 0) {
+            const allChecked = Array.from(quizCheckboxes).every(checkbox => checkbox.checked);
+            selectAllCheckbox.checked = allChecked;
+        }
+    }
+    
+    // Helper method to handle create account form submission
+    async handleCreateAccount(e) {
+        e.preventDefault();
+        
+        const form = e.target;
+        const username = form.querySelector('#username').value.trim();
+        const password = form.querySelector('#password').value.trim();
+        const selectedQuizzes = Array.from(form.querySelectorAll('input[name="quizzes"]:checked'))
+            .map(checkbox => checkbox.value);
+
+        if (username.length < 3) {
+            this.showError('Username must be at least 3 characters long');
+            return;
+        }
+
+        if (password.length < 6) {
+            this.showError('Password must be at least 6 characters long');
+            return;
+        }
+
+        if (selectedQuizzes.length === 0) {
+            this.showError('Please select at least one quiz');
+            return;
+        }
+
+        try {
+            const submitButton = form.querySelector('button[type="submit"]');
+            submitButton.disabled = true;
+            submitButton.textContent = 'Creating Account...';
+            
+            const response = await this.apiService.createAccount(username, password, selectedQuizzes);
+            
+            if (response.success) {
+                this.showSuccess('Account created successfully');
+                
+                // Reset form
+                form.reset();
+                
+                // Reload user list
+                await this.loadUsers();
+                
+                // Switch to users view
+                document.querySelector('.menu-item[data-section="users"]').click();
+            } else {
+                throw new Error(response.message || 'Failed to create account');
+            }
+        } catch (error) {
+            this.showError(error.message || 'Failed to create account');
+        } finally {
+            // Reset button
+            const submitButton = form.querySelector('button[type="submit"]');
+            if (submitButton) {
+                submitButton.disabled = false;
+                submitButton.textContent = 'Create Account';
+            }
+        }
     }
 }
 
