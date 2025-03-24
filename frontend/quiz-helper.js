@@ -10,7 +10,11 @@ export class BaseQuiz {
         this.outcomeScreen = document.getElementById('outcome-screen');
         this.isLoading = false;
         this.questionTimer = null;
-        this.timePerQuestion = 60000; // 60 seconds in milliseconds
+        
+        // Get timer value from localStorage if available, otherwise use default 60 seconds
+        const storedTimerValue = localStorage.getItem('quizTimerValue');
+        this.timePerQuestion = storedTimerValue ? parseInt(storedTimerValue, 10) * 1000 : 60000; // convert to milliseconds
+        
         this.remainingTime = this.timePerQuestion;
         this.questionStartTime = null; // Track when each question starts
     }
@@ -58,6 +62,12 @@ export class BaseQuiz {
             timerContainer.setAttribute('role', 'timer');
             timerContainer.setAttribute('aria-label', 'Question timer');
             this.gameScreen.insertBefore(timerContainer, this.gameScreen.firstChild);
+        }
+
+        // Ensure timer value is up to date by checking localStorage again
+        const storedTimerValue = localStorage.getItem('quizTimerValue');
+        if (storedTimerValue) {
+            this.timePerQuestion = parseInt(storedTimerValue, 10) * 1000; // convert to milliseconds
         }
 
         // Reset and start timer

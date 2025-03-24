@@ -16,6 +16,10 @@ class AdminDashboard {
             'sanity-smoke', 'functional-interview'
         ];
         
+        this.timerSettings = {
+            secondsPerQuestion: 60 // Default value
+        };
+        
         // Initialize immediately if we're on an admin page
         if (window.location.pathname.includes('admin')) {
             this.init().catch(console.error);
@@ -57,6 +61,13 @@ class AdminDashboard {
             return;
         }
 
+        // Load timer settings in the background regardless of page
+        if (isTokenValid) {
+            this.preloadTimerSettings().catch(error => {
+                console.error('Failed to preload timer settings:', error);
+            });
+        }
+
         // If we have a valid token and we're on the admin panel, load the dashboard
         if (isTokenValid && currentPath.includes('admin.html')) {
             console.log('Valid token on admin panel, loading dashboard');
@@ -66,6 +77,22 @@ class AdminDashboard {
             await this.loadUsers();
             await this.loadAllUserProgress();
             await this.updateDashboard();
+        }
+    }
+    
+    // Preload timer settings to localStorage
+    async preloadTimerSettings() {
+        try {
+            const settings = await this.apiService.getQuizTimerSettings();
+            if (settings.success && settings.data && settings.data.secondsPerQuestion) {
+                this.timerSettings = settings.data;
+                
+                // Save to localStorage for quizzes to use
+                localStorage.setItem('quizTimerValue', settings.data.secondsPerQuestion.toString());
+                console.log('Preloaded timer settings:', settings.data.secondsPerQuestion);
+            }
+        } catch (error) {
+            console.error('Failed to preload timer settings:', error);
         }
     }
 
@@ -131,7 +158,10 @@ class AdminDashboard {
             console.log('Loading user progress...'); // Debug log
             await this.loadAllUserProgress();
             console.log('User progress loaded');
-
+            
+            // Load quiz timer settings
+            await this.loadTimerSettings();
+            
             // Final dashboard update
             console.log('Performing final dashboard update...'); // Debug log
             this.updateDashboard();
@@ -284,6 +314,23 @@ class AdminDashboard {
             const viewScenariosBtn = document.getElementById('viewQuizScenariosBtn');
             if (viewScenariosBtn) {
                 viewScenariosBtn.addEventListener('click', () => this.showQuizScenariosSelector());
+            }
+            
+            // Add Quiz Timer Settings button
+            const timerSettingsContainer = document.createElement('div');
+            timerSettingsContainer.className = 'control-field';
+            timerSettingsContainer.innerHTML = `
+                <label class="visually-hidden">Quiz Timer Settings</label>
+                <button id="quizTimerSettingsBtn" class="action-button">
+                    Quiz Timer Settings
+                </button>
+            `;
+            controlsContainer.appendChild(timerSettingsContainer);
+            
+            // Add event listener for the timer settings button
+            const timerSettingsBtn = document.getElementById('quizTimerSettingsBtn');
+            if (timerSettingsBtn) {
+                timerSettingsBtn.addEventListener('click', () => this.showTimerSettings());
             }
         }
     }
@@ -3213,6 +3260,125 @@ class AdminDashboard {
         if (softSkillsQuizzes.includes(quizName)) return 'Soft Skills';
         
         return 'Other Quizzes';
+    }
+
+    // Load quiz timer settings
+    async loadTimerSettings() {
+        try {
+            const response = await this.apiService.getQuizTimerSettings();
+            if (response.success && response.data) {
+                this.timerSettings = response.data;
+                console.log('Loaded timer settings:', this.timerSettings);
+            }
+        } catch (error) {
+            console.error('Failed to load timer settings:', error);
+        }
+    }
+
+    // Show quiz timer settings dialog
+    async showTimerSettings() {
+        // Ensure settings are loaded
+        if (!this.timerSettings) {
+            await this.loadTimerSettings();
+        }
+        
+        // Create modal
+        const modal = document.createElement('div');
+        modal.id = 'timerSettingsModal';
+        modal.className = 'modal';
+        
+        // Set current value in seconds
+        const currentValue = this.timerSettings.secondsPerQuestion || 60;
+        
+        // Create modal content
+        modal.innerHTML = `
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2>Quiz Timer Settings</h2>
+                    <button class="close-button" aria-label="Close">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <p>Set the time allowed for each quiz question. Current setting: <strong>${currentValue} seconds</strong></p>
+                    <div class="form-group">
+                        <label for="timerSeconds">Seconds per question (10-300):</label>
+                        <input type="number" id="timerSeconds" min="10" max="300" value="${currentValue}" 
+                               class="form-control" required aria-label="Seconds per question">
+                    </div>
+                    <div class="form-actions">
+                        <button id="saveTimerSettings" class="primary-button">Save Settings</button>
+                        <button id="cancelTimerSettings" class="secondary-button">Cancel</button>
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        // Add to DOM
+        document.body.appendChild(modal);
+        
+        // Show modal
+        setTimeout(() => modal.classList.add('show'), 10);
+        
+        // Add event listeners
+        const closeBtn = modal.querySelector('.close-button');
+        const saveBtn = document.getElementById('saveTimerSettings');
+        const cancelBtn = document.getElementById('cancelTimerSettings');
+        
+        // Close modal helper function
+        const closeModal = () => {
+            modal.classList.remove('show');
+            setTimeout(() => modal.remove(), 300);
+        };
+        
+        // Add escape key handler
+        const handleEscapeKey = (e) => {
+            if (e.key === 'Escape') {
+                closeModal();
+                document.removeEventListener('keydown', handleEscapeKey);
+            }
+        };
+        
+        // Add event listeners
+        document.addEventListener('keydown', handleEscapeKey);
+        closeBtn.addEventListener('click', closeModal);
+        cancelBtn.addEventListener('click', closeModal);
+        
+        // Save button handler
+        saveBtn.addEventListener('click', async () => {
+            const timerInput = document.getElementById('timerSeconds');
+            const newValue = parseInt(timerInput.value, 10);
+            
+            // Validate input
+            if (isNaN(newValue) || newValue < 10 || newValue > 300) {
+                this.showError('Timer value must be between 10 and 300 seconds');
+                return;
+            }
+            
+            try {
+                saveBtn.disabled = true;
+                saveBtn.textContent = 'Saving...';
+                
+                // Call API to update setting
+                const response = await this.apiService.updateQuizTimerSettings(newValue);
+                
+                if (response.success) {
+                    // Update local settings
+                    this.timerSettings.secondsPerQuestion = newValue;
+                    
+                    // Update localStorage for immediate effect on quizzes
+                    localStorage.setItem('quizTimerValue', newValue.toString());
+                    
+                    this.showSuccess('Quiz timer settings updated successfully');
+                    closeModal();
+                } else {
+                    throw new Error(response.message || 'Failed to update timer settings');
+                }
+            } catch (error) {
+                console.error('Failed to save timer settings:', error);
+                this.showError(error.message || 'Failed to save timer settings');
+                saveBtn.disabled = false;
+                saveBtn.textContent = 'Save Settings';
+            }
+        });
     }
 }
 

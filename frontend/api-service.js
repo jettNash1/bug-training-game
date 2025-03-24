@@ -909,4 +909,57 @@ export class APIService {
             throw error;
         }
     }
+    
+    // Quiz timer settings methods
+    async getQuizTimerSettings() {
+        try {
+            const response = await this.fetchWithAdminAuth(`${this.baseUrl}/admin/settings/quiz-timer`);
+            
+            // If no timer setting exists yet, return default value (60 seconds)
+            if (!response.success || !response.data) {
+                return {
+                    success: true,
+                    data: {
+                        secondsPerQuestion: 60
+                    }
+                };
+            }
+            
+            return response;
+        } catch (error) {
+            console.error('Failed to fetch quiz timer settings:', error);
+            // Return default value on error
+            return {
+                success: true,
+                data: {
+                    secondsPerQuestion: 60
+                }
+            };
+        }
+    }
+    
+    async updateQuizTimerSettings(seconds) {
+        try {
+            // Validate input
+            const secondsValue = parseInt(seconds, 10);
+            if (isNaN(secondsValue) || secondsValue < 10 || secondsValue > 300) {
+                throw new Error('Timer value must be between 10 and 300 seconds');
+            }
+            
+            const response = await this.fetchWithAdminAuth(`${this.baseUrl}/admin/settings/quiz-timer`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    secondsPerQuestion: secondsValue
+                })
+            });
+            
+            return response;
+        } catch (error) {
+            console.error('Failed to update quiz timer settings:', error);
+            throw error;
+        }
+    }
 } 
