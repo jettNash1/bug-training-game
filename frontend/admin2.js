@@ -53,14 +53,14 @@ class Admin2Dashboard extends AdminDashboard {
     // Add loadUsers method
     async loadUsers() {
         try {
-            const response = await fetch('/api/users');
+            // Use the apiService to properly handle authentication
+            const response = await this.apiService.getAllUsers();
             
-            if (response.ok) {
-                const usersData = await response.json();
-                console.log('Loaded user data:', usersData);
+            if (response.success) {
+                console.log('Loaded user data:', response.data);
                 
                 // Store users data
-                this.users = usersData;
+                this.users = response.data;
                 
                 // Update dashboard with user data
                 this.updateUsersList();
@@ -68,11 +68,10 @@ class Admin2Dashboard extends AdminDashboard {
                 // Load user progress for all users
                 this.loadAllUserProgress();
                 
-                return usersData;
+                return response.data;
             } else {
-                const errorText = await response.text();
-                console.error('Failed to load users:', errorText);
-                throw new Error(`Failed to load users: ${response.status} ${response.statusText}`);
+                console.error('Failed to load users:', response.error);
+                throw new Error(`Failed to load users: ${response.error}`);
             }
         } catch (error) {
             console.error('Error loading users:', error);
@@ -99,28 +98,28 @@ class Admin2Dashboard extends AdminDashboard {
     
     async loadUserProgress(username) {
         try {
-            const response = await fetch(`/api/users/${username}/progress`);
+            // Use the apiService to properly handle authentication
+            const response = await this.apiService.getUserProgress(username);
             
-            if (response.ok) {
-                const progressData = await response.json();
-                console.log(`Loaded progress for ${username}:`, progressData);
+            if (response.success) {
+                console.log(`Loaded progress for ${username}:`, response.data);
                 
                 // Find the user and update their progress data
                 const userIndex = this.users.findIndex(u => u.username === username);
                 if (userIndex !== -1) {
                     // Verify data format
-                    if (typeof progressData === 'object') {
+                    if (typeof response.data === 'object') {
                         // Store quiz progress data
-                        this.users[userIndex].quizProgress = progressData.quizProgress || {};
+                        this.users[userIndex].quizProgress = response.data.quizProgress || {};
                         
                         // Store quiz results data if available
-                        if (progressData.quizResults && Array.isArray(progressData.quizResults)) {
-                            this.users[userIndex].quizResults = progressData.quizResults;
+                        if (response.data.quizResults && Array.isArray(response.data.quizResults)) {
+                            this.users[userIndex].quizResults = response.data.quizResults;
                         }
                         
-                        return progressData;
+                        return response.data;
                     } else {
-                        console.error(`Invalid progress data format for ${username}:`, progressData);
+                        console.error(`Invalid progress data format for ${username}:`, response.data);
                         throw new Error('Invalid progress data format');
                     }
                 } else {
@@ -128,9 +127,8 @@ class Admin2Dashboard extends AdminDashboard {
                     throw new Error(`User ${username} not found`);
                 }
             } else {
-                const errorText = await response.text();
-                console.error(`Failed to load progress for ${username}:`, errorText);
-                throw new Error(`Failed to load progress: ${response.status} ${response.statusText}`);
+                console.error(`Failed to load progress for ${username}:`, response.error);
+                throw new Error(`Failed to load progress: ${response.error}`);
             }
         } catch (error) {
             console.error(`Error loading progress for ${username}:`, error);
