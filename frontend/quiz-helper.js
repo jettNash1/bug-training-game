@@ -308,10 +308,11 @@ export class BaseQuiz {
         const xpGained = document.getElementById('xp-gained');
         if (xpGained) {
             if (option.isTimeout) {
-                // Hide experience value for timeout scenarios
-                xpGained.textContent = '';
+                // Hide experience element completely for timeout scenarios
+                xpGained.style.display = 'none';
             } else {
                 // Show experience for normal scenarios
+                xpGained.style.display = '';
                 xpGained.textContent = option.experience >= 0 ? 
                     `Experience gained: +${option.experience}` : 
                     `Experience: ${option.experience}`;
