@@ -8,7 +8,7 @@ class QuizList {
             'raising-tickets', 'reports', 'cms-testing', 'email-testing', 'content-copy',
             'locale-testing', 'script-metrics-troubleshooting', 'standard-script-testing',
             'test-types-tricks', 'automation-interview', 'fully-scripted', 'exploratory',
-            'sanity-smoke'
+            'sanity-smoke', 'functional-interview'
         ];
         this.init();
     }
@@ -134,7 +134,8 @@ class QuizList {
             'automation-interview': 'Prepare for automation interviews',
             'fully-scripted': 'Test fully scripted scenarios',
             'exploratory': 'Explore and test without predefined scripts',
-            'sanity-smoke': 'Learn sanity and smoke testing'
+            'sanity-smoke': 'Learn sanity and smoke testing',
+            'functional-interview': 'Prepare for functional interviews'
         };
         return descriptions[quizName] || 'Master essential testing skills';
     }

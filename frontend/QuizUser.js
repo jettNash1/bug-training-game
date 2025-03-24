@@ -353,8 +353,9 @@ export class QuizUser {
                 'content-copy'
             ]);
             
-            this.updateCategoryProgress('Automation Training', [
-                'automation-interview'
+            this.updateCategoryProgress('Interview Preparation', [
+                'automation-interview',
+                'functional-interview'
             ]);
 
             // Call our new function to apply styles directly

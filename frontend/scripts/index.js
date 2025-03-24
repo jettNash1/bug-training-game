@@ -77,6 +77,7 @@ class IndexPage {
             await this.loadUserProgress();
             this.updateQuizProgress();
             this.updateCategoryProgress();
+            this.addBadgesButton();
         } catch (error) {
             console.error('Failed to initialize:', error);
         } finally {
@@ -393,6 +394,32 @@ class IndexPage {
                 `;
             }
         });
+    }
+
+    addBadgesButton() {
+        // Check if button already exists
+        if (document.querySelector('.badges-button')) return;
+        
+        // Create a badges button
+        const badgesButton = document.createElement('div');
+        badgesButton.className = 'badges-button';
+        badgesButton.innerHTML = `
+            <a href="badges.html" class="primary-button">
+                <i class="fa-solid fa-award"></i> View Your Badges
+            </a>
+        `;
+        
+        // Insert before the first category
+        const firstCategory = document.querySelector('.category-card');
+        if (firstCategory && firstCategory.parentNode) {
+            firstCategory.parentNode.insertBefore(badgesButton, firstCategory);
+        } else {
+            // Fallback - add to the main container
+            const container = document.querySelector('.container');
+            if (container) {
+                container.appendChild(badgesButton);
+            }
+        }
     }
 }
 
