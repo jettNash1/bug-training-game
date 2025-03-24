@@ -1182,6 +1182,7 @@ class AdminDashboard {
                     const apiQuestionHistory = response.data.questionHistory || [];
                     const questionHistory = apiQuestionHistory.map(item => {
                         const isPassed = item.status === 'passed';
+                        const isTimedOut = item.timedOut === true;
                         
                         // Get the correct answer
                         let correctAnswer = '';
@@ -1209,7 +1210,8 @@ class AdminDashboard {
                             scenario: item.scenario?.description || '',
                             selectedAnswer: item.selectedAnswer?.text || 'No answer selected',
                             correctAnswer: correctAnswer || 'Correct answer not available',
-                            isCorrect: isPassed
+                            isCorrect: isPassed,
+                            isTimedOut: isTimedOut
                         };
                     });
                     
@@ -1244,11 +1246,17 @@ class AdminDashboard {
                             .questions-table tr.failed {
                                 background-color: rgba(255, 68, 68, 0.1);
                             }
+                            .questions-table tr.timed-out {
+                                background-color: rgba(158, 158, 158, 0.1);
+                            }
                             .questions-table tr.passed td {
                                 border-bottom: 1px solid rgba(75, 181, 67, 0.2);
                             }
                             .questions-table tr.failed td {
                                 border-bottom: 1px solid rgba(255, 68, 68, 0.2);
+                            }
+                            .questions-table tr.timed-out td {
+                                border-bottom: 1px solid rgba(158, 158, 158, 0.2);
                             }
                             .questions-table tr {
                                 border-left: 4px solid transparent;
@@ -1260,6 +1268,9 @@ class AdminDashboard {
                             }
                             .questions-table tr.failed {
                                 border-left: 4px solid #ff4444;
+                            }
+                            .questions-table tr.timed-out {
+                                border-left: 4px solid #9e9e9e;
                             }
                             .questions-table tbody tr:not(:last-child) {
                                 border-bottom: 1px solid #e9ecef;
@@ -1308,6 +1319,10 @@ class AdminDashboard {
                                 background-color: rgba(255, 68, 68, 0.2);
                                 color: #c62828;
                             }
+                            .status-badge.timeout {
+                                background-color: rgba(158, 158, 158, 0.2);
+                                color: #616161;
+                            }
                         </style>
                         <div class="details-header">
                             <h3 id="questions-details-title">${this.formatQuizName(quizName)} - ${username}'s Answers</h3>
@@ -1332,11 +1347,11 @@ class AdminDashboard {
                                         ${questionHistory.map((question, index) => {
                                             const isPassed = question.isCorrect;
                                             return `
-                                                <tr class="${isPassed ? 'passed' : 'failed'}">
+                                                <tr class="${isPassed ? 'passed' : question.isTimedOut ? 'timed-out' : 'failed'}">
                                                     <td>${index + 1}</td>
                                                     <td>
-                                                        <span class="status-badge ${isPassed ? 'pass' : 'fail'}">
-                                                            ${isPassed ? 'CORRECT' : 'INCORRECT'}
+                                                        <span class="status-badge ${isPassed ? 'pass' : question.isTimedOut ? 'timeout' : 'fail'}">
+                                                            ${isPassed ? 'CORRECT' : question.isTimedOut ? 'TIMED OUT' : 'INCORRECT'}
                                                         </span>
                                                     </td>
                                                     <td>
@@ -1462,6 +1477,7 @@ class AdminDashboard {
                 // Process the question history to extract correct answers
                 questionHistory = result.questionHistory.map(item => {
                     const isPassed = item.isCorrect;
+                    const isTimedOut = item.timedOut === true;
                     
                     // Get the correct answer
                     let correctAnswer = '';
@@ -1486,7 +1502,8 @@ class AdminDashboard {
                     
                     return {
                         ...item,
-                        correctAnswer: correctAnswer || 'Correct answer not available'
+                        correctAnswer: correctAnswer || 'Correct answer not available',
+                        isTimedOut: isTimedOut
                     };
                 });
                 
@@ -1499,6 +1516,7 @@ class AdminDashboard {
                 // Process the question history to extract correct answers
                 questionHistory = progress.questionHistory.map(item => {
                     const isPassed = item.isCorrect;
+                    const isTimedOut = item.timedOut === true;
                     
                     // Get the correct answer
                     let correctAnswer = '';
@@ -1523,7 +1541,8 @@ class AdminDashboard {
                     
                     return {
                         ...item,
-                        correctAnswer: correctAnswer || 'Correct answer not available'
+                        correctAnswer: correctAnswer || 'Correct answer not available',
+                        isTimedOut: isTimedOut
                     };
                 });
                 
@@ -1566,11 +1585,17 @@ class AdminDashboard {
                     .questions-table tr.failed {
                         background-color: rgba(255, 68, 68, 0.1);
                     }
+                    .questions-table tr.timed-out {
+                        background-color: rgba(158, 158, 158, 0.1);
+                    }
                     .questions-table tr.passed td {
                         border-bottom: 1px solid rgba(75, 181, 67, 0.2);
                     }
                     .questions-table tr.failed td {
                         border-bottom: 1px solid rgba(255, 68, 68, 0.2);
+                    }
+                    .questions-table tr.timed-out td {
+                        border-bottom: 1px solid rgba(158, 158, 158, 0.2);
                     }
                     .questions-table tr {
                         border-left: 4px solid transparent;
@@ -1582,6 +1607,9 @@ class AdminDashboard {
                     }
                     .questions-table tr.failed {
                         border-left: 4px solid #ff4444;
+                    }
+                    .questions-table tr.timed-out {
+                        border-left: 4px solid #9e9e9e;
                     }
                     .questions-table tbody tr:not(:last-child) {
                         border-bottom: 1px solid #e9ecef;
@@ -1630,6 +1658,10 @@ class AdminDashboard {
                         background-color: rgba(255, 68, 68, 0.2);
                         color: #c62828;
                     }
+                    .status-badge.timeout {
+                        background-color: rgba(158, 158, 158, 0.2);
+                        color: #616161;
+                    }
                 </style>
                 <div class="details-header">
                     <h3 id="questions-details-title">${this.formatQuizName(quizName)} - ${username}'s Answers</h3>
@@ -1654,11 +1686,11 @@ class AdminDashboard {
                                 ${questionHistory.map((question, index) => {
                                     const isPassed = question.isCorrect;
                                     return `
-                                        <tr class="${isPassed ? 'passed' : 'failed'}">
+                                        <tr class="${isPassed ? 'passed' : question.isTimedOut ? 'timed-out' : 'failed'}">
                                             <td>${index + 1}</td>
                                             <td>
-                                                <span class="status-badge ${isPassed ? 'pass' : 'fail'}">
-                                                    ${isPassed ? 'CORRECT' : 'INCORRECT'}
+                                                <span class="status-badge ${isPassed ? 'pass' : question.isTimedOut ? 'timeout' : 'fail'}">
+                                                    ${isPassed ? 'CORRECT' : question.isTimedOut ? 'TIMED OUT' : 'INCORRECT'}
                                                 </span>
                                             </td>
                                             <td>
@@ -1666,11 +1698,11 @@ class AdminDashboard {
                                                 ${question.scenario ? `<p>${question.scenario}</p>` : ''}
                                             </td>
                                             <td class="answer-content">
-                        <div>
+                                                <div>
                                                     <strong>Selected:</strong> ${question.selectedAnswer || 'No answer selected'}
-                        </div>
+                                                </div>
                                                 ${!question.isCorrect ? `
-                        <div>
+                                                <div>
                                                     <strong>Correct:</strong> ${question.correctAnswer || 'Correct answer not available'}
                                                 </div>` : ''}
                                             </td>

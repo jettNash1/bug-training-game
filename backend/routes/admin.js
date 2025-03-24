@@ -487,7 +487,8 @@ router.get('/users/:username/quiz-questions/:quizName', auth, async (req, res) =
                         text: correctAnswer.text || '',
                         experience: Number(correctAnswer.experience) || 0
                     } : null,
-                    status: record.selectedAnswer.experience > 0 ? 'passed' : 'failed'
+                    status: record.selectedAnswer.experience > 0 ? 'passed' : 'failed',
+                    timedOut: record.timedOut === true
                 };
             } catch (error) {
                 console.error('Error formatting record:', error);

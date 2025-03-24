@@ -123,8 +123,95 @@ export class BaseQuiz {
             timedOut: true
         });
 
+        // Increment current scenario
+        this.player.currentScenario++;
+        
+        // Save progress to ensure timeout is recorded
+        this.saveProgress().catch(error => {
+            console.error('Failed to save progress after timeout:', error);
+        });
+        
+        // Calculate score data for quiz result
+        const totalQuestions = 15;
+        const completedQuestions = this.player.questionHistory.length;
+        const percentComplete = Math.round((completedQuestions / totalQuestions) * 100);
+        
+        const score = {
+            quizName: this.quizName,
+            score: percentComplete,
+            experience: this.player.experience,
+            questionHistory: this.player.questionHistory,
+            questionsAnswered: completedQuestions,
+            lastActive: new Date().toISOString()
+        };
+        
+        // Save quiz result
+        const username = localStorage.getItem('username');
+        if (username) {
+            const quizUser = new QuizUser(username);
+            quizUser.updateQuizScore(
+                this.quizName,
+                score.score, 
+                score.experience,
+                this.player.tools,
+                score.questionHistory,
+                score.questionsAnswered
+            ).catch(error => {
+                console.error('Failed to update quiz score after timeout:', error);
+            });
+        }
+
         // Show outcome
         this.showOutcome(timeUpOption);
+    }
+
+    // Default saveProgress method that will be called by handleTimeUp
+    // if the quiz implementation doesn't override it
+    async saveProgress() {
+        // Determine status based on progress
+        let status = 'in-progress';
+        
+        // Check for completion (all 15 questions answered)
+        if (this.player.questionHistory.length >= 15) {
+            // Set completed status if all questions are answered
+            status = 'completed';
+        }
+
+        const progress = {
+            data: {
+                experience: this.player.experience || 0,
+                tools: this.player.tools || [],
+                currentScenario: this.player.currentScenario || 0,
+                questionHistory: this.player.questionHistory || [],
+                lastUpdated: new Date().toISOString(),
+                questionsAnswered: this.player.questionHistory?.length || 0,
+                status: status
+            }
+        };
+
+        try {
+            const username = localStorage.getItem('username');
+            if (!username) {
+                console.error('No user found, cannot save progress');
+                return;
+            }
+            
+            // Use user-specific key for localStorage
+            const storageKey = `quiz_progress_${username}_${this.quizName}`;
+            localStorage.setItem(storageKey, JSON.stringify(progress));
+            
+            console.log('Saving progress (BaseQuiz) with status:', status);
+            
+            // If apiService is available, use it to save progress to the server
+            if (this.apiService && typeof this.apiService.saveQuizProgress === 'function') {
+                await this.apiService.saveQuizProgress(this.quizName, progress.data);
+            } else {
+                console.warn('No apiService available to save progress to server');
+            }
+        } catch (error) {
+            console.error('Failed to save progress in BaseQuiz:', error);
+            throw error;
+        }
     }
 
     showQuestion() {
