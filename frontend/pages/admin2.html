@@ -370,6 +370,11 @@
             margin-top: 1.5rem;
         }
         
+        .scenarios-intro {
+            margin-bottom: 1.5rem;
+            color: #555;
+        }
+        
         .scenario-categories {
             display: flex;
             flex-direction: column;
@@ -378,9 +383,26 @@
             width: 100%;
         }
         
+        .scenario-category {
+            background: white;
+            border-radius: 8px;
+            padding: 1.5rem;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            width: 100%;
+        }
+        
+        .category-heading {
+            margin-top: 0;
+            margin-bottom: 1.5rem;
+            color: #2c3e50;
+            font-size: 1.3rem;
+            padding-bottom: 0.75rem;
+            border-bottom: 1px solid #eee;
+        }
+        
         .category-quizzes {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
             gap: 1.5rem;
             width: 100%;
         }
@@ -393,10 +415,12 @@
             display: flex;
             flex-direction: column;
             align-items: center;
+            justify-content: space-between;
             text-align: center;
             transition: transform 0.2s, box-shadow 0.2s;
             border: 1px solid #eee;
             width: 100%;
+            height: 100%;
         }
         
         .quiz-type-card:hover {
@@ -406,7 +430,7 @@
         
         .quiz-type-card h3 {
             margin-top: 0;
-            margin-bottom: 1rem;
+            margin-bottom: 1.5rem;
             font-size: 1.2rem;
             color: #2c3e50;
         }
@@ -420,6 +444,7 @@
             cursor: pointer;
             font-weight: 500;
             transition: background 0.2s;
+            min-width: 150px;
         }
         
         .view-scenarios-btn:hover {

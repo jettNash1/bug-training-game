@@ -429,8 +429,19 @@ class Admin2Dashboard extends AdminDashboard {
         const createAccountContainer = document.getElementById('create-account-container');
         if (!createAccountContainer) return;
         
+        // Show loading state
+        createAccountContainer.innerHTML = `
+            <div class="loading-container" style="text-align: center; padding: 2rem;">
+                <div class="loading-spinner"></div>
+                <p>Loading quiz types...</p>
+            </div>
+        `;
+        
         // Fetch the latest quiz types before setting up the form
-        this.fetchQuizTypes().then(() => {
+        this.fetchQuizTypes().then((quizTypes) => {
+            // Sort quiz types by category for better organization
+            const categorizedQuizzes = this.categorizeQuizzesForForm(quizTypes);
+            
             createAccountContainer.innerHTML = `
                 <div class="create-account-form">
                     <form id="createInterviewForm" autocomplete="off">
@@ -468,16 +479,26 @@ class Admin2Dashboard extends AdminDashboard {
                                         <span>Select All Quizzes</span>
                                     </label>
                                 </div>
+                                
                                 <div class="quiz-options">
-                                    ${this.quizTypes
-                                        .slice()
-                                        .sort((a, b) => this.formatQuizName(a).localeCompare(this.formatQuizName(b)))
-                                        .map(quiz => `
-                                        <div class="quiz-option">
-                                            <label>
-                                                <input type="checkbox" name="quizzes" value="${quiz}">
-                                                <span>${this.formatQuizName(quiz)}</span>
-                                            </label>
+                                    ${Object.entries(categorizedQuizzes).map(([category, quizzes]) => `
+                                        <div class="quiz-category">
+                                            <div class="category-header">
+                                                <h4>${category}</h4>
+                                                <button type="button" class="select-category-btn" data-category="${category}">
+                                                    Select All
+                                                </button>
+                                            </div>
+                                            <div class="category-quizzes">
+                                                ${quizzes.map(quiz => `
+                                                    <div class="quiz-option">
+                                                        <label>
+                                                            <input type="checkbox" name="quizzes" value="${quiz}" data-category="${category}">
+                                                            <span>${this.formatQuizName(quiz)}</span>
+                                                        </label>
+                                                    </div>
+                                                `).join('')}
+                                            </div>
                                         </div>
                                     `).join('')}
                                 </div>
@@ -487,6 +508,46 @@ class Admin2Dashboard extends AdminDashboard {
                     </form>
                 </div>
             `;
+            
+            // Add quiz category styles
+            const styleElement = document.createElement('style');
+            styleElement.textContent = `
+                .quiz-category {
+                    margin-bottom: 1.5rem;
+                }
+                .category-header {
+                    display: flex;
+                    justify-content: space-between;
+                    align-items: center;
+                    margin-bottom: 0.75rem;
+                    padding-bottom: 0.5rem;
+                    border-bottom: 1px solid #eee;
+                }
+                .category-header h4 {
+                    margin: 0;
+                    font-size: 1rem;
+                    color: #2c3e50;
+                }
+                .select-category-btn {
+                    background: none;
+                    border: none;
+                    color: #3498db;
+                    font-size: 0.9rem;
+                    cursor: pointer;
+                    padding: 4px 8px;
+                    border-radius: 4px;
+                    transition: background-color 0.2s;
+                }
+                .select-category-btn:hover {
+                    background-color: #f0f7fc;
+                }
+                .category-quizzes {
+                    display: grid;
+                    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+                    gap: 0.5rem;
+                }
+            `;
+            document.head.appendChild(styleElement);
             
             // Add password visibility toggle functionality
             const passwordToggle = createAccountContainer.querySelector('.password-toggle');
@@ -527,6 +588,32 @@ class Admin2Dashboard extends AdminDashboard {
                 });
             }
             
+            // Add event listeners for category select buttons
+            const categoryButtons = createAccountContainer.querySelectorAll('.select-category-btn');
+            categoryButtons.forEach(button => {
+                button.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    const category = button.dataset.category;
+                    const categoryCheckboxes = createAccountContainer.querySelectorAll(`input[name="quizzes"][data-category="${category}"]`);
+                    
+                    // Check if all are already checked
+                    const allChecked = Array.from(categoryCheckboxes).every(cb => cb.checked);
+                    
+                    // Toggle all checkboxes in this category
+                    categoryCheckboxes.forEach(checkbox => {
+                        checkbox.checked = !allChecked;
+                    });
+                    
+                    // Update "Select All" button text
+                    button.textContent = allChecked ? 'Select All' : 'Deselect All';
+                    
+                    // Update main select all checkbox
+                    const allQuizCheckboxes = createAccountContainer.querySelectorAll('input[name="quizzes"]');
+                    const allQuizzesChecked = Array.from(allQuizCheckboxes).every(cb => cb.checked);
+                    selectAllCheckbox.checked = allQuizzesChecked;
+                });
+            });
+            
             // Add event listener for form submission
             const form = createAccountContainer.querySelector('#createInterviewForm');
             if (form) {
@@ -554,11 +641,19 @@ class Admin2Dashboard extends AdminDashboard {
                     }
 
                     try {
+                        const submitButton = form.querySelector('button[type="submit"]');
+                        submitButton.disabled = true;
+                        submitButton.textContent = 'Creating Account...';
+                        
                         await this.createInterviewAccount(username, password, selectedQuizzes);
                         this.showSuccess('Account created successfully');
                         
                         // Reset form
                         form.reset();
+                        
+                        // Reset button
+                        submitButton.disabled = false;
+                        submitButton.textContent = 'Create Account';
                         
                         // Switch to users view
                         document.querySelector('.menu-item[data-section="users"]').click();
@@ -566,6 +661,10 @@ class Admin2Dashboard extends AdminDashboard {
                         // Update user list
                         this.updateUserList();
                     } catch (error) {
+                        const submitButton = form.querySelector('button[type="submit"]');
+                        submitButton.disabled = false;
+                        submitButton.textContent = 'Create Account';
+                        
                         this.showError(error.message || 'Failed to create account');
                     }
                 });
@@ -593,6 +692,14 @@ class Admin2Dashboard extends AdminDashboard {
         const scenariosList = document.getElementById('scenarios-list');
         if (!scenariosList) return;
         
+        // Show loading state
+        scenariosList.innerHTML = `
+            <div class="loading-container" style="text-align: center; padding: 2rem;">
+                <div class="loading-spinner"></div>
+                <p>Loading quiz types...</p>
+            </div>
+        `;
+        
         // Make sure we have the latest quiz types
         this.fetchQuizTypes().then(() => {
             // Get a sorted and complete list of quiz types
@@ -605,18 +712,18 @@ class Admin2Dashboard extends AdminDashboard {
                 sortedQuizTypes.push('automation-interview');
             }
             
-            // Create categories for better organization
+            // Create categories for better organization - use the same as standard admin page
             const categories = {
                 'Technical Skills': [],
-                'QA Processes': [],
-                'Content Testing': [],
-                'Tools & Documentation': [],
                 'Soft Skills': [],
+                'Content Testing': [],
+                'QA Processes': [],
+                'Tools & Documentation': [], 
                 'Interview Quizzes': [],
                 'Other Quizzes': []
             };
             
-            // Categorize quizzes
+            // Categorize quizzes - ensure proper categorization similar to standard admin
             sortedQuizTypes.forEach(quiz => {
                 const category = this.categorizeQuiz(quiz);
                 if (categories[category]) {
@@ -627,37 +734,126 @@ class Admin2Dashboard extends AdminDashboard {
             });
             
             // Create HTML for the scenarios list
-            let categoryHTML = '';
+            let scenariosHTML = `
+                <div class="scenarios-intro">
+                    <p>Select a quiz type to view its scenarios:</p>
+                </div>
+                <div class="scenario-categories">
+            `;
             
             // Generate HTML for each category
             Object.keys(categories).forEach(category => {
-                if (categories[category].length === 0) return;
+                // Skip empty categories
+                if (!categories[category] || categories[category].length === 0) return;
                 
-                categoryHTML += `
+                scenariosHTML += `
                     <div class="scenario-category">
                         <h3 class="category-heading">${category}</h3>
                         <div class="category-quizzes">
-                            ${categories[category].map(quiz => `
-                                <div class="quiz-type-card" data-quiz-type="${quiz}">
-                                    <h3>${this.formatQuizName(quiz)}</h3>
-                                    <button class="view-scenarios-btn" data-quiz-id="${quiz}">
-                                        View Scenarios
-                                    </button>
-                                </div>
-                            `).join('')}
+                `;
+                
+                // Add quiz cards for this category
+                categories[category].forEach(quiz => {
+                    scenariosHTML += `
+                        <div class="quiz-type-card" data-quiz-type="${quiz}">
+                            <h3>${this.formatQuizName(quiz)}</h3>
+                            <button class="view-scenarios-btn" data-quiz-id="${quiz}">
+                                View Scenarios
+                            </button>
+                        </div>
+                    `;
+                });
+                
+                // Close the nested divs for this category
+                scenariosHTML += `
                         </div>
                     </div>
                 `;
             });
             
-            scenariosList.innerHTML = `
-                <div class="scenarios-intro">
-                    <p>Select a quiz type to view its scenarios:</p>
-                </div>
-                <div class="scenario-categories">
-                    ${categoryHTML}
-                </div>
+            scenariosHTML += `</div>`;
+            
+            // Update the scenarios list
+            scenariosList.innerHTML = scenariosHTML;
+            
+            // Add styles to ensure proper layout
+            const styleElement = document.createElement('style');
+            styleElement.textContent = `
+                .scenario-categories {
+                    display: flex;
+                    flex-direction: column;
+                    gap: 2rem;
+                    width: 100%;
+                }
+                
+                .scenario-category {
+                    width: 100%;
+                    background: white;
+                    border-radius: 8px;
+                    padding: 1.5rem;
+                    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+                }
+                
+                .category-heading {
+                    margin-top: 0;
+                    margin-bottom: 1.5rem;
+                    color: #2c3e50;
+                    font-size: 1.3rem;
+                    padding-bottom: 0.75rem;
+                    border-bottom: 1px solid #eee;
+                }
+                
+                .category-quizzes {
+                    width: 100%;
+                    display: grid;
+                    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+                    gap: 1.5rem;
+                }
+                
+                .quiz-type-card {
+                    height: 100%;
+                    background: white;
+                    border-radius: 8px;
+                    padding: 1.5rem;
+                    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+                    display: flex;
+                    flex-direction: column;
+                    align-items: center;
+                    justify-content: space-between;
+                    text-align: center;
+                    transition: transform 0.2s, box-shadow 0.2s;
+                    border: 1px solid #eee;
+                }
+                
+                .quiz-type-card:hover {
+                    transform: translateY(-3px);
+                    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+                }
+                
+                .quiz-type-card h3 {
+                    margin-top: 0;
+                    margin-bottom: 1.5rem;
+                    font-size: 1.2rem;
+                    color: #2c3e50;
+                }
+                
+                .view-scenarios-btn {
+                    background: #3498db;
+                    color: white;
+                    border: none;
+                    padding: 8px 16px;
+                    border-radius: 4px;
+                    cursor: pointer;
+                    font-weight: 500;
+                    transition: background 0.2s;
+                    min-width: 150px;
+                }
+                
+                .view-scenarios-btn:hover {
+                    background: #2980b9;
+                }
             `;
+            document.head.appendChild(styleElement);
             
             // Add event listeners for view scenarios buttons
             const viewButtons = scenariosList.querySelectorAll('.view-scenarios-btn');
@@ -674,8 +870,16 @@ class Admin2Dashboard extends AdminDashboard {
             scenariosList.innerHTML = `
                 <div class="error-message">
                     <p>Failed to load quiz types: ${error.message}</p>
+                    <button class="retry-button">Retry</button>
                 </div>
             `;
+            
+            const retryButton = scenariosList.querySelector('.retry-button');
+            if (retryButton) {
+                retryButton.addEventListener('click', () => {
+                    this.setupScenariosList();
+                });
+            }
         });
     }
 
@@ -1038,6 +1242,386 @@ class Admin2Dashboard extends AdminDashboard {
             return 'Technical Skills';
         }
         return super.categorizeQuiz(quizName);
+    }
+
+    // Override the parent showUserDetails method to ensure consistency with standard admin page
+    async showUserDetails(username) {
+        try {
+            const user = this.users.find(u => u.username === username);
+            if (!user) {
+                throw new Error(`User ${username} not found`);
+            }
+            
+            // Calculate progress metrics
+            const progress = this.calculateUserProgress(user);
+            const lastActive = this.getLastActiveDate(user);
+            
+            // Create overlay
+            const overlay = document.createElement('div');
+            overlay.className = 'user-details-overlay';
+            overlay.setAttribute('role', 'dialog');
+            overlay.setAttribute('aria-modal', 'true');
+            overlay.setAttribute('aria-labelledby', 'user-details-title');
+            
+            // Create content container
+            const content = document.createElement('div');
+            content.className = 'user-details-content';
+            
+            // Create header with close button
+            const headerHTML = `
+                <div class="details-header">
+                    <h3 id="user-details-title">${username}'s Details</h3>
+                    <button class="close-btn" aria-label="Close details">×</button>
+                </div>
+            `;
+            
+            // Create tabs for details, progress, and quiz results
+            const tabsHTML = `
+                <div class="details-tabs">
+                    <button class="tab-button active" data-tab="overview">Overview</button>
+                    <button class="tab-button" data-tab="quiz-results">Quiz Results</button>
+                    <button class="tab-button" data-tab="activity">Activity</button>
+                </div>
+            `;
+            
+            // Create content sections for each tab
+            let overviewHTML = `
+                <div class="tab-content active" id="overview-tab">
+                    <div class="user-summary">
+                        <div class="user-info-section">
+                            <h4>User Information</h4>
+                            <div class="info-grid">
+                                <div class="info-item">
+                                    <span class="info-label">Username:</span>
+                                    <span class="info-value">${username}</span>
+                                </div>
+                                <div class="info-item">
+                                    <span class="info-label">Account Type:</span>
+                                    <span class="info-value">${user.userType === 'interview_candidate' ? 'Regular' : 'Regular'}</span>
+                                </div>
+                                <div class="info-item">
+                                    <span class="info-label">Last Active:</span>
+                                    <span class="info-value">${this.formatDate(lastActive)}</span>
+                                </div>
+                                <div class="info-item">
+                                    <span class="info-label">Overall Progress:</span>
+                                    <span class="info-value">${progress.toFixed(1)}%</span>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="user-actions">
+                            <button id="resetUserProgress" class="action-button danger-button">
+                                Reset Progress
+                            </button>
+                            <button id="deleteUserAccount" class="action-button danger-button">
+                                Delete Account
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="progress-summary">
+                        <h4>Progress Summary</h4>
+                        <div class="progress-grid">
+                            ${this.quizTypes.map(quizType => {
+                                const quizProgress = user.quizProgress?.[quizType.toLowerCase()] || {};
+                                const quizResult = user.quizResults?.find(r => r.quizName.toLowerCase() === quizType.toLowerCase());
+                                
+                                // Use data from either progress or results, prioritizing results
+                                const quizExperience = quizResult?.experience || quizProgress?.experience || 0;
+                                const questionsAnswered = quizResult?.questionsAnswered || 
+                                                        quizResult?.questionHistory?.length ||
+                                                        quizProgress?.questionsAnswered || 
+                                                        quizProgress?.questionHistory?.length || 0;
+                                
+                                // Format quiz progress
+                                const progressPercent = this.calculateQuizProgressPercent(quizType, questionsAnswered);
+                                
+                                return `
+                                    <div class="quiz-progress-item">
+                                        <div class="quiz-progress-header">
+                                            <span class="quiz-name">${this.formatQuizName(quizType)}</span>
+                                            <span class="quiz-percent">${progressPercent.toFixed(0)}%</span>
+                                        </div>
+                                        <div class="progress-bar-container">
+                                            <div class="progress-bar" style="width: ${progressPercent}%"></div>
+                                        </div>
+                                        <div class="quiz-stats">
+                                            <span class="quiz-stat">
+                                                <i class="fas fa-question-circle"></i> ${questionsAnswered} Questions
+                                            </span>
+                                            <span class="quiz-stat">
+                                                <i class="fas fa-star"></i> ${quizExperience} XP
+                                            </span>
+                                        </div>
+                                    </div>
+                                `;
+                            }).join('')}
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            // Quiz Results Tab
+            let quizResultsHTML = `
+                <div class="tab-content" id="quiz-results-tab">
+                    <div class="quiz-results-container">
+                        <h4>Quiz Performance</h4>
+                        ${this.quizTypes.length > 0 ? `
+                            <div class="quiz-details-grid">
+                                ${this.quizTypes.map(quizType => {
+                                    const quizResult = user.quizResults?.find(r => r.quizName.toLowerCase() === quizType.toLowerCase());
+                                    const quizProgress = user.quizProgress?.[quizType.toLowerCase()] || {};
+                                    
+                                    // Check if user has results for this quiz
+                                    const hasAnswered = (quizResult?.questionHistory?.length > 0) || 
+                                                      (quizProgress?.questionHistory?.length > 0);
+                                    
+                                    if (!hasAnswered) {
+                                        return `
+                                            <div class="quiz-detail-card">
+                                                <h5>${this.formatQuizName(quizType)}</h5>
+                                                <p class="no-activity">No activity yet</p>
+                                            </div>
+                                        `;
+                                    }
+                                    
+                                    // Use data from either progress or results, prioritizing results
+                                    const questionHistory = quizResult?.questionHistory || quizProgress?.questionHistory || [];
+                                    
+                                    // Calculate correct/incorrect answers
+                                    const correctAnswers = questionHistory.filter(q => q.correct).length;
+                                    const incorrectAnswers = questionHistory.length - correctAnswers;
+                                    const correctPercent = questionHistory.length ? 
+                                        (correctAnswers / questionHistory.length) * 100 : 0;
+                                    
+                                    return `
+                                        <div class="quiz-detail-card">
+                                            <h5>${this.formatQuizName(quizType)}</h5>
+                                            <div class="answer-stats">
+                                                <div class="stat-circle correct">
+                                                    <span class="stat-value">${correctAnswers}</span>
+                                                    <span class="stat-label">Correct</span>
+                                                </div>
+                                                <div class="stat-circle incorrect">
+                                                    <span class="stat-value">${incorrectAnswers}</span>
+                                                    <span class="stat-label">Incorrect</span>
+                                                </div>
+                                            </div>
+                                            <div class="accuracy-bar">
+                                                <div class="accuracy-label">Accuracy</div>
+                                                <div class="accuracy-bar-container">
+                                                    <div class="accuracy-bar-fill" style="width: ${correctPercent}%"></div>
+                                                </div>
+                                                <div class="accuracy-value">${correctPercent.toFixed(1)}%</div>
+                                            </div>
+                                        </div>
+                                    `;
+                                }).join('')}
+                            </div>
+                        ` : '<p>No quiz types found</p>'}
+                    </div>
+                </div>
+            `;
+            
+            // Activity Tab
+            let activityHTML = `
+                <div class="tab-content" id="activity-tab">
+                    <div class="activity-history">
+                        <h4>Recent Activity</h4>
+                        ${user.activityLog && user.activityLog.length > 0 ? `
+                            <div class="activity-timeline">
+                                ${user.activityLog.slice(0, 20).map(activity => `
+                                    <div class="activity-item">
+                                        <div class="activity-time">${this.formatDate(new Date(activity.timestamp))}</div>
+                                        <div class="activity-details">
+                                            <div class="activity-type">
+                                                <i class="fas ${this.getActivityIcon(activity.type)}"></i>
+                                                ${this.formatActivityType(activity.type)}
+                                            </div>
+                                            <div class="activity-description">${activity.description}</div>
+                                        </div>
+                                    </div>
+                                `).join('')}
+                            </div>
+                        ` : '<p class="no-activity">No activity recorded yet</p>'}
+                    </div>
+                </div>
+            `;
+            
+            // Combine all sections
+            content.innerHTML = `
+                ${headerHTML}
+                ${tabsHTML}
+                <div class="tab-container">
+                    ${overviewHTML}
+                    ${quizResultsHTML}
+                    ${activityHTML}
+                </div>
+            `;
+            
+            // Add content to overlay and append to body
+            overlay.appendChild(content);
+            document.body.appendChild(overlay);
+            
+            // Add event listeners for tabs
+            const tabButtons = overlay.querySelectorAll('.tab-button');
+            const tabContents = overlay.querySelectorAll('.tab-content');
+            
+            tabButtons.forEach(button => {
+                button.addEventListener('click', () => {
+                    // Remove active class from all buttons and contents
+                    tabButtons.forEach(btn => btn.classList.remove('active'));
+                    tabContents.forEach(content => content.classList.remove('active'));
+                    
+                    // Add active class to clicked button and corresponding content
+                    button.classList.add('active');
+                    const tabId = `${button.dataset.tab}-tab`;
+                    document.getElementById(tabId).classList.add('active');
+                });
+            });
+            
+            // Add event listener for close button
+            const closeBtn = overlay.querySelector('.close-btn');
+            if (closeBtn) {
+                closeBtn.addEventListener('click', () => {
+                    overlay.remove();
+                });
+            }
+            
+            // Add event listener for clicking outside the modal
+            overlay.addEventListener('click', (e) => {
+                if (e.target === overlay) {
+                    overlay.remove();
+                }
+            });
+            
+            // Add event listeners for action buttons
+            const resetProgressBtn = overlay.querySelector('#resetUserProgress');
+            if (resetProgressBtn) {
+                resetProgressBtn.addEventListener('click', async () => {
+                    if (confirm(`Are you sure you want to reset all progress for ${username}? This cannot be undone.`)) {
+                        try {
+                            await this.resetUserProgress(username);
+                            this.showSuccess(`Progress reset for ${username}`);
+                            overlay.remove();
+                            this.updateUserList();
+                        } catch (error) {
+                            this.showError(`Failed to reset progress: ${error.message}`);
+                        }
+                    }
+                });
+            }
+            
+            const deleteAccountBtn = overlay.querySelector('#deleteUserAccount');
+            if (deleteAccountBtn) {
+                deleteAccountBtn.addEventListener('click', async () => {
+                    if (confirm(`Are you sure you want to delete ${username}'s account? This cannot be undone.`)) {
+                        try {
+                            await this.deleteUser(username);
+                            this.showSuccess(`Account deleted for ${username}`);
+                            overlay.remove();
+                            this.updateUserList();
+                        } catch (error) {
+                            this.showError(`Failed to delete account: ${error.message}`);
+                        }
+                    }
+                });
+            }
+        } catch (error) {
+            console.error('Error showing user details:', error);
+            this.showError(`Failed to show user details: ${error.message}`);
+        }
+    }
+
+    // Helper method for formatting activity type
+    formatActivityType(type) {
+        switch (type) {
+            case 'login':
+                return 'Login';
+            case 'quiz_start':
+                return 'Started Quiz';
+            case 'quiz_complete':
+                return 'Completed Quiz';
+            case 'answer_question':
+                return 'Answered Question';
+            default:
+                return type.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+        }
+    }
+
+    // Helper method for getting activity icon
+    getActivityIcon(type) {
+        switch (type) {
+            case 'login':
+                return 'fa-sign-in-alt';
+            case 'quiz_start':
+                return 'fa-play';
+            case 'quiz_complete':
+                return 'fa-check-circle';
+            case 'answer_question':
+                return 'fa-question';
+            default:
+                return 'fa-history';
+        }
+    }
+
+    // Calculate quiz progress percent
+    calculateQuizProgressPercent(quizType, questionsAnswered) {
+        // Estimate total questions based on quiz type
+        let totalQuestions = 20; // Default estimate
+        
+        // Customize based on quiz type if needed
+        if (quizType.toLowerCase().includes('interview')) {
+            totalQuestions = 15;
+        }
+        
+        // Calculate percentage
+        const percent = Math.min(100, (questionsAnswered / totalQuestions) * 100);
+        return percent;
+    }
+
+    // Helper method to categorize quizzes for the form
+    categorizeQuizzesForForm(quizTypes) {
+        const categories = {
+            'Technical Skills': [],
+            'QA Processes': [],
+            'Content Testing': [],
+            'Tools & Documentation': [],
+            'Interview Quizzes': [],
+            'Other': []
+        };
+        
+        quizTypes.forEach(quiz => {
+            // Map quiz types to categories
+            if (['automation', 'api', 'mobile', 'security', 'performance', 'script', 'script-metrics', 'technical', 'accessibility'].includes(quiz.toLowerCase())) {
+                categories['Technical Skills'].push(quiz);
+            } 
+            else if (['process', 'uat', 'general', 'test-process'].includes(quiz.toLowerCase())) {
+                categories['QA Processes'].push(quiz);
+            }
+            else if (['content', 'cms', 'cms-testing', 'email', 'email-testing'].includes(quiz.toLowerCase())) {
+                categories['Content Testing'].push(quiz);
+            }
+            else if (['documentation', 'tools'].includes(quiz.toLowerCase())) {
+                categories['Tools & Documentation'].push(quiz);
+            }
+            else if (['interview', 'automation-interview'].includes(quiz.toLowerCase())) {
+                categories['Interview Quizzes'].push(quiz);
+            }
+            else {
+                categories['Other'].push(quiz);
+            }
+        });
+        
+        // Remove empty categories
+        Object.keys(categories).forEach(key => {
+            if (categories[key].length === 0) {
+                delete categories[key];
+            }
+        });
+        
+        return categories;
     }
 }
 
@@ -1683,6 +2267,307 @@ styleElement.textContent = `
             width: 95%;
             padding: 1rem;
         }
+    }
+
+    /* User details modal styles */
+    .details-tabs {
+        display: flex;
+        border-bottom: 1px solid #dee2e6;
+        margin-bottom: 1.5rem;
+    }
+    
+    .tab-button {
+        padding: 0.75rem 1rem;
+        background: none;
+        border: none;
+        border-bottom: 3px solid transparent;
+        font-weight: 500;
+        color: #666;
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+    
+    .tab-button:hover {
+        color: #3498db;
+    }
+    
+    .tab-button.active {
+        color: #3498db;
+        border-bottom-color: #3498db;
+    }
+    
+    .tab-content {
+        display: none;
+    }
+    
+    .tab-content.active {
+        display: block;
+    }
+    
+    .user-summary {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 2rem;
+        margin-bottom: 2rem;
+    }
+    
+    .user-info-section {
+        flex: 1;
+        min-width: 300px;
+    }
+    
+    .user-actions {
+        display: flex;
+        flex-direction: column;
+        gap: 0.75rem;
+    }
+    
+    .danger-button {
+        background-color: #e74c3c;
+    }
+    
+    .danger-button:hover {
+        background-color: #c0392b;
+    }
+    
+    .info-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+        gap: 1rem;
+        margin-top: 1rem;
+    }
+    
+    .info-item {
+        display: flex;
+        flex-direction: column;
+    }
+    
+    .info-label {
+        color: #666;
+        font-size: 0.85rem;
+        margin-bottom: 0.25rem;
+    }
+    
+    .info-value {
+        font-weight: 600;
+        color: #333;
+    }
+    
+    .progress-summary {
+        margin-top: 1.5rem;
+    }
+    
+    .progress-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+        gap: 1.5rem;
+        margin-top: 1rem;
+    }
+    
+    .quiz-progress-item {
+        background-color: white;
+        border-radius: 8px;
+        padding: 1rem;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+    }
+    
+    .quiz-progress-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 0.75rem;
+    }
+    
+    .quiz-name {
+        font-weight: 600;
+        color: #2c3e50;
+    }
+    
+    .quiz-percent {
+        font-weight: 700;
+        color: #3498db;
+    }
+    
+    .progress-bar-container {
+        height: 8px;
+        background-color: #f1f1f1;
+        border-radius: 4px;
+        overflow: hidden;
+        margin-bottom: 0.75rem;
+    }
+    
+    .progress-bar {
+        height: 100%;
+        background-color: #3498db;
+        border-radius: 4px;
+    }
+    
+    .quiz-stats {
+        display: flex;
+        justify-content: space-between;
+        color: #666;
+        font-size: 0.9rem;
+    }
+    
+    .quiz-stat i {
+        margin-right: 0.25rem;
+        color: #7f8c8d;
+    }
+    
+    /* Quiz Results Tab Styles */
+    .quiz-results-container {
+        margin-top: 1rem;
+    }
+    
+    .quiz-details-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+        gap: 1.5rem;
+        margin-top: 1rem;
+    }
+    
+    .quiz-detail-card {
+        background-color: white;
+        border-radius: 8px;
+        padding: 1.25rem;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+    }
+    
+    .quiz-detail-card h5 {
+        margin-top: 0;
+        margin-bottom: 1rem;
+        color: #2c3e50;
+        border-bottom: 1px solid #eee;
+        padding-bottom: 0.5rem;
+    }
+    
+    .answer-stats {
+        display: flex;
+        justify-content: center;
+        gap: 2rem;
+        margin-bottom: 1.5rem;
+    }
+    
+    .stat-circle {
+        width: 80px;
+        height: 80px;
+        border-radius: 50%;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        color: white;
+    }
+    
+    .stat-circle.correct {
+        background-color: #2ecc71;
+    }
+    
+    .stat-circle.incorrect {
+        background-color: #e74c3c;
+    }
+    
+    .stat-value {
+        font-size: 1.5rem;
+        font-weight: 700;
+    }
+    
+    .stat-label {
+        font-size: 0.8rem;
+        margin-top: 0.25rem;
+    }
+    
+    .accuracy-bar {
+        margin-top: 1rem;
+    }
+    
+    .accuracy-label {
+        margin-bottom: 0.5rem;
+        color: #666;
+        font-size: 0.9rem;
+    }
+    
+    .accuracy-bar-container {
+        height: 8px;
+        background-color: #f1f1f1;
+        border-radius: 4px;
+        overflow: hidden;
+        margin-bottom: 0.5rem;
+    }
+    
+    .accuracy-bar-fill {
+        height: 100%;
+        background-color: #2ecc71;
+        border-radius: 4px;
+    }
+    
+    .accuracy-value {
+        text-align: right;
+        font-weight: 600;
+        color: #333;
+        font-size: 0.9rem;
+    }
+    
+    .no-activity {
+        color: #7f8c8d;
+        font-style: italic;
+        text-align: center;
+        margin-top: 1rem;
+    }
+    
+    /* Activity Tab Styles */
+    .activity-history {
+        margin-top: 1rem;
+    }
+    
+    .activity-timeline {
+        margin-top: 1.5rem;
+    }
+    
+    .activity-item {
+        display: flex;
+        margin-bottom: 1.5rem;
+        position: relative;
+    }
+    
+    .activity-item:not(:last-child)::after {
+        content: '';
+        position: absolute;
+        left: 80px;
+        top: 24px;
+        bottom: -24px;
+        width: 2px;
+        background-color: #f1f1f1;
+    }
+    
+    .activity-time {
+        min-width: 160px;
+        color: #7f8c8d;
+        font-size: 0.9rem;
+        padding-top: 0.25rem;
+    }
+    
+    .activity-details {
+        flex: 1;
+        background-color: white;
+        border-radius: 8px;
+        padding: 1rem;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+    }
+    
+    .activity-type {
+        font-weight: 600;
+        color: #2c3e50;
+        margin-bottom: 0.5rem;
+    }
+    
+    .activity-type i {
+        margin-right: 0.5rem;
+        color: #3498db;
+    }
+    
+    .activity-description {
+        color: #555;
     }
 `;
 document.head.appendChild(styleElement); 
