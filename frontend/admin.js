@@ -85,30 +85,38 @@ class AdminDashboard {
     
     // Add timer settings button to the UI
     addTimerSettingsButton() {
-        // Target the search-controls div to add our button
-        const searchControls = document.querySelector('.search-controls');
-        if (!searchControls) return;
+        console.log('Adding timer settings button to admin panel...');
         
-        // Create a new control field for the timer settings
-        const timerControlField = document.createElement('div');
-        timerControlField.className = 'control-field';
-        
-        // Create the button inside
-        timerControlField.innerHTML = `
-            <label class="visually-hidden">Quiz Timer Settings</label>
-            <button id="quizTimerSettingsBtn" class="action-button">
-                Quiz Timer Settings
-            </button>
-        `;
-        
-        // Add it to the search controls
-        searchControls.appendChild(timerControlField);
-        
-        // Add event listener
-        const timerBtn = document.getElementById('quizTimerSettingsBtn');
-        if (timerBtn) {
-            timerBtn.addEventListener('click', () => this.showTimerSettings());
+        // Add the button directly to the admin panel top section
+        const actionSection = document.querySelector('.panel-header .search-controls');
+        if (!actionSection) {
+            console.error('Could not find admin panel action section');
+            return;
         }
+        
+        // Create a standalone button element
+        const timerButton = document.createElement('button');
+        timerButton.id = 'quizTimerSettingsBtn';
+        timerButton.className = 'action-button';
+        timerButton.textContent = 'Quiz Timer Settings';
+        timerButton.style.marginLeft = '10px';
+        
+        // Create a wrapper div to match other controls
+        const buttonWrapper = document.createElement('div');
+        buttonWrapper.className = 'control-field';
+        buttonWrapper.appendChild(timerButton);
+        
+        // Add to the page
+        actionSection.appendChild(buttonWrapper);
+        
+        // Add direct click event
+        timerButton.onclick = (e) => {
+            e.preventDefault();
+            console.log('Timer button clicked');
+            this.showTimerSettings();
+        };
+        
+        console.log('Timer settings button added successfully');
     }
 
     async preloadTimerSettings() {
@@ -3289,117 +3297,167 @@ class AdminDashboard {
         }
     }
 
-    // Show quiz timer settings dialog
+    // Show quiz timer settings dialog with a simpler approach
     async showTimerSettings() {
-        // Ensure settings are loaded
-        if (!this.timerSettings) {
-            await this.loadTimerSettings();
-        }
+        console.log('Showing timer settings dialog...');
         
-        // Create modal
-        const modal = document.createElement('div');
-        modal.id = 'timerSettingsModal';
-        modal.className = 'modal';
-        
-        // Set current value in seconds
-        const currentValue = this.timerSettings.secondsPerQuestion || 60;
-        const timerStatus = currentValue === 0 ? ' (currently disabled)' : ` (currently ${currentValue} seconds)`;
-        
-        // Create modal content
-        modal.innerHTML = `
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h2>Quiz Timer Settings</h2>
-                    <button class="close-button" aria-label="Close">&times;</button>
-                </div>
-                <div class="modal-body">
-                    <p>Set the time allowed for each quiz question${timerStatus}</p>
-                    <div class="form-group">
-                        <label for="timerSeconds">Seconds per question (0-300):</label>
-                        <input type="number" id="timerSeconds" min="0" max="300" value="${currentValue}" 
-                               class="form-control" required aria-label="Seconds per question">
-                        <small>Set to 0 to disable the timer completely.</small>
-                    </div>
-                    <div class="form-actions">
-                        <button id="saveTimerSettings" class="primary-button">Save Settings</button>
-                        <button id="cancelTimerSettings" class="secondary-button">Cancel</button>
-                    </div>
-                </div>
-            </div>
-        `;
-        
-        // Add to DOM
-        document.body.appendChild(modal);
-        
-        // Show modal
-        setTimeout(() => modal.classList.add('show'), 10);
-        
-        // Add event listeners
-        const closeBtn = modal.querySelector('.close-button');
-        const saveBtn = document.getElementById('saveTimerSettings');
-        const cancelBtn = document.getElementById('cancelTimerSettings');
-        
-        // Close modal helper function
-        const closeModal = () => {
-            modal.classList.remove('show');
-            setTimeout(() => modal.remove(), 300);
-        };
-        
-        // Add escape key handler
-        const handleEscapeKey = (e) => {
-            if (e.key === 'Escape') {
-                closeModal();
-                document.removeEventListener('keydown', handleEscapeKey);
-            }
-        };
-        
-        // Add event listeners
-        document.addEventListener('keydown', handleEscapeKey);
-        closeBtn.addEventListener('click', closeModal);
-        cancelBtn.addEventListener('click', closeModal);
-        
-        // Save button handler
-        saveBtn.addEventListener('click', async () => {
-            const timerInput = document.getElementById('timerSeconds');
-            const newValue = parseInt(timerInput.value, 10);
-            
-            // Validate input (allow 0 to disable the timer)
-            if (isNaN(newValue) || newValue < 0 || newValue > 300) {
-                this.showError('Timer value must be between 0 and 300 seconds');
-                return;
+        try {
+            // Ensure settings are loaded
+            if (!this.timerSettings) {
+                await this.loadTimerSettings();
             }
             
-            try {
-                saveBtn.disabled = true;
-                saveBtn.textContent = 'Saving...';
+            console.log('Current timer settings:', this.timerSettings);
+            
+            // Create simple modal overlay
+            const overlay = document.createElement('div');
+            overlay.style.cssText = `
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                background: rgba(0, 0, 0, 0.7);
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                z-index: 2000;
+            `;
+            
+            // Current timer value
+            const currentValue = this.timerSettings.secondsPerQuestion || 60;
+            
+            // Create simple modal content
+            const modal = document.createElement('div');
+            modal.style.cssText = `
+                background: white;
+                padding: 20px;
+                border-radius: 8px;
+                width: 400px;
+                max-width: 90%;
+            `;
+            
+            // Simple HTML content
+            modal.innerHTML = `
+                <h2 style="margin-top: 0;">Quiz Timer Settings</h2>
+                <p>Set the time allowed for each quiz question.</p>
+                <p>Current setting: <strong>${currentValue === 0 ? 'Timer disabled' : currentValue + ' seconds'}</strong></p>
                 
-                // Call API to update setting
-                const response = await this.apiService.updateQuizTimerSettings(newValue);
-                
-                if (response.success) {
-                    // Update local settings
-                    this.timerSettings.secondsPerQuestion = newValue;
+                <form id="timerSettingsForm" style="margin-top: 20px;">
+                    <div style="margin-bottom: 15px;">
+                        <label for="timer-value" style="display: block; margin-bottom: 5px;">
+                            Seconds per question (0-300):
+                        </label>
+                        <input 
+                            type="number" 
+                            id="timer-value" 
+                            min="0" 
+                            max="300" 
+                            value="${currentValue}"
+                            style="width: 100%; padding: 8px; box-sizing: border-box;"
+                        />
+                        <small style="color: #666;">Set to 0 to disable the timer completely.</small>
+                    </div>
                     
-                    // Update localStorage for immediate effect on quizzes
-                    localStorage.setItem('quizTimerValue', newValue.toString());
+                    <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 20px;">
+                        <button type="button" id="cancel-timer-settings" style="
+                            padding: 8px 16px;
+                            background: #f1f1f1;
+                            border: none;
+                            border-radius: 4px;
+                            cursor: pointer;
+                        ">Cancel</button>
+                        
+                        <button type="button" id="save-timer-settings" style="
+                            padding: 8px 16px;
+                            background: #4444ff;
+                            color: white;
+                            border: none;
+                            border-radius: 4px;
+                            cursor: pointer;
+                        ">Save Settings</button>
+                    </div>
+                </form>
+            `;
+            
+            // Add modal to overlay and overlay to body
+            overlay.appendChild(modal);
+            document.body.appendChild(overlay);
+            
+            // Get form elements
+            const form = document.getElementById('timerSettingsForm');
+            const timerInput = document.getElementById('timer-value');
+            const saveButton = document.getElementById('save-timer-settings');
+            const cancelButton = document.getElementById('cancel-timer-settings');
+            
+            // Focus on input
+            setTimeout(() => timerInput?.focus(), 100);
+            
+            // Close modal function
+            const closeModal = () => {
+                document.body.removeChild(overlay);
+                document.removeEventListener('keydown', handleEscKey);
+            };
+            
+            // Handle escape key
+            const handleEscKey = (e) => {
+                if (e.key === 'Escape') closeModal();
+            };
+            document.addEventListener('keydown', handleEscKey);
+            
+            // Add cancel button handler
+            cancelButton.onclick = closeModal;
+            
+            // Add save button handler
+            saveButton.onclick = async () => {
+                try {
+                    const newValue = parseInt(timerInput.value, 10);
                     
-                    // Success message with context about timer being enabled/disabled
-                    const successMsg = newValue === 0 
-                        ? 'Quiz timer disabled successfully' 
-                        : `Quiz timer set to ${newValue} seconds successfully`;
+                    // Validate input
+                    if (isNaN(newValue) || newValue < 0 || newValue > 300) {
+                        this.showError('Timer value must be between 0 and 300 seconds');
+                        return;
+                    }
                     
-                    this.showSuccess(successMsg);
-                    closeModal();
-                } else {
-                    throw new Error(response.message || 'Failed to update timer settings');
+                    // Disable button while saving
+                    saveButton.disabled = true;
+                    saveButton.textContent = 'Saving...';
+                    
+                    // Update timer setting
+                    const response = await this.apiService.updateQuizTimerSettings(newValue);
+                    
+                    if (response.success) {
+                        // Update local settings
+                        this.timerSettings.secondsPerQuestion = newValue;
+                        
+                        // Update localStorage for immediate effect
+                        localStorage.setItem('quizTimerValue', newValue.toString());
+                        
+                        // Show success message
+                        const successMsg = newValue === 0 
+                            ? 'Quiz timer disabled successfully' 
+                            : `Quiz timer set to ${newValue} seconds successfully`;
+                        
+                        this.showSuccess(successMsg);
+                        closeModal();
+                    } else {
+                        throw new Error(response.message || 'Failed to update timer settings');
+                    }
+                } catch (error) {
+                    console.error('Failed to save timer settings:', error);
+                    this.showError(error.message || 'Failed to save timer settings');
+                    saveButton.disabled = false;
+                    saveButton.textContent = 'Save Settings';
                 }
-            } catch (error) {
-                console.error('Failed to save timer settings:', error);
-                this.showError(error.message || 'Failed to save timer settings');
-                saveBtn.disabled = false;
-                saveBtn.textContent = 'Save Settings';
-            }
-        });
+            };
+            
+            // Prevent form submission
+            form.onsubmit = (e) => e.preventDefault();
+            
+        } catch (error) {
+            console.error('Error showing timer settings dialog:', error);
+            this.showError('Failed to show timer settings dialog');
+        }
     }
 }
 
