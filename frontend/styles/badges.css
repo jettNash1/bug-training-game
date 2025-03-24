@@ -1,11 +1,12 @@
 .badges-container {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-    gap: 25px;
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+    gap: 30px;
     margin-top: 30px;
     max-width: 1200px;
     margin-left: auto;
     margin-right: auto;
+    padding: 0 20px;
 }
 
 .main-container {
@@ -26,7 +27,7 @@
     background-color: #f5f5f5;
     border-radius: 8px;
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
-    padding: 25px;
+    padding: 30px 25px;
     text-align: center;
     transition: transform 0.3s ease, box-shadow 0.3s ease;
     display: flex;
@@ -35,6 +36,7 @@
     position: relative;
     overflow: hidden;
     height: 100%;
+    margin-bottom: 15px;
 }
 
 .badge-card.locked {
@@ -57,7 +59,7 @@
     display: flex;
     justify-content: center;
     align-items: center;
-    margin-bottom: 20px;
+    margin-bottom: 25px;
     font-size: 36px;
 }
 
@@ -68,7 +70,7 @@
 .badge-name {
     font-size: 18px;
     font-weight: 500;
-    margin-bottom: 10px;
+    margin-bottom: 15px;
     color: #333;
 }
 
@@ -79,7 +81,7 @@
 .badge-description {
     font-size: 14px;
     color: #666;
-    margin-bottom: 15px;
+    margin-bottom: 20px;
     line-height: 1.4;
 }
 
@@ -95,8 +97,8 @@
     background-color: white;
     border-radius: 8px;
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
-    padding: 20px;
-    margin-bottom: 30px;
+    padding: 25px;
+    margin-bottom: 40px;
     max-width: 1200px;
     margin-left: auto;
     margin-right: auto;
@@ -110,7 +112,7 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 10px;
+    margin-bottom: 15px;
 }
 
 .progress-title {
@@ -185,28 +187,55 @@
     animation: badgeUnlock 1s ease-in-out;
 }
 
+/* Footer styling */
+footer {
+    margin-top: 50px;
+    padding: 20px 0;
+    background-color: #f5f5f5;
+    border-top: 1px solid #e0e0e0;
+    text-align: center;
+}
+
+.footer-content {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 20px;
+}
+
+footer p {
+    color: #666;
+    font-size: 14px;
+}
+
 /* Responsive adjustments */
 @media (max-width: 768px) {
     .badges-container {
         grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-        gap: 15px;
+        gap: 20px;
     }
     
     .badge-card {
-        padding: 15px;
+        padding: 20px 15px;
     }
     
     .badge-icon {
         width: 60px;
         height: 60px;
         font-size: 30px;
+        margin-bottom: 15px;
     }
     
     .badge-name {
         font-size: 16px;
+        margin-bottom: 10px;
     }
     
     .badge-description {
         font-size: 13px;
+        margin-bottom: 15px;
+    }
+    
+    .return-container {
+        margin-bottom: 15px;
     }
 } 

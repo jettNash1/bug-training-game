@@ -11,6 +11,11 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script type="module" src="./scripts/badges.js" defer></script>
     <style>
+        /* Remove the border under the header */
+        .app-header h1 {
+            border-bottom: none;
+        }
+        
         /* Add matching styling for the badges nav button */
         .badges-button {
             background-color: var(--primary-color, #4a90e2);
@@ -40,6 +45,36 @@
             background-color: var(--primary-color-dark, #3a80d2);
             box-shadow: 0 0 4px rgba(0, 0, 0, 0.2) inset;
         }
+        
+        /* Return to Learning Hub button */
+        .return-button {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            background-color: #fff;
+            color: var(--primary-color, #4a90e2);
+            border: 2px solid var(--primary-color, #4a90e2);
+            border-radius: 4px;
+            padding: 10px 16px;
+            font-weight: 500;
+            text-decoration: none;
+            margin: 0 auto 20px;
+            transition: all 0.2s ease;
+        }
+        
+        .return-button:hover {
+            background-color: var(--primary-color, #4a90e2);
+            color: white;
+        }
+        
+        .return-button i {
+            margin-right: 8px;
+        }
+        
+        .return-container {
+            text-align: center;
+            margin-bottom: 20px;
+        }
     </style>
 </head>
 <body>
@@ -61,6 +96,12 @@
     </header>
 
     <main class="main-container" role="main">
+        <div class="return-container">
+            <a href="index.html" class="return-button">
+                <i class="fa-solid fa-arrow-left"></i> Return to Learning Hub
+            </a>
+        </div>
+        
         <h1>Your Achievement Badges</h1>
         
         <div class="loading-overlay">
@@ -86,8 +127,8 @@
     </main>
 
     <footer>
-        <div class="container">
-            <p>&copy; 2023 Quiz Platform. All rights reserved.</p>
+        <div class="footer-content">
+            <p>&copy; 2023 Zoonou. All rights reserved.</p>
         </div>
     </footer>
 
