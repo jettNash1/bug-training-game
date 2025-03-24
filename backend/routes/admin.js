@@ -456,10 +456,42 @@ router.get('/users/:username/quiz-questions/:quizName', auth, async (req, res) =
         // Format the question history for display
         const formattedHistory = questionHistory.map((record, index) => {
             try {
-                if (!record || !record.scenario || !record.selectedAnswer) {
+                // Handle different record formats
+                // For timeout questions or otherwise incomplete records
+                if (!record.scenario && record.scenarioId) {
+                    console.log('Found record with scenarioId but no scenario object:', record);
+                    // This is likely a timeout question in the old format
+                    return {
+                        id: record.scenarioId || index + 1,
+                        scenario: {
+                            title: 'Question ' + (index + 1),
+                            description: '',
+                            level: 'Basic'
+                        },
+                        selectedAnswer: {
+                            text: record.selectedOption || "Time's up - No answer selected",
+                            outcome: record.outcome || "You did not answer in time.",
+                            experience: Number(record.experience) || 0,
+                            tool: ''
+                        },
+                        correctAnswer: null,
+                        status: 'failed',
+                        timedOut: record.timedOut === true
+                    };
+                }
+                
+                // Regular validation for standard format
+                if (!record || !record.scenario) {
                     console.warn('Invalid record structure:', record);
                     return null;
                 }
+
+                // Handle missing selectedAnswer (could happen with some formats)
+                const selectedAnswer = record.selectedAnswer || {
+                    text: record.selectedOption || "No answer selected",
+                    outcome: record.outcome || "",
+                    experience: record.experience || 0
+                };
 
                 // Find the correct answer (the one with the highest experience)
                 let correctAnswer = null;
@@ -478,16 +510,16 @@ router.get('/users/:username/quiz-questions/:quizName', auth, async (req, res) =
                         level: record.scenario.level || 'Basic'
                     },
                     selectedAnswer: {
-                        text: record.selectedAnswer.text || '',
-                        outcome: record.selectedAnswer.outcome || '',
-                        experience: Number(record.selectedAnswer.experience) || 0,
-                        tool: record.selectedAnswer.tool || ''
+                        text: selectedAnswer.text || '',
+                        outcome: selectedAnswer.outcome || '',
+                        experience: Number(selectedAnswer.experience) || 0,
+                        tool: selectedAnswer.tool || ''
                     },
                     correctAnswer: correctAnswer ? {
                         text: correctAnswer.text || '',
                         experience: Number(correctAnswer.experience) || 0
                     } : null,
-                    status: record.selectedAnswer.experience > 0 ? 'passed' : 'failed',
+                    status: record.status || (selectedAnswer.experience > 0 ? 'passed' : 'failed'),
                     timedOut: record.timedOut === true
                 };
             } catch (error) {

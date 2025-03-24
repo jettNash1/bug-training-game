@@ -115,10 +115,9 @@ export class BaseQuiz {
         // Record the choice with timing information
         const timeSpent = this.questionStartTime ? Date.now() - this.questionStartTime : this.timePerQuestion;
         this.player.questionHistory.push({
-            scenarioId: currentScenario.id,
-            selectedOption: timeUpOption.text,
-            outcome: timeUpOption.outcome,
-            experience: timeUpOption.experience,
+            scenario: currentScenario,
+            selectedAnswer: timeUpOption,
+            status: 'failed',
             timeSpent: timeSpent,
             timedOut: true
         });
