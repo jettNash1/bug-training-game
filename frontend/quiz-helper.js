@@ -304,25 +304,30 @@ export class BaseQuiz {
             }
         }
 
-        // Update XP display
-        const xpGained = document.getElementById('xp-gained');
-        if (xpGained) {
-            if (option.isTimeout) {
-                // Hide experience element completely for timeout scenarios
-                xpGained.style.display = 'none';
-            } else {
-                // Show experience for normal scenarios
-                xpGained.style.display = '';
+        // Get the rewards container
+        const rewardsDiv = document.getElementById('rewards');
+        
+        // Handle rewards visibility
+        if (option.isTimeout) {
+            // Hide the rewards div completely for timeout scenarios
+            if (rewardsDiv) rewardsDiv.style.display = 'none';
+        } else {
+            // Show rewards for normal scenarios
+            if (rewardsDiv) rewardsDiv.style.display = '';
+            
+            // Update XP display
+            const xpGained = document.getElementById('xp-gained');
+            if (xpGained) {
                 xpGained.textContent = option.experience >= 0 ? 
                     `Experience gained: +${option.experience}` : 
                     `Experience: ${option.experience}`;
             }
-        }
-
-        // Update tool display if applicable
-        const toolGained = document.getElementById('tool-gained');
-        if (toolGained) {
-            toolGained.textContent = option.tool ? `Tool acquired: ${option.tool}` : '';
+            
+            // Update tool display if applicable
+            const toolGained = document.getElementById('tool-gained');
+            if (toolGained) {
+                toolGained.textContent = option.tool ? `Tool acquired: ${option.tool}` : '';
+            }
         }
 
         // Update progress display
