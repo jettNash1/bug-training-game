@@ -3,56 +3,142 @@ import { AdminDashboard } from './admin.js';
 class Admin2Dashboard extends AdminDashboard {
     constructor() {
         super();
-        console.log('Admin2Dashboard constructor called');
-        
-        // Call parent init first to set up base functionality
-        super.init();
-        
-        // Add custom init for Admin2Dashboard
-        setTimeout(() => {
-            this.init2();
-        }, 100);
+        // Additional initialization for Admin2Dashboard
+        this.isRowView = false; // Default to grid view
+        this.init2();
     }
 
     async init2() {
         try {
             // Verify admin token
-            const token = localStorage.getItem('adminToken');
-            if (!token || !(await this.verifyAdminToken(token))) {
-                window.location.href = '../pages/admin-login.html';
-                return;
+            await this.verifyAdminToken();
+            
+            // Set up event listeners after verifying token
+            this.setupEventListeners();
+            
+            // Load users (add this line)
+            try {
+                await this.loadUsers();
+                console.log(`Successfully loaded ${this.users.length} users`);
+            } catch (error) {
+                console.error('Error loading users:', error);
             }
             
-            console.log('Admin token verified, loading dashboard...');
-            
-            // Setup event listeners
-            this.setupEventListeners2();
-            
-            // Load timer settings
+            // Timer settings
             this.displayTimerSettings();
             
-            // Setup create account form
+            // Set up create account form
             try {
-                await this.setupCreateAccountForm();
+                this.setupCreateAccountForm();
+                console.log('Create account form set up successfully');
             } catch (error) {
                 console.error('Error setting up create account form:', error);
             }
             
-            // Setup scenarios list
+            // Set up scenarios list
             try {
-                await this.setupScenariosList();
+                this.setupScenariosList();
+                console.log('Scenarios list set up successfully');
             } catch (error) {
                 console.error('Error setting up scenarios list:', error);
             }
             
-            // Update dashboard data
-            this.updateDashboard();
         } catch (error) {
-            console.error('Error initializing Admin2Dashboard:', error);
+            console.error('Error in init2:', error);
+            // Handle initialization error
+            this.showError('Initialization failed. Please try refreshing the page.');
         }
     }
     
-    setupEventListeners2() {
+    // Add loadUsers method
+    async loadUsers() {
+        try {
+            const response = await fetch('/api/users');
+            
+            if (response.ok) {
+                const usersData = await response.json();
+                console.log('Loaded user data:', usersData);
+                
+                // Store users data
+                this.users = usersData;
+                
+                // Update dashboard with user data
+                this.updateUsersList();
+                
+                // Load user progress for all users
+                this.loadAllUserProgress();
+                
+                return usersData;
+            } else {
+                const errorText = await response.text();
+                console.error('Failed to load users:', errorText);
+                throw new Error(`Failed to load users: ${response.status} ${response.statusText}`);
+            }
+        } catch (error) {
+            console.error('Error loading users:', error);
+            this.showError('Failed to load users. Please try refreshing the page.');
+            throw error;
+        }
+    }
+    
+    async loadAllUserProgress() {
+        try {
+            for (const user of this.users) {
+                try {
+                    await this.loadUserProgress(user.username);
+                } catch (error) {
+                    console.error(`Error loading progress for user ${user.username}:`, error);
+                }
+            }
+            // Update the user list display to reflect progress data
+            this.updateUsersList();
+        } catch (error) {
+            console.error('Error loading all user progress:', error);
+        }
+    }
+    
+    async loadUserProgress(username) {
+        try {
+            const response = await fetch(`/api/users/${username}/progress`);
+            
+            if (response.ok) {
+                const progressData = await response.json();
+                console.log(`Loaded progress for ${username}:`, progressData);
+                
+                // Find the user and update their progress data
+                const userIndex = this.users.findIndex(u => u.username === username);
+                if (userIndex !== -1) {
+                    // Verify data format
+                    if (typeof progressData === 'object') {
+                        // Store quiz progress data
+                        this.users[userIndex].quizProgress = progressData.quizProgress || {};
+                        
+                        // Store quiz results data if available
+                        if (progressData.quizResults && Array.isArray(progressData.quizResults)) {
+                            this.users[userIndex].quizResults = progressData.quizResults;
+                        }
+                        
+                        return progressData;
+                    } else {
+                        console.error(`Invalid progress data format for ${username}:`, progressData);
+                        throw new Error('Invalid progress data format');
+                    }
+                } else {
+                    console.error(`User ${username} not found in users list`);
+                    throw new Error(`User ${username} not found`);
+                }
+            } else {
+                const errorText = await response.text();
+                console.error(`Failed to load progress for ${username}:`, errorText);
+                throw new Error(`Failed to load progress: ${response.status} ${response.statusText}`);
+            }
+        } catch (error) {
+            console.error(`Error loading progress for ${username}:`, error);
+            throw error;
+        }
+    }
+    
+    setupEventListeners() {
         // Set up the sidebar menu navigation
         const menuItems = document.querySelectorAll('.menu-item');
         menuItems.forEach(item => {
@@ -164,37 +250,34 @@ class Admin2Dashboard extends AdminDashboard {
         }
     }
     
-    async updateUserList() {
-        const container = document.getElementById('usersList');
+    async updateUsersList() {
+        const container = document.getElementById('users-container');
         if (!container) {
-            console.error('User list container not found');
+            console.error('Users container not found');
             return;
         }
-
-        // Get existing search and sort controls
-        const searchInput = document.getElementById('userSearch');
-        const sortSelect = document.getElementById('sortBy');
-        const accountTypeSelect = document.getElementById('accountType');
-
-        if (!this.users || !this.users.length) {
-            console.log('No users to display');
+        
+        if (!this.users || this.users.length === 0) {
             container.innerHTML = '<div class="no-users">No users found</div>';
             return;
         }
+        
+        console.log(`Updating users list with ${this.users.length} users`);
 
-        // Check if we're in grid or row view
-        const isRowView = container.classList.contains('row-view');
-        console.log("Current view mode:", isRowView ? "row" : "grid");
-
-        const searchTerm = searchInput?.value.toLowerCase() || '';
-        const sortBy = sortSelect?.value || 'username-asc';
-        const accountType = accountTypeSelect?.value || 'all';
-
+        // Get filter values
+        const searchTerm = (document.getElementById('user-search')?.value || '').toLowerCase();
+        const accountType = document.getElementById('account-type-filter')?.value || 'all';
+        const sortBy = document.getElementById('sort-select')?.value || 'username-asc';
+        
+        // Check if row view is active
+        const isRowView = this.isRowView;
+        
+        // Filter users by search term and account type
         let filteredUsers = this.users.filter(user => {
             const matchesSearch = user.username.toLowerCase().includes(searchTerm);
             const matchesType = accountType === 'all' || 
-                              (accountType === 'interview' && user.userType === 'interview_candidate') ||
-                              (accountType === 'regular' && user.userType !== 'interview_candidate');
+                             (accountType === 'interview' && user.userType === 'interview_candidate') ||
+                             (accountType === 'regular' && user.userType !== 'interview_candidate');
             return matchesSearch && matchesType;
         });
 
@@ -228,23 +311,27 @@ class Admin2Dashboard extends AdminDashboard {
             let totalQuestionsAnswered = 0;
             let totalXP = 0;
             
-            this.quizTypes.forEach(quizType => {
-                const progress = user.quizProgress?.[quizType.toLowerCase()];
-                const result = user.quizResults?.find(r => r.quizName.toLowerCase() === quizType.toLowerCase());
-                
-                // Prioritize values from quiz results over progress
-                const questionsAnswered = result?.questionsAnswered || 
-                                        result?.questionHistory?.length ||
-                                        progress?.questionsAnswered || 
-                                        progress?.questionHistory?.length || 0;
-                
-                totalQuestionsAnswered += questionsAnswered;
-                
-                // Get experience and ensure it's a multiple of 5
-                let xp = progress?.experience || result?.experience || 0;
-                xp = Math.round(xp / 5) * 5;
-                totalXP += xp;
-            });
+            if (this.quizTypes && Array.isArray(this.quizTypes)) {
+                this.quizTypes.forEach(quizType => {
+                    if (typeof quizType === 'string') {
+                        const progress = user.quizProgress?.[quizType.toLowerCase()];
+                        const result = user.quizResults?.find(r => r.quizName.toLowerCase() === quizType.toLowerCase());
+                        
+                        // Prioritize values from quiz results over progress
+                        const questionsAnswered = result?.questionsAnswered || 
+                                               result?.questionHistory?.length ||
+                                               progress?.questionsAnswered || 
+                                               progress?.questionHistory?.length || 0;
+                        
+                        totalQuestionsAnswered += questionsAnswered;
+                        
+                        // Get experience and ensure it's a multiple of 5
+                        let xp = progress?.experience || result?.experience || 0;
+                        xp = Math.round(xp / 5) * 5;
+                        totalXP += xp;
+                    }
+                });
+            }
 
             const card = document.createElement('div');
             card.className = 'user-card';
@@ -255,7 +342,7 @@ class Admin2Dashboard extends AdminDashboard {
                         <div class="user-info">
                             <span class="username">${user.username}</span>
                             <span class="account-type-badge">
-                                ${user.userType === 'interview_candidate' ? 'Regular' : 'Regular'}
+                                ${user.userType === 'interview_candidate' ? 'Interview' : 'Regular'}
                             </span>
                         </div>
                         <div class="user-stats">
@@ -276,7 +363,7 @@ class Admin2Dashboard extends AdminDashboard {
                                 <span class="stat-value">${this.formatDate(lastActive)}</span>
                             </div>
                         </div>
-                        <button class="view-details-btn row-btn">View Details</button>
+                        <button class="view-details-btn row-btn" tabindex="0" aria-label="View details for ${user.username}">View Details</button>
                     </div>
                 `;
                 
@@ -285,52 +372,55 @@ class Admin2Dashboard extends AdminDashboard {
                     viewBtn.addEventListener('click', () => {
                         this.showUserDetails(user.username);
                     });
+                    viewBtn.addEventListener('keydown', (e) => {
+                        if (e.key === 'Enter' || e.key === ' ') {
+                            e.preventDefault();
+                            this.showUserDetails(user.username);
+                        }
+                    });
                 }
             } else {
                 card.innerHTML = `
                     <div class="user-card-content">
                         <div class="user-header">
-                            <div style="display: flex; align-items: center; gap: 10px;">
-                                <h4>${user.username}</h4>
-                                <span class="account-type-badge" style="
-                                    padding: 4px 8px;
-                                    border-radius: 12px;
-                                    font-size: 0.8em;
-                                    font-weight: 500;
-                                    ${user.userType === 'interview_candidate' ? 
-                                        'background-color: #4CAF50; color: white;' : 
-                                        'background-color: #4CAF50; color: white;'}">
-                                    ${user.userType === 'interview_candidate' ? 'Regular' : 'Regular'}
-                                </span>
+                            <span class="username">${user.username}</span>
+                            <span class="account-type-badge">
+                                ${user.userType === 'interview_candidate' ? 'Interview' : 'Regular'}
+                            </span>
+                        </div>
+                        <div class="progress-container">
+                            <div class="progress-bar" style="width: ${progress}%"></div>
+                            <span class="progress-text">${progress.toFixed(1)}%</span>
+                        </div>
+                        <div class="user-stats">
+                            <div class="stat">
+                                <span class="stat-label">Questions:</span>
+                                <span class="stat-value">${totalQuestionsAnswered}</span>
                             </div>
-                            <div class="user-stats">
-                                <div class="stat">
-                                    <span class="stat-label">Overall Progress:</span>
-                                    <span class="stat-value">${progress.toFixed(1)}%</span>
-                                </div>
-                                <div class="stat">
-                                    <span class="stat-label">Questions Answered:</span>
-                                    <span class="stat-value">${totalQuestionsAnswered}</span>
-                                </div>
-                                <div class="stat">
-                                    <span class="stat-label">Total XP:</span>
-                                    <span class="stat-value">${totalXP}</span>
-                                </div>
-                                <div class="stat">
-                                    <span class="stat-label">Last Active:</span>
-                                    <span class="stat-value">${this.formatDate(lastActive)}</span>
-                                </div>
+                            <div class="stat">
+                                <span class="stat-label">Total XP:</span>
+                                <span class="stat-value">${totalXP}</span>
+                            </div>
+                            <div class="stat">
+                                <span class="stat-label">Last Active:</span>
+                                <span class="stat-value">${this.formatDate(lastActive)}</span>
                             </div>
                         </div>
                     </div>
-                    <button class="view-details-btn" onclick="this.closest('.user-card').dispatchEvent(new CustomEvent('viewDetails'))">
+                    <button class="view-details-btn" tabindex="0" aria-label="View details for ${user.username}">
                         View Details
                     </button>
                 `;
                 
                 // Add event listener for view details button
-                card.addEventListener('viewDetails', () => {
+                card.querySelector('.view-details-btn').addEventListener('click', () => {
                     this.showUserDetails(user.username);
+                });
+                card.querySelector('.view-details-btn').addEventListener('keydown', (e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault();
+                        this.showUserDetails(user.username);
+                    }
                 });
             }
 
@@ -340,6 +430,8 @@ class Admin2Dashboard extends AdminDashboard {
         if (filteredUsers.length === 0) {
             container.innerHTML = '<div class="no-users">No users match your search criteria</div>';
         }
+        
+        console.log(`Displayed ${filteredUsers.length} users out of ${this.users.length} total`);
     }
     
     // Display timer settings in the settings section
@@ -657,7 +749,7 @@ class Admin2Dashboard extends AdminDashboard {
                         document.querySelector('.menu-item[data-section="users"]').click();
                         
                         // Update user list
-                        this.updateUserList();
+                        this.updateUsersList();
                     } catch (error) {
                         const submitButton = form.querySelector('button[type="submit"]');
                         submitButton.disabled = false;
@@ -688,7 +780,10 @@ class Admin2Dashboard extends AdminDashboard {
     // Set up the scenarios list in the scenarios section
     setupScenariosList() {
         const scenariosList = document.getElementById('scenarios-list');
-        if (!scenariosList) return;
+        if (!scenariosList) {
+            console.error('Scenarios list container not found');
+            return;
+        }
         
         // Show loading state
         scenariosList.innerHTML = `
@@ -699,102 +794,112 @@ class Admin2Dashboard extends AdminDashboard {
         `;
         
         // Get quiz types using the fixed fetchQuizTypes method
-        this.fetchQuizTypes().then((quizTypes) => {
-            // Create matching structure to standard admin page
-            scenariosList.innerHTML = `
-                <div class="scenarios-wrapper">
-                    <p class="scenarios-intro">Select a quiz type to view its scenarios:</p>
-                    <div class="scenario-categories"></div>
-                </div>
-            `;
-            
-            const categoriesContainer = scenariosList.querySelector('.scenario-categories');
-            
-            // Define the same categories as in standard admin page
-            const categories = {
-                'Technical Skills': [],
-                'Soft Skills': [],
-                'QA Processes': [],
-                'Content Testing': [],
-                'Tools & Documentation': [],
-                'Interview Quizzes': [],
-                'Other Quizzes': []
-            };
-            
-            // Categorize quizzes
-            quizTypes.forEach(quiz => {
-                const category = this.categorizeQuiz(quiz);
-                if (categories[category]) {
-                    categories[category].push(quiz);
-                } else {
-                    categories['Other Quizzes'].push(quiz);
+        this.fetchQuizTypes()
+            .then(quizTypes => {
+                if (!quizTypes || quizTypes.length === 0) {
+                    throw new Error('No quiz types available');
                 }
-            });
-            
-            // Create HTML for each category
-            Object.keys(categories).forEach(category => {
-                // Skip empty categories
-                if (!categories[category] || categories[category].length === 0) return;
                 
-                const categoryDiv = document.createElement('div');
-                categoryDiv.className = 'scenario-category';
+                console.log(`Successfully loaded ${quizTypes.length} quiz types for scenarios list`);
                 
-                // Add heading
-                const heading = document.createElement('h3');
-                heading.className = 'category-heading';
-                heading.textContent = category;
-                categoryDiv.appendChild(heading);
+                // Create matching structure to standard admin page
+                scenariosList.innerHTML = `
+                    <div class="scenarios-wrapper">
+                        <p class="scenarios-intro">Select a quiz type to view its scenarios:</p>
+                        <div class="scenario-categories"></div>
+                    </div>
+                `;
                 
-                // Add quizzes container
-                const quizzesGrid = document.createElement('div');
-                quizzesGrid.className = 'category-quizzes';
+                const categoriesContainer = scenariosList.querySelector('.scenario-categories');
                 
-                // Add quiz cards
-                categories[category].forEach(quiz => {
-                    const quizCard = document.createElement('div');
-                    quizCard.className = 'quiz-type-card';
-                    quizCard.dataset.quizType = quiz;
+                // Define the same categories as in standard admin page
+                const categories = {
+                    'Technical Skills': [],
+                    'Soft Skills': [],
+                    'QA Processes': [],
+                    'Content Testing': [],
+                    'Tools & Documentation': [],
+                    'Interview Quizzes': [],
+                    'Other Quizzes': []
+                };
+                
+                // Categorize quizzes
+                quizTypes.forEach(quiz => {
+                    const category = this.categorizeQuiz(quiz);
+                    if (categories[category]) {
+                        categories[category].push(quiz);
+                    } else {
+                        categories['Other Quizzes'].push(quiz);
+                    }
+                });
+                
+                // Create HTML for each category
+                Object.keys(categories).forEach(category => {
+                    // Skip empty categories
+                    if (!categories[category] || categories[category].length === 0) return;
                     
-                    const quizName = document.createElement('h3');
-                    quizName.textContent = this.formatQuizName(quiz);
+                    const categoryDiv = document.createElement('div');
+                    categoryDiv.className = 'scenario-category';
                     
-                    const viewButton = document.createElement('button');
-                    viewButton.className = 'view-scenarios-btn';
-                    viewButton.dataset.quizId = quiz;
-                    viewButton.textContent = 'View Scenarios';
+                    // Add heading
+                    const heading = document.createElement('h3');
+                    heading.className = 'category-heading';
+                    heading.textContent = category;
+                    categoryDiv.appendChild(heading);
                     
-                    // Add event listener to button
-                    viewButton.addEventListener('click', async (e) => {
-                        e.preventDefault();
-                        const quizId = viewButton.dataset.quizId;
-                        console.log(`View Scenarios button clicked for quiz: ${quizId}`);
-                        await this.showQuizScenarios(quizId);
+                    // Add quizzes container
+                    const quizzesGrid = document.createElement('div');
+                    quizzesGrid.className = 'category-quizzes';
+                    
+                    // Add quiz cards
+                    categories[category].forEach(quiz => {
+                        const quizCard = document.createElement('div');
+                        quizCard.className = 'quiz-type-card';
+                        quizCard.dataset.quizType = quiz;
+                        
+                        const quizName = document.createElement('h3');
+                        quizName.textContent = this.formatQuizName(quiz);
+                        
+                        const viewButton = document.createElement('button');
+                        viewButton.className = 'view-scenarios-btn';
+                        viewButton.dataset.quizId = quiz;
+                        viewButton.textContent = 'View Scenarios';
+                        viewButton.setAttribute('tabindex', '0');
+                        viewButton.setAttribute('aria-label', `View scenarios for ${this.formatQuizName(quiz)}`);
+                        
+                        // Add event listener to button
+                        viewButton.addEventListener('click', async (e) => {
+                            e.preventDefault();
+                            const quizId = viewButton.dataset.quizId;
+                            console.log(`View Scenarios button clicked for quiz: ${quizId}`);
+                            await this.showQuizScenarios(quizId);
+                        });
+                        
+                        quizCard.appendChild(quizName);
+                        quizCard.appendChild(viewButton);
+                        quizzesGrid.appendChild(quizCard);
                     });
                     
-                    quizCard.appendChild(quizName);
-                    quizCard.appendChild(viewButton);
-                    quizzesGrid.appendChild(quizCard);
+                    categoryDiv.appendChild(quizzesGrid);
+                    categoriesContainer.appendChild(categoryDiv);
                 });
+            })
+            .catch(error => {
+                console.error('Error setting up scenarios list:', error);
+                scenariosList.innerHTML = `
+                    <div class="error-message">
+                        <p>Failed to load quiz types: ${error.message}</p>
+                        <button class="retry-button">Retry</button>
+                    </div>
+                `;
                 
-                categoryDiv.appendChild(quizzesGrid);
-                categoriesContainer.appendChild(categoryDiv);
+                const retryButton = scenariosList.querySelector('.retry-button');
+                if (retryButton) {
+                    retryButton.addEventListener('click', () => {
+                        this.setupScenariosList();
+                    });
+                }
             });
-        }).catch(error => {
-            console.error('Error setting up scenarios list:', error);
-            scenariosList.innerHTML = `
-                <div class="error-message">
-                    <p>Failed to load quiz types: ${error.message}</p>
-                    <button class="retry-button">Retry</button>
-                </div>
-            `;
-            
-            const retryButton = scenariosList.querySelector('.retry-button');
-            if (retryButton) {
-                retryButton.addEventListener('click', () => {
-                    this.setupScenariosList();
-                });
-            }
-        });
     }
 
     // Override categorizeQuiz to match standard admin page
@@ -828,37 +933,78 @@ class Admin2Dashboard extends AdminDashboard {
         return 'Other Quizzes';
     }
 
-    // Helper method to fetch all quiz types
+    // Implement a hardcoded fetchQuizTypes method that handles API failures gracefully
     async fetchQuizTypes() {
         try {
-            // Since the API endpoint returns 404, use a hardcoded list of quiz types
-            // This ensures the function doesn't fail when the API is unavailable
+            // Try to fetch quiz types from API first
+            const response = await fetch('/api/quiz-types');
             
-            // Define a comprehensive list of quiz types based on the standard admin page
-            const defaultQuizTypes = [
-                'general', 'automation', 'cms', 'api', 'accessibility',
-                'mobile', 'security', 'performance', 'uat', 'documentation',
-                'communication', 'automation-interview', 'email', 'script',
-                'script-metrics', 'technical', 'process', 'content', 'tools',
-                'soft-skills', 'interview', 'cms-testing', 'email-testing'
-            ];
+            let quizTypesList;
             
-            console.log('Using default quiz types list');
-            this.quizTypes = defaultQuizTypes;
+            if (response.ok) {
+                const data = await response.json();
+                console.log('Successfully fetched quiz types from API:', data);
+                
+                // Ensure automation-interview is included (sometimes it's missing from the API)
+                if (data.indexOf('automation-interview') === -1) {
+                    data.push('automation-interview');
+                }
+                
+                // Sort alphabetically
+                quizTypesList = data.sort((a, b) => a.localeCompare(b));
+            } else {
+                console.warn('Failed to fetch quiz types from API, using hardcoded fallback');
+                // If the API fails, use the hardcoded fallback
+                quizTypesList = this.getHardcodedQuizTypes();
+            }
+            
+            // Set the class property for use elsewhere
+            this.quizTypes = quizTypesList;
+            
+            return quizTypesList;
         } catch (error) {
-            console.error('Error in fetchQuizTypes:', error);
-            // Fallback to comprehensive default list if anything fails
-            this.quizTypes = [
-                'general', 'automation', 'cms', 'api', 'accessibility',
-                'mobile', 'security', 'performance', 'uat', 'documentation',
-                'communication', 'automation-interview', 'email', 'script',
-                'script-metrics', 'technical', 'process', 'content', 'tools',
-                'soft-skills', 'interview'
-            ];
-            console.log('Using fallback quiz types:', this.quizTypes);
+            console.error('Error fetching quiz types:', error);
+            // If any error occurs, use the hardcoded fallback
+            const fallbackTypes = this.getHardcodedQuizTypes();
+            
+            // Set the class property for use elsewhere
+            this.quizTypes = fallbackTypes;
+            
+            return fallbackTypes;
         }
-        
-        return this.quizTypes;
+    }
+
+    // Helper method to provide hardcoded quiz types
+    getHardcodedQuizTypes() {
+        // This list should match the categories used in categorizeQuiz
+        return [
+            'automation',
+            'automation-interview',
+            'api',
+            'script',
+            'script-metrics',
+            'technical',
+            'accessibility',
+            'performance',
+            'security',
+            'mobile',
+            'communication',
+            'soft-skills',
+            'bug-reporting',
+            'test-cases',
+            'test-strategy',
+            'test-management',
+            'exploratory',
+            'manual',
+            'qa-methodology',
+            'qa-theory',
+            'content',
+            'documentation',
+            'content-testing',
+            'reporting',
+            'tools',
+            'interview'
+        ].sort((a, b) => a.localeCompare(b));
     }
 
     // Override the parent showQuizScenarios method to handle file loading errors better
