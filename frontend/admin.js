@@ -54,18 +54,18 @@ class AdminDashboard {
             return;
         }
 
-        // If we have a valid token and we're on the login page, redirect to admin panel
-        if (isTokenValid && currentPath.includes('admin-login.html')) {
-            console.log('Valid token on login page, redirecting to admin panel');
-            window.location.href = '/pages/admin.html';
-            return;
-        }
-
         // Load timer settings in the background regardless of page
         if (isTokenValid) {
             this.preloadTimerSettings().catch(error => {
                 console.error('Failed to preload timer settings:', error);
             });
+        }
+
+        // If we have a valid token and we're on the login page, redirect to admin panel
+        if (isTokenValid && currentPath.includes('admin-login.html')) {
+            console.log('Valid token on login page, redirecting to admin panel');
+            window.location.href = '/pages/admin.html';
+            return;
         }
 
         // If we have a valid token and we're on the admin panel, load the dashboard
@@ -77,10 +77,40 @@ class AdminDashboard {
             await this.loadUsers();
             await this.loadAllUserProgress();
             await this.updateDashboard();
+            
+            // Add timer settings button to the admin panel
+            this.addTimerSettingsButton();
         }
     }
     
-    // Preload timer settings to localStorage
+    // Add timer settings button to the UI
+    addTimerSettingsButton() {
+        // Target the search-controls div to add our button
+        const searchControls = document.querySelector('.search-controls');
+        if (!searchControls) return;
+        
+        // Create a new control field for the timer settings
+        const timerControlField = document.createElement('div');
+        timerControlField.className = 'control-field';
+        
+        // Create the button inside
+        timerControlField.innerHTML = `
+            <label class="visually-hidden">Quiz Timer Settings</label>
+            <button id="quizTimerSettingsBtn" class="action-button">
+                Quiz Timer Settings
+            </button>
+        `;
+        
+        // Add it to the search controls
+        searchControls.appendChild(timerControlField);
+        
+        // Add event listener
+        const timerBtn = document.getElementById('quizTimerSettingsBtn');
+        if (timerBtn) {
+            timerBtn.addEventListener('click', () => this.showTimerSettings());
+        }
+    }
+
     async preloadTimerSettings() {
         try {
             const settings = await this.apiService.getQuizTimerSettings();
@@ -298,8 +328,9 @@ class AdminDashboard {
         });
 
         // Add View Quiz Scenarios button to the admin panel
-        const controlsContainer = document.querySelector('.search-controls');
-        if (controlsContainer) {
+        const searchControlsContainer = document.querySelector('.search-controls');
+        if (searchControlsContainer) {
+            // Add View Quiz Scenarios button
             const viewScenariosContainer = document.createElement('div');
             viewScenariosContainer.className = 'control-field';
             viewScenariosContainer.innerHTML = `
@@ -308,29 +339,12 @@ class AdminDashboard {
                     View Quiz Scenarios
                 </button>
             `;
-            controlsContainer.appendChild(viewScenariosContainer);
+            searchControlsContainer.appendChild(viewScenariosContainer);
             
-            // Add event listener for the new button
+            // Add event listener for the scenarios button
             const viewScenariosBtn = document.getElementById('viewQuizScenariosBtn');
             if (viewScenariosBtn) {
                 viewScenariosBtn.addEventListener('click', () => this.showQuizScenariosSelector());
-            }
-            
-            // Add Quiz Timer Settings button
-            const timerSettingsContainer = document.createElement('div');
-            timerSettingsContainer.className = 'control-field';
-            timerSettingsContainer.innerHTML = `
-                <label class="visually-hidden">Quiz Timer Settings</label>
-                <button id="quizTimerSettingsBtn" class="action-button">
-                    Quiz Timer Settings
-                </button>
-            `;
-            controlsContainer.appendChild(timerSettingsContainer);
-            
-            // Add event listener for the timer settings button
-            const timerSettingsBtn = document.getElementById('quizTimerSettingsBtn');
-            if (timerSettingsBtn) {
-                timerSettingsBtn.addEventListener('click', () => this.showTimerSettings());
             }
         }
     }
@@ -3289,6 +3303,7 @@ class AdminDashboard {
         
         // Set current value in seconds
         const currentValue = this.timerSettings.secondsPerQuestion || 60;
+        const timerStatus = currentValue === 0 ? ' (currently disabled)' : ` (currently ${currentValue} seconds)`;
         
         // Create modal content
         modal.innerHTML = `
@@ -3298,11 +3313,12 @@ class AdminDashboard {
                     <button class="close-button" aria-label="Close">&times;</button>
                 </div>
                 <div class="modal-body">
-                    <p>Set the time allowed for each quiz question. Current setting: <strong>${currentValue} seconds</strong></p>
+                    <p>Set the time allowed for each quiz question${timerStatus}</p>
                     <div class="form-group">
-                        <label for="timerSeconds">Seconds per question (10-300):</label>
-                        <input type="number" id="timerSeconds" min="10" max="300" value="${currentValue}" 
+                        <label for="timerSeconds">Seconds per question (0-300):</label>
+                        <input type="number" id="timerSeconds" min="0" max="300" value="${currentValue}" 
                                class="form-control" required aria-label="Seconds per question">
+                        <small>Set to 0 to disable the timer completely.</small>
                     </div>
                     <div class="form-actions">
                         <button id="saveTimerSettings" class="primary-button">Save Settings</button>
@@ -3347,9 +3363,9 @@ class AdminDashboard {
             const timerInput = document.getElementById('timerSeconds');
             const newValue = parseInt(timerInput.value, 10);
             
-            // Validate input
-            if (isNaN(newValue) || newValue < 10 || newValue > 300) {
-                this.showError('Timer value must be between 10 and 300 seconds');
+            // Validate input (allow 0 to disable the timer)
+            if (isNaN(newValue) || newValue < 0 || newValue > 300) {
+                this.showError('Timer value must be between 0 and 300 seconds');
                 return;
             }
             
@@ -3367,7 +3383,12 @@ class AdminDashboard {
                     // Update localStorage for immediate effect on quizzes
                     localStorage.setItem('quizTimerValue', newValue.toString());
                     
-                    this.showSuccess('Quiz timer settings updated successfully');
+                    // Success message with context about timer being enabled/disabled
+                    const successMsg = newValue === 0 
+                        ? 'Quiz timer disabled successfully' 
+                        : `Quiz timer set to ${newValue} seconds successfully`;
+                    
+                    this.showSuccess(successMsg);
                     closeModal();
                 } else {
                     throw new Error(response.message || 'Failed to update timer settings');

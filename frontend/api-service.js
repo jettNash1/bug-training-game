@@ -940,10 +940,10 @@ export class APIService {
     
     async updateQuizTimerSettings(seconds) {
         try {
-            // Validate input
+            // Validate input (allow 0 to disable the timer)
             const secondsValue = parseInt(seconds, 10);
-            if (isNaN(secondsValue) || secondsValue < 10 || secondsValue > 300) {
-                throw new Error('Timer value must be between 10 and 300 seconds');
+            if (isNaN(secondsValue) || secondsValue < 0 || secondsValue > 300) {
+                throw new Error('Timer value must be between 0 and 300 seconds');
             }
             
             const response = await this.fetchWithAdminAuth(`${this.baseUrl}/admin/settings/quiz-timer`, {

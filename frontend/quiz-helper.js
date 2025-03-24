@@ -13,7 +13,8 @@ export class BaseQuiz {
         
         // Get timer value from localStorage if available, otherwise use default 60 seconds
         const storedTimerValue = localStorage.getItem('quizTimerValue');
-        this.timePerQuestion = storedTimerValue ? parseInt(storedTimerValue, 10) * 1000 : 60000; // convert to milliseconds
+        // Allow 0 as a valid value (timer disabled)
+        this.timePerQuestion = storedTimerValue !== null ? parseInt(storedTimerValue, 10) * 1000 : 60000; // convert to milliseconds
         
         this.remainingTime = this.timePerQuestion;
         this.questionStartTime = null; // Track when each question starts
@@ -54,6 +55,23 @@ export class BaseQuiz {
     }
 
     initializeTimer() {
+        // If timer is disabled (value is 0), don't create timer UI
+        if (this.timePerQuestion === 0) {
+            // Clear any existing timer if it exists
+            if (this.questionTimer) {
+                clearInterval(this.questionTimer);
+                this.questionTimer = null;
+            }
+            
+            // Remove timer container if it exists
+            const existingTimer = document.getElementById('timer-container');
+            if (existingTimer) {
+                existingTimer.remove();
+            }
+            
+            return;
+        }
+    
         // Create timer UI if it doesn't exist
         let timerContainer = document.getElementById('timer-container');
         if (!timerContainer) {
@@ -66,7 +84,7 @@ export class BaseQuiz {
 
         // Ensure timer value is up to date by checking localStorage again
         const storedTimerValue = localStorage.getItem('quizTimerValue');
-        if (storedTimerValue) {
+        if (storedTimerValue !== null) {
             this.timePerQuestion = parseInt(storedTimerValue, 10) * 1000; // convert to milliseconds
         }
 
@@ -91,7 +109,14 @@ export class BaseQuiz {
     }
 
     updateTimerDisplay() {
+        // If timer is disabled, don't update display
+        if (this.timePerQuestion === 0) {
+            return;
+        }
+        
         const timerContainer = document.getElementById('timer-container');
+        if (!timerContainer) return;
+        
         const seconds = Math.ceil(this.remainingTime / 1000);
         timerContainer.textContent = `Time remaining: ${seconds}s`;
         
@@ -104,6 +129,11 @@ export class BaseQuiz {
     }
 
     handleTimeUp() {
+        // If timer is disabled, don't handle time up
+        if (this.timePerQuestion === 0) {
+            return;
+        }
+        
         clearInterval(this.questionTimer);
         
         // Get current scenario
