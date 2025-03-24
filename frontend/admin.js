@@ -84,19 +84,21 @@ class AdminDashboard {
     }
     
     // Add timer settings button to the UI
-    addTimerSettingsButton() {
-        console.log('Adding timer settings button to admin panel...');
+    async addTimerSettingsButton() {
+        console.log('Adding timer settings button...');
         
-        // Check if button already exists to avoid duplicates
-        if (document.getElementById('quizTimerSettingsBtn')) {
-            console.log('Timer settings button already exists, skipping');
-            return;
-        }
+        // Preload timer settings
+        await this.preloadTimerSettings();
         
-        // Try different selectors for where to add the button
+        // Get timer value, display as "disabled" if 0
+        const timerValue = this.timerSettings.secondsPerQuestion ?? 60;
+        const timerStatus = timerValue === 0 ? 'disabled' : `${timerValue} seconds`;
+        
+        // Find a container for the button - try a few options
         const actionContainers = [
-            document.querySelector('.panel-header .search-controls'),
             document.querySelector('.search-controls'),
+            document.querySelector('.user-actions'),
+            document.querySelector('.action-buttons'),
             document.querySelector('.csv-export-dropdown')
         ];
         
@@ -109,12 +111,28 @@ class AdminDashboard {
         
         console.log('Found container for timer button:', actionContainer);
         
-        // Create the button directly (no wrapping divs)
+        // Create a container to display the current setting
+        const timerSettingsContainer = document.createElement('div');
+        timerSettingsContainer.style.cssText = `
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            margin-left: 10px;
+        `;
+        
+        // Add current timer display
+        const timerStatusDisplay = document.createElement('div');
+        timerStatusDisplay.style.cssText = `
+            font-size: 0.9rem;
+            color: #555;
+        `;
+        timerStatusDisplay.innerHTML = `Quiz Timer: <span class="current-timer-value" style="font-weight: bold;">${timerStatus}</span>`;
+        
+        // Create the button
         const timerButton = document.createElement('button');
         timerButton.id = 'quizTimerSettingsBtn';
         timerButton.className = 'action-button';
         timerButton.style.cssText = `
-            margin-left: 10px;
             background-color: #4444ff;
             color: white;
             border: none;
@@ -122,21 +140,25 @@ class AdminDashboard {
             border-radius: 4px;
             cursor: pointer;
         `;
-        timerButton.textContent = 'Quiz Timer Settings';
+        timerButton.textContent = 'Edit Timer Settings';
         
-        // Add button to page
+        // Add elements to container
+        timerSettingsContainer.appendChild(timerStatusDisplay);
+        timerSettingsContainer.appendChild(timerButton);
+        
+        // Add container to page
         if (actionContainer.className === 'csv-export-dropdown') {
             // If we're adding to dropdown, add it after the dropdown
-            actionContainer.parentNode.insertBefore(timerButton, actionContainer.nextSibling);
+            actionContainer.parentNode.insertBefore(timerSettingsContainer, actionContainer.nextSibling);
         } else {
             // Create a wrapper div to match other controls
             const buttonWrapper = document.createElement('div');
             buttonWrapper.className = 'control-field';
-            buttonWrapper.appendChild(timerButton);
+            buttonWrapper.appendChild(timerSettingsContainer);
             actionContainer.appendChild(buttonWrapper);
         }
         
-        // Add click handler with a simple alert to verify it works
+        // Add click handler
         timerButton.onclick = (e) => {
             e.preventDefault();
             console.log('Timer button clicked!');
@@ -3369,7 +3391,8 @@ class AdminDashboard {
             }
             
             // Current timer value
-            const currentValue = this.timerSettings.secondsPerQuestion || 60;
+            const currentValue = this.timerSettings.secondsPerQuestion ?? 60;
+            const timerStatusText = currentValue === 0 ? 'Timer disabled' : `${currentValue} seconds`;
             
             // Create a transparent backgrop div that covers the entire screen
             const backdrop = document.createElement('div');
@@ -3392,7 +3415,7 @@ class AdminDashboard {
                 <div style="background-color: white; border-radius: 8px; width: 400px; max-width: 90%; padding: 20px; box-shadow: 0 0 10px rgba(0, 0, 0, 0.3);">
                     <h2 style="margin-top: 0; color: #333; font-size: 20px;">Quiz Timer Settings</h2>
                     <p style="margin-bottom: 5px; color: #555;">Set the time allowed for each quiz question.</p>
-                    <p style="margin-bottom: 20px;">Current setting: <strong>${currentValue === 0 ? 'Timer disabled' : currentValue + ' seconds'}</strong></p>
+                    <p style="margin-bottom: 20px;">Current setting: <strong>${timerStatusText}</strong></p>
                     
                     <div style="margin-bottom: 15px;">
                         <label for="timer-value-input" style="display: block; margin-bottom: 5px; font-weight: 500;">
@@ -3504,8 +3527,18 @@ class AdminDashboard {
                             ? 'Quiz timer disabled successfully!' 
                             : `Quiz timer set to ${newValue} seconds!`;
                             
+                        // Update all timer displays on the page
+                        document.querySelectorAll('.current-timer-value').forEach(el => {
+                            el.textContent = newValue === 0 ? 'disabled' : `${newValue} seconds`;
+                        });
+                        
                         alert(message);
                         closeModal();
+                        
+                        // Reload page to ensure all timer references are updated
+                        setTimeout(() => {
+                            window.location.reload();
+                        }, 1000);
                     } else {
                         throw new Error(response.message || 'Failed to save settings');
                     }
