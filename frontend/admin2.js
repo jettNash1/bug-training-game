@@ -249,7 +249,7 @@ class Admin2Dashboard extends AdminDashboard {
     }
     
     async updateUsersList() {
-        const container = document.getElementById('users-container');
+        const container = document.getElementById('usersList');
         if (!container) {
             console.error('Users container not found');
             return;
@@ -263,9 +263,9 @@ class Admin2Dashboard extends AdminDashboard {
         console.log(`Updating users list with ${this.users.length} users`);
 
         // Get filter values
-        const searchTerm = (document.getElementById('user-search')?.value || '').toLowerCase();
-        const accountType = document.getElementById('account-type-filter')?.value || 'all';
-        const sortBy = document.getElementById('sort-select')?.value || 'username-asc';
+        const searchTerm = (document.getElementById('userSearch')?.value || '').toLowerCase();
+        const accountType = document.getElementById('accountType')?.value || 'all';
+        const sortBy = document.getElementById('sortBy')?.value || 'username-asc';
         
         // Check if row view is active
         const isRowView = this.isRowView;
@@ -934,32 +934,38 @@ class Admin2Dashboard extends AdminDashboard {
     // Implement a hardcoded fetchQuizTypes method that handles API failures gracefully
     async fetchQuizTypes() {
         try {
-            // Try to fetch quiz types from API first
-            const response = await fetch('/api/quiz-types');
-            
-            let quizTypesList;
-            
-            if (response.ok) {
-                const data = await response.json();
-                console.log('Successfully fetched quiz types from API:', data);
+            // Try to fetch quiz types from the admin API first
+            try {
+                const response = await this.apiService.fetchWithAdminAuth(`${this.apiService.baseUrl}/admin/quiz-types`);
                 
-                // Ensure automation-interview is included (sometimes it's missing from the API)
-                if (data.indexOf('automation-interview') === -1) {
-                    data.push('automation-interview');
+                if (response && response.success && Array.isArray(response.data)) {
+                    console.log('Successfully fetched quiz types from API:', response.data);
+                    
+                    // Ensure automation-interview is included (sometimes it's missing from the API)
+                    if (response.data.indexOf('automation-interview') === -1) {
+                        response.data.push('automation-interview');
+                    }
+                    
+                    // Sort alphabetically
+                    const quizTypesList = response.data.sort((a, b) => a.localeCompare(b));
+                    
+                    // Set the class property for use elsewhere
+                    this.quizTypes = quizTypesList;
+                    
+                    return quizTypesList;
+                } else {
+                    throw new Error('Invalid response format from quiz-types API');
                 }
-                
-                // Sort alphabetically
-                quizTypesList = data.sort((a, b) => a.localeCompare(b));
-            } else {
-                console.warn('Failed to fetch quiz types from API, using hardcoded fallback');
+            } catch (apiError) {
+                console.warn('Failed to fetch quiz types from API, using hardcoded fallback', apiError);
                 // If the API fails, use the hardcoded fallback
-                quizTypesList = this.getHardcodedQuizTypes();
+                const fallbackTypes = this.getHardcodedQuizTypes();
+                
+                // Set the class property for use elsewhere
+                this.quizTypes = fallbackTypes;
+                
+                return fallbackTypes;
             }
-            
-            // Set the class property for use elsewhere
-            this.quizTypes = quizTypesList;
-            
-            return quizTypesList;
         } catch (error) {
             console.error('Error fetching quiz types:', error);
             // If any error occurs, use the hardcoded fallback
