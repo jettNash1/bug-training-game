@@ -80,6 +80,12 @@ class BadgesPage {
                 return;
             }
 
+            // Update username in the header if not already done
+            const usernameElement = document.getElementById('headerUsername');
+            if (usernameElement && !usernameElement.textContent) {
+                usernameElement.textContent = username;
+            }
+
             // Apply enhanced styling
             this.applyEnhancedStyling();
 
@@ -307,62 +313,59 @@ class BadgesPage {
     }
 
     async loadBadges() {
-        // Get the user's badges
-        const badgesData = await this.badgeService.getUserBadges();
-        
-        // Create a more structured container
-        const container = document.querySelector('.container');
-        if (!container) return;
-        
-        // Clear existing content
-        container.innerHTML = '';
-        
-        // Add page title
-        const pageTitle = document.createElement('h1');
-        pageTitle.textContent = 'Your Achievement Badges';
-        container.appendChild(pageTitle);
-        
-        // Add the progress summary card
-        const summaryCard = document.createElement('div');
-        summaryCard.className = 'badges-summary';
-        summaryCard.innerHTML = `
-            <div class="progress-container">
-                <div class="progress-header">
-                    <div class="progress-title">Achievement Progress</div>
-                    <div class="progress-text">${badgesData.earnedCount}/${badgesData.totalBadges} Badges</div>
-                </div>
-                <div class="progress-bar">
-                    <div class="progress-fill" style="width: ${(badgesData.earnedCount / badgesData.totalBadges) * 100}%"></div>
-                </div>
-            </div>
-        `;
-        container.appendChild(summaryCard);
-        
-        // Create the badges grid
-        const badgesGrid = document.createElement('div');
-        badgesGrid.className = 'badges-container';
-        container.appendChild(badgesGrid);
-        
-        // Add each badge to the grid
-        badgesData.badges.forEach(badge => {
-            const badgeElement = this.createBadgeElement(badge);
-            badgesGrid.appendChild(badgeElement);
-        });
-        
-        // If no badges, show a message
-        if (badgesData.badges.length === 0) {
-            const noBadgesMessage = document.createElement('div');
-            noBadgesMessage.className = 'no-badges-message';
-            noBadgesMessage.innerHTML = `
-                <div style="text-align: center; padding: 40px 20px;">
-                    <div style="font-size: 80px; color: #ccc; margin-bottom: 20px;">
-                        <i class="fa-solid fa-award"></i>
+        try {
+            // Get the user's badges
+            const badgesData = await this.badgeService.getUserBadges();
+            
+            // Update the badge counters
+            const earnedElement = document.getElementById('badges-earned');
+            const totalElement = document.getElementById('badges-total');
+            const progressElement = document.getElementById('badges-progress');
+            
+            if (earnedElement) earnedElement.textContent = badgesData.earnedCount;
+            if (totalElement) totalElement.textContent = badgesData.totalBadges;
+            
+            // Calculate progress percentage
+            const progressPercentage = badgesData.totalBadges > 0 
+                ? Math.round((badgesData.earnedCount / badgesData.totalBadges) * 100) 
+                : 0;
+            
+            // Update progress bar
+            if (progressElement) {
+                progressElement.style.width = `${progressPercentage}%`;
+            }
+            
+            // Get the badges container
+            const badgesGrid = document.getElementById('badges-grid');
+            if (!badgesGrid) return;
+            
+            // Clear existing content
+            badgesGrid.innerHTML = '';
+            
+            // Add each badge to the grid
+            badgesData.badges.forEach(badge => {
+                const badgeElement = this.createBadgeElement(badge);
+                badgesGrid.appendChild(badgeElement);
+            });
+            
+            // If no badges, show a message
+            if (badgesData.badges.length === 0) {
+                const noBadgesMessage = document.createElement('div');
+                noBadgesMessage.className = 'no-badges-message';
+                noBadgesMessage.innerHTML = `
+                    <div style="text-align: center; padding: 40px 20px;">
+                        <div style="font-size: 80px; color: #ccc; margin-bottom: 20px;">
+                            <i class="fa-solid fa-award"></i>
+                        </div>
+                        <h3 style="color: #555; margin-bottom: 10px;">No Badges Available Yet</h3>
+                        <p style="color: #777;">Complete quizzes to earn achievement badges!</p>
                     </div>
-                    <h3 style="color: #555; margin-bottom: 10px;">No Badges Available Yet</h3>
-                    <p style="color: #777;">Complete quizzes to earn achievement badges!</p>
-                </div>
-            `;
-            badgesGrid.appendChild(noBadgesMessage);
+                `;
+                badgesGrid.appendChild(noBadgesMessage);
+            }
+        } catch (error) {
+            console.error('Error loading badges:', error);
+            this.showError('Failed to load your badges data. Please try again later.');
         }
     }
 

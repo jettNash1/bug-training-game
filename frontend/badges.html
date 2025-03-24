@@ -3,11 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Your Achievement Badges | Quiz Platform</title>
-    <link rel="stylesheet" href="styles/main.css">
+    <meta name="description" content="QA Learning Hub - Achievement Badges">
+    <title>Your Achievement Badges | QA Learning Hub</title>
+    <link rel="icon" type="image/x-icon" href="assets/favicon.ico">
+    <link rel="stylesheet" href="styles.css">
     <link rel="stylesheet" href="styles/badges.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <script type="module" src="scripts/badges.js" defer></script>
+    <script type="module" src="./scripts/badges.js" defer></script>
     <style>
         /* Add matching styling for the badges nav button */
         .badges-button {
@@ -41,44 +43,45 @@
     </style>
 </head>
 <body>
-    <header>
-        <div class="header-container">
-            <div class="logo">
-                <img src="assets/logo.png" alt="Quiz Platform Logo">
+    <header class="app-header" role="banner">
+        <div class="logo">
+            <img src="assets/zoonou-logo.svg" alt="Zoonou Logo" width="32" height="32">
+            <h1>QA Learning Hub</h1>
+        </div>
+        <div class="user-menu" role="navigation">
+            <div class="user-info" aria-live="polite">
+                <div class="username" id="headerUsername"></div>
+                <div class="user-role">Learner</div>
             </div>
-            <nav>
-                <ul>
-                    <li><a href="index.html">Home</a></li>
-                    <li><a href="badges.html" class="nav-button badges-button active">
-                        <i class="fa-solid fa-award"></i> Badges
-                    </a></li>
-                    <li><a href="#" onclick="handleLogout(); return false;" class="nav-button logout-button">Logout</a></li>
-                </ul>
-            </nav>
+            <a href="badges.html" class="badges-button active">
+                <i class="fa-solid fa-award"></i> Badges
+            </a>
+            <button class="logout-button" onclick="handleLogout()" aria-label="Logout">Logout</button>
         </div>
     </header>
 
-    <main>
-        <div class="container">
-            <h1>Your Achievement Badges</h1>
-            
-            <div class="loading-overlay">
-                <div class="loading-spinner"></div>
-                <div class="loading-text">Loading your achievements...</div>
-            </div>
-            
-            <div class="badges-summary">
-                <div class="progress-container">
-                    <div class="progress-text">Progress: <span id="badges-earned">0</span>/<span id="badges-total">0</span></div>
-                    <div class="progress-bar">
-                        <div id="badges-progress" class="progress-fill" style="width: 0%"></div>
-                    </div>
+    <main class="main-container" role="main">
+        <h1>Your Achievement Badges</h1>
+        
+        <div class="loading-overlay">
+            <div class="loading-spinner"></div>
+            <div class="loading-text">Loading your achievements...</div>
+        </div>
+        
+        <div class="badges-summary">
+            <div class="progress-container">
+                <div class="progress-header">
+                    <div class="progress-title">Achievement Progress</div>
+                    <div class="progress-text"><span id="badges-earned">0</span>/<span id="badges-total">0</span> Badges</div>
+                </div>
+                <div class="progress-bar">
+                    <div id="badges-progress" class="progress-fill" style="width: 0%"></div>
                 </div>
             </div>
+        </div>
 
-            <div class="badges-container" id="badges-grid">
-                <!-- Badges will be dynamically loaded here -->
-            </div>
+        <div class="badges-container" id="badges-grid">
+            <!-- Badges will be dynamically loaded here -->
         </div>
     </main>
 
@@ -87,5 +90,16 @@
             <p>&copy; 2023 Quiz Platform. All rights reserved.</p>
         </div>
     </footer>
+
+    <script>
+        // Add username to the header
+        document.addEventListener('DOMContentLoaded', () => {
+            const username = localStorage.getItem('username');
+            const usernameElement = document.getElementById('headerUsername');
+            if (username && usernameElement) {
+                usernameElement.textContent = username;
+            }
+        });
+    </script>
 </body>
 </html> 
