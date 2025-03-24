@@ -116,11 +116,8 @@ export class QuizUser {
                 body: JSON.stringify(quizData)
             });
 
-            if (!response.ok) {
-                throw new Error('Failed to save quiz result to server');
-            }
-
-            const data = await response.json();
+            // fetchWithAuth now returns the parsed JSON directly
+            const data = response;
             if (data.success) {
                 this.quizResults = data.data;
                 
@@ -265,8 +262,8 @@ export class QuizUser {
                     body: JSON.stringify(quizData)
                 });
                 
-                // Process response
-                const data = await response.json();
+                // Process response (fetchWithAuth now returns parsed JSON directly)
+                const data = response; // No need to call response.json() anymore
                 if (data.success) {
                     this.quizResults = data.data;
                     
@@ -315,9 +312,11 @@ export class QuizUser {
         try {
             // Fetch user's quiz results from the server
             const response = await this.api.fetchWithAuth(`${config.apiUrl}/users/progress`);
-            const data = await response.json();
+            
+            // fetchWithAuth now returns parsed JSON directly
+            const data = response;
 
-            if (!response.ok) {
+            if (!data.success) {
                 throw new Error(data.message || 'Failed to load progress');
             }
 
