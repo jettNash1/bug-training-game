@@ -84,15 +84,27 @@ class Admin2Dashboard extends AdminDashboard {
         const toggleButtons = document.querySelectorAll('.toggle-button');
         const usersList = document.getElementById('usersList');
         
-        toggleButtons.forEach(button => {
-            button.addEventListener('click', () => {
-                toggleButtons.forEach(btn => btn.classList.remove('active'));
-                button.classList.add('active');
-                
-                const viewType = button.dataset.view;
-                usersList.className = `users-list ${viewType}-view`;
+        if (toggleButtons.length > 0 && usersList) {
+            // Initialize with grid view by default
+            usersList.className = 'users-list grid-view';
+            
+            toggleButtons.forEach(button => {
+                button.addEventListener('click', () => {
+                    // Remove active class from all toggle buttons
+                    toggleButtons.forEach(btn => btn.classList.remove('active'));
+                    
+                    // Add active class to clicked button
+                    button.classList.add('active');
+                    
+                    // Update the users list class based on the selected view
+                    const viewType = button.dataset.view;
+                    usersList.className = `users-list ${viewType}-view`;
+                    
+                    // Force re-render user list to apply new view
+                    this.updateUserList();
+                });
             });
-        });
+        }
         
         // Set up search, sort, and filter functionality
         const searchInput = document.getElementById('userSearch');
@@ -158,6 +170,10 @@ class Admin2Dashboard extends AdminDashboard {
             return;
         }
 
+        // Check if we're in grid or row view
+        const isRowView = container.classList.contains('row-view');
+        console.log("Current view mode:", isRowView ? "row" : "grid");
+
         const searchTerm = searchInput?.value.toLowerCase() || '';
         const sortBy = sortSelect?.value || 'username-asc';
         const accountType = accountTypeSelect?.value || 'all';
@@ -191,9 +207,6 @@ class Admin2Dashboard extends AdminDashboard {
         // Clear existing content
         container.innerHTML = '';
 
-        // Check if we're in grid or row view
-        const isRowView = container.classList.contains('row-view');
-
         // Create and append user cards
         filteredUsers.forEach(user => {
             const progress = this.calculateUserProgress(user);
@@ -224,10 +237,9 @@ class Admin2Dashboard extends AdminDashboard {
             const card = document.createElement('div');
             card.className = 'user-card';
             
-            // Different HTML structure based on view type
             if (isRowView) {
                 card.innerHTML = `
-                    <div class="user-card-content row-content">
+                    <div class="row-content">
                         <div class="user-info">
                             <span class="username">${user.username}</span>
                             <span class="account-type-badge">
@@ -255,6 +267,13 @@ class Admin2Dashboard extends AdminDashboard {
                         <button class="view-details-btn row-btn">View Details</button>
                     </div>
                 `;
+                
+                const viewBtn = card.querySelector('.view-details-btn');
+                if (viewBtn) {
+                    viewBtn.addEventListener('click', () => {
+                        this.showUserDetails(user.username);
+                    });
+                }
             } else {
                 card.innerHTML = `
                     <div class="user-card-content">
@@ -296,21 +315,11 @@ class Admin2Dashboard extends AdminDashboard {
                         View Details
                     </button>
                 `;
-            }
-            
-            // Add event listener for view details button
-            card.addEventListener('viewDetails', () => {
-                this.showUserDetails(user.username);
-            });
-            
-            // For row view, add click event to the button
-            if (isRowView) {
-                const viewBtn = card.querySelector('.view-details-btn');
-                if (viewBtn) {
-                    viewBtn.addEventListener('click', () => {
-                        this.showUserDetails(user.username);
-                    });
-                }
+                
+                // Add event listener for view details button
+                card.addEventListener('viewDetails', () => {
+                    this.showUserDetails(user.username);
+                });
             }
 
             container.appendChild(card);
@@ -1047,9 +1056,8 @@ styleElement.textContent = `
         margin-bottom: 1rem;
         background-color: #f5f5f5;
         border-radius: 4px;
-        position: sticky;
-        top: 0;
-        z-index: 10;
+        position: relative;
+        z-index: 1;
     }
     
     .quiz-options {
@@ -1155,9 +1163,15 @@ styleElement.textContent = `
     
     .scenarios-list {
         display: grid;
-        grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
         gap: 1.5rem;
         margin-top: 1rem;
+        width: 100%;
+    }
+    
+    .user-details-content {
+        width: 95%;
+        max-width: 1200px;
     }
     
     .scenario-card {
@@ -1166,6 +1180,7 @@ styleElement.textContent = `
         padding: 1.5rem;
         box-shadow: 0 2px 4px rgba(0,0,0,0.05);
         border: 1px solid #eee;
+        width: 100%;
     }
     
     .scenario-card h4 {
@@ -1202,12 +1217,20 @@ styleElement.textContent = `
     }
     
     /* Row view styles */
+    .users-list.row-view {
+        display: flex;
+        flex-direction: column;
+        gap: 0.75rem;
+        margin-top: 1.5rem;
+    }
+    
     .users-list.row-view .user-card {
         background: white;
         border-radius: 8px;
         margin-bottom: 0.75rem;
         box-shadow: 0 2px 4px rgba(0,0,0,0.05);
         transition: transform 0.2s, box-shadow 0.2s;
+        width: 100%;
     }
     
     .users-list.row-view .user-card:hover {
@@ -1277,6 +1300,7 @@ styleElement.textContent = `
         cursor: pointer;
         font-weight: 500;
         white-space: nowrap;
+        min-width: 110px;
     }
     
     .users-list.row-view .row-btn:hover {
