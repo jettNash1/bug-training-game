@@ -5,8 +5,70 @@ class BadgesPage {
     constructor() {
         this.apiService = new APIService();
         this.badgeService = new BadgeService(this.apiService);
-        this.badgesGrid = document.getElementById('badges-grid');
         this.initialize();
+        this.showLoadingOverlay();
+    }
+
+    showLoadingOverlay() {
+        // Create loading overlay if it doesn't exist
+        if (!document.querySelector('.loading-overlay')) {
+            const overlay = document.createElement('div');
+            overlay.className = 'loading-overlay';
+            overlay.innerHTML = `
+                <div class="loading-spinner"></div>
+                <div class="loading-text">Loading your achievements...</div>
+            `;
+            document.body.appendChild(overlay);
+
+            // Add styles if they don't exist
+            if (!document.querySelector('#loading-styles')) {
+                const styles = document.createElement('style');
+                styles.id = 'loading-styles';
+                styles.textContent = `
+                    .loading-overlay {
+                        position: fixed;
+                        top: 0;
+                        left: 0;
+                        width: 100%;
+                        height: 100%;
+                        background: rgba(255, 255, 255, 0.9);
+                        display: flex;
+                        flex-direction: column;
+                        justify-content: center;
+                        align-items: center;
+                        z-index: 9999;
+                    }
+                    .loading-spinner {
+                        width: 50px;
+                        height: 50px;
+                        border: 5px solid #f3f3f3;
+                        border-top: 5px solid var(--primary-color, #4a90e2);
+                        border-radius: 50%;
+                        animation: spin 1s linear infinite;
+                        margin-bottom: 20px;
+                    }
+                    .loading-text {
+                        font-size: 1.2em;
+                        color: var(--primary-color, #4a90e2);
+                    }
+                    @keyframes spin {
+                        0% { transform: rotate(0deg); }
+                        100% { transform: rotate(360deg); }
+                    }
+                `;
+                document.head.appendChild(styles);
+            }
+        }
+    }
+
+    hideLoadingOverlay() {
+        const overlay = document.querySelector('.loading-overlay');
+        if (overlay) {
+            // Add fade-out animation
+            overlay.style.transition = 'opacity 0.3s ease-out';
+            overlay.style.opacity = '0';
+            setTimeout(() => overlay.remove(), 300);
+        }
     }
 
     async initialize() {
@@ -18,9 +80,10 @@ class BadgesPage {
                 return;
             }
 
-            // Add username to navigation if it's not there
-            this.addUsernameToNav(username);
+            // Apply enhanced styling
+            this.applyEnhancedStyling();
 
+            // Load badges data
             await this.loadBadges();
             this.hideLoadingOverlay();
         } catch (error) {
@@ -30,12 +93,192 @@ class BadgesPage {
         }
     }
 
-    hideLoadingOverlay() {
-        const overlay = document.querySelector('.loading-overlay');
-        if (overlay) {
-            overlay.style.transition = 'opacity 0.3s ease-out';
-            overlay.style.opacity = '0';
-            setTimeout(() => overlay.remove(), 300);
+    applyEnhancedStyling() {
+        if (document.getElementById('enhanced-badge-styles')) return;
+
+        const enhancedStyles = document.createElement('style');
+        enhancedStyles.id = 'enhanced-badge-styles';
+        enhancedStyles.textContent = `
+            body {
+                background-color: #f5f7fa;
+                font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+                margin: 0;
+                padding: 0;
+            }
+            
+            .container {
+                max-width: 1200px;
+                margin: 30px auto;
+                padding: 0 20px;
+            }
+            
+            h1 {
+                color: #333;
+                font-size: 28px;
+                margin-bottom: 30px;
+                padding-bottom: 10px;
+                border-bottom: 2px solid #eaeaea;
+            }
+            
+            .badges-summary {
+                background-color: white;
+                border-radius: 12px;
+                box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+                padding: 20px;
+                margin-bottom: 30px;
+            }
+            
+            .badges-container {
+                display: grid;
+                grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+                gap: 25px;
+                margin-top: 30px;
+            }
+            
+            .category-header {
+                color: #333;
+                font-size: 22px;
+                margin-bottom: 20px;
+                font-weight: 600;
+            }
+            
+            .badge-card {
+                background-color: white;
+                border-radius: 12px;
+                box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+                padding: 25px 20px;
+                text-align: center;
+                transition: transform 0.3s ease, box-shadow 0.3s ease;
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                position: relative;
+                overflow: hidden;
+                border: 1px solid #eaeaea;
+                height: 100%;
+            }
+            
+            .badge-card.locked {
+                background-color: #f8f8f8;
+                filter: grayscale(90%);
+                opacity: 0.85;
+            }
+            
+            .badge-card:not(.locked):hover {
+                transform: translateY(-5px);
+                box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
+            }
+            
+            .badge-icon {
+                width: 90px;
+                height: 90px;
+                background-color: var(--primary-color, #4a90e2);
+                color: white;
+                border-radius: 50%;
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                margin-bottom: 20px;
+                font-size: 40px;
+                box-shadow: 0 4px 8px rgba(74, 144, 226, 0.3);
+            }
+            
+            .badge-card.locked .badge-icon {
+                background-color: #bbb;
+                box-shadow: none;
+            }
+            
+            .badge-name {
+                font-size: 18px;
+                font-weight: 600;
+                margin-bottom: 10px;
+                color: var(--primary-color, #4a90e2);
+            }
+            
+            .badge-card.locked .badge-name {
+                color: #777;
+            }
+            
+            .badge-description {
+                font-size: 14px;
+                color: #666;
+                margin-bottom: 15px;
+                line-height: 1.5;
+            }
+            
+            .locked-overlay {
+                position: absolute;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                background-color: rgba(245, 245, 245, 0.1);
+                display: flex;
+                align-items: center;
+                justify-content: center;
+            }
+            
+            .lock-icon {
+                position: absolute;
+                bottom: 15px;
+                right: 15px;
+                color: #aaa;
+                font-size: 20px;
+                background: rgba(255, 255, 255, 0.8);
+                border-radius: 50%;
+                width: 36px;
+                height: 36px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            }
+            
+            .progress-container {
+                width: 100%;
+            }
+            
+            .progress-header {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                margin-bottom: 10px;
+            }
+            
+            .progress-title {
+                font-size: 16px;
+                font-weight: 600;
+                color: #555;
+            }
+            
+            .progress-text {
+                font-size: 16px;
+                font-weight: 500;
+                color: var(--primary-color, #4a90e2);
+            }
+            
+            .progress-bar {
+                height: 12px;
+                background-color: #eee;
+                border-radius: 6px;
+                overflow: hidden;
+            }
+            
+            .progress-fill {
+                height: 100%;
+                background-color: var(--primary-color, #4a90e2);
+                border-radius: 6px;
+                transition: width 0.5s ease-in-out;
+            }
+        `;
+        document.head.appendChild(enhancedStyles);
+        
+        // Add Font Awesome if not already included
+        if (!document.querySelector('link[href*="font-awesome"]')) {
+            const fontAwesome = document.createElement('link');
+            fontAwesome.rel = 'stylesheet';
+            fontAwesome.href = 'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css';
+            document.head.appendChild(fontAwesome);
         }
     }
 
@@ -44,41 +287,82 @@ class BadgesPage {
         const errorElement = document.createElement('div');
         errorElement.className = 'error-message';
         errorElement.textContent = message;
+        errorElement.style.cssText = `
+            background-color: #fff5f5;
+            color: #e53e3e;
+            padding: 16px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            text-align: center;
+            border: 1px solid #fed7d7;
+        `;
         
-        // Add it before the badges grid
+        // Add it to the container
         const container = document.querySelector('.container');
-        container.insertBefore(errorElement, this.badgesGrid);
+        if (container) {
+            container.insertBefore(errorElement, container.firstChild);
+        } else {
+            document.body.insertBefore(errorElement, document.body.firstChild);
+        }
     }
 
     async loadBadges() {
         // Get the user's badges
         const badgesData = await this.badgeService.getUserBadges();
         
-        // Update the progress bar
-        document.getElementById('badges-earned').textContent = badgesData.earnedCount;
-        document.getElementById('badges-total').textContent = badgesData.totalBadges;
+        // Create a more structured container
+        const container = document.querySelector('.container');
+        if (!container) return;
         
-        const progressPercentage = badgesData.totalBadges > 0 
-            ? Math.round((badgesData.earnedCount / badgesData.totalBadges) * 100) 
-            : 0;
+        // Clear existing content
+        container.innerHTML = '';
         
-        document.getElementById('badges-progress').style.width = `${progressPercentage}%`;
+        // Add page title
+        const pageTitle = document.createElement('h1');
+        pageTitle.textContent = 'Your Achievement Badges';
+        container.appendChild(pageTitle);
         
-        // Clear the badges grid
-        this.badgesGrid.innerHTML = '';
+        // Add the progress summary card
+        const summaryCard = document.createElement('div');
+        summaryCard.className = 'badges-summary';
+        summaryCard.innerHTML = `
+            <div class="progress-container">
+                <div class="progress-header">
+                    <div class="progress-title">Achievement Progress</div>
+                    <div class="progress-text">${badgesData.earnedCount}/${badgesData.totalBadges} Badges</div>
+                </div>
+                <div class="progress-bar">
+                    <div class="progress-fill" style="width: ${(badgesData.earnedCount / badgesData.totalBadges) * 100}%"></div>
+                </div>
+            </div>
+        `;
+        container.appendChild(summaryCard);
+        
+        // Create the badges grid
+        const badgesGrid = document.createElement('div');
+        badgesGrid.className = 'badges-container';
+        container.appendChild(badgesGrid);
         
         // Add each badge to the grid
         badgesData.badges.forEach(badge => {
             const badgeElement = this.createBadgeElement(badge);
-            this.badgesGrid.appendChild(badgeElement);
+            badgesGrid.appendChild(badgeElement);
         });
         
         // If no badges, show a message
         if (badgesData.badges.length === 0) {
             const noBadgesMessage = document.createElement('div');
             noBadgesMessage.className = 'no-badges-message';
-            noBadgesMessage.textContent = 'No badges available yet. Check back soon!';
-            this.badgesGrid.appendChild(noBadgesMessage);
+            noBadgesMessage.innerHTML = `
+                <div style="text-align: center; padding: 40px 20px;">
+                    <div style="font-size: 80px; color: #ccc; margin-bottom: 20px;">
+                        <i class="fa-solid fa-award"></i>
+                    </div>
+                    <h3 style="color: #555; margin-bottom: 10px;">No Badges Available Yet</h3>
+                    <p style="color: #777;">Complete quizzes to earn achievement badges!</p>
+                </div>
+            `;
+            badgesGrid.appendChild(noBadgesMessage);
         }
     }
 
@@ -93,35 +377,10 @@ class BadgesPage {
             </div>
             <h3 class="badge-name">${badge.name}</h3>
             <p class="badge-description">${badge.description}</p>
-            <div class="locked-overlay">
-                <i class="fa-solid fa-lock"></i>
-            </div>
+            ${!badge.earned ? '<div class="lock-icon"><i class="fa-solid fa-lock"></i></div>' : ''}
         `;
         
         return badgeElement;
-    }
-
-    addUsernameToNav(username) {
-        const navMenu = document.querySelector('nav ul');
-        if (!navMenu) return;
-        
-        // Check if username element already exists
-        if (!navMenu.querySelector('.username-display')) {
-            // Create username display element
-            const usernameItem = document.createElement('li');
-            usernameItem.className = 'username-display';
-            usernameItem.textContent = username;
-            
-            // Insert at the appropriate position
-            const homeLink = navMenu.querySelector('a[href="index.html"]');
-            const homeLi = homeLink ? homeLink.closest('li') : null;
-            
-            if (homeLi && homeLi.nextSibling) {
-                navMenu.insertBefore(usernameItem, homeLi.nextSibling);
-            } else {
-                navMenu.appendChild(usernameItem);
-            }
-        }
     }
 }
 
