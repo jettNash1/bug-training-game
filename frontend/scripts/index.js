@@ -77,7 +77,7 @@ class IndexPage {
             await this.loadUserProgress();
             this.updateQuizProgress();
             this.updateCategoryProgress();
-            this.addBadgesButton();
+            this.addBadgesNavLink();
         } catch (error) {
             console.error('Failed to initialize:', error);
         } finally {
@@ -396,29 +396,78 @@ class IndexPage {
         });
     }
 
-    addBadgesButton() {
-        // Check if button already exists
-        if (document.querySelector('.badges-button')) return;
+    addBadgesNavLink() {
+        // First, check if the nav link already exists
+        if (document.querySelector('nav a[href="badges.html"]')) return;
         
-        // Create a badges button
-        const badgesButton = document.createElement('div');
-        badgesButton.className = 'badges-button';
-        badgesButton.innerHTML = `
-            <a href="badges.html" class="primary-button">
-                <i class="fa-solid fa-award"></i> View Your Badges
+        // Get the nav element
+        const navMenu = document.querySelector('nav ul');
+        if (!navMenu) return;
+        
+        // Get the username display element and logout link
+        const usernameElement = navMenu.querySelector('li.username-display');
+        const logoutLink = navMenu.querySelector('li a[onclick*="handleLogout"]');
+        
+        if (!usernameElement || !logoutLink) {
+            console.error('Could not find username or logout elements');
+            return;
+        }
+        
+        // Create the badges nav item
+        const badgesItem = document.createElement('li');
+        badgesItem.innerHTML = `
+            <a href="badges.html" class="badges-link">
+                <i class="fa-solid fa-award"></i> Badges
             </a>
         `;
         
-        // Insert before the first category
-        const firstCategory = document.querySelector('.category-card');
-        if (firstCategory && firstCategory.parentNode) {
-            firstCategory.parentNode.insertBefore(badgesButton, firstCategory);
-        } else {
-            // Fallback - add to the main container
-            const container = document.querySelector('.container');
-            if (container) {
-                container.appendChild(badgesButton);
-            }
+        // Add class for styling
+        const badgesLink = badgesItem.querySelector('a');
+        if (badgesLink) {
+            badgesLink.classList.add('nav-button', 'badges-button');
+        }
+        
+        // Insert after username and before logout
+        const logoutItem = logoutLink.closest('li');
+        navMenu.insertBefore(badgesItem, logoutItem);
+        
+        // Add Font Awesome if not already included
+        if (!document.querySelector('link[href*="font-awesome"]')) {
+            const fontAwesome = document.createElement('link');
+            fontAwesome.rel = 'stylesheet';
+            fontAwesome.href = 'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css';
+            document.head.appendChild(fontAwesome);
+        }
+        
+        // Add the CSS for the badges button
+        if (!document.getElementById('badges-button-style')) {
+            const style = document.createElement('style');
+            style.id = 'badges-button-style';
+            style.textContent = `
+                .badges-button {
+                    background-color: var(--primary-color, #4a90e2);
+                    color: white;
+                    border-radius: 4px;
+                    padding: 8px 16px;
+                    transition: background-color 0.3s ease;
+                    text-decoration: none;
+                    display: inline-flex;
+                    align-items: center;
+                    justify-content: center;
+                    margin: 0 8px;
+                    font-weight: 500;
+                }
+                
+                .badges-button:hover {
+                    background-color: var(--primary-color-dark, #3a80d2);
+                    color: white;
+                }
+                
+                .badges-button i {
+                    margin-right: 6px;
+                }
+            `;
+            document.head.appendChild(style);
         }
     }
 }

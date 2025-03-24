@@ -8,6 +8,37 @@
     <link rel="stylesheet" href="styles/badges.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script type="module" src="scripts/badges.js" defer></script>
+    <style>
+        /* Add matching styling for the badges nav button */
+        .badges-button {
+            background-color: var(--primary-color, #4a90e2);
+            color: white;
+            border-radius: 4px;
+            padding: 8px 16px;
+            transition: background-color 0.3s ease;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 8px;
+            font-weight: 500;
+        }
+        
+        .badges-button:hover {
+            background-color: var(--primary-color-dark, #3a80d2);
+            color: white;
+        }
+        
+        .badges-button i {
+            margin-right: 6px;
+        }
+        
+        /* Style for active link */
+        .badges-button.active {
+            background-color: var(--primary-color-dark, #3a80d2);
+            box-shadow: 0 0 4px rgba(0, 0, 0, 0.2) inset;
+        }
+    </style>
 </head>
 <body>
     <header>
@@ -18,8 +49,10 @@
             <nav>
                 <ul>
                     <li><a href="index.html">Home</a></li>
-                    <li><a href="badges.html" class="active">Badges</a></li>
-                    <li><a href="#" onclick="handleLogout(); return false;">Logout</a></li>
+                    <li><a href="badges.html" class="nav-button badges-button active">
+                        <i class="fa-solid fa-award"></i> Badges
+                    </a></li>
+                    <li><a href="#" onclick="handleLogout(); return false;" class="nav-button">Logout</a></li>
                 </ul>
             </nav>
         </div>

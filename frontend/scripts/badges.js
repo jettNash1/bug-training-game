@@ -18,6 +18,9 @@ class BadgesPage {
                 return;
             }
 
+            // Add username to navigation if it's not there
+            this.addUsernameToNav(username);
+
             await this.loadBadges();
             this.hideLoadingOverlay();
         } catch (error) {
@@ -96,6 +99,29 @@ class BadgesPage {
         `;
         
         return badgeElement;
+    }
+
+    addUsernameToNav(username) {
+        const navMenu = document.querySelector('nav ul');
+        if (!navMenu) return;
+        
+        // Check if username element already exists
+        if (!navMenu.querySelector('.username-display')) {
+            // Create username display element
+            const usernameItem = document.createElement('li');
+            usernameItem.className = 'username-display';
+            usernameItem.textContent = username;
+            
+            // Insert at the appropriate position
+            const homeLink = navMenu.querySelector('a[href="index.html"]');
+            const homeLi = homeLink ? homeLink.closest('li') : null;
+            
+            if (homeLi && homeLi.nextSibling) {
+                navMenu.insertBefore(usernameItem, homeLi.nextSibling);
+            } else {
+                navMenu.appendChild(usernameItem);
+            }
+        }
     }
 }
 
