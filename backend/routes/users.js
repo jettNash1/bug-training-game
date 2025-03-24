@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const User = require('../models/user.model');
+const Setting = require('../models/setting.model');
 const jwt = require('jsonwebtoken');
 const auth = require('../middleware/auth');
 
@@ -571,6 +572,30 @@ router.get('/data', auth, async (req, res) => {
             success: false, 
             message: 'Failed to get user data',
             error: process.env.NODE_ENV === 'production' ? null : error.message
+        });
+    }
+});
+
+// Get quiz timer settings for users
+router.get('/settings/quiz-timer', auth, async (req, res) => {
+    try {
+        // Retrieve timer settings from database
+        const timerSetting = await Setting.findOne({ key: 'quizTimerSeconds' });
+        
+        // Default to 60 seconds if not found
+        const secondsPerQuestion = timerSetting ? timerSetting.value : 60;
+        
+        return res.json({
+            success: true,
+            data: {
+                secondsPerQuestion
+            }
+        });
+    } catch (error) {
+        console.error('Error retrieving quiz timer settings:', error);
+        return res.status(500).json({
+            success: false,
+            message: 'Failed to retrieve quiz timer settings'
         });
     }
 });

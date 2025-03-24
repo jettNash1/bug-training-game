@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const User = require('../models/user.model');
+const Setting = require('../models/setting.model');
 const jwt = require('jsonwebtoken');
 const auth = require('../middleware/auth');
 const fs = require('fs').promises;
@@ -1092,6 +1093,101 @@ router.get('/quizzes/:quizName/scenarios', auth, async (req, res) => {
         return res.status(500).json({
             success: false,
             message: `Server error: ${error.message}`
+        });
+    }
+});
+
+// Quiz Timer Settings
+// GET - Retrieve the current quiz timer settings
+router.get('/settings/quiz-timer', auth, async (req, res) => {
+    try {
+        // Verify admin status
+        if (!req.user.isAdmin) {
+            return res.status(403).json({
+                success: false,
+                message: 'Admin access required'
+            });
+        }
+
+        // Retrieve timer settings from database
+        const timerSetting = await Setting.findOne({ key: 'quizTimerSeconds' });
+        
+        // Default to 60 seconds if not found
+        const secondsPerQuestion = timerSetting ? timerSetting.value : 60;
+        
+        return res.json({
+            success: true,
+            data: {
+                secondsPerQuestion,
+                updatedAt: timerSetting ? timerSetting.updatedAt : null
+            }
+        });
+    } catch (error) {
+        console.error('Error retrieving quiz timer settings:', error);
+        return res.status(500).json({
+            success: false,
+            message: 'Failed to retrieve quiz timer settings',
+            error: error.message
+        });
+    }
+});
+
+// POST - Update the quiz timer settings
+router.post('/settings/quiz-timer', auth, async (req, res) => {
+    try {
+        // Verify admin status
+        if (!req.user.isAdmin) {
+            return res.status(403).json({
+                success: false,
+                message: 'Admin access required'
+            });
+        }
+
+        const { secondsPerQuestion } = req.body;
+        
+        // Validate the seconds value
+        if (secondsPerQuestion === undefined || 
+            secondsPerQuestion === null || 
+            isNaN(secondsPerQuestion) || 
+            secondsPerQuestion < 0 || 
+            secondsPerQuestion > 300) {
+            return res.status(400).json({
+                success: false,
+                message: 'Invalid timer value. Must be between 0 and 300 seconds.'
+            });
+        }
+
+        // Update or create the setting
+        const timerSetting = await Setting.findOneAndUpdate(
+            { key: 'quizTimerSeconds' },
+            { 
+                $set: { 
+                    value: secondsPerQuestion,
+                    description: 'Time allowed for each quiz question in seconds (0-300, 0 = disabled)'
+                }
+            },
+            { 
+                new: true,       // Return the updated document
+                upsert: true     // Create if it doesn't exist
+            }
+        );
+        
+        console.log(`Quiz timer updated to ${secondsPerQuestion} seconds by admin ${req.user.username}`);
+        
+        return res.json({
+            success: true,
+            message: 'Quiz timer settings updated successfully',
+            data: {
+                secondsPerQuestion: timerSetting.value,
+                updatedAt: timerSetting.updatedAt
+            }
+        });
+    } catch (error) {
+        console.error('Error updating quiz timer settings:', error);
+        return res.status(500).json({
+            success: false,
+            message: 'Failed to update quiz timer settings',
+            error: error.message
         });
     }
 });

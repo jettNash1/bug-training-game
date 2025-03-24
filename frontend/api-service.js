@@ -917,15 +917,32 @@ export class APIService {
                 // Try to get from API first
                 const response = await this.fetchWithAdminAuth(`${this.baseUrl}/admin/settings/quiz-timer`);
                 
-                // If response is successful, return it
-                if (response.success && response.data) {
+                // If response is successful, update localStorage and return the value
+                if (response.success && response.data && response.data.secondsPerQuestion !== undefined) {
+                    // Update localStorage for immediate effect on quizzes
+                    localStorage.setItem('quizTimerValue', response.data.secondsPerQuestion.toString());
+                    console.log('Timer settings loaded from API:', response.data.secondsPerQuestion);
                     return response;
                 }
             } catch (apiError) {
-                console.warn('Failed to fetch quiz timer settings from API, using localStorage fallback:', apiError);
+                console.warn('Failed to fetch quiz timer settings from API, trying user endpoint:', apiError);
+                
+                try {
+                    // Try the user endpoint as a fallback (read-only access)
+                    const userResponse = await this.fetchWithAuth(`${this.baseUrl}/users/settings/quiz-timer`);
+                    
+                    if (userResponse.success && userResponse.data && userResponse.data.secondsPerQuestion !== undefined) {
+                        // Update localStorage for immediate effect on quizzes
+                        localStorage.setItem('quizTimerValue', userResponse.data.secondsPerQuestion.toString());
+                        console.log('Timer settings loaded from user API:', userResponse.data.secondsPerQuestion);
+                        return userResponse;
+                    }
+                } catch (userApiError) {
+                    console.warn('Failed to fetch quiz timer settings from user API, using localStorage fallback:', userApiError);
+                }
             }
             
-            // If API call failed or returned no data, use localStorage as fallback
+            // If API calls failed or returned no data, use localStorage as fallback
             const storedTimerValue = localStorage.getItem('quizTimerValue');
             const secondsPerQuestion = storedTimerValue !== null ? parseInt(storedTimerValue, 10) : 60;
             
@@ -970,6 +987,12 @@ export class APIService {
                         secondsPerQuestion: secondsValue
                     })
                 });
+                
+                // If successful, update localStorage
+                if (response.success) {
+                    localStorage.setItem('quizTimerValue', secondsValue.toString());
+                    console.log('Timer settings saved to API:', secondsValue);
+                }
                 
                 return response;
             } catch (apiError) {

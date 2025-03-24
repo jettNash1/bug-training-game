@@ -164,6 +164,9 @@ mongoose.connect(process.env.MONGODB_URI, mongooseOptions)
             await mongoose.connection.collection('users').createIndex({ 'quizResults.quizName': 1 });
             await mongoose.connection.collection('users').createIndex({ 'quizProgress': 1 });
             
+            // Initialize system settings
+            await initializeSystemSettings();
+            
             // Log successful connection and index creation
             console.log('Connected to MongoDB and created indexes');
             
@@ -176,7 +179,7 @@ mongoose.connect(process.env.MONGODB_URI, mongooseOptions)
                 });
             }
         } catch (error) {
-            console.error('Error creating indexes:', error);
+            console.error('Error creating indexes or initializing settings:', error);
             // Continue even if index creation fails
         }
     })
@@ -187,6 +190,37 @@ mongoose.connect(process.env.MONGODB_URI, mongooseOptions)
             process.exit(1);
         }
     });
+
+// Initialize system settings
+async function initializeSystemSettings() {
+    try {
+        // Import Setting model
+        const Setting = require('./models/setting.model');
+        
+        // Default settings
+        const defaultSettings = [
+            {
+                key: 'quizTimerSeconds',
+                value: 60,
+                description: 'Time allowed for each quiz question in seconds (0-300, 0 = disabled)'
+            }
+            // Add other default settings here as needed
+        ];
+        
+        // Initialize each setting (only if it doesn't exist)
+        for (const setting of defaultSettings) {
+            const exists = await Setting.findOne({ key: setting.key });
+            if (!exists) {
+                await Setting.create(setting);
+                console.log(`Created default setting: ${setting.key} = ${setting.value}`);
+            }
+        }
+        
+        console.log('System settings initialized');
+    } catch (error) {
+        console.error('Error initializing system settings:', error);
+    }
+}
 
 // Add MongoDB connection error handlers with reconnection logic
 mongoose.connection.on('error', err => {
