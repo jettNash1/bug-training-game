@@ -397,39 +397,37 @@ class IndexPage {
     }
 
     addBadgesNavLink() {
-        // First, check if the nav link already exists
-        if (document.querySelector('nav a[href="badges.html"]')) return;
+        // First, check if we need to handle the header format shown in the screenshot
+        const usernameDisplay = document.querySelector('.user-info, .username-display');
+        const logoutButton = document.querySelector('a.logout-button, button.logout-button, a[onclick*="handleLogout"]');
         
-        // Get the nav element
-        const navMenu = document.querySelector('nav ul');
-        if (!navMenu) return;
-        
-        // Get the username display element and logout link
-        const usernameElement = navMenu.querySelector('li.username-display');
-        const logoutLink = navMenu.querySelector('li a[onclick*="handleLogout"]');
-        
-        if (!usernameElement || !logoutLink) {
-            console.error('Could not find username or logout elements');
+        if (!usernameDisplay || !logoutButton) {
+            console.log('Could not find standard username or logout elements, trying alternative approach');
+            this.addBadgesButtonAlternative();
             return;
         }
         
-        // Create the badges nav item
-        const badgesItem = document.createElement('li');
-        badgesItem.innerHTML = `
-            <a href="badges.html" class="badges-link">
-                <i class="fa-solid fa-award"></i> Badges
-            </a>
-        `;
-        
-        // Add class for styling
-        const badgesLink = badgesItem.querySelector('a');
-        if (badgesLink) {
-            badgesLink.classList.add('nav-button', 'badges-button');
+        // Get the parent container that holds the username and logout button
+        const headerRightSection = logoutButton.closest('div, nav');
+        if (!headerRightSection) {
+            console.log('Could not find header right section, trying alternative approach');
+            this.addBadgesButtonAlternative();
+            return;
         }
         
-        // Insert after username and before logout
-        const logoutItem = logoutLink.closest('li');
-        navMenu.insertBefore(badgesItem, logoutItem);
+        // Check if badges button already exists
+        if (headerRightSection.querySelector('a[href="badges.html"]')) {
+            return;
+        }
+        
+        // Create the badges button with styling to match the logout button but in blue
+        const badgesButton = document.createElement('a');
+        badgesButton.href = 'badges.html';
+        badgesButton.className = 'badges-button';
+        badgesButton.innerHTML = '<i class="fa-solid fa-award"></i> Badges';
+        
+        // Insert before the logout button
+        headerRightSection.insertBefore(badgesButton, logoutButton);
         
         // Add Font Awesome if not already included
         if (!document.querySelector('link[href*="font-awesome"]')) {
@@ -439,7 +437,7 @@ class IndexPage {
             document.head.appendChild(fontAwesome);
         }
         
-        // Add the CSS for the badges button
+        // Add the CSS for the badges button to match the layout in the screenshot
         if (!document.getElementById('badges-button-style')) {
             const style = document.createElement('style');
             style.id = 'badges-button-style';
@@ -454,8 +452,102 @@ class IndexPage {
                     display: inline-flex;
                     align-items: center;
                     justify-content: center;
-                    margin: 0 8px;
+                    margin-right: 10px;
                     font-weight: 500;
+                    font-size: 14px;
+                }
+                
+                .badges-button:hover {
+                    background-color: var(--primary-color-dark, #3a80d2);
+                    color: white;
+                }
+                
+                .badges-button i {
+                    margin-right: 6px;
+                }
+            `;
+            document.head.appendChild(style);
+        }
+    }
+
+    // Add a fallback method to try different approaches to add the badges button
+    addBadgesButtonAlternative() {
+        // Look for the header element
+        const header = document.querySelector('header');
+        if (!header) {
+            console.error('Could not find header element');
+            return;
+        }
+        
+        // Try to identify the user area based on the screenshot layout
+        const userArea = header.querySelector('.header-container > div:last-child') || 
+                         header.querySelector('.user-info') || 
+                         header.querySelector('.header-right');
+        
+        // If we can't find a designated user area, create one
+        if (!userArea) {
+            // Check if we have a header container
+            const headerContainer = header.querySelector('.header-container');
+            if (!headerContainer) {
+                console.error('Could not find header container');
+                return;
+            }
+            
+            // Create a user area div
+            const newUserArea = document.createElement('div');
+            newUserArea.className = 'header-right';
+            headerContainer.appendChild(newUserArea);
+            
+            // Add the badges button to this new area
+            this.addBadgeToElement(newUserArea);
+        } else {
+            // Add the badges button to the existing user area
+            this.addBadgeToElement(userArea);
+        }
+    }
+
+    // Helper method to add the badge to a specific element
+    addBadgeToElement(element) {
+        // Check if badges button already exists
+        if (element.querySelector('a[href="badges.html"]')) {
+            return;
+        }
+        
+        // Create the badges button
+        const badgesButton = document.createElement('a');
+        badgesButton.href = 'badges.html';
+        badgesButton.className = 'badges-button';
+        badgesButton.innerHTML = '<i class="fa-solid fa-award"></i> Badges';
+        
+        // Find the logout button if it exists in this element
+        const logoutButton = element.querySelector('a.logout-button, button.logout-button, a[onclick*="handleLogout"]');
+        
+        if (logoutButton) {
+            // Insert before the logout button
+            element.insertBefore(badgesButton, logoutButton);
+        } else {
+            // Add to the beginning of the element
+            element.prepend(badgesButton);
+        }
+        
+        // Ensure styles are added
+        if (!document.getElementById('badges-button-style')) {
+            const style = document.createElement('style');
+            style.id = 'badges-button-style';
+            style.textContent = `
+                .badges-button {
+                    background-color: var(--primary-color, #4a90e2);
+                    color: white;
+                    border-radius: 4px;
+                    padding: 8px 16px;
+                    transition: background-color 0.3s ease;
+                    text-decoration: none;
+                    display: inline-flex;
+                    align-items: center;
+                    justify-content: center;
+                    margin-right: 10px;
+                    font-weight: 500;
+                    font-size: 14px;
                 }
                 
                 .badges-button:hover {
