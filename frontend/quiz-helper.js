@@ -307,9 +307,15 @@ export class BaseQuiz {
         // Update XP display
         const xpGained = document.getElementById('xp-gained');
         if (xpGained) {
-            xpGained.textContent = option.experience >= 0 ? 
-                `Experience gained: +${option.experience}` : 
-                `Experience: ${option.experience}`;
+            if (option.isTimeout) {
+                // Hide experience value for timeout scenarios
+                xpGained.textContent = '';
+            } else {
+                // Show experience for normal scenarios
+                xpGained.textContent = option.experience >= 0 ? 
+                    `Experience gained: +${option.experience}` : 
+                    `Experience: ${option.experience}`;
+            }
         }
 
         // Update tool display if applicable
