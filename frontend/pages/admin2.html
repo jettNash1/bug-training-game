@@ -370,16 +370,23 @@
             margin-top: 1.5rem;
         }
         
+        .scenarios-wrapper {
+            display: flex;
+            flex-direction: column;
+            width: 100%;
+        }
+        
         .scenarios-intro {
             margin-bottom: 1.5rem;
             color: #555;
+            padding-left: 0;
+            font-size: 1rem;
         }
         
         .scenario-categories {
             display: flex;
             flex-direction: column;
             gap: 2rem;
-            margin-top: 1.5rem;
             width: 100%;
         }
         
@@ -451,7 +458,7 @@
             background: #2980b9;
         }
         
-        /* User details overlay - ensure modal is centered and properly sized */
+        /* User Details Modal Styles */
         .user-details-overlay {
             position: fixed;
             top: 0;
@@ -466,35 +473,337 @@
         }
         
         .user-details-content {
-            background: white;
+            background-color: white;
             border-radius: 8px;
-            padding: 2rem;
-            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+            width: 90%;
+            max-width: 900px;
             max-height: 90vh;
             overflow-y: auto;
-            width: 90%;
-            max-width: 1200px;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
         }
         
-        /* Action button styles */
-        .action-button {
-            background: #3498db;
-            color: white;
+        .details-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px 20px;
+            border-bottom: 1px solid #e0e0e0;
+        }
+        
+        .details-header h3 {
+            margin: 0;
+            font-size: 1.5rem;
+            color: #2c3e50;
+        }
+        
+        .close-btn {
+            background: none;
             border: none;
-            padding: 10px 16px;
-            border-radius: 4px;
+            font-size: 1.8rem;
+            cursor: pointer;
+            color: #7f8c8d;
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+        }
+        
+        .close-btn:hover {
+            background-color: #f8f9fa;
+            color: #e74c3c;
+        }
+        
+        /* Tabs Navigation */
+        .tabs {
+            display: flex;
+            border-bottom: 1px solid #e0e0e0;
+            background-color: #f8f9fa;
+        }
+        
+        .tab-button {
+            padding: 12px 20px;
+            background: none;
+            border: none;
             cursor: pointer;
             font-weight: 500;
-            transition: background-color 0.2s, transform 0.1s;
-            font-size: 1rem;
+            color: #7f8c8d;
+            position: relative;
+            transition: all 0.2s ease;
+            text-decoration: none;
         }
         
-        .action-button:hover {
-            background: #2980b9;
+        .tab-button:hover {
+            color: #3498db;
+            background-color: rgba(52, 152, 219, 0.05);
         }
         
-        .action-button:active {
-            transform: translateY(1px);
+        .tab-button.active {
+            color: #3498db;
+            font-weight: 600;
+        }
+        
+        .tab-button.active::after {
+            content: '';
+            position: absolute;
+            bottom: -1px;
+            left: 0;
+            width: 100%;
+            height: 3px;
+            background-color: #3498db;
+        }
+        
+        /* Tab Content */
+        .tab-container {
+            padding: 20px;
+            flex: 1;
+        }
+        
+        .tab-content {
+            display: none;
+        }
+        
+        .tab-content.active {
+            display: block;
+        }
+        
+        /* User Information */
+        .user-information {
+            background-color: #f8f9fa;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 20px;
+        }
+        
+        .user-information h4 {
+            margin-top: 0;
+            margin-bottom: 15px;
+            color: #2c3e50;
+            font-size: 1.2rem;
+        }
+        
+        .info-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 10px;
+        }
+        
+        .info-row {
+            display: flex;
+            margin-bottom: 8px;
+        }
+        
+        .info-label {
+            font-weight: 600;
+            color: #7f8c8d;
+            margin-right: 10px;
+        }
+        
+        .info-value {
+            color: #2c3e50;
+        }
+        
+        /* Progress Summary */
+        .progress-summary {
+            margin-bottom: 20px;
+        }
+        
+        .progress-summary h4 {
+            margin-top: 0;
+            margin-bottom: 15px;
+            color: #2c3e50;
+            font-size: 1.2rem;
+        }
+        
+        .quiz-progress-list {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            gap: 15px;
+        }
+        
+        .quiz-progress-item {
+            background-color: white;
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            padding: 15px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+        
+        .quiz-progress-item:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+        
+        .quiz-progress-item h4 {
+            margin-top: 0;
+            margin-bottom: 10px;
+            font-size: 1.1rem;
+            color: #2c3e50;
+        }
+        
+        .progress-details {
+            margin-bottom: 15px;
+        }
+        
+        .progress-details div {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 5px;
+        }
+        
+        .progress-details strong {
+            color: #7f8c8d;
+        }
+        
+        .not-started {
+            border-left: 4px solid #95a5a6;
+        }
+        
+        .in-progress {
+            border-left: 4px solid #f39c12;
+        }
+        
+        .completed-partial {
+            border-left: 4px solid #3498db;
+        }
+        
+        .completed-perfect {
+            border-left: 4px solid #2ecc71;
+        }
+        
+        .text-muted {
+            color: #95a5a6;
+        }
+        
+        .text-warning {
+            color: #f39c12;
+        }
+        
+        .text-primary {
+            color: #3498db;
+        }
+        
+        .text-success {
+            color: #2ecc71;
+        }
+        
+        /* Quiz Actions */
+        .quiz-actions {
+            display: flex;
+            gap: 10px;
+        }
+        
+        .view-questions-btn, .reset-quiz-btn {
+            padding: 8px 12px;
+            border: none;
+            border-radius: 4px;
+            font-size: 0.85rem;
+            cursor: pointer;
+            transition: background-color 0.2s ease;
+            flex: 1;
+        }
+        
+        .view-questions-btn {
+            background-color: #3498db;
+            color: white;
+        }
+        
+        .view-questions-btn:hover {
+            background-color: #2980b9;
+        }
+        
+        .reset-quiz-btn {
+            background-color: #e74c3c;
+            color: white;
+        }
+        
+        .reset-quiz-btn:hover {
+            background-color: #c0392b;
+        }
+        
+        /* Activity Tab */
+        .activity-timeline {
+            max-height: 500px;
+            overflow-y: auto;
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+        }
+        
+        .activity-item {
+            display: flex;
+            padding: 12px 15px;
+            border-bottom: 1px solid #e0e0e0;
+        }
+        
+        .activity-item:last-child {
+            border-bottom: none;
+        }
+        
+        .activity-time {
+            min-width: 120px;
+            color: #7f8c8d;
+            font-size: 0.9rem;
+        }
+        
+        .activity-details {
+            flex: 1;
+        }
+        
+        .activity-type {
+            font-weight: 600;
+            margin-bottom: 5px;
+            color: #2c3e50;
+        }
+        
+        .activity-description {
+            color: #7f8c8d;
+        }
+        
+        .no-activity {
+            text-align: center;
+            padding: 20px;
+            color: #7f8c8d;
+            font-style: italic;
+        }
+        
+        /* User Actions */
+        .user-actions {
+            display: flex;
+            gap: 15px;
+            margin-top: 20px;
+            padding-top: 20px;
+            border-top: 1px solid #e0e0e0;
+        }
+        
+        .action-button {
+            padding: 10px 15px;
+            border: none;
+            border-radius: 4px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: background-color 0.2s ease;
+        }
+        
+        .reset-progress-btn {
+            background-color: #f39c12;
+            color: white;
+        }
+        
+        .reset-progress-btn:hover {
+            background-color: #d35400;
+        }
+        
+        .delete-account-btn {
+            background-color: #e74c3c;
+            color: white;
+        }
+        
+        .delete-account-btn:hover {
+            background-color: #c0392b;
         }
 
         /* Responsive styles */
@@ -537,6 +846,109 @@
                 flex-wrap: wrap;
             }
         }
+
+        /* Quiz Questions View */
+        .question-list {
+            padding: 20px;
+            max-height: 70vh;
+            overflow-y: auto;
+        }
+
+        .questions-header {
+            margin-bottom: 15px;
+        }
+
+        .questions-header h4 {
+            margin: 0;
+            color: #2c3e50;
+            font-size: 1.2rem;
+        }
+
+        .questions-container {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .question-item {
+            display: flex;
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+        }
+
+        .question-item.correct {
+            border-left: 4px solid #2ecc71;
+        }
+
+        .question-item.incorrect {
+            border-left: 4px solid #e74c3c;
+        }
+
+        .question-number {
+            background-color: #f8f9fa;
+            padding: 15px;
+            min-width: 60px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-weight: 600;
+            color: #7f8c8d;
+            border-right: 1px solid #e0e0e0;
+        }
+
+        .question-content {
+            flex: 1;
+            padding: 15px;
+        }
+
+        .question-text {
+            font-size: 1rem;
+            margin-bottom: 10px;
+            color: #2c3e50;
+        }
+
+        .question-details {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 10px;
+            font-size: 0.9rem;
+        }
+
+        .question-status {
+            display: flex;
+            align-items: center;
+            padding: 0 15px;
+            min-width: 100px;
+            justify-content: center;
+            background-color: #f8f9fa;
+            border-left: 1px solid #e0e0e0;
+        }
+
+        .status-indicator {
+            padding: 5px 10px;
+            border-radius: 4px;
+            font-weight: 500;
+            font-size: 0.9rem;
+        }
+
+        .status-indicator.correct {
+            background-color: #d5f5e3;
+            color: #27ae60;
+        }
+
+        .status-indicator.incorrect {
+            background-color: #fadbd8;
+            color: #c0392b;
+        }
+
+        .question-answer,
+        .question-correct-answer,
+        .question-timestamp {
+            margin-bottom: 5px;
+        }
+
     </style>
 </body>
 </html> 
