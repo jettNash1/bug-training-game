@@ -355,11 +355,26 @@ export class APIService {
                     }
                 }
                 
+                // Get the error text and try to parse as JSON
                 const errorText = await response.text();
-                throw new Error(`API error (${response.status}): ${errorText || response.statusText}`);
+                let errorData;
+                try {
+                    errorData = JSON.parse(errorText);
+                    throw new Error(errorData.message || `API error (${response.status}): ${response.statusText}`);
+                } catch (e) {
+                    // If parsing fails, use the raw text
+                    throw new Error(`API error (${response.status}): ${errorText || response.statusText}`);
+                }
             }
             
-            return await response.json();
+            // Try to parse the response as JSON, but handle text responses too
+            const responseText = await response.text();
+            try {
+                return JSON.parse(responseText);
+            } catch (e) {
+                console.warn('Response is not valid JSON, returning as text:', responseText);
+                return { success: true, data: responseText };
+            }
         } catch (error) {
             // Clear timeout in case of error
             clearTimeout(timeoutId);

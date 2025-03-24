@@ -221,13 +221,13 @@ export class QuizUser {
 
     async getQuizProgress(quizName) {
         try {
-            const response = await this.api.fetchWithAuth(`${config.apiUrl}/users/quiz-progress/${quizName}`);
-            if (!response.ok) {
-                throw new Error('Failed to get quiz progress');
+            // Use the apiService method instead of direct fetch to benefit from all token handling and error management
+            const response = await this.api.getQuizProgress(quizName);
+            if (!response || !response.success) {
+                console.warn('Quiz progress API returned unsuccessful response:', response);
+                return null;
             }
-            const data = await response.json();
-            console.log('Got quiz progress:', data);
-            return data.success ? data.data : null;
+            return response.data;
         } catch (error) {
             console.error('Failed to get quiz progress:', error);
             return null;
@@ -254,37 +254,49 @@ export class QuizUser {
                 completedAt: new Date().toISOString()
             };
 
-            // Save to server
-            const response = await this.api.fetchWithAuth(`${config.apiUrl}/users/quiz-results`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify(quizData)
-            });
-
-            if (!response.ok) {
-                throw new Error('Failed to save quiz result to server');
-            }
-
-            const data = await response.json();
-            if (data.success) {
-                this.quizResults = data.data;
+            // Use the apiService to save quiz results
+            try {
+                // Save to server using the appropriate API method
+                const response = await this.api.fetchWithAuth(`${config.apiUrl}/users/quiz-results`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(quizData)
+                });
                 
-                // Also update the quiz progress
-                const progressData = {
-                    experience: quizData.experience,
-                    tools: quizData.tools,
-                    questionHistory: quizData.questionHistory,
-                    questionsAnswered: quizData.questionsAnswered,
-                    currentScenario: quizData.questionsAnswered % 5, // Keep track of position within current level
-                    lastUpdated: quizData.completedAt
-                };
+                // Process response
+                const data = await response.json();
+                if (data.success) {
+                    this.quizResults = data.data;
+                    
+                    // Also update the quiz progress
+                    const progressData = {
+                        experience: quizData.experience,
+                        tools: quizData.tools,
+                        questionHistory: quizData.questionHistory,
+                        questionsAnswered: quizData.questionsAnswered,
+                        currentScenario: quizData.questionsAnswered % 5, // Keep track of position within current level
+                        lastUpdated: quizData.completedAt
+                    };
+                    
+                    // Save progress using the API service
+                    await this.api.saveQuizProgress(quizName, progressData);
+                    return true;
+                }
                 
-                await this.api.saveQuizProgress(quizName, progressData);
-                return true;
+                // If we get here, saving failed
+                console.warn('Failed to save quiz result to server. Success = false');
+                return false;
+            } catch (apiError) {
+                console.error('API error when saving quiz result:', apiError);
+                
+                // Fall back to local storage
+                this.saveToLocalStorage(quizData);
+                
+                // Still return false to indicate API save failed
+                return false;
             }
-            return false;
         } catch (error) {
             console.error('Failed to save quiz result:', error);
             return false;
