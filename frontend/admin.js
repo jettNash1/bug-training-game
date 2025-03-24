@@ -87,32 +87,59 @@ class AdminDashboard {
     addTimerSettingsButton() {
         console.log('Adding timer settings button to admin panel...');
         
-        // Add the button directly to the admin panel top section
-        const actionSection = document.querySelector('.panel-header .search-controls');
-        if (!actionSection) {
-            console.error('Could not find admin panel action section');
+        // Check if button already exists to avoid duplicates
+        if (document.getElementById('quizTimerSettingsBtn')) {
+            console.log('Timer settings button already exists, skipping');
             return;
         }
         
-        // Create a standalone button element
+        // Try different selectors for where to add the button
+        const actionContainers = [
+            document.querySelector('.panel-header .search-controls'),
+            document.querySelector('.search-controls'),
+            document.querySelector('.csv-export-dropdown')
+        ];
+        
+        // Find first valid container
+        const actionContainer = actionContainers.find(container => container !== null);
+        if (!actionContainer) {
+            console.error('Could not find any suitable container for timer settings button');
+            return;
+        }
+        
+        console.log('Found container for timer button:', actionContainer);
+        
+        // Create the button directly (no wrapping divs)
         const timerButton = document.createElement('button');
         timerButton.id = 'quizTimerSettingsBtn';
         timerButton.className = 'action-button';
+        timerButton.style.cssText = `
+            margin-left: 10px;
+            background-color: #4444ff;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+        `;
         timerButton.textContent = 'Quiz Timer Settings';
-        timerButton.style.marginLeft = '10px';
         
-        // Create a wrapper div to match other controls
-        const buttonWrapper = document.createElement('div');
-        buttonWrapper.className = 'control-field';
-        buttonWrapper.appendChild(timerButton);
+        // Add button to page
+        if (actionContainer.className === 'csv-export-dropdown') {
+            // If we're adding to dropdown, add it after the dropdown
+            actionContainer.parentNode.insertBefore(timerButton, actionContainer.nextSibling);
+        } else {
+            // Create a wrapper div to match other controls
+            const buttonWrapper = document.createElement('div');
+            buttonWrapper.className = 'control-field';
+            buttonWrapper.appendChild(timerButton);
+            actionContainer.appendChild(buttonWrapper);
+        }
         
-        // Add to the page
-        actionSection.appendChild(buttonWrapper);
-        
-        // Add direct click event
+        // Add click handler with a simple alert to verify it works
         timerButton.onclick = (e) => {
             e.preventDefault();
-            console.log('Timer button clicked');
+            console.log('Timer button clicked!');
             this.showTimerSettings();
         };
         
@@ -121,16 +148,50 @@ class AdminDashboard {
 
     async preloadTimerSettings() {
         try {
-            const settings = await this.apiService.getQuizTimerSettings();
-            if (settings.success && settings.data && settings.data.secondsPerQuestion) {
-                this.timerSettings = settings.data;
+            // First check if there's already a value in localStorage
+            const storedValue = localStorage.getItem('quizTimerValue');
+            if (storedValue !== null) {
+                // Parse the value, ensuring it's a valid number between 0-300
+                let timerValue = parseInt(storedValue, 10);
                 
-                // Save to localStorage for quizzes to use
-                localStorage.setItem('quizTimerValue', settings.data.secondsPerQuestion.toString());
-                console.log('Preloaded timer settings:', settings.data.secondsPerQuestion);
+                // Validate the value
+                if (isNaN(timerValue) || timerValue < 0 || timerValue > 300) {
+                    console.warn('Invalid timer value in localStorage, resetting to default');
+                    timerValue = 60; // Default to 60 seconds
+                    localStorage.setItem('quizTimerValue', timerValue.toString());
+                }
+                
+                this.timerSettings.secondsPerQuestion = timerValue;
+                console.log('Using timer settings from localStorage:', timerValue);
+            }
+            
+            // Try to get settings from API (but don't block on failure)
+            try {
+                const settings = await this.apiService.getQuizTimerSettings();
+                if (settings.success && settings.data && settings.data.secondsPerQuestion !== undefined) {
+                    this.timerSettings.secondsPerQuestion = settings.data.secondsPerQuestion;
+                    
+                    // Save to localStorage for quizzes to use
+                    localStorage.setItem('quizTimerValue', settings.data.secondsPerQuestion.toString());
+                    console.log('Preloaded timer settings from API:', settings.data.secondsPerQuestion);
+                }
+            } catch (apiError) {
+                console.warn('Failed to get timer settings from API, using localStorage value', apiError);
+                
+                // Ensure there's always a value in localStorage
+                if (localStorage.getItem('quizTimerValue') === null) {
+                    localStorage.setItem('quizTimerValue', '60'); // Default to 60 seconds
+                    this.timerSettings.secondsPerQuestion = 60;
+                }
             }
         } catch (error) {
             console.error('Failed to preload timer settings:', error);
+            
+            // Make sure we have a default value as fallback
+            if (localStorage.getItem('quizTimerValue') === null) {
+                localStorage.setItem('quizTimerValue', '60');
+                this.timerSettings.secondsPerQuestion = 60;
+            }
         }
     }
 
@@ -3297,166 +3358,174 @@ class AdminDashboard {
         }
     }
 
-    // Show quiz timer settings dialog with a simpler approach
+    // Show quiz timer settings dialog with the simplest possible approach
     async showTimerSettings() {
-        console.log('Showing timer settings dialog...');
-        
         try {
+            console.log('Showing timer settings dialog...');
+            
             // Ensure settings are loaded
             if (!this.timerSettings) {
                 await this.loadTimerSettings();
             }
             
-            console.log('Current timer settings:', this.timerSettings);
+            // Current timer value
+            const currentValue = this.timerSettings.secondsPerQuestion || 60;
             
-            // Create simple modal overlay
-            const overlay = document.createElement('div');
-            overlay.style.cssText = `
+            // Create a transparent backgrop div that covers the entire screen
+            const backdrop = document.createElement('div');
+            backdrop.id = 'timer-settings-backdrop';
+            backdrop.style.cssText = `
                 position: fixed;
                 top: 0;
                 left: 0;
                 width: 100%;
                 height: 100%;
-                background: rgba(0, 0, 0, 0.7);
+                background-color: rgba(0, 0, 0, 0.7);
+                z-index: 9999;
                 display: flex;
                 justify-content: center;
                 align-items: center;
-                z-index: 2000;
             `;
             
-            // Current timer value
-            const currentValue = this.timerSettings.secondsPerQuestion || 60;
-            
-            // Create simple modal content
-            const modal = document.createElement('div');
-            modal.style.cssText = `
-                background: white;
-                padding: 20px;
-                border-radius: 8px;
-                width: 400px;
-                max-width: 90%;
-            `;
-            
-            // Simple HTML content
-            modal.innerHTML = `
-                <h2 style="margin-top: 0;">Quiz Timer Settings</h2>
-                <p>Set the time allowed for each quiz question.</p>
-                <p>Current setting: <strong>${currentValue === 0 ? 'Timer disabled' : currentValue + ' seconds'}</strong></p>
-                
-                <form id="timerSettingsForm" style="margin-top: 20px;">
+            // Create modal container
+            const modalHTML = `
+                <div style="background-color: white; border-radius: 8px; width: 400px; max-width: 90%; padding: 20px; box-shadow: 0 0 10px rgba(0, 0, 0, 0.3);">
+                    <h2 style="margin-top: 0; color: #333; font-size: 20px;">Quiz Timer Settings</h2>
+                    <p style="margin-bottom: 5px; color: #555;">Set the time allowed for each quiz question.</p>
+                    <p style="margin-bottom: 20px;">Current setting: <strong>${currentValue === 0 ? 'Timer disabled' : currentValue + ' seconds'}</strong></p>
+                    
                     <div style="margin-bottom: 15px;">
-                        <label for="timer-value" style="display: block; margin-bottom: 5px;">
+                        <label for="timer-value-input" style="display: block; margin-bottom: 5px; font-weight: 500;">
                             Seconds per question (0-300):
                         </label>
                         <input 
                             type="number" 
-                            id="timer-value" 
+                            id="timer-value-input" 
                             min="0" 
                             max="300" 
                             value="${currentValue}"
-                            style="width: 100%; padding: 8px; box-sizing: border-box;"
+                            style="width: 100%; padding: 8px; box-sizing: border-box; border: 1px solid #ccc; border-radius: 4px;"
                         />
-                        <small style="color: #666;">Set to 0 to disable the timer completely.</small>
+                        <small style="color: #666; display: block; margin-top: 5px;">Set to 0 to disable the timer completely.</small>
                     </div>
                     
                     <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 20px;">
-                        <button type="button" id="cancel-timer-settings" style="
+                        <button type="button" id="timer-cancel-btn" style="
                             padding: 8px 16px;
                             background: #f1f1f1;
                             border: none;
                             border-radius: 4px;
                             cursor: pointer;
+                            font-weight: 500;
                         ">Cancel</button>
                         
-                        <button type="button" id="save-timer-settings" style="
+                        <button type="button" id="timer-save-btn" style="
                             padding: 8px 16px;
                             background: #4444ff;
                             color: white;
                             border: none;
                             border-radius: 4px;
                             cursor: pointer;
+                            font-weight: 500;
                         ">Save Settings</button>
                     </div>
-                </form>
+                </div>
             `;
             
-            // Add modal to overlay and overlay to body
-            overlay.appendChild(modal);
-            document.body.appendChild(overlay);
+            // Add the HTML to the backdrop
+            backdrop.innerHTML = modalHTML;
             
-            // Get form elements
-            const form = document.getElementById('timerSettingsForm');
-            const timerInput = document.getElementById('timer-value');
-            const saveButton = document.getElementById('save-timer-settings');
-            const cancelButton = document.getElementById('cancel-timer-settings');
+            // Add to the body
+            document.body.appendChild(backdrop);
             
-            // Focus on input
-            setTimeout(() => timerInput?.focus(), 100);
+            // Set up event listeners
+            const timerInput = document.getElementById('timer-value-input');
+            const saveButton = document.getElementById('timer-save-btn');
+            const cancelButton = document.getElementById('timer-cancel-btn');
             
-            // Close modal function
+            // Verify elements were found
+            if (!timerInput || !saveButton || !cancelButton) {
+                console.error('Could not find timer setting form elements',
+                    { timerInput, saveButton, cancelButton });
+                return;
+            }
+            
+            // Function to remove the modal
             const closeModal = () => {
-                document.body.removeChild(overlay);
-                document.removeEventListener('keydown', handleEscKey);
+                document.body.removeChild(backdrop);
             };
             
-            // Handle escape key
-            const handleEscKey = (e) => {
-                if (e.key === 'Escape') closeModal();
-            };
-            document.addEventListener('keydown', handleEscKey);
-            
-            // Add cancel button handler
+            // Add events
             cancelButton.onclick = closeModal;
             
-            // Add save button handler
-            saveButton.onclick = async () => {
-                try {
-                    const newValue = parseInt(timerInput.value, 10);
-                    
-                    // Validate input
-                    if (isNaN(newValue) || newValue < 0 || newValue > 300) {
-                        this.showError('Timer value must be between 0 and 300 seconds');
-                        return;
-                    }
-                    
-                    // Disable button while saving
-                    saveButton.disabled = true;
-                    saveButton.textContent = 'Saving...';
-                    
-                    // Update timer setting
-                    const response = await this.apiService.updateQuizTimerSettings(newValue);
-                    
-                    if (response.success) {
-                        // Update local settings
-                        this.timerSettings.secondsPerQuestion = newValue;
-                        
-                        // Update localStorage for immediate effect
-                        localStorage.setItem('quizTimerValue', newValue.toString());
-                        
-                        // Show success message
-                        const successMsg = newValue === 0 
-                            ? 'Quiz timer disabled successfully' 
-                            : `Quiz timer set to ${newValue} seconds successfully`;
-                        
-                        this.showSuccess(successMsg);
-                        closeModal();
-                    } else {
-                        throw new Error(response.message || 'Failed to update timer settings');
-                    }
-                } catch (error) {
-                    console.error('Failed to save timer settings:', error);
-                    this.showError(error.message || 'Failed to save timer settings');
-                    saveButton.disabled = false;
-                    saveButton.textContent = 'Save Settings';
+            // Handle escape key press
+            const handleEscape = (e) => {
+                if (e.key === 'Escape') {
+                    closeModal();
+                    document.removeEventListener('keydown', handleEscape);
+                }
+            };
+            document.addEventListener('keydown', handleEscape);
+            
+            // Click outside to close
+            backdrop.onclick = (e) => {
+                if (e.target === backdrop) {
+                    closeModal();
                 }
             };
             
-            // Prevent form submission
-            form.onsubmit = (e) => e.preventDefault();
+            // Save button click handler
+            saveButton.onclick = async () => {
+                try {
+                    // Get value from input
+                    const newValue = parseInt(timerInput.value, 10);
+                    
+                    // Validate
+                    if (isNaN(newValue) || newValue < 0 || newValue > 300) {
+                        alert('Timer value must be between 0 and 300 seconds');
+                        return;
+                    }
+                    
+                    // Update UI
+                    saveButton.disabled = true;
+                    saveButton.textContent = 'Saving...';
+                    saveButton.style.opacity = '0.7';
+                    
+                    // Call API to save
+                    const response = await this.apiService.updateQuizTimerSettings(newValue);
+                    
+                    // Success
+                    if (response.success) {
+                        // Update local cache
+                        this.timerSettings.secondsPerQuestion = newValue;
+                        
+                        // Show feedback 
+                        const message = newValue === 0 
+                            ? 'Quiz timer disabled successfully!' 
+                            : `Quiz timer set to ${newValue} seconds!`;
+                            
+                        alert(message);
+                        closeModal();
+                    } else {
+                        throw new Error(response.message || 'Failed to save settings');
+                    }
+                } catch (error) {
+                    console.error('Failed to save timer settings:', error);
+                    alert(`Error: ${error.message || 'Failed to save settings'}`);
+                    
+                    // Reset button
+                    saveButton.disabled = false;
+                    saveButton.textContent = 'Save Settings';
+                    saveButton.style.opacity = '1';
+                }
+            };
+            
+            // Focus the input field
+            setTimeout(() => timerInput.focus(), 100);
             
         } catch (error) {
             console.error('Error showing timer settings dialog:', error);
-            this.showError('Failed to show timer settings dialog');
+            alert('Could not show timer settings dialog');
         }
     }
 }
