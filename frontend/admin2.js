@@ -1756,15 +1756,76 @@ class Admin2Dashboard extends AdminDashboard {
                     <div class="questions-container">
                         ${sortedQuestions.map((question, index) => `
                             <div class="question-item ${question.correct ? 'correct' : 'incorrect'}">
-                                <div class="question-time">${this.formatDate(new Date(question.timestamp))}</div>
-                                <div class="question-details">
-                                    <div class="question-type">
-                                        <i class="fas ${this.getQuestionIcon(question.correct)}"></i>
-                                        ${this.formatQuestionType(question.type)}
+                                <div class="question-number">Q${index + 1}</div>
+                                <div class="question-content">
+                                    <div class="question-text">${question.questionText || 'Question text not available'}</div>
+                                    <div class="question-details">
+                                        <div class="question-answer">
+                                            <strong>User Answer:</strong> ${question.userAnswer || 'Not answered'}
+                                        </div>
+                                        <div class="question-correct-answer">
+                                            <strong>Correct Answer:</strong> ${question.correctAnswer || 'Not available'}
+                                        </div>
+                                        ${question.timestamp ? `
+                                            <div class="question-timestamp">
+                                                <strong>Time:</strong> ${this.formatDate(new Date(question.timestamp))}
+                                            </div>
+                                        ` : ''}
                                     </div>
-                                    <div class="question-description">${question.description}</div>
+                                </div>
+                                <div class="question-status">
+                                    <span class="status-indicator ${question.correct ? 'correct' : 'incorrect'}">
+                                        ${question.correct ? 'Correct' : 'Incorrect'}
+                                    </span>
                                 </div>
                             </div>
+                        `).join('')}
+                    </div>
+                `;
+            }
+            
+            // Assemble content
+            content.appendChild(header);
+            content.appendChild(questionList);
+            overlay.appendChild(content);
+            document.body.appendChild(overlay);
+            
+            // Add event listeners
+            closeBtn.addEventListener('click', () => {
+                overlay.remove();
+            });
+            
+            overlay.addEventListener('click', (e) => {
+                if (e.target === overlay) {
+                    overlay.remove();
+                }
+            });
+            
+            // Add event listener for escape key
+            const handleEscape = (e) => {
+                if (e.key === 'Escape') {
+                    overlay.remove();
+                    document.removeEventListener('keydown', handleEscape);
+                }
+            };
+            document.addEventListener('keydown', handleEscape);
+            
+        } catch (error) {
+            console.error('Error showing quiz questions:', error);
+            this.showError(`Failed to show quiz questions: ${error.message}`);
+        }
+    }
+
+    // Helper method for getting question icon based on correctness
+    getQuestionIcon(isCorrect) {
+        return isCorrect ? 'fa-check-circle' : 'fa-times-circle';
+    }
+
+    // Helper method for formatting question type
+    formatQuestionType(type) {
+        if (!type) return 'Question';
+        return type.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+    }
 }
 
 // Initialize the Admin2Dashboard when the document is ready
