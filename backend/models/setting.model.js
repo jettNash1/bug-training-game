@@ -29,7 +29,11 @@ settingSchema.pre('save', function(next) {
 
 // Update timestamp when value is updated
 settingSchema.pre('findOneAndUpdate', function(next) {
-    this.update({}, { $set: { updatedAt: new Date() } });
+    // Set updatedAt in the update document
+    if (!this.getUpdate().$set) {
+        this.getUpdate().$set = {};
+    }
+    this.getUpdate().$set.updatedAt = new Date();
     next();
 });
 
