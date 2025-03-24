@@ -23,7 +23,7 @@ export class SanitySmokeQuiz extends BaseQuiz {
         
         // Set the quiz name
         Object.defineProperty(this, 'quizName', {
-            value: 'sanity-smoke-quiz',
+            value: 'sanity-smoke',
             writable: false,
             configurable: false,
             enumerable: true

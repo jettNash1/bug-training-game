@@ -23,7 +23,7 @@ export class ExploratoryQuiz extends BaseQuiz {
         
         // Set the quiz name
         Object.defineProperty(this, 'quizName', {
-            value: 'exploratory-quiz',
+            value: 'exploratory',
             writable: false,
             configurable: false,
             enumerable: true
@@ -954,7 +954,8 @@ export class ExploratoryQuiz extends BaseQuiz {
                     score.experience,
                     this.player.tools,
                     score.questionHistory,
-                    score.questionsAnswered
+                    score.questionsAnswered,
+                    score.status
                 );
             }
 
