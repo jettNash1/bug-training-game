@@ -1294,23 +1294,33 @@ class Admin2Dashboard extends AdminDashboard {
     // Override the parent showUserDetails method for a tabbed interface like standard admin
     async showUserDetails(username) {
         try {
+            // Get user data
             const user = this.users.find(u => u.username === username);
             if (!user) {
-                throw new Error(`User ${username} not found`);
+                throw new Error('User not found');
             }
-            
-            // Calculate progress metrics
-            const progress = this.calculateUserProgress(user);
-            const lastActive = this.getLastActiveDate(user);
-            
-            // Create overlay
+
+            const isInterviewAccount = user.userType === 'interview_candidate';
+            // For interview accounts, allowedQuizzes means visible, everything else is hidden
+            // For regular accounts, hiddenQuizzes means hidden, everything else is visible
+            const allowedQuizzes = (user.allowedQuizzes || []).map(q => q.toLowerCase());
+            const hiddenQuizzes = (user.hiddenQuizzes || []).map(q => q.toLowerCase());
+
+            console.log('User details:', {
+                username,
+                isInterviewAccount,
+                userType: user.userType,
+                allowedQuizzes,
+                hiddenQuizzes
+            });
+
+            // Create the overlay
             const overlay = document.createElement('div');
             overlay.className = 'user-details-overlay';
             overlay.setAttribute('role', 'dialog');
             overlay.setAttribute('aria-modal', 'true');
             overlay.setAttribute('aria-labelledby', 'user-details-title');
             
-            // Create content container
             const content = document.createElement('div');
             content.className = 'user-details-content';
             
@@ -1325,33 +1335,18 @@ class Admin2Dashboard extends AdminDashboard {
             const closeBtn = document.createElement('button');
             closeBtn.className = 'close-btn';
             closeBtn.setAttribute('aria-label', 'Close details');
+            closeBtn.setAttribute('tabindex', '0');
             closeBtn.innerHTML = '×';
             
             header.appendChild(title);
             header.appendChild(closeBtn);
             
-            // Create tab navigation
-            const tabs = document.createElement('div');
-            tabs.className = 'tabs';
-            
-            // Tab buttons structure matching the standard admin page
-            tabs.innerHTML = `
-                <a href="#" class="tab-button active" data-tab="overview">Overview</a>
-                <a href="#" class="tab-button" data-tab="quiz-results">Quiz Results</a>
-                <a href="#" class="tab-button" data-tab="activity">Activity</a>
-            `;
-            
-            // Create tab contents container
-            const tabContainer = document.createElement('div');
-            tabContainer.className = 'tab-container';
-            
-            // Overview Tab Content
-            const overviewTab = document.createElement('div');
-            overviewTab.id = 'overview-tab';
-            overviewTab.className = 'tab-content active';
+            // Only create the Overview content - remove tabs since they're not needed
+            const overviewContent = document.createElement('div');
+            overviewContent.className = 'overview-content';
             
             // User Information Section
-            overviewTab.innerHTML = `
+            overviewContent.innerHTML = `
                 <div class="user-information">
                     <h4>User Information</h4>
                     <div class="info-grid">
@@ -1361,15 +1356,15 @@ class Admin2Dashboard extends AdminDashboard {
                         </div>
                         <div class="info-row">
                             <div class="info-label">Account Type:</div>
-                            <div class="info-value">${user.userType === 'interview_candidate' ? 'Regular' : 'Regular'}</div>
+                            <div class="info-value">${isInterviewAccount ? 'Interview Candidate' : 'Regular'}</div>
                         </div>
                         <div class="info-row">
                             <div class="info-label">Last Active:</div>
-                            <div class="info-value">${this.formatDate(lastActive)}</div>
+                            <div class="info-value">${this.formatDate(this.getLastActiveDate(user))}</div>
                         </div>
                         <div class="info-row">
                             <div class="info-label">Overall Progress:</div>
-                            <div class="info-value">${progress.toFixed(1)}%</div>
+                            <div class="info-value">${this.calculateUserProgress(user).toFixed(1)}%</div>
                         </div>
                     </div>
                 </div>
@@ -1381,152 +1376,192 @@ class Admin2Dashboard extends AdminDashboard {
             `;
             
             // Populate quiz progress list
-            const quizProgressList = overviewTab.querySelector('.quiz-progress-list');
+            const quizProgressList = overviewContent.querySelector('.quiz-progress-list');
             
             // Generate quiz progress items to match standard admin
-            this.quizTypes.forEach(quizType => {
-                const quizProgress = user.quizProgress?.[quizType.toLowerCase()] || {};
-                const quizResult = user.quizResults?.find(r => r.quizName.toLowerCase() === quizType.toLowerCase());
+            this.quizTypes
+                .slice()
+                .sort((a, b) => this.formatQuizName(a).localeCompare(this.formatQuizName(b)))
+                .forEach(quizType => {
+                    const quizLower = quizType.toLowerCase();
+                    
+                    // For interview accounts:
+                    //   - Visible (checked) if in allowedQuizzes
+                    //   - Hidden (unchecked) if not in allowedQuizzes
+                    // For regular accounts:
+                    //   - Visible (checked) if not in hiddenQuizzes
+                    //   - Hidden (unchecked) if in hiddenQuizzes
+                    const isInAllowedQuizzes = allowedQuizzes.includes(quizLower);
+                    const isInHiddenQuizzes = hiddenQuizzes.includes(quizLower);
+                    
+                    // Determine visibility based on account type
+                    const isVisible = isInterviewAccount ? isInAllowedQuizzes : !isInHiddenQuizzes;
+                    
+                    console.log('Quiz visibility details:', {
+                        quizName: quizType,
+                        quizLower,
+                        isInterviewAccount,
+                        allowedQuizzes,
+                        hiddenQuizzes,
+                        isInAllowedQuizzes,
+                        isInHiddenQuizzes,
+                        isVisible
+                    });
                 
-                // Use data from either progress or results, prioritizing results
-                const quizExperience = quizResult?.experience || quizProgress?.experience || 0;
-                const questionsAnswered = quizResult?.questionsAnswered || 
-                                        quizResult?.questionHistory?.length ||
-                                        quizProgress?.questionsAnswered || 
-                                        quizProgress?.questionHistory?.length || 0;
-                
-                // Calculate percentage
-                const totalQuestions = this.estimateTotalQuestions(quizType);
-                const percentComplete = Math.min(100, (questionsAnswered / totalQuestions) * 100);
-                
-                // Create quiz card
-                const quizCard = document.createElement('div');
-                quizCard.className = 'quiz-progress-item';
-                
-                // Add class based on progress state
-                if (questionsAnswered === 0) {
-                    quizCard.classList.add('not-started');
-                } else if (percentComplete < 100) {
-                    quizCard.classList.add('in-progress');
-                } else if (quizExperience === totalQuestions) {
-                    quizCard.classList.add('completed-perfect');
-                } else {
-                    quizCard.classList.add('completed-partial');
-                }
-                
-                quizCard.innerHTML = `
-                    <h4>${this.formatQuizName(quizType)}</h4>
-                    <div class="progress-details">
-                        <div>
-                            <strong>Progress:</strong>
-                            <span>${percentComplete.toFixed(0)}%</span>
-                        </div>
-                        <div>
-                            <strong>XP:</strong>
-                            <span>${quizExperience}</span>
-                        </div>
-                        <div>
-                            <strong>Questions:</strong>
-                            <span>${questionsAnswered}/${totalQuestions}</span>
-                        </div>
-                        <div>
-                            <strong>Status:</strong>
-                            <span class="${this.getStatusClass(percentComplete)}">
-                                ${this.getStatusText(percentComplete)}
-                            </span>
-                        </div>
-                    </div>
-                    <div class="quiz-actions">
-                        <button class="view-questions-btn" data-quiz="${quizType}" data-username="${username}">
-                            View Questions
-                        </button>
-                        <button class="reset-quiz-btn" data-quiz="${quizType}" data-username="${username}">
-                            Reset Progress
-                        </button>
-                    </div>
-                `;
-                
-                quizProgressList.appendChild(quizCard);
-            });
-            
-            // Quiz Results Tab
-            const quizResultsTab = document.createElement('div');
-            quizResultsTab.id = 'quiz-results-tab';
-            quizResultsTab.className = 'tab-content';
-            quizResultsTab.innerHTML = `
-                <h4>Quiz Results</h4>
-                <p>Detailed quiz results will be displayed here.</p>
-            `;
-            
-            // Activity Tab
-            const activityTab = document.createElement('div');
-            activityTab.id = 'activity-tab';
-            activityTab.className = 'tab-content';
-            activityTab.innerHTML = `
-                <h4>Activity History</h4>
-                ${user.activityLog && user.activityLog.length > 0 ? `
-                    <div class="activity-timeline">
-                        ${user.activityLog.slice(0, 20).map(activity => `
-                            <div class="activity-item">
-                                <div class="activity-time">${this.formatDate(new Date(activity.timestamp))}</div>
-                                <div class="activity-details">
-                                    <div class="activity-type">
-                                        <i class="fas ${this.getActivityIcon(activity.type)}"></i>
-                                        ${this.formatActivityType(activity.type)}
-                                    </div>
-                                    <div class="activity-description">${activity.description}</div>
-                                </div>
+                    const quizProgress = user.quizProgress?.[quizLower] || {};
+                    const quizResult = user.quizResults?.find(r => r.quizName.toLowerCase() === quizLower);
+                    
+                    // Use data from either progress or results, prioritizing results
+                    const questionsAnswered = quizResult?.questionsAnswered || 
+                                            quizResult?.questionHistory?.length ||
+                                            quizProgress?.questionsAnswered || 
+                                            quizProgress?.questionHistory?.length || 0;
+                    const experience = quizResult?.experience || quizProgress?.experience || 0;
+                    const score = quizResult?.score || 0;
+                    const lastActive = quizResult?.completedAt || quizResult?.lastActive || quizProgress?.lastUpdated || 'Never';
+                    
+                    const status = questionsAnswered === 15 ? 'Completed' : 
+                                questionsAnswered > 0 ? 'In Progress' : 
+                                'Not Started';
+                    
+                    // Determine background color based on XP and status
+                    let backgroundColor = '#f5f5f5'; // Default gray for not started
+                    if (questionsAnswered > 0) {
+                        if (questionsAnswered === 15) {
+                            // All questions completed
+                            if (experience >= 300 || score >= 100) {
+                                backgroundColor = '#e8f5e9'; // Light green for perfect score (300/300 or 100%)
+                            } else {
+                                backgroundColor = '#fff3e0'; // Light yellow for completed but not perfect score
+                            }
+                        } else {
+                            // Not all questions completed
+                            if (experience >= 235) {
+                                backgroundColor = '#fff3e0'; // Light yellow for pass (≥235/300)
+                            } else {
+                                backgroundColor = '#ffebee'; // Light red for fail (<235/300)
+                            }
+                        }
+                    }
+                    
+                    // Determine quiz status class
+                    let statusClass = 'not-started';
+                    if (questionsAnswered === 15) {
+                        if (experience >= 300 || score >= 100) {
+                            statusClass = 'completed-perfect'; // Perfect score
+                        } else {
+                            statusClass = 'completed-partial'; // Completed but not perfect
+                        }
+                    } else if (questionsAnswered > 0) {
+                        statusClass = 'in-progress';
+                    }
+                    
+                    // Create quiz card
+                    const quizCard = document.createElement('div');
+                    quizCard.className = `quiz-progress-item ${statusClass}`;
+                    quizCard.style.backgroundColor = backgroundColor;
+                    
+                    quizCard.innerHTML = `
+                        <h4>${this.formatQuizName(quizType)}</h4>
+                        <div class="progress-details">
+                            <div>
+                                <strong>Progress:</strong> 
+                                <span class="${status === 'Completed' ? 'text-success' : 
+                                            status === 'In Progress' ? 'text-warning' : 
+                                            'text-muted'}">${status}</span>
                             </div>
-                        `).join('')}
-                    </div>
-                ` : '<p class="no-activity">No activity recorded yet</p>'}
-            `;
-            
-            // Add tabs to container
-            tabContainer.appendChild(overviewTab);
-            tabContainer.appendChild(quizResultsTab);
-            tabContainer.appendChild(activityTab);
+                            <div>
+                                <strong>Score:</strong> 
+                                <span>${score}%</span>
+                            </div>
+                            <div>
+                                <strong>Questions:</strong> 
+                                <span>${questionsAnswered}/15</span>
+                            </div>
+                            <div>
+                                <strong>XP:</strong> 
+                                <span>${experience}/300</span>
+                            </div>
+                            <div>
+                                <strong>Last Active:</strong> 
+                                <span>${this.formatDate(lastActive)}</span>
+                            </div>
+                            <div>
+                                <strong>Visibility:</strong>
+                                <label class="visibility-toggle">
+                                    <input type="checkbox" 
+                                        class="quiz-visibility-toggle"
+                                        data-quiz-name="${quizType}"
+                                        ${isVisible ? 'checked' : ''}
+                                        aria-label="Toggle visibility for ${this.formatQuizName(quizType)}"
+                                        tabindex="0">
+                                    <span>Make visible to user</span>
+                                </label>
+                            </div>
+                        </div>
+                        <div class="quiz-actions">
+                            <button class="reset-quiz-btn"
+                                data-quiz-name="${quizType}"
+                                data-username="${username}"
+                                aria-label="Reset progress for ${this.formatQuizName(quizType)}"
+                                tabindex="0">
+                                Reset Progress
+                            </button>
+                            <button class="view-questions-btn"
+                                data-quiz-name="${quizType}"
+                                data-username="${username}"
+                                aria-label="View questions for ${this.formatQuizName(quizType)}"
+                                tabindex="0">
+                                View Questions
+                            </button>
+                        </div>
+                    `;
+                    
+                    quizProgressList.appendChild(quizCard);
+                });
             
             // User actions
             const userActions = document.createElement('div');
             userActions.className = 'user-actions';
             userActions.innerHTML = `
-                <button id="resetUserProgress" class="action-button reset-progress-btn">
-                    Reset Progress
+                <button id="resetUserProgress" class="reset-all-btn" 
+                    style="background-color: #dc3545; color: white;"
+                    aria-label="Reset all progress for ${username}"
+                    tabindex="0">
+                    Reset All Progress
                 </button>
-                <button id="deleteUserAccount" class="action-button delete-account-btn">
-                    Delete Account
+                <button id="resetUserPassword" class="reset-password-btn" 
+                    style="background-color: var(--secondary-color); color: white;"
+                    aria-label="Reset password for ${username}"
+                    tabindex="0">
+                    Reset Password
+                </button>
+                <button id="deleteUserAccount" class="delete-user-btn" 
+                    style="background-color: #dc3545; color: white; border: 2px solid #dc3545;"
+                    aria-label="Delete user ${username}"
+                    tabindex="0">
+                    Delete User
                 </button>
             `;
             
             // Assemble content
             content.appendChild(header);
-            content.appendChild(tabs);
-            content.appendChild(tabContainer);
+            content.appendChild(overviewContent);
             content.appendChild(userActions);
             overlay.appendChild(content);
             document.body.appendChild(overlay);
             
-            // Add tab switching functionality
-            const tabButtons = overlay.querySelectorAll('.tab-button');
-            tabButtons.forEach(button => {
-                button.addEventListener('click', (e) => {
-                    e.preventDefault();
-                    
-                    // Remove active class from all buttons and contents
-                    tabButtons.forEach(btn => btn.classList.remove('active'));
-                    overlay.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
-                    
-                    // Add active class to clicked button and corresponding content
-                    button.classList.add('active');
-                    const tabId = `${button.dataset.tab}-tab`;
-                    document.getElementById(tabId).classList.add('active');
-                });
-            });
-            
-            // Add event listeners for close button
+            // Add event listener for close button
             closeBtn.addEventListener('click', () => {
                 overlay.remove();
+            });
+            
+            // Add keyboard support for close button
+            closeBtn.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    overlay.remove();
+                }
             });
             
             // Add event listener for clicking outside the modal
@@ -1536,7 +1571,7 @@ class Admin2Dashboard extends AdminDashboard {
                 }
             });
             
-            // Add event listener for escape key
+            // Add escape key handler
             const handleEscape = (e) => {
                 if (e.key === 'Escape') {
                     overlay.remove();
@@ -1545,38 +1580,87 @@ class Admin2Dashboard extends AdminDashboard {
             };
             document.addEventListener('keydown', handleEscape);
             
-            // Add event listeners for button actions
-            const viewQuestionButtons = overlay.querySelectorAll('.view-questions-btn');
-            viewQuestionButtons.forEach(button => {
-                button.addEventListener('click', async () => {
-                    const quizId = button.dataset.quiz;
-                    const username = button.dataset.username;
-                    await this.showQuizQuestions(quizId, username);
-                });
-            });
-            
-            const resetQuizButtons = overlay.querySelectorAll('.reset-quiz-btn');
-            resetQuizButtons.forEach(button => {
-                button.addEventListener('click', async () => {
-                    const quizId = button.dataset.quiz;
-                    const username = button.dataset.username;
+            // Add event listeners for quiz visibility toggles
+            content.querySelectorAll('.quiz-visibility-toggle').forEach(toggle => {
+                toggle.addEventListener('change', async (e) => {
+                    const quizName = e.target.dataset.quizName;
+                    const isVisible = e.target.checked;
                     
-                    if (confirm(`Are you sure you want to reset progress for ${this.formatQuizName(quizId)}?`)) {
-                        try {
-                            await this.resetQuizProgress(username, quizId);
-                            overlay.remove();
-                            this.showSuccess(`Reset progress for ${this.formatQuizName(quizId)}`);
-                            this.updateUserList();
-                        } catch (error) {
-                            this.showError(`Failed to reset quiz progress: ${error.message}`);
-                        }
+                    console.log(`Visibility toggle changed for ${quizName}: isVisible=${isVisible}`);
+                    
+                    try {
+                        const apiService = new ApiService();
+                        await apiService.updateQuizVisibility(username, quizName, isVisible);
+                        this.showSuccess(`Updated visibility for ${this.formatQuizName(quizName)}`);
+                    } catch (error) {
+                        console.error('Failed to update quiz visibility:', error);
+                        this.showError(`Failed to update visibility for ${this.formatQuizName(quizName)}`);
+                        e.target.checked = !isVisible; // Revert the checkbox
+                    }
+                });
+                
+                // Add keyboard support for visibility toggle
+                toggle.addEventListener('keydown', (e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault();
+                        toggle.checked = !toggle.checked;
+                        toggle.dispatchEvent(new Event('change'));
                     }
                 });
             });
             
-            const resetProgressBtn = overlay.querySelector('#resetUserProgress');
-            if (resetProgressBtn) {
-                resetProgressBtn.addEventListener('click', async () => {
+            // Add event listeners for reset quiz buttons
+            content.querySelectorAll('.reset-quiz-btn').forEach(button => {
+                button.addEventListener('click', async (e) => {
+                    const quizName = e.target.dataset.quizName;
+                    const userName = e.target.dataset.username;
+                    
+                    if (confirm(`Are you sure you want to reset progress for ${this.formatQuizName(quizName)}?`)) {
+                        try {
+                            await this.resetQuizProgress(userName, quizName);
+                            // Refresh the user list and details view
+                            await this.loadUsers();
+                            overlay.remove();
+                            this.showSuccess(`Reset progress for ${this.formatQuizName(quizName)}`);
+                            this.showUserDetails(userName);
+                        } catch (error) {
+                            console.error('Failed to reset quiz:', error);
+                            this.showError(`Failed to reset ${this.formatQuizName(quizName)}`);
+                        }
+                    }
+                });
+                
+                // Add keyboard support for reset quiz button
+                button.addEventListener('keydown', (e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault();
+                        button.click();
+                    }
+                });
+            });
+            
+            // Add event listeners for view questions buttons
+            content.querySelectorAll('.view-questions-btn').forEach(button => {
+                button.addEventListener('click', async (e) => {
+                    const quizName = e.target.dataset.quizName;
+                    const userName = e.target.dataset.username;
+                    
+                    await this.showQuizQuestions(quizName, userName);
+                });
+                
+                // Add keyboard support for view questions button
+                button.addEventListener('keydown', (e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault();
+                        button.click();
+                    }
+                });
+            });
+            
+            // Add event listener for reset all progress button
+            const resetAllBtn = overlay.querySelector('#resetUserProgress');
+            if (resetAllBtn) {
+                resetAllBtn.addEventListener('click', async () => {
                     if (confirm(`Are you sure you want to reset all progress for ${username}? This cannot be undone.`)) {
                         try {
                             await this.resetAllProgress(username);
@@ -1588,11 +1672,47 @@ class Admin2Dashboard extends AdminDashboard {
                         }
                     }
                 });
+                
+                // Add keyboard support for reset all button
+                resetAllBtn.addEventListener('keydown', (e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault();
+                        resetAllBtn.click();
+                    }
+                });
             }
             
-            const deleteAccountBtn = overlay.querySelector('#deleteUserAccount');
-            if (deleteAccountBtn) {
-                deleteAccountBtn.addEventListener('click', async () => {
+            // Add event listener for reset password button
+            const resetPasswordBtn = overlay.querySelector('#resetUserPassword');
+            if (resetPasswordBtn) {
+                resetPasswordBtn.addEventListener('click', async () => {
+                    if (confirm(`Are you sure you want to reset the password for ${username}?`)) {
+                        try {
+                            const apiService = new ApiService();
+                            const response = await apiService.resetUserPassword(username);
+                            
+                            this.showSuccess(`Password reset for ${username}: ${response.newPassword}`);
+                            console.log('Password reset successful:', response);
+                        } catch (error) {
+                            console.error('Failed to reset password:', error);
+                            this.showError(`Failed to reset password for ${username}`);
+                        }
+                    }
+                });
+                
+                // Add keyboard support for reset password button
+                resetPasswordBtn.addEventListener('keydown', (e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault();
+                        resetPasswordBtn.click();
+                    }
+                });
+            }
+            
+            // Add event listener for delete user button
+            const deleteUserBtn = overlay.querySelector('#deleteUserAccount');
+            if (deleteUserBtn) {
+                deleteUserBtn.addEventListener('click', async () => {
                     if (confirm(`Are you sure you want to delete ${username}'s account? This cannot be undone.`)) {
                         try {
                             await this.deleteUser(username);
@@ -1602,6 +1722,14 @@ class Admin2Dashboard extends AdminDashboard {
                         } catch (error) {
                             this.showError(`Failed to delete account: ${error.message}`);
                         }
+                    }
+                });
+                
+                // Add keyboard support for delete user button
+                deleteUserBtn.addEventListener('keydown', (e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault();
+                        deleteUserBtn.click();
                     }
                 });
             }
@@ -1804,7 +1932,8 @@ class Admin2Dashboard extends AdminDashboard {
             
             // Get quiz results from API
             try {
-                const apiService = new ApiService();
+                // Import ApiService from relative path
+                const apiService = this.apiService; // Use the inherited apiService
                 const response = await apiService.getQuizQuestions(username, quizType);
                 console.log('Quiz questions API response:', response);
                 
