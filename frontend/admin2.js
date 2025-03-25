@@ -464,63 +464,185 @@ class Admin2Dashboard extends AdminDashboard {
         const timerContainer = document.getElementById('timer-settings-container');
         if (!timerContainer) return;
         
-        const currentValue = this.timerSettings.secondsPerQuestion ?? 60;
-        const timerStatusText = currentValue === 0 ? 'Timer disabled' : `${currentValue} seconds`;
+        // Get the default value
+        const defaultValue = this.timerSettings?.defaultSeconds ?? 60;
+        const quizTimers = this.timerSettings?.quizTimers ?? {};
         
+        // Create HTML for settings form
         timerContainer.innerHTML = `
-            <div class="settings-form">
-                <p>Current setting: <strong>${timerStatusText}</strong></p>
+            <div class="settings-form timer-settings-form">
+                <h4>Default Timer Setting</h4>
+                <p>This setting applies to all quizzes unless overridden by per-quiz settings.</p>
                 <div class="form-group">
-                    <label for="timer-value-input">
-                        Seconds per question (0-300):
+                    <label for="default-timer-value">
+                        Default seconds per question (0-300):
                     </label>
-                    <input 
-                        type="number" 
-                        id="timer-value-input" 
-                        min="0" 
-                        max="300" 
-                        value="${currentValue}"
-                        class="settings-input"
-                    />
+                    <div class="input-with-button">
+                        <input 
+                            type="number" 
+                            id="default-timer-value" 
+                            min="0" 
+                            max="300" 
+                            value="${defaultValue}"
+                            class="settings-input"
+                        />
+                        <button id="save-default-timer-btn" class="action-button">Save Default</button>
+                    </div>
                     <small>Set to 0 to disable the timer completely.</small>
                 </div>
-                <button id="save-timer-btn" class="action-button">Save Settings</button>
+                
+                <h4 class="mt-4">Per-Quiz Timer Settings</h4>
+                <p>Set different time limits for specific quizzes. These override the default setting.</p>
+                
+                <div class="per-quiz-timer-form">
+                    <div class="form-group">
+                        <label for="quiz-select">Select Quiz:</label>
+                        <select id="quiz-select" class="settings-input">
+                            <option value="">-- Select a Quiz --</option>
+                            ${this.quizTypes && Array.isArray(this.quizTypes) 
+                                ? this.quizTypes
+                                    .slice()
+                                    .sort((a, b) => this.formatQuizName(a).localeCompare(this.formatQuizName(b)))
+                                    .map(quiz => `<option value="${quiz}">${this.formatQuizName(quiz)}</option>`)
+                                    .join('')
+                                : ''
+                            }
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="quiz-timer-value">
+                            Seconds per question for this quiz (0-300):
+                        </label>
+                        <div class="input-with-button">
+                            <input 
+                                type="number" 
+                                id="quiz-timer-value" 
+                                min="0" 
+                                max="300" 
+                                value="60"
+                                class="settings-input"
+                                disabled
+                            />
+                            <button id="save-quiz-timer-btn" class="action-button" disabled>Set Timer</button>
+                            <button id="reset-quiz-timer-btn" class="action-button secondary" disabled>Reset to Default</button>
+                        </div>
+                    </div>
+                </div>
+                
+                <h4 class="mt-4">Current Timer Settings</h4>
+                <div class="current-timer-settings">
+                    <div class="default-timer-display">
+                        <strong>Default:</strong> 
+                        <span id="default-timer-display">${defaultValue === 0 ? 'Timer disabled' : `${defaultValue} seconds`}</span>
+                    </div>
+                    
+                    <div class="custom-timers-list">
+                        <h5>Quiz-Specific Settings:</h5>
+                        ${this.generateQuizTimersList(quizTimers)}
+                    </div>
+                </div>
             </div>
         `;
         
-        // Add event listener for save button
-        const saveButton = document.getElementById('save-timer-btn');
-        if (saveButton) {
-            saveButton.addEventListener('click', async () => {
-                const timerInput = document.getElementById('timer-value-input');
-                if (!timerInput) return;
+        // Apply some styles to make it look better
+        const style = document.createElement('style');
+        style.textContent = `
+            .timer-settings-form h4 {
+                margin-top: 1.5rem;
+                margin-bottom: 0.5rem;
+                border-bottom: 1px solid #eee;
+                padding-bottom: 0.5rem;
+            }
+            .input-with-button {
+                display: flex;
+                gap: 10px;
+                align-items: center;
+                margin-bottom: 0.5rem;
+            }
+            .action-button.secondary {
+                background-color: #6c757d;
+            }
+            .action-button.secondary:hover {
+                background-color: #5a6268;
+            }
+            .mt-4 {
+                margin-top: 1.5rem;
+            }
+            .current-timer-settings {
+                background-color: #f8f9fa;
+                padding: 15px;
+                border-radius: 5px;
+                margin-top: 1rem;
+            }
+            .default-timer-display {
+                margin-bottom: 10px;
+                font-size: 16px;
+            }
+            .custom-timers-list {
+                margin-top: 15px;
+            }
+            .custom-timers-list h5 {
+                margin-bottom: 10px;
+                font-size: 14px;
+                color: #666;
+            }
+            .timer-table {
+                width: 100%;
+                border-collapse: collapse;
+            }
+            .timer-table th, .timer-table td {
+                padding: 8px;
+                text-align: left;
+                border-bottom: 1px solid #ddd;
+            }
+            .timer-table th {
+                background-color: #eee;
+                font-weight: 600;
+            }
+            .timer-table tr:hover {
+                background-color: #f5f5f5;
+            }
+            .no-custom-timers {
+                color: #666;
+                font-style: italic;
+            }
+        `;
+        timerContainer.appendChild(style);
+        
+        // Add event listener for the default timer save button
+        const saveDefaultButton = document.getElementById('save-default-timer-btn');
+        if (saveDefaultButton) {
+            saveDefaultButton.addEventListener('click', async () => {
+                const defaultTimerInput = document.getElementById('default-timer-value');
+                if (!defaultTimerInput) return;
                 
                 try {
                     // Get value from input
-                    const newValue = parseInt(timerInput.value, 10);
+                    const newDefaultValue = parseInt(defaultTimerInput.value, 10);
                     
                     // Validate
-                    if (isNaN(newValue) || newValue < 0 || newValue > 300) {
+                    if (isNaN(newDefaultValue) || newDefaultValue < 0 || newDefaultValue > 300) {
                         alert('Timer value must be between 0 and 300 seconds');
                         return;
                     }
                     
                     // Update UI
-                    saveButton.disabled = true;
-                    saveButton.textContent = 'Saving...';
+                    saveDefaultButton.disabled = true;
+                    saveDefaultButton.textContent = 'Saving...';
                     
-                    // Call API to save
-                    const response = await this.apiService.updateQuizTimerSettings(newValue);
+                    // Call API to save (keeping existing per-quiz settings)
+                    const response = await this.apiService.updateQuizTimerSettings(newDefaultValue, quizTimers);
                     
                     // Success
                     if (response.success) {
                         // Update local cache
-                        this.timerSettings.secondsPerQuestion = newValue;
+                        this.timerSettings = response.data;
                         
                         // Show feedback
-                        const message = newValue === 0 
-                            ? 'Quiz timer disabled successfully!' 
-                            : `Quiz timer set to ${newValue} seconds!`;
+                        const message = newDefaultValue === 0 
+                            ? 'Default quiz timer disabled successfully!' 
+                            : `Default quiz timer set to ${newDefaultValue} seconds!`;
                             
                         this.showSuccess(message);
                         this.displayTimerSettings(); // Refresh the display
@@ -528,15 +650,195 @@ class Admin2Dashboard extends AdminDashboard {
                         throw new Error(response.message || 'Failed to save settings');
                     }
                 } catch (error) {
-                    console.error('Failed to save timer settings:', error);
+                    console.error('Failed to save default timer settings:', error);
                     this.showError(`Error: ${error.message || 'Failed to save settings'}`);
                 } finally {
                     // Reset button
-                    saveButton.disabled = false;
-                    saveButton.textContent = 'Save Settings';
+                    saveDefaultButton.disabled = false;
+                    saveDefaultButton.textContent = 'Save Default';
                 }
             });
         }
+        
+        // Add event listeners for quiz selection dropdown
+        const quizSelect = document.getElementById('quiz-select');
+        const quizTimerInput = document.getElementById('quiz-timer-value');
+        const saveQuizTimerButton = document.getElementById('save-quiz-timer-btn');
+        const resetQuizTimerButton = document.getElementById('reset-quiz-timer-btn');
+        
+        if (quizSelect && quizTimerInput && saveQuizTimerButton && resetQuizTimerButton) {
+            quizSelect.addEventListener('change', () => {
+                const selectedQuiz = quizSelect.value;
+                if (selectedQuiz) {
+                    // Enable the timer input and buttons
+                    quizTimerInput.disabled = false;
+                    saveQuizTimerButton.disabled = false;
+                    resetQuizTimerButton.disabled = false;
+                    
+                    // Set the input value to the current setting for this quiz or the default
+                    const quizSetting = quizTimers[selectedQuiz];
+                    quizTimerInput.value = quizSetting !== undefined ? quizSetting : defaultValue;
+                } else {
+                    // Disable the timer input and buttons if no quiz is selected
+                    quizTimerInput.disabled = true;
+                    saveQuizTimerButton.disabled = true;
+                    resetQuizTimerButton.disabled = true;
+                    quizTimerInput.value = 60;
+                }
+            });
+            
+            // Add event listener for saving quiz-specific timer
+            saveQuizTimerButton.addEventListener('click', async () => {
+                const selectedQuiz = quizSelect.value;
+                if (!selectedQuiz) return;
+                
+                try {
+                    // Get value from input
+                    const quizTimerValue = parseInt(quizTimerInput.value, 10);
+                    
+                    // Validate
+                    if (isNaN(quizTimerValue) || quizTimerValue < 0 || quizTimerValue > 300) {
+                        alert('Timer value must be between 0 and 300 seconds');
+                        return;
+                    }
+                    
+                    // Update UI
+                    saveQuizTimerButton.disabled = true;
+                    saveQuizTimerButton.textContent = 'Saving...';
+                    
+                    // Call API to save this specific quiz timer
+                    const response = await this.apiService.updateSingleQuizTimer(selectedQuiz, quizTimerValue);
+                    
+                    // Success
+                    if (response.success) {
+                        // Update local cache
+                        this.timerSettings = response.data;
+                        
+                        // Show feedback
+                        const quizName = this.formatQuizName(selectedQuiz);
+                        const message = quizTimerValue === 0 
+                            ? `Timer disabled for ${quizName}!` 
+                            : `Timer for ${quizName} set to ${quizTimerValue} seconds!`;
+                            
+                        this.showSuccess(message);
+                        this.displayTimerSettings(); // Refresh the display
+                    } else {
+                        throw new Error(response.message || 'Failed to save settings');
+                    }
+                } catch (error) {
+                    console.error('Failed to save quiz timer settings:', error);
+                    this.showError(`Error: ${error.message || 'Failed to save settings'}`);
+                } finally {
+                    // Reset button
+                    saveQuizTimerButton.disabled = false;
+                    saveQuizTimerButton.textContent = 'Set Timer';
+                }
+            });
+            
+            // Add event listener for resetting quiz timer to default
+            resetQuizTimerButton.addEventListener('click', async () => {
+                const selectedQuiz = quizSelect.value;
+                if (!selectedQuiz) return;
+                
+                try {
+                    // Update UI
+                    resetQuizTimerButton.disabled = true;
+                    resetQuizTimerButton.textContent = 'Resetting...';
+                    
+                    // Check if this quiz actually has a custom setting
+                    if (quizTimers[selectedQuiz] === undefined) {
+                        this.showInfo(`${this.formatQuizName(selectedQuiz)} is already using the default timer.`);
+                        resetQuizTimerButton.disabled = false;
+                        resetQuizTimerButton.textContent = 'Reset to Default';
+                        return;
+                    }
+                    
+                    // Call API to reset this specific quiz timer
+                    const response = await this.apiService.resetQuizTimer(selectedQuiz);
+                    
+                    // Success
+                    if (response.success) {
+                        // Update local cache
+                        this.timerSettings = response.data;
+                        
+                        // Show feedback
+                        const quizName = this.formatQuizName(selectedQuiz);
+                        this.showSuccess(`${quizName} is now using the default timer setting.`);
+                        
+                        // Reset the input to the default value
+                        quizTimerInput.value = this.timerSettings.defaultSeconds;
+                        
+                        // Refresh the display
+                        this.displayTimerSettings();
+                    } else {
+                        throw new Error(response.message || 'Failed to reset timer');
+                    }
+                } catch (error) {
+                    console.error('Failed to reset quiz timer:', error);
+                    this.showError(`Error: ${error.message || 'Failed to reset timer'}`);
+                } finally {
+                    // Reset button
+                    resetQuizTimerButton.disabled = false;
+                    resetQuizTimerButton.textContent = 'Reset to Default';
+                }
+            });
+        }
+    }
+    
+    // Helper method to generate HTML for the list of quiz-specific timer settings
+    generateQuizTimersList(quizTimers) {
+        const quizTimerEntries = Object.entries(quizTimers || {});
+        
+        if (quizTimerEntries.length === 0) {
+            return '<p class="no-custom-timers">No quiz-specific settings configured yet.</p>';
+        }
+        
+        // Sort entries by quiz name
+        quizTimerEntries.sort((a, b) => this.formatQuizName(a[0]).localeCompare(this.formatQuizName(b[0])));
+        
+        return `
+            <table class="timer-table">
+                <thead>
+                    <tr>
+                        <th>Quiz</th>
+                        <th>Timer Setting</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${quizTimerEntries.map(([quizName, seconds]) => `
+                        <tr>
+                            <td>${this.formatQuizName(quizName)}</td>
+                            <td>${seconds === 0 ? 'Disabled' : `${seconds} seconds`}</td>
+                        </tr>
+                    `).join('')}
+                </tbody>
+            </table>
+        `;
+    }
+    
+    // Helper method to show info messages (neutral)
+    showInfo(message) {
+        const infoContainer = document.createElement('div');
+        infoContainer.className = 'info-message';
+        infoContainer.innerHTML = `
+            <span>${message}</span>
+            <button class="close-message">&times;</button>
+        `;
+        
+        // Add to the page
+        document.body.appendChild(infoContainer);
+        
+        // Add event listener to close the message
+        infoContainer.querySelector('.close-message').addEventListener('click', () => {
+            infoContainer.remove();
+        });
+        
+        // Automatically remove after 5 seconds
+        setTimeout(() => {
+            if (infoContainer.parentNode) {
+                infoContainer.remove();
+            }
+        }, 5000);
     }
     
     // Set up the create account form in the create account section
@@ -3622,6 +3924,59 @@ styleElement.textContent = `
     
     .activity-description {
         color: #555;
+    }
+
+    .retry-button:hover {
+        background: #2980b9;
+    }
+
+    /* Loading spinner */
+    .loading-spinner {
+        width: 40px;
+        height: 40px;
+        border: 3px solid rgba(0, 0, 0, 0.1);
+        border-radius: 50%;
+        border-top-color: #3498db;
+        animation: spin 1s ease-in-out infinite;
+        margin: 1rem auto;
+    }
+
+    @keyframes spin {
+        to { transform: rotate(360deg); }
+    }
+    
+    /* Info message */
+    .info-message {
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        background-color: #d1ecf1;
+        color: #0c5460;
+        padding: 1rem;
+        border-radius: 4px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+        z-index: 1000;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        max-width: 400px;
+        border-left: 4px solid #0c5460;
+        animation: slide-in 0.3s ease-out;
+    }
+    
+    .info-message .close-message {
+        background: none;
+        border: none;
+        color: #0c5460;
+        font-size: 1.2rem;
+        cursor: pointer;
+        padding: 0 0 0 10px;
+        margin-left: 10px;
+    }
+    
+    @keyframes slide-in {
+        from { transform: translateX(100%); opacity: 0; }
+        to { transform: translateX(0); opacity: 1; }
     }
 `;
 document.head.appendChild(styleElement); 
