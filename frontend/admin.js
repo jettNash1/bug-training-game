@@ -225,7 +225,7 @@ class AdminDashboard {
             }
 
             // Token is already stored by adminLogin method
-            window.location.replace('/pages/admin.html');
+            window.location.replace('./admin.html');
         } catch (error) {
             console.error('Login error:', error);
             throw new Error(error.message || 'Login failed. Please try again.');
@@ -236,7 +236,7 @@ class AdminDashboard {
         try {
             await this.apiService.adminLogout();
         } finally {
-            window.location.replace('/pages/admin-login.html');
+            window.location.replace('./admin-login.html');
         }
     }
 

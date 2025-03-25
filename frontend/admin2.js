@@ -13,7 +13,7 @@ class Admin2Dashboard extends AdminDashboard {
             // Get the admin token from localStorage
             const adminToken = localStorage.getItem('adminToken');
             if (!adminToken) {
-                window.location.replace('/pages/admin-login.html');
+                window.location.replace('./admin-login.html');
                 return;
             }
 
@@ -21,7 +21,7 @@ class Admin2Dashboard extends AdminDashboard {
             const isValid = await this.verifyAdminToken(adminToken);
             if (!isValid) {
                 // Token is invalid, redirect to login
-                window.location.replace('/pages/admin-login.html');
+                window.location.replace('./admin-login.html');
                 return;
             }
             
@@ -590,7 +590,7 @@ class Admin2Dashboard extends AdminDashboard {
                         </div>
                         <div class="form-group quiz-selection-container">
                             <label>Select Quizzes:</label>
-                            <div class="quiz-selection">
+                            <div class="quiz-selection" id="quizTypesList">
                                 <div class="select-all-option">
                                     <label>
                                         <input type="checkbox" id="selectAllQuizzes">
@@ -611,7 +611,10 @@ class Admin2Dashboard extends AdminDashboard {
                                                 ${quizzes.map(quiz => `
                                                     <div class="quiz-option">
                                                         <label>
-                                                            <input type="checkbox" name="quizzes" value="${quiz}" data-category="${category}">
+                                                            <input type="checkbox" 
+                                                                   name="quizzes" 
+                                                                   value="${quiz.toLowerCase()}" 
+                                                                   data-category="${category}">
                                                             <span>${this.formatQuizName(quiz)}</span>
                                                         </label>
                                                     </div>
@@ -1946,8 +1949,7 @@ class Admin2Dashboard extends AdminDashboard {
             }
 
             // Get selected quizzes
-            const selectedQuizzes = Array.from(quizCheckboxes)
-                .filter(checkbox => checkbox.checked)
+            const selectedQuizzes = Array.from(document.querySelectorAll('input[name="quizzes"]:checked'))
                 .map(checkbox => checkbox.value.toLowerCase());
 
             // Validate quiz selection
