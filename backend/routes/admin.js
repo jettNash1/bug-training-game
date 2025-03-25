@@ -6,6 +6,7 @@ const jwt = require('jsonwebtoken');
 const auth = require('../middleware/auth');
 const fs = require('fs').promises;
 const path = require('path');
+const ScheduledReset = require('../models/scheduledReset.model');
 
 // Admin token verification
 router.get('/verify-token', async (req, res) => {
@@ -1201,6 +1202,137 @@ router.post('/settings/quiz-timer', auth, async (req, res) => {
         return res.status(500).json({
             success: false,
             message: 'Failed to update quiz timer settings',
+            error: error.message
+        });
+    }
+});
+
+// Get all scheduled resets
+router.get('/schedules', auth, async (req, res) => {
+    try {
+        // Verify admin status
+        if (!req.user.isAdmin) {
+            return res.status(403).json({
+                success: false,
+                message: 'Admin access required'
+            });
+        }
+
+        // Get all scheduled resets from the database
+        const schedules = await ScheduledReset.find().sort({ resetDateTime: 1 });
+        
+        res.json({
+            success: true,
+            data: schedules
+        });
+    } catch (error) {
+        console.error('Error fetching scheduled resets:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Failed to fetch scheduled resets',
+            error: error.message
+        });
+    }
+});
+
+// Create a new scheduled reset
+router.post('/schedules', auth, async (req, res) => {
+    try {
+        // Verify admin status
+        if (!req.user.isAdmin) {
+            return res.status(403).json({
+                success: false,
+                message: 'Admin access required'
+            });
+        }
+
+        const { username, quizName, resetDateTime } = req.body;
+
+        // Validate inputs
+        if (!username || !quizName || !resetDateTime) {
+            return res.status(400).json({
+                success: false,
+                message: 'Missing required fields'
+            });
+        }
+
+        // Validate resetDateTime is in the future
+        const resetTime = new Date(resetDateTime);
+        const now = new Date();
+        if (resetTime <= now) {
+            return res.status(400).json({
+                success: false,
+                message: 'Reset time must be in the future'
+            });
+        }
+
+        // Check if user exists
+        const user = await User.findOne({ username });
+        if (!user) {
+            return res.status(404).json({
+                success: false,
+                message: 'User not found'
+            });
+        }
+
+        // Create new scheduled reset
+        const schedule = new ScheduledReset({
+            username,
+            quizName,
+            resetDateTime: resetTime,
+            createdAt: new Date()
+        });
+
+        await schedule.save();
+
+        res.json({
+            success: true,
+            message: 'Scheduled reset created successfully',
+            data: schedule
+        });
+    } catch (error) {
+        console.error('Error creating scheduled reset:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Failed to create scheduled reset',
+            error: error.message
+        });
+    }
+});
+
+// Delete a scheduled reset
+router.delete('/schedules/:id', auth, async (req, res) => {
+    try {
+        // Verify admin status
+        if (!req.user.isAdmin) {
+            return res.status(403).json({
+                success: false,
+                message: 'Admin access required'
+            });
+        }
+
+        const { id } = req.params;
+
+        // Find and delete the scheduled reset
+        const schedule = await ScheduledReset.findByIdAndDelete(id);
+        
+        if (!schedule) {
+            return res.status(404).json({
+                success: false,
+                message: 'Scheduled reset not found'
+            });
+        }
+
+        res.json({
+            success: true,
+            message: 'Scheduled reset deleted successfully',
+            data: schedule
+        });
+    } catch (error) {
+        console.error('Error deleting scheduled reset:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Failed to delete scheduled reset',
             error: error.message
         });
     }
