@@ -2073,7 +2073,7 @@ class AdminDashboard {
             const hiddenQuizzes = validQuizTypes.filter(quiz => !allowedQuizzes.includes(quiz));
 
             // Make the API request
-            const response = await this.apiService.fetchWithAdminAuth('/admin/create-interview-account', {
+            const response = await this.apiService.fetchWithAdminAuth('/api/admin/create-interview-account', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
@@ -2091,12 +2091,34 @@ class AdminDashboard {
                 throw new Error(response.message || 'Failed to create account');
             }
 
-            // Update the users list
+            // Show success message
+            this.showSuccess(`Account created for ${username}`);
+            
+            // Wait for a moment to ensure the backend has processed the new account
+            await new Promise(resolve => setTimeout(resolve, 500));
+            
+            // Load the latest user data
             await this.loadUsers();
+            
+            // Wait for the user data to be processed
+            await new Promise(resolve => setTimeout(resolve, 100));
+            
+            // Update the dashboard with the new data
+            await this.updateDashboard();
+            
+            // Verify the new user is in the list
+            const newUser = this.users.find(user => user.username === username);
+            if (!newUser) {
+                console.warn('New user not found in users list after creation');
+                // Try loading users one more time
+                await this.loadUsers();
+                await this.updateDashboard();
+            }
             
             return response;
         } catch (error) {
             console.error('Failed to create account:', error);
+            this.showError(error.message || 'Failed to create account');
             throw error;
         }
     }

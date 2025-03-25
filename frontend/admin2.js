@@ -10,8 +10,20 @@ class Admin2Dashboard extends AdminDashboard {
 
     async init2() {
         try {
+            // Get the admin token from localStorage
+            const adminToken = localStorage.getItem('adminToken');
+            if (!adminToken) {
+                window.location.replace('/pages/admin-login.html');
+                return;
+            }
+
             // Verify admin token
-            await this.verifyAdminToken();
+            const isValid = await this.verifyAdminToken(adminToken);
+            if (!isValid) {
+                // Token is invalid, redirect to login
+                window.location.replace('/pages/admin-login.html');
+                return;
+            }
             
             // Set up event listeners after verifying token
             this.setupEventListeners();
@@ -45,8 +57,8 @@ class Admin2Dashboard extends AdminDashboard {
             
         } catch (error) {
             console.error('Error in init2:', error);
-            // Handle initialization error
-            this.showError('Initialization failed. Please try refreshing the page.');
+            // Handle initialization error - redirect to login if authentication fails
+            window.location.replace('/pages/admin-login.html');
         }
     }
     
