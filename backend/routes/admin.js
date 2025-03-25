@@ -896,6 +896,10 @@ router.get('/quizzes/:quizName/scenarios', auth, async (req, res) => {
             // Special case for CMS-Testing-quiz.js which has a different filename
             if (normalizedQuizName === 'cms-testing') {
                 filePath = path.resolve(__dirname, '../../frontend/quizzes/CMS-Testing-quiz.js');
+            } else if (normalizedQuizName === 'automation-interview') {
+                filePath = path.resolve(__dirname, '../../frontend/quizzes/automation-interview.js');
+            } else if (normalizedQuizName === 'standard-script-testing') {
+                filePath = path.resolve(__dirname, '../../frontend/quizzes/standard-script-testing.js');
             } else {
                 filePath = path.resolve(__dirname, `../../frontend/quizzes/${normalizedQuizName}-quiz.js`);
             }
@@ -906,11 +910,21 @@ router.get('/quizzes/:quizName/scenarios', auth, async (req, res) => {
             try {
                 await fs.access(filePath);
             } catch (error) {
-                console.error(`File not found: ${filePath}`);
-                return res.status(404).json({
-                    success: false,
-                    message: `Quiz file not found: ${normalizedQuizName}-quiz.js`
-                });
+                // If file not found, try alternative formats before failing
+                console.error(`File not found at: ${filePath}`);
+                try {
+                    const alternativePath = path.resolve(__dirname, `../../frontend/quizzes/${normalizedQuizName}.js`);
+                    console.log(`Trying alternative path: ${alternativePath}`);
+                    await fs.access(alternativePath);
+                    // If we reach here, the file exists at the alternative path
+                    filePath = alternativePath;
+                } catch (alternativeError) {
+                    console.error(`Alternative file not found: ${alternativeError.message}`);
+                    return res.status(404).json({
+                        success: false,
+                        message: `Quiz file not found for: ${normalizedQuizName}`
+                    });
+                }
             }
             
             // Read the file content
