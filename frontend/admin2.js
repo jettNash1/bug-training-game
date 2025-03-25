@@ -892,47 +892,23 @@ class Admin2Dashboard extends AdminDashboard {
     // Implement a hardcoded fetchQuizTypes method that handles API failures gracefully
     async fetchQuizTypes() {
         try {
-            // Try to fetch quiz types from the admin API first
-            try {
-                const response = await this.apiService.fetchWithAdminAuth(`${this.apiService.baseUrl}/admin/quiz-types`);
-                
-                if (response && response.success && Array.isArray(response.data)) {
-                    console.log('Successfully fetched quiz types from API:', response.data);
-                    
-                    // Ensure automation-interview is included (sometimes it's missing from the API)
-                    if (response.data.indexOf('automation-interview') === -1) {
-                        response.data.push('automation-interview');
-                    }
-                    
-                    // Sort alphabetically
-                    const quizTypesList = response.data.sort((a, b) => a.localeCompare(b));
-                    
-                    // Set the class property for use elsewhere
-                    this.quizTypes = quizTypesList;
-                    
-                    return quizTypesList;
-                } else {
-                    throw new Error('Invalid response format from quiz-types API');
-                }
-            } catch (apiError) {
-                console.warn('Failed to fetch quiz types from API, using hardcoded fallback', apiError);
-                // If the API fails, use the hardcoded fallback
-                const fallbackTypes = this.getHardcodedQuizTypes();
-                
-                // Set the class property for use elsewhere
-                this.quizTypes = fallbackTypes;
-                
-                return fallbackTypes;
-            }
+            const response = await this.apiService.fetchWithAdminAuth('/admin/quiz-types');
+            if (!response.ok) {
+                throw new Error('Failed to fetch quiz types');
+            }d
+            return await response.json();
         } catch (error) {
             console.error('Error fetching quiz types:', error);
-            // If any error occurs, use the hardcoded fallback
-            const fallbackTypes = this.getHardcodedQuizTypes();
-            
-            // Set the class property for use elsewhere
-            this.quizTypes = fallbackTypes;
-            
-            return fallbackTypes;
+            // Fallback to hardcoded quiz types if API fails
+            return [
+                'communication', 'initiative', 'time-management', 'tester-mindset',
+                'risk-analysis', 'risk-management', 'non-functional', 'test-support',
+                'issue-verification', 'build-verification', 'issue-tracking-tools',
+                'raising-tickets', 'reports', 'cms-testing', 'email-testing', 'content-copy',
+                'locale-testing', 'script-metrics-troubleshooting', 'standard-script-testing',
+                'test-types-tricks', 'automation-interview', 'fully-scripted', 'exploratory',
+                'sanity-smoke', 'functional-interview'
+            ];
         }
     }
 
@@ -940,32 +916,13 @@ class Admin2Dashboard extends AdminDashboard {
     getHardcodedQuizTypes() {
         // This list should match the categories used in categorizeQuiz
         return [
-            'automation',
-            'automation-interview',
-            'api',
-            'script',
-            'script-metrics',
-            'technical',
-            'accessibility',
-            'performance',
-            'security',
-            'mobile',
-            'communication',
-            'soft-skills',
-            'bug-reporting',
-            'test-cases',
-            'test-strategy',
-            'test-management',
-            'exploratory',
-            'manual',
-            'qa-methodology',
-            'qa-theory',
-            'content',
-            'documentation',
-            'content-testing',
-            'reporting',
-            'tools',
-            'interview'
+            'communication', 'initiative', 'time-management', 'tester-mindset',
+            'risk-analysis', 'risk-management', 'non-functional', 'test-support',
+            'issue-verification', 'build-verification', 'issue-tracking-tools',
+            'raising-tickets', 'reports', 'cms-testing', 'email-testing', 'content-copy',
+            'locale-testing', 'script-metrics-troubleshooting','standard-script-testing',
+            'test-types-tricks', 'automation-interview', 'fully-scripted', 'exploratory',
+            'sanity-smoke', 'functional-interview'
         ].sort((a, b) => a.localeCompare(b));
     }
 
@@ -1975,32 +1932,40 @@ class Admin2Dashboard extends AdminDashboard {
             const submitButton = form.querySelector('button[type="submit"]');
             submitButton.disabled = true;
             submitButton.textContent = 'Creating Account...';
-            
-            // Convert selected quizzes to lowercase for consistency
-            const allowedQuizzes = selectedQuizzes.map(quiz => quiz.toLowerCase());
-            
-            // Create array of hidden quizzes (all quizzes not in allowedQuizzes)
-            const hiddenQuizzes = this.quizTypes
-                .map(quiz => quiz.toLowerCase())
-                .filter(quiz => !allowedQuizzes.includes(quiz));
 
-            const response = await this.apiService.fetchWithAdminAuth(
-                `${this.apiService.baseUrl}/admin/create-interview-account`,
-                {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({
-                        username,
-                        password,
-                        userType: 'interview_candidate',
-                        allowedQuizzes,
-                        hiddenQuizzes
-                    })
-                }
-            );
-            
+            // Define the valid quiz types
+            const validQuizTypes = [
+                'communication', 'initiative', 'time-management', 'tester-mindset',
+                'risk-analysis', 'risk-management', 'non-functional', 'test-support',
+                'issue-verification', 'build-verification', 'issue-tracking-tools',
+                'raising-tickets', 'reports', 'cms-testing', 'email-testing', 'content-copy',
+                'locale-testing', 'script-metrics-troubleshooting', 'standard-script-testing',
+                'test-types-tricks', 'automation-interview', 'fully-scripted', 'exploratory',
+                'sanity-smoke', 'functional-interview'
+            ];
+
+            // Validate and format selected quizzes
+            const allowedQuizzes = selectedQuizzes
+                .map(quiz => quiz.toLowerCase())
+                .filter(quiz => validQuizTypes.includes(quiz));
+
+            // Create array of hidden quizzes (all valid quizzes not in allowedQuizzes)
+            const hiddenQuizzes = validQuizTypes.filter(quiz => !allowedQuizzes.includes(quiz));
+
+            const response = await this.apiService.fetchWithAdminAuth('/admin/create-interview-account', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    username,
+                    password,
+                    userType: 'interview_candidate',
+                    allowedQuizzes,
+                    hiddenQuizzes
+                })
+            });
+
             if (!response.success) {
                 throw new Error(response.message || 'Failed to create account');
             }

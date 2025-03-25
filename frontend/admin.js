@@ -2039,77 +2039,64 @@ class AdminDashboard {
 
     async createInterviewAccount(username, password, selectedQuizzes) {
         try {
-            // Validate username and password length
+            // Define the valid quiz types
+            const validQuizTypes = [
+                'communication', 'initiative', 'time-management', 'tester-mindset',
+                'risk-analysis', 'risk-management', 'non-functional', 'test-support',
+                'issue-verification', 'build-verification', 'issue-tracking-tools',
+                'raising-tickets', 'reports', 'cms-testing', 'email-testing', 'content-copy',
+                'locale-testing', 'script-metrics-troubleshooting', 'standard-script-testing',
+                'test-types-tricks', 'automation-interview', 'fully-scripted', 'exploratory',
+                'sanity-smoke', 'functional-interview'
+            ];
+
+            // Validate username length
             if (username.length < 3) {
                 throw new Error('Username must be at least 3 characters long');
             }
+
+            // Validate password length
             if (password.length < 6) {
                 throw new Error('Password must be at least 6 characters long');
             }
 
-            // Convert selected quizzes to lowercase for consistency
-            const allowedQuizzes = selectedQuizzes.map(quiz => quiz.toLowerCase());
-            
-            // Create array of hidden quizzes (all quizzes not in allowedQuizzes)
-            const hiddenQuizzes = this.quizTypes
+            // Validate and format selected quizzes
+            const allowedQuizzes = selectedQuizzes
                 .map(quiz => quiz.toLowerCase())
-                .filter(quiz => !allowedQuizzes.includes(quiz));
+                .filter(quiz => validQuizTypes.includes(quiz));
 
-            console.log('Creating account with:', {
-                username,
-                allowedQuizzes,
-                hiddenQuizzes
+            if (allowedQuizzes.length === 0) {
+                throw new Error('Please select at least one quiz');
+            }
+
+            // Create array of hidden quizzes (all valid quizzes not in allowedQuizzes)
+            const hiddenQuizzes = validQuizTypes.filter(quiz => !allowedQuizzes.includes(quiz));
+
+            // Make the API request
+            const response = await this.apiService.fetchWithAdminAuth('/admin/create-interview-account', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    username,
+                    password,
+                    userType: 'interview_candidate',
+                    allowedQuizzes,
+                    hiddenQuizzes
+                })
             });
-
-            const response = await this.apiService.fetchWithAdminAuth(
-                `${this.apiService.baseUrl}/admin/create-interview-account`,
-                {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({
-                        username,
-                        password,
-                        userType: 'interview_candidate',
-                        allowedQuizzes,
-                        hiddenQuizzes
-                    })
-                }
-            );
 
             if (!response.success) {
                 throw new Error(response.message || 'Failed to create account');
             }
 
-            // Show success message
-            this.showSuccess(`Account created for ${username}`);
-            
-            // Wait for a moment to ensure the backend has processed the new account
-            await new Promise(resolve => setTimeout(resolve, 500));
-            
-            // Load the latest user data
+            // Update the users list
             await this.loadUsers();
-            
-            // Wait for the user data to be processed
-            await new Promise(resolve => setTimeout(resolve, 100));
-            
-            // Update the dashboard with the new data
-            await this.updateDashboard();
-            
-            // Verify the new user is in the list
-            const newUser = this.users.find(user => user.username === username);
-            if (!newUser) {
-                console.warn('New user not found in users list after creation');
-                // Try loading users one more time
-                await this.loadUsers();
-                await this.updateDashboard();
-            }
             
             return response;
         } catch (error) {
             console.error('Failed to create account:', error);
-            this.showError(error.message || 'Failed to create account');
             throw error;
         }
     }
