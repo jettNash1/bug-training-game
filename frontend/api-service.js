@@ -1107,8 +1107,9 @@ export class APIService {
             // Validate input and log values for debugging
             console.log(`Setting timer for ${quizName} to ${seconds} seconds (raw value)`);
             
-            const value = parseInt(seconds, 10);
-            console.log(`Parsed value: ${value}, isNaN: ${isNaN(value)}`);
+            // Ensure we're working with a number
+            const value = typeof seconds === 'string' ? parseInt(seconds, 10) : Number(seconds);
+            console.log(`Parsed value: ${value}, isNaN: ${isNaN(value)}, type: ${typeof value}`);
             
             if (isNaN(value) || value < 0 || value > 300) {
                 throw new Error('Timer value must be between 0 and 300 seconds');
@@ -1120,10 +1121,13 @@ export class APIService {
             
             // Update the specific quiz timer
             const quizTimers = settings.data.quizTimers || {};
-            quizTimers[quizName] = value;
+            quizTimers[quizName] = value; // Ensure this is a number
             
             console.log(`Updated quiz timers:`, quizTimers);
             console.log(`Default seconds:`, settings.data.defaultSeconds);
+            
+            // Ensure defaultSeconds is also a number
+            const defaultSeconds = Number(settings.data.defaultSeconds);
             
             // Save directly to localStorage first as a safety measure
             try {
@@ -1136,13 +1140,18 @@ export class APIService {
             // Save all settings with direct calls instead of using updateQuizTimerSettings
             try {
                 // Try to save to the API first
+                console.log('Sending to API:', {
+                    defaultSeconds: defaultSeconds,
+                    quizTimers: quizTimers
+                });
+                
                 const response = await this.fetchWithAdminAuth(`${this.baseUrl}/admin/settings/quiz-timer`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'
                     },
                     body: JSON.stringify({
-                        defaultSeconds: settings.data.defaultSeconds,
+                        defaultSeconds: defaultSeconds,
                         quizTimers: quizTimers
                     })
                 });
@@ -1151,7 +1160,7 @@ export class APIService {
                 if (response.success) {
                     localStorage.setItem('perQuizTimerSettings', JSON.stringify(quizTimers));
                     console.log('Timer settings saved to API:', {
-                        defaultSeconds: settings.data.defaultSeconds,
+                        defaultSeconds: defaultSeconds,
                         quizTimers: quizTimers
                     });
                 }
@@ -1165,7 +1174,7 @@ export class APIService {
                     success: true,
                     message: 'Quiz timer setting saved to localStorage (API not available)',
                     data: {
-                        defaultSeconds: settings.data.defaultSeconds,
+                        defaultSeconds: defaultSeconds,
                         quizTimers: quizTimers
                     }
                 };
@@ -1184,6 +1193,9 @@ export class APIService {
             const settings = await this.getQuizTimerSettings();
             console.log('Current timer settings:', settings.data);
             
+            // Ensure defaultSeconds is a number
+            const defaultSeconds = Number(settings.data.defaultSeconds);
+            
             // Remove the specific quiz timer if it exists
             const quizTimers = settings.data.quizTimers || {};
             if (quizTimers[quizName] !== undefined) {
@@ -1200,13 +1212,18 @@ export class APIService {
                 
                 // Save with direct API call
                 try {
+                    console.log('Sending to API:', {
+                        defaultSeconds: defaultSeconds,
+                        quizTimers: quizTimers
+                    });
+                    
                     const response = await this.fetchWithAdminAuth(`${this.baseUrl}/admin/settings/quiz-timer`, {
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/json'
                         },
                         body: JSON.stringify({
-                            defaultSeconds: settings.data.defaultSeconds,
+                            defaultSeconds: defaultSeconds,
                             quizTimers: quizTimers
                         })
                     });
@@ -1226,7 +1243,7 @@ export class APIService {
                         success: true,
                         message: 'Timer settings updated in localStorage (API not available)',
                         data: {
-                            defaultSeconds: settings.data.defaultSeconds,
+                            defaultSeconds: defaultSeconds,
                             quizTimers: quizTimers
                         }
                     };

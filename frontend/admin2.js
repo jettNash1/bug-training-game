@@ -693,11 +693,13 @@ class Admin2Dashboard extends AdminDashboard {
                 if (!selectedQuiz) return;
                 
                 try {
-                    // Get value from input
-                    const quizTimerValue = parseInt(quizTimerInput.value, 10);
+                    // Get value from input and ensure it's a number
+                    const rawInput = quizTimerInput.value.trim();
+                    console.log(`Raw input value: "${rawInput}"`);
                     
-                    // Log for debugging
-                    console.log(`Setting ${selectedQuiz} timer to ${quizTimerValue} seconds (raw input: ${quizTimerInput.value})`);
+                    // Parse as integer and validate
+                    const quizTimerValue = Number(rawInput);
+                    console.log(`Parsed value: ${quizTimerValue}, type: ${typeof quizTimerValue}, isNaN: ${isNaN(quizTimerValue)}`);
                     
                     // Validate
                     if (isNaN(quizTimerValue) || quizTimerValue < 0 || quizTimerValue > 300) {
