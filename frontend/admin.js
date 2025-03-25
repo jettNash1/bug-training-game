@@ -2048,13 +2048,13 @@ class AdminDashboard {
 
             // Define the valid quiz types
             const validQuizTypes = [
-                'communication', 'initiative', 'time-management', 'tester-mindset',
-                'risk-analysis', 'risk-management', 'non-functional', 'test-support',
-                'issue-verification', 'build-verification', 'issue-tracking-tools',
-                'raising-tickets', 'reports', 'cms-testing', 'email-testing', 'content-copy',
-                'locale-testing', 'script-metrics-troubleshooting', 'standard-script-testing',
-                'test-types-tricks', 'automation-interview', 'fully-scripted', 'exploratory',
-                'sanity-smoke', 'functional-interview'
+                'communication-quiz', 'initiative-quiz', 'time-management-quiz', 'tester-mindset-quiz',
+                'risk-analysis-quiz', 'risk-management-quiz', 'non-functional-quiz', 'test-support-quiz',
+                'issue-verification-quiz', 'build-verification-quiz', 'issue-tracking-tools-quiz',
+                'raising-tickets-quiz', 'reports-quiz', 'cms-testing-quiz', 'email-testing-quiz', 
+                'content-copy-quiz', 'locale-testing-quiz', 'script-metrics-troubleshooting-quiz', 
+                'standard-script-testing', 'test-types-tricks-quiz', 'automation-interview', 
+                'fully-scripted-quiz', 'exploratory-quiz', 'sanity-smoke-quiz', 'functional-interview-quiz'
             ];
 
             // Validate username length
@@ -2084,18 +2084,22 @@ class AdminDashboard {
             const allowedQuizzes = selectedQuizzes
                 .map(quiz => {
                     const quizName = quiz.toLowerCase();
-                    // Special case for automation-interview
-                    if (quizName === 'automation-interview') {
+                    // Special cases that don't use -quiz suffix
+                    if (quizName === 'automation-interview' || quizName === 'standard-script-testing') {
                         return quizName;
                     }
-                    // Append -quiz if not already present
+                    // Add -quiz suffix if not present
                     return quizName.endsWith('-quiz') ? quizName : `${quizName}-quiz`;
                 })
                 .filter(quiz => validQuizTypes.includes(quiz));
 
-            console.log('Allowed quizzes after validation:', allowedQuizzes);
+            console.log('Quiz names after transformation:', allowedQuizzes);
 
-            if (allowedQuizzes.length === 0) {
+            // Filter valid quizzes
+            const validQuizzes = allowedQuizzes.filter(quiz => validQuizTypes.includes(quiz));
+            console.log('Valid quizzes:', validQuizzes);
+
+            if (validQuizzes.length === 0) {
                 throw new Error('Please select at least one quiz');
             }
 
