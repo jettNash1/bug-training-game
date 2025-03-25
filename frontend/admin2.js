@@ -803,7 +803,12 @@ class Admin2Dashboard extends AdminDashboard {
                     
                     quizCard.appendChild(quizName);
                     quizCard.appendChild(viewButton);
-                    quizzesGrid.appendChild(quizCard);
+                    
+                    // Wrap the card in a container to ensure proper spacing
+                    const cardWrapper = document.createElement('div');
+                    cardWrapper.className = 'quiz-card-wrapper';
+                    cardWrapper.appendChild(quizCard);
+                    quizzesGrid.appendChild(cardWrapper);
                 });
                 
                 categoryDiv.appendChild(quizzesGrid);
