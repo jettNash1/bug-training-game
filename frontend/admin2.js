@@ -1929,6 +1929,19 @@ class Admin2Dashboard extends AdminDashboard {
             const username = document.getElementById('username').value;
             const password = document.getElementById('password').value;
             
+            // Define the valid quiz types
+            const validQuizTypes = [
+                'automation-interview', 'build-verification-quiz', 'cms-testing-quiz',
+                'communication-quiz', 'content-copy-quiz', 'email-testing-quiz',
+                'exploratory-quiz', 'fully-scripted-quiz', 'functional-interview-quiz',
+                'initiative-quiz', 'issue-tracking-tools-quiz', 'issue-verification-quiz',
+                'locale-testing-quiz', 'non-functional-quiz', 'raising-tickets-quiz',
+                'reports-quiz', 'risk-analysis-quiz', 'risk-management-quiz',
+                'sanity-smoke-quiz', 'script-metrics-troubleshooting-quiz',
+                'standard-script-testing', 'test-support-quiz', 'test-types-tricks-quiz',
+                'tester-mindset-quiz', 'time-management-quiz'
+            ];
+            
             // Log all selected checkboxes
             const selectedCheckboxes = document.querySelectorAll('input[name="quizzes"]:checked');
             console.log('Selected checkboxes:', Array.from(selectedCheckboxes).map(cb => ({
@@ -1944,6 +1957,19 @@ class Admin2Dashboard extends AdminDashboard {
             // Log the valid quiz types for comparison
             console.log('Valid quiz types:', validQuizTypes);
 
+            // Validate basic requirements
+            if (username.length < 3) {
+                throw new Error('Username must be at least 3 characters long');
+            }
+
+            if (password.length < 6) {
+                throw new Error('Password must be at least 6 characters long');
+            }
+            
+            if (selectedQuizzes.length === 0) {
+                throw new Error('Please select at least one quiz');
+            }
+
             // Log which quizzes are invalid
             const invalidQuizzes = selectedQuizzes.filter(quiz => !validQuizTypes.includes(quiz));
             if (invalidQuizzes.length > 0) {
@@ -1954,6 +1980,10 @@ class Admin2Dashboard extends AdminDashboard {
             // Filter valid quizzes and log them
             const allowedQuizzes = selectedQuizzes.filter(quiz => validQuizTypes.includes(quiz));
             console.log('Allowed quizzes (after validation):', allowedQuizzes);
+            
+            if (allowedQuizzes.length === 0) {
+                throw new Error('No valid quiz types selected');
+            }
 
             // Create array of hidden quizzes and log them
             const hiddenQuizzes = validQuizTypes.filter(quiz => !allowedQuizzes.includes(quiz));
@@ -1969,60 +1999,12 @@ class Admin2Dashboard extends AdminDashboard {
             };
             console.log('Request body:', requestBody);
 
-            // Define the valid quiz types
-            const validQuizTypes = [
-                'automation-interview', 'build-verification-quiz', 'cms-testing-quiz',
-                'communication-quiz', 'content-copy-quiz', 'email-testing-quiz',
-                'exploratory-quiz', 'fully-scripted-quiz', 'functional-interview-quiz',
-                'initiative-quiz', 'issue-tracking-tools-quiz', 'issue-verification-quiz',
-                'locale-testing-quiz', 'non-functional-quiz', 'raising-tickets-quiz',
-                'reports-quiz', 'risk-analysis-quiz', 'risk-management-quiz',
-                'sanity-smoke-quiz', 'script-metrics-troubleshooting-quiz',
-                'standard-script-testing', 'test-support-quiz', 'test-types-tricks-quiz',
-                'tester-mindset-quiz', 'time-management-quiz'
-            ];
-
-            // Validate username length
-            if (username.length < 3) {
-                throw new Error('Username must be at least 3 characters long');
-            }
-
-            // Validate password length
-            if (password.length < 6) {
-                throw new Error('Password must be at least 6 characters long');
-            }
-
-            // Get selected quizzes
-            const selectedQuizzes = Array.from(document.querySelectorAll('input[name="quizzes"]:checked'))
-                .map(checkbox => checkbox.value.toLowerCase());
-
-            // Validate quiz selection
-            if (selectedQuizzes.length === 0) {
-                throw new Error('Please select at least one quiz');
-            }
-
-            // Validate and filter selected quizzes
-            const allowedQuizzes = selectedQuizzes.filter(quiz => validQuizTypes.includes(quiz));
-            
-            if (allowedQuizzes.length === 0) {
-                throw new Error('No valid quiz types selected');
-            }
-
-            // Create array of hidden quizzes (all valid quizzes not in allowedQuizzes)
-            const hiddenQuizzes = validQuizTypes.filter(quiz => !allowedQuizzes.includes(quiz));
-
             const response = await this.apiService.fetchWithAdminAuth('/api/admin/create-interview-account', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
                 },
-                body: JSON.stringify({
-                    username,
-                    password,
-                    userType: 'interview_candidate',
-                    allowedQuizzes,
-                    hiddenQuizzes
-                })
+                body: JSON.stringify(requestBody)
             });
 
             if (!response.success) {
