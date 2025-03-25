@@ -1223,6 +1223,7 @@ class Admin2Dashboard extends AdminDashboard {
     // Implement a hardcoded fetchQuizTypes method that handles API failures gracefully
     async fetchQuizTypes() {
         try {
+            // Use the correct API endpoint with /api prefix
             const response = await this.apiService.fetchWithAdminAuth('/admin/quiz-types');
             
             // Check if the response is successful and has data
@@ -1235,6 +1236,7 @@ class Admin2Dashboard extends AdminDashboard {
         } catch (error) {
             console.error('Error fetching quiz types:', error);
             // Fallback to hardcoded quiz types if API fails
+            console.log('Using hardcoded quiz types as fallback');
             return this.getHardcodedQuizTypes();
         }
     }

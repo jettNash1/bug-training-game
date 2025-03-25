@@ -90,7 +90,14 @@ export class APIService {
                     status: response.status,
                     contentType
                 });
-                throw new Error('Server returned HTML instead of JSON. Check API endpoint and authentication.');
+                // Instead of throwing, try to parse the response as JSON
+                const text = await response.text();
+                try {
+                    const data = JSON.parse(text);
+                    return data;
+                } catch (e) {
+                    throw new Error('Server returned HTML instead of JSON. Check API endpoint and authentication.');
+                }
             }
 
             // Try to parse response as JSON
