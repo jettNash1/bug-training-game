@@ -1115,6 +1115,14 @@ router.get('/quizzes/:quizName/scenarios', auth, async (req, res) => {
 // GET quiz timer settings
 router.get('/settings/quiz-timer', auth, async (req, res) => {
     try {
+        // Verify admin status
+        if (!req.user.isAdmin) {
+            return res.status(403).json({
+                success: false,
+                message: 'Admin access required'
+            });
+        }
+
         // Find the timer settings document
         const settings = await Setting.findOne({ key: 'quizTimerSettings' });
         
@@ -1151,8 +1159,17 @@ router.get('/settings/quiz-timer', auth, async (req, res) => {
 // POST - Update quiz timer settings
 router.post('/settings/quiz-timer', auth, async (req, res) => {
     try {
+        // Verify admin status
+        if (!req.user.isAdmin) {
+            return res.status(403).json({
+                success: false,
+                message: 'Admin access required'
+            });
+        }
+
         // Extract timer settings from request body
         const { secondsPerQuestion, defaultSeconds, quizTimers, quizName } = req.body;
+        console.log('Received timer update request:', { secondsPerQuestion, defaultSeconds, quizTimers, quizName });
         
         // Get current settings or create new
         let settings = await Setting.findOne({ key: 'quizTimerSettings' });
@@ -1174,12 +1191,28 @@ router.post('/settings/quiz-timer', auth, async (req, res) => {
             settings.value.defaultSeconds = Number(defaultSeconds);
         }
         
+        // Initialize quizTimers if it doesn't exist
+        if (!settings.value.quizTimers) {
+            settings.value.quizTimers = {};
+        }
+        
         // Update quiz-specific timer if provided
-        if (quizName && quizTimers && quizTimers[quizName] !== undefined) {
-            if (!settings.value.quizTimers) {
-                settings.value.quizTimers = {};
+        if (quizName && quizTimers) {
+            // If quizTimers is an object with the quizName as a key
+            if (typeof quizTimers === 'object' && quizTimers[quizName] !== undefined) {
+                settings.value.quizTimers[quizName] = Number(quizTimers[quizName]);
             }
-            settings.value.quizTimers[quizName] = Number(quizTimers[quizName]);
+            // If quizTimers is a direct number value
+            else if (typeof quizTimers === 'number' || !isNaN(Number(quizTimers))) {
+                settings.value.quizTimers[quizName] = Number(quizTimers);
+            }
+            
+            // Clean up any timers that match the default
+            Object.entries(settings.value.quizTimers).forEach(([quiz, value]) => {
+                if (value === settings.value.defaultSeconds) {
+                    delete settings.value.quizTimers[quiz];
+                }
+            });
         }
         
         // Update timestamp
@@ -1187,6 +1220,7 @@ router.post('/settings/quiz-timer', auth, async (req, res) => {
         
         // Validate and save
         await settings.save();
+        console.log('Saved timer settings:', settings.value);
         
         // Return updated settings
         return res.json({
@@ -1200,7 +1234,8 @@ router.post('/settings/quiz-timer', auth, async (req, res) => {
         console.error('Error updating quiz timer settings:', error);
         res.status(500).json({
             success: false,
-            message: 'Failed to update quiz timer settings'
+            message: 'Failed to update quiz timer settings',
+            error: error.message
         });
     }
 });

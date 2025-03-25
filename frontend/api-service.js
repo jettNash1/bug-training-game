@@ -931,14 +931,15 @@ export class APIService {
             try {
                 // Try to get from API first
                 const response = await this.fetchWithAdminAuth(`${this.baseUrl}/admin/settings/quiz-timer`);
+                console.log('Raw timer settings response:', response);
                 
                 // If response is successful, update localStorage and return the value
-                if (response.success && response.data) {
-                    console.log('Timer settings loaded from API:', response.data);
+                if (response.success && response.data && response.data.value) {
+                    const settings = response.data.value;
+                    console.log('Timer settings loaded from API:', settings);
                     
-                    // Extract settings from the response, handling both old and new formats
-                    const settings = response.data.value || response.data;
-                    const defaultSeconds = settings.defaultSeconds || settings.secondsPerQuestion || 60;
+                    // Ensure we have valid defaultSeconds and quizTimers
+                    const defaultSeconds = typeof settings.defaultSeconds === 'number' ? settings.defaultSeconds : 60;
                     const quizTimers = settings.quizTimers || {};
                     
                     // Store in localStorage for immediate effect on quizzes
@@ -947,7 +948,7 @@ export class APIService {
                     
                     return {
                         success: true,
-                        message: response.message || 'Timer settings loaded from API',
+                        message: 'Timer settings loaded from API',
                         data: {
                             defaultSeconds: defaultSeconds,
                             quizTimers: quizTimers,
@@ -965,7 +966,20 @@ export class APIService {
             
             // Get quiz-specific timer settings from localStorage
             const perQuizTimersJson = localStorage.getItem('perQuizTimerSettings');
-            const quizTimers = perQuizTimersJson ? JSON.parse(perQuizTimersJson) : {};
+            let quizTimers = {};
+            try {
+                if (perQuizTimersJson) {
+                    quizTimers = JSON.parse(perQuizTimersJson);
+                    // Validate each timer value
+                    Object.entries(quizTimers).forEach(([quiz, value]) => {
+                        if (typeof value !== 'number' || isNaN(value) || value < 0 || value > 300) {
+                            delete quizTimers[quiz];
+                        }
+                    });
+                }
+            } catch (parseError) {
+                console.warn('Error parsing perQuizTimerSettings from localStorage:', parseError);
+            }
             
             console.log('Using localStorage fallback for timer settings:', {
                 defaultSeconds,
@@ -1083,24 +1097,44 @@ export class APIService {
         try {
             // Get all timer settings
             const response = await this.getQuizTimerSettings();
+            console.log('Retrieved timer settings:', response);
             
-            if (response.success) {
+            if (response.success && response.data) {
                 const { defaultSeconds, quizTimers } = response.data;
                 
                 // Check if this quiz has a specific timer setting
                 if (quizTimers && quizName && quizTimers[quizName] !== undefined) {
-                    console.log(`Using specific timer setting for ${quizName}: ${quizTimers[quizName]} seconds`);
-                    return quizTimers[quizName];
+                    const quizSpecificTimer = Number(quizTimers[quizName]);
+                    console.log(`Using specific timer for ${quizName}: ${quizSpecificTimer} seconds`);
+                    return quizSpecificTimer;
                 }
                 
                 // Otherwise return the default
-                console.log(`Using default timer setting for ${quizName}: ${defaultSeconds} seconds`);
-                return defaultSeconds;
+                const defaultTimer = Number(defaultSeconds);
+                console.log(`Using default timer for ${quizName}: ${defaultTimer} seconds`);
+                return defaultTimer;
             }
             
-            // Fallback to the localStorage value if API call fails
+            // Fallback to localStorage if API response is invalid
+            const perQuizTimersJson = localStorage.getItem('perQuizTimerSettings');
+            if (perQuizTimersJson) {
+                try {
+                    const perQuizTimers = JSON.parse(perQuizTimersJson);
+                    if (perQuizTimers[quizName] !== undefined) {
+                        const storedQuizTimer = Number(perQuizTimers[quizName]);
+                        console.log(`Using localStorage quiz-specific timer for ${quizName}: ${storedQuizTimer} seconds`);
+                        return storedQuizTimer;
+                    }
+                } catch (e) {
+                    console.warn('Error parsing perQuizTimerSettings from localStorage:', e);
+                }
+            }
+            
+            // Final fallback to default timer value
             const storedValue = localStorage.getItem('quizTimerValue');
-            return storedValue !== null ? parseInt(storedValue, 10) : 60;
+            const defaultValue = storedValue !== null ? parseInt(storedValue, 10) : 60;
+            console.log(`Using fallback timer value for ${quizName}: ${defaultValue} seconds`);
+            return defaultValue;
         } catch (error) {
             console.error(`Failed to get timer value for quiz ${quizName}:`, error);
             return 60; // Default fallback
@@ -1109,6 +1143,10 @@ export class APIService {
     
     async updateSingleQuizTimer(quizName, seconds) {
         try {
+            if (!quizName) {
+                throw new Error('Quiz name is required');
+            }
+
             // Validate input and log values for debugging
             console.log(`Setting timer for ${quizName} to ${seconds} seconds (raw value)`);
             
@@ -1124,53 +1162,54 @@ export class APIService {
             const settings = await this.getQuizTimerSettings();
             console.log('Current timer settings:', settings.data);
             
-            // Update the specific quiz timer
-            const quizTimers = settings.data.quizTimers || {};
-            quizTimers[quizName] = value;
+            // Create the updated quiz timers object
+            const quizTimers = { ...settings.data.quizTimers };
             
-            // Save to localStorage as backup
-            try {
-                localStorage.setItem('perQuizTimerSettings', JSON.stringify(quizTimers));
-                console.log('Successfully saved to localStorage as backup');
-            } catch (localError) {
-                console.warn('Failed to save to localStorage:', localError);
+            // Only set the timer if it's different from the default
+            if (value !== settings.data.defaultSeconds) {
+                quizTimers[quizName] = value;
+            } else {
+                // If the value matches the default, remove the specific timer
+                delete quizTimers[quizName];
             }
             
-            // Save to API with the complete settings structure
+            // Save to localStorage as backup
+            localStorage.setItem('perQuizTimerSettings', JSON.stringify(quizTimers));
+            
+            // Send to API with the complete settings structure
             try {
-                console.log('Sending to API:', {
-                    defaultSeconds: settings.data.defaultSeconds,
-                    quizTimers: quizTimers
-                });
-                
                 const response = await this.fetchWithAdminAuth(`${this.baseUrl}/admin/settings/quiz-timer`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'
                     },
                     body: JSON.stringify({
-                        key: 'quizTimerSettings',
-                        value: {
-                            defaultSeconds: settings.data.defaultSeconds,
-                            quizTimers: quizTimers
-                        }
+                        defaultSeconds: settings.data.defaultSeconds,
+                        quizTimers: quizTimers,
+                        quizName: quizName
                     })
                 });
                 
                 if (response.success) {
                     console.log('Timer settings saved to API:', response.data);
                     
+                    // Update localStorage with the latest settings from the API
+                    if (response.data.value) {
+                        localStorage.setItem('quizTimerValue', response.data.value.defaultSeconds.toString());
+                        localStorage.setItem('perQuizTimerSettings', JSON.stringify(response.data.value.quizTimers));
+                    }
+                    
                     return {
                         success: true,
                         message: 'Timer setting saved successfully',
-                        data: {
+                        data: response.data.value || {
                             defaultSeconds: settings.data.defaultSeconds,
                             quizTimers: quizTimers
                         }
                     };
                 }
                 
-                return response;
+                throw new Error(response.message || 'Failed to save timer settings to API');
             } catch (apiError) {
                 console.warn('Failed to save timer settings to API:', apiError);
                 
@@ -1279,10 +1318,19 @@ export class APIService {
             const response = await this.fetchWithAdminAuth(`${this.baseUrl}/admin/schedules`);
             
             if (response.success) {
-                console.log('Successfully fetched scheduled resets from API:', response.data);
+                // Validate and process the schedules data
+                const schedules = Array.isArray(response.data) ? response.data.map(schedule => ({
+                    id: schedule._id || schedule.id,
+                    username: schedule.username || '',
+                    quizName: schedule.quizName || '',
+                    resetDateTime: schedule.resetDateTime || new Date().toISOString(),
+                    createdAt: schedule.createdAt || new Date().toISOString()
+                })) : [];
+                
+                console.log('Successfully fetched scheduled resets from API:', schedules);
                 return {
                     success: true,
-                    data: response.data || []
+                    data: schedules
                 };
             } else {
                 throw new Error(response.message || 'Failed to fetch scheduled resets');
@@ -1290,22 +1338,53 @@ export class APIService {
         } catch (error) {
             console.error('Error fetching scheduled resets:', error);
             
-            // Use localStorage as fallback
+            // Use localStorage as fallback with validation
             console.warn('Using localStorage fallback for scheduled resets');
-            const schedulesJson = localStorage.getItem('scheduledResets');
-            const schedules = schedulesJson ? JSON.parse(schedulesJson) : [];
-            
-            return {
-                success: true,
-                fallback: true,
-                message: 'Using localStorage fallback for scheduled resets',
-                data: schedules
-            };
+            try {
+                const schedulesJson = localStorage.getItem('scheduledResets');
+                const schedules = schedulesJson ? JSON.parse(schedulesJson) : [];
+                
+                // Validate and clean up localStorage data
+                const validSchedules = schedules.filter(schedule => {
+                    return schedule && 
+                           typeof schedule.id === 'string' &&
+                           typeof schedule.username === 'string' &&
+                           typeof schedule.quizName === 'string' &&
+                           typeof schedule.resetDateTime === 'string' &&
+                           typeof schedule.createdAt === 'string';
+                });
+                
+                return {
+                    success: true,
+                    fallback: true,
+                    message: 'Using localStorage fallback for scheduled resets',
+                    data: validSchedules
+                };
+            } catch (localError) {
+                console.error('Error processing localStorage fallback:', localError);
+                return {
+                    success: false,
+                    message: 'Failed to fetch scheduled resets',
+                    error: error.message
+                };
+            }
         }
     }
     
     async createScheduledReset(username, quizName, resetDateTime) {
         try {
+            // Validate inputs
+            if (!username || !quizName || !resetDateTime) {
+                throw new Error('Missing required fields: username, quizName, and resetDateTime are required');
+            }
+
+            // Validate resetDateTime is in the future
+            const resetTime = new Date(resetDateTime);
+            const now = new Date();
+            if (resetTime <= now) {
+                throw new Error('Reset time must be in the future');
+            }
+
             console.log(`Creating scheduled reset for ${username}'s ${quizName} at ${resetDateTime}`);
             
             const response = await this.fetchWithAdminAuth(`${this.baseUrl}/admin/schedules`, {
@@ -1321,7 +1400,8 @@ export class APIService {
             });
             
             if (response.success) {
-                console.log('Successfully created scheduled reset through API:', response);
+                const schedule = response.data;
+                console.log('Successfully created scheduled reset through API:', schedule);
                 
                 // Also save to localStorage as a backup/fallback
                 try {
@@ -1336,14 +1416,15 @@ export class APIService {
                     );
                     
                     if (!exists) {
-                        schedules.push({
-                            id: response.data.id || Date.now().toString(),
+                        const newSchedule = {
+                            id: schedule._id || schedule.id || Date.now().toString(),
                             username,
                             quizName,
                             resetDateTime,
                             createdAt: new Date().toISOString()
-                        });
+                        };
                         
+                        schedules.push(newSchedule);
                         localStorage.setItem('scheduledResets', JSON.stringify(schedules));
                     }
                 } catch (localError) {
@@ -1357,7 +1438,7 @@ export class APIService {
         } catch (error) {
             console.error('Error creating scheduled reset:', error);
             
-            // Use localStorage as fallback
+            // Use localStorage as fallback with validation
             console.warn('Using localStorage fallback for creating scheduled reset');
             try {
                 const schedulesJson = localStorage.getItem('scheduledResets');
@@ -1371,15 +1452,20 @@ export class APIService {
                     createdAt: new Date().toISOString()
                 };
                 
-                schedules.push(newSchedule);
-                localStorage.setItem('scheduledResets', JSON.stringify(schedules));
-                
-                return {
-                    success: true,
-                    fallback: true,
-                    message: 'Scheduled reset created in localStorage (API not available)',
-                    data: newSchedule
-                };
+                // Validate the new schedule before adding
+                if (newSchedule.username && newSchedule.quizName && newSchedule.resetDateTime) {
+                    schedules.push(newSchedule);
+                    localStorage.setItem('scheduledResets', JSON.stringify(schedules));
+                    
+                    return {
+                        success: true,
+                        fallback: true,
+                        message: 'Scheduled reset created in localStorage (API not available)',
+                        data: newSchedule
+                    };
+                } else {
+                    throw new Error('Invalid schedule data');
+                }
             } catch (localError) {
                 console.error('Error creating scheduled reset in localStorage:', localError);
                 throw error;
@@ -1389,6 +1475,10 @@ export class APIService {
     
     async cancelScheduledReset(scheduleId) {
         try {
+            if (!scheduleId) {
+                throw new Error('Schedule ID is required');
+            }
+
             console.log(`Cancelling scheduled reset with ID: ${scheduleId}`);
             
             const response = await this.fetchWithAdminAuth(`${this.baseUrl}/admin/schedules/${scheduleId}`, {
@@ -1417,7 +1507,7 @@ export class APIService {
         } catch (error) {
             console.error('Error cancelling scheduled reset:', error);
             
-            // Use localStorage as fallback
+            // Use localStorage as fallback with validation
             console.warn('Using localStorage fallback for cancelling scheduled reset');
             try {
                 const schedulesJson = localStorage.getItem('scheduledResets');
