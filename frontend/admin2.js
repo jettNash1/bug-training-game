@@ -111,7 +111,9 @@ class Admin2Dashboard extends AdminDashboard {
                     console.error(`Error loading progress for user ${user.username}:`, error);
                 }
             }
-            // Update the user list display to reflect progress data
+            // Update statistics and user list after loading all progress
+            const stats = this.updateStatistics();
+            this.updateStatisticsDisplay(stats);
             this.updateUsersList();
         } catch (error) {
             console.error('Error loading all user progress:', error);
@@ -274,35 +276,68 @@ class Admin2Dashboard extends AdminDashboard {
             this.showError(`Failed to update dashboard: ${error.message}`);
         }
     }
+
+    updateStatistics() {
+        const today = new Date().setHours(0, 0, 0, 0);
+        
+        const stats = this.users.reduce((acc, user) => {
+            // Check if user was active today
+            const lastActive = this.getLastActiveDate(user);
+            if (lastActive >= today) {
+                acc.activeUsers++;
+            }
+
+            // Calculate progress for average
+            const userProgress = this.calculateUserProgress(user);
+            acc.totalProgress += userProgress;
+            
+            return acc;
+        }, {
+            totalUsers: this.users.length,
+            activeUsers: 0,
+            totalProgress: 0
+        });
+
+        stats.averageProgress = this.users.length > 0 ? 
+            Math.round(stats.totalProgress / stats.totalUsers) : 0;
+        
+        console.log('Statistics updated:', stats);
+        return stats;
+    }
+
+    updateStatisticsDisplay(stats) {
+        // Update the statistics in the UI
+        const totalUsersElement = document.getElementById('totalUsers');
+        const activeUsersElement = document.getElementById('activeUsers');
+        const averageCompletionElement = document.getElementById('averageCompletion');
+
+        if (totalUsersElement) {
+            totalUsersElement.textContent = stats.totalUsers || 0;
+        }
+        if (activeUsersElement) {
+            activeUsersElement.textContent = stats.activeUsers || 0;
+        }
+        if (averageCompletionElement) {
+            averageCompletionElement.textContent = `${stats.averageProgress || 0}%`;
+        }
+    }
     
     async updateUsersList() {
         const container = document.getElementById('usersList');
-        if (!container) {
-            console.error('Users container not found');
-            return;
-        }
-        
-        if (!this.users || this.users.length === 0) {
-            container.innerHTML = '<div class="no-users">No users found</div>';
-            return;
-        }
-        
-        console.log(`Updating users list with ${this.users.length} users`);
+        if (!container) return;
 
-        // Get filter values
-        const searchTerm = (document.getElementById('userSearch')?.value || '').toLowerCase();
-        const accountType = document.getElementById('accountType')?.value || 'all';
+        // Get current filter values
+        const searchQuery = document.getElementById('userSearch')?.value.toLowerCase() || '';
         const sortBy = document.getElementById('sortBy')?.value || 'username-asc';
-        
-        // Check if row view is active
-        const isRowView = this.isRowView;
-        
-        // Filter users by search term and account type
+        const accountType = document.getElementById('accountType')?.value || 'all';
+        const isRowView = !container.classList.contains('grid-view');
+
+        // Filter users
         let filteredUsers = this.users.filter(user => {
-            const matchesSearch = user.username.toLowerCase().includes(searchTerm);
+            const matchesSearch = user.username.toLowerCase().includes(searchQuery);
             const matchesType = accountType === 'all' || 
-                             (accountType === 'interview' && user.userType === 'interview_candidate') ||
-                             (accountType === 'regular' && user.userType !== 'interview_candidate');
+                              (accountType === 'regular' && user.userType !== 'interview_candidate') ||
+                              (accountType === 'interview' && user.userType === 'interview_candidate');
             return matchesSearch && matchesType;
         });
 
@@ -455,8 +490,10 @@ class Admin2Dashboard extends AdminDashboard {
         if (filteredUsers.length === 0) {
             container.innerHTML = '<div class="no-users">No users match your search criteria</div>';
         }
-        
-        console.log(`Displayed ${filteredUsers.length} users out of ${this.users.length} total`);
+
+        // Update statistics based on filtered users
+        const stats = this.updateStatistics();
+        this.updateStatisticsDisplay(stats);
     }
     
     // Display timer settings in the settings section
