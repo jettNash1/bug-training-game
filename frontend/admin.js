@@ -2080,9 +2080,17 @@ class AdminDashboard {
                 });
             }
 
-            // Validate and format selected quizzes (using the existing variable)
+            // Validate and format selected quizzes
             const allowedQuizzes = selectedQuizzes
-                .map(quiz => quiz.toLowerCase())
+                .map(quiz => {
+                    const quizName = quiz.toLowerCase();
+                    // Special case for automation-interview
+                    if (quizName === 'automation-interview') {
+                        return quizName;
+                    }
+                    // Append -quiz if not already present
+                    return quizName.endsWith('-quiz') ? quizName : `${quizName}-quiz`;
+                })
                 .filter(quiz => validQuizTypes.includes(quiz));
 
             console.log('Allowed quizzes after validation:', allowedQuizzes);
@@ -2091,8 +2099,17 @@ class AdminDashboard {
                 throw new Error('Please select at least one quiz');
             }
 
-            // Create array of hidden quizzes
-            const hiddenQuizzes = validQuizTypes.filter(quiz => !allowedQuizzes.includes(quiz));
+            // Create array of hidden quizzes (all valid quizzes not in allowedQuizzes)
+            const hiddenQuizzes = validQuizTypes
+                .filter(quiz => !allowedQuizzes.includes(quiz))
+                .map(quiz => {
+                    // Special case for automation-interview
+                    if (quiz === 'automation-interview') {
+                        return quiz;
+                    }
+                    // Append -quiz if not already present
+                    return quiz.endsWith('-quiz') ? quiz : `${quiz}-quiz`;
+                });
             console.log('Hidden quizzes:', hiddenQuizzes);
 
             // Log the final request body
