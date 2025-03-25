@@ -1928,8 +1928,47 @@ class Admin2Dashboard extends AdminDashboard {
         try {
             const username = document.getElementById('username').value;
             const password = document.getElementById('password').value;
-            const quizCheckboxes = document.querySelectorAll('#quizTypesList input[type="checkbox"]');
             
+            // Log all selected checkboxes
+            const selectedCheckboxes = document.querySelectorAll('input[name="quizzes"]:checked');
+            console.log('Selected checkboxes:', Array.from(selectedCheckboxes).map(cb => ({
+                value: cb.value,
+                dataset: cb.dataset
+            })));
+
+            // Get selected quizzes and log them
+            const selectedQuizzes = Array.from(selectedCheckboxes)
+                .map(checkbox => checkbox.value.toLowerCase());
+            console.log('Selected quizzes (before validation):', selectedQuizzes);
+
+            // Log the valid quiz types for comparison
+            console.log('Valid quiz types:', validQuizTypes);
+
+            // Log which quizzes are invalid
+            const invalidQuizzes = selectedQuizzes.filter(quiz => !validQuizTypes.includes(quiz));
+            if (invalidQuizzes.length > 0) {
+                console.error('Invalid quiz names found:', invalidQuizzes);
+                console.log('These quiz names do not match any in the valid quiz types list');
+            }
+
+            // Filter valid quizzes and log them
+            const allowedQuizzes = selectedQuizzes.filter(quiz => validQuizTypes.includes(quiz));
+            console.log('Allowed quizzes (after validation):', allowedQuizzes);
+
+            // Create array of hidden quizzes and log them
+            const hiddenQuizzes = validQuizTypes.filter(quiz => !allowedQuizzes.includes(quiz));
+            console.log('Hidden quizzes:', hiddenQuizzes);
+
+            // Log the final request body
+            const requestBody = {
+                username,
+                password,
+                userType: 'interview_candidate',
+                allowedQuizzes,
+                hiddenQuizzes
+            };
+            console.log('Request body:', requestBody);
+
             // Define the valid quiz types
             const validQuizTypes = [
                 'automation-interview', 'build-verification-quiz', 'cms-testing-quiz',
