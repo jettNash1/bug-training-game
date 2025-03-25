@@ -2041,13 +2041,15 @@ class AdminDashboard {
         try {
             // Define the valid quiz types
             const validQuizTypes = [
-                'communication', 'initiative', 'time-management', 'tester-mindset',
-                'risk-analysis', 'risk-management', 'non-functional', 'test-support',
-                'issue-verification', 'build-verification', 'issue-tracking-tools',
-                'raising-tickets', 'reports', 'cms-testing', 'email-testing', 'content-copy',
-                'locale-testing', 'script-metrics-troubleshooting', 'standard-script-testing',
-                'test-types-tricks', 'automation-interview', 'fully-scripted', 'exploratory',
-                'sanity-smoke', 'functional-interview'
+                'automation-interview', 'build-verification-quiz', 'cms-testing-quiz',
+                'communication-quiz', 'content-copy-quiz', 'email-testing-quiz',
+                'exploratory-quiz', 'fully-scripted-quiz', 'functional-interview-quiz',
+                'initiative-quiz', 'issue-tracking-tools-quiz', 'issue-verification-quiz',
+                'locale-testing-quiz', 'non-functional-quiz', 'raising-tickets-quiz',
+                'reports-quiz', 'risk-analysis-quiz', 'risk-management-quiz',
+                'sanity-smoke-quiz', 'script-metrics-troubleshooting-quiz',
+                'standard-script-testing', 'test-support-quiz', 'test-types-tricks-quiz',
+                'tester-mindset-quiz', 'time-management-quiz'
             ];
 
             // Validate username length
