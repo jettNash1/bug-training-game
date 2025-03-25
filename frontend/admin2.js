@@ -1916,35 +1916,14 @@ class Admin2Dashboard extends AdminDashboard {
     }
     
     // Helper method to handle create account form submission
-    async handleCreateAccount(e) {
-        e.preventDefault();
+    async handleCreateAccount(event) {
+        event.preventDefault();
         
-        const form = e.target;
-        const username = form.querySelector('#username').value.trim();
-        const password = form.querySelector('#password').value.trim();
-        const selectedQuizzes = Array.from(form.querySelectorAll('input[name="quizzes"]:checked'))
-            .map(checkbox => checkbox.value);
-
-        if (username.length < 3) {
-            this.showError('Username must be at least 3 characters long');
-            return;
-        }
-
-        if (password.length < 6) {
-            this.showError('Password must be at least 6 characters long');
-            return;
-        }
-
-        if (selectedQuizzes.length === 0) {
-            this.showError('Please select at least one quiz');
-            return;
-        }
-
         try {
-            const submitButton = form.querySelector('button[type="submit"]');
-            submitButton.disabled = true;
-            submitButton.textContent = 'Creating Account...';
-
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+            const quizCheckboxes = document.querySelectorAll('#quizTypesList input[type="checkbox"]');
+            
             // Define the valid quiz types
             const validQuizTypes = [
                 'communication', 'initiative', 'time-management', 'tester-mindset',
@@ -1956,15 +1935,37 @@ class Admin2Dashboard extends AdminDashboard {
                 'sanity-smoke', 'functional-interview'
             ];
 
-            // Validate and format selected quizzes
-            const allowedQuizzes = selectedQuizzes
-                .map(quiz => quiz.toLowerCase())
-                .filter(quiz => validQuizTypes.includes(quiz));
+            // Validate username length
+            if (username.length < 3) {
+                throw new Error('Username must be at least 3 characters long');
+            }
+
+            // Validate password length
+            if (password.length < 6) {
+                throw new Error('Password must be at least 6 characters long');
+            }
+
+            // Get selected quizzes
+            const selectedQuizzes = Array.from(quizCheckboxes)
+                .filter(checkbox => checkbox.checked)
+                .map(checkbox => checkbox.value.toLowerCase());
+
+            // Validate quiz selection
+            if (selectedQuizzes.length === 0) {
+                throw new Error('Please select at least one quiz');
+            }
+
+            // Validate and filter selected quizzes
+            const allowedQuizzes = selectedQuizzes.filter(quiz => validQuizTypes.includes(quiz));
+            
+            if (allowedQuizzes.length === 0) {
+                throw new Error('No valid quiz types selected');
+            }
 
             // Create array of hidden quizzes (all valid quizzes not in allowedQuizzes)
             const hiddenQuizzes = validQuizTypes.filter(quiz => !allowedQuizzes.includes(quiz));
 
-            const response = await this.apiService.fetchWithAdminAuth('/admin/create-interview-account', {
+            const response = await this.apiService.fetchWithAdminAuth('/api/admin/create-interview-account', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
@@ -1982,25 +1983,19 @@ class Admin2Dashboard extends AdminDashboard {
                 throw new Error(response.message || 'Failed to create account');
             }
 
-            this.showSuccess('Account created successfully');
+            // Show success message
+            this.showSuccess(`Account created for ${username}`);
             
-            // Reset form
-            form.reset();
+            // Reset the form
+            document.getElementById('createInterviewForm').reset();
             
-            // Reload user list
+            // Update the users list
             await this.loadUsers();
             
-            // Switch to users view
-            document.querySelector('.menu-item[data-section="users"]').click();
         } catch (error) {
+            console.error('Failed to create account:', error);
             this.showError(error.message || 'Failed to create account');
-        } finally {
-            // Reset button
-            const submitButton = form.querySelector('button[type="submit"]');
-            if (submitButton) {
-                submitButton.disabled = false;
-                submitButton.textContent = 'Create Account';
-            }
+            throw error;
         }
     }
 }

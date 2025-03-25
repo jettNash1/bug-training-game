@@ -2072,7 +2072,6 @@ class AdminDashboard {
             // Create array of hidden quizzes (all valid quizzes not in allowedQuizzes)
             const hiddenQuizzes = validQuizTypes.filter(quiz => !allowedQuizzes.includes(quiz));
 
-            // Make the API request
             const response = await this.apiService.fetchWithAdminAuth('/api/admin/create-interview-account', {
                 method: 'POST',
                 headers: {
