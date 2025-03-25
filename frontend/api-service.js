@@ -64,6 +64,7 @@ export class APIService {
             const headers = {
                 'Authorization': `Bearer ${adminToken}`,
                 'Content-Type': 'application/json',
+                'Accept': 'application/json', // Explicitly request JSON response
                 ...options.headers
             };
 
@@ -80,6 +81,17 @@ export class APIService {
             }
 
             const response = await fetch(fullUrl, fetchOptions);
+
+            // Check if response is HTML (indicating a redirect or error page)
+            const contentType = response.headers.get('content-type');
+            if (contentType && contentType.includes('text/html')) {
+                console.error('Received HTML response instead of JSON:', {
+                    url: fullUrl,
+                    status: response.status,
+                    contentType
+                });
+                throw new Error('Server returned HTML instead of JSON. Check API endpoint and authentication.');
+            }
 
             // Try to parse response as JSON
             let text;

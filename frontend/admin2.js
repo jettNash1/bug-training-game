@@ -1224,22 +1224,18 @@ class Admin2Dashboard extends AdminDashboard {
     async fetchQuizTypes() {
         try {
             const response = await this.apiService.fetchWithAdminAuth('/admin/quiz-types');
-            if (!response.ok) {
-                throw new Error('Failed to fetch quiz types');
-            }d
-            return await response.json();
+            
+            // Check if the response is successful and has data
+            if (response.success && response.data) {
+                console.log('Successfully fetched quiz types:', response.data);
+                return response.data;
+            } else {
+                throw new Error(response.message || 'Failed to fetch quiz types');
+            }
         } catch (error) {
             console.error('Error fetching quiz types:', error);
             // Fallback to hardcoded quiz types if API fails
-            return [
-                'communication', 'initiative', 'time-management', 'tester-mindset',
-                'risk-analysis', 'risk-management', 'non-functional', 'test-support',
-                'issue-verification', 'build-verification', 'issue-tracking-tools',
-                'raising-tickets', 'reports', 'cms-testing', 'email-testing', 'content-copy',
-                'locale-testing', 'script-metrics-troubleshooting', 'standard-script-testing',
-                'test-types-tricks', 'automation-interview', 'fully-scripted', 'exploratory',
-                'sanity-smoke', 'functional-interview'
-            ];
+            return this.getHardcodedQuizTypes();
         }
     }
 
