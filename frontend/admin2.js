@@ -941,6 +941,82 @@ class Admin2Dashboard extends AdminDashboard {
         ].sort((a, b) => a.localeCompare(b));
     }
 
+    // Add fetchQuizScenarios method to match the parent class
+    async fetchQuizScenarios(quizName) {
+        try {
+            console.log(`Fetching quiz scenarios for ${quizName} using API endpoint`);
+            
+            // Normalize the quiz name to match API expectations
+            const normalizedQuizName = quizName.toLowerCase();
+            
+            // Get the token
+            const token = localStorage.getItem('adminToken');
+            
+            if (!token) {
+                throw new Error('No admin token found. Please log in again.');
+            }
+            
+            // Get the API URL from config or use a fallback
+            let apiUrl;
+            try {
+                // Try to import the config
+                const { config } = await import('./config.js');
+                apiUrl = config.apiUrl;
+                console.log(`Using API URL from config: ${apiUrl}`);
+            } catch (importError) {
+                console.warn('Failed to import config.js, using fallback API URL', importError);
+                
+                // Fallback logic to determine API URL
+                if (window.location.hostname.includes('render.com') || 
+                    window.location.hostname === 'bug-training-game.onrender.com') {
+                    apiUrl = 'https://bug-training-game-api.onrender.com/api';
+                } 
+                else if (window.location.hostname.includes('amazonaws.com') || 
+                         window.location.hostname.includes('s3-website') ||
+                         window.location.hostname.includes('learning-hub')) {
+                    apiUrl = 'http://13.42.151.152/api';
+                }
+                else {
+                    apiUrl = '/api'; // Local development
+                }
+                
+                console.log(`Using fallback API URL: ${apiUrl}`);
+            }
+            
+            const response = await fetch(`${apiUrl}/admin/quizzes/${normalizedQuizName}/scenarios`, {
+                method: 'GET',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                }
+            });
+            
+            if (!response.ok) {
+                const errorData = await response.json().catch(() => ({}));
+                const errorMessage = errorData.message || `Failed to fetch scenarios: ${response.status}`;
+                
+                // Check for specific error about extracting scenarios
+                if (errorMessage.includes('Could not extract scenarios from source code')) {
+                    throw new Error(`The quiz file format for ${this.formatQuizName(quizName)} is not compatible with the scenario viewer. This is likely due to the quiz file using JavaScript objects that cannot be parsed as JSON.`);
+                }
+                
+                throw new Error(errorMessage);
+            }
+            
+            const data = await response.json();
+            
+            if (!data.success) {
+                throw new Error(data.message || 'Failed to fetch scenarios from API');
+            }
+            
+            console.log(`Successfully fetched scenarios for ${quizName} from API`);
+            return data;
+        } catch (error) {
+            console.error(`Error in fetchQuizScenarios for ${quizName}:`, error);
+            throw error;
+        }
+    }
+
     // Override the parent showQuizScenarios method to handle file loading errors better
     async showQuizScenarios(quizName) {
         try {
@@ -961,101 +1037,111 @@ class Admin2Dashboard extends AdminDashboard {
             `;
             document.body.appendChild(loadingOverlay);
 
-            // Prepare quiz file name (normalize for different naming conventions)
-            let quizFileName = quizName.toLowerCase();
+            // Fetch quiz scenarios
+            let scenarios;
             
-            // Special handling for hyphenated quiz names
-            if (quizFileName === 'automation-interview') {
-                quizFileName = 'automation-interview'; // Keep as is
-            } else if (quizFileName.includes('-')) {
-                // Convert "some-name" to "SomeName" or keep original if that doesn't work
-                const parts = quizFileName.split('-');
-                const camelCase = parts.map(part => part.charAt(0).toUpperCase() + part.slice(1)).join('');
-                quizFileName = camelCase + '-quiz';
-            } else {
-                // Add -quiz suffix for most quiz files
-                quizFileName = quizFileName + '-quiz';
-            }
-            
-            console.log(`Attempting to load quiz file: ${quizFileName}`);
-            
-            let scenarios = [];
             try {
-                // Try different possible filenames
-                const possibleFileNames = [
-                    `${quizName.toLowerCase()}.js`,
-                    `${quizName.toLowerCase()}-quiz.js`,
-                    `${quizFileName}.js`
-                ];
+                // Set a timeout for the fetch operation
+                const timeoutPromise = new Promise((_, reject) => {
+                    setTimeout(() => reject(new Error('Request timed out after 10 seconds')), 10000);
+                });
                 
-                // Try to dynamically import the quiz module
-                let quizModule = null;
+                // Race the fetch against the timeout
+                scenarios = await Promise.race([
+                    this.fetchQuizScenarios(quizName),
+                    timeoutPromise
+                ]);
                 
-                // Loop through possible filenames until one works
-                for (const fileName of possibleFileNames) {
-                    try {
-                        console.log(`Trying to load: /quizzes/${fileName}`);
-                        quizModule = await import(`/quizzes/${fileName}`);
-                        console.log(`Successfully loaded: /quizzes/${fileName}`);
-                        break;
-                    } catch (err) {
-                        console.warn(`Failed to load: /quizzes/${fileName}`, err);
-                        // Continue to try other filenames
-                    }
+                // Check if scenarios data is valid
+                if (!scenarios) {
+                    throw new Error(`No valid scenarios data found for ${this.formatQuizName(quizName)}`);
                 }
                 
-                // If no module was loaded, throw an error
-                if (!quizModule) {
-                    throw new Error(`Could not find quiz module for ${quizName}`);
+                // Extract the data property if it exists (API response format)
+                if (scenarios.data) {
+                    scenarios = scenarios.data;
                 }
                 
-                // Extract scenarios from the module's class
-                const quizClasses = Object.values(quizModule).filter(val => typeof val === 'function');
-                if (quizClasses.length === 0) {
-                    throw new Error(`No quiz class found in module for ${quizName}`);
+                // Ensure we have the expected structure
+                if (!scenarios.basic && !scenarios.intermediate && !scenarios.advanced) {
+                    console.warn(`Unexpected scenarios format for ${quizName}:`, scenarios);
+                    throw new Error(`Invalid scenarios format for ${this.formatQuizName(quizName)}`);
                 }
                 
-                // Create an instance of the quiz class to access its scenarios
-                const quizInstance = new quizClasses[0]();
-                scenarios = quizInstance.scenarios || quizInstance.basicScenarios || [];
+                // Check if we have any scenarios to display
+                const hasScenarios = 
+                    (scenarios.basic && scenarios.basic.length > 0) || 
+                    (scenarios.intermediate && scenarios.intermediate.length > 0) || 
+                    (scenarios.advanced && scenarios.advanced.length > 0);
+                    
+                if (!hasScenarios) {
+                    throw new Error(`No scenarios found for ${this.formatQuizName(quizName)}`);
+                }
                 
-                // Group scenarios by level
-                const groupedScenarios = {
-                    basic: scenarios.filter(s => s.level === 'Basic'),
-                    intermediate: scenarios.filter(s => s.level === 'Intermediate'),
-                    advanced: scenarios.filter(s => s.level === 'Advanced')
-                };
+            } catch (fetchError) {
+                console.error(`Error fetching scenarios for ${quizName}:`, fetchError);
                 
-                scenarios = groupedScenarios;
+                // Determine if this is a parsing error
+                const isParsingError = fetchError.message.includes('not compatible with the scenario viewer') || 
+                                      fetchError.message.includes('Could not extract scenarios');
                 
-            } catch (error) {
-                console.error(`Error loading quiz scenarios for ${quizName}:`, error);
-                
-                // Show error message with fallback options
+                // Show error message in the loading overlay
                 loadingOverlay.innerHTML = `
                     <div style="
                         background: white;
                         padding: 2rem;
                         border-radius: 8px;
                         text-align: center;
-                        max-width: 500px;">
-                        <h3>Error Loading Scenarios</h3>
-                        <p style="color: #dc3545; margin: 1rem 0;">
-                            Could not load scenarios for ${this.formatQuizName(quizName)}.
+                        max-width: 600px;">
+                        <h3 style="color: #dc3545;">Error</h3>
+                        <p>${fetchError.message || `Failed to load scenarios for ${this.formatQuizName(quizName)}`}</p>
+                        <p style="margin-top: 0.5rem; font-size: 0.9rem; color: #6c757d;">
+                            ${isParsingError ? 
+                              `The quiz file structure may be using JavaScript features that cannot be automatically extracted.
+                               You can still view the quiz file directly to see the scenarios.` : 
+                              `This could be due to network issues or the quiz file not being available.
+                               Please try again later or contact the administrator.`}
                         </p>
-                        <p>
-                            The quiz file might be using a different naming convention or structure.
-                        </p>
-                        <div style="margin-top: 1.5rem; display: flex; gap: 1rem; justify-content: center;">
-                            <button id="retryBtn" class="action-button">
+                        <div style="margin-top: 20px; display: flex; gap: 10px; justify-content: center; flex-wrap: wrap;">
+                            ${isParsingError ? 
+                              `<button id="viewFileBtn" class="action-button" style="
+                                  background: var(--primary-color);
+                                  color: white;
+                                  border: none;
+                                  padding: 8px 16px;
+                                  border-radius: 4px;
+                                  cursor: pointer;">
+                                  View Quiz File
+                              </button>` : ''}
+                            <button id="retryBtn" class="action-button" style="
+                                background: ${isParsingError ? '#6c757d' : 'var(--primary-color)'};
+                                color: white;
+                                border: none;
+                                padding: 8px 16px;
+                                border-radius: 4px;
+                                cursor: pointer;">
                                 Retry
                             </button>
-                            <button id="viewFileBtn" class="action-button" style="background-color: #6c757d;">
-                                View File Path
+                            <button id="closeErrorBtn" class="action-button" style="
+                                background: #6c757d;
+                                color: white;
+                                border: none;
+                                padding: 8px 16px;
+                                border-radius: 4px;
+                                cursor: pointer;">
+                                Close
                             </button>
                         </div>
                     </div>
                 `;
+                
+                // Add event listener for close button
+                const closeErrorBtn = document.getElementById('closeErrorBtn');
+                if (closeErrorBtn) {
+                    closeErrorBtn.addEventListener('click', () => {
+                        loadingOverlay.remove();
+                    });
+                }
                 
                 // Add event listener for retry button
                 const retryBtn = document.getElementById('retryBtn');
@@ -1066,13 +1152,16 @@ class Admin2Dashboard extends AdminDashboard {
                     });
                 }
                 
-                // Add event listener for view file button
+                // Add event listener for view file button if it exists
                 const viewFileBtn = document.getElementById('viewFileBtn');
                 if (viewFileBtn) {
                     viewFileBtn.addEventListener('click', () => {
                         loadingOverlay.remove();
                         
-                        // Show possible file paths
+                        // Open the quiz file in a new tab/window
+                        const quizFileName = `${quizName.toLowerCase()}-quiz.js`;
+                        
+                        // Create a modal to show the file path
                         const filePathModal = document.createElement('div');
                         filePathModal.className = 'modal-overlay';
                         filePathModal.innerHTML = `
@@ -1083,46 +1172,25 @@ class Admin2Dashboard extends AdminDashboard {
                                 text-align: center;
                                 max-width: 600px;">
                                 <h3>Quiz File Information</h3>
-                                <p>Possible file locations for this quiz:</p>
+                                <p>To view the quiz file, you can navigate to:</p>
                                 <code style="
                                     display: block;
                                     background: #f8f9fa;
                                     padding: 1rem;
                                     border-radius: 4px;
-                                    margin: 0.5rem 0;
-                                    text-align: left;
-                                    overflow-x: auto;">
-                                    frontend/quizzes/${quizName.toLowerCase()}.js
-                                </code>
-                                <code style="
-                                    display: block;
-                                    background: #f8f9fa;
-                                    padding: 1rem;
-                                    border-radius: 4px;
-                                    margin: 0.5rem 0;
+                                    margin: 1rem 0;
                                     text-align: left;
                                     overflow-x: auto;">
                                     frontend/quizzes/${quizName.toLowerCase()}-quiz.js
                                 </code>
-                                <code style="
-                                    display: block;
-                                    background: #f8f9fa;
-                                    padding: 1rem;
-                                    border-radius: 4px;
-                                    margin: 0.5rem 0;
-                                    text-align: left;
-                                    overflow-x: auto;">
-                                    frontend/quizzes/${quizFileName}.js
-                                </code>
-                                <p>Please check if the file exists and its structure.</p>
+                                <p>This file contains the scenarios for the ${this.formatQuizName(quizName)} quiz.</p>
                                 <button id="closeFilePathBtn" class="action-button" style="
                                     background: var(--primary-color);
                                     color: white;
                                     border: none;
                                     padding: 8px 16px;
                                     border-radius: 4px;
-                                    cursor: pointer;
-                                    margin-top: 1rem;">
+                                    cursor: pointer;">
                                     Close
                                 </button>
                             </div>
