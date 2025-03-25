@@ -1976,22 +1976,45 @@ class Admin2Dashboard extends AdminDashboard {
             submitButton.disabled = true;
             submitButton.textContent = 'Creating Account...';
             
-            const response = await this.apiService.createAccount(username, password, selectedQuizzes);
+            // Convert selected quizzes to lowercase for consistency
+            const allowedQuizzes = selectedQuizzes.map(quiz => quiz.toLowerCase());
             
-            if (response.success) {
-                this.showSuccess('Account created successfully');
-                
-                // Reset form
-                form.reset();
-                
-                // Reload user list
-                await this.loadUsers();
-                
-                // Switch to users view
-                document.querySelector('.menu-item[data-section="users"]').click();
-            } else {
+            // Create array of hidden quizzes (all quizzes not in allowedQuizzes)
+            const hiddenQuizzes = this.quizTypes
+                .map(quiz => quiz.toLowerCase())
+                .filter(quiz => !allowedQuizzes.includes(quiz));
+
+            const response = await this.apiService.fetchWithAdminAuth(
+                `${this.apiService.baseUrl}/admin/create-interview-account`,
+                {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        username,
+                        password,
+                        userType: 'interview_candidate',
+                        allowedQuizzes,
+                        hiddenQuizzes
+                    })
+                }
+            );
+            
+            if (!response.success) {
                 throw new Error(response.message || 'Failed to create account');
             }
+
+            this.showSuccess('Account created successfully');
+            
+            // Reset form
+            form.reset();
+            
+            // Reload user list
+            await this.loadUsers();
+            
+            // Switch to users view
+            document.querySelector('.menu-item[data-section="users"]').click();
         } catch (error) {
             this.showError(error.message || 'Failed to create account');
         } finally {
