@@ -783,9 +783,11 @@ class Admin2Dashboard extends AdminDashboard {
                     quizCard.className = 'quiz-type-card';
                     quizCard.dataset.quizType = quiz;
                     
+                    // Create a container for the quiz name
                     const quizName = document.createElement('h3');
                     quizName.textContent = this.formatQuizName(quiz);
                     
+                    // Create the button
                     const viewButton = document.createElement('button');
                     viewButton.className = 'view-scenarios-btn';
                     viewButton.dataset.quizId = quiz;
@@ -807,8 +809,6 @@ class Admin2Dashboard extends AdminDashboard {
                 categoryDiv.appendChild(quizzesGrid);
                 categoriesContainer.appendChild(categoryDiv);
             });
-            
-            // Remove inline styles since we now have them in the HTML
         };
     }
 
