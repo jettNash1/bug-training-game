@@ -715,7 +715,7 @@ router.post('/create-interview-account', auth, async (req, res) => {
             'raising-tickets', 'reports', 'cms-testing', 'email-testing', 'content-copy',
             'locale-testing', 'script-metrics-troubleshooting','standard-script-testing',
             'test-types-tricks', 'automation-interview', 'fully-scripted', 'exploratory',
-            'sanity-smoke'
+            'sanity-smoke', 'functional-interview'
         ].map(quiz => quiz.toLowerCase());
 
         // Normalize allowed quizzes to lowercase
