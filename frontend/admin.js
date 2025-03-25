@@ -2057,6 +2057,16 @@ class AdminDashboard {
                 'sanity-smoke', 'functional-interview'
             ];
 
+            // Validate username length
+            if (username.length < 3) {
+                throw new Error('Username must be at least 3 characters long');
+            }
+
+            // Validate password length
+            if (password.length < 6) {
+                throw new Error('Password must be at least 6 characters long');
+            }
+
             // Log validation checks
             console.log('Valid quiz types:', validQuizTypes);
             
@@ -2070,12 +2080,16 @@ class AdminDashboard {
                 });
             }
 
-            // Validate and format selected quizzes
+            // Validate and format selected quizzes (using the existing variable)
             const allowedQuizzes = selectedQuizzes
                 .map(quiz => quiz.toLowerCase())
                 .filter(quiz => validQuizTypes.includes(quiz));
-            
+
             console.log('Allowed quizzes after validation:', allowedQuizzes);
+
+            if (allowedQuizzes.length === 0) {
+                throw new Error('Please select at least one quiz');
+            }
 
             // Create array of hidden quizzes
             const hiddenQuizzes = validQuizTypes.filter(quiz => !allowedQuizzes.includes(quiz));
@@ -2094,40 +2108,12 @@ class AdminDashboard {
                 password: '*'.repeat(password.length)
             });
 
-            // Validate username length
-            if (username.length < 3) {
-                throw new Error('Username must be at least 3 characters long');
-            }
-
-            // Validate password length
-            if (password.length < 6) {
-                throw new Error('Password must be at least 6 characters long');
-            }
-
-            // Validate and format selected quizzes
-            const allowedQuizzes = selectedQuizzes
-                .map(quiz => quiz.toLowerCase())
-                .filter(quiz => validQuizTypes.includes(quiz));
-
-            if (allowedQuizzes.length === 0) {
-                throw new Error('Please select at least one quiz');
-            }
-
-            // Create array of hidden quizzes (all valid quizzes not in allowedQuizzes)
-            const hiddenQuizzes = validQuizTypes.filter(quiz => !allowedQuizzes.includes(quiz));
-
             const response = await this.apiService.fetchWithAdminAuth('/api/admin/create-interview-account', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
                 },
-                body: JSON.stringify({
-                    username,
-                    password,
-                    userType: 'interview_candidate',
-                    allowedQuizzes,
-                    hiddenQuizzes
-                })
+                body: JSON.stringify(requestBody)
             });
 
             if (!response.success) {
