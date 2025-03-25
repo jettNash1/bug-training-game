@@ -478,14 +478,14 @@ class Admin2Dashboard extends AdminDashboard {
                         Default seconds per question (0-300):
                     </label>
                     <div class="input-with-button">
-                        <input 
-                            type="number" 
+                    <input 
+                        type="number" 
                             id="default-timer-value" 
-                            min="0" 
-                            max="300" 
+                        min="0" 
+                        max="300" 
                             value="${defaultValue}"
-                            class="settings-input"
-                        />
+                        class="settings-input"
+                    />
                         <button id="save-default-timer-btn" class="action-button">Save Default</button>
                     </div>
                     <small>Set to 0 to disable the timer completely.</small>
@@ -696,6 +696,9 @@ class Admin2Dashboard extends AdminDashboard {
                     // Get value from input
                     const quizTimerValue = parseInt(quizTimerInput.value, 10);
                     
+                    // Log for debugging
+                    console.log(`Setting ${selectedQuiz} timer to ${quizTimerValue} seconds (raw input: ${quizTimerInput.value})`);
+                    
                     // Validate
                     if (isNaN(quizTimerValue) || quizTimerValue < 0 || quizTimerValue > 300) {
                         alert('Timer value must be between 0 and 300 seconds');
@@ -706,30 +709,42 @@ class Admin2Dashboard extends AdminDashboard {
                     saveQuizTimerButton.disabled = true;
                     saveQuizTimerButton.textContent = 'Saving...';
                     
-                    // Call API to save this specific quiz timer
-                    const response = await this.apiService.updateSingleQuizTimer(selectedQuiz, quizTimerValue);
-                    
-                    // Success
-                    if (response.success) {
-                        // Update local cache
-                        this.timerSettings = response.data;
-                        
-                        // Show feedback
-                        const quizName = this.formatQuizName(selectedQuiz);
-                        const message = quizTimerValue === 0 
-                            ? `Timer disabled for ${quizName}!` 
-                            : `Timer for ${quizName} set to ${quizTimerValue} seconds!`;
+                    // Set a timeout for debugging
+                    setTimeout(async () => {
+                        try {
+                            // Call API to save this specific quiz timer
+                            const response = await this.apiService.updateSingleQuizTimer(selectedQuiz, quizTimerValue);
                             
-                        this.showSuccess(message);
-                        this.displayTimerSettings(); // Refresh the display
-                    } else {
-                        throw new Error(response.message || 'Failed to save settings');
-                    }
+                            // Success
+                            if (response.success) {
+                                // Update local cache
+                                this.timerSettings = response.data;
+                                
+                                // Show feedback
+                                const quizName = this.formatQuizName(selectedQuiz);
+                                const message = quizTimerValue === 0 
+                                    ? `Timer disabled for ${quizName}!` 
+                                    : `Timer for ${quizName} set to ${quizTimerValue} seconds!`;
+                                    
+                                this.showSuccess(message);
+                                this.displayTimerSettings(); // Refresh the display
+                            } else {
+                                throw new Error(response.message || 'Failed to save settings');
+                            }
+                        } catch (innerError) {
+                            console.error('Failed to save quiz timer settings:', innerError);
+                            this.showError(`Error: ${innerError.message || 'Failed to save settings'}`);
+                            
+                            // Reset button state
+                            saveQuizTimerButton.disabled = false;
+                            saveQuizTimerButton.textContent = 'Set Timer';
+                        }
+                    }, 100); // Short delay to ensure the UI updates before the API call
                 } catch (error) {
                     console.error('Failed to save quiz timer settings:', error);
                     this.showError(`Error: ${error.message || 'Failed to save settings'}`);
-                } finally {
-                    // Reset button
+                    
+                    // Reset button state
                     saveQuizTimerButton.disabled = false;
                     saveQuizTimerButton.textContent = 'Set Timer';
                 }
@@ -1830,7 +1845,7 @@ class Admin2Dashboard extends AdminDashboard {
                                 aria-label="View questions for ${this.formatQuizName(quizType)}"
                                 tabindex="0">
                                 View Questions
-                            </button>
+                        </button>
                     </div>
                 `;
                 
