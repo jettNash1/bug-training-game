@@ -1,7 +1,7 @@
 import { config } from './config.js';
 
 // Add this at the top with other imports
-const ADMIN_PATHS = ['/pages/admin-login.html', '/pages/admin.html'];
+const ADMIN_PATHS = ['/pages/admin-login.html', '/pages/admin.html', '/pages/admin2.html'];
 
 // Token management functions
 export const getAuthToken = () => localStorage.getItem('token');
@@ -71,13 +71,13 @@ export async function checkAuth() {
         }
         
         // If on admin panel and no token, redirect to admin login
-        if (currentPath.includes('admin.html') && !adminToken) {
+        if ((currentPath.includes('admin.html') || currentPath.includes('admin2.html')) && !adminToken) {
             window.location.replace('/pages/admin-login.html');
             return false;
         }
         
         // If on admin panel, verify token
-        if (currentPath.includes('admin.html') && adminToken) {
+        if ((currentPath.includes('admin.html') || currentPath.includes('admin2.html')) && adminToken) {
             try {
                 const response = await fetch(`${config.apiUrl}/admin/verify`, {
                     method: 'GET',
