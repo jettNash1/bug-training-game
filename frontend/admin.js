@@ -2039,18 +2039,60 @@ class AdminDashboard {
 
     async createInterviewAccount(username, password, selectedQuizzes) {
         try {
+            // Log the incoming parameters
+            console.log('Creating account with:', {
+                username,
+                password: '*'.repeat(password.length),
+                selectedQuizzes
+            });
+
             // Define the valid quiz types
             const validQuizTypes = [
-                'automation-interview', 'build-verification-quiz', 'cms-testing-quiz',
-                'communication-quiz', 'content-copy-quiz', 'email-testing-quiz',
-                'exploratory-quiz', 'fully-scripted-quiz', 'functional-interview-quiz',
-                'initiative-quiz', 'issue-tracking-tools-quiz', 'issue-verification-quiz',
-                'locale-testing-quiz', 'non-functional-quiz', 'raising-tickets-quiz',
-                'reports-quiz', 'risk-analysis-quiz', 'risk-management-quiz',
-                'sanity-smoke-quiz', 'script-metrics-troubleshooting-quiz',
-                'standard-script-testing', 'test-support-quiz', 'test-types-tricks-quiz',
-                'tester-mindset-quiz', 'time-management-quiz'
+                'communication', 'initiative', 'time-management', 'tester-mindset',
+                'risk-analysis', 'risk-management', 'non-functional', 'test-support',
+                'issue-verification', 'build-verification', 'issue-tracking-tools',
+                'raising-tickets', 'reports', 'cms-testing', 'email-testing', 'content-copy',
+                'locale-testing', 'script-metrics-troubleshooting', 'standard-script-testing',
+                'test-types-tricks', 'automation-interview', 'fully-scripted', 'exploratory',
+                'sanity-smoke', 'functional-interview'
             ];
+
+            // Log validation checks
+            console.log('Valid quiz types:', validQuizTypes);
+            
+            // Log any invalid quizzes
+            const invalidQuizzes = selectedQuizzes.filter(quiz => !validQuizTypes.includes(quiz.toLowerCase()));
+            if (invalidQuizzes.length > 0) {
+                console.error('Invalid quiz names found:', {
+                    invalid: invalidQuizzes,
+                    selectedQuizzes: selectedQuizzes,
+                    validTypes: validQuizTypes
+                });
+            }
+
+            // Validate and format selected quizzes
+            const allowedQuizzes = selectedQuizzes
+                .map(quiz => quiz.toLowerCase())
+                .filter(quiz => validQuizTypes.includes(quiz));
+            
+            console.log('Allowed quizzes after validation:', allowedQuizzes);
+
+            // Create array of hidden quizzes
+            const hiddenQuizzes = validQuizTypes.filter(quiz => !allowedQuizzes.includes(quiz));
+            console.log('Hidden quizzes:', hiddenQuizzes);
+
+            // Log the final request body
+            const requestBody = {
+                username,
+                password,
+                userType: 'interview_candidate',
+                allowedQuizzes,
+                hiddenQuizzes
+            };
+            console.log('Request body being sent:', {
+                ...requestBody,
+                password: '*'.repeat(password.length)
+            });
 
             // Validate username length
             if (username.length < 3) {
