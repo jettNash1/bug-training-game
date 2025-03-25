@@ -936,9 +936,9 @@ export class APIService {
                 if (response.success && response.data) {
                     console.log('Timer settings loaded from API:', response.data);
                     
-                    // Extract settings from the response
+                    // Extract settings from the response, handling both old and new formats
                     const settings = response.data.value || response.data;
-                    const defaultSeconds = settings.defaultSeconds || 60;
+                    const defaultSeconds = settings.defaultSeconds || settings.secondsPerQuestion || 60;
                     const quizTimers = settings.quizTimers || {};
                     
                     // Store in localStorage for immediate effect on quizzes
