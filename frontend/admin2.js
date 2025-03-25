@@ -1673,10 +1673,13 @@ class Admin2Dashboard extends AdminDashboard {
         if (!quizTypes || !Array.isArray(quizTypes)) {
             console.error('Invalid quizTypes provided to categorizeQuizzesForForm:', quizTypes);
             quizTypes = [
-                'general', 'automation', 'cms', 'api', 'accessibility',
-                'mobile', 'security', 'performance', 'uat', 'documentation',
-                'communication', 'automation-interview', 'email', 'script',
-                'script-metrics'
+                'communication', 'initiative', 'time-management', 'tester-mindset',
+                'risk-analysis', 'risk-management', 'non-functional', 'test-support',
+                'issue-verification', 'build-verification', 'issue-tracking-tools',
+                'raising-tickets', 'reports', 'cms-testing', 'email-testing', 'content-copy',
+                'locale-testing', 'script-metrics-troubleshooting', 'standard-script-testing',
+                'test-types-tricks', 'automation-interview', 'fully-scripted', 'exploratory',
+                'sanity-smoke', 'functional-interview'
             ];
         }
         
@@ -1695,23 +1698,23 @@ class Admin2Dashboard extends AdminDashboard {
             
             const lowerQuiz = quiz.toLowerCase();
             
-            // Map quiz types to categories
-            if (['automation', 'api', 'mobile', 'security', 'performance', 'script', 'script-metrics', 'technical', 'accessibility'].includes(lowerQuiz)) {
+            // Map quiz types to categories based on the valid quiz types
+            if (['non-functional', 'script-metrics-troubleshooting', 'standard-script-testing'].includes(lowerQuiz)) {
                 categories['Technical Skills'].push(quiz);
             } 
-            else if (['process', 'uat', 'general', 'test-process'].includes(lowerQuiz)) {
+            else if (['test-support', 'issue-verification', 'build-verification', 'fully-scripted', 'exploratory', 'sanity-smoke'].includes(lowerQuiz)) {
                 categories['QA Processes'].push(quiz);
             }
-            else if (['content', 'cms', 'cms-testing', 'email', 'email-testing'].includes(lowerQuiz)) {
+            else if (['cms-testing', 'email-testing', 'content-copy', 'locale-testing'].includes(lowerQuiz)) {
                 categories['Content Testing'].push(quiz);
             }
-            else if (['documentation', 'tools'].includes(lowerQuiz)) {
+            else if (['issue-tracking-tools', 'raising-tickets', 'reports'].includes(lowerQuiz)) {
                 categories['Tools & Documentation'].push(quiz);
             }
-            else if (['communication', 'soft-skills'].includes(lowerQuiz)) {
+            else if (['communication', 'initiative', 'time-management', 'tester-mindset', 'risk-analysis', 'risk-management'].includes(lowerQuiz)) {
                 categories['Soft Skills'].push(quiz);
             }
-            else if (['interview', 'automation-interview'].includes(lowerQuiz)) {
+            else if (['automation-interview', 'functional-interview'].includes(lowerQuiz)) {
                 categories['Interview Quizzes'].push(quiz);
             }
             else {
