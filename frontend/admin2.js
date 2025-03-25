@@ -613,7 +613,7 @@ class Admin2Dashboard extends AdminDashboard {
                                                         <label>
                                                             <input type="checkbox" 
                                                                    name="quizzes" 
-                                                                   value="${quiz.endsWith('-quiz') ? quiz : `${quiz}-quiz`}" 
+                                                                   value="${quiz}" 
                                                                    data-category="${category}">
                                                             <span>${this.formatQuizName(quiz)}</span>
                                                         </label>
@@ -1931,15 +1931,15 @@ class Admin2Dashboard extends AdminDashboard {
             
             // Define the valid quiz types
             const validQuizTypes = [
-                'automation-interview', 'build-verification-quiz', 'cms-testing-quiz',
-                'communication-quiz', 'content-copy-quiz', 'email-testing-quiz',
-                'exploratory-quiz', 'fully-scripted-quiz', 'functional-interview-quiz',
-                'initiative-quiz', 'issue-tracking-tools-quiz', 'issue-verification-quiz',
-                'locale-testing-quiz', 'non-functional-quiz', 'raising-tickets-quiz',
-                'reports-quiz', 'risk-analysis-quiz', 'risk-management-quiz',
-                'sanity-smoke-quiz', 'script-metrics-troubleshooting-quiz',
-                'standard-script-testing', 'test-support-quiz', 'test-types-tricks-quiz',
-                'tester-mindset-quiz', 'time-management-quiz'
+                'automation-interview', 'build-verification', 'cms-testing',
+                'communication', 'content-copy', 'email-testing',
+                'exploratory', 'fully-scripted', 'functional-interview',
+                'initiative', 'issue-tracking-tools', 'issue-verification',
+                'locale-testing', 'non-functional', 'raising-tickets',
+                'reports', 'risk-analysis', 'risk-management',
+                'sanity-smoke', 'script-metrics-troubleshooting',
+                'standard-script-testing', 'test-support', 'test-types-tricks',
+                'tester-mindset', 'time-management'
             ];
             
             // Log all selected checkboxes
