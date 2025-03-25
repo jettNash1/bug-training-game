@@ -1791,120 +1791,266 @@ class Admin2Dashboard extends AdminDashboard {
         }
     }
 
-    // Add new implementation for showQuizQuestions with properly closed blocks
+    // Add implementation for showQuizQuestions matching standard admin
     async showQuizQuestions(quizType, username) {
         try {
-            // Get user's quiz data
+            // Get user data
             const user = this.users.find(u => u.username === username);
             if (!user) {
-                throw new Error(`User ${username} not found`);
+                throw new Error('User not found');
             }
+
+            console.log('Showing quiz questions for:', { username, quizType });
             
-            const quizResult = user.quizResults?.find(r => r.quizName.toLowerCase() === quizType.toLowerCase());
-            const quizProgress = user.quizProgress?.[quizType.toLowerCase()] || {};
-            const questionHistory = quizResult?.questionHistory || quizProgress?.questionHistory || [];
-            
-            // Create overlay
-            const overlay = document.createElement('div');
-            overlay.className = 'user-details-overlay';
-            overlay.setAttribute('role', 'dialog');
-            overlay.setAttribute('aria-modal', 'true');
-            
-            // Create content container
-            const content = document.createElement('div');
-            content.className = 'user-details-content';
-            
-            // Create header
-            const header = document.createElement('div');
-            header.className = 'details-header';
-            
-            const title = document.createElement('h3');
-            title.textContent = `${this.formatQuizName(quizType)} Questions for ${username}`;
-            
-            const closeBtn = document.createElement('button');
-            closeBtn.className = 'close-btn';
-            closeBtn.setAttribute('aria-label', 'Close');
-            closeBtn.innerHTML = '×';
-            
-            header.appendChild(title);
-            header.appendChild(closeBtn);
-            
-            // Create question list
-            const questionList = document.createElement('div');
-            questionList.className = 'question-list';
-            
-            if (questionHistory.length === 0) {
-                questionList.innerHTML = `
-                    <p class="no-activity">No questions attempted yet for this quiz.</p>
-                `;
-            } else {
-                // Sort questions by timestamp if available
-                const sortedQuestions = [...questionHistory].sort((a, b) => {
-                    const timeA = a.timestamp ? new Date(a.timestamp) : 0;
-                    const timeB = b.timestamp ? new Date(b.timestamp) : 0;
-                    return timeB - timeA; // Latest first
-                });
+            // Get quiz results from API
+            try {
+                const apiService = new ApiService();
+                const response = await apiService.getQuizQuestions(username, quizType);
+                console.log('Quiz questions API response:', response);
                 
-                questionList.innerHTML = `
-                    <div class="questions-header">
-                        <h4>Question History (${sortedQuestions.length} questions)</h4>
-                    </div>
-                    <div class="questions-container">
-                        ${sortedQuestions.map((question, index) => `
-                            <div class="question-item ${question.correct ? 'correct' : 'incorrect'}">
-                                <div class="question-number">Q${index + 1}</div>
-                                <div class="question-content">
-                                    <div class="question-text">${question.questionText || 'Question text not available'}</div>
-                                    <div class="question-details">
-                                        <div class="question-answer">
-                                            <strong>User Answer:</strong> ${question.userAnswer || 'Not answered'}
-                                        </div>
-                                        <div class="question-correct-answer">
-                                            <strong>Correct Answer:</strong> ${question.correctAnswer || 'Not available'}
-                                        </div>
-                                        ${question.timestamp ? `
-                                            <div class="question-timestamp">
-                                                <strong>Time:</strong> ${this.formatDate(new Date(question.timestamp))}
-                                            </div>
-                                        ` : ''}
-                                    </div>
-                                </div>
-                                <div class="question-status">
-                                    <span class="status-indicator ${question.correct ? 'correct' : 'incorrect'}">
-                                        ${question.correct ? 'Correct' : 'Incorrect'}
-                                    </span>
-                                </div>
-                            </div>
-                        `).join('')}
-                    </div>
-                `;
+                if (response.success && response.data) {
+                    // Map the API response to the format expected by the UI
+                    const apiQuestionHistory = response.data.questionHistory || [];
+                    const questionHistory = apiQuestionHistory.map(item => {
+                        const isPassed = item.status === 'passed';
+                        const isTimedOut = item.timedOut === true;
+                        
+                        // Get the correct answer
+                        let correctAnswer = '';
+                        if (item.correctAnswer && item.correctAnswer.text) {
+                            // If the API provides the correct answer directly, use it
+                            correctAnswer = item.correctAnswer.text;
+                        } else if (!isPassed && item.selectedAnswer?.outcome) {
+                            // Otherwise try to extract from outcome text
+                            const outcomeText = item.selectedAnswer.outcome;
+                            const match = outcomeText.match(/The correct answer was: "([^"]+)"/);
+                            if (match && match[1]) {
+                                correctAnswer = match[1];
+                            } else {
+                                // If we can't extract from outcome, use the tool field
+                                // The tool field often contains the name of the correct answer for incorrect responses
+                                correctAnswer = item.selectedAnswer?.tool || 'Correct answer not available';
+                            }
+                        } else if (isPassed) {
+                            // For correct answers, the selected answer is the correct answer
+                            correctAnswer = item.selectedAnswer?.text || '';
+                        }
+                        
+                        return {
+                            question: item.scenario?.title || 'Question text not available',
+                            scenario: item.scenario?.description || '',
+                            selectedAnswer: item.selectedAnswer?.text || 'No answer selected',
+                            correctAnswer: correctAnswer || 'Correct answer not available',
+                            isCorrect: isPassed,
+                            isTimedOut: isTimedOut
+                        };
+                    });
+                    
+                    const questionsAnswered = response.data.totalQuestions || 0;
+                    const quizScore = response.data.score || 0;
+                    const quizStatus = questionsAnswered >= 15 ? 'Completed' : (questionsAnswered > 0 ? 'In Progress' : 'Not Started');
+                    
+                    console.log('Mapped question history:', questionHistory);
+                    console.log('Questions answered:', questionsAnswered);
+                    console.log('Quiz status:', quizStatus);
+                    
+                    // Create overlay container
+                    const overlay = document.createElement('div');
+                    overlay.className = 'user-details-overlay';
+                    overlay.style.zIndex = '1002'; // Ensure it's above other overlays
+                    overlay.setAttribute('role', 'dialog');
+                    overlay.setAttribute('aria-modal', 'true');
+                    overlay.setAttribute('aria-labelledby', 'questions-details-title');
+
+                    // Create content container
+                    const content = document.createElement('div');
+                    content.className = 'user-details-content';
+                    
+                    // Determine if we should show the questions table or the "no questions" message
+                    const hasCompletedQuestions = questionHistory.length > 0 || questionsAnswered > 0;
+                    
+                    content.innerHTML = `
+                        <style>
+                            .questions-table tr.passed {
+                                background-color: rgba(75, 181, 67, 0.1);
+                            }
+                            .questions-table tr.failed {
+                                background-color: rgba(255, 68, 68, 0.1);
+                            }
+                            .questions-table tr.timed-out {
+                                background-color: rgba(158, 158, 158, 0.1);
+                            }
+                            .questions-table tr.passed td {
+                                border-bottom: 1px solid rgba(75, 181, 67, 0.2);
+                            }
+                            .questions-table tr.failed td {
+                                border-bottom: 1px solid rgba(255, 68, 68, 0.2);
+                            }
+                            .questions-table tr.timed-out td {
+                                border-bottom: 1px solid rgba(158, 158, 158, 0.2);
+                            }
+                            .questions-table tr {
+                                border-left: 4px solid transparent;
+                                height: auto;
+                                min-height: 60px;
+                            }
+                            .questions-table tr.passed {
+                                border-left: 4px solid #4bb543;
+                            }
+                            .questions-table tr.failed {
+                                border-left: 4px solid #ff4444;
+                            }
+                            .questions-table tr.timed-out {
+                                border-left: 4px solid #9e9e9e;
+                            }
+                            .questions-table tbody tr:not(:last-child) {
+                                border-bottom: 1px solid #e9ecef;
+                            }
+                            .questions-table td {
+                                padding: 12px 15px;
+                                vertical-align: top;
+                                line-height: 1.5;
+                            }
+                            .questions-table th {
+                                padding: 12px 15px;
+                                background-color: #f8f9fa;
+                                border-bottom: 2px solid #dee2e6;
+                                font-weight: 600;
+                            }
+                            .questions-table {
+                                width: 100%;
+                                border-collapse: separate;
+                                border-spacing: 0;
+                                margin-bottom: 1rem;
+                                box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+                            }
+                            .questions-table strong {
+                                font-weight: 600;
+                                display: block;
+                                margin-bottom: 6px;
+                            }
+                            .answer-content div {
+                                margin-bottom: 8px;
+                            }
+                            .answer-content strong {
+                                display: inline-block;
+                                min-width: 80px;
+                            }
+                            .status-badge {
+                                padding: 4px 8px;
+                                border-radius: 4px;
+                                font-weight: bold;
+                                font-size: 0.9em;
+                            }
+                            .status-badge.pass {
+                                background-color: rgba(75, 181, 67, 0.2);
+                                color: #2e7d32;
+                            }
+                            .status-badge.fail {
+                                background-color: rgba(255, 68, 68, 0.2);
+                                color: #c62828;
+                            }
+                            .status-badge.timeout {
+                                background-color: rgba(158, 158, 158, 0.2);
+                                color: #616161;
+                            }
+                        </style>
+                        <div class="details-header">
+                            <h3 id="questions-details-title">${this.formatQuizName(quizType)} - ${username}'s Answers</h3>
+                            <button class="close-btn" aria-label="Close questions view" tabindex="0">×</button>
+                        </div>
+                        <div class="questions-content">
+                            ${!hasCompletedQuestions ? 
+                                `<div class="not-attempted">
+                                    <p>This user has not attempted any questions in this quiz yet.</p>
+                                </div>` : 
+                                questionHistory.length > 0 ?
+                                `<table class="questions-table">
+                                    <thead>
+                                        <tr>
+                                            <th style="width: 5%;">#</th>
+                                            <th style="width: 15%;">Status</th>
+                                            <th style="width: 40%;">Question</th>
+                                            <th style="width: 40%;">Answer</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        ${questionHistory.map((question, index) => {
+                                            const isPassed = question.isCorrect;
+                                            return `
+                                                <tr class="${isPassed ? 'passed' : question.isTimedOut ? 'timed-out' : 'failed'}">
+                                                    <td>${index + 1}</td>
+                                                    <td>
+                                                        <span class="status-badge ${isPassed ? 'pass' : question.isTimedOut ? 'timeout' : 'fail'}">
+                                                            ${isPassed ? 'CORRECT' : question.isTimedOut ? 'TIMED OUT' : 'INCORRECT'}
+                                                        </span>
+                                                    </td>
+                                                    <td>
+                                                        <strong>${question.question || 'Question text not available'}</strong>
+                                                        ${question.scenario ? `<p>${question.scenario}</p>` : ''}
+                                                    </td>
+                                                    <td class="answer-content">
+                                                        <div>
+                                                            <strong>Selected:</strong> ${question.selectedAnswer || 'No answer selected'}
+                                                        </div>
+                                                        <div>
+                                                            <strong>Correct:</strong> ${question.correctAnswer || 'Correct answer not available'}
+                                                        </div>
+                                                    </td>
+                                                </tr>
+                                            `;
+                                        }).join('')}
+                                    </tbody>
+                                </table>` :
+                                `<div class="not-attempted">
+                                    <p>This user has completed ${questionsAnswered} questions, but detailed history is not available.</p>
+                                </div>`
+                            }
+                        </div>
+                    `;
+                    
+                    overlay.appendChild(content);
+                    document.body.appendChild(overlay);
+                    
+                    // Close button event listener
+                    const closeBtn = content.querySelector('.close-btn');
+                    if (closeBtn) {
+                        closeBtn.addEventListener('click', () => {
+                            overlay.remove();
+                        });
+                        
+                        // Add keyboard support for close button
+                        closeBtn.addEventListener('keydown', (e) => {
+                            if (e.key === 'Enter' || e.key === ' ') {
+                                e.preventDefault();
+                                overlay.remove();
+                            }
+                        });
+                    }
+                    
+                    // Close on escape key
+                    const handleEscapeKey = (e) => {
+                        if (e.key === 'Escape') {
+                            overlay.remove();
+                            document.removeEventListener('keydown', handleEscapeKey);
+                        }
+                    };
+                    document.addEventListener('keydown', handleEscapeKey);
+                    
+                    // Close on click outside
+                    overlay.addEventListener('click', (e) => {
+                        if (e.target === overlay) {
+                            overlay.remove();
+                        }
+                    });
+                    
+                } else {
+                    throw new Error('Quiz data not available');
+                }
+            } catch (apiError) {
+                console.error('API error:', apiError);
+                this.showError(`Failed to fetch quiz questions: ${apiError.message}`);
             }
-            
-            // Assemble content
-            content.appendChild(header);
-            content.appendChild(questionList);
-            overlay.appendChild(content);
-            document.body.appendChild(overlay);
-            
-            // Add event listeners
-            closeBtn.addEventListener('click', () => {
-                overlay.remove();
-            });
-            
-            overlay.addEventListener('click', (e) => {
-                if (e.target === overlay) {
-                    overlay.remove();
-                }
-            });
-            
-            // Add event listener for escape key
-            const handleEscape = (e) => {
-                if (e.key === 'Escape') {
-                    overlay.remove();
-                    document.removeEventListener('keydown', handleEscape);
-                }
-            };
-            document.addEventListener('keydown', handleEscape);
             
         } catch (error) {
             console.error('Error showing quiz questions:', error);
