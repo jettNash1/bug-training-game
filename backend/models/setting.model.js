@@ -21,8 +21,30 @@ const settingSchema = new mongoose.Schema({
     }
 });
 
-// Update timestamp on save
+// Add validation for quiz timer settings
 settingSchema.pre('save', function(next) {
+    if (this.key === 'quizTimerSettings') {
+        const value = this.value;
+        
+        // Validate default seconds
+        if (typeof value.defaultSeconds !== 'number' || 
+            value.defaultSeconds < 0 || 
+            value.defaultSeconds > 300) {
+            next(new Error('Default timer value must be between 0 and 300 seconds'));
+            return;
+        }
+        
+        // Validate per-quiz settings if they exist
+        if (value.quizTimers) {
+            for (const [quiz, seconds] of Object.entries(value.quizTimers)) {
+                if (typeof seconds !== 'number' || seconds < 0 || seconds > 300) {
+                    next(new Error(`Timer value for quiz ${quiz} must be between 0 and 300 seconds`));
+                    return;
+                }
+            }
+        }
+    }
+    
     this.updatedAt = new Date();
     next();
 });

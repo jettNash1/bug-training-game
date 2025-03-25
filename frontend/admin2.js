@@ -2924,18 +2924,23 @@ class Admin2Dashboard extends AdminDashboard {
             const cancelBtn = document.querySelector(`.cancel-schedule-btn[data-id="${scheduleId}"]`);
             if (cancelBtn) {
                 cancelBtn.disabled = true;
-                cancelBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Cancelling...';
+                cancelBtn.setAttribute('aria-busy', 'true');
+                cancelBtn.innerHTML = `
+                    <i class="fas fa-spinner fa-spin" aria-hidden="true"></i>
+                    <span class="sr-only">Cancelling schedule...</span>
+                    <span aria-hidden="true">Cancelling...</span>
+                `;
             }
             
             // Use the API service to cancel the schedule
             const response = await this.apiService.cancelScheduledReset(scheduleId);
             
             if (response.success) {
-                // Refresh the display
-                this.loadScheduledResets();
+                // Show success message before refreshing display
+                this.showSuccess(`Successfully cancelled scheduled reset for ${this.formatQuizName(scheduleToCancel.quizName)}`);
                 
-                // Show success message
-                this.showSuccess('Schedule cancelled successfully');
+                // Refresh the display
+                await this.loadScheduledResets();
             } else {
                 throw new Error(response.message || 'Failed to cancel schedule');
             }
@@ -2943,8 +2948,16 @@ class Admin2Dashboard extends AdminDashboard {
             console.error('Error cancelling schedule:', error);
             this.showError(`Failed to cancel schedule: ${error.message}`);
             
+            // Reset the button state if it still exists
+            const cancelBtn = document.querySelector(`.cancel-schedule-btn[data-id="${scheduleId}"]`);
+            if (cancelBtn) {
+                cancelBtn.disabled = false;
+                cancelBtn.removeAttribute('aria-busy');
+                cancelBtn.innerHTML = '<i class="fas fa-times" aria-hidden="true"></i> Cancel';
+            }
+            
             // Refresh the display to ensure consistency
-            this.loadScheduledResets();
+            await this.loadScheduledResets();
         }
     }
     

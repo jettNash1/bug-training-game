@@ -580,15 +580,24 @@ router.get('/data', auth, async (req, res) => {
 router.get('/settings/quiz-timer', auth, async (req, res) => {
     try {
         // Retrieve timer settings from database
-        const timerSetting = await Setting.findOne({ key: 'quizTimerSeconds' });
+        const timerSetting = await Setting.findOne({ key: 'quizTimerSettings' });
         
-        // Default to 60 seconds if not found
-        const secondsPerQuestion = timerSetting ? timerSetting.value : 60;
+        // Default settings if not found
+        const defaultSettings = {
+            defaultSeconds: 60,
+            quizTimers: {},
+            updatedAt: new Date()
+        };
+        
+        // Use stored settings or defaults
+        const settings = timerSetting ? timerSetting.value : defaultSettings;
         
         return res.json({
             success: true,
             data: {
-                secondsPerQuestion
+                defaultSeconds: settings.defaultSeconds,
+                quizTimers: settings.quizTimers || {},
+                updatedAt: timerSetting ? timerSetting.updatedAt : new Date()
             }
         });
     } catch (error) {

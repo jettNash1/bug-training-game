@@ -1125,16 +1125,24 @@ router.get('/settings/quiz-timer', auth, async (req, res) => {
         }
 
         // Retrieve timer settings from database
-        const timerSetting = await Setting.findOne({ key: 'quizTimerSeconds' });
+        const timerSetting = await Setting.findOne({ key: 'quizTimerSettings' });
         
-        // Default to 60 seconds if not found
-        const secondsPerQuestion = timerSetting ? timerSetting.value : 60;
+        // Default settings if not found
+        const defaultSettings = {
+            defaultSeconds: 60,
+            quizTimers: {},
+            updatedAt: new Date()
+        };
+        
+        // Use stored settings or defaults
+        const settings = timerSetting ? timerSetting.value : defaultSettings;
         
         return res.json({
             success: true,
             data: {
-                secondsPerQuestion,
-                updatedAt: timerSetting ? timerSetting.updatedAt : null
+                defaultSeconds: settings.defaultSeconds,
+                quizTimers: settings.quizTimers || {},
+                updatedAt: timerSetting ? timerSetting.updatedAt : new Date()
             }
         });
     } catch (error) {
@@ -1158,42 +1166,76 @@ router.post('/settings/quiz-timer', auth, async (req, res) => {
             });
         }
 
-        const { secondsPerQuestion } = req.body;
+        const { defaultSeconds, quizTimers, quizName } = req.body;
         
-        // Validate the seconds value
-        if (secondsPerQuestion === undefined || 
-            secondsPerQuestion === null || 
-            isNaN(secondsPerQuestion) || 
-            secondsPerQuestion < 0 || 
-            secondsPerQuestion > 300) {
-            return res.status(400).json({
-                success: false,
-                message: 'Invalid timer value. Must be between 0 and 300 seconds.'
+        // Get current settings
+        let timerSetting = await Setting.findOne({ key: 'quizTimerSettings' });
+        
+        // If no settings exist, create default
+        if (!timerSetting) {
+            timerSetting = new Setting({
+                key: 'quizTimerSettings',
+                value: {
+                    defaultSeconds: 60,
+                    quizTimers: {}
+                },
+                description: 'Quiz timer settings including default and per-quiz values'
             });
         }
-
-        // Update or create the setting
-        const timerSetting = await Setting.findOneAndUpdate(
-            { key: 'quizTimerSeconds' },
-            { 
-                $set: { 
-                    value: secondsPerQuestion,
-                    description: 'Time allowed for each quiz question in seconds (0-300, 0 = disabled)'
-                }
-            },
-            { 
-                new: true,       // Return the updated document
-                upsert: true     // Create if it doesn't exist
-            }
-        );
         
-        console.log(`Quiz timer updated to ${secondsPerQuestion} seconds by admin ${req.user.username}`);
+        // If updating a specific quiz timer
+        if (quizName) {
+            const value = Number(req.body.secondsPerQuestion);
+            
+            // Validate the value
+            if (isNaN(value) || value < 0 || value > 300) {
+                return res.status(400).json({
+                    success: false,
+                    message: 'Invalid timer value. Must be between 0 and 300 seconds.'
+                });
+            }
+            
+            // Update or remove the quiz-specific timer
+            if (value === timerSetting.value.defaultSeconds) {
+                // If the value matches default, remove the override
+                delete timerSetting.value.quizTimers[quizName];
+            } else {
+                // Set the quiz-specific timer
+                timerSetting.value.quizTimers[quizName] = value;
+            }
+        } 
+        // If updating default timer or all settings
+        else if (defaultSeconds !== undefined) {
+            const value = Number(defaultSeconds);
+            
+            // Validate the value
+            if (isNaN(value) || value < 0 || value > 300) {
+                return res.status(400).json({
+                    success: false,
+                    message: 'Invalid timer value. Must be between 0 and 300 seconds.'
+                });
+            }
+            
+            // Update default seconds
+            timerSetting.value.defaultSeconds = value;
+            
+            // If quizTimers is provided, update those too
+            if (quizTimers) {
+                timerSetting.value.quizTimers = quizTimers;
+            }
+        }
+        
+        // Save the settings
+        await timerSetting.save();
+        
+        console.log(`Quiz timer settings updated by admin ${req.user.username}:`, timerSetting.value);
         
         return res.json({
             success: true,
             message: 'Quiz timer settings updated successfully',
             data: {
-                secondsPerQuestion: timerSetting.value,
+                defaultSeconds: timerSetting.value.defaultSeconds,
+                quizTimers: timerSetting.value.quizTimers,
                 updatedAt: timerSetting.updatedAt
             }
         });

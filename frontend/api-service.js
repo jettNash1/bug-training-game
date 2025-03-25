@@ -1165,19 +1165,20 @@ export class APIService {
             
             // Update the specific quiz timer locally
             const quizTimers = settings.data.quizTimers || {};
-            quizTimers[quizName] = value; // Ensure this is a number
+            
+            // Only store the quiz-specific timer if it's different from the default
+            if (value !== settings.data.defaultSeconds) {
+                quizTimers[quizName] = value;
+            } else {
+                // If the value matches the default, remove any quiz-specific setting
+                delete quizTimers[quizName];
+            }
             
             console.log(`Updated quiz timers:`, quizTimers);
-            console.log(`Default seconds:`, settings.data.defaultSeconds);
             
-            // Save directly to localStorage for both the specific quiz and as a backup
+            // Save to localStorage as backup
             try {
-                // Save per-quiz settings to localStorage
                 localStorage.setItem('perQuizTimerSettings', JSON.stringify(quizTimers));
-                
-                // Also update the global timer setting for API call compatibility
-                localStorage.setItem('quizTimerValue', value.toString());
-                
                 console.log('Successfully saved to localStorage as backup');
             } catch (localError) {
                 console.warn('Failed to save to localStorage:', localError);
@@ -1185,9 +1186,8 @@ export class APIService {
             
             // Save to API
             try {
-                // Try to save to the API using the expected format
-                // The API expects secondsPerQuestion, not defaultSeconds and quizTimers
-                console.log('Sending to API with secondsPerQuestion format:', {
+                console.log('Sending to API:', {
+                    quizName,
                     secondsPerQuestion: value
                 });
                 
@@ -1197,35 +1197,35 @@ export class APIService {
                         'Content-Type': 'application/json'
                     },
                     body: JSON.stringify({
+                        quizName,
                         secondsPerQuestion: value
                     })
                 });
                 
-                // If successful, construct a response that matches our expected format
+                // If successful, return in our application's expected format
                 if (response.success) {
-                    console.log('Timer settings saved to API:', response);
+                    console.log('Timer settings saved to API:', response.data);
                     
-                    // Return in the format expected by our application
                     return {
                         success: true,
-                        message: 'Timer setting saved to API successfully',
+                        message: 'Timer setting saved successfully',
                         data: {
-                            defaultSeconds: value,
-                            quizTimers: quizTimers
+                            defaultSeconds: response.data.defaultSeconds,
+                            quizTimers: response.data.quizTimers
                         }
                     };
                 }
                 
                 return response;
             } catch (apiError) {
-                console.warn('Failed to save timer settings to API, using localStorage fallback:', apiError);
+                console.warn('Failed to save timer settings to API:', apiError);
                 
-                // Return a mock successful response
+                // Return a mock successful response using localStorage values
                 return {
                     success: true,
                     message: 'Quiz timer setting saved to localStorage (API not available)',
                     data: {
-                        defaultSeconds: value,
+                        defaultSeconds: settings.data.defaultSeconds,
                         quizTimers: quizTimers
                     }
                 };
@@ -1525,14 +1525,34 @@ export class APIService {
                     console.log(`Processing scheduled reset for ${schedule.username}'s ${schedule.quizName} quiz`);
                     
                     try {
-                        // Call API to reset the quiz
-                        const resetResponse = await this.fetchWithAdminAuth(`${this.baseUrl}/admin/users/${schedule.username}/quiz/${schedule.quizName}/reset`, {
-                            method: 'POST'
-                        });
+                        // Call API to reset the quiz using the correct endpoint
+                        const resetResponse = await this.fetchWithAdminAuth(
+                            `${this.baseUrl}/admin/users/${schedule.username}/quiz-progress/${schedule.quizName}/reset`,
+                            {
+                                method: 'POST'
+                            }
+                        );
                         
                         if (resetResponse.success) {
                             console.log(`Successfully reset ${schedule.username}'s ${schedule.quizName} quiz`);
                             processedIds.push(schedule.id);
+                            
+                            // Also reset quiz scores
+                            try {
+                                await this.fetchWithAdminAuth(
+                                    `${this.baseUrl}/admin/users/${schedule.username}/quiz-scores/reset`,
+                                    {
+                                        method: 'POST',
+                                        headers: {
+                                            'Content-Type': 'application/json'
+                                        },
+                                        body: JSON.stringify({ quizName: schedule.quizName })
+                                    }
+                                );
+                                console.log(`Successfully reset scores for ${schedule.username}'s ${schedule.quizName} quiz`);
+                            } catch (scoreResetError) {
+                                console.error('Error resetting quiz scores:', scoreResetError);
+                            }
                         } else {
                             console.error(`Failed to reset quiz:`, resetResponse.message);
                         }
@@ -1542,7 +1562,7 @@ export class APIService {
                 }
             }
             
-            // Remove processed schedules from API
+            // Remove processed schedules
             if (processedIds.length > 0) {
                 console.log(`Removing ${processedIds.length} processed schedules`);
                 
