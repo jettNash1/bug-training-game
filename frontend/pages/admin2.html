@@ -422,6 +422,38 @@
             padding: 5px;
         }
         
+        /* Specific fix for QA Processes section to limit to 6 cards per row */
+        .scenario-category[data-category="qa-processes"] .category-quizzes {
+            display: grid;
+            grid-template-columns: repeat(6, 1fr);
+            grid-auto-flow: row;
+            grid-auto-rows: auto;
+        }
+        
+        @media (max-width: 1400px) {
+            .scenario-category[data-category="qa-processes"] .category-quizzes {
+                grid-template-columns: repeat(4, 1fr);
+            }
+        }
+        
+        @media (max-width: 1000px) {
+            .scenario-category[data-category="qa-processes"] .category-quizzes {
+                grid-template-columns: repeat(3, 1fr);
+            }
+        }
+        
+        @media (max-width: 768px) {
+            .scenario-category[data-category="qa-processes"] .category-quizzes {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+        
+        @media (max-width: 480px) {
+            .scenario-category[data-category="qa-processes"] .category-quizzes {
+                grid-template-columns: 1fr;
+            }
+        }
+        
         .quiz-card-wrapper {
             padding: 10px;
             margin-bottom: 5px;

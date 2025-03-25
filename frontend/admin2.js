@@ -766,6 +766,7 @@ class Admin2Dashboard extends AdminDashboard {
                 
                 const categoryDiv = document.createElement('div');
                 categoryDiv.className = 'scenario-category';
+                categoryDiv.dataset.category = category.toLowerCase().replace(/\s+/g, '-');
                 
                 // Add heading
                 const heading = document.createElement('h3');
