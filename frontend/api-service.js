@@ -936,13 +936,29 @@ export class APIService {
                 if (response.success && response.data) {
                     console.log('Timer settings loaded from API:', response.data);
                     
+                    // API returns secondsPerQuestion, our frontend expects defaultSeconds and quizTimers
+                    // Convert the format
+                    const defaultSeconds = response.data.secondsPerQuestion !== undefined 
+                        ? Number(response.data.secondsPerQuestion) 
+                        : 60;
+                        
                     // Store in localStorage for immediate effect on quizzes
-                    // For backward compatibility, we store the default value if available
-                    if (response.data.defaultSeconds !== undefined) {
-                        localStorage.setItem('quizTimerValue', response.data.defaultSeconds.toString());
-                    }
+                    localStorage.setItem('quizTimerValue', defaultSeconds.toString());
                     
-                    return response;
+                    // Get any existing per-quiz overrides from localStorage
+                    const perQuizTimersJson = localStorage.getItem('perQuizTimerSettings');
+                    const quizTimers = perQuizTimersJson ? JSON.parse(perQuizTimersJson) : {};
+                    
+                    // Return in the expected format for our frontend
+                    return {
+                        success: true,
+                        message: response.message || 'Timer settings loaded from API',
+                        data: {
+                            defaultSeconds: defaultSeconds,
+                            quizTimers: quizTimers,
+                            updatedAt: response.data.updatedAt
+                        }
+                    };
                 }
             } catch (apiError) {
                 console.warn('Failed to fetch quiz timer settings from API, trying user endpoint:', apiError);
@@ -954,12 +970,28 @@ export class APIService {
                     if (userResponse.success && userResponse.data) {
                         console.log('Timer settings loaded from user API:', userResponse.data);
                         
+                        // Convert API format to our frontend format
+                        const defaultSeconds = userResponse.data.secondsPerQuestion !== undefined 
+                            ? Number(userResponse.data.secondsPerQuestion) 
+                            : 60;
+                            
                         // Store in localStorage for immediate effect on quizzes
-                        if (userResponse.data.defaultSeconds !== undefined) {
-                            localStorage.setItem('quizTimerValue', userResponse.data.defaultSeconds.toString());
-                        }
+                        localStorage.setItem('quizTimerValue', defaultSeconds.toString());
                         
-                        return userResponse;
+                        // Get any existing per-quiz overrides from localStorage
+                        const perQuizTimersJson = localStorage.getItem('perQuizTimerSettings');
+                        const quizTimers = perQuizTimersJson ? JSON.parse(perQuizTimersJson) : {};
+                        
+                        // Return in the expected format for our frontend
+                        return {
+                            success: true,
+                            message: userResponse.message || 'Timer settings loaded from user API',
+                            data: {
+                                defaultSeconds: defaultSeconds,
+                                quizTimers: quizTimers,
+                                updatedAt: userResponse.data.updatedAt
+                            }
+                        };
                     }
                 } catch (userApiError) {
                     console.warn('Failed to fetch quiz timer settings from user API, using localStorage fallback:', userApiError);
@@ -1004,7 +1036,9 @@ export class APIService {
     async updateQuizTimerSettings(defaultSeconds, quizTimers = {}) {
         try {
             // Validate input for default timer (allow 0 to disable the timer)
-            const defaultValue = parseInt(defaultSeconds, 10);
+            const defaultValue = Number(defaultSeconds);
+            console.log(`Updating timer settings with value: ${defaultValue}, type: ${typeof defaultValue}`);
+            
             if (isNaN(defaultValue) || defaultValue < 0 || defaultValue > 300) {
                 throw new Error('Timer value must be between 0 and 300 seconds');
             }
@@ -1012,7 +1046,7 @@ export class APIService {
             // Validate per-quiz timer values
             const validatedQuizTimers = {};
             for (const [quizName, seconds] of Object.entries(quizTimers)) {
-                const value = parseInt(seconds, 10);
+                const value = Number(seconds);
                 if (!isNaN(value) && value >= 0 && value <= 300) {
                     validatedQuizTimers[quizName] = value;
                 } else {
@@ -1021,26 +1055,36 @@ export class APIService {
             }
             
             try {
-                // Try to save to the API first
+                // Try to save to the API first using the API's expected format
+                console.log('Sending to API with secondsPerQuestion format:', {
+                    secondsPerQuestion: defaultValue
+                });
+                
                 const response = await this.fetchWithAdminAuth(`${this.baseUrl}/admin/settings/quiz-timer`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'
                     },
                     body: JSON.stringify({
-                        defaultSeconds: defaultValue,
-                        quizTimers: validatedQuizTimers
+                        secondsPerQuestion: defaultValue
                     })
                 });
                 
-                // If successful, update localStorage
+                // If successful, update localStorage and return formatted response
                 if (response.success) {
                     localStorage.setItem('quizTimerValue', defaultValue.toString());
                     localStorage.setItem('perQuizTimerSettings', JSON.stringify(validatedQuizTimers));
-                    console.log('Timer settings saved to API:', {
-                        defaultSeconds: defaultValue,
-                        quizTimers: validatedQuizTimers
-                    });
+                    console.log('Timer settings saved to API:', response.data);
+                    
+                    // Return in our application's expected format
+                    return {
+                        success: true,
+                        message: response.message || 'Timer settings updated successfully',
+                        data: {
+                            defaultSeconds: defaultValue,
+                            quizTimers: validatedQuizTimers
+                        }
+                    };
                 }
                 
                 return response;
@@ -1119,30 +1163,32 @@ export class APIService {
             const settings = await this.getQuizTimerSettings();
             console.log('Current timer settings:', settings.data);
             
-            // Update the specific quiz timer
+            // Update the specific quiz timer locally
             const quizTimers = settings.data.quizTimers || {};
             quizTimers[quizName] = value; // Ensure this is a number
             
             console.log(`Updated quiz timers:`, quizTimers);
             console.log(`Default seconds:`, settings.data.defaultSeconds);
             
-            // Ensure defaultSeconds is also a number
-            const defaultSeconds = Number(settings.data.defaultSeconds);
-            
-            // Save directly to localStorage first as a safety measure
+            // Save directly to localStorage for both the specific quiz and as a backup
             try {
+                // Save per-quiz settings to localStorage
                 localStorage.setItem('perQuizTimerSettings', JSON.stringify(quizTimers));
+                
+                // Also update the global timer setting for API call compatibility
+                localStorage.setItem('quizTimerValue', value.toString());
+                
                 console.log('Successfully saved to localStorage as backup');
             } catch (localError) {
                 console.warn('Failed to save to localStorage:', localError);
             }
             
-            // Save all settings with direct calls instead of using updateQuizTimerSettings
+            // Save to API
             try {
-                // Try to save to the API first
-                console.log('Sending to API:', {
-                    defaultSeconds: defaultSeconds,
-                    quizTimers: quizTimers
+                // Try to save to the API using the expected format
+                // The API expects secondsPerQuestion, not defaultSeconds and quizTimers
+                console.log('Sending to API with secondsPerQuestion format:', {
+                    secondsPerQuestion: value
                 });
                 
                 const response = await this.fetchWithAdminAuth(`${this.baseUrl}/admin/settings/quiz-timer`, {
@@ -1151,18 +1197,23 @@ export class APIService {
                         'Content-Type': 'application/json'
                     },
                     body: JSON.stringify({
-                        defaultSeconds: defaultSeconds,
-                        quizTimers: quizTimers
+                        secondsPerQuestion: value
                     })
                 });
                 
-                // If successful, update localStorage
+                // If successful, construct a response that matches our expected format
                 if (response.success) {
-                    localStorage.setItem('perQuizTimerSettings', JSON.stringify(quizTimers));
-                    console.log('Timer settings saved to API:', {
-                        defaultSeconds: defaultSeconds,
-                        quizTimers: quizTimers
-                    });
+                    console.log('Timer settings saved to API:', response);
+                    
+                    // Return in the format expected by our application
+                    return {
+                        success: true,
+                        message: 'Timer setting saved to API successfully',
+                        data: {
+                            defaultSeconds: value,
+                            quizTimers: quizTimers
+                        }
+                    };
                 }
                 
                 return response;
@@ -1174,7 +1225,7 @@ export class APIService {
                     success: true,
                     message: 'Quiz timer setting saved to localStorage (API not available)',
                     data: {
-                        defaultSeconds: defaultSeconds,
+                        defaultSeconds: value,
                         quizTimers: quizTimers
                     }
                 };
@@ -1193,7 +1244,7 @@ export class APIService {
             const settings = await this.getQuizTimerSettings();
             console.log('Current timer settings:', settings.data);
             
-            // Ensure defaultSeconds is a number
+            // Get the default seconds value as a number
             const defaultSeconds = Number(settings.data.defaultSeconds);
             
             // Remove the specific quiz timer if it exists
@@ -1202,19 +1253,19 @@ export class APIService {
                 delete quizTimers[quizName];
                 console.log(`Removed timer setting for ${quizName}, updated timers:`, quizTimers);
                 
-                // Save directly to localStorage first as a safety measure
+                // Save directly to localStorage
                 try {
                     localStorage.setItem('perQuizTimerSettings', JSON.stringify(quizTimers));
+                    localStorage.setItem('quizTimerValue', defaultSeconds.toString());
                     console.log('Successfully saved to localStorage as backup');
                 } catch (localError) {
                     console.warn('Failed to save to localStorage:', localError);
                 }
                 
-                // Save with direct API call
+                // Save with direct API call using the format the API expects
                 try {
-                    console.log('Sending to API:', {
-                        defaultSeconds: defaultSeconds,
-                        quizTimers: quizTimers
+                    console.log('Sending to API with secondsPerQuestion format:', {
+                        secondsPerQuestion: defaultSeconds
                     });
                     
                     const response = await this.fetchWithAdminAuth(`${this.baseUrl}/admin/settings/quiz-timer`, {
@@ -1223,15 +1274,22 @@ export class APIService {
                             'Content-Type': 'application/json'
                         },
                         body: JSON.stringify({
-                            defaultSeconds: defaultSeconds,
-                            quizTimers: quizTimers
+                            secondsPerQuestion: defaultSeconds
                         })
                     });
                     
-                    // If successful, update localStorage
+                    // If successful, return a response that matches our expected format
                     if (response.success) {
-                        localStorage.setItem('perQuizTimerSettings', JSON.stringify(quizTimers));
                         console.log('Updated timer settings saved to API');
+                        
+                        return {
+                            success: true,
+                            message: 'Timer reset successfully',
+                            data: {
+                                defaultSeconds: defaultSeconds,
+                                quizTimers: quizTimers
+                            }
+                        };
                     }
                     
                     return response;
