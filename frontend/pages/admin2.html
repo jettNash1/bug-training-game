@@ -45,6 +45,12 @@
                                 <span>Create Account</span>
                             </button>
                         </li>
+                        <li class="menu-item" data-section="schedule">
+                            <button>
+                                <i class="fas fa-calendar-alt"></i>
+                                <span>Schedule</span>
+                            </button>
+                        </li>
                         <li class="menu-item" data-section="scenarios">
                             <button>
                                 <i class="fas fa-tasks"></i>
@@ -149,6 +155,57 @@
                         <h2>Create Account</h2>
                         <div id="create-account-container">
                             <!-- Create account form will be displayed here -->
+                        </div>
+                    </div>
+
+                    <!-- Schedule Section -->
+                    <div id="schedule-section" class="content-section">
+                        <h2>Schedule Quiz Reset</h2>
+                        <div class="schedule-container">
+                            <p class="section-description">Schedule automatic quiz resets for users at specific dates and times.</p>
+                            
+                            <div class="schedule-form-card">
+                                <h3>Create Schedule</h3>
+                                <form id="scheduleForm" class="schedule-form">
+                                    <div class="form-group">
+                                        <label for="scheduleUser">Select User:</label>
+                                        <select id="scheduleUser" name="username" required>
+                                            <option value="">-- Select User --</option>
+                                            <!-- User options will be populated dynamically -->
+                                        </select>
+                                    </div>
+                                    
+                                    <div class="form-group">
+                                        <label for="scheduleQuiz">Select Quiz:</label>
+                                        <select id="scheduleQuiz" name="quizName" required>
+                                            <option value="">-- Select Quiz --</option>
+                                            <!-- Quiz options will be populated dynamically -->
+                                        </select>
+                                    </div>
+                                    
+                                    <div class="form-group">
+                                        <label for="scheduleDate">Reset Date:</label>
+                                        <input type="date" id="scheduleDate" name="resetDate" required>
+                                    </div>
+                                    
+                                    <div class="form-group">
+                                        <label for="scheduleTime">Reset Time:</label>
+                                        <input type="time" id="scheduleTime" name="resetTime" required>
+                                    </div>
+                                    
+                                    <div class="form-actions">
+                                        <button type="submit" class="submit-btn">Schedule Reset</button>
+                                    </div>
+                                </form>
+                            </div>
+                            
+                            <div class="scheduled-items-card">
+                                <h3>Scheduled Resets</h3>
+                                <div id="scheduledItemsList">
+                                    <!-- Schedule items will be displayed here -->
+                                    <p class="no-items-message">No scheduled resets yet.</p>
+                                </div>
+                            </div>
                         </div>
                     </div>
 
@@ -944,6 +1001,153 @@
             margin-bottom: 5px;
         }
 
+        /* Schedule Section Styles */
+        .schedule-container {
+            display: flex;
+            flex-direction: column;
+            gap: 2rem;
+            margin-top: 1rem;
+        }
+
+        .section-description {
+            color: #666;
+            margin-bottom: 1.5rem;
+        }
+
+        .schedule-form-card,
+        .scheduled-items-card {
+            background: white;
+            border-radius: 8px;
+            padding: 1.5rem;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        .schedule-form-card h3,
+        .scheduled-items-card h3 {
+            margin-top: 0;
+            margin-bottom: 1.5rem;
+            color: #2c3e50;
+            font-size: 1.3rem;
+            padding-bottom: 0.75rem;
+            border-bottom: 1px solid #eee;
+        }
+
+        .schedule-form {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 1.5rem;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        .form-group label {
+            font-weight: 600;
+            color: #555;
+        }
+
+        .form-group select,
+        .form-group input {
+            padding: 0.75rem;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 1rem;
+        }
+
+        .form-actions {
+            grid-column: 1 / -1;
+            display: flex;
+            justify-content: flex-end;
+            margin-top: 1rem;
+        }
+
+        .submit-btn {
+            background: #3498db;
+            color: white;
+            border: none;
+            padding: 0.75rem 1.5rem;
+            border-radius: 4px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .submit-btn:hover {
+            background: #2980b9;
+        }
+
+        #scheduledItemsList {
+            margin-top: 1rem;
+        }
+
+        .scheduled-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1rem;
+            border: 1px solid #eee;
+            border-radius: 4px;
+            margin-bottom: 1rem;
+            background-color: #f9f9f9;
+        }
+
+        .scheduled-item:hover {
+            background-color: #f2f2f2;
+        }
+
+        .scheduled-info {
+            flex: 1;
+        }
+
+        .scheduled-user {
+            font-weight: 600;
+            color: #2c3e50;
+        }
+
+        .scheduled-quiz {
+            color: #3498db;
+            font-weight: 500;
+        }
+
+        .scheduled-time {
+            color: #7f8c8d;
+            font-size: 0.9rem;
+        }
+
+        .scheduled-actions {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .cancel-schedule-btn {
+            background: #e74c3c;
+            color: white;
+            border: none;
+            padding: 0.5rem 0.75rem;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .cancel-schedule-btn:hover {
+            background: #c0392b;
+        }
+
+        .no-items-message {
+            color: #7f8c8d;
+            font-style: italic;
+            text-align: center;
+            padding: 1rem;
+        }
+
+        @media (max-width: 768px) {
+            .schedule-form {
+                grid-template-columns: 1fr;
+            }
+        }
     </style>
 </body>
 </html> 

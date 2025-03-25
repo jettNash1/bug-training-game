@@ -55,6 +55,16 @@ class Admin2Dashboard extends AdminDashboard {
                 console.error('Error setting up scenarios list:', error);
             }
             
+            // Setup schedule section
+            try {
+                this.setupScheduleSection();
+                console.log('Schedule section set up successfully');
+                
+                // Set up interval to check for scheduled resets
+                setInterval(() => this.checkScheduledResets(), 60000); // Check every minute
+            } catch (error) {
+                console.error('Error setting up schedule section:', error);
+            }
         } catch (error) {
             console.error('Error in init2:', error);
             // Handle initialization error - redirect to login if authentication fails
@@ -163,6 +173,11 @@ class Admin2Dashboard extends AdminDashboard {
                 // Show the corresponding section
                 const sectionId = item.dataset.section;
                 document.getElementById(`${sectionId}-section`).classList.add('active');
+                
+                // If entering the schedule section, refresh the data
+                if (sectionId === 'schedule') {
+                    this.refreshScheduleData();
+                }
             });
         });
         
@@ -1410,12 +1425,12 @@ class Admin2Dashboard extends AdminDashboard {
                 
                     const quizProgress = user.quizProgress?.[quizLower] || {};
                     const quizResult = user.quizResults?.find(r => r.quizName.toLowerCase() === quizLower);
-                    
-                    // Use data from either progress or results, prioritizing results
-                    const questionsAnswered = quizResult?.questionsAnswered || 
-                                            quizResult?.questionHistory?.length ||
-                                            quizProgress?.questionsAnswered || 
-                                            quizProgress?.questionHistory?.length || 0;
+                
+                // Use data from either progress or results, prioritizing results
+                const questionsAnswered = quizResult?.questionsAnswered || 
+                                        quizResult?.questionHistory?.length ||
+                                        quizProgress?.questionsAnswered || 
+                                        quizProgress?.questionHistory?.length || 0;
                     const experience = quizResult?.experience || quizProgress?.experience || 0;
                     const score = quizResult?.score || 0;
                     const lastActive = quizResult?.completedAt || quizResult?.lastActive || quizProgress?.lastUpdated || 'Never';
@@ -1449,36 +1464,36 @@ class Admin2Dashboard extends AdminDashboard {
                     if (questionsAnswered === 15) {
                         if (experience >= 300 || score >= 100) {
                             statusClass = 'completed-perfect'; // Perfect score
-                        } else {
+                } else {
                             statusClass = 'completed-partial'; // Completed but not perfect
                         }
                     } else if (questionsAnswered > 0) {
                         statusClass = 'in-progress';
-                    }
+                }
                     
                     // Create quiz card
                     const quizCard = document.createElement('div');
                     quizCard.className = `quiz-progress-item ${statusClass}`;
                     quizCard.style.backgroundColor = backgroundColor;
-                    
-                    quizCard.innerHTML = `
-                        <h4>${this.formatQuizName(quizType)}</h4>
-                        <div class="progress-details">
-                            <div>
-                                <strong>Progress:</strong> 
+                
+                quizCard.innerHTML = `
+                    <h4>${this.formatQuizName(quizType)}</h4>
+                    <div class="progress-details">
+                        <div>
+                            <strong>Progress:</strong>
                                 <span class="${status === 'Completed' ? 'text-success' : 
                                             status === 'In Progress' ? 'text-warning' : 
                                             'text-muted'}">${status}</span>
-                            </div>
-                            <div>
+                        </div>
+                        <div>
                                 <strong>Score:</strong> 
                                 <span>${score}%</span>
-                            </div>
-                            <div>
-                                <strong>Questions:</strong> 
+                        </div>
+                        <div>
+                            <strong>Questions:</strong>
                                 <span>${questionsAnswered}/15</span>
-                            </div>
-                            <div>
+                        </div>
+                        <div>
                                 <strong>XP:</strong> 
                                 <span>${experience}/300</span>
                             </div>
@@ -1497,16 +1512,16 @@ class Admin2Dashboard extends AdminDashboard {
                                         tabindex="0">
                                     <span>Make visible to user</span>
                                 </label>
-                            </div>
                         </div>
-                        <div class="quiz-actions">
+                    </div>
+                    <div class="quiz-actions">
                             <button class="reset-quiz-btn"
                                 data-quiz-name="${quizType}"
                                 data-username="${username}"
                                 aria-label="Reset progress for ${this.formatQuizName(quizType)}"
                                 tabindex="0">
-                                Reset Progress
-                            </button>
+                            Reset Progress
+                        </button>
                             <button class="view-questions-btn"
                                 data-quiz-name="${quizType}"
                                 data-username="${username}"
@@ -1514,11 +1529,11 @@ class Admin2Dashboard extends AdminDashboard {
                                 tabindex="0">
                                 View Questions
                             </button>
-                        </div>
-                    `;
-                    
-                    quizProgressList.appendChild(quizCard);
-                });
+                    </div>
+                `;
+                
+                quizProgressList.appendChild(quizCard);
+            });
             
             // User actions
             const userActions = document.createElement('div');
@@ -1984,17 +1999,17 @@ class Admin2Dashboard extends AdminDashboard {
                     console.log('Quiz status:', quizStatus);
                     
                     // Create overlay container
-                    const overlay = document.createElement('div');
-                    overlay.className = 'user-details-overlay';
+            const overlay = document.createElement('div');
+            overlay.className = 'user-details-overlay';
                     overlay.style.zIndex = '1002'; // Ensure it's above other overlays
-                    overlay.setAttribute('role', 'dialog');
-                    overlay.setAttribute('aria-modal', 'true');
+            overlay.setAttribute('role', 'dialog');
+            overlay.setAttribute('aria-modal', 'true');
                     overlay.setAttribute('aria-labelledby', 'questions-details-title');
-
-                    // Create content container
-                    const content = document.createElement('div');
-                    content.className = 'user-details-content';
-                    
+            
+            // Create content container
+            const content = document.createElement('div');
+            content.className = 'user-details-content';
+            
                     // Determine if we should show the questions table or the "no questions" message
                     const hasCompletedQuestions = questionHistory.length > 0 || questionsAnswered > 0;
                     
@@ -2087,7 +2102,7 @@ class Admin2Dashboard extends AdminDashboard {
                         <div class="details-header">
                             <h3 id="questions-details-title">${this.formatQuizName(quizType)} - ${username}'s Answers</h3>
                             <button class="close-btn" aria-label="Close questions view" tabindex="0">×</button>
-                        </div>
+                    </div>
                         <div class="questions-content">
                             ${!hasCompletedQuestions ? 
                                 `<div class="not-attempted">
@@ -2112,7 +2127,7 @@ class Admin2Dashboard extends AdminDashboard {
                                                     <td>
                                                         <span class="status-badge ${isPassed ? 'pass' : question.isTimedOut ? 'timeout' : 'fail'}">
                                                             ${isPassed ? 'CORRECT' : question.isTimedOut ? 'TIMED OUT' : 'INCORRECT'}
-                                                        </span>
+                                    </span>
                                                     </td>
                                                     <td>
                                                         <strong>${question.question || 'Question text not available'}</strong>
@@ -2121,10 +2136,10 @@ class Admin2Dashboard extends AdminDashboard {
                                                     <td class="answer-content">
                                                         <div>
                                                             <strong>Selected:</strong> ${question.selectedAnswer || 'No answer selected'}
-                                                        </div>
+                                </div>
                                                         <div>
                                                             <strong>Correct:</strong> ${question.correctAnswer || 'Correct answer not available'}
-                                                        </div>
+                            </div>
                                                     </td>
                                                 </tr>
                                             `;
@@ -2138,29 +2153,29 @@ class Admin2Dashboard extends AdminDashboard {
                         </div>
                     `;
                     
-                    overlay.appendChild(content);
-                    document.body.appendChild(overlay);
-                    
+            overlay.appendChild(content);
+            document.body.appendChild(overlay);
+            
                     // Close button event listener
                     const closeBtn = content.querySelector('.close-btn');
                     if (closeBtn) {
-                        closeBtn.addEventListener('click', () => {
-                            overlay.remove();
-                        });
-                        
+            closeBtn.addEventListener('click', () => {
+                overlay.remove();
+            });
+            
                         // Add keyboard support for close button
                         closeBtn.addEventListener('keydown', (e) => {
                             if (e.key === 'Enter' || e.key === ' ') {
                                 e.preventDefault();
-                                overlay.remove();
-                            }
-                        });
+                    overlay.remove();
+                }
+            });
                     }
-                    
+            
                     // Close on escape key
                     const handleEscapeKey = (e) => {
-                        if (e.key === 'Escape') {
-                            overlay.remove();
+                if (e.key === 'Escape') {
+                    overlay.remove();
                             document.removeEventListener('keydown', handleEscapeKey);
                         }
                     };
@@ -2312,6 +2327,354 @@ class Admin2Dashboard extends AdminDashboard {
             console.error('Failed to create account:', error);
             this.showError(error.message || 'Failed to create account');
             throw error;
+        }
+    }
+
+    // Setup schedule section with form and event handlers
+    setupScheduleSection() {
+        // Get form elements
+        const scheduleForm = document.getElementById('scheduleForm');
+        const userSelect = document.getElementById('scheduleUser');
+        const quizSelect = document.getElementById('scheduleQuiz');
+        const dateInput = document.getElementById('scheduleDate');
+        const timeInput = document.getElementById('scheduleTime');
+        
+        // Populate user dropdown
+        this.populateUserDropdown();
+        
+        // Populate quiz dropdown
+        this.populateQuizDropdown();
+        
+        // Set minimum date to today
+        const today = new Date();
+        const year = today.getFullYear();
+        const month = String(today.getMonth() + 1).padStart(2, '0');
+        const day = String(today.getDate()).padStart(2, '0');
+        dateInput.min = `${year}-${month}-${day}`;
+        
+        // Add form submit handler
+        scheduleForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            this.createSchedule();
+        });
+        
+        // Load and display existing scheduled resets
+        this.loadScheduledResets();
+    }
+    
+    // Populate user dropdown with available users
+    populateUserDropdown() {
+        const userSelect = document.getElementById('scheduleUser');
+        
+        // Clear existing options except the first one
+        while (userSelect.options.length > 1) {
+            userSelect.remove(1);
+        }
+        
+        // Add user options
+        this.users.forEach(user => {
+            const option = document.createElement('option');
+            option.value = user.username;
+            option.textContent = user.username;
+            userSelect.appendChild(option);
+        });
+    }
+    
+    // Populate quiz dropdown with available quizzes
+    populateQuizDropdown() {
+        const quizSelect = document.getElementById('scheduleQuiz');
+        
+        // Clear existing options except the first one
+        while (quizSelect.options.length > 1) {
+            quizSelect.remove(1);
+        }
+        
+        // Add quiz options sorted alphabetically
+        this.quizTypes
+            .slice()
+            .sort((a, b) => this.formatQuizName(a).localeCompare(this.formatQuizName(b)))
+            .forEach(quizType => {
+                const option = document.createElement('option');
+                option.value = quizType;
+                option.textContent = this.formatQuizName(quizType);
+                quizSelect.appendChild(option);
+            });
+    }
+    
+    // Create a new schedule based on form data
+    async createSchedule() {
+        try {
+            const username = document.getElementById('scheduleUser').value;
+            const quizName = document.getElementById('scheduleQuiz').value;
+            const resetDate = document.getElementById('scheduleDate').value;
+            const resetTime = document.getElementById('scheduleTime').value;
+            
+            // Validate inputs
+            if (!username || !quizName || !resetDate || !resetTime) {
+                this.showError('Please fill in all fields');
+                return;
+            }
+            
+            // Create datetime string
+            const resetDateTime = `${resetDate}T${resetTime}:00`;
+            
+            // Show loading state
+            const submitBtn = document.querySelector('.submit-btn');
+            submitBtn.disabled = true;
+            submitBtn.textContent = 'Scheduling...';
+            
+            // Use the API service to create the schedule
+            const response = await this.apiService.createScheduledReset(username, quizName, resetDateTime);
+            
+            if (response.success) {
+                // Reset form
+                document.getElementById('scheduleForm').reset();
+                
+                // Show success message
+                this.showSuccess(`Reset scheduled for ${this.formatQuizName(quizName)} on ${this.formatScheduleDateTime(resetDateTime)}`);
+                
+                // Refresh the schedules list
+                this.loadScheduledResets();
+            } else {
+                throw new Error(response.message || 'Failed to schedule reset');
+            }
+        } catch (error) {
+            console.error('Error creating schedule:', error);
+            this.showError(`Failed to create schedule: ${error.message}`);
+        } finally {
+            // Reset button state
+            const submitBtn = document.querySelector('.submit-btn');
+            submitBtn.disabled = false;
+            submitBtn.textContent = 'Schedule Reset';
+        }
+    }
+    
+    // Get all scheduled resets from API with localStorage fallback
+    async getScheduledResets() {
+        try {
+            const response = await this.apiService.getScheduledResets();
+            return response.data || [];
+        } catch (error) {
+            console.error('Error getting scheduled resets:', error);
+            this.showError(`Failed to load scheduled resets: ${error.message}`);
+            return [];
+        }
+    }
+    
+    // Load and display scheduled resets
+    async loadScheduledResets() {
+        try {
+            // Show loading state
+            const scheduledItemsList = document.getElementById('scheduledItemsList');
+            scheduledItemsList.innerHTML = `
+                <div class="loading-container" style="text-align: center; padding: 1rem;">
+                    <div class="loading-spinner"></div>
+                    <p>Loading scheduled resets...</p>
+                </div>
+            `;
+            
+            // Get schedules and display them
+            await this.displayScheduledResets();
+        } catch (error) {
+            console.error('Error loading scheduled resets:', error);
+            this.showError(`Failed to load scheduled resets: ${error.message}`);
+            
+            // Show error state
+            const scheduledItemsList = document.getElementById('scheduledItemsList');
+            scheduledItemsList.innerHTML = `
+                <div class="error-message">
+                    <p>Failed to load scheduled resets. Please try refreshing the page.</p>
+                </div>
+            `;
+        }
+    }
+    
+    // Display scheduled resets in the list
+    async displayScheduledResets() {
+        const scheduledItemsList = document.getElementById('scheduledItemsList');
+        
+        try {
+            // Get schedules from API or localStorage fallback
+            const schedules = await this.getScheduledResets();
+            
+            // Clear existing content
+            scheduledItemsList.innerHTML = '';
+            
+            if (schedules.length === 0) {
+                scheduledItemsList.innerHTML = '<p class="no-items-message">No scheduled resets yet.</p>';
+                return;
+            }
+            
+            // Sort schedules by date/time (earliest first)
+            schedules.sort((a, b) => new Date(a.resetDateTime) - new Date(b.resetDateTime));
+            
+            // Create list items for each scheduled reset
+            schedules.forEach(schedule => {
+                const scheduledItem = document.createElement('div');
+                scheduledItem.className = 'scheduled-item';
+                scheduledItem.dataset.id = schedule.id;
+                
+                scheduledItem.innerHTML = `
+                    <div class="scheduled-info">
+                        <div class="scheduled-user">${schedule.username}</div>
+                        <div class="scheduled-quiz">${this.formatQuizName(schedule.quizName)}</div>
+                        <div class="scheduled-time">Reset scheduled for: ${this.formatScheduleDateTime(schedule.resetDateTime)}</div>
+                    </div>
+                    <div class="scheduled-actions">
+                        <button class="cancel-schedule-btn" data-id="${schedule.id}" aria-label="Cancel schedule">
+                            <i class="fas fa-times"></i> Cancel
+                        </button>
+                    </div>
+                `;
+                
+                scheduledItemsList.appendChild(scheduledItem);
+            });
+            
+            // Add event listeners to cancel buttons
+            scheduledItemsList.querySelectorAll('.cancel-schedule-btn').forEach(button => {
+                button.addEventListener('click', (e) => {
+                    const scheduleId = e.currentTarget.dataset.id;
+                    this.cancelSchedule(scheduleId);
+                });
+            });
+        } catch (error) {
+            console.error('Error displaying scheduled resets:', error);
+            scheduledItemsList.innerHTML = `
+                <div class="error-message">
+                    <p>Failed to display scheduled resets. Please try refreshing the page.</p>
+                </div>
+            `;
+        }
+    }
+    
+    // Cancel a scheduled reset
+    async cancelSchedule(scheduleId) {
+        try {
+            // Find the schedule to display information in the confirmation dialog
+            const schedules = await this.getScheduledResets();
+            const scheduleToCancel = schedules.find(s => s.id === scheduleId);
+            
+            if (!scheduleToCancel) {
+                this.showError('Schedule not found');
+                return;
+            }
+            
+            // Confirm cancellation
+            if (!confirm(`Are you sure you want to cancel the scheduled reset for ${this.formatQuizName(scheduleToCancel.quizName)}?`)) {
+                return;
+            }
+            
+            // Show loading state on the button
+            const cancelBtn = document.querySelector(`.cancel-schedule-btn[data-id="${scheduleId}"]`);
+            if (cancelBtn) {
+                cancelBtn.disabled = true;
+                cancelBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Cancelling...';
+            }
+            
+            // Use the API service to cancel the schedule
+            const response = await this.apiService.cancelScheduledReset(scheduleId);
+            
+            if (response.success) {
+                // Refresh the display
+                this.loadScheduledResets();
+                
+                // Show success message
+                this.showSuccess('Schedule cancelled successfully');
+            } else {
+                throw new Error(response.message || 'Failed to cancel schedule');
+            }
+        } catch (error) {
+            console.error('Error cancelling schedule:', error);
+            this.showError(`Failed to cancel schedule: ${error.message}`);
+            
+            // Refresh the display to ensure consistency
+            this.loadScheduledResets();
+        }
+    }
+    
+    // Format schedule date/time for display
+    formatScheduleDateTime(dateTimeString) {
+        const options = {
+            weekday: 'short',
+            year: 'numeric',
+            month: 'short',
+            day: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit'
+        };
+        
+        return new Date(dateTimeString).toLocaleString(undefined, options);
+    }
+    
+    // Refresh schedule section data
+    async refreshScheduleData() {
+        this.populateUserDropdown();
+        this.populateQuizDropdown();
+        await this.loadScheduledResets();
+    }
+    
+    // Check for scheduled resets that need to be executed
+    async checkScheduledResets() {
+        try {
+            // Use the API service to check and process scheduled resets
+            const result = await this.apiService.checkAndProcessScheduledResets();
+            
+            if (result.processed > 0) {
+                console.log(`Processed ${result.processed} scheduled resets out of ${result.total} total`);
+                
+                // Refresh the display if the schedule section is active
+                const scheduleSection = document.getElementById('schedule-section');
+                if (scheduleSection && scheduleSection.classList.contains('active')) {
+                    this.refreshScheduleData();
+                }
+            }
+        } catch (error) {
+            console.error('Error checking scheduled resets:', error);
+        }
+    }
+    
+    // Helper method to show the schedule section
+    showScheduleSection() {
+        try {
+            // Get all menu items and sections
+            const menuItems = document.querySelectorAll('.menu-item');
+            const contentSections = document.querySelectorAll('.content-section');
+            
+            // Hide all sections
+            contentSections.forEach(section => {
+                section.classList.remove('active');
+            });
+            
+            // Remove active class from all menu items
+            menuItems.forEach(item => {
+                item.classList.remove('active');
+            });
+            
+            // Find the schedule menu item and make it active
+            const scheduleMenuItem = Array.from(menuItems).find(item => item.dataset.section === 'schedule');
+            if (scheduleMenuItem) {
+                scheduleMenuItem.classList.add('active');
+            } else {
+                console.error('Schedule menu item not found');
+            }
+            
+            // Show the schedule section
+            const scheduleSection = document.getElementById('schedule-section');
+            if (scheduleSection) {
+                scheduleSection.classList.add('active');
+                
+                // Refresh the schedule data
+                this.refreshScheduleData();
+                
+                console.log('Schedule section is now visible');
+                return true;
+            } else {
+                console.error('Schedule section not found in the DOM');
+                return false;
+            }
+        } catch (error) {
+            console.error('Error showing schedule section:', error);
+            return false;
         }
     }
 }

@@ -1037,4 +1037,269 @@ export class APIService {
             throw error;
         }
     }
+    
+    // Schedule-related methods
+    
+    async getScheduledResets() {
+        try {
+            console.log('Fetching scheduled resets from API');
+            const response = await this.fetchWithAdminAuth(`${this.baseUrl}/admin/schedules`);
+            
+            if (response.success) {
+                console.log('Successfully fetched scheduled resets from API:', response.data);
+                return {
+                    success: true,
+                    data: response.data || []
+                };
+            } else {
+                throw new Error(response.message || 'Failed to fetch scheduled resets');
+            }
+        } catch (error) {
+            console.error('Error fetching scheduled resets:', error);
+            
+            // Use localStorage as fallback
+            console.warn('Using localStorage fallback for scheduled resets');
+            const schedulesJson = localStorage.getItem('scheduledResets');
+            const schedules = schedulesJson ? JSON.parse(schedulesJson) : [];
+            
+            return {
+                success: true,
+                fallback: true,
+                message: 'Using localStorage fallback for scheduled resets',
+                data: schedules
+            };
+        }
+    }
+    
+    async createScheduledReset(username, quizName, resetDateTime) {
+        try {
+            console.log(`Creating scheduled reset for ${username}'s ${quizName} at ${resetDateTime}`);
+            
+            const response = await this.fetchWithAdminAuth(`${this.baseUrl}/admin/schedules`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    username,
+                    quizName,
+                    resetDateTime
+                })
+            });
+            
+            if (response.success) {
+                console.log('Successfully created scheduled reset through API:', response);
+                
+                // Also save to localStorage as a backup/fallback
+                try {
+                    const schedulesJson = localStorage.getItem('scheduledResets');
+                    const schedules = schedulesJson ? JSON.parse(schedulesJson) : [];
+                    
+                    // Only add if not already present (check for matching username, quiz, and datetime)
+                    const exists = schedules.some(s => 
+                        s.username === username && 
+                        s.quizName === quizName && 
+                        s.resetDateTime === resetDateTime
+                    );
+                    
+                    if (!exists) {
+                        schedules.push({
+                            id: response.data.id || Date.now().toString(),
+                            username,
+                            quizName,
+                            resetDateTime,
+                            createdAt: new Date().toISOString()
+                        });
+                        
+                        localStorage.setItem('scheduledResets', JSON.stringify(schedules));
+                    }
+                } catch (localError) {
+                    console.warn('Error saving to localStorage:', localError);
+                }
+                
+                return response;
+            } else {
+                throw new Error(response.message || 'Failed to create scheduled reset');
+            }
+        } catch (error) {
+            console.error('Error creating scheduled reset:', error);
+            
+            // Use localStorage as fallback
+            console.warn('Using localStorage fallback for creating scheduled reset');
+            try {
+                const schedulesJson = localStorage.getItem('scheduledResets');
+                const schedules = schedulesJson ? JSON.parse(schedulesJson) : [];
+                
+                const newSchedule = {
+                    id: Date.now().toString(),
+                    username,
+                    quizName,
+                    resetDateTime,
+                    createdAt: new Date().toISOString()
+                };
+                
+                schedules.push(newSchedule);
+                localStorage.setItem('scheduledResets', JSON.stringify(schedules));
+                
+                return {
+                    success: true,
+                    fallback: true,
+                    message: 'Scheduled reset created in localStorage (API not available)',
+                    data: newSchedule
+                };
+            } catch (localError) {
+                console.error('Error creating scheduled reset in localStorage:', localError);
+                throw error;
+            }
+        }
+    }
+    
+    async cancelScheduledReset(scheduleId) {
+        try {
+            console.log(`Cancelling scheduled reset with ID: ${scheduleId}`);
+            
+            const response = await this.fetchWithAdminAuth(`${this.baseUrl}/admin/schedules/${scheduleId}`, {
+                method: 'DELETE'
+            });
+            
+            if (response.success) {
+                console.log('Successfully cancelled scheduled reset through API:', response);
+                
+                // Also remove from localStorage
+                try {
+                    const schedulesJson = localStorage.getItem('scheduledResets');
+                    if (schedulesJson) {
+                        const schedules = JSON.parse(schedulesJson);
+                        const updatedSchedules = schedules.filter(s => s.id !== scheduleId);
+                        localStorage.setItem('scheduledResets', JSON.stringify(updatedSchedules));
+                    }
+                } catch (localError) {
+                    console.warn('Error updating localStorage after cancellation:', localError);
+                }
+                
+                return response;
+            } else {
+                throw new Error(response.message || 'Failed to cancel scheduled reset');
+            }
+        } catch (error) {
+            console.error('Error cancelling scheduled reset:', error);
+            
+            // Use localStorage as fallback
+            console.warn('Using localStorage fallback for cancelling scheduled reset');
+            try {
+                const schedulesJson = localStorage.getItem('scheduledResets');
+                if (!schedulesJson) {
+                    return {
+                        success: false,
+                        fallback: true,
+                        message: 'No scheduled resets found in localStorage'
+                    };
+                }
+                
+                const schedules = JSON.parse(schedulesJson);
+                const scheduleToCancel = schedules.find(s => s.id === scheduleId);
+                
+                if (!scheduleToCancel) {
+                    return {
+                        success: false,
+                        fallback: true,
+                        message: 'Scheduled reset not found in localStorage'
+                    };
+                }
+                
+                const updatedSchedules = schedules.filter(s => s.id !== scheduleId);
+                localStorage.setItem('scheduledResets', JSON.stringify(updatedSchedules));
+                
+                return {
+                    success: true,
+                    fallback: true,
+                    message: 'Scheduled reset cancelled in localStorage (API not available)',
+                    data: scheduleToCancel
+                };
+            } catch (localError) {
+                console.error('Error cancelling scheduled reset in localStorage:', localError);
+                throw error;
+            }
+        }
+    }
+    
+    async checkAndProcessScheduledResets() {
+        try {
+            console.log('Checking for scheduled resets that need to be executed');
+            
+            // Get all scheduled resets
+            const response = await this.getScheduledResets();
+            
+            if (!response.success) {
+                throw new Error(response.message || 'Failed to fetch scheduled resets');
+            }
+            
+            const schedules = response.data || [];
+            const now = new Date();
+            const processedIds = [];
+            
+            for (const schedule of schedules) {
+                const resetTime = new Date(schedule.resetDateTime);
+                
+                // If the reset time has passed
+                if (resetTime <= now) {
+                    console.log(`Processing scheduled reset for ${schedule.username}'s ${schedule.quizName} quiz`);
+                    
+                    try {
+                        // Call API to reset the quiz
+                        const resetResponse = await this.fetchWithAdminAuth(`${this.baseUrl}/admin/users/${schedule.username}/quiz/${schedule.quizName}/reset`, {
+                            method: 'POST'
+                        });
+                        
+                        if (resetResponse.success) {
+                            console.log(`Successfully reset ${schedule.username}'s ${schedule.quizName} quiz`);
+                            processedIds.push(schedule.id);
+                        } else {
+                            console.error(`Failed to reset quiz:`, resetResponse.message);
+                        }
+                    } catch (resetError) {
+                        console.error(`Error resetting quiz:`, resetError);
+                    }
+                }
+            }
+            
+            // Remove processed schedules from API
+            if (processedIds.length > 0) {
+                console.log(`Removing ${processedIds.length} processed schedules`);
+                
+                // If using the API, delete each processed schedule
+                if (!response.fallback) {
+                    for (const id of processedIds) {
+                        try {
+                            await this.cancelScheduledReset(id);
+                        } catch (error) {
+                            console.error(`Error removing processed schedule ${id}:`, error);
+                        }
+                    }
+                } 
+                // If using localStorage, update it directly
+                else {
+                    try {
+                        const schedulesJson = localStorage.getItem('scheduledResets');
+                        if (schedulesJson) {
+                            const allSchedules = JSON.parse(schedulesJson);
+                            const remainingSchedules = allSchedules.filter(s => !processedIds.includes(s.id));
+                            localStorage.setItem('scheduledResets', JSON.stringify(remainingSchedules));
+                        }
+                    } catch (localError) {
+                        console.error('Error updating localStorage after processing schedules:', localError);
+                    }
+                }
+            }
+            
+            return {
+                success: true,
+                processed: processedIds.length,
+                total: schedules.length
+            };
+        } catch (error) {
+            console.error('Error checking and processing scheduled resets:', error);
+            throw error;
+        }
+    }
 } 
