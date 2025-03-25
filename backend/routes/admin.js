@@ -1167,6 +1167,7 @@ router.post('/settings/quiz-timer', auth, async (req, res) => {
         }
 
         const { defaultSeconds, quizTimers, quizName } = req.body;
+        console.log('Received timer update request:', { defaultSeconds, quizTimers, quizName });
         
         // Get current settings
         let timerSetting = await Setting.findOne({ key: 'quizTimerSettings' });
@@ -1184,25 +1185,22 @@ router.post('/settings/quiz-timer', auth, async (req, res) => {
         }
         
         // If updating a specific quiz timer
-        if (quizName) {
-            const value = Number(req.body.secondsPerQuestion);
+        if (quizName && quizTimers) {
+            console.log('Updating specific quiz timer for:', quizName);
+            console.log('New quiz timers:', quizTimers);
             
-            // Validate the value
-            if (isNaN(value) || value < 0 || value > 300) {
-                return res.status(400).json({
-                    success: false,
-                    message: 'Invalid timer value. Must be between 0 and 300 seconds.'
-                });
-            }
+            // Update the quiz timers
+            timerSetting.value.quizTimers = {
+                ...timerSetting.value.quizTimers,
+                ...quizTimers
+            };
             
-            // Update or remove the quiz-specific timer
-            if (value === timerSetting.value.defaultSeconds) {
-                // If the value matches default, remove the override
-                delete timerSetting.value.quizTimers[quizName];
-            } else {
-                // Set the quiz-specific timer
-                timerSetting.value.quizTimers[quizName] = value;
-            }
+            // Clean up any timers that match the default
+            Object.entries(timerSetting.value.quizTimers).forEach(([quiz, value]) => {
+                if (value === timerSetting.value.defaultSeconds) {
+                    delete timerSetting.value.quizTimers[quiz];
+                }
+            });
         } 
         // If updating default timer or all settings
         else if (defaultSeconds !== undefined) {
@@ -1222,6 +1220,13 @@ router.post('/settings/quiz-timer', auth, async (req, res) => {
             // If quizTimers is provided, update those too
             if (quizTimers) {
                 timerSetting.value.quizTimers = quizTimers;
+                
+                // Clean up any timers that match the default
+                Object.entries(timerSetting.value.quizTimers).forEach(([quiz, timerValue]) => {
+                    if (timerValue === value) {
+                        delete timerSetting.value.quizTimers[quiz];
+                    }
+                });
             }
         }
         

@@ -26,6 +26,12 @@ settingSchema.pre('save', function(next) {
     if (this.key === 'quizTimerSettings') {
         const value = this.value;
         
+        // Ensure value is an object
+        if (!value || typeof value !== 'object') {
+            next(new Error('Quiz timer settings must be an object'));
+            return;
+        }
+        
         // Validate default seconds
         if (typeof value.defaultSeconds !== 'number' || 
             value.defaultSeconds < 0 || 
@@ -34,14 +40,22 @@ settingSchema.pre('save', function(next) {
             return;
         }
         
+        // Initialize quizTimers if undefined
+        if (!value.quizTimers) {
+            value.quizTimers = {};
+        }
+        
         // Validate per-quiz settings if they exist
-        if (value.quizTimers) {
+        if (value.quizTimers && typeof value.quizTimers === 'object') {
             for (const [quiz, seconds] of Object.entries(value.quizTimers)) {
                 if (typeof seconds !== 'number' || seconds < 0 || seconds > 300) {
                     next(new Error(`Timer value for quiz ${quiz} must be between 0 and 300 seconds`));
                     return;
                 }
             }
+        } else {
+            // If quizTimers is not an object, initialize it
+            value.quizTimers = {};
         }
     }
     

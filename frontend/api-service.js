@@ -1188,7 +1188,7 @@ export class APIService {
             try {
                 console.log('Sending to API:', {
                     quizName,
-                    secondsPerQuestion: value
+                    quizTimers
                 });
                 
                 const response = await this.fetchWithAdminAuth(`${this.baseUrl}/admin/settings/quiz-timer`, {
@@ -1198,7 +1198,8 @@ export class APIService {
                     },
                     body: JSON.stringify({
                         quizName,
-                        secondsPerQuestion: value
+                        quizTimers,
+                        defaultSeconds: settings.data.defaultSeconds
                     })
                 });
                 
