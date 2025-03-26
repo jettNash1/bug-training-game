@@ -1,6 +1,7 @@
 export class BadgeService {
     constructor(apiService) {
         this.apiService = apiService;
+        this.cachedCategories = null;
     }
 
     countVisibleQuizzes(categories) {
@@ -143,39 +144,49 @@ export class BadgeService {
     }
 
     async getCategoryStructure() {
-        const maxRetries = 3;
-        const retryDelay = 2000; // 2 seconds
-        
-        for (let attempt = 1; attempt <= maxRetries; attempt++) {
-            try {
-                const response = await this.apiService.fetchWithAuth('categories');
-                if (!response.success) {
-                    throw new Error('Failed to fetch categories');
-                }
-                
-                // Transform into a more usable structure
-                // { categoryName: [{ id: 'quizId', name: 'Quiz Name', hidden: false }] }
-                const categories = {};
-                
-                response.data.forEach(category => {
-                    categories[category.name] = category.quizzes.map(quiz => ({
-                        id: quiz.id,
-                        name: quiz.name,
-                        hidden: quiz.hidden || false
-                    }));
-                });
-                
-                return categories;
-            } catch (error) {
-                console.warn(`Attempt ${attempt} failed:`, error);
-                if (attempt === maxRetries) {
-                    console.error('Error fetching category structure after all retries:', error);
-                    return null;
-                }
-                await new Promise(resolve => setTimeout(resolve, retryDelay));
-            }
+        // Return cached categories if available
+        if (this.cachedCategories) {
+            return this.cachedCategories;
         }
-        return null;
+
+        try {
+            const response = await this.apiService.fetchWithAuth('categories');
+            if (!response.success) {
+                throw new Error('Failed to fetch categories');
+            }
+            
+            // Transform into a more usable structure
+            const categories = {};
+            
+            response.data.forEach(category => {
+                categories[category.name] = category.quizzes.map(quiz => ({
+                    id: quiz.id,
+                    name: quiz.name,
+                    hidden: quiz.hidden || false
+                }));
+            });
+            
+            // Cache the categories
+            this.cachedCategories = categories;
+            return categories;
+        } catch (error) {
+            console.error('Error fetching category structure:', error);
+            
+            // Return a default structure with known quizzes if API fails
+            const defaultCategories = {
+                'Technical': [
+                    { id: 'initiative', name: 'Initiative', hidden: false },
+                    { id: 'build-verification', name: 'Build Verification', hidden: false },
+                    { id: 'standard-script-testing', name: 'Standard Script Testing', hidden: false },
+                    { id: 'risk-management', name: 'Risk Management', hidden: false },
+                    { id: 'tester-mindset', name: 'Tester Mindset', hidden: false }
+                ]
+            };
+            
+            // Cache the default categories
+            this.cachedCategories = defaultCategories;
+            return defaultCategories;
+        }
     }
 
     generateQuizCompletionBadges(quizResults, categories, quizProgress) {
