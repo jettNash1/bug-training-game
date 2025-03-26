@@ -14,16 +14,19 @@ export class BadgeService {
     async getUserBadges() {
         try {
             // 1. Grab user data
+            console.log('Fetching user data...');
             const userData = await this.apiService.getUserData();
             if (!userData.success || !userData.data) {
                 throw new Error('Failed to load user data');
             }
+            console.log('User data received:', userData.data);
 
             // Extract quiz progress from user data
             const quizProgress = userData.data.quizProgress || {};
             console.log('Quiz Progress:', quizProgress);
             
             // 2. Get available quizzes from categories with retries
+            console.log('Fetching category structure...');
             let categories = null;
             let retryCount = 0;
             const maxRetries = 3;
@@ -31,6 +34,7 @@ export class BadgeService {
             while (retryCount < maxRetries) {
                 try {
                     categories = await this.getCategoryStructure();
+                    console.log('Categories fetched successfully:', categories);
                     break; // If successful, exit the retry loop
                 } catch (error) {
                     retryCount++;
@@ -53,12 +57,21 @@ export class BadgeService {
             );
             console.log('Available Quizzes:', allQuizzes);
 
+            if (allQuizzes.length === 0) {
+                console.warn('No visible quizzes found in categories');
+                return {
+                    badges: [],
+                    totalBadges: 0,
+                    earnedCount: 0
+                };
+            }
+
             // 3. Process quiz completion status
             const badges = allQuizzes.map(quiz => {
                 const quizName = quiz.id;
                 const progress = quizProgress[quizName] || {};
                 
-                // Check if quiz is complete
+                // Check if quiz is complete based on status or progress
                 const isCompleted = progress && (
                     progress.status === 'completed' ||
                     progress.status === 'passed' ||
@@ -76,8 +89,8 @@ export class BadgeService {
 
                 return {
                     id: `quiz-${quizName}`,
-                    name: `${quiz.name} Master`,
-                    description: `Complete the ${quiz.name} quiz`,
+                    name: quiz.name ? `${quiz.name} Master` : `${this.formatQuizName(quizName)} Master`,
+                    description: quiz.name ? `Complete the ${quiz.name} quiz` : `Complete the ${this.formatQuizName(quizName)} quiz`,
                     icon: 'fa-solid fa-check-circle',
                     earned: isCompleted,
                     completionDate: isCompleted ? (progress.lastUpdated || progress.completedAt || new Date().toISOString()) : null,
@@ -101,11 +114,7 @@ export class BadgeService {
             };
         } catch (error) {
             console.error('Error getting user badges:', error);
-            return {
-                badges: [],
-                totalBadges: 0,
-                earnedCount: 0
-            };
+            throw error; // Re-throw the error to be handled by the badges page
         }
     }
 
@@ -242,5 +251,13 @@ export class BadgeService {
         }
 
         return quizCompletionBadges;
+    }
+
+    // Helper function to format quiz names
+    formatQuizName(quizId) {
+        return quizId
+            .split('_')
+            .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+            .join(' ');
     }
 } 

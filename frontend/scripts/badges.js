@@ -5,8 +5,13 @@ class BadgesPage {
     constructor() {
         this.apiService = new APIService();
         this.badgeService = new BadgeService(this.apiService);
-        this.initialize();
         this.showLoadingOverlay();
+        // Make initialization async and handle errors
+        this.initialize().catch(error => {
+            console.error('Failed to initialize badges page:', error);
+            this.hideLoadingOverlay();
+            this.showError('Failed to load your badges. Please try again later.');
+        });
     }
 
     showLoadingOverlay() {
@@ -89,13 +94,20 @@ class BadgesPage {
             // Apply enhanced styling
             this.applyEnhancedStyling();
 
-            // Load badges data
-            await this.loadBadges();
+            // Load badges data with timeout
+            const timeoutPromise = new Promise((_, reject) => {
+                setTimeout(() => reject(new Error('Loading badges timed out')), 10000);
+            });
+
+            const loadBadgesPromise = this.loadBadges();
+            await Promise.race([loadBadgesPromise, timeoutPromise]);
+            
             this.hideLoadingOverlay();
         } catch (error) {
             console.error('Failed to initialize badges page:', error);
             this.hideLoadingOverlay();
-            this.showError('Failed to load your badges. Please try again later.');
+            this.showError(error.message || 'Failed to load your badges. Please try again later.');
+            throw error; // Re-throw to be caught by the constructor
         }
     }
 
@@ -136,8 +148,14 @@ class BadgesPage {
 
     async loadBadges() {
         try {
+            console.log('Starting to load badges...');
             // Get the user's badges
             const badgesData = await this.badgeService.getUserBadges();
+            console.log('Badges data received:', badgesData);
+            
+            if (!badgesData || !badgesData.badges) {
+                throw new Error('Invalid badges data received');
+            }
             
             // Update the badge counters
             const earnedElement = document.getElementById('badges-earned');
@@ -159,7 +177,9 @@ class BadgesPage {
             
             // Get the badges container
             const badgesGrid = document.getElementById('badges-grid');
-            if (!badgesGrid) return;
+            if (!badgesGrid) {
+                throw new Error('Badges grid container not found');
+            }
             
             // Clear existing content
             badgesGrid.innerHTML = '';
@@ -187,7 +207,7 @@ class BadgesPage {
             }
         } catch (error) {
             console.error('Error loading badges:', error);
-            this.showError('Failed to load your badges data. Please try again later.');
+            throw error; // Re-throw to be caught by initialize()
         }
     }
 
