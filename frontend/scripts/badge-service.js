@@ -25,33 +25,30 @@ export class BadgeService {
             // Create a set to track unique completed quizzes
             const completedQuizzes = new Set();
 
-            // Check quiz results for completed quizzes
-            quizResults.forEach(result => {
-                if (result.questionsAnswered === 15) {
-                    completedQuizzes.add(result.quizName);
-                }
-            });
-
             // Check quiz progress for completed quizzes
             Object.entries(quizProgress).forEach(([quizName, progress]) => {
-                if (progress.questionsAnswered === 15) {
+                // A quiz is completed if it exists in the progress object
+                // and has a valid status/completion state
+                if (progress && (
+                    progress.status === 'completed' || 
+                    progress.status === 'passed' ||
+                    (progress.questionHistory && progress.questionHistory.length === 15)
+                )) {
                     completedQuizzes.add(quizName);
                 }
             });
 
             // Create badges for completed quizzes
             const badges = Array.from(completedQuizzes).map(quizName => {
-                // Find the corresponding result or progress for completion date
-                const result = quizResults.find(r => r.quizName === quizName);
                 const progress = quizProgress[quizName];
                 
                 return {
                     id: `quiz-${quizName}`,
-                    name: `${quizName} Master`,
-                    description: `Complete the ${quizName} quiz`,
+                    name: `${quizName.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())} Master`,
+                    description: `Complete the ${quizName.replace(/_/g, ' ')} quiz`,
                     icon: 'fa-solid fa-check-circle',
                     earned: true,
-                    completionDate: (result?.completedAt || progress?.lastUpdated || null),
+                    completionDate: progress?.lastUpdated || progress?.completedAt || new Date().toISOString(),
                     quizId: quizName
                 };
             });
