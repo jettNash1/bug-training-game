@@ -1199,7 +1199,7 @@ export class APIService {
             // Save to localStorage as backup
             localStorage.setItem('perQuizTimerSettings', JSON.stringify(quizTimers));
             
-            // Send to API with the complete settings structure
+            // Send to API with the format it expects
             try {
                 const response = await this.fetchWithAdminAuth(`${this.baseUrl}/admin/settings/quiz-timer`, {
                     method: 'POST',
@@ -1207,8 +1207,7 @@ export class APIService {
                         'Content-Type': 'application/json'
                     },
                     body: JSON.stringify({
-                        defaultSeconds: settings.data.defaultSeconds,
-                        quizTimers: quizTimers,
+                        secondsPerQuestion: value,
                         quizName: quizName
                     })
                 });
