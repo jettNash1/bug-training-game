@@ -1,5 +1,5 @@
 import { QuizUser } from './QuizUser.js';
-import { ApiService } from './api-service.js';
+import { APIService } from './api-service.js';
 
 export class BaseQuiz {
     constructor(config) {
@@ -11,7 +11,7 @@ export class BaseQuiz {
         this.outcomeScreen = document.getElementById('outcome-screen');
         this.isLoading = false;
         this.questionTimer = null;
-        this.apiService = new ApiService();
+        this.apiService = new APIService();
         
         // Initialize timer value
         this.timePerQuestion = 60000; // Default 60 seconds
