@@ -13,19 +13,37 @@ export class BaseQuiz {
         this.questionTimer = null;
         this.apiService = new APIService();
         
-        // Initialize timer value
-        this.timePerQuestion = 60000; // Default 60 seconds
-        this.remainingTime = this.timePerQuestion;
+        // Initialize timer value with a temporary default
+        // The actual value will be set by loadTimerSettings
+        this.timePerQuestion = null;
+        this.remainingTime = null;
         this.questionStartTime = null; // Track when each question starts
         
-        // Load timer settings from API
-        this.loadTimerSettings();
+        // Load timer settings from API immediately
+        this.initializeTimerSettings();
+    }
+
+    async initializeTimerSettings() {
+        try {
+            // Wait for timer settings to be loaded before proceeding
+            await this.loadTimerSettings();
+            console.log('Timer settings initialized:', this.timePerQuestion / 1000, 'seconds');
+        } catch (error) {
+            console.error('Failed to initialize timer settings:', error);
+            // Set default values only if loading fails
+            this.timePerQuestion = 60000; // Default 60 seconds
+            this.remainingTime = this.timePerQuestion;
+        }
     }
 
     async loadTimerSettings() {
         try {
+            // Get quiz-specific timer value
             const timerValue = await this.apiService.getQuizTimerValue(this.quizName);
-            this.timePerQuestion = timerValue * 1000; // Convert to milliseconds
+            console.log('Loaded timer value for quiz:', this.quizName, timerValue, 'seconds');
+            
+            // Convert to milliseconds and update timer settings
+            this.timePerQuestion = timerValue * 1000;
             this.remainingTime = this.timePerQuestion;
             
             // Update timer display if it exists
@@ -35,7 +53,7 @@ export class BaseQuiz {
             }
         } catch (error) {
             console.error('Failed to load timer settings:', error);
-            // Keep using default 60 seconds if API call fails
+            throw error; // Let the caller handle the error
         }
     }
 
