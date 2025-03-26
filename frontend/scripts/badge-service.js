@@ -73,6 +73,16 @@ export class BadgeService {
                 };
             });
 
+            // Sort badges: completed first, then alphabetically by name
+            badges.sort((a, b) => {
+                // First sort by completion status
+                if (a.earned && !b.earned) return -1;
+                if (!a.earned && b.earned) return 1;
+                
+                // Then sort alphabetically by name
+                return a.name.localeCompare(b.name);
+            });
+
             // Count completed badges
             const completedCount = badges.filter(badge => badge.earned).length;
 
