@@ -43,74 +43,104 @@ export class BadgeService {
     }
 
     async getAllQuizScores() {
-        try {
-            // First get the list of available quizzes
-            const quizResponse = await this.apiService.fetchWithAuth('quizzes/list');
-            if (!quizResponse.success) {
-                throw new Error('Failed to fetch quiz list');
-            }
-
-            const quizIds = quizResponse.data.map(quiz => quiz.id);
-            const progressPromises = quizIds.map(async (quizId) => {
-                try {
-                    const savedProgress = await this.apiService.getQuizProgress(quizId);
-                    if (!savedProgress || !savedProgress.success) {
-                        return { 
-                            quizName: quizId, 
-                            score: 0, 
-                            questionsAnswered: 0, 
-                            status: 'not-started',
-                            experience: 0
-                        };
-                    }
-                    
-                    const progress = savedProgress.data;
-                    return {
-                        quizName: quizId,
-                        score: progress.score || 0,
-                        questionsAnswered: progress.questionsAnswered || 0,
-                        status: progress.status || 'in-progress',
-                        experience: progress.experience || 0,
-                        completedAt: progress.completedAt || null
-                    };
-                } catch (error) {
-                    console.error(`Error loading progress for quiz ${quizId}:`, error);
-                    return null;
+        const maxRetries = 3;
+        const retryDelay = 2000; // 2 seconds
+        
+        for (let attempt = 1; attempt <= maxRetries; attempt++) {
+            try {
+                // First get the list of available quizzes
+                const quizResponse = await this.apiService.fetchWithAuth('quizzes/list');
+                if (!quizResponse.success) {
+                    throw new Error('Failed to fetch quiz list');
                 }
-            });
-            
-            const results = await Promise.all(progressPromises);
-            return results.filter(Boolean);
-        } catch (error) {
-            console.error('Error fetching all quiz scores:', error);
-            return [];
+
+                const quizIds = quizResponse.data.map(quiz => quiz.id);
+                
+                // Process quizzes in smaller batches to avoid timeout
+                const batchSize = 5;
+                const results = [];
+                
+                for (let i = 0; i < quizIds.length; i += batchSize) {
+                    const batch = quizIds.slice(i, i + batchSize);
+                    const batchPromises = batch.map(async (quizId) => {
+                        try {
+                            const savedProgress = await this.apiService.getQuizProgress(quizId);
+                            if (!savedProgress || !savedProgress.success) {
+                                return { 
+                                    quizName: quizId, 
+                                    score: 0, 
+                                    questionsAnswered: 0, 
+                                    status: 'not-started',
+                                    experience: 0
+                                };
+                            }
+                            
+                            const progress = savedProgress.data;
+                            return {
+                                quizName: quizId,
+                                score: progress.score || 0,
+                                questionsAnswered: progress.questionsAnswered || 0,
+                                status: progress.status || 'in-progress',
+                                experience: progress.experience || 0,
+                                completedAt: progress.completedAt || null
+                            };
+                        } catch (error) {
+                            console.error(`Error loading progress for quiz ${quizId}:`, error);
+                            return null;
+                        }
+                    });
+                    
+                    const batchResults = await Promise.all(batchPromises);
+                    results.push(...batchResults);
+                }
+                
+                return results.filter(Boolean);
+            } catch (error) {
+                console.warn(`Attempt ${attempt} failed:`, error);
+                if (attempt === maxRetries) {
+                    console.error('Error fetching all quiz scores after all retries:', error);
+                    return [];
+                }
+                await new Promise(resolve => setTimeout(resolve, retryDelay));
+            }
         }
+        return [];
     }
 
     async getCategoryStructure() {
-        try {
-            const response = await this.apiService.fetchWithAuth('categories');
-            if (!response.success) {
-                throw new Error('Failed to fetch categories');
+        const maxRetries = 3;
+        const retryDelay = 2000; // 2 seconds
+        
+        for (let attempt = 1; attempt <= maxRetries; attempt++) {
+            try {
+                const response = await this.apiService.fetchWithAuth('categories');
+                if (!response.success) {
+                    throw new Error('Failed to fetch categories');
+                }
+                
+                // Transform into a more usable structure
+                // { categoryName: [{ id: 'quizId', name: 'Quiz Name', hidden: false }] }
+                const categories = {};
+                
+                response.data.forEach(category => {
+                    categories[category.name] = category.quizzes.map(quiz => ({
+                        id: quiz.id,
+                        name: quiz.name,
+                        hidden: quiz.hidden || false
+                    }));
+                });
+                
+                return categories;
+            } catch (error) {
+                console.warn(`Attempt ${attempt} failed:`, error);
+                if (attempt === maxRetries) {
+                    console.error('Error fetching category structure after all retries:', error);
+                    return null;
+                }
+                await new Promise(resolve => setTimeout(resolve, retryDelay));
             }
-            
-            // Transform into a more usable structure
-            // { categoryName: [{ id: 'quizId', name: 'Quiz Name', hidden: false }] }
-            const categories = {};
-            
-            response.data.forEach(category => {
-                categories[category.name] = category.quizzes.map(quiz => ({
-                    id: quiz.id,
-                    name: quiz.name,
-                    hidden: quiz.hidden || false
-                }));
-            });
-            
-            return categories;
-        } catch (error) {
-            console.error('Error fetching category structure:', error);
-            return null;
         }
+        return null;
     }
 
     async generateQuizCompletionBadges(quizScores, categories) {
