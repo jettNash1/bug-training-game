@@ -25,40 +25,16 @@ export class BadgeService {
             const quizProgress = userData.data.quizProgress || {};
             console.log('Quiz Progress:', quizProgress);
             
-            // 2. Get available quizzes from categories with retries
-            console.log('Fetching category structure...');
-            let categories = null;
-            let retryCount = 0;
-            const maxRetries = 3;
+            // Get all quizzes from the progress data
+            const allQuizzes = Object.keys(quizProgress).map(quizId => ({
+                id: quizId,
+                name: this.formatQuizName(quizId)
+            }));
             
-            while (retryCount < maxRetries) {
-                try {
-                    categories = await this.getCategoryStructure();
-                    console.log('Categories fetched successfully:', categories);
-                    break; // If successful, exit the retry loop
-                } catch (error) {
-                    retryCount++;
-                    console.warn(`Attempt ${retryCount} to fetch categories failed:`, error);
-                    if (retryCount === maxRetries) {
-                        throw new Error('Failed to load quiz categories after multiple attempts');
-                    }
-                    // Wait before retrying (exponential backoff)
-                    await new Promise(resolve => setTimeout(resolve, Math.pow(2, retryCount) * 1000));
-                }
-            }
-
-            if (!categories) {
-                throw new Error('Failed to load quiz categories');
-            }
-
-            // Get all visible quizzes
-            const allQuizzes = Object.values(categories).flatMap(categoryQuizzes => 
-                categoryQuizzes.filter(quiz => !quiz.hidden)
-            );
             console.log('Available Quizzes:', allQuizzes);
 
             if (allQuizzes.length === 0) {
-                console.warn('No visible quizzes found in categories');
+                console.warn('No quizzes found in user progress');
                 return {
                     badges: [],
                     totalBadges: 0,
@@ -66,10 +42,9 @@ export class BadgeService {
                 };
             }
 
-            // 3. Process quiz completion status
+            // Process quiz completion status
             const badges = allQuizzes.map(quiz => {
-                const quizName = quiz.id;
-                const progress = quizProgress[quizName] || {};
+                const progress = quizProgress[quiz.id] || {};
                 
                 // Check if quiz is complete based on status or progress
                 const isCompleted = progress && (
@@ -79,7 +54,7 @@ export class BadgeService {
                     (typeof progress.questionsAnswered === 'number' && progress.questionsAnswered >= 15)
                 );
 
-                console.log(`Quiz ${quizName} completion status:`, {
+                console.log(`Quiz ${quiz.id} completion status:`, {
                     isCompleted,
                     progress,
                     status: progress.status,
@@ -88,13 +63,13 @@ export class BadgeService {
                 });
 
                 return {
-                    id: `quiz-${quizName}`,
-                    name: quiz.name ? `${quiz.name} Master` : `${this.formatQuizName(quizName)} Master`,
-                    description: quiz.name ? `Complete the ${quiz.name} quiz` : `Complete the ${this.formatQuizName(quizName)} quiz`,
+                    id: `quiz-${quiz.id}`,
+                    name: `${quiz.name} Master`,
+                    description: `Complete the ${quiz.name} quiz`,
                     icon: 'fa-solid fa-check-circle',
                     earned: isCompleted,
                     completionDate: isCompleted ? (progress.lastUpdated || progress.completedAt || new Date().toISOString()) : null,
-                    quizId: quizName
+                    quizId: quiz.id
                 };
             });
 
@@ -256,7 +231,7 @@ export class BadgeService {
     // Helper function to format quiz names
     formatQuizName(quizId) {
         return quizId
-            .split('_')
+            .split(/[-_]/) // Split on either hyphen or underscore
             .map(word => word.charAt(0).toUpperCase() + word.slice(1))
             .join(' ');
     }
