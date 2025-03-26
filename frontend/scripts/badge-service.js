@@ -125,9 +125,13 @@ export class BadgeService {
                 };
             });
 
+            // Add individual quiz completion badges
+            const quizCompletionBadges = await this.generateQuizCompletionBadges(quizScores, categories);
+            earnedBadges.push(...quizCompletionBadges);
+
             return {
                 badges: earnedBadges,
-                totalBadges: this.badges.length,
+                totalBadges: earnedBadges.length,
                 earnedCount: earnedBadges.filter(badge => badge.earned).length
             };
         } catch (error) {
@@ -209,5 +213,33 @@ export class BadgeService {
             console.error('Error fetching category structure:', error);
             return null;
         }
+    }
+
+    async generateQuizCompletionBadges(quizScores, categories) {
+        const quizCompletionBadges = [];
+        
+        // Get all quizzes from categories
+        const allQuizzes = Object.values(categories || {}).flatMap(category => 
+            category.filter(quiz => !quiz.hidden)
+        );
+
+        // Create a badge for each quiz
+        for (const quiz of allQuizzes) {
+            const quizScore = quizScores.find(score => score.quizName === quiz.id);
+            const isCompleted = quizScore && quizScore.questionsAnswered === 15;
+            const completionDate = quizScore?.completedAt || null;
+
+            quizCompletionBadges.push({
+                id: `quiz-${quiz.id}`,
+                name: `${quiz.name} Master`,
+                description: `Complete the ${quiz.name} quiz`,
+                icon: 'fa-solid fa-check-circle',
+                earned: isCompleted,
+                completionDate: completionDate,
+                quizId: quiz.id
+            });
+        }
+
+        return quizCompletionBadges;
     }
 } 

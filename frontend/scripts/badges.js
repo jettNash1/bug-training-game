@@ -196,12 +196,27 @@ class BadgesPage {
         badgeElement.className = `badge-card ${badge.earned ? '' : 'locked'}`;
         badgeElement.id = `badge-${badge.id}`;
         
+        // Format completion date if available
+        let completionDateHtml = '';
+        if (badge.completionDate) {
+            const date = new Date(badge.completionDate);
+            const formattedDate = date.toLocaleDateString('en-GB', {
+                day: 'numeric',
+                month: 'short',
+                year: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+            completionDateHtml = `<div class="badge-completion-date">Completed: ${formattedDate}</div>`;
+        }
+        
         badgeElement.innerHTML = `
             <div class="badge-icon">
                 <i class="${badge.icon}"></i>
             </div>
             <h3 class="badge-name">${badge.name}</h3>
             <p class="badge-description">${badge.description}</p>
+            ${completionDateHtml}
             ${!badge.earned ? '<div class="lock-icon"><i class="fa-solid fa-lock"></i></div>' : ''}
         `;
         
