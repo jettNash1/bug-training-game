@@ -910,9 +910,9 @@ class Admin2Dashboard extends AdminDashboard {
         
         // Set a timeout to ensure the UI updates even if the quiz types fetch hangs
         let timeoutId = setTimeout(() => {
-            console.warn('Quiz types fetch timeout - using fallback');
+            console.warn('Quiz types fetch timeout after 10 seconds - using fallback');
             renderForm(this.getHardcodedQuizTypes());
-        }, 5000);
+        }, 10000); // Increased timeout to 10 seconds
         
         // Fetch the latest quiz types before setting up the form
         this.fetchQuizTypes()
@@ -1074,9 +1074,9 @@ class Admin2Dashboard extends AdminDashboard {
         
         // Set a timeout to ensure the UI updates even if the quiz types fetch hangs
         let timeoutId = setTimeout(() => {
-            console.warn('Quiz types fetch timeout - using fallback for scenarios');
+            console.warn('Quiz types fetch timeout after 10 seconds - using fallback for scenarios');
             renderScenarios(this.getHardcodedQuizTypes());
-        }, 5000);
+        }, 10000); // Increased timeout to 10 seconds
         
         // Get quiz types using the fixed fetchQuizTypes method
         this.fetchQuizTypes()
@@ -1223,7 +1223,8 @@ class Admin2Dashboard extends AdminDashboard {
     // Implement a hardcoded fetchQuizTypes method that handles API failures gracefully
     async fetchQuizTypes() {
         try {
-            // Use the correct API endpoint with /api prefix
+            console.log('Fetching quiz types from API...');
+            // Use the correct API endpoint without /api prefix since it's handled by fetchWithAdminAuth
             const response = await this.apiService.fetchWithAdminAuth('admin/quiz-types');
             
             // Check if the response is successful and has data
@@ -1231,6 +1232,7 @@ class Admin2Dashboard extends AdminDashboard {
                 console.log('Successfully fetched quiz types:', response.data);
                 return response.data;
             } else {
+                console.warn('Quiz types response was not successful:', response);
                 throw new Error(response.message || 'Failed to fetch quiz types');
             }
         } catch (error) {

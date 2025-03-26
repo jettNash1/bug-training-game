@@ -1371,4 +1371,49 @@ router.delete('/schedules/:id', auth, async (req, res) => {
     }
 });
 
+// Get quiz types
+router.get('/quiz-types', auth, async (req, res) => {
+    try {
+        // Verify admin status
+        if (!req.user.isAdmin) {
+            return res.status(403).json({
+                success: false,
+                message: 'Admin access required'
+            });
+        }
+
+        // Read the quizzes directory
+        const quizzesDir = path.resolve(__dirname, '../../frontend/quizzes');
+        const files = await fs.readdir(quizzesDir);
+
+        // Filter and process quiz files
+        const quizTypes = files
+            .filter(file => file.endsWith('-quiz.js') || file === 'standard-script-testing.js' || file === 'automation-interview.js')
+            .map(file => {
+                // Remove the -quiz.js suffix and convert to lowercase
+                let quizName = file.replace('-quiz.js', '').replace('.js', '');
+                // Handle special cases
+                if (quizName === 'CMS-Testing') {
+                    quizName = 'cms-testing';
+                }
+                return quizName.toLowerCase();
+            })
+            .sort(); // Sort alphabetically
+
+        console.log('Found quiz types:', quizTypes);
+        
+        res.json({
+            success: true,
+            data: quizTypes
+        });
+    } catch (error) {
+        console.error('Error getting quiz types:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Failed to get quiz types',
+            error: error.message
+        });
+    }
+});
+
 module.exports = router; 
