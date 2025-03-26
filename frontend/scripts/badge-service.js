@@ -22,9 +22,27 @@ export class BadgeService {
             // Extract quiz progress from user data
             const quizProgress = userData.data.quizProgress || {};
             console.log('Quiz Progress:', quizProgress);
+            
+            // 2. Get available quizzes from categories with retries
+            let categories = null;
+            let retryCount = 0;
+            const maxRetries = 3;
+            
+            while (retryCount < maxRetries) {
+                try {
+                    categories = await this.getCategoryStructure();
+                    break; // If successful, exit the retry loop
+                } catch (error) {
+                    retryCount++;
+                    console.warn(`Attempt ${retryCount} to fetch categories failed:`, error);
+                    if (retryCount === maxRetries) {
+                        throw new Error('Failed to load quiz categories after multiple attempts');
+                    }
+                    // Wait before retrying (exponential backoff)
+                    await new Promise(resolve => setTimeout(resolve, Math.pow(2, retryCount) * 1000));
+                }
+            }
 
-            // 2. Get available quizzes from categories
-            const categories = await this.getCategoryStructure();
             if (!categories) {
                 throw new Error('Failed to load quiz categories');
             }
@@ -163,7 +181,13 @@ export class BadgeService {
         }
 
         try {
-            const response = await this.apiService.fetchWithAuth('categories');
+            // Create a custom fetch options object with a longer timeout
+            const options = {
+                signal: (new AbortController()).signal,
+                timeout: 15000 // Increase timeout to 15 seconds
+            };
+
+            const response = await this.apiService.fetchWithAuth('categories', options);
             if (!response.success) {
                 throw new Error('Failed to fetch categories');
             }
@@ -184,21 +208,8 @@ export class BadgeService {
             return categories;
         } catch (error) {
             console.error('Error fetching category structure:', error);
-            
-            // Return a default structure with known quizzes if API fails
-            const defaultCategories = {
-                'Technical': [
-                    { id: 'initiative', name: 'Initiative', hidden: false },
-                    { id: 'build-verification', name: 'Build Verification', hidden: false },
-                    { id: 'standard-script-testing', name: 'Standard Script Testing', hidden: false },
-                    { id: 'risk-management', name: 'Risk Management', hidden: false },
-                    { id: 'tester-mindset', name: 'Tester Mindset', hidden: false }
-                ]
-            };
-            
-            // Cache the default categories
-            this.cachedCategories = defaultCategories;
-            return defaultCategories;
+            // Don't use fallback structure, throw the error to handle it properly
+            throw error;
         }
     }
 
