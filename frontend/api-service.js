@@ -46,9 +46,9 @@ export class APIService {
             const adminToken = localStorage.getItem('adminToken');
             
             // Ensure we have the correct URL (handle both absolute and relative URLs)
-            const fullUrl = url.startsWith('http') ? url : url.startsWith('/') ? 
-                `${this.baseUrl.replace(/\/api$/, '')}${url}` : 
-                `${this.baseUrl}/${url.replace(/^api\//, '')}`;
+            const fullUrl = url.startsWith('http') ? url : 
+                          url.startsWith('/') ? `${this.baseUrl.replace(/\/api$/, '')}${url}` : 
+                          `${this.baseUrl}/${url.replace(/^api\//, '')}`;
             
             console.log('Fetching with admin auth:', { 
                 url: fullUrl, 
@@ -96,6 +96,10 @@ export class APIService {
                     const data = JSON.parse(text);
                     return data;
                 } catch (e) {
+                    // If we can't parse as JSON, check if it's an authentication error
+                    if (response.status === 401 || response.status === 403) {
+                        throw new Error('Admin authentication required');
+                    }
                     throw new Error('Server returned HTML instead of JSON. Check API endpoint and authentication.');
                 }
             }

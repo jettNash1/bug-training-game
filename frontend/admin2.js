@@ -276,7 +276,7 @@ class Admin2Dashboard extends AdminDashboard {
             this.showError(`Failed to update dashboard: ${error.message}`);
         }
     }
-
+    
     updateStatistics() {
         const today = new Date().setHours(0, 0, 0, 0);
         
@@ -490,7 +490,7 @@ class Admin2Dashboard extends AdminDashboard {
         if (filteredUsers.length === 0) {
             container.innerHTML = '<div class="no-users">No users match your search criteria</div>';
         }
-
+        
         // Update statistics based on filtered users
         const stats = this.updateStatistics();
         this.updateStatisticsDisplay(stats);
@@ -1224,7 +1224,7 @@ class Admin2Dashboard extends AdminDashboard {
     async fetchQuizTypes() {
         try {
             // Use the correct API endpoint with /api prefix
-            const response = await this.apiService.fetchWithAdminAuth('/admin/quiz-types');
+            const response = await this.apiService.fetchWithAdminAuth('admin/quiz-types');
             
             // Check if the response is successful and has data
             if (response.success && response.data) {
