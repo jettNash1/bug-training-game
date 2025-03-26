@@ -18,21 +18,43 @@ export class BadgeService {
                 throw new Error('Failed to load user data');
             }
 
-            // Get quiz results from user data
+            // Get quiz results and progress from user data
             const quizResults = userData.data.quizResults || [];
-            
-            // Create a badge for each completed quiz
-            const badges = quizResults
-                .filter(result => result.questionsAnswered === 15) // Only completed quizzes
-                .map(result => ({
-                    id: `quiz-${result.quizName}`,
-                    name: `${result.quizName} Master`,
-                    description: `Complete the ${result.quizName} quiz`,
+            const quizProgress = userData.data.quizProgress || {};
+
+            // Create a set to track unique completed quizzes
+            const completedQuizzes = new Set();
+
+            // Check quiz results for completed quizzes
+            quizResults.forEach(result => {
+                if (result.questionsAnswered === 15) {
+                    completedQuizzes.add(result.quizName);
+                }
+            });
+
+            // Check quiz progress for completed quizzes
+            Object.entries(quizProgress).forEach(([quizName, progress]) => {
+                if (progress.questionsAnswered === 15) {
+                    completedQuizzes.add(quizName);
+                }
+            });
+
+            // Create badges for completed quizzes
+            const badges = Array.from(completedQuizzes).map(quizName => {
+                // Find the corresponding result or progress for completion date
+                const result = quizResults.find(r => r.quizName === quizName);
+                const progress = quizProgress[quizName];
+                
+                return {
+                    id: `quiz-${quizName}`,
+                    name: `${quizName} Master`,
+                    description: `Complete the ${quizName} quiz`,
                     icon: 'fa-solid fa-check-circle',
                     earned: true,
-                    completionDate: result.completedAt || null,
-                    quizId: result.quizName
-                }));
+                    completionDate: (result?.completedAt || progress?.lastUpdated || null),
+                    quizId: quizName
+                };
+            });
 
             return {
                 badges,
