@@ -515,14 +515,14 @@ class Admin2Dashboard extends AdminDashboard {
                         Default seconds per question (0-300):
                     </label>
                     <div class="input-with-button">
-                    <input 
-                        type="number" 
+                        <input 
+                            type="number" 
                             id="default-timer-value" 
-                        min="0" 
-                        max="300" 
+                            min="0" 
+                            max="300" 
                             value="${defaultValue}"
-                        class="settings-input"
-                    />
+                            class="settings-input"
+                        />
                         <button id="save-default-timer-btn" class="action-button">Save Default</button>
                     </div>
                     <small>Set to 0 to disable the timer completely.</small>
@@ -557,7 +557,7 @@ class Admin2Dashboard extends AdminDashboard {
                                 id="quiz-timer-value" 
                                 min="0" 
                                 max="300" 
-                                value="60"
+                                value="${defaultValue}"
                                 class="settings-input"
                                 disabled
                             />
@@ -582,70 +582,110 @@ class Admin2Dashboard extends AdminDashboard {
             </div>
         `;
         
-        // Apply some styles to make it look better
-        const style = document.createElement('style');
-        style.textContent = `
-            .timer-settings-form h4 {
-                margin-top: 1.5rem;
-                margin-bottom: 0.5rem;
-                border-bottom: 1px solid #eee;
-                padding-bottom: 0.5rem;
-            }
-            .input-with-button {
-                display: flex;
-                gap: 10px;
-                align-items: center;
-                margin-bottom: 0.5rem;
-            }
-            .action-button.secondary {
-                background-color: #6c757d;
-            }
-            .action-button.secondary:hover {
-                background-color: #5a6268;
-            }
-            .mt-4 {
-                margin-top: 1.5rem;
-            }
-            .current-timer-settings {
-                background-color: #f8f9fa;
-                padding: 15px;
-                border-radius: 5px;
-                margin-top: 1rem;
-            }
-            .default-timer-display {
-                margin-bottom: 10px;
-                font-size: 16px;
-            }
-            .custom-timers-list {
-                margin-top: 15px;
-            }
-            .custom-timers-list h5 {
-                margin-bottom: 10px;
-                font-size: 14px;
-                color: #666;
-            }
-            .timer-table {
-                width: 100%;
-                border-collapse: collapse;
-            }
-            .timer-table th, .timer-table td {
-                padding: 8px;
-                text-align: left;
-                border-bottom: 1px solid #ddd;
-            }
-            .timer-table th {
-                background-color: #eee;
-                font-weight: 600;
-            }
-            .timer-table tr:hover {
-                background-color: #f5f5f5;
-            }
-            .no-custom-timers {
-                color: #666;
-                font-style: italic;
-            }
-        `;
-        timerContainer.appendChild(style);
+        // Add event listeners for quiz selection
+        const quizSelect = document.getElementById('quiz-select');
+        const quizTimerInput = document.getElementById('quiz-timer-value');
+        const saveQuizTimerBtn = document.getElementById('save-quiz-timer-btn');
+        const resetQuizTimerBtn = document.getElementById('reset-quiz-timer-btn');
+        
+        if (quizSelect && quizTimerInput && saveQuizTimerBtn && resetQuizTimerBtn) {
+            quizSelect.addEventListener('change', () => {
+                const selectedQuiz = quizSelect.value;
+                if (selectedQuiz) {
+                    // Enable input and buttons
+                    quizTimerInput.disabled = false;
+                    saveQuizTimerBtn.disabled = false;
+                    resetQuizTimerBtn.disabled = false;
+                    
+                    // Set current value if exists, otherwise use default
+                    quizTimerInput.value = quizTimers[selectedQuiz] ?? defaultValue;
+                } else {
+                    // Disable input and buttons
+                    quizTimerInput.disabled = true;
+                    saveQuizTimerBtn.disabled = true;
+                    resetQuizTimerBtn.disabled = true;
+                    quizTimerInput.value = defaultValue;
+                }
+            });
+            
+            // Save quiz timer button
+            saveQuizTimerBtn.addEventListener('click', async () => {
+                const selectedQuiz = quizSelect.value;
+                if (!selectedQuiz) return;
+                
+                try {
+                    const newValue = parseInt(quizTimerInput.value, 10);
+                    
+                    // Validate
+                    if (isNaN(newValue) || newValue < 0 || newValue > 300) {
+                        alert('Timer value must be between 0 and 300 seconds');
+                        return;
+                    }
+                    
+                    // Update UI
+                    saveQuizTimerBtn.disabled = true;
+                    saveQuizTimerBtn.textContent = 'Saving...';
+                    
+                    // Call API to save
+                    const response = await this.apiService.updateSingleQuizTimer(selectedQuiz, newValue);
+                    
+                    if (response.success) {
+                        // Update local cache
+                        this.timerSettings = response.data;
+                        
+                        // Show feedback
+                        const message = newValue === 0 
+                            ? `Timer disabled for ${this.formatQuizName(selectedQuiz)}` 
+                            : `Timer set to ${newValue} seconds for ${this.formatQuizName(selectedQuiz)}`;
+                            
+                        this.showSuccess(message);
+                        this.displayTimerSettings(); // Refresh the display
+                    } else {
+                        throw new Error(response.message || 'Failed to save settings');
+                    }
+                } catch (error) {
+                    console.error('Failed to save quiz timer settings:', error);
+                    this.showError(`Error: ${error.message || 'Failed to save settings'}`);
+                } finally {
+                    // Reset button
+                    saveQuizTimerBtn.disabled = false;
+                    saveQuizTimerBtn.textContent = 'Set Timer';
+                }
+            });
+            
+            // Reset quiz timer button
+            resetQuizTimerBtn.addEventListener('click', async () => {
+                const selectedQuiz = quizSelect.value;
+                if (!selectedQuiz) return;
+                
+                try {
+                    // Update UI
+                    resetQuizTimerBtn.disabled = true;
+                    resetQuizTimerBtn.textContent = 'Resetting...';
+                    
+                    // Call API to reset
+                    const response = await this.apiService.resetQuizTimer(selectedQuiz);
+                    
+                    if (response.success) {
+                        // Update local cache
+                        this.timerSettings = response.data;
+                        
+                        // Show feedback
+                        this.showSuccess(`Timer reset to default for ${this.formatQuizName(selectedQuiz)}`);
+                        this.displayTimerSettings(); // Refresh the display
+                    } else {
+                        throw new Error(response.message || 'Failed to reset settings');
+                    }
+                } catch (error) {
+                    console.error('Failed to reset quiz timer settings:', error);
+                    this.showError(`Error: ${error.message || 'Failed to reset settings'}`);
+                } finally {
+                    // Reset button
+                    resetQuizTimerBtn.disabled = false;
+                    resetQuizTimerBtn.textContent = 'Reset to Default';
+                }
+            });
+        }
         
         // Add event listener for the default timer save button
         const saveDefaultButton = document.getElementById('save-default-timer-btn');
@@ -693,147 +733,6 @@ class Admin2Dashboard extends AdminDashboard {
                     // Reset button
                     saveDefaultButton.disabled = false;
                     saveDefaultButton.textContent = 'Save Default';
-                }
-            });
-        }
-        
-        // Add event listeners for quiz selection dropdown
-        const quizSelect = document.getElementById('quiz-select');
-        const quizTimerInput = document.getElementById('quiz-timer-value');
-        const saveQuizTimerButton = document.getElementById('save-quiz-timer-btn');
-        const resetQuizTimerButton = document.getElementById('reset-quiz-timer-btn');
-        
-        if (quizSelect && quizTimerInput && saveQuizTimerButton && resetQuizTimerButton) {
-            quizSelect.addEventListener('change', () => {
-                const selectedQuiz = quizSelect.value;
-                if (selectedQuiz) {
-                    // Enable the timer input and buttons
-                    quizTimerInput.disabled = false;
-                    saveQuizTimerButton.disabled = false;
-                    resetQuizTimerButton.disabled = false;
-                    
-                    // Set the input value to the current setting for this quiz or the default
-                    const quizSetting = quizTimers[selectedQuiz];
-                    quizTimerInput.value = quizSetting !== undefined ? quizSetting : defaultValue;
-                } else {
-                    // Disable the timer input and buttons if no quiz is selected
-                    quizTimerInput.disabled = true;
-                    saveQuizTimerButton.disabled = true;
-                    resetQuizTimerButton.disabled = true;
-                    quizTimerInput.value = 60;
-                }
-            });
-            
-            // Add event listener for saving quiz-specific timer
-            saveQuizTimerButton.addEventListener('click', async () => {
-                const selectedQuiz = quizSelect.value;
-                if (!selectedQuiz) return;
-                
-                try {
-                    // Get value from input and ensure it's a number
-                    const rawInput = quizTimerInput.value.trim();
-                    console.log(`Raw input value: "${rawInput}"`);
-                    
-                    // Parse as integer and validate
-                    const quizTimerValue = Number(rawInput);
-                    console.log(`Parsed value: ${quizTimerValue}, type: ${typeof quizTimerValue}, isNaN: ${isNaN(quizTimerValue)}`);
-                    
-                    // Validate
-                    if (isNaN(quizTimerValue) || quizTimerValue < 0 || quizTimerValue > 300) {
-                        alert('Timer value must be between 0 and 300 seconds');
-                        return;
-                    }
-                    
-                    // Update UI
-                    saveQuizTimerButton.disabled = true;
-                    saveQuizTimerButton.textContent = 'Saving...';
-                    
-                    // Set a timeout for debugging
-                    setTimeout(async () => {
-                        try {
-                            // Call API to save this specific quiz timer
-                            const response = await this.apiService.updateSingleQuizTimer(selectedQuiz, quizTimerValue);
-                            
-                            // Success
-                            if (response.success) {
-                                // Update local cache
-                                this.timerSettings = response.data;
-                                
-                                // Show feedback
-                                const quizName = this.formatQuizName(selectedQuiz);
-                                const message = quizTimerValue === 0 
-                                    ? `Timer disabled for ${quizName}!` 
-                                    : `Timer for ${quizName} set to ${quizTimerValue} seconds!`;
-                                    
-                                this.showSuccess(message);
-                                this.displayTimerSettings(); // Refresh the display
-                            } else {
-                                throw new Error(response.message || 'Failed to save settings');
-                            }
-                        } catch (innerError) {
-                            console.error('Failed to save quiz timer settings:', innerError);
-                            this.showError(`Error: ${innerError.message || 'Failed to save settings'}`);
-                            
-                            // Reset button state
-                            saveQuizTimerButton.disabled = false;
-                            saveQuizTimerButton.textContent = 'Set Timer';
-                        }
-                    }, 100); // Short delay to ensure the UI updates before the API call
-                } catch (error) {
-                    console.error('Failed to save quiz timer settings:', error);
-                    this.showError(`Error: ${error.message || 'Failed to save settings'}`);
-                    
-                    // Reset button state
-                    saveQuizTimerButton.disabled = false;
-                    saveQuizTimerButton.textContent = 'Set Timer';
-                }
-            });
-            
-            // Add event listener for resetting quiz timer to default
-            resetQuizTimerButton.addEventListener('click', async () => {
-                const selectedQuiz = quizSelect.value;
-                if (!selectedQuiz) return;
-                
-                try {
-                    // Update UI
-                    resetQuizTimerButton.disabled = true;
-                    resetQuizTimerButton.textContent = 'Resetting...';
-                    
-                    // Check if this quiz actually has a custom setting
-                    if (quizTimers[selectedQuiz] === undefined) {
-                        this.showInfo(`${this.formatQuizName(selectedQuiz)} is already using the default timer.`);
-                        resetQuizTimerButton.disabled = false;
-                        resetQuizTimerButton.textContent = 'Reset to Default';
-                        return;
-                    }
-                    
-                    // Call API to reset this specific quiz timer
-                    const response = await this.apiService.resetQuizTimer(selectedQuiz);
-                    
-                    // Success
-                    if (response.success) {
-                        // Update local cache
-                        this.timerSettings = response.data;
-                        
-                        // Show feedback
-                        const quizName = this.formatQuizName(selectedQuiz);
-                        this.showSuccess(`${quizName} is now using the default timer setting.`);
-                        
-                        // Reset the input to the default value
-                        quizTimerInput.value = this.timerSettings.defaultSeconds;
-                        
-                        // Refresh the display
-                        this.displayTimerSettings();
-                    } else {
-                        throw new Error(response.message || 'Failed to reset timer');
-                    }
-                } catch (error) {
-                    console.error('Failed to reset quiz timer:', error);
-                    this.showError(`Error: ${error.message || 'Failed to reset timer'}`);
-                } finally {
-                    // Reset button
-                    resetQuizTimerButton.disabled = false;
-                    resetQuizTimerButton.textContent = 'Reset to Default';
                 }
             });
         }
@@ -1931,7 +1830,7 @@ class Admin2Dashboard extends AdminDashboard {
             closeBtn.addEventListener('keydown', (e) => {
                 if (e.key === 'Enter' || e.key === ' ') {
                     e.preventDefault();
-                overlay.remove();
+                    overlay.remove();
                 }
             });
             
@@ -3044,6 +2943,45 @@ class Admin2Dashboard extends AdminDashboard {
         } catch (error) {
             console.error('Error showing schedule section:', error);
             return false;
+        }
+    }
+
+    async updateQuizTimerSettings(quizName, seconds) {
+        try {
+            // Get current settings first
+            const currentSettings = await this.apiService.fetchWithAdminAuth('/admin/settings/quiz-timer');
+            
+            // Update the quiz-specific timer
+            const updatedSettings = {
+                secondsPerQuestion: currentSettings.data.secondsPerQuestion,
+                quizTimers: {
+                    ...currentSettings.data.quizTimers,
+                    [quizName]: seconds
+                }
+            };
+            
+            // Save the updated settings
+            const response = await this.apiService.fetchWithAdminAuth('/admin/settings/quiz-timer', {
+                method: 'POST',
+                body: JSON.stringify(updatedSettings)
+            });
+            
+            if (response.success) {
+                // Update local cache
+                this.quizTimerSettings = response.data;
+                localStorage.setItem('quizTimerSettings', JSON.stringify(response.data));
+                
+                // Refresh the display
+                this.displayTimerSettings();
+                
+                // Show success message
+                this.showInfoMessage(`Timer for ${quizName} updated to ${seconds} seconds`);
+            } else {
+                throw new Error(response.message || 'Failed to update timer settings');
+            }
+        } catch (error) {
+            console.error('Error updating quiz timer:', error);
+            this.showErrorMessage(`Failed to update timer: ${error.message}`);
         }
     }
 }

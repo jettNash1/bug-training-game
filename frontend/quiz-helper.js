@@ -1,4 +1,5 @@
 import { QuizUser } from './QuizUser.js';
+import { ApiService } from './api-service.js';
 
 export class BaseQuiz {
     constructor(config) {
@@ -10,14 +11,32 @@ export class BaseQuiz {
         this.outcomeScreen = document.getElementById('outcome-screen');
         this.isLoading = false;
         this.questionTimer = null;
+        this.apiService = new ApiService();
         
-        // Get timer value from localStorage if available, otherwise use default 60 seconds
-        const storedTimerValue = localStorage.getItem('quizTimerValue');
-        // Allow 0 as a valid value (timer disabled)
-        this.timePerQuestion = storedTimerValue !== null ? parseInt(storedTimerValue, 10) * 1000 : 60000; // convert to milliseconds
-        
+        // Initialize timer value
+        this.timePerQuestion = 60000; // Default 60 seconds
         this.remainingTime = this.timePerQuestion;
         this.questionStartTime = null; // Track when each question starts
+        
+        // Load timer settings from API
+        this.loadTimerSettings();
+    }
+
+    async loadTimerSettings() {
+        try {
+            const timerValue = await this.apiService.getQuizTimerValue(this.quizName);
+            this.timePerQuestion = timerValue * 1000; // Convert to milliseconds
+            this.remainingTime = this.timePerQuestion;
+            
+            // Update timer display if it exists
+            const timerContainer = document.getElementById('timer-container');
+            if (timerContainer) {
+                this.updateTimerDisplay();
+            }
+        } catch (error) {
+            console.error('Failed to load timer settings:', error);
+            // Keep using default 60 seconds if API call fails
+        }
     }
 
     showError(message) {
@@ -54,7 +73,7 @@ export class BaseQuiz {
         this.showQuestion();
     }
 
-    initializeTimer() {
+    async initializeTimer() {
         // If timer is disabled (value is 0), don't create timer UI
         if (this.timePerQuestion === 0) {
             // Clear any existing timer if it exists
@@ -82,10 +101,13 @@ export class BaseQuiz {
             this.gameScreen.insertBefore(timerContainer, this.gameScreen.firstChild);
         }
 
-        // Ensure timer value is up to date by checking localStorage again
-        const storedTimerValue = localStorage.getItem('quizTimerValue');
-        if (storedTimerValue !== null) {
-            this.timePerQuestion = parseInt(storedTimerValue, 10) * 1000; // convert to milliseconds
+        // Ensure timer value is up to date by checking API
+        try {
+            const timerValue = await this.apiService.getQuizTimerValue(this.quizName);
+            this.timePerQuestion = timerValue * 1000; // convert to milliseconds
+        } catch (error) {
+            console.error('Failed to refresh timer settings:', error);
+            // Keep using current timer value if API call fails
         }
 
         // Reset and start timer
