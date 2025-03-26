@@ -583,7 +583,19 @@ class Admin2Dashboard extends AdminDashboard {
                     </div>
                     
                     <div class="custom-timers-list">
-                        <h5>Quiz-Specific Settings:</h5>
+                        <div class="custom-timers-header">
+                            <h5>Quiz-Specific Settings:</h5>
+                            ${Object.keys(quizTimers).length > 0 ? `
+                                <div class="custom-timers-actions">
+                                    <label class="select-all-label">
+                                        <input type="checkbox" id="select-all-custom-timers">
+                                        Select All
+                                    </label>
+                                    <button id="clear-selected-timers" class="action-button danger" disabled>Clear Selected</button>
+                                    <button id="clear-all-timers" class="action-button danger">Clear All</button>
+                                </div>
+                            ` : ''}
+                        </div>
                         ${this.generateQuizTimersList(quizTimers)}
                     </div>
                 </div>
@@ -595,6 +607,104 @@ class Admin2Dashboard extends AdminDashboard {
         const quizTimerInput = document.getElementById('quiz-timer-value');
         const saveQuizTimerBtn = document.getElementById('save-quiz-timer-btn');
         const resetQuizTimerBtn = document.getElementById('reset-quiz-timer-btn');
+        
+        // Add event listeners for custom timer clearing
+        const selectAllCustomTimers = document.getElementById('select-all-custom-timers');
+        const clearSelectedTimersBtn = document.getElementById('clear-selected-timers');
+        const clearAllTimersBtn = document.getElementById('clear-all-timers');
+        const timerCheckboxes = document.querySelectorAll('.timer-checkbox');
+        
+        if (selectAllCustomTimers && clearSelectedTimersBtn && clearAllTimersBtn) {
+            // Handle select all checkbox
+            selectAllCustomTimers.addEventListener('change', () => {
+                timerCheckboxes.forEach(checkbox => {
+                    checkbox.checked = selectAllCustomTimers.checked;
+                });
+                clearSelectedTimersBtn.disabled = !selectAllCustomTimers.checked;
+            });
+            
+            // Handle individual checkboxes
+            timerCheckboxes.forEach(checkbox => {
+                checkbox.addEventListener('change', () => {
+                    const anyChecked = Array.from(timerCheckboxes).some(cb => cb.checked);
+                    clearSelectedTimersBtn.disabled = !anyChecked;
+                    
+                    // Update select all checkbox state
+                    selectAllCustomTimers.checked = Array.from(timerCheckboxes).every(cb => cb.checked);
+                });
+            });
+            
+            // Handle clear selected button
+            clearSelectedTimersBtn.addEventListener('click', async () => {
+                const selectedQuizzes = Array.from(timerCheckboxes)
+                    .filter(checkbox => checkbox.checked)
+                    .map(checkbox => checkbox.dataset.quiz);
+                
+                if (selectedQuizzes.length === 0) {
+                    this.showInfo('Please select at least one quiz timer to clear');
+                    return;
+                }
+                
+                if (!confirm(`Are you sure you want to clear the custom timer settings for ${selectedQuizzes.length} selected quiz(es)?`)) {
+                    return;
+                }
+                
+                try {
+                    clearSelectedTimersBtn.disabled = true;
+                    clearSelectedTimersBtn.textContent = 'Clearing...';
+                    
+                    // Clear each selected timer
+                    for (const quiz of selectedQuizzes) {
+                        await this.apiService.resetQuizTimer(quiz);
+                    }
+                    
+                    // Refresh timer settings
+                    const response = await this.apiService.getQuizTimerSettings();
+                    if (response.success) {
+                        this.timerSettings = response.data;
+                        this.showSuccess('Selected quiz timers cleared successfully');
+                        this.displayTimerSettings(); // Refresh the display
+                    }
+                } catch (error) {
+                    console.error('Failed to clear selected timers:', error);
+                    this.showError(`Error: ${error.message || 'Failed to clear timers'}`);
+                    clearSelectedTimersBtn.disabled = false;
+                    clearSelectedTimersBtn.textContent = 'Clear Selected';
+                }
+            });
+            
+            // Handle clear all button
+            clearAllTimersBtn.addEventListener('click', async () => {
+                const totalTimers = Object.keys(quizTimers).length;
+                if (!confirm(`Are you sure you want to clear ALL custom timer settings (${totalTimers} quiz(es))? This action cannot be undone.`)) {
+                    return;
+                }
+                
+                try {
+                    clearAllTimersBtn.disabled = true;
+                    clearAllTimersBtn.textContent = 'Clearing...';
+                    
+                    // Clear all timers
+                    const allQuizzes = Object.keys(quizTimers);
+                    for (const quiz of allQuizzes) {
+                        await this.apiService.resetQuizTimer(quiz);
+                    }
+                    
+                    // Refresh timer settings
+                    const response = await this.apiService.getQuizTimerSettings();
+                    if (response.success) {
+                        this.timerSettings = response.data;
+                        this.showSuccess('All custom quiz timers cleared successfully');
+                        this.displayTimerSettings(); // Refresh the display
+                    }
+                } catch (error) {
+                    console.error('Failed to clear all timers:', error);
+                    this.showError(`Error: ${error.message || 'Failed to clear timers'}`);
+                    clearAllTimersBtn.disabled = false;
+                    clearAllTimersBtn.textContent = 'Clear All';
+                }
+            });
+        }
         
         if (quizSelect && quizTimerInput && saveQuizTimerBtn && resetQuizTimerBtn) {
             quizSelect.addEventListener('change', () => {
@@ -761,6 +871,7 @@ class Admin2Dashboard extends AdminDashboard {
             <table class="timer-table">
                 <thead>
                     <tr>
+                        <th style="width: 40px;"></th>
                         <th>Quiz</th>
                         <th>Timer Setting</th>
                     </tr>
@@ -768,6 +879,9 @@ class Admin2Dashboard extends AdminDashboard {
                 <tbody>
                     ${quizTimerEntries.map(([quizName, seconds]) => `
                         <tr>
+                            <td>
+                                <input type="checkbox" class="timer-checkbox" data-quiz="${quizName}">
+                            </td>
                             <td>${this.formatQuizName(quizName)}</td>
                             <td>${seconds === 0 ? 'Disabled' : `${seconds} seconds`}</td>
                         </tr>
@@ -3990,6 +4104,89 @@ styleElement.textContent = `
     @keyframes slide-in {
         from { transform: translateX(100%); opacity: 0; }
         to { transform: translateX(0); opacity: 1; }
+    }
+
+    /* Add styles for timer settings */
+    .timer-settings {
+        padding: 20px;
+        max-width: 800px;
+        margin: 0 auto;
+    }
+    
+    .timer-table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 10px;
+    }
+    
+    .timer-table th,
+    .timer-table td {
+        padding: 8px;
+        text-align: left;
+        border-bottom: 1px solid #ddd;
+    }
+    
+    .timer-table th {
+        background-color: #f5f5f5;
+        font-weight: 600;
+    }
+    
+    .timer-checkbox {
+        width: 16px;
+        height: 16px;
+        cursor: pointer;
+    }
+    
+    .custom-timers-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 15px;
+        padding: 10px 0;
+        border-bottom: 2px solid #eee;
+    }
+    
+    .custom-timers-actions {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+    
+    .select-all-label {
+        display: flex;
+        align-items: center;
+        gap: 5px;
+        cursor: pointer;
+        user-select: none;
+    }
+    
+    .action-button {
+        padding: 6px 12px;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 14px;
+        transition: all 0.2s ease;
+    }
+    
+    .action-button:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+    }
+    
+    .action-button.danger {
+        background-color: #dc3545;
+        color: white;
+    }
+    
+    .action-button.danger:hover:not(:disabled) {
+        background-color: #c82333;
+    }
+    
+    .no-custom-timers {
+        color: #666;
+        font-style: italic;
+        margin: 20px 0;
     }
 `;
 document.head.appendChild(styleElement); 
