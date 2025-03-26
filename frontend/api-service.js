@@ -34,67 +34,6 @@ export class APIService {
         return '/api';
     }
 
-    // Regular authenticated fetch method
-    async fetchWithAuth(endpoint, options = {}) {
-        try {
-            const token = localStorage.getItem('token');
-            if (!token) {
-                throw new Error('No authentication token found');
-            }
-
-            const fullUrl = endpoint.startsWith('http') ? endpoint : 
-                          endpoint.startsWith('/') ? `${this.baseUrl.replace(/\/api$/, '')}${endpoint}` : 
-                          `${this.baseUrl}/${endpoint.replace(/^api\//, '')}`;
-
-            const headers = {
-                'Authorization': `Bearer ${token}`,
-                'Content-Type': 'application/json',
-                'Accept': 'application/json',
-                ...options.headers
-            };
-
-            const response = await fetch(fullUrl, {
-                ...options,
-                credentials: 'include',
-                headers
-            });
-
-            const data = await response.json();
-
-            if (!response.ok) {
-                throw new Error(data.message || `Request failed with status ${response.status}`);
-            }
-
-            return data;
-        } catch (error) {
-            console.error('Request failed:', error);
-            if (error.message.includes('No authentication token found')) {
-                window.location.href = '/login.html';
-            }
-            throw error;
-        }
-    }
-
-    // Get quiz progress for a specific quiz
-    async getQuizProgress(quizId) {
-        try {
-            return await this.fetchWithAuth(`quiz-progress/${quizId}`);
-        } catch (error) {
-            console.error(`Failed to get quiz progress for ${quizId}:`, error);
-            return null;
-        }
-    }
-
-    // Get user data including quiz results and progress
-    async getUserData() {
-        try {
-            return await this.fetchWithAuth('users/data');
-        } catch (error) {
-            console.error('Failed to get user data:', error);
-            return { success: false, data: null };
-        }
-    }
-
     // Helper method to get admin auth header
     getAdminAuthHeader() {
         const adminToken = localStorage.getItem('adminToken');
@@ -375,6 +314,132 @@ export class APIService {
             console.error('Token refresh error:', error);
             clearTokens();
             throw error;
+        }
+    }
+
+    async fetchWithAuth(url, options = {}) {
+        const token = getAuthToken();
+        if (!token) {
+            throw new Error('No authentication token found');
+        }
+
+        // Create AbortController for timeout
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 second timeout
+        
+        try {
+            // Ensure we have the correct URL (handle both absolute and relative URLs)
+            const fullUrl = url.startsWith('http') ? url : url.startsWith('/') ? 
+                `${this.baseUrl.replace(/\/api$/, '')}${url}` : 
+                `${this.baseUrl}/${url.replace(/^api\//, '')}`;
+            
+            console.log(`Fetching with auth: ${fullUrl}`);
+            
+            // Add signal to options if not already present
+            const fetchOptions = {
+                ...options,
+                credentials: 'include',
+                headers: {
+                    ...options.headers,
+                    'Authorization': `Bearer ${token}`
+                },
+                signal: options.signal || controller.signal
+            };
+            
+            const response = await fetch(fullUrl, fetchOptions);
+            
+            // Clear timeout since fetch completed
+            clearTimeout(timeoutId);
+            
+            if (!response.ok) {
+                if (response.status === 401) {
+                    // Token expired, try to refresh
+                    try {
+                        const refreshToken = localStorage.getItem('refreshToken');
+                        if (!refreshToken) {
+                            throw new Error('No refresh token available');
+                        }
+                        
+                        const refreshData = await this.refreshToken(refreshToken);
+                        if (!refreshData.token) {
+                            throw new Error('Failed to refresh token');
+                        }
+
+                        // Retry original request with new token
+                        return await this.fetchWithAuth(url, options);
+                    } catch (refreshError) {
+                        // If refresh fails, clear tokens and redirect to login
+                        clearTokens();
+                        console.error('Authentication failed. Redirecting to login...');
+                        setTimeout(() => {
+                            window.location.href = '/login.html';
+                        }, 1000);
+                        throw new Error('Authentication failed. Please log in again.');
+                    }
+                }
+                
+                // Get the error text and try to parse as JSON
+                const errorText = await response.text();
+                let errorData;
+                try {
+                    errorData = JSON.parse(errorText);
+                    throw new Error(errorData.message || `API error (${response.status}): ${response.statusText}`);
+                } catch (e) {
+                    // If parsing fails, use the raw text
+                    throw new Error(`API error (${response.status}): ${errorText || response.statusText}`);
+                }
+            }
+            
+            // Try to parse the response as JSON, but handle text responses too
+            const responseText = await response.text();
+            try {
+                return JSON.parse(responseText);
+            } catch (e) {
+                console.warn('Response is not valid JSON, returning as text:', responseText);
+                return { success: true, data: responseText };
+            }
+        } catch (error) {
+            // Clear timeout in case of error
+            clearTimeout(timeoutId);
+            
+            // Special handling for abort errors (timeouts)
+            if (error.name === 'AbortError') {
+                throw new Error('Request timed out. Server may be busy, please try again later.');
+            }
+            
+            // Network errors
+            if (error.message && error.message.includes('Failed to fetch')) {
+                throw new Error('Network error. Please check your internet connection and try again.');
+            }
+            
+            console.error('API request failed:', error);
+            throw error;
+        }
+    }
+
+    async getQuizProgress(quizName) {
+        try {
+            const data = await this.fetchWithAuth(`${this.baseUrl}/users/quiz-progress/${quizName}`);
+            
+            // If data is missing status, determine it based on the progress
+            if (data && data.data && !data.data.status) {
+                const progress = data.data;
+                if (progress.questionsAnswered >= 15) {
+                    progress.status = progress.experience >= 300 ? 'completed' : 'failed';
+                } else if (progress.questionsAnswered >= 10 && progress.experience < 150) {
+                    progress.status = 'failed';
+                } else if (progress.questionsAnswered >= 5 && progress.experience < 50) {
+                    progress.status = 'failed';
+                } else if (progress.questionsAnswered > 0) {
+                    progress.status = 'in-progress';
+                }
+            }
+            
+            console.log('Quiz progress received from API:', { quizName, data });
+            return data;
+        } catch (error) {
+            console.error('Failed to get quiz progress:', error);
+            return null;
         }
     }
 
@@ -825,6 +890,64 @@ export class APIService {
         }
     }
 
+    async getUserData() {
+        try {
+            console.log('Fetching user data from:', `${this.baseUrl}/users/data`);
+            
+            const data = await this.fetchWithAuth(`${this.baseUrl}/users/data`);
+            console.log('User data response:', data);
+            
+            if (!data || !data.success || !data.data) {
+                console.error('User data response indicates failure:', data);
+                throw new Error(data?.message || 'Failed to get user data');
+            }
+
+            // Ensure quiz arrays are lowercase for consistent comparison
+            const allowedQuizzes = (data.data.allowedQuizzes || []).map(quiz => quiz.toLowerCase());
+            const hiddenQuizzes = (data.data.hiddenQuizzes || []).map(quiz => quiz.toLowerCase());
+
+            console.log('User data from API:', {
+                username: data.data.username,
+                userType: data.data.userType,
+                allowedQuizzes,
+                hiddenQuizzes
+            });
+
+            return {
+                success: true,
+                data: {
+                    username: data.data.username,
+                    userType: data.data.userType || 'regular',
+                    allowedQuizzes,
+                    hiddenQuizzes,
+                    quizResults: data.data.quizResults || [],
+                    quizProgress: data.data.quizProgress || {}
+                }
+            };
+        } catch (error) {
+            console.error('Error fetching user data:', error);
+            
+            // Add fallback behavior for development/testing
+            if (window.location.hostname.includes('localhost') || 
+                window.location.hostname.includes('127.0.0.1')) {
+                console.warn('Using fallback user data for development');
+                return {
+                    success: true,
+                    data: {
+                        username: 'test_user',
+                        userType: 'regular',
+                        allowedQuizzes: [],
+                        hiddenQuizzes: [],
+                        quizResults: [],
+                        quizProgress: {}
+                    }
+                };
+            }
+            
+            throw error;
+        }
+    }
+    
     // Quiz timer settings methods
     async getQuizTimerSettings() {
         try {
