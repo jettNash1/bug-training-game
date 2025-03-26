@@ -65,7 +65,7 @@ export class TimeManagementQuiz extends BaseQuiz {
             return;
         }
 
-        // Basic Scenarios (IDs 1-5, 75 XP total)
+        // Basic Scenarios (IDs 1-5)
         this.basicScenarios = [
             {
                 id: 1,
@@ -80,18 +80,18 @@ export class TimeManagementQuiz extends BaseQuiz {
                         tool: 'Calendar Management'
                     },
                     {
-                        text: 'Start working on the first task you see',
-                        outcome: 'Planning ahead is more effective than reactive working.',
+                        text: 'Start working on the first task presented to you within an assigned project',
+                        outcome: 'Planning ahead and prioritising is more effective than reactive working.',
                         experience: -5
                     },
                     {
-                        text: 'Wait for daily assignments',
+                        text: 'Wait for daily assignments to be communicated by project managers',
                         outcome: 'Proactive planning is better than waiting for instructions.',
                         experience: -10
                     },
                     {
-                        text: 'Focus only on today\'s tasks',
-                        outcome: 'Looking ahead helps prevent future bottlenecks.',
+                        text: 'Focus on immediate tasks for the days testing activities',
+                        outcome: 'Looking ahead helps prevent future bottlenecks within projects.',
                         experience: 0
                     }
                 ]
@@ -99,28 +99,28 @@ export class TimeManagementQuiz extends BaseQuiz {
             {
                 id: 2,
                 level: 'Basic',
-                title: 'Workspace Organization',
+                title: 'Workspace Organisation',
                 description: 'How should you prepare your workspace for efficient testing?',
                 options: [
                     {
-                        text: 'Clean workspace, organized email inbox, pinned relevant channels, and charged devices',
-                        outcome: 'Excellent! An organized workspace increases efficiency.',
+                        text: 'Clean workspace, organised email inbox, pinned relevant channels, and charged devices',
+                        outcome: 'Excellent! An organised workspace increases efficiency.',
                         experience: 15,
                         tool: 'Workspace Management'
                     },
                     {
-                        text: 'Keep all channels and tabs open',
+                        text: 'Keep all channels and tabs open to make sure of quick communication and easy access to everything you need',
                         outcome: 'Too many open items can cause confusion and slow you down.',
                         experience: -5
                     },
                     {
-                        text: 'Start working without preparation',
-                        outcome: 'Preparation prevents delays and increases productivity.',
+                        text: 'Start working straight away with open tabs in relation to previous projects for continuity',
+                        outcome: 'Current project reparation prevents delays and increases productivity.',
                         experience: -10
                     },
                     {
-                        text: 'Only focus on device setup',
-                        outcome: 'Complete workspace organization is important.',
+                        text: 'Focus on device setup as to not encounter delays with uncharged devices',
+                        outcome: 'Complete workspace organisation is more important to mitigate reduction in time management of projects.',
                         experience: 0
                     }
                 ]
@@ -132,24 +132,24 @@ export class TimeManagementQuiz extends BaseQuiz {
                 description: 'When should you review project documentation for a new assignment?',
                 options: [
                     {
-                        text: 'Before the first session, using unsold time if needed',
+                        text: 'This should be done before the first session, using unsold time if needed',
                         outcome: 'Perfect! Early preparation ensures efficient testing.',
                         experience: 15,
                         tool: 'Documentation Review'
                     },
                     {
-                        text: 'During the first test session',
-                        outcome: 'Review should be done before testing begins.',
+                        text: 'During the first test session to work in parallel with test execution',
+                        outcome: 'Project review should ideally be done before testing begins to mitigate time constraint issues.',
                         experience: -5
                     },
                     {
-                        text: 'Only when issues arise',
-                        outcome: 'Proactive review prevents issues and saves time.',
+                        text: 'This should be done on an individual basis when issues arise',
+                        outcome: 'Proactive review can prevent project issues and save time.',
                         experience: -10
                     },
                     {
-                        text: 'After the first standup',
-                        outcome: 'Documentation should be reviewed before meetings.',
+                        text: 'After the first standup meeting as initial stand ups should take minimal time',
+                        outcome: 'Documentation should be reviewed before meetings and any related issues raised then.',
                         experience: 0
                     }
                 ]
@@ -167,18 +167,18 @@ export class TimeManagementQuiz extends BaseQuiz {
                         tool: 'Resource Management'
                     },
                     {
-                        text: 'Start testing immediately',
+                        text: 'Start testing immediately to make sure project time lines are kept on track',
                         outcome: 'Checking resources first prevents misdirected effort.',
                         experience: -10
                     },
                     {
-                        text: 'Wait for team instructions',
-                        outcome: 'Proactive preparation is better than waiting.',
+                        text: 'Wait for team instructions from project managers',
+                        outcome: 'Proactive preparation is preferred to waiting for instruction as project managers may be under resourced.',
                         experience: -5
                     },
                     {
-                        text: 'Review yesterday\'s work only',
-                        outcome: 'Current resource status is most important.',
+                        text: 'Review yesterday\'s work to make sure documenting is correctly followed',
+                        outcome: 'Current resource status for the project and scope updates are most important when considering the forthcoming day.',
                         experience: 0
                     }
                 ]
@@ -196,25 +196,25 @@ export class TimeManagementQuiz extends BaseQuiz {
                         tool: 'Meeting Planning'
                     },
                     {
-                        text: 'Schedule back-to-back',
-                        outcome: 'Buffer time is needed for effective meetings.',
+                        text: 'Schedule back-to-back meetings to keep in the same mindset',
+                        outcome: 'Buffer time between meetings is required for mop up and planning. This ensures the best effectiveness to reach meeting goals.',
                         experience: -10
                     },
                     {
-                        text: 'Join at exact start time',
-                        outcome: 'Preparation time ensures productive meetings.',
+                        text: 'Finish current activities and join at the exact start time of the meeting',
+                        outcome: 'Preparation time is required as it ensures more productive meetings.',
                         experience: -5
                     },
                     {
-                        text: 'Focus only on meeting duration',
-                        outcome: 'Consider full meeting impact on schedule.',
+                        text: 'Focus only on meeting duration when planning schedules',
+                        outcome: 'Considering full meeting impact on schedule and meeting content is essential for productivity.',
                         experience: 0
                     }
                 ]
             }
         ];
 
-        // Intermediate Scenarios (IDs 6-10, 125 XP total)
+        // Intermediate Scenarios (IDs 6-10)
         this.intermediateScenarios = [
             {
                 id: 6,
@@ -223,24 +223,24 @@ export class TimeManagementQuiz extends BaseQuiz {
                 description: 'How do you determine appropriate time allocation for test activities?',
                 options: [
                     {
-                        text: 'Review SOW timings, environment count, software size, and core user journeys',
+                        text: 'Review Statement Of Work timings, environment count, software size, and core user journeys',
                         outcome: 'Excellent! A comprehensive review ensures accurate timing.',
                         experience: 20,
                         tool: 'Time Estimation'
                     },
                     {
-                        text: 'Use standard timings for all projects',
-                        outcome: 'Each project needs custom time estimation.',
+                        text: 'Use a standard default timing for all projects that require test activities',
+                        outcome: 'Each project needs their own specific custom time estimation relating to their needs.',
                         experience: -15
                     },
                     {
-                        text: 'Base estimates on previous similar projects only',
-                        outcome: 'Current project specifics need consideration.',
+                        text: 'Base estimates on previous similar projects that have been worked on',
+                        outcome: 'Current project specifics always need to be taken into consideration.',
                         experience: -10
                     },
                     {
-                        text: 'Estimate without reviewing scope',
-                        outcome: 'Scope review is crucial for timing.',
+                        text: 'Leave out a scope review when estimating the project timings',
+                        outcome: 'Scope review is crucial for timing as it takes into consideration what needs to be tested.',
                         experience: -5
                     }
                 ]
@@ -258,18 +258,18 @@ export class TimeManagementQuiz extends BaseQuiz {
                         tool: 'Workload Management'
                     },
                     {
-                        text: 'Divide equally by number',
-                        outcome: 'Task division should consider experience levels.',
+                        text: 'Divide tasks equally between the team by number',
+                        outcome: 'Task division should consider experience levels as some testers may not be familiar with a certain task.',
                         experience: -15
                     },
                     {
-                        text: 'Assign randomly',
-                        outcome: 'Strategic assignment ensures efficient testing.',
+                        text: 'Assign tasks equally taking into consideration fairness of workload',
+                        outcome: 'Strategic assignment taking into consideration tester experience ensures efficient testing.',
                         experience: -10
                     },
                     {
-                        text: 'Let team members choose',
-                        outcome: 'Structured distribution needed for coverage.',
+                        text: 'Let team members choose which tasks they want to fulfil within the project',
+                        outcome: 'A structured distribution is generally required for the best testing coverage.',
                         experience: -5
                     }
                 ]
@@ -277,28 +277,28 @@ export class TimeManagementQuiz extends BaseQuiz {
             {
                 id: 8,
                 level: 'Intermediate',
-                title: 'Test Coverage Prioritization',
-                description: 'How do you prioritize different areas of testing?',
+                title: 'Test Coverage Priorisation',
+                description: 'How do you prioritise different areas of testing?',
                 options: [
                     {
-                        text: 'Analyze client priorities, core functions, and user patterns',
-                        outcome: 'Excellent! Strategic prioritization maximizes value.',
+                        text: 'Analyse client priorities, core functions, and user patterns',
+                        outcome: 'Excellent! Strategic prioritisation maximizes testing value.',
                         experience: 20,
                         tool: 'Priority Management'
                     },
                     {
-                        text: 'Test in linear order',
-                        outcome: 'Priority-based testing is more effective.',
+                        text: 'Test in a linear order to gain as much coverage as possible',
+                        outcome: 'Priority-based testing is a more effective use of time management as issues could be missed by testing in a sequential manner.',
                         experience: -15
                     },
                     {
-                        text: 'Focus on easy areas first',
-                        outcome: 'Prioritize based on importance, not ease.',
+                        text: 'Focus on easy areas first to gain as much coverage as possible',
+                        outcome: 'Prioritisation should be based on importance to the system and client, rather than ease first.',
                         experience: -10
                     },
                     {
-                        text: 'Follow personal preferences',
-                        outcome: 'Client needs should drive priorities.',
+                        text: 'Follow personal preferences based on experience of previous similar test cases',
+                        outcome: 'Client needs should drive priorities rather than individual preferences.',
                         experience: -5
                     }
                 ]
@@ -316,18 +316,18 @@ export class TimeManagementQuiz extends BaseQuiz {
                         tool: 'Progress Tracking'
                     },
                     {
-                        text: 'Wait until end of day',
-                        outcome: 'Regular progress checks prevent delays.',
+                        text: 'Wait until end of day before reporting on any progress',
+                        outcome: 'Regular progress checks can prevent delays to testing timelines.',
                         experience: -15
                     },
                     {
-                        text: 'Only track when asked',
-                        outcome: 'Proactive monitoring is essential.',
+                        text: 'Only track project progress on request and report findings when asked',
+                        outcome: 'Proactive monitoring is essential as it can ensure issues to resource or testing can be mitigated.',
                         experience: -10
                     },
                     {
-                        text: 'Focus on speed over tracking',
-                        outcome: 'Balance speed with progress monitoring.',
+                        text: 'Focus on speed over progress tracking to make sure project timelines are met',
+                        outcome: 'Speed of test activities should be balanced with progress monitoring.',
                         experience: -5
                     }
                 ]
@@ -340,30 +340,30 @@ export class TimeManagementQuiz extends BaseQuiz {
                 options: [
                     {
                         text: 'Start with primary environment, then adjust timing for others based on global issues',
-                        outcome: 'Excellent! Efficient environment coverage strategy.',
+                        outcome: 'Excellent! This is an efficient environment coverage strategy.',
                         experience: 20,
                         tool: 'Environment Management'
                     },
                     {
-                        text: 'Test all equally',
-                        outcome: 'Adapt timing based on previous findings.',
+                        text: 'Test all environments equally in regards to time spent on testing activities',
+                        outcome: 'Timings should be adapted based on previous findings within the project.',
                         experience: -15
                     },
                     {
-                        text: 'Random environment order',
-                        outcome: 'Strategic order maximizes efficiency.',
+                        text: 'Use random environment order approach to gain as much coverage as possible',
+                        outcome: 'A strategic order approach maximizes efficiency and coverage.',
                         experience: -10
                     },
                     {
-                        text: 'Skip secondary environments',
-                        outcome: 'All environments need appropriate coverage.',
+                        text: 'Leave secondary environments as long as primary environments are covered',
+                        outcome: 'All requested environments need appropriate coverage according to the project needs.',
                         experience: -5
                     }
                 ]
             }
         ];
 
-        // Advanced Scenarios (IDs 11-15, 100 XP total)
+        // Advanced Scenarios (IDs 11-15)
         this.advancedScenarios = [
             {
                 id: 11,
@@ -373,22 +373,22 @@ export class TimeManagementQuiz extends BaseQuiz {
                 options: [
                     {
                         text: 'Review all project requirements, create daily schedules, maintain clear separation',
-                        outcome: 'Perfect! Structured approach to multiple projects.',
+                        outcome: 'Perfect! This is a good structured approach to multiple projects.',
                         experience: 25,
                         tool: 'Multi-Project Management'
                     },
                     {
-                        text: 'Handle projects as they come',
-                        outcome: 'Advance planning needed for multiple projects.',
+                        text: 'Handle projects as and when they are requested',
+                        outcome: 'Advance planning is preferred for multiple projects to prepare time management and resources.',
                         experience: -15
                     },
                     {
-                        text: 'Focus on one project at a time',
-                        outcome: 'Balance needed across all projects.',
+                        text: 'Focus on one project at a time until completion',
+                        outcome: 'Balance is needed across all projects and priority tests.',
                         experience: -10
                     },
                     {
-                        text: 'Multitask between projects',
+                        text: 'Multitask between projects simultaneously to make sure project timelines can be met',
                         outcome: 'Clear project separation is more effective.',
                         experience: -5
                     }
@@ -401,24 +401,24 @@ export class TimeManagementQuiz extends BaseQuiz {
                 description: 'How do you handle potential timing risks in a project?',
                 options: [
                     {
-                        text: 'Identify risks early, implement mitigation steps, communicate with PM',
+                        text: 'Identify risks early, implement mitigation steps, communicate with the project manager',
                         outcome: 'Excellent! Proactive risk management saves time.',
                         experience: 25,
                         tool: 'Risk Management'
                     },
                     {
-                        text: 'Deal with issues as they arise',
-                        outcome: 'Early risk identification prevents delays.',
+                        text: 'Deal with time risks as they arise during test activities',
+                        outcome: 'Early risk identification and planning prevents delays further along in the testing process.',
                         experience: -15
                     },
                     {
-                        text: 'Ignore minor risks',
-                        outcome: 'All risks need appropriate attention.',
+                        text: 'Leave investigation of minor risks to project timings',
+                        outcome: 'All risks need appropriate attention, reporting and mitigating.',
                         experience: -10
                     },
                     {
-                        text: 'Handle risks without reporting',
-                        outcome: 'Risk communication is essential.',
+                        text: 'Handle timing risks to the project without reporting them',
+                        outcome: 'Risk communication is an important and essential process to mitigate any issues that might cause project slow down.',
                         experience: -5
                     }
                 ]
@@ -430,24 +430,24 @@ export class TimeManagementQuiz extends BaseQuiz {
                 description: 'You discover major issues late in the testing window. How do you manage this?',
                 options: [
                     {
-                        text: 'Immediately notify PM, document thoroughly, reprioritize remaining time',
-                        outcome: 'Perfect! Quick response and clear communication.',
+                        text: 'Immediately notify the project manager, document thoroughly, reprioritise remaining time',
+                        outcome: 'Perfect! A quick response and clear communication is essential to mitigating any delays.',
                         experience: 25,
                         tool: 'Issue Management'
                     },
                     {
-                        text: 'Continue with original plan',
-                        outcome: 'Major issues need immediate attention.',
+                        text: 'Continue with the tasks within the original project plan',
+                        outcome: 'Major issues need immediate attention, no matter at what point the project is up to.',
                         experience: -15
                     },
                     {
-                        text: 'Rush through remaining tests',
-                        outcome: 'Maintain quality while reprioritizing.',
+                        text: 'Rush through the remaining required tests to achieve as much coverage as possible',
+                        outcome: 'Tests should not be rushed in order to maintain quality, and reprioritising should continue in relation to the issues raised.',
                         experience: -10
                     },
                     {
-                        text: 'Skip documentation for speed',
-                        outcome: 'Proper documentation remains important.',
+                        text: 'Skip documentation on project, and test script reporting for speed',
+                        outcome: 'Proper documentation is essential as it give stakeholders critical information on project progress.',
                         experience: -5
                     }
                 ]
@@ -465,18 +465,18 @@ export class TimeManagementQuiz extends BaseQuiz {
                         tool: 'Change Management'
                     },
                     {
-                        text: 'Continue current task',
-                        outcome: 'Quick adaptation to changes needed.',
+                        text: 'Continue with the current tasks assigned to completion',
+                        outcome: 'Adaptation to changes required to reassess priorities.',
                         experience: -15
                     },
                     {
-                        text: 'Wait for instructions',
-                        outcome: 'Proactive response to changes required.',
+                        text: 'Wait for instructions from stakeholders as to which tasks need reprioritising',
+                        outcome: 'A proactive response to changes is required to decrease the impact of major resource changes.',
                         experience: -10
                     },
                     {
-                        text: 'Ignore minor changes',
-                        outcome: 'All resource changes need attention.',
+                        text: 'Leave minor changes to resources and continue with priority tasks set out in previous planning',
+                        outcome: 'All resource changes need attention in order to reassess priorities.',
                         experience: -5
                     }
                 ]
@@ -489,23 +489,23 @@ export class TimeManagementQuiz extends BaseQuiz {
                 options: [
                     {
                         text: 'Establish sustainable routines, regularly review efficiency, adapt processes as needed',
-                        outcome: 'Perfect! Sustainable approach to long-term projects.',
+                        outcome: 'Perfect! This is sustainable approach to long-term projects.',
                         experience: 25,
                         tool: 'Long-term Planning'
                     },
                     {
-                        text: 'Keep same routine without review',
-                        outcome: 'Regular process review improves efficiency.',
+                        text: 'Keep same routine throughout the project to maintain consistency',
+                        outcome: 'Regular process reviews improve efficiency.',
                         experience: -15
                     },
                     {
-                        text: 'Focus only on daily tasks',
-                        outcome: 'Long-term view needed for sustainability.',
+                        text: 'Focus only on daily tasks and to ensure quick manageable goals',
+                        outcome: 'A long-term view required for sustainability of a project.',
                         experience: -10
                     },
                     {
-                        text: 'Change processes frequently',
-                        outcome: 'Balanced adaptation better than frequent changes.',
+                        text: 'Change processes frequently to gain as much coverage as possible',
+                        outcome: 'A balanced adaptation over a long period is better than frequent changes.',
                         experience: -5
                     }
                 ]

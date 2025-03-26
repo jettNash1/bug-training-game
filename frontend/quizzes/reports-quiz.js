@@ -388,7 +388,7 @@ export class ReportsQuiz extends BaseQuiz {
                         experience: -10
                     },
                     {
-                        text: 'Inform the client that the business use a structured guideline that need to be followed for consistency',
+                        text: 'Inform the client that the business use a structured guideline that needs to be followed for consistency',
                         outcome: 'While consistency is important, the client can essentially request how they receive the data they require and the way they want the data to be reported.',
                         experience: -5
                     }

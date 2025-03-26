@@ -350,7 +350,7 @@ export class RiskAnalysisQuiz extends BaseQuiz {
                         experience: -15
                     },
                     {
-                        text: 'Adress communication issues when they arise during testing activities',
+                        text: 'Address communication issues when they arise during testing activities',
                         outcome: 'Proactive planning is required to maintain effective communication with the client throughout testing activities.',
                         experience: -10
                     },
@@ -459,7 +459,7 @@ export class RiskAnalysisQuiz extends BaseQuiz {
                 description: 'How do you assess risks when client requirements change during testing?',
                 options: [
                     {
-                        text: 'Analyze impact on timeline, coverage, and existing tests, then adjust strategy',
+                        text: 'Analyse impact on timeline, coverage, and existing tests, then adjust strategy',
                         outcome: 'Excellent! Change impact analysis.',
                         experience: 25,
                         tool: 'Change Impact Assessment'
@@ -495,7 +495,7 @@ export class RiskAnalysisQuiz extends BaseQuiz {
                     },
                     {
                         text: 'Document all major issues in a project review',
-                        outcome: 'While important all aspects need to be included for review including project challenges. Thes can then be reviewed for improvement moving forward.',
+                        outcome: 'While important all aspects need to be included for review including project challenges. These can then be reviewed for improvement moving forward.',
                         experience: -15
                     },
                     {

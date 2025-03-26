@@ -328,7 +328,7 @@ export class FullyScriptedQuiz extends BaseQuiz {
                     {
                         text: 'Test one environment at a time after primary environments have fully tested',
                         outcome: 'While this can work, parallel testing is recommended when possible',
-                        experience: -5
+                        experience: 5
                     }
                 ]
             },

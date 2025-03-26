@@ -213,7 +213,8 @@ export class LocaleTestingQuiz extends BaseQuiz {
                 ]
             }
         ];
-                // Intermediate Scenarios (IDs 6-10, 100 XP total, 20 XP each)
+
+        // Intermediate Scenarios (IDs 6-10)
         this.intermediateScenarios = [
             {
                 id: 6,
@@ -362,7 +363,7 @@ export class LocaleTestingQuiz extends BaseQuiz {
             }
         ];
 
-                // Advanced Scenarios (IDs 11-15, 125 XP total, 25 XP each)
+        // Advanced Scenarios (IDs 11-15)
         this.advancedScenarios = [
             {
                 id: 11,

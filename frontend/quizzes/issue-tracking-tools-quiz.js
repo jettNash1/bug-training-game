@@ -119,7 +119,7 @@ export class IssueTrackingToolsQuiz extends BaseQuiz {
                         experience: -5
                     },
                     {
-                        text: 'Navigate to the project when notifications are returned',
+                        text: 'Navigate to the project through notifications when they are received regarding updates',
                         outcome: 'Proactive searching is more effective as a notification may not arrive until late in the day if at all.',
                         experience: 0
                     }
@@ -214,7 +214,7 @@ export class IssueTrackingToolsQuiz extends BaseQuiz {
             }
         ];
 
-        // Intermediate Scenarios (IDs 6-10, 125 XP total)
+        // Intermediate Scenarios (IDs 6-10)
         this.intermediateScenarios = [
             {
                 id: 6,
@@ -363,7 +363,7 @@ export class IssueTrackingToolsQuiz extends BaseQuiz {
             }
         ];
 
-        // Advanced Scenarios (IDs 11-15, 100 XP total)
+        // Advanced Scenarios (IDs 11-15)
         this.advancedScenarios = [
             {
                 id: 11,
@@ -417,7 +417,7 @@ export class IssueTrackingToolsQuiz extends BaseQuiz {
                         experience: -10
                     },
                     {
-                        text: 'Raise the major issues as when these are addressed any dependant issues will be resolved',
+                        text: 'Raise related major issues, as when these are addressed, any dependant issues will be resolved',
                         outcome: 'All related issues need correct organisation and any dependencies should be documented.',
                         experience: -5
                     }

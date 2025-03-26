@@ -213,6 +213,7 @@ export class RiskManagementQuiz extends BaseQuiz {
                 ]
             }
         ];
+
         // Intermediate Scenarios (IDs 6-10, 125 XP total)
         this.intermediateScenarios = [
             {
@@ -296,7 +297,7 @@ export class RiskManagementQuiz extends BaseQuiz {
                         experience: -10
                     },
                     {
-                        text: 'Mark devices as untested within the test report for submission o the client',
+                        text: 'Mark devices as untested within the test report for submission to the client',
                         outcome: 'Technical issues need correct investigation and documentation.',
                         experience: 0
                     }

@@ -65,7 +65,7 @@ export class BuildVerificationQuiz extends BaseQuiz {
             return;
         }
 
-        // Basic Scenarios (IDs 1-5, 75 XP total)
+        // Basic Scenarios (IDs 1-5)
         this.basicScenarios = [
             {
                 id: 1,
@@ -148,7 +148,7 @@ export class BuildVerificationQuiz extends BaseQuiz {
                         experience: -5
                     },
                     {
-                        text: 'Documentation errors should priority as this can lead to blocking issues with testing activities',
+                        text: 'Documentation errors should take priority, as this can lead to blocking issues with testing activities',
                         outcome: 'Critical operations should take priority as testing can be carried out if core functionality of the application behaves as intended.',
                         experience: 0
                     }
@@ -214,7 +214,7 @@ export class BuildVerificationQuiz extends BaseQuiz {
             }
         ];
 
-        // Intermediate Scenarios (IDs 6-10, 125 XP total)
+        // Intermediate Scenarios (IDs 6-10)
         this.intermediateScenarios = [
             {
                 id: 6,
@@ -363,7 +363,7 @@ export class BuildVerificationQuiz extends BaseQuiz {
             }
         ];
 
-        // Advanced Scenarios (IDs 11-15, 100 XP total)
+        // Advanced Scenarios (IDs 11-15)
         this.advancedScenarios = [
             {
                 id: 11,
@@ -459,7 +459,7 @@ export class BuildVerificationQuiz extends BaseQuiz {
                 description: 'How do you manage risks in BVT?',
                 options: [
                     {
-                        text: 'Identify potential risks, prioritize critical areas, and maintain contingency plans',
+                        text: 'Identify potential risks, prioritise critical areas, and maintain contingency plans',
                         outcome: 'Excellent! Risk management ensures BVT effectiveness.',
                         experience: 25,
                         tool: 'Risk Assessment'

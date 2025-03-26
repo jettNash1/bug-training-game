@@ -65,7 +65,7 @@ export class InitiativeQuiz extends BaseQuiz {
             return;
         }
 
-        // Basic Scenarios (IDs 1-5, 75 XP total)
+        // Basic Scenarios (IDs 1-5)
         this.basicScenarios = [
             {
                 id: 1,
@@ -103,7 +103,7 @@ export class InitiativeQuiz extends BaseQuiz {
                 description: 'After a work social event, the office space is messy and people are leaving. What shows the best initiative?',
                 options: [
                     {
-                        text: 'Start cleaning up and organizing without being asked',
+                        text: 'Start cleaning up and organising without being asked',
                         outcome: 'Excellent! Taking responsibility for shared spaces shows great initiative.',
                         experience: 15,
                         tool: 'Workplace Responsibility'
@@ -213,7 +213,8 @@ export class InitiativeQuiz extends BaseQuiz {
                 ]
             },
         ];
-        // Intermediate Scenarios (IDs 6-10, 125 XP total)
+
+        // Intermediate Scenarios (IDs 6-10)
         this.intermediateScenarios = [
             {
                 id: 6,
@@ -315,7 +316,7 @@ export class InitiativeQuiz extends BaseQuiz {
                         tool: 'Quality Assurance'
                     },
                     {
-                        text: 'Report that you\'re completed the main coverage of the project and wait for instruction',
+                        text: 'Report that you\'ve completed the main coverage of the project and wait for instruction',
                         outcome: 'This could miss opportunities to add value to the project and enhance client relations.',
                         experience: -15
                     },
@@ -361,7 +362,8 @@ export class InitiativeQuiz extends BaseQuiz {
                 ]
             }
         ];
-        // Advanced Scenarios (IDs 11-15, 100 XP total)
+
+        // Advanced Scenarios (IDs 11-15)
         this.advancedScenarios = [
             {
                 id: 11,
@@ -439,7 +441,7 @@ export class InitiativeQuiz extends BaseQuiz {
                         experience: -10
                     },
                     {
-                        text: 'Focus your team\'s involvement relating to the issue that raised',
+                        text: 'Focus your team\'s involvement relating to the issue that has been raised',
                         outcome: 'Advanced initiative means addressing the broader impact and involving all affected parties.',
                         experience: -15
                     },
@@ -502,7 +504,7 @@ export class InitiativeQuiz extends BaseQuiz {
                         experience: -10
                     },
                     {
-                        text: 'Add all the concerns to the it to the risk register for thorough risk management',
+                        text: 'Add all the concerns to the risk register for thorough risk management',
                         outcome: 'While documentation is good, taking action is also required.',
                         experience: -5
                     }

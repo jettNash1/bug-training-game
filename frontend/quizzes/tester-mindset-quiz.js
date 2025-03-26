@@ -407,7 +407,7 @@ export class TesterMindsetQuiz extends BaseQuiz {
                         tool: 'Strategy Adaptation Framework'
                     },
                     {
-                        text: 'Continue the testing activities outlined in the original strategy to saty in line with initial client expectation',
+                        text: 'Continue the testing activities outlined in the original strategy to stay in line with initial client expectation',
                         outcome: 'The strategy must evolve with project changes as important features could missed.',
                         experience: -20
                     },
@@ -494,7 +494,7 @@ export class TesterMindsetQuiz extends BaseQuiz {
                         tool: 'Quality Impact Analysis'
                     },
                     {
-                        text: 'Accept the reduced timeline and continue with testing activites',
+                        text: 'Accept the reduced timeline and continue with testing activities',
                         outcome: 'Quality concerns should be raised professionally as issues could be missed with reduced coverage.',
                         experience: -30
                     },
