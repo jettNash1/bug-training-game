@@ -12,25 +12,32 @@ export class BadgeService {
 
     async getUserBadges() {
         try {
-            // Get the user's quiz progress
+            // Get user data which includes quiz results and progress
             const userData = await this.apiService.getUserData();
             if (!userData.success || !userData.data) {
                 throw new Error('Failed to load user data');
             }
 
-            // Get all quiz scores for the user
-            const quizScores = await this.getAllQuizScores();
+            // Get quiz results from user data
+            const quizResults = userData.data.quizResults || [];
             
-            // Get quiz categories structure
-            const categories = await this.getCategoryStructure();
-
-            // Generate quiz completion badges
-            const badges = await this.generateQuizCompletionBadges(quizScores, categories);
+            // Create a badge for each completed quiz
+            const badges = quizResults
+                .filter(result => result.questionsAnswered === 15) // Only completed quizzes
+                .map(result => ({
+                    id: `quiz-${result.quizName}`,
+                    name: `${result.quizName} Master`,
+                    description: `Complete the ${result.quizName} quiz`,
+                    icon: 'fa-solid fa-check-circle',
+                    earned: true,
+                    completionDate: result.completedAt || null,
+                    quizId: result.quizName
+                }));
 
             return {
                 badges,
                 totalBadges: badges.length,
-                earnedCount: badges.filter(badge => badge.earned).length
+                earnedCount: badges.length // All badges are earned since we're only showing completed quizzes
             };
         } catch (error) {
             console.error('Error getting user badges:', error);
@@ -143,19 +150,22 @@ export class BadgeService {
         return null;
     }
 
-    async generateQuizCompletionBadges(quizScores, categories) {
+    generateQuizCompletionBadges(quizResults, categories, quizProgress) {
         const quizCompletionBadges = [];
         
-        // Get all quizzes from categories
+        // Get all visible quizzes from categories
         const allQuizzes = Object.values(categories || {}).flatMap(category => 
             category.filter(quiz => !quiz.hidden)
         );
 
         // Create a badge for each quiz
         for (const quiz of allQuizzes) {
-            const quizScore = quizScores.find(score => score.quizName === quiz.id);
-            const isCompleted = quizScore && quizScore.questionsAnswered === 15;
-            const completionDate = quizScore?.completedAt || null;
+            const quizResult = quizResults.find(result => result.quizName === quiz.id);
+            const progress = quizProgress[quiz.id];
+            
+            // Check completion status
+            const isCompleted = quizResult && quizResult.questionsAnswered === 15;
+            const completionDate = quizResult?.completedAt || progress?.completedAt || null;
 
             quizCompletionBadges.push({
                 id: `quiz-${quiz.id}`,
