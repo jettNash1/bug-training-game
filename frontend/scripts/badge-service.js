@@ -54,9 +54,7 @@ export class BadgeService {
             const progressPromises = quizIds.map(async (quizId) => {
                 try {
                     const savedProgress = await this.apiService.getQuizProgress(quizId);
-                    const progress = savedProgress?.data;
-                    
-                    if (!progress) {
+                    if (!savedProgress || !savedProgress.success) {
                         return { 
                             quizName: quizId, 
                             score: 0, 
@@ -66,6 +64,7 @@ export class BadgeService {
                         };
                     }
                     
+                    const progress = savedProgress.data;
                     return {
                         quizName: quizId,
                         score: progress.score || 0,
