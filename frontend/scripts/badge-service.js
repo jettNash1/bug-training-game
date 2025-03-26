@@ -18,17 +18,24 @@ export class BadgeService {
                 throw new Error('Failed to load user data');
             }
 
-            // Get quiz results and progress from user data
-            const quizResults = userData.data.quizResults || [];
+            // Get quiz progress and category structure
             const quizProgress = userData.data.quizProgress || {};
+            const categories = await this.getCategoryStructure();
+            
+            if (!categories) {
+                throw new Error('Failed to load quiz categories');
+            }
 
-            // Create a set to track unique completed quizzes
+            // Get all visible quizzes from categories
+            const allQuizzes = Object.values(categories).flatMap(categoryQuizzes => 
+                categoryQuizzes.filter(quiz => !quiz.hidden)
+            );
+
+            // Create a set to track completed quizzes
             const completedQuizzes = new Set();
 
             // Check quiz progress for completed quizzes
             Object.entries(quizProgress).forEach(([quizName, progress]) => {
-                // A quiz is completed if it exists in the progress object
-                // and has a valid status/completion state
                 if (progress && (
                     progress.status === 'completed' || 
                     progress.status === 'passed' ||
@@ -38,17 +45,19 @@ export class BadgeService {
                 }
             });
 
-            // Create badges for completed quizzes
-            const badges = Array.from(completedQuizzes).map(quizName => {
+            // Create badges for all quizzes
+            const badges = allQuizzes.map(quiz => {
+                const quizName = quiz.id;
                 const progress = quizProgress[quizName];
+                const isCompleted = completedQuizzes.has(quizName);
                 
                 return {
                     id: `quiz-${quizName}`,
-                    name: `${quizName.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())} Master`,
-                    description: `Complete the ${quizName.replace(/_/g, ' ')} quiz`,
+                    name: `${quiz.name} Master`,
+                    description: `Complete the ${quiz.name} quiz`,
                     icon: 'fa-solid fa-check-circle',
-                    earned: true,
-                    completionDate: progress?.lastUpdated || progress?.completedAt || new Date().toISOString(),
+                    earned: isCompleted,
+                    completionDate: isCompleted ? (progress?.lastUpdated || progress?.completedAt || new Date().toISOString()) : null,
                     quizId: quizName
                 };
             });
@@ -56,7 +65,7 @@ export class BadgeService {
             return {
                 badges,
                 totalBadges: badges.length,
-                earnedCount: badges.length // All badges are earned since we're only showing completed quizzes
+                earnedCount: completedQuizzes.size
             };
         } catch (error) {
             console.error('Error getting user badges:', error);
