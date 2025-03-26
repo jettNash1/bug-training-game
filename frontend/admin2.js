@@ -1931,7 +1931,7 @@ class Admin2Dashboard extends AdminDashboard {
             closeBtn.addEventListener('keydown', (e) => {
                 if (e.key === 'Enter' || e.key === ' ') {
                     e.preventDefault();
-                    overlay.remove();
+                overlay.remove();
                 }
             });
             
