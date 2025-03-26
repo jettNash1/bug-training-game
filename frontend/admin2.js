@@ -36,6 +36,14 @@ class Admin2Dashboard extends AdminDashboard {
                 console.error('Error loading users:', error);
             }
             
+            // Load timer settings before displaying them
+            try {
+                await this.loadTimerSettings();
+                console.log('Timer settings loaded successfully');
+            } catch (error) {
+                console.error('Error loading timer settings:', error);
+            }
+            
             // Timer settings
             this.displayTimerSettings();
             
