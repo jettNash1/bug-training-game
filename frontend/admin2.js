@@ -5,6 +5,7 @@ class Admin2Dashboard extends AdminDashboard {
         super();
         // Additional initialization for Admin2Dashboard
         this.isRowView = false; // Default to grid view
+        this.guideSettings = {};
         this.init2();
     }
 
@@ -44,8 +45,19 @@ class Admin2Dashboard extends AdminDashboard {
                 console.error('Error loading timer settings:', error);
             }
             
+            // Load guide settings
+            try {
+                await this.loadGuideSettings();
+                console.log('Guide settings loaded successfully');
+            } catch (error) {
+                console.error('Error loading guide settings:', error);
+            }
+            
             // Timer settings
             this.displayTimerSettings();
+            
+            // Guide settings
+            this.displayGuideSettings();
             
             // Set up create account form
             try {
@@ -3104,6 +3116,101 @@ class Admin2Dashboard extends AdminDashboard {
         } catch (error) {
             console.error('Error updating quiz timer:', error);
             this.showErrorMessage(`Failed to update timer: ${error.message}`);
+        }
+    }
+
+    async loadGuideSettings() {
+        try {
+            const response = await fetch(`${this.apiBaseUrl}/guide-settings`, {
+                method: 'GET',
+                headers: {
+                    'Authorization': `Bearer ${this.adminToken}`,
+                    'Content-Type': 'application/json'
+                }
+            });
+
+            if (!response.ok) {
+                throw new Error('Failed to load guide settings');
+            }
+
+            this.guideSettings = await response.json();
+        } catch (error) {
+            console.error('Error loading guide settings:', error);
+            this.guideSettings = {};
+        }
+    }
+
+    displayGuideSettings() {
+        const container = document.getElementById('guide-settings-container');
+        if (!container) return;
+
+        const quizTypes = this.quizTypes || [];
+        
+        const html = `
+            <div class="guide-settings-wrapper">
+                ${quizTypes.map(quiz => `
+                    <div class="guide-setting-item" data-quiz="${quiz}">
+                        <h4>${this.formatQuizName(quiz)}</h4>
+                        <input type="url" 
+                            class="guide-url-input" 
+                            placeholder="Enter guide URL" 
+                            value="${this.guideSettings[quiz]?.url || ''}"
+                            aria-label="Guide URL for ${this.formatQuizName(quiz)}">
+                        <div class="guide-toggle">
+                            <input type="checkbox" 
+                                id="guide-enabled-${quiz}" 
+                                ${this.guideSettings[quiz]?.enabled ? 'checked' : ''}
+                                aria-label="Enable guide for ${this.formatQuizName(quiz)}">
+                            <label for="guide-enabled-${quiz}">Enable Guide</label>
+                        </div>
+                        <button class="save-guide-btn" data-quiz="${quiz}">Save Settings</button>
+                    </div>
+                `).join('')}
+            </div>
+        `;
+
+        container.innerHTML = html;
+
+        // Add event listeners for save buttons
+        container.querySelectorAll('.save-guide-btn').forEach(button => {
+            button.addEventListener('click', async () => {
+                const quiz = button.dataset.quiz;
+                const item = container.querySelector(`.guide-setting-item[data-quiz="${quiz}"]`);
+                const urlInput = item.querySelector('.guide-url-input');
+                const enabledCheckbox = item.querySelector('input[type="checkbox"]');
+
+                try {
+                    await this.saveGuideSettings(quiz, urlInput.value, enabledCheckbox.checked);
+                    this.showSuccess(`Guide settings saved for ${this.formatQuizName(quiz)}`);
+                } catch (error) {
+                    this.showError(`Failed to save guide settings for ${this.formatQuizName(quiz)}`);
+                }
+            });
+        });
+    }
+
+    async saveGuideSettings(quiz, url, enabled) {
+        try {
+            const response = await fetch(`${this.apiBaseUrl}/guide-settings/${quiz}`, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${this.adminToken}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ url, enabled })
+            });
+
+            if (!response.ok) {
+                throw new Error('Failed to save guide settings');
+            }
+
+            // Update local settings
+            this.guideSettings[quiz] = { url, enabled };
+            
+            return true;
+        } catch (error) {
+            console.error('Error saving guide settings:', error);
+            throw error;
         }
     }
 }

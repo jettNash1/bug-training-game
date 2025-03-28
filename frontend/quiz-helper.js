@@ -12,6 +12,8 @@ export class BaseQuiz {
         this.isLoading = false;
         this.questionTimer = null;
         this.apiService = new APIService();
+        this.guideUrl = null;
+        this.showGuideButton = false;
         
         // Initialize timer value with a temporary default
         // The actual value will be set by loadTimerSettings
@@ -19,8 +21,9 @@ export class BaseQuiz {
         this.remainingTime = null;
         this.questionStartTime = null; // Track when each question starts
         
-        // Load timer settings from API immediately
+        // Load timer settings and guide settings from API immediately
         this.initializeTimerSettings();
+        this.initializeGuideSettings();
     }
 
     async initializeTimerSettings() {
@@ -54,6 +57,50 @@ export class BaseQuiz {
         } catch (error) {
             console.error('Failed to load timer settings:', error);
             throw error; // Let the caller handle the error
+        }
+    }
+
+    async initializeGuideSettings() {
+        try {
+            const guideSettings = await this.apiService.getQuizGuideSettings(this.quizName);
+            if (guideSettings) {
+                this.guideUrl = guideSettings.url;
+                this.showGuideButton = guideSettings.enabled;
+                this.updateGuideButton();
+            }
+        } catch (error) {
+            console.error('Failed to initialize guide settings:', error);
+        }
+    }
+
+    updateGuideButton() {
+        // Remove existing guide button if any
+        const existingButton = document.getElementById('guide-button');
+        if (existingButton) {
+            existingButton.remove();
+        }
+
+        // If guide is enabled and URL is set, show the button
+        if (this.showGuideButton && this.guideUrl) {
+            const guideButton = document.createElement('button');
+            guideButton.id = 'guide-button';
+            guideButton.className = 'guide-button';
+            guideButton.innerHTML = '<i class="fas fa-book"></i> Guide';
+            guideButton.setAttribute('aria-label', 'Open quiz guide');
+            guideButton.onclick = () => window.open(this.guideUrl, '_blank');
+            
+            // Insert the button in the game screen
+            const buttonContainer = document.createElement('div');
+            buttonContainer.className = 'guide-button-container';
+            buttonContainer.appendChild(guideButton);
+            
+            // Add to game screen, right after the timer if it exists
+            const timerContainer = document.getElementById('timer-container');
+            if (timerContainer) {
+                timerContainer.parentNode.insertBefore(buttonContainer, timerContainer.nextSibling);
+            } else {
+                this.gameScreen.insertBefore(buttonContainer, this.gameScreen.firstChild);
+            }
         }
     }
 

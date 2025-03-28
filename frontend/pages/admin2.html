@@ -55,7 +55,7 @@
                         <li class="menu-item" data-section="scenarios">
                             <button>
                                 <i class="fas fa-tasks"></i>
-                                <span>Scenarios</span>
+                                <span>Quiz Questions</span>
                             </button>
                         </li>
                         <li class="menu-item" data-section="export">
@@ -147,6 +147,13 @@
                                 <h3>Quiz Timer Settings</h3>
                                 <p>Set the time allowed for each quiz question.</p>
                                 <div id="timer-settings-container"></div>
+                            </div>
+                            <div class="settings-card">
+                                <h3>Guide Settings</h3>
+                                <p>Configure guide URLs for each quiz.</p>
+                                <div id="guide-settings-container">
+                                    <!-- Guide settings will be populated here -->
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -1148,6 +1155,93 @@
             .schedule-form {
                 grid-template-columns: 1fr;
             }
+        }
+
+        /* Guide Settings Styles */
+        #guide-settings-container {
+            margin-top: 1.5rem;
+        }
+
+        .guide-setting-item {
+            background: #f8f9fa;
+            border-radius: 8px;
+            padding: 1.25rem;
+            margin-bottom: 1rem;
+            border: 1px solid #e0e0e0;
+        }
+
+        .guide-setting-item h4 {
+            margin: 0 0 1rem 0;
+            color: #2c3e50;
+        }
+
+        .guide-url-input {
+            width: 100%;
+            padding: 0.75rem;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            margin-bottom: 1rem;
+        }
+
+        .guide-toggle {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .guide-toggle input[type="checkbox"] {
+            width: 1.2rem;
+            height: 1.2rem;
+        }
+
+        .guide-toggle label {
+            color: #555;
+            font-weight: 500;
+        }
+
+        .save-guide-btn {
+            background: #3498db;
+            color: white;
+            border: none;
+            padding: 0.75rem 1.5rem;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: 500;
+            margin-top: 1rem;
+            transition: background 0.2s;
+        }
+
+        .save-guide-btn:hover {
+            background: #2980b9;
+        }
+
+        /* Guide Button Styles */
+        .guide-button-container {
+            margin: 1rem 0;
+            text-align: right;
+        }
+
+        .guide-button {
+            background: #3498db;
+            color: white;
+            border: none;
+            padding: 0.75rem 1.5rem;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: 500;
+            transition: all 0.2s;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .guide-button:hover {
+            background: #2980b9;
+            transform: translateY(-2px);
+        }
+
+        .guide-button i {
+            font-size: 1.1rem;
         }
     </style>
 </body>

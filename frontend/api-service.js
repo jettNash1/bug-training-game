@@ -1671,4 +1671,35 @@ export class APIService {
             throw error;
         }
     }
+
+    async getQuizGuideSettings(quizName) {
+        try {
+            const response = await this.fetchWithAuth(`${this.baseUrl}/guide-settings/${quizName}`);
+            return response.data;
+        } catch (error) {
+            console.error('Failed to get guide settings:', error);
+            return null;
+        }
+    }
+
+    async updateQuizGuideSettings(quizName, settings) {
+        try {
+            const response = await this.fetchWithAdminAuth(`${this.baseUrl}/admin/guide-settings/${quizName}`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(settings)
+            });
+
+            if (!response.success) {
+                throw new Error(response.message || 'Failed to update guide settings');
+            }
+
+            return response.data;
+        } catch (error) {
+            console.error('Failed to update guide settings:', error);
+            throw error;
+        }
+    }
 } 
