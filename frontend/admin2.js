@@ -142,36 +142,37 @@ export class Admin2Dashboard extends AdminDashboard {
         const contentSections = document.querySelectorAll('.content-section');
 
         menuItems.forEach(item => {
-            const button = item.querySelector('button');
-            if (button) {
-                button.addEventListener('click', () => {
-                    // Remove active class from all menu items and sections
-                    menuItems.forEach(mi => mi.classList.remove('active'));
-                    contentSections.forEach(section => {
-                        section.classList.remove('active');
-                        section.style.display = 'none';
-                    });
-
-                    // Add active class to clicked menu item
-                    item.classList.add('active');
-
-                    // Show corresponding section
-                    const sectionId = `${item.dataset.section}-section`;
-                    const section = document.getElementById(sectionId);
-                    if (section) {
-                        section.style.display = 'block';
-                        // Use setTimeout to ensure display: block is applied before adding active class
-                        setTimeout(() => {
-                            section.classList.add('active');
-                        }, 0);
-                        
-                        // Special handling for schedule section
-                        if (item.dataset.section === 'schedule') {
-                            this.refreshScheduleData();
-                        }
-                    }
+            item.addEventListener('click', () => {
+                // Remove active class from all menu items
+                menuItems.forEach(mi => mi.classList.remove('active'));
+                
+                // Add active class to clicked menu item
+                item.classList.add('active');
+                
+                // Get the section ID from data attribute
+                const sectionId = item.getAttribute('data-section');
+                const section = document.getElementById(sectionId);
+                
+                // Hide all sections first
+                document.querySelectorAll('.content-section').forEach(s => {
+                    s.classList.remove('active');
+                    s.style.display = 'none';
                 });
-            }
+                
+                if (section) {
+                    // Set display to block and add active class after a small delay
+                    // This ensures the display property is applied before the transition
+                    section.style.display = 'block';
+                    setTimeout(() => {
+                        section.classList.add('active');
+                    }, 0);
+                    
+                    // Special handling for schedule section
+                    if (sectionId === 'schedule-section') {
+                        this.loadScheduleData();
+                    }
+                }
+            });
         });
 
         // Logout button
