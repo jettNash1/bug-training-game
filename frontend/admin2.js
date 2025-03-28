@@ -567,7 +567,7 @@ export class Admin2Dashboard extends AdminDashboard {
                         <select id="quiz-select" class="settings-input">
                             <option value="">-- Select a Quiz --</option>
                             ${allQuizTypes.map(quiz => 
-                                `<option value="${quiz}">${quiz}</option>`
+                                `<option value="${quiz}">${this.formatQuizName(quiz)}</option>`
                             ).join('')}
                         </select>
                     </div>
@@ -3046,7 +3046,7 @@ export class Admin2Dashboard extends AdminDashboard {
                         <select id="guide-quiz-select" class="settings-input">
                             <option value="">-- Select a Quiz --</option>
                             ${allQuizTypes.map(quiz => 
-                                `<option value="${quiz}">${quiz}</option>`
+                                `<option value="${quiz}">${this.formatQuizName(quiz)}</option>`
                             ).join('')}
                         </select>
                     </div>
@@ -3330,7 +3330,7 @@ export class Admin2Dashboard extends AdminDashboard {
         }
         
         // Sort entries by quiz name
-        guideEntries.sort((a, b) => a[0].localeCompare(b[0]));
+        guideEntries.sort((a, b) => this.formatQuizName(a[0]).localeCompare(this.formatQuizName(b[0])));
         
         return `
             <table class="settings-table">
@@ -3348,7 +3348,7 @@ export class Admin2Dashboard extends AdminDashboard {
                             <td>
                                 <input type="checkbox" class="guide-checkbox" data-quiz="${quizName}">
                             </td>
-                            <td>${quizName}</td>
+                            <td>${this.formatQuizName(quizName)}</td>
                             <td>
                                 <a href="${settings.url}" target="_blank" rel="noopener noreferrer">${settings.url}</a>
                             </td>
@@ -3362,6 +3362,15 @@ export class Admin2Dashboard extends AdminDashboard {
                 </tbody>
             </table>
         `;
+    }
+
+    // Helper function to format quiz names from kebab-case to Title Case
+    formatQuizName(quizName) {
+        if (!quizName) return '';
+        return quizName
+            .split('-')
+            .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+            .join(' ');
     }
 }
 
