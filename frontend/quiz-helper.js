@@ -1230,10 +1230,152 @@ export class BaseQuiz {
 // Add this at the end of the file
 // Add startup hook to ensure guide initialization
 (function() {
+    // Direct method to initialize guide buttons for all quizzes
+    function initializeQuizGuides() {
+        console.log('[Guide] Direct initialization of quiz guides');
+        
+        // Try to find the quiz name from the page
+        let quizName = null;
+        const path = window.location.pathname.toLowerCase();
+        
+        // Detect quiz name from URL path
+        if (path.includes('communication')) {
+            quizName = 'communication';
+        } else if (path.includes('cms')) {
+            quizName = 'cms';
+        } else if (path.includes('team-portal')) {
+            quizName = 'team-portal';
+        }
+        
+        if (!quizName) {
+            // Try other detection methods
+            const quizParam = new URLSearchParams(window.location.search).get('quiz');
+            if (quizParam) {
+                quizName = quizParam.toLowerCase();
+            }
+        }
+        
+        if (!quizName) {
+            console.log('[Guide] Could not detect quiz name for direct initialization');
+            return;
+        }
+        
+        console.log(`[Guide] Detected quiz name for direct initialization: ${quizName}`);
+        
+        // Function to create and insert guide button
+        function createGuideButton(url) {
+            // Remove any existing button first
+            const existingButton = document.getElementById('guide-button-container');
+            if (existingButton) {
+                existingButton.remove();
+            }
+            
+            // Create button element
+            const guideButton = document.createElement('button');
+            guideButton.id = 'guide-button';
+            guideButton.className = 'guide-button';
+            guideButton.innerHTML = '<i class="fas fa-book"></i> Guide';
+            guideButton.setAttribute('aria-label', 'Open quiz guide');
+            guideButton.onclick = () => window.open(url, '_blank');
+            
+            // Style the button
+            guideButton.style.backgroundColor = '#4e73df';
+            guideButton.style.color = 'white';
+            guideButton.style.border = 'none';
+            guideButton.style.borderRadius = '4px';
+            guideButton.style.padding = '8px 16px';
+            guideButton.style.margin = '10px auto';
+            guideButton.style.cursor = 'pointer';
+            guideButton.style.display = 'flex';
+            guideButton.style.alignItems = 'center';
+            guideButton.style.justifyContent = 'center';
+            guideButton.style.gap = '8px';
+            guideButton.style.fontWeight = '500';
+            guideButton.style.fontSize = '14px';
+            guideButton.style.boxShadow = '0 2px 4px rgba(0, 0, 0, 0.1)';
+            
+            // Create container for the button
+            const buttonContainer = document.createElement('div');
+            buttonContainer.id = 'guide-button-container';
+            buttonContainer.className = 'guide-button-container';
+            buttonContainer.style.display = 'flex';
+            buttonContainer.style.justifyContent = 'center';
+            buttonContainer.style.width = '100%';
+            buttonContainer.style.marginBottom = '20px';
+            buttonContainer.style.marginTop = '10px';
+            buttonContainer.appendChild(guideButton);
+            
+            // Try to insert the button at the best location
+            let inserted = false;
+            
+            // Try inserting before timer
+            const timerContainer = document.getElementById('timer-container');
+            if (timerContainer && timerContainer.parentNode) {
+                console.log('[Guide] Inserting guide button before timer');
+                timerContainer.parentNode.insertBefore(buttonContainer, timerContainer);
+                inserted = true;
+            }
+            
+            // If that didn't work, try the game screen
+            if (!inserted) {
+                const gameScreen = document.getElementById('game-screen');
+                if (gameScreen) {
+                    console.log('[Guide] Inserting guide button at the beginning of game screen');
+                    gameScreen.insertBefore(buttonContainer, gameScreen.firstChild);
+                    inserted = true;
+                }
+            }
+            
+            // If that still didn't work, try body
+            if (!inserted) {
+                const firstElement = document.body.firstChild;
+                if (firstElement) {
+                    console.log('[Guide] Inserting guide button at the beginning of body');
+                    document.body.insertBefore(buttonContainer, firstElement);
+                    inserted = true;
+                } else {
+                    console.log('[Guide] Appending guide button to body');
+                    document.body.appendChild(buttonContainer);
+                }
+            }
+            
+            console.log(`[Guide] Guide button created with URL: ${url}`);
+            return guideButton;
+        }
+        
+        // Check if settings exist in localStorage
+        try {
+            const settingsJson = localStorage.getItem('guideSettings');
+            if (settingsJson) {
+                const settings = JSON.parse(settingsJson);
+                if (settings && settings[quizName] && settings[quizName].url && settings[quizName].enabled) {
+                    console.log(`[Guide] Using guide settings from localStorage: ${settings[quizName].url}`);
+                    createGuideButton(settings[quizName].url);
+                    return;
+                }
+            }
+        } catch (e) {
+            console.warn('[Guide] Error checking localStorage for guide settings:', e);
+        }
+        
+        // Special case for communication quiz
+        if (quizName === 'communication') {
+            const url = 'https://example.com/communication-guide';
+            console.log(`[Guide] Using hardcoded URL for communication quiz: ${url}`);
+            createGuideButton(url);
+        }
+    }
+
     // Wait for the DOM to load completely
     window.addEventListener('DOMContentLoaded', function() {
         console.log('[Guide] Page finished loading, checking guide button');
-        // Give a short delay for other scripts to complete
+        
+        // Run direct initialization first
+        setTimeout(function() {
+            initializeQuizGuides();
+        }, 500);
+        
+        // Then try through quizHelper if available
         setTimeout(function() {
             if (window.quizHelper) {
                 console.log('[Guide] Found quizHelper, ensuring guide initialization');
@@ -1247,6 +1389,11 @@ export class BaseQuiz {
     // Also check after a longer delay for single page apps or slow-loading pages
     setTimeout(function() {
         console.log('[Guide] Delayed check for guide button');
+        if (!document.getElementById('guide-button-container')) {
+            console.log('[Guide] No guide button found in delayed check, trying again');
+            initializeQuizGuides();
+        }
+        
         if (window.quizHelper) {
             console.log('[Guide] Found quizHelper in delayed check, ensuring guide initialization');
             window.quizHelper.ensureGuideInitialized();

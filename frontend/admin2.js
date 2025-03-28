@@ -3295,14 +3295,29 @@ export class Admin2Dashboard extends AdminDashboard {
                 if (response.data && response.data[quiz]) {
                     this.guideSettings[quiz] = response.data[quiz];
                 } else {
-                this.guideSettings[quiz] = { url, enabled };
+                    this.guideSettings[quiz] = { url, enabled };
+                }
+                
+                // Always save to localStorage for quiz page to find
+                try {
+                    const existingSettingsJson = localStorage.getItem('guideSettings');
+                    const existingSettings = existingSettingsJson ? JSON.parse(existingSettingsJson) : {};
+                    
+                    // Update with new settings
+                    existingSettings[quiz] = { url, enabled };
+                    
+                    // Save back to localStorage
+                    localStorage.setItem('guideSettings', JSON.stringify(existingSettings));
+                    console.log(`[Guide] Saved guide settings to localStorage for ${quiz}:`, existingSettings[quiz]);
+                } catch (e) {
+                    console.warn(`[Guide] Failed to save guide settings to localStorage: ${e.message}`);
                 }
                 
                 // Show warning if using localStorage fallback
                 if (response.source === 'localStorage') {
                     this.showInfo(`Guide settings saved locally (server unavailable).`);
                     console.warn('Guide settings saved to localStorage only - API was unavailable');
-            } else {
+                } else {
                     this.showInfo(`Guide settings for ${this.formatQuizName(quiz)} saved successfully!`);
                 }
                 
