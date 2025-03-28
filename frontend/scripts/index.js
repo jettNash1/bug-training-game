@@ -78,6 +78,7 @@ class IndexPage {
             this.updateQuizProgress();
             this.updateCategoryProgress();
             this.addBadgesNavLink();
+            await this.loadGuideSettingsAndAddButtons();
         } catch (error) {
             console.error('Failed to initialize:', error);
         } finally {
@@ -561,6 +562,169 @@ class IndexPage {
             `;
             document.head.appendChild(style);
         }
+    }
+
+    async loadGuideSettingsAndAddButtons() {
+        console.log('[Index] Loading guide settings for quiz items');
+        
+        try {
+            // Get all visible quiz items
+            const visibleQuizItems = Array.from(this.quizItems).filter(
+                item => !item.classList.contains('quiz-hidden') && !item.classList.contains('locked-quiz')
+            );
+            
+            if (visibleQuizItems.length === 0) {
+                console.log('[Index] No visible quiz items found');
+                return;
+            }
+            
+            // Add styles for guide buttons if not already present
+            if (!document.getElementById('guide-button-styles')) {
+                const styles = document.createElement('style');
+                styles.id = 'guide-button-styles';
+                styles.textContent = `
+                    .quiz-guide-button {
+                        background-color: #4e73df;
+                        color: white;
+                        border: none;
+                        border-radius: 4px;
+                        padding: 6px 12px;
+                        font-size: 14px;
+                        font-weight: 500;
+                        cursor: pointer;
+                        margin-top: 8px;
+                        margin-bottom: 5px;
+                        display: inline-block;
+                        text-align: center;
+                        text-decoration: none;
+                        box-shadow: 0 2px 4px rgba(0,0,0,0.15);
+                        transition: all 0.2s ease;
+                        width: auto;
+                        min-width: 80px;
+                        position: relative;
+                        z-index: 2;
+                    }
+                    .quiz-guide-button:hover {
+                        background-color: #3867d6;
+                        box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+                        text-decoration: none;
+                        color: white;
+                    }
+                    .quiz-guide-button:focus {
+                        outline: 2px solid #3867d6;
+                        text-decoration: none;
+                        color: white;
+                    }
+                    .quiz-item {
+                        position: relative;
+                    }
+                    /* Ensure all quiz items have space for the guide button */
+                    .quiz-item p {
+                        margin-bottom: 30px;
+                    }
+                `;
+                document.head.appendChild(styles);
+            }
+            
+            // Check guide settings for each quiz
+            for (const item of visibleQuizItems) {
+                const quizId = item.dataset.quiz;
+                if (!quizId) continue;
+                
+                try {
+                    // Fetch guide settings from API
+                    const response = await this.apiService.fetchGuideSettings(quizId);
+                    
+                    if (response && response.success && response.data && response.data.enabled && response.data.url) {
+                        console.log(`[Index] Guide button enabled for quiz ${quizId} with URL: ${response.data.url}`);
+                        
+                        // Create or update guide button
+                        this.addGuideButtonToQuizItem(item, quizId, response.data.url);
+                    } else {
+                        console.log(`[Index] Guide button not enabled for quiz ${quizId}`);
+                        // Remove any existing guide button
+                        const existingButton = item.querySelector(`.quiz-guide-button[data-quiz-id="${quizId}"]`);
+                        if (existingButton) {
+                            existingButton.remove();
+                        }
+                    }
+                } catch (error) {
+                    console.error(`[Index] Error fetching guide settings for quiz ${quizId}:`, error);
+                }
+            }
+            
+            console.log('[Index] Finished setting up guide buttons');
+        } catch (error) {
+            console.error('[Index] Error loading guide settings:', error);
+        }
+    }
+    
+    addGuideButtonToQuizItem(quizItem, quizId, guideUrl) {
+        // Remove any existing guide button for this quiz
+        const existingButton = quizItem.querySelector(`.quiz-guide-button[data-quiz-id="${quizId}"]`);
+        if (existingButton) {
+            existingButton.remove();
+        }
+        
+        console.log(`[Index] Adding guide button to quiz item: ${quizId}`);
+        
+        // Create button
+        const guideButton = document.createElement('a');
+        guideButton.className = 'quiz-guide-button';
+        guideButton.textContent = 'Guide';
+        guideButton.href = guideUrl;
+        guideButton.target = '_blank';
+        guideButton.setAttribute('data-quiz-id', quizId);
+        guideButton.setAttribute('aria-label', `Open guide for ${quizId}`);
+        
+        // Analyze the structure of the quiz item
+        console.log(`[Index] Quiz item structure for ${quizId}:`, quizItem.innerHTML);
+        
+        // Get the appropriate quiz title and description
+        const titleElement = quizItem.querySelector('h3') || quizItem.querySelector('h2') || quizItem.querySelector('strong');
+        const scoreElement = quizItem.querySelector('.progress-indicator') || quizItem.querySelector(`#${quizId}-progress`);
+        let descriptionElement = quizItem.querySelector('p');
+        
+        // Check if we need to create a better structure
+        let needsRestructuring = false;
+        
+        // Create a container for the guide button
+        const buttonContainer = document.createElement('div');
+        buttonContainer.className = 'guide-button-container';
+        buttonContainer.style.width = '100%';
+        buttonContainer.style.textAlign = 'center';
+        buttonContainer.style.marginTop = '10px';
+        buttonContainer.appendChild(guideButton);
+        
+        // Approach 1: Best case - add at end of quiz content
+        if (descriptionElement) {
+            console.log(`[Index] Found description element for ${quizId}, inserting after`);
+            
+            // Check if there's already space after the description
+            const computedStyle = window.getComputedStyle(descriptionElement);
+            const marginBottom = parseInt(computedStyle.marginBottom);
+            
+            if (marginBottom < 30) {
+                descriptionElement.style.marginBottom = '30px';
+            }
+            
+            // Insert after the description
+            descriptionElement.parentNode.insertBefore(buttonContainer, descriptionElement.nextSibling);
+            return;
+        }
+        
+        // Approach 2: Try to find the bottom of the quiz item
+        const allElements = Array.from(quizItem.children);
+        if (allElements.length > 0) {
+            console.log(`[Index] No description found for ${quizId}, appending to last child`);
+            const lastElement = allElements[allElements.length - 1];
+            lastElement.parentNode.insertBefore(buttonContainer, lastElement.nextSibling);
+            return;
+        }
+        
+        // Approach 3: Just append to the quiz item as last resort
+        console.log(`[Index] Appending directly to quiz item for ${quizId}`);
+        quizItem.appendChild(buttonContainer);
     }
 }
 

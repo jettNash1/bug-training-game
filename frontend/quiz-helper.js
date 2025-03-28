@@ -177,73 +177,26 @@ export class BaseQuiz {
                 return;
             }
             
-            console.log(`[Guide] Fetching guide settings for ${this.quizName} using API service`);
+            // Disable guide button functionality in quiz pages - only show on index page
+            this.showGuideButton = false;
+            this.guideUrl = null;
+            this.updateGuideButton(); // Remove any existing guide button
             
-            // Add a retry mechanism
-            let attempts = 0;
+            console.log('[Guide] Guide buttons disabled in quiz pages, they will only appear on the index page');
+            
+            // We still fetch the guide settings for debugging purposes, but don't display the button
             let response = null;
-            
-            while (attempts < 2 && (!response || !response.success)) {
-                try {
-                    attempts++;
-                    console.log(`[Guide] API attempt ${attempts} for quiz ${this.quizName}`);
-                    response = await this.apiService.fetchGuideSettings(this.quizName);
-                    console.log(`[Guide] Guide settings response (attempt ${attempts}):`, response);
-                } catch (retryError) {
-                    console.error(`[Guide] Error in fetch attempt ${attempts}:`, retryError);
-                    // Wait a bit before retrying
-                    if (attempts < 2) {
-                        await new Promise(resolve => setTimeout(resolve, 500));
-                    }
-                }
-            }
-            
-            if (response && response.success) {
-                const settings = response.data;
-                
-                if (settings) {
-                    console.log(`[Guide] Applying guide settings:`, settings);
-                    // Apply the settings to the quiz
-                    this.guideUrl = settings.url;
-                    this.showGuideButton = settings.enabled;
-                    
-                    console.log(`[Guide] Settings applied - URL: ${this.guideUrl}, Enabled: ${this.showGuideButton}`);
-                } else {
-                    console.warn(`[Guide] No settings found in response`);
-                    this.guideUrl = null;
-                    this.showGuideButton = false;
-                }
-            } else {
-                console.error('[Guide] Failed to load guide settings:', response);
-                this.guideUrl = null;
-                this.showGuideButton = false;
+            try {
+                response = await this.apiService.fetchGuideSettings(this.quizName);
+                console.log(`[Guide] Guide settings response (for reference only):`, response);
+            } catch (error) {
+                console.error('[Guide] Error fetching guide settings:', error);
             }
         } catch (error) {
             console.error(`[Guide] Error loading guide settings:`, error);
             this.guideUrl = null;
             this.showGuideButton = false;
         }
-        
-        // Check if we actually have valid settings
-        if (this.showGuideButton && !this.guideUrl) {
-            console.warn(`[Guide] Guide button enabled but URL is missing - disabling button`);
-            this.showGuideButton = false;
-        }
-        
-        // Only initially show the guide button if this is the first question
-        // (player starts at question 0, so check if current scenario is 0)
-        if (this.player && this.player.currentScenario !== undefined) {
-            if (this.player.currentScenario > 0) {
-                console.log(`[Guide] Not the first question (current scenario: ${this.player.currentScenario}), hiding guide button`);
-                this.showGuideButton = false;
-            } else {
-                console.log(`[Guide] First question detected, showing guide button if enabled`);
-            }
-        }
-        
-        // Update the UI to show or hide the button
-        console.log(`[Guide] Calling updateGuideButton() with URL: ${this.guideUrl}, Enabled: ${this.showGuideButton}`);
-        this.updateGuideButton();
     }
 
     updateGuideButton() {
@@ -1148,109 +1101,28 @@ export class BaseQuiz {
     }
 
     forceShowGuideButton(url = "https://example.com/guide") {
-        console.log(`[Guide] Forcing guide button to show with URL: ${url}`);
-        this.guideUrl = url;
-        this.showGuideButton = true;
-        this.updateGuideButton();
-        
-        // Just in case there are timing issues, try again after a delay
-        setTimeout(() => {
-            console.log('[Guide] Retry adding guide button after 500ms delay');
-            this.updateGuideButton();
-        }, 500);
-        
-        // Add a global reference for console access
-        window.quizHelper = this;
-        console.log('[Guide] Use "window.quizHelper.forceShowGuideButton()" in console to trigger again');
+        console.log(`[Guide] Guide buttons have been disabled in quiz pages and only appear on the index page`);
+        return false;
     }
 
     ensureGuideInitialized() {
-        // Make sure we have a quiz name from somewhere
-        if (!this.quizName) {
-            // Try to detect from URL or page
-            this.quizName = this.detectQuizNameFromPage();
-            
-            // If still not found, look at the path for clues
-            if (!this.quizName) {
-                const path = window.location.pathname;
-                console.log(`[Guide] Trying to extract quiz name from path: ${path}`);
-                
-                if (path.includes('communication')) {
-                    this.quizName = 'communication';
-                } else if (path.includes('cms')) {
-                    this.quizName = 'cms';
-                } else if (path.includes('team-portal')) {
-                    this.quizName = 'team-portal';
-                }
-                
-                console.log(`[Guide] Extracted quiz name: ${this.quizName}`);
-            }
-        }
-        
-        if (this.quizName) {
-            // (Re)initialize guide settings with the quiz name
-            console.log(`[Guide] Re-initializing guide settings with quiz name: ${this.quizName}`);
-            this.initializeGuideSettings();
-        } else {
-            console.error('[Guide] Could not determine quiz name, cannot initialize guide');
-        }
-        
-        // Create a global reference for debugging/troubleshooting
-        window.quizHelper = this;
+        console.log('[Guide] Guide buttons have been disabled in quiz pages and only appear on the index page');
+        return false;
     }
 
     forceEnableGuide(quizName = null, guideUrl = "https://example.com/quiz-guide") {
-        // Try to update quiz name if provided, but don't fail if it's read-only
-        if (quizName) {
-            try {
-                this.quizName = quizName;
-                console.log(`[Guide] Force set quiz name to: ${this.quizName}`);
-            } catch (error) {
-                console.log(`[Guide] Could not change quiz name (it may be read-only in this quiz implementation). Using existing name: ${this.quizName}`);
-            }
-        }
-        
-        // Enable guide
-        this.guideUrl = guideUrl;
-        this.showGuideButton = true;
-        console.log(`[Guide] Force enabled guide with URL: ${this.guideUrl}`);
-        
-        // Update the UI
-        this.updateGuideButton();
-        
-        // Try again after a small delay (for potential DOM changes)
-        setTimeout(() => {
-            console.log('[Guide] Delayed update of guide button after force enable');
-            this.updateGuideButton();
-        }, 1000);
-        
+        console.log(`[Guide] Guide buttons have been disabled in quiz pages and only appear on the index page`);
         return {
-            quizName: this.quizName,
-            guideUrl: this.guideUrl,
-            buttonEnabled: this.showGuideButton
+            enabled: false,
+            message: "Guide buttons only appear on the index page"
         };
     }
 
-    // Alternative method that doesn't try to change the quiz name
     enableGuideButton(guideUrl = "https://example.com/quiz-guide") {
-        // Just enable the guide with the current quiz name
-        this.guideUrl = guideUrl;
-        this.showGuideButton = true;
-        console.log(`[Guide] Enabled guide button for ${this.quizName} with URL: ${this.guideUrl}`);
-        
-        // Update the UI
-        this.updateGuideButton();
-        
-        // Try again after a small delay (for potential DOM changes)
-        setTimeout(() => {
-            console.log('[Guide] Delayed update of guide button');
-            this.updateGuideButton();
-        }, 1000);
-        
+        console.log(`[Guide] Guide buttons have been disabled in quiz pages and only appear on the index page`);
         return {
-            quizName: this.quizName,
-            guideUrl: this.guideUrl,
-            buttonEnabled: this.showGuideButton
+            enabled: false,
+            message: "Guide buttons only appear on the index page"
         };
     }
 }
@@ -1259,236 +1131,18 @@ export class BaseQuiz {
 (function() {
     // Direct method to initialize guide buttons for all quizzes
     function initializeQuizGuides() {
-        console.log('[Guide] Direct initialization of quiz guides');
-        
-        // Try to find the quiz name from the page
-        let quizName = null;
-        const path = window.location.pathname.toLowerCase();
-        
-        // Detect quiz name from URL path
-        if (path.includes('communication')) {
-            quizName = 'communication';
-        } else if (path.includes('cms')) {
-            quizName = 'cms';
-        } else if (path.includes('team-portal')) {
-            quizName = 'team-portal';
-        }
-        
-        if (!quizName) {
-            // Try other detection methods
-            const quizParam = new URLSearchParams(window.location.search).get('quiz');
-            if (quizParam) {
-                quizName = quizParam.toLowerCase();
-            }
-        }
-        
-        if (!quizName) {
-            console.log('[Guide] Could not detect quiz name for direct initialization');
-            return;
-        }
-        
-        console.log(`[Guide] Detected quiz name for direct initialization: ${quizName}`);
-        
-        // Function to create and insert guide button
-        function createGuideButton(url) {
-            // Remove any existing button first
-            const existingButton = document.getElementById('guide-button-container');
-            if (existingButton) {
-                existingButton.remove();
-            }
-            
-            // Create button element
-            const guideButton = document.createElement('button');
-            guideButton.id = 'guide-button';
-            guideButton.className = 'guide-button';
-            guideButton.innerHTML = 'Guide';
-            guideButton.setAttribute('aria-label', 'Open quiz guide');
-            guideButton.onclick = () => window.open(url, '_blank');
-            
-            // Apply common styles regardless of whether Back button exists
-            guideButton.style.display = 'inline-block';
-            guideButton.style.padding = '10px 20px';
-            guideButton.style.fontSize = '16px';
-            guideButton.style.fontWeight = '400';
-            guideButton.style.borderRadius = '4px';
-            guideButton.style.border = 'none';
-            guideButton.style.backgroundColor = '#4e73df';
-            guideButton.style.color = 'white';
-            guideButton.style.cursor = 'pointer';
-            guideButton.style.textAlign = 'center';
-            guideButton.style.boxShadow = '0 2px 5px rgba(0,0,0,0.15)';
-            guideButton.style.transition = 'all 0.2s ease';
-            guideButton.style.minWidth = '100px';
-            
-            // Add hover effect
-            guideButton.onmouseover = () => {
-                guideButton.style.backgroundColor = '#3867d6';
-                guideButton.style.boxShadow = '0 4px 8px rgba(0,0,0,0.2)';
-            };
-            guideButton.onmouseout = () => {
-                guideButton.style.backgroundColor = '#4e73df';
-                guideButton.style.boxShadow = '0 2px 5px rgba(0,0,0,0.15)';
-            };
-            
-            // Create container for the button
-            const buttonContainer = document.createElement('div');
-            buttonContainer.id = 'guide-button-container';
-            buttonContainer.className = 'guide-button-container';
-            buttonContainer.style.marginTop = '0'; // Reduced spacing
-            buttonContainer.style.marginBottom = '10px';
-            buttonContainer.appendChild(guideButton);
-            
-            // Find the "Back to Hub" button to position the guide button beneath it
-            const backToHubButton = document.querySelector('a[href="/"], a[href="/index.html"], a[href="index.html"], a[href="./"], button[aria-label="Back to Hub"]');
-            
-            // If we couldn't find it by normal selectors, try to find by text content
-            let foundBackButton = backToHubButton;
-            if (!foundBackButton) {
-                // Look for elements containing "Back to Hub" text
-                const allButtons = document.querySelectorAll('a, button');
-                for (const button of allButtons) {
-                    if (button.textContent && button.textContent.trim().includes('Back to Hub')) {
-                        foundBackButton = button;
-                        console.log('[Guide] Found Back to Hub button by text content');
-                        break;
-                    }
-                }
-            }
-            
-            if (foundBackButton) {
-                console.log('[Guide] Found Back to Hub button, positioning guide button below it');
-                
-                // Check if the Back to Hub button is inside a container
-                const backButtonParent = foundBackButton.parentElement;
-                
-                // Get the computed style of the back button to match exactly
-                const backButtonStyle = window.getComputedStyle(foundBackButton);
-                
-                // Apply exact same width to guide button
-                guideButton.style.width = backButtonStyle.width;
-                guideButton.style.minWidth = backButtonStyle.minWidth;
-                guideButton.style.maxWidth = backButtonStyle.maxWidth;
-                
-                // Create a wrapper if it doesn't exist, to style both buttons consistently
-                let buttonWrapper = document.getElementById('nav-buttons-wrapper');
-                if (!buttonWrapper) {
-                    buttonWrapper = document.createElement('div');
-                    buttonWrapper.id = 'nav-buttons-wrapper';
-                    buttonWrapper.style.display = 'flex';
-                    buttonWrapper.style.flexDirection = 'column';
-                    buttonWrapper.style.gap = '5px';
-                    buttonWrapper.style.margin = '0';
-                    buttonWrapper.style.padding = '0';
-                    
-                    // Replace the Back to Hub button with our wrapper
-                    foundBackButton.parentNode.insertBefore(buttonWrapper, foundBackButton);
-                    buttonWrapper.appendChild(foundBackButton);
-                }
-                
-                // Add the guide button to the wrapper
-                buttonWrapper.appendChild(buttonContainer);
-                console.log('[Guide] Guide button positioned in nav wrapper with Back to Hub button');
-                return; // Exit early as we've found our preferred position
-            }
-            
-            // Fallback positioning approaches if Back to Hub button not found
-            let insertionSuccessful = false;
-            
-            // Try to find the top navigation or header area first
-            const navContainer = document.querySelector('nav, header, .navigation, .header, .top-bar');
-            if (navContainer) {
-                console.log('[Guide] Adding guide button after navigation/header');
-                navContainer.insertAdjacentElement('afterend', buttonContainer);
-                insertionSuccessful = true;
-            }
-            
-            // Approach 1: Insert before timer container
-            const timerContainer = document.getElementById('timer-container');
-            if (!insertionSuccessful && timerContainer && timerContainer.parentNode) {
-                console.log('[Guide] Adding guide button before timer container');
-                timerContainer.parentNode.insertBefore(buttonContainer, timerContainer);
-                insertionSuccessful = true;
-            }
-            
-            // Approach 2: Insert at beginning of game screen
-            if (!insertionSuccessful) {
-                const gameScreen = document.getElementById('game-screen');
-                if (gameScreen) {
-                    console.log('[Guide] Adding guide button to beginning of game screen');
-                    gameScreen.insertBefore(buttonContainer, gameScreen.firstChild);
-                    insertionSuccessful = true;
-                }
-            }
-            
-            // Approach 3: Last resort - add to body
-            if (!insertionSuccessful) {
-                console.log('[Guide] Adding guide button to document body as last resort');
-                document.body.insertBefore(buttonContainer, document.body.firstChild);
-            }
-            
-            console.log('[Guide] Guide button added successfully');
-            
-            // Store a reference for debugging
-            window.guideButton = guideButton;
-            window.quizHelper = this;
-        }
-        
-        // Check if settings exist in localStorage
-        try {
-            const settingsJson = localStorage.getItem('guideSettings');
-            if (settingsJson) {
-                const settings = JSON.parse(settingsJson);
-                if (settings && settings[quizName] && settings[quizName].url && settings[quizName].enabled) {
-                    console.log(`[Guide] Using guide settings from localStorage: ${settings[quizName].url}`);
-                    createGuideButton(settings[quizName].url);
-                    return;
-                }
-            }
-        } catch (e) {
-            console.warn('[Guide] Error checking localStorage for guide settings:', e);
-        }
-        
-        // Special case for communication quiz
-        if (quizName === 'communication') {
-            const url = 'https://example.com/communication-guide';
-            console.log(`[Guide] Using hardcoded URL for communication quiz: ${url}`);
-            createGuideButton(url);
-        }
+        // Buttons were moved to the index page, no longer needed in quiz pages
+        console.log('[Guide] Guide buttons have been moved to index page cards and disabled in quiz pages');
+        return false;
     }
 
     // Wait for the DOM to load completely
     window.addEventListener('DOMContentLoaded', function() {
-        console.log('[Guide] Page finished loading, checking guide button');
-        
-        // Run direct initialization first
-        setTimeout(function() {
-            initializeQuizGuides();
-        }, 500);
-        
-        // Then try through quizHelper if available
-        setTimeout(function() {
-            if (window.quizHelper) {
-                console.log('[Guide] Found quizHelper, ensuring guide initialization');
-                window.quizHelper.ensureGuideInitialized();
-            } else {
-                console.log('[Guide] quizHelper not found, cannot initialize guide');
-            }
-        }, 1000);
+        console.log('[Guide] Guide buttons have been moved to index page cards and disabled in quiz pages');
     });
     
     // Also check after a longer delay for single page apps or slow-loading pages
     setTimeout(function() {
-        console.log('[Guide] Delayed check for guide button');
-        if (!document.getElementById('guide-button-container')) {
-            console.log('[Guide] No guide button found in delayed check, trying again');
-            initializeQuizGuides();
-        }
-        
-        if (window.quizHelper) {
-            console.log('[Guide] Found quizHelper in delayed check, ensuring guide initialization');
-            window.quizHelper.ensureGuideInitialized();
-        } else {
-            console.log('[Guide] quizHelper not found in delayed check, cannot initialize guide');
-        }
+        console.log('[Guide] Guide buttons have been moved to index page cards and disabled in quiz pages');
     }, 3000);
 })(); 
