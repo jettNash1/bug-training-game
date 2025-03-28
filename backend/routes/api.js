@@ -1,8 +1,8 @@
 // Guide settings endpoint for frontend quiz access
-router.get('/guide-settings/:quizName', auth, async (req, res) => {
+router.get('/guide-settings/:quizName', async (req, res) => {
     try {
         const { quizName } = req.params;
-        console.log(`[API] Fetching guide settings for quiz: ${quizName}, User: ${req.userId}`);
+        console.log(`[API] Fetching guide settings for quiz: ${quizName}`);
         
         // Get guide settings from database
         const settings = await Setting.findOne({ key: 'guideSettings' });
@@ -19,8 +19,9 @@ router.get('/guide-settings/:quizName', auth, async (req, res) => {
         }
         
         // Get the specific quiz settings
-        const quizSettings = settings.value[quizName] || { url: null, enabled: false };
-        console.log(`[API] Found guide settings for ${quizName}:`, quizSettings);
+        const normalizedQuizName = quizName.toLowerCase().trim();
+        const quizSettings = settings.value[normalizedQuizName] || { url: null, enabled: false };
+        console.log(`[API] Found guide settings for ${normalizedQuizName}:`, quizSettings);
         
         // Ensure URL and enabled are always present in the response
         const responseData = {

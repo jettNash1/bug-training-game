@@ -178,11 +178,27 @@ export class BaseQuiz {
             }
             
             console.log(`[Guide] Fetching guide settings for ${this.quizName} using API service`);
-            const response = await this.apiService.fetchGuideSettings(this.quizName);
             
-            console.log(`[Guide] Guide settings response:`, response);
+            // Add a retry mechanism
+            let attempts = 0;
+            let response = null;
             
-            if (response.success) {
+            while (attempts < 2 && (!response || !response.success)) {
+                try {
+                    attempts++;
+                    console.log(`[Guide] API attempt ${attempts} for quiz ${this.quizName}`);
+                    response = await this.apiService.fetchGuideSettings(this.quizName);
+                    console.log(`[Guide] Guide settings response (attempt ${attempts}):`, response);
+                } catch (retryError) {
+                    console.error(`[Guide] Error in fetch attempt ${attempts}:`, retryError);
+                    // Wait a bit before retrying
+                    if (attempts < 2) {
+                        await new Promise(resolve => setTimeout(resolve, 500));
+                    }
+                }
+            }
+            
+            if (response && response.success) {
                 const settings = response.data;
                 
                 if (settings) {
@@ -1153,6 +1169,34 @@ export class BaseQuiz {
         
         // Create a global reference for debugging/troubleshooting
         window.quizHelper = this;
+    }
+
+    forceEnableGuide(quizName = null, guideUrl = "https://example.com/quiz-guide") {
+        // Update quiz name if provided
+        if (quizName) {
+            this.quizName = quizName;
+            console.log(`[Guide] Force set quiz name to: ${this.quizName}`);
+        }
+        
+        // Enable guide
+        this.guideUrl = guideUrl;
+        this.showGuideButton = true;
+        console.log(`[Guide] Force enabled guide with URL: ${this.guideUrl}`);
+        
+        // Update the UI
+        this.updateGuideButton();
+        
+        // Try again after a small delay (for potential DOM changes)
+        setTimeout(() => {
+            console.log('[Guide] Delayed update of guide button after force enable');
+            this.updateGuideButton();
+        }, 1000);
+        
+        return {
+            quizName: this.quizName,
+            guideUrl: this.guideUrl,
+            buttonEnabled: this.showGuideButton
+        };
     }
 }
 

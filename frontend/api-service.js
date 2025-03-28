@@ -1802,29 +1802,33 @@ export class APIService {
     async fetchGuideSettings(quizName) {
         console.log(`[API] Fetching guide settings for quiz: ${quizName}`);
         
+        if (!quizName) {
+            console.error('[API] No quiz name provided for guide settings fetch');
+            return {
+                success: false,
+                data: {
+                    url: null,
+                    enabled: false
+                }
+            };
+        }
+        
         // Normalize quiz name
         const normalizedQuizName = quizName.toLowerCase().trim();
         
         try {
-            // Construct the URL carefully
+            // Construct the URL carefully with proper encoding
             const url = `${this.baseUrl}/guide-settings/${encodeURIComponent(normalizedQuizName)}`;
             console.log(`[API] Guide settings URL: ${url}`);
             
-            // Create timeout controller
-            const controller = new AbortController();
-            const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 second timeout
-            
-            // Make the API request
+            // Just do a simple fetch without timeout - let the browser handle it
             const response = await fetch(url, {
                 method: 'GET',
                 headers: {
                     'Accept': 'application/json'
                 },
-                signal: controller.signal
+                credentials: 'include'
             });
-            
-            // Clear the timeout
-            clearTimeout(timeoutId);
             
             if (!response.ok) {
                 console.warn(`[API] Error response from guide settings API: ${response.status}`);
@@ -1838,13 +1842,27 @@ export class APIService {
             }
             
             // Parse the response
-            const jsonData = await response.json();
-            console.log(`[API] Guide settings response:`, jsonData);
+            const text = await response.text();
+            console.log(`[API] Guide settings raw response:`, text);
             
-            if (jsonData.success && jsonData.data) {
-                return jsonData;
-            } else {
-                console.warn(`[API] Invalid guide settings response:`, jsonData);
+            try {
+                const jsonData = JSON.parse(text);
+                console.log(`[API] Guide settings parsed response:`, jsonData);
+                
+                if (jsonData.success && jsonData.data) {
+                    return jsonData;
+                } else {
+                    console.warn(`[API] Invalid guide settings response:`, jsonData);
+                    return {
+                        success: false,
+                        data: {
+                            url: null,
+                            enabled: false
+                        }
+                    };
+                }
+            } catch (parseError) {
+                console.error(`[API] Error parsing guide settings JSON:`, parseError);
                 return {
                     success: false,
                     data: {
