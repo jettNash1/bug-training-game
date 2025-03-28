@@ -251,7 +251,14 @@
     </div>
 
     <!-- Load scripts as modules -->
-    <script type="module" src="../admin2.js"></script>
+    <script type="module">
+        import { Admin2Dashboard } from '../admin2.js';
+        
+        // Initialize the dashboard when the DOM is loaded
+        document.addEventListener('DOMContentLoaded', () => {
+            window.adminDashboard = new Admin2Dashboard();
+        });
+    </script>
 
     <style>
         /* Admin 2 layout styles */

@@ -1,6 +1,6 @@
 import { AdminDashboard } from './admin.js';
 
-class Admin2Dashboard extends AdminDashboard {
+export class Admin2Dashboard extends AdminDashboard {
     constructor() {
         super();
         // Additional initialization for Admin2Dashboard
