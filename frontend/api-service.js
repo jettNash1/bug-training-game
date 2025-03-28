@@ -1797,4 +1797,51 @@ export class APIService {
             throw error;
         }
     }
+
+    // Guide settings methods for quiz UI
+    async fetchGuideSettings(quizName) {
+        try {
+            // First try to get from API
+            const response = await this.fetchWithAuth(`${this.baseUrl}/guide-settings/${quizName}`);
+            
+            if (response.success && response.data) {
+                return response;
+            } else {
+                throw new Error(response.message || 'Failed to fetch guide settings');
+            }
+        } catch (error) {
+            console.warn(`Error fetching guide settings for ${quizName}:`, error);
+            
+            // Try to get from localStorage as fallback
+            try {
+                const guideSettingsJson = localStorage.getItem('guideSettings');
+                if (guideSettingsJson) {
+                    const allSettings = JSON.parse(guideSettingsJson);
+                    
+                    if (allSettings && allSettings[quizName]) {
+                        const quizSettings = allSettings[quizName];
+                        return {
+                            success: true,
+                            data: {
+                                url: quizSettings.url,
+                                enabled: quizSettings.enabled,
+                                source: 'localStorage'
+                            }
+                        };
+                    }
+                }
+            } catch (localError) {
+                console.error('Error reading guide settings from localStorage:', localError);
+            }
+            
+            // Return empty settings if nothing found
+            return {
+                success: true,
+                data: {
+                    url: null,
+                    enabled: false
+                }
+            };
+        }
+    }
 } 

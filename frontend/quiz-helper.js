@@ -62,21 +62,39 @@ export class BaseQuiz {
 
     async initializeGuideSettings() {
         try {
-            const response = await this.apiService.fetchWithAuth(`${this.apiService.baseUrl}/guide-settings/${this.quizName}`);
+            console.log(`Initializing guide settings for ${this.quizName}`);
+            
+            // Use the dedicated method for guide settings
+            const response = await this.apiService.fetchGuideSettings(this.quizName);
+            
             if (response.success) {
                 const settings = response.data;
+                console.log(`Guide settings loaded for ${this.quizName}:`, settings);
+                
                 this.guideUrl = settings?.url || null;
                 this.showGuideButton = settings?.enabled || false;
+                
+                if (settings?.source === 'localStorage') {
+                    console.warn(`Using localStorage fallback for guide settings of ${this.quizName}`);
+                }
+                
+                if (this.showGuideButton && this.guideUrl) {
+                    console.log(`Guide button will be shown for ${this.quizName} with URL: ${this.guideUrl}`);
+                } else {
+                    console.log(`Guide button will not be shown for ${this.quizName}: enabled=${this.showGuideButton}, url=${this.guideUrl}`);
+                }
             } else {
-                console.error('Failed to load guide settings');
+                console.error('Failed to load guide settings:', response);
                 this.guideUrl = null;
                 this.showGuideButton = false;
             }
         } catch (error) {
-            console.error('Error loading guide settings:', error);
+            console.error(`Error loading guide settings for ${this.quizName}:`, error);
             this.guideUrl = null;
             this.showGuideButton = false;
         }
+        
+        // Update the UI
         this.updateGuideButton();
     }
 
@@ -89,6 +107,9 @@ export class BaseQuiz {
 
         // If guide is enabled and URL is set, show the button
         if (this.showGuideButton && this.guideUrl) {
+            console.log(`Creating guide button for URL: ${this.guideUrl}`);
+            
+            // Create button element
             const guideButton = document.createElement('button');
             guideButton.id = 'guide-button';
             guideButton.className = 'guide-button';
@@ -96,18 +117,51 @@ export class BaseQuiz {
             guideButton.setAttribute('aria-label', 'Open quiz guide');
             guideButton.onclick = () => window.open(this.guideUrl, '_blank');
             
-            // Insert the button in the game screen
+            // Add styles directly to ensure they are applied
+            guideButton.style.backgroundColor = '#4e73df';
+            guideButton.style.color = 'white';
+            guideButton.style.border = 'none';
+            guideButton.style.borderRadius = '4px';
+            guideButton.style.padding = '8px 16px';
+            guideButton.style.margin = '10px 0';
+            guideButton.style.cursor = 'pointer';
+            guideButton.style.display = 'flex';
+            guideButton.style.alignItems = 'center';
+            guideButton.style.justifyContent = 'center';
+            guideButton.style.gap = '8px';
+            guideButton.style.fontWeight = '500';
+            guideButton.style.fontSize = '14px';
+            guideButton.style.boxShadow = '0 2px 4px rgba(0, 0, 0, 0.1)';
+            
+            // Create container for the button
             const buttonContainer = document.createElement('div');
             buttonContainer.className = 'guide-button-container';
+            buttonContainer.style.display = 'flex';
+            buttonContainer.style.justifyContent = 'center';
+            buttonContainer.style.width = '100%';
+            buttonContainer.style.marginBottom = '10px';
             buttonContainer.appendChild(guideButton);
+            
+            // Find the game screen
+            const gameScreen = document.getElementById('game-screen');
+            if (!gameScreen) {
+                console.error('Game screen element not found, cannot add guide button');
+                return;
+            }
             
             // Add to game screen, right after the timer if it exists
             const timerContainer = document.getElementById('timer-container');
             if (timerContainer) {
+                console.log('Adding guide button after timer container');
                 timerContainer.parentNode.insertBefore(buttonContainer, timerContainer.nextSibling);
             } else {
-                this.gameScreen.insertBefore(buttonContainer, this.gameScreen.firstChild);
+                console.log('No timer container found, adding guide button to beginning of game screen');
+                gameScreen.insertBefore(buttonContainer, gameScreen.firstChild);
             }
+            
+            console.log('Guide button added successfully');
+        } else {
+            console.log('Guide button not shown: showGuideButton =', this.showGuideButton, 'guideUrl =', this.guideUrl);
         }
     }
 

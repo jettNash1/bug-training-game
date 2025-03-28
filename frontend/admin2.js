@@ -545,14 +545,14 @@ export class Admin2Dashboard extends AdminDashboard {
                 <div class="form-row">
                     <label>Default seconds per question (0-300):</label>
                     <div class="input-button-group">
-                        <input type="number" 
+                    <input type="number" 
                             id="default-timer" 
                             value="${defaultSeconds}" 
-                            min="0" 
-                            max="300"
+                        min="0" 
+                        max="300"
                             class="timer-seconds-input">
                         <button class="save-default-btn action-button">Save Default</button>
-                    </div>
+                </div>
                 </div>
                 <small>Set to 0 to disable the timer completely.</small>
             </div>
@@ -3059,11 +3059,11 @@ export class Admin2Dashboard extends AdminDashboard {
                     
                     <div class="form-row">
                         <label>Guide URL:</label>
-                        <input type="url" 
+                <input type="url" 
                             id="guide-url-input" 
                             placeholder="https://example.com/guide"
                             class="settings-input">
-                    </div>
+                </div>
                     
                     <div class="form-row">
                         <label class="checkbox-label">
@@ -3127,7 +3127,7 @@ export class Admin2Dashboard extends AdminDashboard {
         });
 
         // Save guide settings
-        saveButton.addEventListener('click', async () => {
+            saveButton.addEventListener('click', async () => {
             const selectedQuiz = quizSelect.value;
             if (!selectedQuiz) {
                 alert('Please select a quiz');
@@ -3158,8 +3158,8 @@ export class Admin2Dashboard extends AdminDashboard {
                 if (guideSettingsList) {
                     guideSettingsList.innerHTML = this.generateGuideSettingsList(this.guideSettings);
                 }
-            } catch (error) {
-                console.error('Failed to save guide settings:', error);
+                } catch (error) {
+                    console.error('Failed to save guide settings:', error);
                 alert('Failed to save guide settings');
             }
         });
@@ -3286,7 +3286,7 @@ export class Admin2Dashboard extends AdminDashboard {
             this.showInfo(`Saving guide settings for ${this.formatQuizName(quiz)}...`);
             
             const response = await this.apiService.saveGuideSetting(quiz, url, enabled);
-            
+
             if (response.success) {
                 // Update local state with the new guide settings
                 if (!this.guideSettings) {
@@ -3297,14 +3297,14 @@ export class Admin2Dashboard extends AdminDashboard {
                 if (response.data && response.data[quiz]) {
                     this.guideSettings[quiz] = response.data[quiz];
                 } else {
-                    this.guideSettings[quiz] = { url, enabled };
+                this.guideSettings[quiz] = { url, enabled };
                 }
                 
                 // Show warning if using localStorage fallback
                 if (response.source === 'localStorage') {
                     this.showInfo(`Guide settings saved locally (server unavailable).`);
                     console.warn('Guide settings saved to localStorage only - API was unavailable');
-                } else {
+            } else {
                     this.showInfo(`Guide settings for ${this.formatQuizName(quiz)} saved successfully!`);
                 }
                 
