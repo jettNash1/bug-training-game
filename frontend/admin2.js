@@ -529,6 +529,9 @@ export class Admin2Dashboard extends AdminDashboard {
 
         const defaultSeconds = this.timerSettings?.defaultSeconds || 60;
         const quizTimers = this.timerSettings?.quizTimers || {};
+        
+        // Use inherited quizTypes array from parent class combined with hardcoded types
+        const allQuizTypes = [...new Set([...this.quizTypes, ...this.getHardcodedQuizTypes()])].sort();
 
         // Create the default timer settings section
         const defaultSettingsHTML = `
@@ -563,7 +566,7 @@ export class Admin2Dashboard extends AdminDashboard {
                         <label>Select Quiz:</label>
                         <select id="quiz-select" class="settings-input">
                             <option value="">-- Select a Quiz --</option>
-                            ${this.getHardcodedQuizTypes().map(quiz => 
+                            ${allQuizTypes.map(quiz => 
                                 `<option value="${quiz}">${quiz}</option>`
                             ).join('')}
                         </select>
@@ -3024,7 +3027,8 @@ export class Admin2Dashboard extends AdminDashboard {
         // Clear existing content
         container.innerHTML = '';
 
-        const quizTypes = this.getHardcodedQuizTypes();
+        // Use inherited quizTypes array from parent class combined with hardcoded types
+        const allQuizTypes = [...new Set([...this.quizTypes, ...this.getHardcodedQuizTypes()])].sort();
         const guideSettings = this.guideSettings || {};
 
         // Create the guide settings HTML
@@ -3041,7 +3045,7 @@ export class Admin2Dashboard extends AdminDashboard {
                         <label>Select Quiz:</label>
                         <select id="guide-quiz-select" class="settings-input">
                             <option value="">-- Select a Quiz --</option>
-                            ${quizTypes.map(quiz => 
+                            ${allQuizTypes.map(quiz => 
                                 `<option value="${quiz}">${quiz}</option>`
                             ).join('')}
                         </select>
@@ -3097,19 +3101,19 @@ export class Admin2Dashboard extends AdminDashboard {
         const quizSelect = container.querySelector('#guide-quiz-select');
         const urlInput = container.querySelector('#guide-url-input');
         const enabledCheckbox = container.querySelector('#guide-enabled-checkbox');
-        const saveGuideBtn = container.querySelector('#save-guide-btn');
+        const saveButton = container.querySelector('#save-guide-btn');
         const selectAllCheckbox = container.querySelector('#select-all-guides');
         const enableSelectedBtn = container.querySelector('#enable-selected-guides');
         const disableSelectedBtn = container.querySelector('#disable-selected-guides');
         const removeSelectedBtn = container.querySelector('#remove-selected-guides');
 
-        // Update URL and enabled status when a quiz is selected
+        // Set initial state when a quiz is selected
         quizSelect.addEventListener('change', () => {
             const selectedQuiz = quizSelect.value;
-            if (selectedQuiz) {
-                const settings = guideSettings[selectedQuiz] || { url: '', enabled: false };
-                urlInput.value = settings.url || '';
-                enabledCheckbox.checked = settings.enabled || false;
+            if (selectedQuiz && this.guideSettings[selectedQuiz]) {
+                const guideSetting = this.guideSettings[selectedQuiz];
+                urlInput.value = guideSetting.url || '';
+                enabledCheckbox.checked = guideSetting.enabled || false;
             } else {
                 urlInput.value = '';
                 enabledCheckbox.checked = false;
@@ -3117,173 +3121,157 @@ export class Admin2Dashboard extends AdminDashboard {
         });
 
         // Save guide settings
-        saveGuideBtn.addEventListener('click', async () => {
+        saveButton.addEventListener('click', async () => {
             const selectedQuiz = quizSelect.value;
             if (!selectedQuiz) {
                 alert('Please select a quiz');
                 return;
             }
-            
             const url = urlInput.value.trim();
             if (!url) {
-                alert('Please enter a valid URL');
-                return;
-            }
-            
-            if (!url.startsWith('http://') && !url.startsWith('https://')) {
-                alert('URL must start with http:// or https://');
+                alert('Please enter a URL');
                 return;
             }
             
             try {
-                await this.saveGuideSettings(selectedQuiz, url, enabledCheckbox.checked);
+                // Validate URL format
+                new URL(url);
+            } catch (e) {
+                alert('Please enter a valid URL (include http:// or https://)');
+                return;
+            }
+            
+            const enabled = enabledCheckbox.checked;
+            
+            try {
+                await this.saveGuideSettings(selectedQuiz, url, enabled);
                 this.showInfo(`Guide settings for ${selectedQuiz} saved successfully`);
+                
                 // Refresh the guide settings list
-                const guideList = container.querySelector('#guide-settings-list');
-                if (guideList) {
-                    guideList.innerHTML = this.generateGuideSettingsList(this.guideSettings);
+                const guideSettingsList = container.querySelector('#guide-settings-list');
+                if (guideSettingsList) {
+                    guideSettingsList.innerHTML = this.generateGuideSettingsList(this.guideSettings);
                 }
             } catch (error) {
                 console.error('Failed to save guide settings:', error);
-                alert('Failed to save guide settings. Please try again.');
+                alert('Failed to save guide settings');
             }
         });
-
-        // Select all guides functionality
+        
+        // Select all guides
         selectAllCheckbox.addEventListener('change', () => {
-            const checkboxes = container.querySelectorAll('.guide-checkbox');
-            checkboxes.forEach(cb => cb.checked = selectAllCheckbox.checked);
+            const checkboxes = container.querySelectorAll('#guide-settings-list input[type="checkbox"]');
+            checkboxes.forEach(checkbox => {
+                checkbox.checked = selectAllCheckbox.checked;
+            });
         });
-
+        
         // Enable selected guides
         enableSelectedBtn.addEventListener('click', async () => {
-            const selectedQuizzes = Array.from(container.querySelectorAll('.guide-checkbox:checked'))
-                .map(cb => cb.dataset.quiz);
-            
-            if (selectedQuizzes.length === 0) {
-                alert('Please select at least one quiz');
+            const selectedGuides = this.getSelectedGuides(container);
+            if (selectedGuides.length === 0) {
+                alert('Please select at least one guide');
                 return;
             }
-
+            
             try {
-                for (const quiz of selectedQuizzes) {
-                    const currentSettings = guideSettings[quiz] || { url: '', enabled: false };
-                    if (currentSettings.url) {
-                        await this.saveGuideSettings(quiz, currentSettings.url, true);
+                let updatedCount = 0;
+                for (const quiz of selectedGuides) {
+                    if (this.guideSettings[quiz] && this.guideSettings[quiz].url) {
+                        await this.saveGuideSettings(quiz, this.guideSettings[quiz].url, true);
+                        updatedCount++;
                     }
                 }
-                this.showInfo(`Enabled guides for ${selectedQuizzes.length} quizzes`);
+                
+                this.showInfo(`${updatedCount} guide(s) enabled successfully`);
+                
                 // Refresh the guide settings list
-                const guideList = container.querySelector('#guide-settings-list');
-                if (guideList) {
-                    guideList.innerHTML = this.generateGuideSettingsList(this.guideSettings);
+                const guideSettingsList = container.querySelector('#guide-settings-list');
+                if (guideSettingsList) {
+                    guideSettingsList.innerHTML = this.generateGuideSettingsList(this.guideSettings);
                 }
             } catch (error) {
                 console.error('Failed to enable guides:', error);
-                alert('Failed to enable some guides. Please try again.');
+                alert('Failed to enable guides');
             }
         });
-
+        
         // Disable selected guides
         disableSelectedBtn.addEventListener('click', async () => {
-            const selectedQuizzes = Array.from(container.querySelectorAll('.guide-checkbox:checked'))
-                .map(cb => cb.dataset.quiz);
-            
-            if (selectedQuizzes.length === 0) {
-                alert('Please select at least one quiz');
+            const selectedGuides = this.getSelectedGuides(container);
+            if (selectedGuides.length === 0) {
+                alert('Please select at least one guide');
                 return;
             }
-
+            
             try {
-                for (const quiz of selectedQuizzes) {
-                    const currentSettings = guideSettings[quiz] || { url: '', enabled: false };
-                    if (currentSettings.url) {
-                        await this.saveGuideSettings(quiz, currentSettings.url, false);
+                let updatedCount = 0;
+                for (const quiz of selectedGuides) {
+                    if (this.guideSettings[quiz] && this.guideSettings[quiz].url) {
+                        await this.saveGuideSettings(quiz, this.guideSettings[quiz].url, false);
+                        updatedCount++;
                     }
                 }
-                this.showInfo(`Disabled guides for ${selectedQuizzes.length} quizzes`);
+                
+                this.showInfo(`${updatedCount} guide(s) disabled successfully`);
+                
                 // Refresh the guide settings list
-                const guideList = container.querySelector('#guide-settings-list');
-                if (guideList) {
-                    guideList.innerHTML = this.generateGuideSettingsList(this.guideSettings);
+                const guideSettingsList = container.querySelector('#guide-settings-list');
+                if (guideSettingsList) {
+                    guideSettingsList.innerHTML = this.generateGuideSettingsList(this.guideSettings);
                 }
             } catch (error) {
                 console.error('Failed to disable guides:', error);
-                alert('Failed to disable some guides. Please try again.');
+                alert('Failed to disable guides');
             }
         });
-
+        
         // Remove selected guides
         removeSelectedBtn.addEventListener('click', async () => {
-            const selectedQuizzes = Array.from(container.querySelectorAll('.guide-checkbox:checked'))
-                .map(cb => cb.dataset.quiz);
-            
-            if (selectedQuizzes.length === 0) {
-                alert('Please select at least one quiz');
+            const selectedGuides = this.getSelectedGuides(container);
+            if (selectedGuides.length === 0) {
+                alert('Please select at least one guide');
                 return;
             }
-
-            if (confirm(`Are you sure you want to remove guide settings for ${selectedQuizzes.length} selected quizzes?`)) {
-                try {
-                    for (const quiz of selectedQuizzes) {
+            
+            const confirmed = confirm(`Are you sure you want to remove ${selectedGuides.length} guide setting(s)?`);
+            if (!confirmed) return;
+            
+            try {
+                let removedCount = 0;
+                for (const quiz of selectedGuides) {
+                    if (this.guideSettings[quiz]) {
+                        // Set to empty string to "remove" the guide
                         await this.saveGuideSettings(quiz, '', false);
+                        removedCount++;
                     }
-                    this.showInfo(`Removed guide settings for ${selectedQuizzes.length} quizzes`);
-                    // Refresh the guide settings list
-                    const guideList = container.querySelector('#guide-settings-list');
-                    if (guideList) {
-                        guideList.innerHTML = this.generateGuideSettingsList(this.guideSettings);
-                    }
-                } catch (error) {
-                    console.error('Failed to remove guide settings:', error);
-                    alert('Failed to remove some guide settings. Please try again.');
                 }
+                
+                this.showInfo(`${removedCount} guide setting(s) removed successfully`);
+                
+                // Refresh the guide settings list
+                const guideSettingsList = container.querySelector('#guide-settings-list');
+                if (guideSettingsList) {
+                    guideSettingsList.innerHTML = this.generateGuideSettingsList(this.guideSettings);
+                }
+            } catch (error) {
+                console.error('Failed to remove guides:', error);
+                alert('Failed to remove guides');
             }
         });
     }
     
-    // Helper method to generate HTML for the list of guide settings
-    generateGuideSettingsList(guideSettings) {
-        const guideEntries = Object.entries(guideSettings || {})
-            .filter(([_, settings]) => settings && settings.url);
-        
-        if (guideEntries.length === 0) {
-            return '<p class="no-settings">No guide settings configured yet.</p>';
-        }
-        
-        // Sort entries by quiz name
-        guideEntries.sort((a, b) => a[0].localeCompare(b[0]));
-        
-        return `
-            <table class="settings-table">
-                <thead>
-                    <tr>
-                        <th style="width: 40px;"></th>
-                        <th>Quiz</th>
-                        <th>URL</th>
-                        <th>Status</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    ${guideEntries.map(([quizName, settings]) => `
-                        <tr>
-                            <td>
-                                <input type="checkbox" class="guide-checkbox" data-quiz="${quizName}">
-                            </td>
-                            <td>${quizName}</td>
-                            <td>
-                                <a href="${settings.url}" target="_blank" rel="noopener noreferrer">${settings.url}</a>
-                            </td>
-                            <td>
-                                <span class="status-badge ${settings.enabled ? 'enabled' : 'disabled'}">
-                                    ${settings.enabled ? 'Enabled' : 'Disabled'}
-                                </span>
-                            </td>
-                        </tr>
-                    `).join('')}
-                </tbody>
-            </table>
-        `;
+    // Helper method to get selected guides from the UI
+    getSelectedGuides(container) {
+        const selectedGuides = [];
+        const checkboxes = container.querySelectorAll('#guide-settings-list input[type="checkbox"]:checked');
+        checkboxes.forEach(checkbox => {
+            const quiz = checkbox.getAttribute('data-quiz');
+            if (quiz) {
+                selectedGuides.push(quiz);
+            }
+        });
+        return selectedGuides;
     }
 
     async saveGuideSettings(quiz, url, enabled) {
@@ -3330,6 +3318,50 @@ export class Admin2Dashboard extends AdminDashboard {
             console.error('Failed to load timer settings:', error);
             this.timerSettings = { defaultSeconds: 60, quizTimers: {} };
         }
+    }
+
+    // Helper method to generate HTML for the list of guide settings
+    generateGuideSettingsList(guideSettings) {
+        const guideEntries = Object.entries(guideSettings || {})
+            .filter(([_, settings]) => settings && settings.url);
+        
+        if (guideEntries.length === 0) {
+            return '<p class="no-settings">No guide settings configured yet.</p>';
+        }
+        
+        // Sort entries by quiz name
+        guideEntries.sort((a, b) => a[0].localeCompare(b[0]));
+        
+        return `
+            <table class="settings-table">
+                <thead>
+                    <tr>
+                        <th style="width: 40px;"></th>
+                        <th>Quiz</th>
+                        <th>URL</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${guideEntries.map(([quizName, settings]) => `
+                        <tr>
+                            <td>
+                                <input type="checkbox" class="guide-checkbox" data-quiz="${quizName}">
+                            </td>
+                            <td>${quizName}</td>
+                            <td>
+                                <a href="${settings.url}" target="_blank" rel="noopener noreferrer">${settings.url}</a>
+                            </td>
+                            <td>
+                                <span class="status-badge ${settings.enabled ? 'enabled' : 'disabled'}">
+                                    ${settings.enabled ? 'Enabled' : 'Disabled'}
+                                </span>
+                            </td>
+                        </tr>
+                    `).join('')}
+                </tbody>
+            </table>
+        `;
     }
 }
 
