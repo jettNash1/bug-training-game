@@ -25,6 +25,9 @@ export class Admin2Dashboard extends AdminDashboard {
                 return;
             }
 
+            // Set up event listeners first to ensure menu functionality
+            this.setupEventListeners();
+
             // Load users
             await this.loadUsers();
             
@@ -39,8 +42,7 @@ export class Admin2Dashboard extends AdminDashboard {
             await this.loadGuideSettings();
             this.displayGuideSettings();
 
-            // Set up event listeners
-            this.setupEventListeners();
+            // Set up other components
             this.setupCreateAccountForm();
             this.setupScenariosList();
             this.setupScheduleSection();
@@ -148,6 +150,11 @@ export class Admin2Dashboard extends AdminDashboard {
         const menuItems = document.querySelectorAll('.menu-item');
         const contentSections = document.querySelectorAll('.content-section');
         
+        if (!menuItems.length || !contentSections.length) {
+            console.error('Menu items or content sections not found');
+            return;
+        }
+
         console.log('Setting up menu event listeners:', {
             menuItemsCount: menuItems.length,
             contentSectionsCount: contentSections.length
@@ -172,9 +179,14 @@ export class Admin2Dashboard extends AdminDashboard {
                     const sectionId = item.getAttribute('data-section');
                     const section = document.getElementById(sectionId);
                     
+                    if (!section) {
+                        console.error(`Section not found for ID: ${sectionId}`);
+                        return;
+                    }
+                    
                     console.log('Looking for section:', {
                         sectionId,
-                        sectionFound: !!section
+                        sectionFound: true
                     });
                     
                     // Hide all sections first
@@ -183,18 +195,16 @@ export class Admin2Dashboard extends AdminDashboard {
                         s.style.display = 'none';
                     });
                     
-                    if (section) {
-                        // Set display to block and add active class after a small delay
-                        // This ensures the display property is applied before the transition
-                        section.style.display = 'block';
-                        setTimeout(() => {
-                            section.classList.add('active');
-                        }, 0);
-                        
-                        // Special handling for schedule section
-                        if (sectionId === 'schedule-section') {
-                            this.loadScheduleData();
-                        }
+                    // Set display to block and add active class after a small delay
+                    // This ensures the display property is applied before the transition
+                    section.style.display = 'block';
+                    setTimeout(() => {
+                        section.classList.add('active');
+                    }, 0);
+                    
+                    // Special handling for schedule section
+                    if (sectionId === 'schedule-section') {
+                        this.loadScheduleData();
                     }
                 });
             }
