@@ -28,27 +28,31 @@ export class Admin2Dashboard extends AdminDashboard {
             // Set up event listeners first to ensure menu functionality
             this.setupEventListeners();
 
-            // Load users
-            await this.loadUsers();
-            
-            // Load timer settings
-            const timerSettings = await this.apiService.fetchWithAdminAuth(`${this.apiService.baseUrl}/admin/settings/quiz-timer`);
-            if (timerSettings.success) {
-                this.timerSettings = timerSettings.data;
-                this.displayTimerSettings();
-            }
+            // Initialize all components in parallel
+            await Promise.all([
+                this.loadUsers(),
+                this.loadTimerSettings(),
+                this.loadGuideSettings()
+            ]);
 
-            // Load guide settings
-            await this.loadGuideSettings();
-            this.displayGuideSettings();
-
-            // Set up other components
+            // Set up all UI components
             this.setupCreateAccountForm();
             this.setupScenariosList();
             this.setupScheduleSection();
+            this.displayTimerSettings();
+            this.displayGuideSettings();
 
             // Update dashboard with initial data
             await this.updateDashboard();
+
+            // Show the default section (users)
+            const defaultSection = document.getElementById('users-section');
+            if (defaultSection) {
+                defaultSection.style.display = 'block';
+                setTimeout(() => {
+                    defaultSection.classList.add('active');
+                }, 0);
+            }
         } catch (error) {
             console.error('Failed to initialize dashboard:', error);
             if (error.message.includes('token')) {
@@ -57,7 +61,6 @@ export class Admin2Dashboard extends AdminDashboard {
         }
     }
     
-    // Add loadUsers method
     async loadUsers() {
         try {
             // Use the apiService to properly handle authentication
@@ -184,11 +187,6 @@ export class Admin2Dashboard extends AdminDashboard {
                         return;
                     }
                     
-                    console.log('Looking for section:', {
-                        sectionId,
-                        sectionFound: true
-                    });
-                    
                     // Hide all sections first
                     contentSections.forEach(s => {
                         s.classList.remove('active');
@@ -196,15 +194,26 @@ export class Admin2Dashboard extends AdminDashboard {
                     });
                     
                     // Set display to block and add active class after a small delay
-                    // This ensures the display property is applied before the transition
                     section.style.display = 'block';
                     setTimeout(() => {
                         section.classList.add('active');
                     }, 0);
                     
-                    // Special handling for schedule section
-                    if (sectionId === 'schedule-section') {
-                        this.loadScheduleData();
+                    // Special handling for different sections
+                    switch(sectionId) {
+                        case 'schedule-section':
+                            this.loadScheduleData();
+                            break;
+                        case 'settings-section':
+                            this.displayTimerSettings();
+                            this.displayGuideSettings();
+                            break;
+                        case 'scenarios-section':
+                            this.setupScenariosList();
+                            break;
+                        case 'create-account-section':
+                            this.setupCreateAccountForm();
+                            break;
                     }
                 });
             }
@@ -2910,6 +2919,18 @@ export class Admin2Dashboard extends AdminDashboard {
             await this.apiService.adminLogout();
         } finally {
             window.location.replace('/pages/admin-login.html');
+        }
+    }
+
+    async loadTimerSettings() {
+        try {
+            const timerSettings = await this.apiService.fetchWithAdminAuth(`${this.apiService.baseUrl}/admin/settings/quiz-timer`);
+            if (timerSettings.success) {
+                this.timerSettings = timerSettings.data;
+            }
+        } catch (error) {
+            console.error('Failed to load timer settings:', error);
+            this.timerSettings = { defaultSeconds: 60, quizTimers: {} };
         }
     }
 }
