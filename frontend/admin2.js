@@ -789,9 +789,9 @@ export class Admin2Dashboard extends AdminDashboard {
     }
     
     // Helper method to show info messages (neutral)
-    showInfo(message) {
+    showInfo(message, type = 'info') {
         const infoContainer = document.createElement('div');
-        infoContainer.className = 'info-message';
+        infoContainer.className = `message ${type}-message`;
         infoContainer.innerHTML = `
             <span>${message}</span>
             <button class="close-message">&times;</button>
@@ -2996,7 +2996,7 @@ export class Admin2Dashboard extends AdminDashboard {
                 this.displayTimerSettings();
                 
                 // Show success message
-                this.showInfoMessage(`Timer for ${quizName} updated to ${seconds} seconds`);
+                this.showInfo(`Timer for ${quizName} updated to ${seconds} seconds`);
             } else {
                 throw new Error(response.message || 'Failed to update timer settings');
             }
@@ -3008,10 +3008,14 @@ export class Admin2Dashboard extends AdminDashboard {
 
     async loadGuideSettings() {
         try {
-            const response = await this.apiService.fetchWithAdminAuth(`${this.apiService.baseUrl}/admin/guide-settings`);
+            const response = await this.apiService.getGuideSettings();
             if (response.success) {
                 this.guideSettings = response.data || {};
-                console.log('Loaded guide settings:', this.guideSettings);
+                console.log('Loaded guide settings:', this.guideSettings, 'from', response.source || 'unknown');
+                
+                if (response.source === 'localStorage') {
+                    console.warn('Using guide settings from localStorage (API may be unavailable)');
+                }
             } else {
                 console.warn('Failed to load guide settings:', response);
                 this.guideSettings = {};
@@ -3278,34 +3282,46 @@ export class Admin2Dashboard extends AdminDashboard {
 
     async saveGuideSettings(quiz, url, enabled) {
         try {
-            const response = await this.apiService.fetchWithAdminAuth(
-                `${this.apiService.baseUrl}/admin/guide-settings`,
-                {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({ 
-                        quiz,
-                        url, 
-                        enabled 
-                    })
-                }
-            );
-
+            // Show a loading state
+            this.showInfo(`Saving guide settings for ${this.formatQuizName(quiz)}...`);
+            
+            const response = await this.apiService.saveGuideSetting(quiz, url, enabled);
+            
             if (response.success) {
                 // Update local state with the new guide settings
                 if (!this.guideSettings) {
                     this.guideSettings = {};
                 }
-                this.guideSettings[quiz] = { url, enabled };
+                
+                // If the response includes data, update from that, otherwise use input params
+                if (response.data && response.data[quiz]) {
+                    this.guideSettings[quiz] = response.data[quiz];
+                } else {
+                    this.guideSettings[quiz] = { url, enabled };
+                }
+                
+                // Show warning if using localStorage fallback
+                if (response.source === 'localStorage') {
+                    this.showInfo(`Guide settings saved locally (server unavailable).`);
+                    console.warn('Guide settings saved to localStorage only - API was unavailable');
+                } else {
+                    this.showInfo(`Guide settings for ${this.formatQuizName(quiz)} saved successfully!`);
+                }
+                
                 return true;
             } else {
-                console.error('API returned error:', response);
                 throw new Error(response.message || 'Failed to save guide settings');
             }
         } catch (error) {
             console.error('Error saving guide settings:', error);
+            
+            // Special handling for validation errors
+            if (error.message && error.message.includes('URL format')) {
+                this.showInfo(`Error: ${error.message}`, 'error');
+            } else {
+                this.showInfo('Failed to save guide settings', 'error');
+            }
+            
             throw error;
         }
     }

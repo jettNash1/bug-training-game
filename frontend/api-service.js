@@ -1671,4 +1671,130 @@ export class APIService {
             throw error;
         }
     }
+
+    // Guide settings methods
+    async getGuideSettings() {
+        try {
+            const response = await this.fetchWithAdminAuth(`${this.baseUrl}/admin/guide-settings`);
+            
+            if (response.success && response.data) {
+                // Save to localStorage as a backup
+                localStorage.setItem('guideSettings', JSON.stringify(response.data));
+                
+                return {
+                    success: true,
+                    data: response.data,
+                    source: 'api'
+                };
+            } else {
+                throw new Error(response.message || 'Failed to get guide settings');
+            }
+        } catch (error) {
+            console.error('Error fetching guide settings:', error);
+            
+            // Try to get from localStorage as fallback
+            try {
+                const localSettings = localStorage.getItem('guideSettings');
+                if (localSettings) {
+                    const settings = JSON.parse(localSettings);
+                    return {
+                        success: true,
+                        data: settings,
+                        source: 'localStorage'
+                    };
+                }
+            } catch (localError) {
+                console.warn('Error reading from localStorage:', localError);
+            }
+            
+            // Return empty object if all else fails
+            return {
+                success: true,
+                data: {},
+                source: 'default'
+            };
+        }
+    }
+    
+    async saveGuideSetting(quizName, url, enabled) {
+        try {
+            // Sanitize inputs
+            const sanitizedQuiz = quizName.trim().toLowerCase();
+            const sanitizedUrl = url.trim();
+            
+            // Validate URL if provided
+            if (sanitizedUrl && !sanitizedUrl.match(/^https?:\/\/.+/)) {
+                throw new Error('Invalid URL format. Must start with http:// or https://');
+            }
+            
+            // API call
+            const response = await this.fetchWithAdminAuth(`${this.baseUrl}/admin/guide-settings/${sanitizedQuiz}`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ 
+                    url: sanitizedUrl, 
+                    enabled: Boolean(enabled) 
+                })
+            });
+            
+            if (response.success) {
+                // Update localStorage with the new settings
+                try {
+                    const existingSettingsJson = localStorage.getItem('guideSettings');
+                    const existingSettings = existingSettingsJson ? JSON.parse(existingSettingsJson) : {};
+                    
+                    const updatedSettings = {
+                        ...existingSettings,
+                        [sanitizedQuiz]: { url: sanitizedUrl, enabled: Boolean(enabled) }
+                    };
+                    
+                    localStorage.setItem('guideSettings', JSON.stringify(updatedSettings));
+                } catch (storageError) {
+                    console.warn('Failed to update localStorage:', storageError);
+                }
+                
+                return {
+                    success: true,
+                    data: response.data || { [sanitizedQuiz]: { url: sanitizedUrl, enabled: Boolean(enabled) } }
+                };
+            } else {
+                throw new Error(response.message || 'Failed to save guide settings');
+            }
+        } catch (error) {
+            console.error('Error saving guide setting:', error);
+            
+            // If we get an HTML response, use localStorage as fallback
+            if (error.message && (
+                error.message.includes('HTML response') || 
+                error.message.includes('Server returned HTML')
+            )) {
+                try {
+                    // Update localStorage directly
+                    const existingSettingsJson = localStorage.getItem('guideSettings');
+                    const existingSettings = existingSettingsJson ? JSON.parse(existingSettingsJson) : {};
+                    
+                    const updatedSettings = {
+                        ...existingSettings,
+                        [quizName]: { url, enabled: Boolean(enabled) }
+                    };
+                    
+                    localStorage.setItem('guideSettings', JSON.stringify(updatedSettings));
+                    
+                    console.warn('API returned HTML, using localStorage fallback for guide settings');
+                    return {
+                        success: true,
+                        data: { [quizName]: { url, enabled: Boolean(enabled) } },
+                        source: 'localStorage',
+                        warning: 'API unavailable, using localStorage fallback'
+                    };
+                } catch (localError) {
+                    console.error('Failed to use localStorage fallback:', localError);
+                }
+            }
+            
+            throw error;
+        }
+    }
 } 
