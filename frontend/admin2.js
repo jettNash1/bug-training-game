@@ -3008,11 +3008,13 @@ export class Admin2Dashboard extends AdminDashboard {
 
     async loadGuideSettings() {
         try {
-            const response = await this.apiService.fetchWithAdminAuth(`${this.apiBaseUrl}/admin/guide-settings`);
+            const response = await this.apiService.fetchWithAdminAuth(`${this.apiService.baseUrl}/admin/guide-settings`);
             if (response.success) {
-                this.guideSettings = response.data;
+                this.guideSettings = response.data || {};
+                console.log('Loaded guide settings:', this.guideSettings);
             } else {
-                throw new Error('Failed to load guide settings');
+                console.warn('Failed to load guide settings:', response);
+                this.guideSettings = {};
             }
         } catch (error) {
             console.error('Error loading guide settings:', error);
@@ -3277,26 +3279,34 @@ export class Admin2Dashboard extends AdminDashboard {
     async saveGuideSettings(quiz, url, enabled) {
         try {
             const response = await this.apiService.fetchWithAdminAuth(
-                `${this.apiBaseUrl}/admin/guide-settings/${quiz}`,
+                `${this.apiService.baseUrl}/admin/guide-settings`,
                 {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'
                     },
-                    body: JSON.stringify({ url, enabled })
+                    body: JSON.stringify({ 
+                        quiz,
+                        url, 
+                        enabled 
+                    })
                 }
             );
 
             if (response.success) {
+                // Update local state with the new guide settings
+                if (!this.guideSettings) {
+                    this.guideSettings = {};
+                }
                 this.guideSettings[quiz] = { url, enabled };
-                this.displayGuideSettings();
-                alert('Guide settings saved successfully!');
+                return true;
             } else {
-                throw new Error('Failed to save guide settings');
+                console.error('API returned error:', response);
+                throw new Error(response.message || 'Failed to save guide settings');
             }
         } catch (error) {
             console.error('Error saving guide settings:', error);
-            alert('Failed to save guide settings. Please try again.');
+            throw error;
         }
     }
 
