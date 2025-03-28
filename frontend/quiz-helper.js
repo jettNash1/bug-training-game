@@ -1172,10 +1172,14 @@ export class BaseQuiz {
     }
 
     forceEnableGuide(quizName = null, guideUrl = "https://example.com/quiz-guide") {
-        // Update quiz name if provided
+        // Try to update quiz name if provided, but don't fail if it's read-only
         if (quizName) {
-            this.quizName = quizName;
-            console.log(`[Guide] Force set quiz name to: ${this.quizName}`);
+            try {
+                this.quizName = quizName;
+                console.log(`[Guide] Force set quiz name to: ${this.quizName}`);
+            } catch (error) {
+                console.log(`[Guide] Could not change quiz name (it may be read-only in this quiz implementation). Using existing name: ${this.quizName}`);
+            }
         }
         
         // Enable guide
@@ -1189,6 +1193,29 @@ export class BaseQuiz {
         // Try again after a small delay (for potential DOM changes)
         setTimeout(() => {
             console.log('[Guide] Delayed update of guide button after force enable');
+            this.updateGuideButton();
+        }, 1000);
+        
+        return {
+            quizName: this.quizName,
+            guideUrl: this.guideUrl,
+            buttonEnabled: this.showGuideButton
+        };
+    }
+
+    // Alternative method that doesn't try to change the quiz name
+    enableGuideButton(guideUrl = "https://example.com/quiz-guide") {
+        // Just enable the guide with the current quiz name
+        this.guideUrl = guideUrl;
+        this.showGuideButton = true;
+        console.log(`[Guide] Enabled guide button for ${this.quizName} with URL: ${this.guideUrl}`);
+        
+        // Update the UI
+        this.updateGuideButton();
+        
+        // Try again after a small delay (for potential DOM changes)
+        setTimeout(() => {
+            console.log('[Guide] Delayed update of guide button');
             this.updateGuideButton();
         }, 1000);
         
