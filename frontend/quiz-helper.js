@@ -260,7 +260,7 @@ export class BaseQuiz {
             guideButton.style.border = 'none';
             guideButton.style.borderRadius = '4px';
             guideButton.style.padding = '8px 16px';
-            guideButton.style.margin = '10px 0';
+            guideButton.style.margin = '10px auto';
             guideButton.style.cursor = 'pointer';
             guideButton.style.display = 'flex';
             guideButton.style.alignItems = 'center';
@@ -277,19 +277,36 @@ export class BaseQuiz {
             buttonContainer.style.display = 'flex';
             buttonContainer.style.justifyContent = 'center';
             buttonContainer.style.width = '100%';
-            buttonContainer.style.marginBottom = '10px';
+            buttonContainer.style.marginBottom = '20px';
+            buttonContainer.style.marginTop = '10px';
             buttonContainer.appendChild(guideButton);
             
-            // Try multiple placement approaches for robustness
+            // Try multiple placement approaches for robustness, prioritizing the preferred location first
             let insertionSuccessful = false;
             
-            // Approach 1: Insert after timer
+            // Approach 0 (PREFERRED): Look for the main content area above the timer
+            // This targets the red box area indicated in the screenshot
+            const contentArea = document.querySelector('.container, .quiz-container, .content-area');
             const timerContainer = document.getElementById('timer-container');
-            if (timerContainer && timerContainer.parentNode) {
-                console.log('[Guide] Adding guide button after timer container');
-                timerContainer.parentNode.insertBefore(buttonContainer, timerContainer.nextSibling);
+            
+            if (contentArea && timerContainer) {
+                // Find the parent that contains the timer
+                let timerParent = timerContainer.parentNode;
+                
+                // Insert BEFORE the element that contains the timer
+                if (timerParent && timerParent.parentNode) {
+                    console.log('[Guide] Adding guide button in preferred location (above timer container parent)');
+                    timerParent.parentNode.insertBefore(buttonContainer, timerParent);
+                    insertionSuccessful = true;
+                }
+            }
+            
+            // Approach 1: Insert before timer container
+            if (!insertionSuccessful && timerContainer && timerContainer.parentNode) {
+                console.log('[Guide] Adding guide button before timer container');
+                timerContainer.parentNode.insertBefore(buttonContainer, timerContainer);
                 insertionSuccessful = true;
-            } 
+            }
             
             // Approach 2: Insert at beginning of game screen
             if (!insertionSuccessful) {
