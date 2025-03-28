@@ -11,84 +11,40 @@ class Admin2Dashboard extends AdminDashboard {
 
     async init2() {
         try {
-            // Get the admin token from localStorage
-            const adminToken = localStorage.getItem('adminToken');
-            if (!adminToken) {
-                window.location.replace('./admin-login.html');
+            // Verify admin token
+            const tokenVerification = await this.apiService.verifyAdminToken();
+            if (!tokenVerification.success) {
+                window.location.href = '/login.html';
                 return;
             }
 
-            // Verify admin token
-            const isValid = await this.verifyAdminToken(adminToken);
-            if (!isValid) {
-                // Token is invalid, redirect to login
-                window.location.replace('./admin-login.html');
-                return;
+            // Load users
+            await this.loadUsers();
+            
+            // Load timer settings
+            const timerSettings = await this.apiService.fetchWithAdminAuth(`${this.apiService.baseUrl}/admin/settings/quiz-timer`);
+            if (timerSettings.success) {
+                this.timerSettings = timerSettings.data;
+                this.displayTimerSettings();
             }
-            
-            // Set up event listeners after verifying token
-            this.setupEventListeners();
-            
-            // Load users (add this line)
-            try {
-                await this.loadUsers();
-                console.log(`Successfully loaded ${this.users.length} users`);
-            } catch (error) {
-                console.error('Error loading users:', error);
-            }
-            
-            // Load timer settings before displaying them
-            try {
-                await this.loadTimerSettings();
-                console.log('Timer settings loaded successfully');
-            } catch (error) {
-                console.error('Error loading timer settings:', error);
-            }
-            
+
             // Load guide settings
-            try {
-                await this.loadGuideSettings();
-                console.log('Guide settings loaded successfully');
-            } catch (error) {
-                console.error('Error loading guide settings:', error);
-            }
-            
-            // Timer settings
-            this.displayTimerSettings();
-            
-            // Guide settings
+            await this.loadGuideSettings();
             this.displayGuideSettings();
-            
-            // Set up create account form
-            try {
-                this.setupCreateAccountForm();
-                console.log('Create account form set up successfully');
-            } catch (error) {
-                console.error('Error setting up create account form:', error);
-            }
-            
-            // Set up scenarios list
-            try {
-                this.setupScenariosList();
-                console.log('Scenarios list set up successfully');
-            } catch (error) {
-                console.error('Error setting up scenarios list:', error);
-            }
-            
-            // Setup schedule section
-            try {
-                this.setupScheduleSection();
-                console.log('Schedule section set up successfully');
-                
-                // Set up interval to check for scheduled resets
-                setInterval(() => this.checkScheduledResets(), 60000); // Check every minute
-            } catch (error) {
-                console.error('Error setting up schedule section:', error);
-            }
+
+            // Set up event listeners
+            this.setupEventListeners();
+            this.setupCreateAccountForm();
+            this.setupScenariosList();
+            this.setupScheduleSection();
+
+            // Update dashboard with initial data
+            await this.updateDashboard();
         } catch (error) {
-            console.error('Error in init2:', error);
-            // Handle initialization error - redirect to login if authentication fails
-            window.location.replace('/pages/admin-login.html');
+            console.error('Failed to initialize dashboard:', error);
+            if (error.message.includes('token')) {
+                window.location.href = '/login.html';
+            }
         }
     }
     
@@ -518,354 +474,52 @@ class Admin2Dashboard extends AdminDashboard {
     
     // Display timer settings in the settings section
     displayTimerSettings() {
-        const timerContainer = document.getElementById('timer-settings-container');
-        if (!timerContainer) return;
-        
-        // Get the default value
-        const defaultValue = this.timerSettings?.defaultSeconds ?? 60;
-        const quizTimers = this.timerSettings?.quizTimers ?? {};
-        
-        // Create HTML for settings form
-        timerContainer.innerHTML = `
-            <div class="settings-form timer-settings-form">
-                <h4>Default Timer Setting</h4>
-                <p>This setting applies to all quizzes unless overridden by per-quiz settings.</p>
-                <div class="form-group">
-                    <label for="default-timer-value">
-                        Default seconds per question (0-300):
-                    </label>
-                    <div class="input-with-button">
-                        <input 
-                            type="number" 
-                            id="default-timer-value" 
-                            min="0" 
-                            max="300" 
-                            value="${defaultValue}"
-                            class="settings-input"
-                        />
-                        <button id="save-default-timer-btn" class="action-button">Save Default</button>
-                    </div>
-                    <small>Set to 0 to disable the timer completely.</small>
+        const container = document.getElementById('timer-settings-container');
+        if (!container) return;
+
+        // Clear existing content
+        container.innerHTML = '';
+
+        // Get all quiz types
+        const quizTypes = this.getHardcodedQuizTypes();
+
+        // Create settings for each quiz
+        quizTypes.forEach(quiz => {
+            const seconds = this.timerSettings?.quizTimers?.[quiz] || this.timerSettings?.defaultSeconds || 60;
+            
+            const settingItem = document.createElement('div');
+            settingItem.className = 'timer-setting-item';
+
+            settingItem.innerHTML = `
+                <h4>${quiz}</h4>
+                <div class="timer-input-group">
+                    <input type="number" 
+                        class="timer-seconds-input" 
+                        value="${seconds}" 
+                        min="0" 
+                        max="300"
+                        aria-label="Timer seconds for ${quiz}">
+                    <span class="timer-unit">seconds</span>
                 </div>
-                
-                <h4 class="mt-4">Per-Quiz Timer Settings</h4>
-                <p>Set different time limits for specific quizzes. These override the default setting.</p>
-                
-                <div class="per-quiz-timer-form">
-                    <div class="form-group">
-                        <label for="quiz-select">Select Quiz:</label>
-                        <select id="quiz-select" class="settings-input">
-                            <option value="">-- Select a Quiz --</option>
-                            ${this.quizTypes && Array.isArray(this.quizTypes) 
-                                ? this.quizTypes
-                                    .slice()
-                                    .sort((a, b) => this.formatQuizName(a).localeCompare(this.formatQuizName(b)))
-                                    .map(quiz => `<option value="${quiz}">${this.formatQuizName(quiz)}</option>`)
-                                    .join('')
-                                : ''
-                            }
-                        </select>
-                    </div>
-                    
-                    <div class="form-group">
-                        <label for="quiz-timer-value">
-                            Seconds per question for this quiz (0-300):
-                        </label>
-                        <div class="input-with-button">
-                            <input 
-                                type="number" 
-                                id="quiz-timer-value" 
-                                min="0" 
-                                max="300" 
-                                value="${defaultValue}"
-                                class="settings-input"
-                                disabled
-                            />
-                            <button id="save-quiz-timer-btn" class="action-button" disabled>Set Timer</button>
-                            <button id="reset-quiz-timer-btn" class="action-button secondary" disabled>Reset to Default</button>
-                        </div>
-                    </div>
-                </div>
-                
-                <h4 class="mt-4">Current Timer Settings</h4>
-                <div class="current-timer-settings">
-                    <div class="default-timer-display">
-                        <strong>Default:</strong> 
-                        <span id="default-timer-display">${defaultValue === 0 ? 'Timer disabled' : `${defaultValue} seconds`}</span>
-                    </div>
-                    
-                    <div class="custom-timers-list">
-                        <div class="custom-timers-header">
-                            <h5>Quiz-Specific Settings:</h5>
-                            ${Object.keys(quizTimers).length > 0 ? `
-                                <div class="custom-timers-actions">
-                                    <label class="select-all-label">
-                                        <input type="checkbox" id="select-all-custom-timers">
-                                        Select All
-                                    </label>
-                                    <button id="clear-selected-timers" class="action-button danger" disabled>Clear Selected</button>
-                                    <button id="clear-all-timers" class="action-button danger">Clear All</button>
-                                </div>
-                            ` : ''}
-                        </div>
-                        ${this.generateQuizTimersList(quizTimers)}
-                    </div>
-                </div>
-            </div>
-        `;
-        
-        // Add event listeners for quiz selection
-        const quizSelect = document.getElementById('quiz-select');
-        const quizTimerInput = document.getElementById('quiz-timer-value');
-        const saveQuizTimerBtn = document.getElementById('save-quiz-timer-btn');
-        const resetQuizTimerBtn = document.getElementById('reset-quiz-timer-btn');
-        
-        // Add event listeners for custom timer clearing
-        const selectAllCustomTimers = document.getElementById('select-all-custom-timers');
-        const clearSelectedTimersBtn = document.getElementById('clear-selected-timers');
-        const clearAllTimersBtn = document.getElementById('clear-all-timers');
-        const timerCheckboxes = document.querySelectorAll('.timer-checkbox');
-        
-        if (selectAllCustomTimers && clearSelectedTimersBtn && clearAllTimersBtn) {
-            // Handle select all checkbox
-            selectAllCustomTimers.addEventListener('change', () => {
-                timerCheckboxes.forEach(checkbox => {
-                    checkbox.checked = selectAllCustomTimers.checked;
-                });
-                clearSelectedTimersBtn.disabled = !selectAllCustomTimers.checked;
-            });
-            
-            // Handle individual checkboxes
-            timerCheckboxes.forEach(checkbox => {
-                checkbox.addEventListener('change', () => {
-                    const anyChecked = Array.from(timerCheckboxes).some(cb => cb.checked);
-                    clearSelectedTimersBtn.disabled = !anyChecked;
-                    
-                    // Update select all checkbox state
-                    selectAllCustomTimers.checked = Array.from(timerCheckboxes).every(cb => cb.checked);
-                });
-            });
-            
-            // Handle clear selected button
-            clearSelectedTimersBtn.addEventListener('click', async () => {
-                const selectedQuizzes = Array.from(timerCheckboxes)
-                    .filter(checkbox => checkbox.checked)
-                    .map(checkbox => checkbox.dataset.quiz);
-                
-                if (selectedQuizzes.length === 0) {
-                    this.showInfo('Please select at least one quiz timer to clear');
-                    return;
-                }
-                
-                if (!confirm(`Are you sure you want to clear the custom timer settings for ${selectedQuizzes.length} selected quiz(es)?`)) {
-                    return;
-                }
+                <button class="save-timer-btn" data-quiz="${quiz}">Save Timer</button>
+            `;
+
+            // Add event listener for save button
+            const saveButton = settingItem.querySelector('.save-timer-btn');
+            saveButton.addEventListener('click', async () => {
+                const secondsInput = settingItem.querySelector('.timer-seconds-input');
+                const seconds = parseInt(secondsInput.value, 10);
                 
                 try {
-                    clearSelectedTimersBtn.disabled = true;
-                    clearSelectedTimersBtn.textContent = 'Clearing...';
-                    
-                    // Clear each selected timer
-                    for (const quiz of selectedQuizzes) {
-                        await this.apiService.resetQuizTimer(quiz);
-                    }
-                    
-                    // Refresh timer settings
-                    const response = await this.apiService.getQuizTimerSettings();
-                    if (response.success) {
-                        this.timerSettings = response.data;
-                        this.showSuccess('Selected quiz timers cleared successfully');
-                        this.displayTimerSettings(); // Refresh the display
-                    }
+                    await this.updateQuizTimerSettings(quiz, seconds);
                 } catch (error) {
-                    console.error('Failed to clear selected timers:', error);
-                    this.showError(`Error: ${error.message || 'Failed to clear timers'}`);
-                    clearSelectedTimersBtn.disabled = false;
-                    clearSelectedTimersBtn.textContent = 'Clear Selected';
+                    console.error('Failed to save timer settings:', error);
+                    alert('Failed to save timer settings. Please try again.');
                 }
             });
-            
-            // Handle clear all button
-            clearAllTimersBtn.addEventListener('click', async () => {
-                const totalTimers = Object.keys(quizTimers).length;
-                if (!confirm(`Are you sure you want to clear ALL custom timer settings (${totalTimers} quiz(es))? This action cannot be undone.`)) {
-                    return;
-                }
-                
-                try {
-                    clearAllTimersBtn.disabled = true;
-                    clearAllTimersBtn.textContent = 'Clearing...';
-                    
-                    // Clear all timers
-                    const allQuizzes = Object.keys(quizTimers);
-                    for (const quiz of allQuizzes) {
-                        await this.apiService.resetQuizTimer(quiz);
-                    }
-                    
-                    // Refresh timer settings
-                    const response = await this.apiService.getQuizTimerSettings();
-                    if (response.success) {
-                        this.timerSettings = response.data;
-                        this.showSuccess('All custom quiz timers cleared successfully');
-                        this.displayTimerSettings(); // Refresh the display
-                    }
-                } catch (error) {
-                    console.error('Failed to clear all timers:', error);
-                    this.showError(`Error: ${error.message || 'Failed to clear timers'}`);
-                    clearAllTimersBtn.disabled = false;
-                    clearAllTimersBtn.textContent = 'Clear All';
-                }
-            });
-        }
-        
-        if (quizSelect && quizTimerInput && saveQuizTimerBtn && resetQuizTimerBtn) {
-            quizSelect.addEventListener('change', () => {
-                const selectedQuiz = quizSelect.value;
-                if (selectedQuiz) {
-                    // Enable input and buttons
-                    quizTimerInput.disabled = false;
-                    saveQuizTimerBtn.disabled = false;
-                    resetQuizTimerBtn.disabled = false;
-                    
-                    // Set current value if exists, otherwise use default
-                    quizTimerInput.value = quizTimers[selectedQuiz] ?? defaultValue;
-                } else {
-                    // Disable input and buttons
-                    quizTimerInput.disabled = true;
-                    saveQuizTimerBtn.disabled = true;
-                    resetQuizTimerBtn.disabled = true;
-                    quizTimerInput.value = defaultValue;
-                }
-            });
-            
-            // Save quiz timer button
-            saveQuizTimerBtn.addEventListener('click', async () => {
-                const selectedQuiz = quizSelect.value;
-                if (!selectedQuiz) return;
-                
-                try {
-                    const newValue = parseInt(quizTimerInput.value, 10);
-                    
-                    // Validate
-                    if (isNaN(newValue) || newValue < 0 || newValue > 300) {
-                        alert('Timer value must be between 0 and 300 seconds');
-                        return;
-                    }
-                    
-                    // Update UI
-                    saveQuizTimerBtn.disabled = true;
-                    saveQuizTimerBtn.textContent = 'Saving...';
-                    
-                    // Call API to save
-                    const response = await this.apiService.updateSingleQuizTimer(selectedQuiz, newValue);
-                    
-                    if (response.success) {
-                        // Update local cache
-                        this.timerSettings = response.data;
-                        
-                        // Show feedback
-                        const message = newValue === 0 
-                            ? `Timer disabled for ${this.formatQuizName(selectedQuiz)}` 
-                            : `Timer set to ${newValue} seconds for ${this.formatQuizName(selectedQuiz)}`;
-                            
-                        this.showSuccess(message);
-                        this.displayTimerSettings(); // Refresh the display
-                    } else {
-                        throw new Error(response.message || 'Failed to save settings');
-                    }
-                } catch (error) {
-                    console.error('Failed to save quiz timer settings:', error);
-                    this.showError(`Error: ${error.message || 'Failed to save settings'}`);
-                } finally {
-                    // Reset button
-                    saveQuizTimerBtn.disabled = false;
-                    saveQuizTimerBtn.textContent = 'Set Timer';
-                }
-            });
-            
-            // Reset quiz timer button
-            resetQuizTimerBtn.addEventListener('click', async () => {
-                const selectedQuiz = quizSelect.value;
-                if (!selectedQuiz) return;
-                
-                try {
-                    // Update UI
-                    resetQuizTimerBtn.disabled = true;
-                    resetQuizTimerBtn.textContent = 'Resetting...';
-                    
-                    // Call API to reset
-                    const response = await this.apiService.resetQuizTimer(selectedQuiz);
-                    
-                    if (response.success) {
-                        // Update local cache
-                        this.timerSettings = response.data;
-                        
-                        // Show feedback
-                        this.showSuccess(`Timer reset to default for ${this.formatQuizName(selectedQuiz)}`);
-                        this.displayTimerSettings(); // Refresh the display
-                    } else {
-                        throw new Error(response.message || 'Failed to reset settings');
-                    }
-                } catch (error) {
-                    console.error('Failed to reset quiz timer settings:', error);
-                    this.showError(`Error: ${error.message || 'Failed to reset settings'}`);
-                } finally {
-                    // Reset button
-                    resetQuizTimerBtn.disabled = false;
-                    resetQuizTimerBtn.textContent = 'Reset to Default';
-                }
-            });
-        }
-        
-        // Add event listener for the default timer save button
-        const saveDefaultButton = document.getElementById('save-default-timer-btn');
-        if (saveDefaultButton) {
-            saveDefaultButton.addEventListener('click', async () => {
-                const defaultTimerInput = document.getElementById('default-timer-value');
-                if (!defaultTimerInput) return;
-                
-                try {
-                    // Get value from input
-                    const newDefaultValue = parseInt(defaultTimerInput.value, 10);
-                    
-                    // Validate
-                    if (isNaN(newDefaultValue) || newDefaultValue < 0 || newDefaultValue > 300) {
-                        alert('Timer value must be between 0 and 300 seconds');
-                        return;
-                    }
-                    
-                    // Update UI
-                    saveDefaultButton.disabled = true;
-                    saveDefaultButton.textContent = 'Saving...';
-                    
-                    // Call API to save (keeping existing per-quiz settings)
-                    const response = await this.apiService.updateQuizTimerSettings(newDefaultValue, quizTimers);
-                    
-                    // Success
-                    if (response.success) {
-                        // Update local cache
-                        this.timerSettings = response.data;
-                        
-                        // Show feedback
-                        const message = newDefaultValue === 0 
-                            ? 'Default quiz timer disabled successfully!' 
-                            : `Default quiz timer set to ${newDefaultValue} seconds!`;
-                            
-                        this.showSuccess(message);
-                        this.displayTimerSettings(); // Refresh the display
-                    } else {
-                        throw new Error(response.message || 'Failed to save settings');
-                    }
-                } catch (error) {
-                    console.error('Failed to save default timer settings:', error);
-                    this.showError(`Error: ${error.message || 'Failed to save settings'}`);
-                } finally {
-                    // Reset button
-                    saveDefaultButton.disabled = false;
-                    saveDefaultButton.textContent = 'Save Default';
-                }
-            });
-        }
+
+            container.appendChild(settingItem);
+        });
     }
     
     // Helper method to generate HTML for the list of quiz-specific timer settings
@@ -1278,16 +932,18 @@ class Admin2Dashboard extends AdminDashboard {
 
     // Helper method to provide hardcoded quiz types
     getHardcodedQuizTypes() {
-        // This list should match the categories used in categorizeQuiz
         return [
-            'communication', 'initiative', 'time-management', 'tester-mindset',
-            'risk-analysis', 'risk-management', 'non-functional', 'test-support',
-            'issue-verification', 'build-verification', 'issue-tracking-tools',
-            'raising-tickets', 'reports', 'cms-testing', 'email-testing', 'content-copy',
-            'locale-testing', 'script-metrics-troubleshooting','standard-script-testing',
-            'test-types-tricks', 'automation-interview', 'fully-scripted', 'exploratory',
-            'sanity-smoke', 'functional-interview'
-        ].sort((a, b) => a.localeCompare(b));
+            'cms-testing',
+            'web-testing',
+            'mobile-testing',
+            'api-testing',
+            'accessibility-testing',
+            'security-testing',
+            'performance-testing',
+            'automation-testing',
+            'game-testing',
+            'localization-testing'
+        ];
     }
 
     // Add fetchQuizScenarios method to match the parent class
@@ -2222,7 +1878,7 @@ class Admin2Dashboard extends AdminDashboard {
                 'risk-analysis', 'risk-management', 'non-functional', 'test-support',
                 'issue-verification', 'build-verification', 'issue-tracking-tools',
                 'raising-tickets', 'reports', 'cms-testing', 'email-testing', 'content-copy',
-                'locale-testing', 'script-metrics-troubleshooting', 'standard-script-testing',
+                'locale-testing', 'script-metrics-troubleshooting','standard-script-testing',
                 'test-types-tricks', 'automation-interview', 'fully-scripted', 'exploratory',
                 'sanity-smoke', 'functional-interview'
             ];
@@ -3137,48 +2793,51 @@ class Admin2Dashboard extends AdminDashboard {
         const container = document.getElementById('guide-settings-container');
         if (!container) return;
 
-        const quizTypes = this.quizTypes || [];
-        
-        const html = `
-            <div class="guide-settings-wrapper">
-                ${quizTypes.map(quiz => `
-                    <div class="guide-setting-item" data-quiz="${quiz}">
-                        <h4>${this.formatQuizName(quiz)}</h4>
-                        <input type="url" 
-                            class="guide-url-input" 
-                            placeholder="Enter guide URL" 
-                            value="${this.guideSettings[quiz]?.url || ''}"
-                            aria-label="Guide URL for ${this.formatQuizName(quiz)}">
-                        <div class="guide-toggle">
-                            <input type="checkbox" 
-                                id="guide-enabled-${quiz}" 
-                                ${this.guideSettings[quiz]?.enabled ? 'checked' : ''}
-                                aria-label="Enable guide for ${this.formatQuizName(quiz)}">
-                            <label for="guide-enabled-${quiz}">Enable Guide</label>
-                        </div>
-                        <button class="save-guide-btn" data-quiz="${quiz}">Save Settings</button>
-                    </div>
-                `).join('')}
-            </div>
-        `;
+        // Clear existing content
+        container.innerHTML = '';
 
-        container.innerHTML = html;
+        // Get all quiz types
+        const quizTypes = this.getHardcodedQuizTypes();
 
-        // Add event listeners for save buttons
-        container.querySelectorAll('.save-guide-btn').forEach(button => {
-            button.addEventListener('click', async () => {
-                const quiz = button.dataset.quiz;
-                const item = container.querySelector(`.guide-setting-item[data-quiz="${quiz}"]`);
-                const urlInput = item.querySelector('.guide-url-input');
-                const enabledCheckbox = item.querySelector('input[type="checkbox"]');
+        // Create settings for each quiz
+        quizTypes.forEach(quiz => {
+            const settings = this.guideSettings[quiz] || { url: '', enabled: false };
+            
+            const settingItem = document.createElement('div');
+            settingItem.className = 'guide-setting-item';
 
+            settingItem.innerHTML = `
+                <h4>${quiz}</h4>
+                <input type="url" 
+                    class="guide-url-input" 
+                    value="${settings.url || ''}" 
+                    placeholder="Enter guide URL"
+                    aria-label="Guide URL for ${quiz}">
+                <div class="guide-toggle">
+                    <input type="checkbox" 
+                        id="guide-enabled-${quiz}" 
+                        ${settings.enabled ? 'checked' : ''}
+                        aria-label="Enable guide for ${quiz}">
+                    <label for="guide-enabled-${quiz}">Enable Guide</label>
+                </div>
+                <button class="save-guide-btn" data-quiz="${quiz}">Save Settings</button>
+            `;
+
+            // Add event listener for save button
+            const saveButton = settingItem.querySelector('.save-guide-btn');
+            saveButton.addEventListener('click', async () => {
+                const urlInput = settingItem.querySelector('.guide-url-input');
+                const enabledCheckbox = settingItem.querySelector('input[type="checkbox"]');
+                
                 try {
                     await this.saveGuideSettings(quiz, urlInput.value, enabledCheckbox.checked);
-                    this.showSuccess(`Guide settings saved for ${this.formatQuizName(quiz)}`);
                 } catch (error) {
-                    this.showError(`Failed to save guide settings for ${this.formatQuizName(quiz)}`);
+                    console.error('Failed to save guide settings:', error);
+                    alert('Failed to save guide settings. Please try again.');
                 }
             });
+
+            container.appendChild(settingItem);
         });
     }
 
