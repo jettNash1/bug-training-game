@@ -259,62 +259,122 @@ export class BaseQuiz {
         if (this.showGuideButton && this.guideUrl) {
             console.log(`[Guide] Creating guide button for URL: ${this.guideUrl}`);
             
+            // Find the "Back to Hub" button to position the guide button beneath it
+            const backToHubButton = document.querySelector('a[href="/"], a[href="/index.html"], a[href="index.html"], a[href="./"], button[aria-label="Back to Hub"]');
+            
+            // If we couldn't find it by normal selectors, try to find by text content
+            let foundBackButton = backToHubButton;
+            if (!foundBackButton) {
+                // Look for elements containing "Back to Hub" text
+                const allButtons = document.querySelectorAll('a, button');
+                for (const button of allButtons) {
+                    if (button.textContent && button.textContent.trim().includes('Back to Hub')) {
+                        foundBackButton = button;
+                        console.log('[Guide] Found Back to Hub button by text content');
+                        break;
+                    }
+                }
+            }
+            
             // Create button element
             const guideButton = document.createElement('button');
             guideButton.id = 'guide-button';
             guideButton.className = 'guide-button';
-            guideButton.innerHTML = '<i class="fas fa-book"></i> Guide';
+            guideButton.innerHTML = 'Guide';
             guideButton.setAttribute('aria-label', 'Open quiz guide');
             guideButton.onclick = () => window.open(this.guideUrl, '_blank');
             
-            // Add styles directly to ensure they are applied
-            guideButton.style.backgroundColor = '#4e73df';
-            guideButton.style.color = 'white';
-            guideButton.style.border = 'none';
-            guideButton.style.borderRadius = '4px';
-            guideButton.style.padding = '8px 16px';
-            guideButton.style.margin = '10px auto';
-            guideButton.style.cursor = 'pointer';
-            guideButton.style.display = 'flex';
-            guideButton.style.alignItems = 'center';
-            guideButton.style.justifyContent = 'center';
-            guideButton.style.gap = '8px';
-            guideButton.style.fontWeight = '500';
-            guideButton.style.fontSize = '14px';
-            guideButton.style.boxShadow = '0 2px 4px rgba(0, 0, 0, 0.1)';
+            // Apply styles - if Back button exists, copy its styles, otherwise use default styles
+            if (foundBackButton) {
+                // Try to copy as many styles as possible from the Back to Hub button
+                const computedStyle = window.getComputedStyle(foundBackButton);
+                
+                // Copy basic styles
+                guideButton.style.backgroundColor = computedStyle.backgroundColor || '#4e73df';
+                guideButton.style.color = computedStyle.color || 'white';
+                guideButton.style.border = computedStyle.border || 'none';
+                guideButton.style.borderRadius = computedStyle.borderRadius || '4px';
+                guideButton.style.padding = computedStyle.padding || '8px 16px';
+                guideButton.style.fontFamily = computedStyle.fontFamily;
+                guideButton.style.fontSize = computedStyle.fontSize;
+                guideButton.style.fontWeight = computedStyle.fontWeight;
+                guideButton.style.boxShadow = computedStyle.boxShadow;
+                guideButton.style.textDecoration = computedStyle.textDecoration;
+                guideButton.style.lineHeight = computedStyle.lineHeight;
+                guideButton.style.display = 'inline-block';
+                guideButton.style.textAlign = 'center';
+                
+                // Copy the class name if it might have styles
+                if (foundBackButton.className) {
+                    guideButton.className = `guide-button ${foundBackButton.className}`;
+                }
+                
+                console.log('[Guide] Copied styles from Back to Hub button');
+            } else {
+                // Default styles if back button not found
+                guideButton.style.backgroundColor = '#4e73df';
+                guideButton.style.color = 'white';
+                guideButton.style.border = 'none';
+                guideButton.style.borderRadius = '4px';
+                guideButton.style.padding = '8px 16px';
+                guideButton.style.cursor = 'pointer';
+                guideButton.style.fontWeight = '400';
+                guideButton.style.fontSize = '16px';
+                guideButton.style.fontFamily = '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif';
+                guideButton.style.textDecoration = 'none';
+                guideButton.style.boxShadow = '0 1px 3px rgba(0, 0, 0, 0.1)';
+                guideButton.style.transition = 'background-color 0.2s';
+                guideButton.style.display = 'inline-block';
+                guideButton.style.textAlign = 'center';
+                guideButton.style.lineHeight = '1.5';
+                
+                // Add hover effect
+                guideButton.onmouseover = () => {
+                    guideButton.style.backgroundColor = '#3867d6';
+                };
+                guideButton.onmouseout = () => {
+                    guideButton.style.backgroundColor = '#4e73df';
+                };
+            }
             
             // Create container for the button
             const buttonContainer = document.createElement('div');
             buttonContainer.id = 'guide-button-container';
             buttonContainer.className = 'guide-button-container';
-            buttonContainer.style.display = 'flex';
-            buttonContainer.style.justifyContent = 'center';
-            buttonContainer.style.width = '100%';
-            buttonContainer.style.marginBottom = '20px';
             buttonContainer.style.marginTop = '10px';
+            buttonContainer.style.marginBottom = '20px';
             buttonContainer.appendChild(guideButton);
             
-            // Try multiple placement approaches for robustness, prioritizing the preferred location first
-            let insertionSuccessful = false;
-            
-            // Approach 0 (PREFERRED): Look for the main content area above the timer
-            // This targets the red box area indicated in the screenshot
-            const contentArea = document.querySelector('.container, .quiz-container, .content-area');
-            const timerContainer = document.getElementById('timer-container');
-            
-            if (contentArea && timerContainer) {
-                // Find the parent that contains the timer
-                let timerParent = timerContainer.parentNode;
+            if (foundBackButton) {
+                console.log('[Guide] Found Back to Hub button, positioning guide button below it');
+                const backToHubContainer = foundBackButton.parentNode;
                 
-                // Insert BEFORE the element that contains the timer
-                if (timerParent && timerParent.parentNode) {
-                    console.log('[Guide] Adding guide button in preferred location (above timer container parent)');
-                    timerParent.parentNode.insertBefore(buttonContainer, timerParent);
-                    insertionSuccessful = true;
+                if (backToHubContainer) {
+                    // Position after the back to hub button (as a sibling)
+                    if (backToHubContainer.parentNode) {
+                        backToHubContainer.parentNode.insertBefore(buttonContainer, backToHubContainer.nextSibling);
+                    } else {
+                        // If no parent container, insert after the button itself
+                        foundBackButton.insertAdjacentElement('afterend', buttonContainer);
+                    }
+                    console.log('[Guide] Guide button positioned under Back to Hub button');
+                    return; // Exit early as we've found our preferred position
                 }
             }
             
+            // Fallback positioning approaches if Back to Hub button not found
+            let insertionSuccessful = false;
+            
+            // Try to find the top navigation or header area first
+            const navContainer = document.querySelector('nav, header, .navigation, .header, .top-bar');
+            if (navContainer) {
+                console.log('[Guide] Adding guide button after navigation/header');
+                navContainer.insertAdjacentElement('afterend', buttonContainer);
+                insertionSuccessful = true;
+            }
+            
             // Approach 1: Insert before timer container
+            const timerContainer = document.getElementById('timer-container');
             if (!insertionSuccessful && timerContainer && timerContainer.parentNode) {
                 console.log('[Guide] Adding guide button before timer container');
                 timerContainer.parentNode.insertBefore(buttonContainer, timerContainer);
@@ -331,33 +391,10 @@ export class BaseQuiz {
                 }
             }
             
-            // Approach 3: Find a question container
-            if (!insertionSuccessful) {
-                const questionContainer = document.querySelector('.question-container, #question-container, #scenario-container, .scenario-container');
-                if (questionContainer) {
-                    console.log('[Guide] Adding guide button before question container');
-                    questionContainer.parentNode.insertBefore(buttonContainer, questionContainer);
-                    insertionSuccessful = true;
-                }
-            }
-            
-            // Approach 4: Try to find the title element
-            if (!insertionSuccessful) {
-                const titleElement = document.querySelector('h1, .quiz-title, #scenario-title, .scenario-title');
-                if (titleElement) {
-                    console.log('[Guide] Adding guide button after quiz title');
-                    if (titleElement.parentNode) {
-                        titleElement.parentNode.insertBefore(buttonContainer, titleElement.nextSibling);
-                        insertionSuccessful = true;
-                    }
-                }
-            }
-            
-            // Approach 5: Last resort - add to body
+            // Approach 3: Last resort - add to body
             if (!insertionSuccessful) {
                 console.log('[Guide] Adding guide button to document body as last resort');
                 document.body.insertBefore(buttonContainer, document.body.firstChild);
-                insertionSuccessful = true;
             }
             
             console.log('[Guide] Guide button added successfully');
@@ -1227,8 +1264,7 @@ export class BaseQuiz {
     }
 }
 
-// Add this at the end of the file
-// Add startup hook to ensure guide initialization
+// Self-executing function to initialize guide buttons
 (function() {
     // Direct method to initialize guide buttons for all quizzes
     function initializeQuizGuides() {
@@ -1274,73 +1310,145 @@ export class BaseQuiz {
             const guideButton = document.createElement('button');
             guideButton.id = 'guide-button';
             guideButton.className = 'guide-button';
-            guideButton.innerHTML = '<i class="fas fa-book"></i> Guide';
+            guideButton.innerHTML = 'Guide';
             guideButton.setAttribute('aria-label', 'Open quiz guide');
             guideButton.onclick = () => window.open(url, '_blank');
             
-            // Style the button
-            guideButton.style.backgroundColor = '#4e73df';
-            guideButton.style.color = 'white';
-            guideButton.style.border = 'none';
-            guideButton.style.borderRadius = '4px';
-            guideButton.style.padding = '8px 16px';
-            guideButton.style.margin = '10px auto';
-            guideButton.style.cursor = 'pointer';
-            guideButton.style.display = 'flex';
-            guideButton.style.alignItems = 'center';
-            guideButton.style.justifyContent = 'center';
-            guideButton.style.gap = '8px';
-            guideButton.style.fontWeight = '500';
-            guideButton.style.fontSize = '14px';
-            guideButton.style.boxShadow = '0 2px 4px rgba(0, 0, 0, 0.1)';
+            // Find the "Back to Hub" button to position the guide button beneath it
+            const backToHubButton = document.querySelector('a[href="/"], a[href="/index.html"], a[href="index.html"], a[href="./"], button[aria-label="Back to Hub"]');
+            
+            // If we couldn't find it by normal selectors, try to find by text content
+            let foundBackButton = backToHubButton;
+            if (!foundBackButton) {
+                // Look for elements containing "Back to Hub" text
+                const allButtons = document.querySelectorAll('a, button');
+                for (const button of allButtons) {
+                    if (button.textContent && button.textContent.trim().includes('Back to Hub')) {
+                        foundBackButton = button;
+                        console.log('[Guide] Found Back to Hub button by text content');
+                        break;
+                    }
+                }
+            }
+            
+            // Apply styles - if Back button exists, copy its styles, otherwise use default styles
+            if (foundBackButton) {
+                // Try to copy as many styles as possible from the Back to Hub button
+                const computedStyle = window.getComputedStyle(foundBackButton);
+                
+                // Copy basic styles
+                guideButton.style.backgroundColor = computedStyle.backgroundColor || '#4e73df';
+                guideButton.style.color = computedStyle.color || 'white';
+                guideButton.style.border = computedStyle.border || 'none';
+                guideButton.style.borderRadius = computedStyle.borderRadius || '4px';
+                guideButton.style.padding = computedStyle.padding || '8px 16px';
+                guideButton.style.fontFamily = computedStyle.fontFamily;
+                guideButton.style.fontSize = computedStyle.fontSize;
+                guideButton.style.fontWeight = computedStyle.fontWeight;
+                guideButton.style.boxShadow = computedStyle.boxShadow;
+                guideButton.style.textDecoration = computedStyle.textDecoration;
+                guideButton.style.lineHeight = computedStyle.lineHeight;
+                guideButton.style.display = 'inline-block';
+                guideButton.style.textAlign = 'center';
+                
+                // Copy the class name if it might have styles
+                if (foundBackButton.className) {
+                    guideButton.className = `guide-button ${foundBackButton.className}`;
+                }
+                
+                console.log('[Guide] Copied styles from Back to Hub button');
+            } else {
+                // Default styles if back button not found
+                guideButton.style.backgroundColor = '#4e73df';
+                guideButton.style.color = 'white';
+                guideButton.style.border = 'none';
+                guideButton.style.borderRadius = '4px';
+                guideButton.style.padding = '8px 16px';
+                guideButton.style.cursor = 'pointer';
+                guideButton.style.fontWeight = '400';
+                guideButton.style.fontSize = '16px';
+                guideButton.style.fontFamily = '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif';
+                guideButton.style.textDecoration = 'none';
+                guideButton.style.boxShadow = '0 1px 3px rgba(0, 0, 0, 0.1)';
+                guideButton.style.transition = 'background-color 0.2s';
+                guideButton.style.display = 'inline-block';
+                guideButton.style.textAlign = 'center';
+                guideButton.style.lineHeight = '1.5';
+                
+                // Add hover effect
+                guideButton.onmouseover = () => {
+                    guideButton.style.backgroundColor = '#3867d6';
+                };
+                guideButton.onmouseout = () => {
+                    guideButton.style.backgroundColor = '#4e73df';
+                };
+            }
             
             // Create container for the button
             const buttonContainer = document.createElement('div');
             buttonContainer.id = 'guide-button-container';
             buttonContainer.className = 'guide-button-container';
-            buttonContainer.style.display = 'flex';
-            buttonContainer.style.justifyContent = 'center';
-            buttonContainer.style.width = '100%';
-            buttonContainer.style.marginBottom = '20px';
             buttonContainer.style.marginTop = '10px';
+            buttonContainer.style.marginBottom = '20px';
             buttonContainer.appendChild(guideButton);
             
-            // Try to insert the button at the best location
-            let inserted = false;
-            
-            // Try inserting before timer
-            const timerContainer = document.getElementById('timer-container');
-            if (timerContainer && timerContainer.parentNode) {
-                console.log('[Guide] Inserting guide button before timer');
-                timerContainer.parentNode.insertBefore(buttonContainer, timerContainer);
-                inserted = true;
+            if (foundBackButton) {
+                console.log('[Guide] Found Back to Hub button, positioning guide button below it');
+                const backToHubContainer = foundBackButton.parentNode;
+                
+                if (backToHubContainer) {
+                    // Position after the back to hub button (as a sibling)
+                    if (backToHubContainer.parentNode) {
+                        backToHubContainer.parentNode.insertBefore(buttonContainer, backToHubContainer.nextSibling);
+                    } else {
+                        // If no parent container, insert after the button itself
+                        foundBackButton.insertAdjacentElement('afterend', buttonContainer);
+                    }
+                    console.log('[Guide] Guide button positioned under Back to Hub button');
+                    return; // Exit early as we've found our preferred position
+                }
             }
             
-            // If that didn't work, try the game screen
-            if (!inserted) {
+            // Fallback positioning approaches if Back to Hub button not found
+            let insertionSuccessful = false;
+            
+            // Try to find the top navigation or header area first
+            const navContainer = document.querySelector('nav, header, .navigation, .header, .top-bar');
+            if (navContainer) {
+                console.log('[Guide] Adding guide button after navigation/header');
+                navContainer.insertAdjacentElement('afterend', buttonContainer);
+                insertionSuccessful = true;
+            }
+            
+            // Approach 1: Insert before timer container
+            const timerContainer = document.getElementById('timer-container');
+            if (!insertionSuccessful && timerContainer && timerContainer.parentNode) {
+                console.log('[Guide] Adding guide button before timer container');
+                timerContainer.parentNode.insertBefore(buttonContainer, timerContainer);
+                insertionSuccessful = true;
+            }
+            
+            // Approach 2: Insert at beginning of game screen
+            if (!insertionSuccessful) {
                 const gameScreen = document.getElementById('game-screen');
                 if (gameScreen) {
-                    console.log('[Guide] Inserting guide button at the beginning of game screen');
+                    console.log('[Guide] Adding guide button to beginning of game screen');
                     gameScreen.insertBefore(buttonContainer, gameScreen.firstChild);
-                    inserted = true;
+                    insertionSuccessful = true;
                 }
             }
             
-            // If that still didn't work, try body
-            if (!inserted) {
-                const firstElement = document.body.firstChild;
-                if (firstElement) {
-                    console.log('[Guide] Inserting guide button at the beginning of body');
-                    document.body.insertBefore(buttonContainer, firstElement);
-                    inserted = true;
-                } else {
-                    console.log('[Guide] Appending guide button to body');
-                    document.body.appendChild(buttonContainer);
-                }
+            // Approach 3: Last resort - add to body
+            if (!insertionSuccessful) {
+                console.log('[Guide] Adding guide button to document body as last resort');
+                document.body.insertBefore(buttonContainer, document.body.firstChild);
             }
             
-            console.log(`[Guide] Guide button created with URL: ${url}`);
-            return guideButton;
+            console.log('[Guide] Guide button added successfully');
+            
+            // Store a reference for debugging
+            window.guideButton = guideButton;
+            window.quizHelper = this;
         }
         
         // Check if settings exist in localStorage
