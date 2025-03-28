@@ -527,45 +527,223 @@ export class Admin2Dashboard extends AdminDashboard {
         // Clear existing content
         container.innerHTML = '';
 
-        // Get all quiz types
-        const quizTypes = this.getHardcodedQuizTypes();
+        const defaultSeconds = this.timerSettings?.defaultSeconds || 60;
+        const quizTimers = this.timerSettings?.quizTimers || {};
 
-        // Create settings for each quiz
-        quizTypes.forEach(quiz => {
-            const seconds = this.timerSettings?.quizTimers?.[quiz] || this.timerSettings?.defaultSeconds || 60;
+        // Create the default timer settings section
+        const defaultSettingsHTML = `
+            <h3>Quiz Timer Settings</h3>
+            <p>Set the time allowed for each quiz question.</p>
             
-            const settingItem = document.createElement('div');
-            settingItem.className = 'timer-setting-item';
-
-            settingItem.innerHTML = `
-                <h4>${quiz}</h4>
+            <div class="timer-section">
+                <h4>Default Timer Setting</h4>
+                <p>This setting applies to all quizzes unless overridden by per-quiz settings.</p>
                 <div class="timer-input-group">
+                    <label for="default-timer">Default seconds per question (0-300):</label>
                     <input type="number" 
-                        class="timer-seconds-input" 
-                        value="${seconds}" 
+                        id="default-timer" 
+                        value="${defaultSeconds}" 
                         min="0" 
                         max="300"
-                        aria-label="Timer seconds for ${quiz}">
-                    <span class="timer-unit">seconds</span>
+                        class="timer-seconds-input">
+                    <button class="save-default-btn">Save Default</button>
                 </div>
-                <button class="save-timer-btn" data-quiz="${quiz}">Save Timer</button>
-            `;
+                <small>Set to 0 to disable the timer completely.</small>
+            </div>
 
-            // Add event listener for save button
-            const saveButton = settingItem.querySelector('.save-timer-btn');
-            saveButton.addEventListener('click', async () => {
-                const secondsInput = settingItem.querySelector('.timer-seconds-input');
-                const seconds = parseInt(secondsInput.value, 10);
+            <div class="timer-section">
+                <h4>Per-Quiz Timer Settings</h4>
+                <p>Set different time limits for specific quizzes. These override the default setting.</p>
                 
-                try {
-                    await this.updateQuizTimerSettings(quiz, seconds);
-                } catch (error) {
-                    console.error('Failed to save timer settings:', error);
-                    alert('Failed to save timer settings. Please try again.');
-                }
-            });
+                <div class="quiz-timer-form">
+                    <div class="form-row">
+                        <label for="quiz-select">Select Quiz:</label>
+                        <select id="quiz-select">
+                            <option value="">-- Select a Quiz --</option>
+                            ${this.getHardcodedQuizTypes().map(quiz => 
+                                `<option value="${quiz}">${quiz}</option>`
+                            ).join('')}
+                        </select>
+                    </div>
+                    
+                    <div class="form-row">
+                        <label for="quiz-timer">Seconds per question for this quiz (0-300):</label>
+                        <input type="number" 
+                            id="quiz-timer" 
+                            value="60" 
+                            min="0" 
+                            max="300"
+                            class="timer-seconds-input">
+                        <div class="button-group">
+                            <button id="set-timer-btn">Set Timer</button>
+                            <button id="reset-default-btn">Reset to Default</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
 
-            container.appendChild(settingItem);
+            <div class="timer-section">
+                <h4>Current Timer Settings</h4>
+                <p>Default: ${defaultSeconds} seconds</p>
+                
+                <div class="current-settings">
+                    <div class="settings-header">
+                        <h5>Quiz-Specific Settings:</h5>
+                        <div class="settings-actions">
+                            <label>
+                                <input type="checkbox" id="select-all-timers">
+                                Select All
+                            </label>
+                            <button id="clear-selected" class="danger-btn">Clear Selected</button>
+                            <button id="clear-all" class="danger-btn">Clear All</button>
+                        </div>
+                    </div>
+                    <div id="quiz-timers-list">
+                        ${this.generateQuizTimersList(quizTimers)}
+                    </div>
+                </div>
+            </div>
+        `;
+
+        container.innerHTML = defaultSettingsHTML;
+
+        // Set up event listeners
+        const defaultTimerInput = container.querySelector('#default-timer');
+        const saveDefaultBtn = container.querySelector('.save-default-btn');
+        const quizSelect = container.querySelector('#quiz-select');
+        const quizTimerInput = container.querySelector('#quiz-timer');
+        const setTimerBtn = container.querySelector('#set-timer-btn');
+        const resetDefaultBtn = container.querySelector('#reset-default-btn');
+        const selectAllCheckbox = container.querySelector('#select-all-timers');
+        const clearSelectedBtn = container.querySelector('#clear-selected');
+        const clearAllBtn = container.querySelector('#clear-all');
+
+        // Save default timer setting
+        saveDefaultBtn.addEventListener('click', async () => {
+            const seconds = parseInt(defaultTimerInput.value, 10);
+            if (isNaN(seconds) || seconds < 0 || seconds > 300) {
+                alert('Please enter a valid number between 0 and 300');
+                return;
+            }
+            try {
+                await this.updateQuizTimerSettings(null, seconds);
+                this.showInfo(`Default timer set to ${seconds} seconds`);
+            } catch (error) {
+                console.error('Failed to save default timer:', error);
+                alert('Failed to save default timer setting');
+            }
+        });
+
+        // Update quiz timer input when a quiz is selected
+        quizSelect.addEventListener('change', () => {
+            const selectedQuiz = quizSelect.value;
+            if (selectedQuiz) {
+                const currentSetting = quizTimers[selectedQuiz] || defaultSeconds;
+                quizTimerInput.value = currentSetting;
+            }
+        });
+
+        // Set timer for specific quiz
+        setTimerBtn.addEventListener('click', async () => {
+            const selectedQuiz = quizSelect.value;
+            if (!selectedQuiz) {
+                alert('Please select a quiz');
+                return;
+            }
+            const seconds = parseInt(quizTimerInput.value, 10);
+            if (isNaN(seconds) || seconds < 0 || seconds > 300) {
+                alert('Please enter a valid number between 0 and 300');
+                return;
+            }
+            try {
+                await this.updateQuizTimerSettings(selectedQuiz, seconds);
+                this.showInfo(`Timer for ${selectedQuiz} set to ${seconds} seconds`);
+                // Refresh the current settings display
+                const timersList = container.querySelector('#quiz-timers-list');
+                if (timersList) {
+                    timersList.innerHTML = this.generateQuizTimersList(this.timerSettings.quizTimers);
+                }
+            } catch (error) {
+                console.error('Failed to save quiz timer:', error);
+                alert('Failed to save quiz timer setting');
+            }
+        });
+
+        // Reset quiz timer to default
+        resetDefaultBtn.addEventListener('click', async () => {
+            const selectedQuiz = quizSelect.value;
+            if (!selectedQuiz) {
+                alert('Please select a quiz');
+                return;
+            }
+            try {
+                await this.updateQuizTimerSettings(selectedQuiz, defaultSeconds);
+                this.showInfo(`Timer for ${selectedQuiz} reset to default (${defaultSeconds} seconds)`);
+                quizTimerInput.value = defaultSeconds;
+                // Refresh the current settings display
+                const timersList = container.querySelector('#quiz-timers-list');
+                if (timersList) {
+                    timersList.innerHTML = this.generateQuizTimersList(this.timerSettings.quizTimers);
+                }
+            } catch (error) {
+                console.error('Failed to reset quiz timer:', error);
+                alert('Failed to reset quiz timer setting');
+            }
+        });
+
+        // Select all timers functionality
+        selectAllCheckbox.addEventListener('change', () => {
+            const checkboxes = container.querySelectorAll('.timer-checkbox');
+            checkboxes.forEach(cb => cb.checked = selectAllCheckbox.checked);
+        });
+
+        // Clear selected timer settings
+        clearSelectedBtn.addEventListener('click', async () => {
+            const selectedQuizzes = Array.from(container.querySelectorAll('.timer-checkbox:checked'))
+                .map(cb => cb.dataset.quiz);
+            
+            if (selectedQuizzes.length === 0) {
+                alert('Please select at least one quiz');
+                return;
+            }
+
+            if (confirm(`Are you sure you want to clear timer settings for ${selectedQuizzes.length} selected quizzes?`)) {
+                try {
+                    for (const quiz of selectedQuizzes) {
+                        await this.updateQuizTimerSettings(quiz, defaultSeconds);
+                    }
+                    this.showInfo(`Cleared timer settings for ${selectedQuizzes.length} quizzes`);
+                    // Refresh the current settings display
+                    const timersList = container.querySelector('#quiz-timers-list');
+                    if (timersList) {
+                        timersList.innerHTML = this.generateQuizTimersList(this.timerSettings.quizTimers);
+                    }
+                } catch (error) {
+                    console.error('Failed to clear selected timer settings:', error);
+                    alert('Failed to clear some timer settings');
+                }
+            }
+        });
+
+        // Clear all timer settings
+        clearAllBtn.addEventListener('click', async () => {
+            if (confirm('Are you sure you want to clear ALL quiz-specific timer settings?')) {
+                try {
+                    const quizzes = Object.keys(quizTimers);
+                    for (const quiz of quizzes) {
+                        await this.updateQuizTimerSettings(quiz, defaultSeconds);
+                    }
+                    this.showInfo('Cleared all quiz-specific timer settings');
+                    // Refresh the current settings display
+                    const timersList = container.querySelector('#quiz-timers-list');
+                    if (timersList) {
+                        timersList.innerHTML = this.generateQuizTimersList(this.timerSettings.quizTimers);
+                    }
+                } catch (error) {
+                    console.error('Failed to clear all timer settings:', error);
+                    alert('Failed to clear all timer settings');
+                }
+            }
         });
     }
     
