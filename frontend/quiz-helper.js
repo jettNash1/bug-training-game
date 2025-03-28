@@ -166,16 +166,6 @@ export class BaseQuiz {
     async initializeGuideSettings() {
         console.log(`[Guide] Initializing guide settings for quiz: ${this.quizName}`);
         
-        // Force the guide button to show during development - REMOVE THIS IN PRODUCTION
-        // Uncomment these lines to force enable the guide button for testing
-        /*
-        this.guideUrl = "https://example.com/guide";
-        this.showGuideButton = true;
-        console.log(`[Guide] DEVELOPMENT MODE: Force enabled guide with URL ${this.guideUrl}`);
-        this.updateGuideButton();
-        return;
-        */
-        
         if (!this.quizName) {
             console.error('[Guide] Quiz name not set, cannot initialize guide settings');
             return;
@@ -202,10 +192,6 @@ export class BaseQuiz {
                     this.showGuideButton = settings.enabled;
                     
                     console.log(`[Guide] Settings applied - URL: ${this.guideUrl}, Enabled: ${this.showGuideButton}`);
-                    
-                    if (settings.source === 'localStorage') {
-                        console.warn(`[Guide] Using localStorage fallback for guide settings`);
-                    }
                 } else {
                     console.warn(`[Guide] No settings found in response`);
                     this.guideUrl = null;
@@ -226,6 +212,17 @@ export class BaseQuiz {
         if (this.showGuideButton && !this.guideUrl) {
             console.warn(`[Guide] Guide button enabled but URL is missing - disabling button`);
             this.showGuideButton = false;
+        }
+        
+        // Only initially show the guide button if this is the first question
+        // (player starts at question 0, so check if current scenario is 0)
+        if (this.player && this.player.currentScenario !== undefined) {
+            if (this.player.currentScenario > 0) {
+                console.log(`[Guide] Not the first question (current scenario: ${this.player.currentScenario}), hiding guide button`);
+                this.showGuideButton = false;
+            } else {
+                console.log(`[Guide] First question detected, showing guide button if enabled`);
+            }
         }
         
         // Update the UI to show or hide the button
@@ -733,6 +730,13 @@ export class BaseQuiz {
     nextQuestion() {
         // Increment current scenario
         this.player.currentScenario++;
+
+        // Hide the guide button after the first question
+        if (this.player.currentScenario > 0) {
+            console.log('[Guide] Beyond first question, hiding guide button');
+            this.showGuideButton = false;
+            this.updateGuideButton(); // Remove the button from the UI
+        }
 
         // Hide outcome screen and show game screen
         this.outcomeScreen.classList.add('hidden');

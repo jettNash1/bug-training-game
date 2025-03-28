@@ -1979,8 +1979,8 @@ export class Admin2Dashboard extends AdminDashboard {
                 resetPasswordBtn.addEventListener('click', async () => {
                     if (confirm(`Are you sure you want to reset the password for ${username}?`)) {
                         try {
-                            const apiService = new ApiService();
-                            const response = await apiService.resetUserPassword(username);
+                            // Use this.apiService instead of creating a new instance
+                            const response = await this.apiService.resetUserPassword(username);
                             
                             this.showSuccess(`Password reset for ${username}: ${response.newPassword}`);
                             console.log('Password reset successful:', response);
@@ -2167,20 +2167,19 @@ export class Admin2Dashboard extends AdminDashboard {
     // Implement resetAllProgress to match the method name used in the showUserDetails method
     async resetAllProgress(username) {
         try {
-            const response = await fetch(`/api/admin/users/${username}/reset-progress`, {
+            // Use apiService instead of direct fetch
+            const response = await this.apiService.fetchWithAdminAuth(`${this.apiService.baseUrl}/admin/users/${username}/reset-progress`, {
                 method: 'POST',
                 headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${localStorage.getItem('adminToken')}`
+                    'Content-Type': 'application/json'
                 }
             });
 
-            if (!response.ok) {
-                const errorData = await response.json();
-                throw new Error(errorData.message || 'Failed to reset user progress');
+            if (!response.success) {
+                throw new Error(response.message || 'Failed to reset user progress');
             }
 
-            return await response.json();
+            return response;
         } catch (error) {
             console.error('Error resetting user progress:', error);
             throw error;
@@ -2190,20 +2189,19 @@ export class Admin2Dashboard extends AdminDashboard {
     // Implement resetQuizProgress for individual quiz reset functionality
     async resetQuizProgress(username, quizType) {
         try {
-            const response = await fetch(`/api/admin/users/${username}/quiz/${quizType}/reset`, {
+            // Use apiService instead of direct fetch
+            const response = await this.apiService.fetchWithAdminAuth(`${this.apiService.baseUrl}/admin/users/${username}/quiz/${quizType}/reset`, {
                 method: 'POST',
                 headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${localStorage.getItem('adminToken')}`
+                    'Content-Type': 'application/json'
                 }
             });
 
-            if (!response.ok) {
-                const errorData = await response.json();
-                throw new Error(errorData.message || 'Failed to reset quiz progress');
+            if (!response.success) {
+                throw new Error(response.message || 'Failed to reset quiz progress');
             }
 
-            return await response.json();
+            return response;
         } catch (error) {
             console.error('Error resetting quiz progress:', error);
             throw error;
