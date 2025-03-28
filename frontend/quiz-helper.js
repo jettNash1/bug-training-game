@@ -15,15 +15,78 @@ export class BaseQuiz {
         this.guideUrl = null;
         this.showGuideButton = false;
         
+        // Attempt to get quiz name from config, URL, or data attributes
+        this.quizName = config.quizName || this.detectQuizNameFromPage();
+        console.log('[Quiz] Detected quiz name:', this.quizName);
+        
         // Initialize timer value with a temporary default
         // The actual value will be set by loadTimerSettings
         this.timePerQuestion = null;
         this.remainingTime = null;
         this.questionStartTime = null; // Track when each question starts
         
-        // Load timer settings and guide settings from API immediately
+        // Load timer settings from API immediately
         this.initializeTimerSettings();
-        this.initializeGuideSettings();
+        
+        // For guide settings, we'll wait until the quiz starts
+        // or load them after a short delay to ensure quiz name is set
+        if (this.quizName) {
+            this.initializeGuideSettings();
+        } else {
+            // Delay guide initialization to allow derived classes to set quizName
+            setTimeout(() => {
+                if (!this.quizName) {
+                    this.quizName = this.detectQuizNameFromPage();
+                    console.log('[Quiz] Delayed detection of quiz name:', this.quizName);
+                }
+                if (this.quizName) {
+                    this.initializeGuideSettings();
+                }
+            }, 500);
+        }
+    }
+
+    // Helper method to detect quiz name from URL or document
+    detectQuizNameFromPage() {
+        try {
+            // Try to get from URL first
+            const urlParams = new URLSearchParams(window.location.search);
+            const quizParam = urlParams.get('quiz') || urlParams.get('quizName');
+            if (quizParam) {
+                return quizParam.toLowerCase();
+            }
+            
+            // Try to get from path
+            const pathMatch = window.location.pathname.match(/\/([^\/]+)-quiz\.html$/);
+            if (pathMatch && pathMatch[1]) {
+                return pathMatch[1].toLowerCase();
+            }
+            
+            // Try to get from page elements
+            const quizTitle = document.querySelector('h1, .quiz-title');
+            if (quizTitle && quizTitle.textContent) {
+                // Convert title to likely quiz name: "Communication Quiz" -> "communication"
+                return quizTitle.textContent.replace(/\s+quiz$/i, '').trim().toLowerCase();
+            }
+            
+            // Try to get from data attribute
+            const quizContainer = document.querySelector('[data-quiz-name], [data-quiz-id], [data-quiz]');
+            if (quizContainer) {
+                return (quizContainer.dataset.quizName || 
+                        quizContainer.dataset.quizId || 
+                        quizContainer.dataset.quiz || '').toLowerCase();
+            }
+            
+            // Last resort: try to detect from page title
+            if (document.title && document.title.includes('Quiz')) {
+                return document.title.replace(/\s+quiz$/i, '').trim().toLowerCase();
+            }
+            
+            return null;
+        } catch (e) {
+            console.error('[Quiz] Error detecting quiz name:', e);
+            return null;
+        }
     }
 
     async initializeTimerSettings() {
@@ -177,30 +240,61 @@ export class BaseQuiz {
             buttonContainer.style.marginBottom = '10px';
             buttonContainer.appendChild(guideButton);
             
-            // Log the DOM state for debugging
-            console.log(`[Guide] Game screen element:`, document.getElementById('game-screen'));
-            console.log(`[Guide] Timer container:`, document.getElementById('timer-container'));
+            // Try multiple placement approaches for robustness
+            let insertionSuccessful = false;
             
-            // Find the game screen
-            const gameScreen = document.getElementById('game-screen');
-            if (!gameScreen) {
-                console.error('[Guide] Game screen element not found, cannot add guide button');
-                // Try adding to body as fallback
-                document.body.appendChild(buttonContainer);
-                return;
-            }
-            
-            // Add to game screen, right after the timer if it exists
+            // Approach 1: Insert after timer
             const timerContainer = document.getElementById('timer-container');
-            if (timerContainer) {
+            if (timerContainer && timerContainer.parentNode) {
                 console.log('[Guide] Adding guide button after timer container');
                 timerContainer.parentNode.insertBefore(buttonContainer, timerContainer.nextSibling);
-            } else {
-                console.log('[Guide] No timer container found, adding guide button to beginning of game screen');
-                gameScreen.insertBefore(buttonContainer, gameScreen.firstChild);
+                insertionSuccessful = true;
+            } 
+            
+            // Approach 2: Insert at beginning of game screen
+            if (!insertionSuccessful) {
+                const gameScreen = document.getElementById('game-screen');
+                if (gameScreen) {
+                    console.log('[Guide] Adding guide button to beginning of game screen');
+                    gameScreen.insertBefore(buttonContainer, gameScreen.firstChild);
+                    insertionSuccessful = true;
+                }
+            }
+            
+            // Approach 3: Find a question container
+            if (!insertionSuccessful) {
+                const questionContainer = document.querySelector('.question-container, #question-container, #scenario-container, .scenario-container');
+                if (questionContainer) {
+                    console.log('[Guide] Adding guide button before question container');
+                    questionContainer.parentNode.insertBefore(buttonContainer, questionContainer);
+                    insertionSuccessful = true;
+                }
+            }
+            
+            // Approach 4: Try to find the title element
+            if (!insertionSuccessful) {
+                const titleElement = document.querySelector('h1, .quiz-title, #scenario-title, .scenario-title');
+                if (titleElement) {
+                    console.log('[Guide] Adding guide button after quiz title');
+                    if (titleElement.parentNode) {
+                        titleElement.parentNode.insertBefore(buttonContainer, titleElement.nextSibling);
+                        insertionSuccessful = true;
+                    }
+                }
+            }
+            
+            // Approach 5: Last resort - add to body
+            if (!insertionSuccessful) {
+                console.log('[Guide] Adding guide button to document body as last resort');
+                document.body.insertBefore(buttonContainer, document.body.firstChild);
+                insertionSuccessful = true;
             }
             
             console.log('[Guide] Guide button added successfully');
+            
+            // Store a reference for debugging
+            window.guideButton = guideButton;
+            window.quizHelper = this;
         } else {
             console.log('[Guide] Guide button not shown: showGuideButton =', this.showGuideButton, 'guideUrl =', this.guideUrl);
         }
@@ -237,6 +331,22 @@ export class BaseQuiz {
             window.location.href = '/login.html';
             return;
         }
+        
+        // Make sure we have the quiz name set
+        if (!this.quizName) {
+            this.quizName = this.detectQuizNameFromPage();
+            console.log('[Quiz] Setting quiz name in startGame:', this.quizName);
+        }
+        
+        // Initialize or reinitialize guide settings
+        if (this.quizName) {
+            console.log('[Quiz] Initializing guide settings in startGame');
+            this.initializeGuideSettings();
+        }
+        
+        // Create a global reference for debugging
+        window.quizHelper = this;
+        
         this.showQuestion();
     }
 
