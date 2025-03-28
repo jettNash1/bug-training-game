@@ -3,11 +3,29 @@ import { QuizUser } from '../QuizUser.js';
 
 class IndexPage {
     constructor() {
-        this.apiService = new APIService();
-        this.user = new QuizUser(localStorage.getItem('username'));
-        this.quizItems = document.querySelectorAll('.quiz-item:not(.locked-quiz)');
-        this.initialize();
-        this.showLoadingOverlay();
+        try {
+            console.log('[Index] Initializing IndexPage');
+            this.apiService = new APIService();
+            this.user = new QuizUser(localStorage.getItem('username'));
+            this.quizItems = document.querySelectorAll('.quiz-item:not(.locked-quiz)');
+            
+            // Show loading overlay first
+            this.showLoadingOverlay();
+            
+            // Set a backup timeout to ensure the loading overlay is hidden after a maximum time
+            // This prevents the page from getting stuck in loading state
+            this.loadingTimeout = setTimeout(() => {
+                console.log('[Index] Loading timeout reached - forcing loading overlay removal');
+                this.hideLoadingOverlay();
+            }, 10000); // 10 seconds maximum loading time
+            
+            // Initialize the page
+            this.initialize();
+        } catch (error) {
+            console.error('[Index] Error during IndexPage construction:', error);
+            // Ensure loading overlay is hidden even if initialization fails
+            this.hideLoadingOverlay();
+        }
     }
 
     showLoadingOverlay() {
@@ -63,6 +81,12 @@ class IndexPage {
     }
 
     hideLoadingOverlay() {
+        // Clear the loading timeout if it exists
+        if (this.loadingTimeout) {
+            clearTimeout(this.loadingTimeout);
+            this.loadingTimeout = null;
+        }
+        
         const overlay = document.querySelector('.loading-overlay');
         if (overlay) {
             // Add fade-out animation
@@ -74,16 +98,25 @@ class IndexPage {
 
     async initialize() {
         try {
+            // Load user progress first
             await this.loadUserProgress();
+            
+            // Update UI with loaded progress
             this.updateQuizProgress();
             this.updateCategoryProgress();
             this.addBadgesNavLink();
-            await this.loadGuideSettingsAndAddButtons();
+            
+            // Load guide settings in a non-blocking way
+            this.loadGuideSettingsAndAddButtons().catch(err => {
+                console.error('[Index] Error loading guide settings:', err);
+            });
         } catch (error) {
-            console.error('Failed to initialize:', error);
-        } finally {
-            this.hideLoadingOverlay();
+            console.error('[Index] Failed to initialize:', error);
         }
+        
+        // Always hide the loading overlay after initializing core functionality
+        // even if guide buttons are still loading
+        this.hideLoadingOverlay();
     }
 
     handleLogout() {
@@ -626,36 +659,44 @@ class IndexPage {
                 document.head.appendChild(styles);
             }
             
-            // Check guide settings for each quiz
-            for (const item of visibleQuizItems) {
+            // Use Promise.allSettled instead of awaiting each request to prevent one failure from blocking everything
+            const guidePromises = visibleQuizItems.map(item => {
                 const quizId = item.dataset.quiz;
-                if (!quizId) continue;
+                if (!quizId) return Promise.resolve();
                 
-                try {
-                    // Fetch guide settings from API
-                    const response = await this.apiService.fetchGuideSettings(quizId);
-                    
-                    if (response && response.success && response.data && response.data.enabled && response.data.url) {
-                        console.log(`[Index] Guide button enabled for quiz ${quizId} with URL: ${response.data.url}`);
-                        
-                        // Create or update guide button
-                        this.addGuideButtonToQuizItem(item, quizId, response.data.url);
-                    } else {
-                        console.log(`[Index] Guide button not enabled for quiz ${quizId}`);
-                        // Remove any existing guide button
-                        const existingButton = item.querySelector(`.quiz-guide-button[data-quiz-id="${quizId}"]`);
-                        if (existingButton) {
-                            existingButton.remove();
-                        }
-                    }
-                } catch (error) {
+                // Add a timeout to prevent hanging if the API call takes too long
+                const timeoutPromise = new Promise((_, reject) => 
+                    setTimeout(() => reject(new Error('Timeout fetching guide settings')), 5000)
+                );
+                
+                // Race the API call against the timeout
+                return Promise.race([
+                    this.apiService.fetchGuideSettings(quizId)
+                        .then(response => {
+                            if (response && response.success && response.data && response.data.enabled && response.data.url) {
+                                console.log(`[Index] Guide button enabled for quiz ${quizId} with URL: ${response.data.url}`);
+                                this.addGuideButtonToQuizItem(item, quizId, response.data.url);
+                            } else {
+                                console.log(`[Index] Guide button not enabled for quiz ${quizId}`);
+                                const existingButton = item.querySelector(`.quiz-guide-button[data-quiz-id="${quizId}"]`);
+                                if (existingButton) {
+                                    existingButton.remove();
+                                }
+                            }
+                        }),
+                    timeoutPromise
+                ]).catch(error => {
                     console.error(`[Index] Error fetching guide settings for quiz ${quizId}:`, error);
-                }
-            }
+                    // Continue with other quizzes even if this one fails
+                });
+            });
+            
+            // Wait for all guide settings to be processed, but don't let failures block the UI
+            await Promise.allSettled(guidePromises);
             
             console.log('[Index] Finished setting up guide buttons');
         } catch (error) {
-            console.error('[Index] Error loading guide settings:', error);
+            console.error('[Index] Error in guide button setup:', error);
         }
     }
     
