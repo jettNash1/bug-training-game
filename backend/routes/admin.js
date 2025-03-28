@@ -1375,4 +1375,79 @@ router.get('/quiz-types', auth, async (req, res) => {
     }
 });
 
+// Guide settings routes
+router.get('/guide-settings', auth, async (req, res) => {
+    try {
+        const settings = await Setting.findOne({ key: 'guideSettings' });
+        
+        if (!settings) {
+            // If no settings exist, create default settings
+            const defaultSettings = new Setting({
+                key: 'guideSettings',
+                value: {}
+            });
+            await defaultSettings.save();
+            return res.json({
+                success: true,
+                data: defaultSettings.value
+            });
+        }
+        
+        res.json({
+            success: true,
+            data: settings.value
+        });
+    } catch (error) {
+        console.error('Error fetching guide settings:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Failed to fetch guide settings'
+        });
+    }
+});
+
+router.post('/guide-settings/:quizName', auth, async (req, res) => {
+    try {
+        const { quizName } = req.params;
+        const { url, enabled } = req.body;
+        
+        // Validate URL if provided
+        if (url && !url.match(/^https?:\/\/.+/)) {
+            return res.status(400).json({
+                success: false,
+                message: 'Invalid URL format. Must start with http:// or https://'
+            });
+        }
+        
+        // Get current settings or create new ones
+        let settings = await Setting.findOne({ key: 'guideSettings' });
+        if (!settings) {
+            settings = new Setting({
+                key: 'guideSettings',
+                value: {}
+            });
+        }
+        
+        // Update settings for the specific quiz
+        settings.value = {
+            ...settings.value,
+            [quizName]: { url, enabled }
+        };
+        
+        await settings.save();
+        
+        res.json({
+            success: true,
+            message: 'Guide settings updated successfully',
+            data: settings.value
+        });
+    } catch (error) {
+        console.error('Error updating guide settings:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Failed to update guide settings'
+        });
+    }
+});
+
 module.exports = router; 

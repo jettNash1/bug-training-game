@@ -609,4 +609,33 @@ router.get('/settings/quiz-timer', auth, async (req, res) => {
     }
 });
 
+// Get guide settings for a specific quiz
+router.get('/guide-settings/:quizName', auth, async (req, res) => {
+    try {
+        const { quizName } = req.params;
+        
+        // Get guide settings from database
+        const settings = await Setting.findOne({ key: 'guideSettings' });
+        
+        // If no settings exist or no settings for this quiz, return null
+        if (!settings || !settings.value || !settings.value[quizName]) {
+            return res.json({
+                success: true,
+                data: null
+            });
+        }
+        
+        return res.json({
+            success: true,
+            data: settings.value[quizName]
+        });
+    } catch (error) {
+        console.error('Error retrieving guide settings:', error);
+        return res.status(500).json({
+            success: false,
+            message: 'Failed to retrieve guide settings'
+        });
+    }
+});
+
 module.exports = router;

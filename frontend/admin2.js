@@ -3121,19 +3121,12 @@ class Admin2Dashboard extends AdminDashboard {
 
     async loadGuideSettings() {
         try {
-            const response = await fetch(`${this.apiBaseUrl}/guide-settings`, {
-                method: 'GET',
-                headers: {
-                    'Authorization': `Bearer ${this.adminToken}`,
-                    'Content-Type': 'application/json'
-                }
-            });
-
-            if (!response.ok) {
+            const response = await this.apiService.fetchWithAdminAuth(`${this.apiBaseUrl}/admin/guide-settings`);
+            if (response.success) {
+                this.guideSettings = response.data;
+            } else {
                 throw new Error('Failed to load guide settings');
             }
-
-            this.guideSettings = await response.json();
         } catch (error) {
             console.error('Error loading guide settings:', error);
             this.guideSettings = {};
@@ -3191,26 +3184,27 @@ class Admin2Dashboard extends AdminDashboard {
 
     async saveGuideSettings(quiz, url, enabled) {
         try {
-            const response = await fetch(`${this.apiBaseUrl}/guide-settings/${quiz}`, {
-                method: 'POST',
-                headers: {
-                    'Authorization': `Bearer ${this.adminToken}`,
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({ url, enabled })
-            });
+            const response = await this.apiService.fetchWithAdminAuth(
+                `${this.apiBaseUrl}/admin/guide-settings/${quiz}`,
+                {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ url, enabled })
+                }
+            );
 
-            if (!response.ok) {
+            if (response.success) {
+                this.guideSettings[quiz] = { url, enabled };
+                this.displayGuideSettings();
+                alert('Guide settings saved successfully!');
+            } else {
                 throw new Error('Failed to save guide settings');
             }
-
-            // Update local settings
-            this.guideSettings[quiz] = { url, enabled };
-            
-            return true;
         } catch (error) {
             console.error('Error saving guide settings:', error);
-            throw error;
+            alert('Failed to save guide settings. Please try again.');
         }
     }
 }

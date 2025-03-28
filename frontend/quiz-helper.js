@@ -62,15 +62,22 @@ export class BaseQuiz {
 
     async initializeGuideSettings() {
         try {
-            const guideSettings = await this.apiService.getQuizGuideSettings(this.quizName);
-            if (guideSettings) {
-                this.guideUrl = guideSettings.url;
-                this.showGuideButton = guideSettings.enabled;
-                this.updateGuideButton();
+            const response = await this.apiService.fetchWithAuth(`${this.apiService.baseUrl}/guide-settings/${this.quizName}`);
+            if (response.success) {
+                const settings = response.data;
+                this.guideUrl = settings?.url || null;
+                this.showGuideButton = settings?.enabled || false;
+            } else {
+                console.error('Failed to load guide settings');
+                this.guideUrl = null;
+                this.showGuideButton = false;
             }
         } catch (error) {
-            console.error('Failed to initialize guide settings:', error);
+            console.error('Error loading guide settings:', error);
+            this.guideUrl = null;
+            this.showGuideButton = false;
         }
+        this.updateGuideButton();
     }
 
     updateGuideButton() {
