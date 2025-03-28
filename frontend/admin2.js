@@ -535,9 +535,6 @@ export class Admin2Dashboard extends AdminDashboard {
 
         // Create the default timer settings section
         const defaultSettingsHTML = `
-            <h3>Quiz Timer Settings</h3>
-            <p>Set the time allowed for each quiz question.</p>
-            
             <div class="timer-section">
                 <h4>Default Timer Setting</h4>
                 <p>This setting applies to all quizzes unless overridden by per-quiz settings.</p>
@@ -3152,9 +3149,6 @@ export class Admin2Dashboard extends AdminDashboard {
 
         // Create the guide settings HTML
         const guideSettingsHTML = `
-            <h3>Guide Settings</h3>
-            <p>Configure guide URLs for each quiz.</p>
-            
             <div class="guide-section">
                 <h4>Quiz Guide Configuration</h4>
                 <p>Set guide URLs and enable/disable guides for specific quizzes.</p>
