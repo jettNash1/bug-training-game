@@ -11,6 +11,18 @@ export class Admin2Dashboard extends AdminDashboard {
 
     async init2() {
         try {
+            // Setup interval to check for scheduled resets that need processing
+            this.scheduleCheckInterval = setInterval(() => {
+                this.checkScheduledResets().catch(error => {
+                    console.error('Error during scheduled resets check:', error);
+                });
+            }, 60000); // Check every minute
+            
+            // Do an initial check for scheduled resets
+            this.checkScheduledResets().catch(error => {
+                console.error('Error during initial scheduled resets check:', error);
+            });
+            
             // Wait for DOM to be fully loaded
             if (document.readyState !== 'complete') {
                 await new Promise(resolve => {
@@ -202,7 +214,7 @@ export class Admin2Dashboard extends AdminDashboard {
                     // Special handling for different sections
                     switch(sectionId) {
                         case 'schedule-section':
-                            this.loadScheduleData();
+                            this.refreshScheduleData();
                             break;
                         case 'settings-section':
                             this.displayTimerSettings();
@@ -2717,12 +2729,25 @@ export class Admin2Dashboard extends AdminDashboard {
 
     // Setup schedule section with form and event handlers
     setupScheduleSection() {
-        // Get form elements
+        console.log('Setting up schedule section');
+        
         const scheduleForm = document.getElementById('scheduleForm');
         const userSelect = document.getElementById('scheduleUser');
         const quizSelect = document.getElementById('scheduleQuiz');
         const dateInput = document.getElementById('scheduleDate');
         const timeInput = document.getElementById('scheduleTime');
+        
+        // Add a refresh button to manually refresh scheduled resets
+        const scheduledItemsHeader = document.querySelector('.scheduled-items-header');
+        if (scheduledItemsHeader) {
+            const refreshButton = document.createElement('button');
+            refreshButton.className = 'refresh-btn action-button secondary';
+            refreshButton.innerHTML = '<i class="fas fa-sync-alt"></i> Refresh';
+            refreshButton.setAttribute('aria-label', 'Refresh scheduled resets');
+            refreshButton.addEventListener('click', () => this.refreshScheduleData());
+            
+            scheduledItemsHeader.appendChild(refreshButton);
+        }
         
         // Populate user dropdown
         this.populateUserDropdown();
@@ -2745,6 +2770,11 @@ export class Admin2Dashboard extends AdminDashboard {
         
         // Load and display existing scheduled resets
         this.loadScheduledResets();
+        
+        // Also check for any scheduled resets that need to be executed
+        this.checkScheduledResets().catch(error => {
+            console.error('Error checking scheduled resets during setup:', error);
+        });
     }
     
     // Populate user dropdown with available users
@@ -2860,9 +2890,39 @@ export class Admin2Dashboard extends AdminDashboard {
             
             // Get schedules and display them
             await this.displayScheduledResets();
+            
+            // Add a button to check for due scheduled resets
+            const scheduledItemsHeader = document.querySelector('.scheduled-items-header');
+            if (scheduledItemsHeader) {
+                // Remove any existing check button first
+                const existingCheckBtn = scheduledItemsHeader.querySelector('.check-resets-btn');
+                if (existingCheckBtn) {
+                    existingCheckBtn.remove();
+                }
+                
+                // Create and add the check button
+                const checkButton = document.createElement('button');
+                checkButton.className = 'check-resets-btn action-button secondary';
+                checkButton.innerHTML = '<i class="fas fa-clock"></i> Check Due Resets';
+                checkButton.setAttribute('aria-label', 'Check for due scheduled resets');
+                checkButton.addEventListener('click', async () => {
+                    try {
+                        checkButton.disabled = true;
+                        checkButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Checking...';
+                        await this.checkScheduledResets();
+                        checkButton.disabled = false;
+                        checkButton.innerHTML = '<i class="fas fa-clock"></i> Check Due Resets';
+                    } catch (error) {
+                        checkButton.disabled = false;
+                        checkButton.innerHTML = '<i class="fas fa-clock"></i> Check Due Resets';
+                    }
+                });
+                
+                scheduledItemsHeader.appendChild(checkButton);
+            }
         } catch (error) {
             console.error('Error loading scheduled resets:', error);
-            this.showError(`Failed to load scheduled resets: ${error.message}`);
+            this.showInfo(`Failed to load scheduled resets: ${error.message}`, 'error');
             
             // Show error state
             const scheduledItemsList = document.getElementById('scheduledItemsList');
@@ -3014,20 +3074,38 @@ export class Admin2Dashboard extends AdminDashboard {
     // Check for scheduled resets that need to be executed
     async checkScheduledResets() {
         try {
+            console.log('Checking for scheduled resets that need to be executed...');
+            
             // Use the API service to check and process scheduled resets
             const result = await this.apiService.checkAndProcessScheduledResets();
+            
+            console.log('Schedule check complete:', result);
             
             if (result.processed > 0) {
                 console.log(`Processed ${result.processed} scheduled resets out of ${result.total} total`);
                 
+                // Show notification
+                this.showInfo(`Successfully processed ${result.processed} scheduled quiz resets`);
+                
                 // Refresh the display if the schedule section is active
                 const scheduleSection = document.getElementById('schedule-section');
                 if (scheduleSection && scheduleSection.classList.contains('active')) {
-                    this.refreshScheduleData();
+                    console.log('Schedule section is active, refreshing data');
+                    await this.refreshScheduleData();
                 }
+            } else {
+                console.log(`No scheduled resets needed processing (${result.total} total scheduled)`);
             }
+            
+            return result;
         } catch (error) {
             console.error('Error checking scheduled resets:', error);
+            // Only show error to user if schedule section is active
+            const scheduleSection = document.getElementById('schedule-section');
+            if (scheduleSection && scheduleSection.classList.contains('active')) {
+                this.showInfo(`Failed to check scheduled resets: ${error.message}`, 'error');
+            }
+            throw error;
         }
     }
     
