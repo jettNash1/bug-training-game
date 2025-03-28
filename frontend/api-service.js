@@ -1800,41 +1800,52 @@ export class APIService {
 
     // Guide settings methods for quiz UI
     async fetchGuideSettings(quizName) {
+        console.log(`[API] Fetching guide settings for quiz: ${quizName}`);
         try {
-            // First try to get from API
-            const response = await this.fetchWithAuth(`${this.baseUrl}/guide-settings/${quizName}`);
+            const url = `${this.baseUrl}/guide-settings/${quizName}`;
+            console.log(`[API] Guide settings URL: ${url}`);
+            
+            const response = await this.fetchWithAuth(url);
+            console.log(`[API] Guide settings response:`, response);
             
             if (response.success && response.data) {
-                return response;
+                // Store in localStorage as a fallback
+                try {
+                    localStorage.setItem(`guide_settings_${quizName}`, JSON.stringify(response.data));
+                    console.log(`[API] Saved guide settings to localStorage for ${quizName}:`, response.data);
+                } catch (err) {
+                    console.warn(`[API] Could not save guide settings to localStorage:`, err);
+                }
+                
+                return {
+                    success: true,
+                    data: response.data
+                };
             } else {
-                throw new Error(response.message || 'Failed to fetch guide settings');
+                console.warn(`[API] Invalid guide settings response:`, response);
+                throw new Error('Invalid response format');
             }
         } catch (error) {
-            console.warn(`Error fetching guide settings for ${quizName}:`, error);
+            console.error(`[API] Error fetching guide settings for ${quizName}:`, error);
             
             // Try to get from localStorage as fallback
             try {
-                const guideSettingsJson = localStorage.getItem('guideSettings');
-                if (guideSettingsJson) {
-                    const allSettings = JSON.parse(guideSettingsJson);
-                    
-                    if (allSettings && allSettings[quizName]) {
-                        const quizSettings = allSettings[quizName];
-                        return {
-                            success: true,
-                            data: {
-                                url: quizSettings.url,
-                                enabled: quizSettings.enabled,
-                                source: 'localStorage'
-                            }
-                        };
-                    }
+                const cachedSettings = localStorage.getItem(`guide_settings_${quizName}`);
+                if (cachedSettings) {
+                    const settings = JSON.parse(cachedSettings);
+                    console.log(`[API] Using cached guide settings from localStorage:`, settings);
+                    return {
+                        success: true,
+                        data: settings,
+                        source: 'localStorage'
+                    };
                 }
-            } catch (localError) {
-                console.error('Error reading guide settings from localStorage:', localError);
+            } catch (err) {
+                console.warn(`[API] Error accessing localStorage:`, err);
             }
             
-            // Return empty settings if nothing found
+            // Return default values
+            console.log(`[API] Returning default guide settings (disabled)`);
             return {
                 success: true,
                 data: {
