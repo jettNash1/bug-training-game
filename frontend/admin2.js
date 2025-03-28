@@ -628,15 +628,29 @@ export class Admin2Dashboard extends AdminDashboard {
         saveDefaultBtn.addEventListener('click', async () => {
             const seconds = parseInt(defaultTimerInput.value, 10);
             if (isNaN(seconds) || seconds < 0 || seconds > 300) {
-                alert('Please enter a valid number between 0 and 300');
+                this.showInfo('Please enter a valid number between 0 and 300', 'error');
                 return;
             }
+            
             try {
-                await this.updateQuizTimerSettings(null, seconds);
-                this.showInfo(`Default timer set to ${seconds} seconds`);
-                } catch (error) {
+                // Use apiService directly to update default timer
+                const response = await this.apiService.updateQuizTimerSettings(seconds);
+                
+                if (response.success) {
+                    this.timerSettings = response.data;
+                    this.showInfo(`Default timer set to ${seconds} seconds`);
+                    
+                    // Update the quiz timers list
+                    const timersList = container.querySelector('#quiz-timers-list');
+                    if (timersList) {
+                        timersList.innerHTML = this.generateQuizTimersList(this.timerSettings.quizTimers);
+                    }
+                } else {
+                    throw new Error(response.message || 'Failed to save default timer');
+                }
+            } catch (error) {
                 console.error('Failed to save default timer:', error);
-                alert('Failed to save default timer setting');
+                this.showInfo(`Failed to save default timer: ${error.message}`, 'error');
             }
         });
 
@@ -653,25 +667,38 @@ export class Admin2Dashboard extends AdminDashboard {
         setTimerBtn.addEventListener('click', async () => {
             const selectedQuiz = quizSelect.value;
             if (!selectedQuiz) {
-                alert('Please select a quiz');
+                this.showInfo('Please select a quiz', 'error');
                 return;
             }
+            
             const seconds = parseInt(quizTimerInput.value, 10);
             if (isNaN(seconds) || seconds < 0 || seconds > 300) {
-                alert('Please enter a valid number between 0 and 300');
+                this.showInfo('Please enter a valid number between 0 and 300', 'error');
                 return;
             }
+            
             try {
-                await this.updateQuizTimerSettings(selectedQuiz, seconds);
-                this.showInfo(`Timer for ${selectedQuiz} set to ${seconds} seconds`);
-                // Refresh the current settings display
-                const timersList = container.querySelector('#quiz-timers-list');
-                if (timersList) {
-                    timersList.innerHTML = this.generateQuizTimersList(this.timerSettings.quizTimers);
+                // Use the apiService to directly update the timer
+                const response = await this.apiService.updateSingleQuizTimer(selectedQuiz, seconds);
+                
+                if (response.success) {
+                    // Update local data
+                    this.timerSettings = response.data;
+                    
+                    // Show success message
+                    this.showInfo(`Timer for ${selectedQuiz} set to ${seconds} seconds`);
+                    
+                    // Refresh the current settings display
+                    const timersList = container.querySelector('#quiz-timers-list');
+                    if (timersList) {
+                        timersList.innerHTML = this.generateQuizTimersList(this.timerSettings.quizTimers);
+                    }
+                } else {
+                    throw new Error(response.message || 'Failed to save quiz timer');
                 }
             } catch (error) {
                 console.error('Failed to save quiz timer:', error);
-                alert('Failed to save quiz timer setting');
+                this.showInfo(`Failed to save quiz timer: ${error.message}`, 'error');
             }
         });
 
@@ -679,21 +706,35 @@ export class Admin2Dashboard extends AdminDashboard {
         resetDefaultBtn.addEventListener('click', async () => {
             const selectedQuiz = quizSelect.value;
             if (!selectedQuiz) {
-                alert('Please select a quiz');
+                this.showInfo('Please select a quiz', 'error');
                 return;
             }
+            
             try {
-                await this.updateQuizTimerSettings(selectedQuiz, defaultSeconds);
-                this.showInfo(`Timer for ${selectedQuiz} reset to default (${defaultSeconds} seconds)`);
-                quizTimerInput.value = defaultSeconds;
-                // Refresh the current settings display
-                const timersList = container.querySelector('#quiz-timers-list');
-                if (timersList) {
-                    timersList.innerHTML = this.generateQuizTimersList(this.timerSettings.quizTimers);
+                // Use apiService to reset the timer
+                const response = await this.apiService.resetQuizTimer(selectedQuiz);
+                
+                if (response.success) {
+                    // Update local data
+                    this.timerSettings = response.data;
+                    
+                    // Update input field to show default
+                    quizTimerInput.value = this.timerSettings.defaultSeconds;
+                    
+                    // Show success message
+                    this.showInfo(`Timer for ${selectedQuiz} reset to default (${this.timerSettings.defaultSeconds} seconds)`);
+                    
+                    // Refresh the current settings display
+                    const timersList = container.querySelector('#quiz-timers-list');
+                    if (timersList) {
+                        timersList.innerHTML = this.generateQuizTimersList(this.timerSettings.quizTimers);
+                    }
+                } else {
+                    throw new Error(response.message || 'Failed to reset quiz timer');
                 }
             } catch (error) {
                 console.error('Failed to reset quiz timer:', error);
-                alert('Failed to reset quiz timer setting');
+                this.showInfo(`Failed to reset quiz timer: ${error.message}`, 'error');
             }
         });
 
@@ -709,16 +750,51 @@ export class Admin2Dashboard extends AdminDashboard {
                 .map(cb => cb.dataset.quiz);
             
             if (selectedQuizzes.length === 0) {
-                alert('Please select at least one quiz');
+                this.showInfo('Please select at least one quiz', 'error');
                 return;
             }
 
             if (confirm(`Are you sure you want to clear timer settings for ${selectedQuizzes.length} selected quizzes?`)) {
                 try {
+                    const successfulResets = [];
+                    const failedResets = [];
+                    
+                    // Process one quiz at a time
                     for (const quiz of selectedQuizzes) {
-                        await this.updateQuizTimerSettings(quiz, defaultSeconds);
+                        try {
+                            const response = await this.apiService.resetQuizTimer(quiz);
+                            if (response.success) {
+                                successfulResets.push(quiz);
+                            } else {
+                                failedResets.push(quiz);
+                            }
+                        } catch (error) {
+                            console.error(`Failed to reset timer for quiz ${quiz}:`, error);
+                            failedResets.push(quiz);
+                        }
                     }
-                    this.showInfo(`Cleared timer settings for ${selectedQuizzes.length} quizzes`);
+                    
+                    // Update local timer settings from the last response if available
+                    if (successfulResets.length > 0) {
+                        // Get the latest timer settings
+                        const settingsResponse = await this.apiService.getQuizTimerSettings();
+                        if (settingsResponse.success) {
+                            this.timerSettings = settingsResponse.data;
+                        }
+                    }
+                    
+                    // Show appropriate message
+                    if (successfulResets.length > 0) {
+                        this.showInfo(`Cleared timer settings for ${successfulResets.length} quizzes`);
+                        
+                        // If some failed, also show warning
+                        if (failedResets.length > 0) {
+                            this.showInfo(`Failed to clear settings for ${failedResets.length} quizzes`, 'warning');
+                        }
+                    } else {
+                        this.showInfo('Failed to clear any timer settings', 'error');
+                    }
+                    
                     // Refresh the current settings display
                     const timersList = container.querySelector('#quiz-timers-list');
                     if (timersList) {
@@ -726,7 +802,7 @@ export class Admin2Dashboard extends AdminDashboard {
                     }
                 } catch (error) {
                     console.error('Failed to clear selected timer settings:', error);
-                    alert('Failed to clear some timer settings');
+                    this.showInfo(`Failed to clear timer settings: ${error.message}`, 'error');
                 }
             }
         });
@@ -735,11 +811,49 @@ export class Admin2Dashboard extends AdminDashboard {
         clearAllBtn.addEventListener('click', async () => {
             if (confirm('Are you sure you want to clear ALL quiz-specific timer settings?')) {
                 try {
-                    const quizzes = Object.keys(quizTimers);
-                    for (const quiz of quizzes) {
-                        await this.updateQuizTimerSettings(quiz, defaultSeconds);
+                    // Get the current list of quizzes with custom timers
+                    const quizzes = Object.keys(this.timerSettings?.quizTimers || {});
+                    
+                    if (quizzes.length === 0) {
+                        this.showInfo('No custom timer settings to clear', 'info');
+                        return;
                     }
-                    this.showInfo('Cleared all quiz-specific timer settings');
+                    
+                    const successfulResets = [];
+                    const failedResets = [];
+                    
+                    // Process each quiz
+                    for (const quiz of quizzes) {
+                        try {
+                            const response = await this.apiService.resetQuizTimer(quiz);
+                            if (response.success) {
+                                successfulResets.push(quiz);
+                                
+                                // Update local settings after each successful reset
+                                this.timerSettings = response.data;
+                            } else {
+                                failedResets.push(quiz);
+                            }
+                        } catch (error) {
+                            console.error(`Failed to reset timer for quiz ${quiz}:`, error);
+                            failedResets.push(quiz);
+                        }
+                    }
+                    
+                    // Show appropriate message
+                    if (successfulResets.length > 0) {
+                        this.showInfo(`Cleared timer settings for ${successfulResets.length} quizzes`);
+                        
+                        // If some failed, also show warning
+                        if (failedResets.length > 0) {
+                            this.showInfo(`Failed to clear settings for ${failedResets.length} quizzes`, 'warning');
+                        }
+                    } else if (failedResets.length > 0) {
+                        this.showInfo('Failed to clear any timer settings', 'error');
+                    } else {
+                        this.showInfo('No timer settings to clear', 'info');
+                    }
+                    
                     // Refresh the current settings display
                     const timersList = container.querySelector('#quiz-timers-list');
                     if (timersList) {
@@ -747,7 +861,7 @@ export class Admin2Dashboard extends AdminDashboard {
                     }
                 } catch (error) {
                     console.error('Failed to clear all timer settings:', error);
-                    alert('Failed to clear all timer settings');
+                    this.showInfo(`Failed to clear all timer settings: ${error.message}`, 'error');
                 }
             }
         });
@@ -2965,25 +3079,24 @@ export class Admin2Dashboard extends AdminDashboard {
         }
     }
 
+    // Helper method to show error messages
+    showErrorMessage(message) {
+        // Use the existing showInfo method with 'error' type
+        this.showInfo(message, 'error');
+    }
+
     async updateQuizTimerSettings(quizName, seconds) {
         try {
-            // Get current settings first
-            const currentSettings = await this.apiService.fetchWithAdminAuth('/admin/settings/quiz-timer');
+            console.log(`Updating timer for ${quizName} to ${seconds} seconds`);
             
-            // Update the quiz-specific timer
-            const updatedSettings = {
-                secondsPerQuestion: currentSettings.data.secondsPerQuestion,
-                quizTimers: {
-                    ...currentSettings.data.quizTimers,
-                    [quizName]: seconds
-                }
-            };
+            // Validate the timer value
+            const parsedSeconds = parseInt(seconds, 10);
+            if (isNaN(parsedSeconds) || parsedSeconds < 0 || parsedSeconds > 300) {
+                throw new Error('Timer value must be between 0 and 300 seconds');
+            }
             
-            // Save the updated settings
-            const response = await this.apiService.fetchWithAdminAuth('/admin/settings/quiz-timer', {
-                method: 'POST',
-                body: JSON.stringify(updatedSettings)
-            });
+            // Use the updateSingleQuizTimer method of apiService instead of raw fetch
+            const response = await this.apiService.updateSingleQuizTimer(quizName, parsedSeconds);
             
             if (response.success) {
                 // Update local cache
@@ -2994,13 +3107,15 @@ export class Admin2Dashboard extends AdminDashboard {
                 this.displayTimerSettings();
                 
                 // Show success message
-                this.showInfo(`Timer for ${quizName} updated to ${seconds} seconds`);
+                this.showInfo(`Timer for ${quizName} updated to ${parsedSeconds} seconds`);
+                return true;
             } else {
                 throw new Error(response.message || 'Failed to update timer settings');
             }
         } catch (error) {
             console.error('Error updating quiz timer:', error);
-            this.showErrorMessage(`Failed to update timer: ${error.message}`);
+            this.showInfo(`Failed to update timer: ${error.message}`, 'error');
+            return false;
         }
     }
 
@@ -3349,13 +3464,38 @@ export class Admin2Dashboard extends AdminDashboard {
 
     async loadTimerSettings() {
         try {
-            const timerSettings = await this.apiService.fetchWithAdminAuth(`${this.apiService.baseUrl}/admin/settings/quiz-timer`);
-            if (timerSettings.success) {
-                this.timerSettings = timerSettings.data;
+            console.log('Loading timer settings via apiService');
+            const response = await this.apiService.getQuizTimerSettings();
+            
+            if (response.success) {
+                this.timerSettings = response.data;
+                console.log('Successfully loaded timer settings:', this.timerSettings);
+            } else {
+                throw new Error(response.message || 'Failed to load timer settings');
             }
         } catch (error) {
             console.error('Failed to load timer settings:', error);
-            this.timerSettings = { defaultSeconds: 60, quizTimers: {} };
+            
+            // Try to load from localStorage as fallback
+            try {
+                const cachedSettings = localStorage.getItem('quizTimerSettings');
+                if (cachedSettings) {
+                    this.timerSettings = JSON.parse(cachedSettings);
+                    console.log('Loaded timer settings from localStorage:', this.timerSettings);
+                } else {
+                    // Set default values
+                    this.timerSettings = { defaultSeconds: 60, quizTimers: {} };
+                    console.log('Using default timer settings');
+                }
+            } catch (localStorageError) {
+                console.error('Error loading from localStorage:', localStorageError);
+                this.timerSettings = { defaultSeconds: 60, quizTimers: {} };
+            }
+            
+            // Show error notification if this was an API error (not on initial load)
+            if (document.readyState === 'complete') {
+                this.showInfo('Could not load timer settings from server. Using cached values.', 'warning');
+            }
         }
     }
 
