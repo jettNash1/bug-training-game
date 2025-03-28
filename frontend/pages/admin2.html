@@ -252,11 +252,16 @@
 
     <!-- Load scripts as modules -->
     <script type="module">
-        import { Admin2Dashboard } from '../admin2.js';
+        import { Admin2Dashboard } from '/frontend/admin2.js';
         
         // Initialize the dashboard when the DOM is loaded
-        document.addEventListener('DOMContentLoaded', () => {
-            window.adminDashboard = new Admin2Dashboard();
+        document.addEventListener('DOMContentLoaded', async () => {
+            try {
+                window.adminDashboard = new Admin2Dashboard();
+                console.log('Admin dashboard initialized');
+            } catch (error) {
+                console.error('Failed to initialize admin dashboard:', error);
+            }
         });
     </script>
 

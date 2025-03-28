@@ -1,4 +1,4 @@
-import { AdminDashboard } from './admin.js';
+import { AdminDashboard } from '/frontend/admin.js';
 
 export class Admin2Dashboard extends AdminDashboard {
     constructor() {
