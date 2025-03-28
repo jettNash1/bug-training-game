@@ -1179,138 +1179,155 @@
         }
 
         /* Guide Settings Styles */
-        #guide-settings-container {
-            margin-top: 1.5rem;
-        }
-
-        .guide-setting-item {
+        .guide-section {
             background: #f8f9fa;
             border-radius: 8px;
             padding: 1.25rem;
-            margin-bottom: 1rem;
+            margin-bottom: 1.5rem;
             border: 1px solid #e0e0e0;
         }
 
-        .guide-setting-item h4 {
-            margin: 0 0 1rem 0;
+        .guide-section h4 {
+            margin-top: 0;
+            margin-bottom: 0.75rem;
             color: #2c3e50;
         }
 
-        .guide-url-input {
+        .quiz-guide-form {
+            margin-top: 1rem;
+        }
+
+        .form-row {
+            margin-bottom: 1rem;
+        }
+
+        .form-row label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 500;
+        }
+
+        .input-button-group {
+            display: flex;
+            gap: 0.5rem;
+            align-items: center;
+        }
+
+        #guide-url-input {
             width: 100%;
             padding: 0.75rem;
             border: 1px solid #ddd;
             border-radius: 4px;
-            margin-bottom: 1rem;
         }
 
-        .guide-toggle {
+        .checkbox-label {
             display: flex;
             align-items: center;
             gap: 0.5rem;
+            cursor: pointer;
         }
 
-        .guide-toggle input[type="checkbox"] {
-            width: 1.2rem;
-            height: 1.2rem;
-        }
-
-        .guide-toggle label {
-            color: #555;
+        .status-badge {
+            display: inline-block;
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+            font-size: 0.85rem;
             font-weight: 500;
         }
 
-        .save-guide-btn {
+        .status-badge.enabled {
+            background-color: #28a745;
+            color: white;
+        }
+
+        .status-badge.disabled {
+            background-color: #dc3545;
+            color: white;
+        }
+
+        .settings-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 1rem;
+        }
+
+        .settings-table th,
+        .settings-table td {
+            padding: 0.75rem;
+            border-bottom: 1px solid #e0e0e0;
+            text-align: left;
+        }
+
+        .settings-table th {
+            font-weight: 600;
+            background-color: #f1f3f5;
+        }
+
+        .settings-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+
+        .settings-actions {
+            display: flex;
+            gap: 0.5rem;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .no-settings {
+            color: #6c757d;
+            font-style: italic;
+            padding: 1rem 0;
+        }
+
+        /* Shared button styles */
+        .action-button {
             background: #3498db;
             color: white;
             border: none;
-            padding: 0.75rem 1.5rem;
+            padding: 0.5rem 1rem;
             border-radius: 4px;
             cursor: pointer;
             font-weight: 500;
-            margin-top: 1rem;
             transition: background 0.2s;
         }
 
-        .save-guide-btn:hover {
+        .action-button:hover {
             background: #2980b9;
         }
 
-        /* Guide Button Styles */
-        .guide-button-container {
-            margin: 1rem 0;
-            text-align: right;
+        .action-button.secondary {
+            background: #6c757d;
         }
 
-        .guide-button {
-            background: #3498db;
-            color: white;
-            border: none;
-            padding: 0.75rem 1.5rem;
-            border-radius: 4px;
-            cursor: pointer;
-            font-weight: 500;
-            transition: all 0.2s;
-            display: inline-flex;
-            align-items: center;
-            gap: 0.5rem;
+        .action-button.secondary:hover {
+            background: #5a6268;
         }
 
-        .guide-button:hover {
-            background: #2980b9;
-            transform: translateY(-2px);
+        .action-button.danger-btn {
+            background: #dc3545;
         }
 
-        .guide-button i {
-            font-size: 1.1rem;
+        .action-button.danger-btn:hover {
+            background: #c82333;
         }
 
-        /* Timer Settings Styles */
-        .timer-setting-item {
+        /* Timer section styles (to match guide section) */
+        .timer-section {
             background: #f8f9fa;
             border-radius: 8px;
             padding: 1.25rem;
-            margin-bottom: 1rem;
+            margin-bottom: 1.5rem;
             border: 1px solid #e0e0e0;
         }
 
-        .timer-setting-item h4 {
-            margin: 0 0 1rem 0;
+        .timer-section h4 {
+            margin-top: 0;
+            margin-bottom: 0.75rem;
             color: #2c3e50;
-        }
-
-        .timer-input-group {
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-            margin-bottom: 1rem;
-        }
-
-        .timer-seconds-input {
-            width: 100px;
-            padding: 0.75rem;
-            border: 1px solid #ddd;
-            border-radius: 4px;
-        }
-
-        .timer-unit {
-            color: #555;
-            font-weight: 500;
-        }
-
-        .save-timer-btn {
-            background: #3498db;
-            color: white;
-            border: none;
-            padding: 0.75rem 1.5rem;
-            border-radius: 4px;
-            cursor: pointer;
-            font-weight: 500;
-            transition: background 0.2s;
-        }
-
-        .save-timer-btn:hover {
-            background: #2980b9;
         }
     </style>
 </body>

@@ -174,10 +174,10 @@ export class Admin2Dashboard extends AdminDashboard {
                     
                     // Remove active class from all menu items
                     menuItems.forEach(mi => mi.classList.remove('active'));
-                    
+
                     // Add active class to clicked menu item
                     item.classList.add('active');
-                    
+
                     // Get the section ID from data attribute
                     const sectionId = item.getAttribute('data-section');
                     const section = document.getElementById(sectionId);
@@ -538,15 +538,18 @@ export class Admin2Dashboard extends AdminDashboard {
             <div class="timer-section">
                 <h4>Default Timer Setting</h4>
                 <p>This setting applies to all quizzes unless overridden by per-quiz settings.</p>
-                <div class="timer-input-group">
-                    <label for="default-timer">Default seconds per question (0-300):</label>
-                    <input type="number" 
-                        id="default-timer" 
-                        value="${defaultSeconds}" 
-                        min="0" 
-                        max="300"
-                        class="timer-seconds-input">
-                    <button class="save-default-btn">Save Default</button>
+                
+                <div class="form-row">
+                    <label>Default seconds per question (0-300):</label>
+                    <div class="input-button-group">
+                        <input type="number" 
+                            id="default-timer" 
+                            value="${defaultSeconds}" 
+                            min="0" 
+                            max="300"
+                            class="timer-seconds-input">
+                        <button class="save-default-btn action-button">Save Default</button>
+                    </div>
                 </div>
                 <small>Set to 0 to disable the timer completely.</small>
             </div>
@@ -557,8 +560,8 @@ export class Admin2Dashboard extends AdminDashboard {
                 
                 <div class="quiz-timer-form">
                     <div class="form-row">
-                        <label for="quiz-select">Select Quiz:</label>
-                        <select id="quiz-select">
+                        <label>Select Quiz:</label>
+                        <select id="quiz-select" class="settings-input">
                             <option value="">-- Select a Quiz --</option>
                             ${this.getHardcodedQuizTypes().map(quiz => 
                                 `<option value="${quiz}">${quiz}</option>`
@@ -567,16 +570,16 @@ export class Admin2Dashboard extends AdminDashboard {
                     </div>
                     
                     <div class="form-row">
-                        <label for="quiz-timer">Seconds per question for this quiz (0-300):</label>
-                        <input type="number" 
-                            id="quiz-timer" 
-                            value="60" 
-                            min="0" 
-                            max="300"
-                            class="timer-seconds-input">
-                        <div class="button-group">
-                            <button id="set-timer-btn">Set Timer</button>
-                            <button id="reset-default-btn">Reset to Default</button>
+                        <label>Seconds per question for this quiz (0-300):</label>
+                        <div class="input-button-group">
+                            <input type="number" 
+                                id="quiz-timer" 
+                                value="60" 
+                                min="0" 
+                                max="300"
+                                class="timer-seconds-input settings-input">
+                            <button id="set-timer-btn" class="action-button">Set Timer</button>
+                            <button id="reset-default-btn" class="action-button secondary">Reset to Default</button>
                         </div>
                     </div>
                 </div>
@@ -590,12 +593,12 @@ export class Admin2Dashboard extends AdminDashboard {
                     <div class="settings-header">
                         <h5>Quiz-Specific Settings:</h5>
                         <div class="settings-actions">
-                            <label>
+                            <label class="checkbox-label">
                                 <input type="checkbox" id="select-all-timers">
-                                Select All
+                                <span>Select All</span>
                             </label>
-                            <button id="clear-selected" class="danger-btn">Clear Selected</button>
-                            <button id="clear-all" class="danger-btn">Clear All</button>
+                            <button id="clear-selected" class="action-button danger-btn">Clear Selected</button>
+                            <button id="clear-all" class="action-button danger-btn">Clear All</button>
                         </div>
                     </div>
                     <div id="quiz-timers-list">
@@ -628,7 +631,7 @@ export class Admin2Dashboard extends AdminDashboard {
             try {
                 await this.updateQuizTimerSettings(null, seconds);
                 this.showInfo(`Default timer set to ${seconds} seconds`);
-            } catch (error) {
+                } catch (error) {
                 console.error('Failed to save default timer:', error);
                 alert('Failed to save default timer setting');
             }
@@ -3021,49 +3024,266 @@ export class Admin2Dashboard extends AdminDashboard {
         // Clear existing content
         container.innerHTML = '';
 
-        // Get all quiz types
         const quizTypes = this.getHardcodedQuizTypes();
+        const guideSettings = this.guideSettings || {};
 
-        // Create settings for each quiz
-        quizTypes.forEach(quiz => {
-            const settings = this.guideSettings[quiz] || { url: '', enabled: false };
+        // Create the guide settings HTML
+        const guideSettingsHTML = `
+            <h3>Guide Settings</h3>
+            <p>Configure guide URLs for each quiz.</p>
             
-            const settingItem = document.createElement('div');
-            settingItem.className = 'guide-setting-item';
-
-            settingItem.innerHTML = `
-                <h4>${quiz}</h4>
-                <input type="url" 
-                    class="guide-url-input" 
-                    value="${settings.url || ''}" 
-                    placeholder="Enter guide URL"
-                    aria-label="Guide URL for ${quiz}">
-                <div class="guide-toggle">
-                    <input type="checkbox" 
-                        id="guide-enabled-${quiz}" 
-                        ${settings.enabled ? 'checked' : ''}
-                        aria-label="Enable guide for ${quiz}">
-                    <label for="guide-enabled-${quiz}">Enable Guide</label>
-                </div>
-                <button class="save-guide-btn" data-quiz="${quiz}">Save Settings</button>
-            `;
-
-            // Add event listener for save button
-            const saveButton = settingItem.querySelector('.save-guide-btn');
-            saveButton.addEventListener('click', async () => {
-                const urlInput = settingItem.querySelector('.guide-url-input');
-                const enabledCheckbox = settingItem.querySelector('input[type="checkbox"]');
+            <div class="guide-section">
+                <h4>Quiz Guide Configuration</h4>
+                <p>Set guide URLs and enable/disable guides for specific quizzes.</p>
                 
-                try {
-                    await this.saveGuideSettings(quiz, urlInput.value, enabledCheckbox.checked);
-                } catch (error) {
-                    console.error('Failed to save guide settings:', error);
-                    alert('Failed to save guide settings. Please try again.');
-                }
-            });
+                <div class="quiz-guide-form">
+                    <div class="form-row">
+                        <label>Select Quiz:</label>
+                        <select id="guide-quiz-select" class="settings-input">
+                            <option value="">-- Select a Quiz --</option>
+                            ${quizTypes.map(quiz => 
+                                `<option value="${quiz}">${quiz}</option>`
+                            ).join('')}
+                        </select>
+                    </div>
+                    
+                    <div class="form-row">
+                        <label>Guide URL:</label>
+                        <input type="url" 
+                            id="guide-url-input" 
+                            placeholder="https://example.com/guide"
+                            class="settings-input">
+                    </div>
+                    
+                    <div class="form-row">
+                        <label class="checkbox-label">
+                            <input type="checkbox" id="guide-enabled-checkbox">
+                            <span>Enable Guide</span>
+                        </label>
+                    </div>
+                    
+                    <div class="form-row">
+                        <button id="save-guide-btn" class="action-button">Save Guide Settings</button>
+                    </div>
+                </div>
+            </div>
 
-            container.appendChild(settingItem);
+            <div class="guide-section">
+                <h4>Current Guide Settings</h4>
+                
+                <div class="current-settings">
+                    <div class="settings-header">
+                        <h5>Quiz Guides:</h5>
+                        <div class="settings-actions">
+                            <label class="checkbox-label">
+                                <input type="checkbox" id="select-all-guides">
+                                <span>Select All</span>
+                            </label>
+                            <button id="enable-selected-guides" class="action-button">Enable Selected</button>
+                            <button id="disable-selected-guides" class="action-button secondary">Disable Selected</button>
+                            <button id="remove-selected-guides" class="action-button danger-btn">Remove Selected</button>
+                        </div>
+                    </div>
+                    <div id="guide-settings-list" class="settings-list">
+                        ${this.generateGuideSettingsList(guideSettings)}
+                    </div>
+                </div>
+            </div>
+        `;
+
+        container.innerHTML = guideSettingsHTML;
+
+        // Set up event listeners
+        const quizSelect = container.querySelector('#guide-quiz-select');
+        const urlInput = container.querySelector('#guide-url-input');
+        const enabledCheckbox = container.querySelector('#guide-enabled-checkbox');
+        const saveGuideBtn = container.querySelector('#save-guide-btn');
+        const selectAllCheckbox = container.querySelector('#select-all-guides');
+        const enableSelectedBtn = container.querySelector('#enable-selected-guides');
+        const disableSelectedBtn = container.querySelector('#disable-selected-guides');
+        const removeSelectedBtn = container.querySelector('#remove-selected-guides');
+
+        // Update URL and enabled status when a quiz is selected
+        quizSelect.addEventListener('change', () => {
+            const selectedQuiz = quizSelect.value;
+            if (selectedQuiz) {
+                const settings = guideSettings[selectedQuiz] || { url: '', enabled: false };
+                urlInput.value = settings.url || '';
+                enabledCheckbox.checked = settings.enabled || false;
+            } else {
+                urlInput.value = '';
+                enabledCheckbox.checked = false;
+            }
         });
+
+        // Save guide settings
+        saveGuideBtn.addEventListener('click', async () => {
+            const selectedQuiz = quizSelect.value;
+            if (!selectedQuiz) {
+                alert('Please select a quiz');
+                return;
+            }
+            
+            const url = urlInput.value.trim();
+            if (!url) {
+                alert('Please enter a valid URL');
+                return;
+            }
+            
+            if (!url.startsWith('http://') && !url.startsWith('https://')) {
+                alert('URL must start with http:// or https://');
+                return;
+            }
+            
+            try {
+                await this.saveGuideSettings(selectedQuiz, url, enabledCheckbox.checked);
+                this.showInfo(`Guide settings for ${selectedQuiz} saved successfully`);
+                // Refresh the guide settings list
+                const guideList = container.querySelector('#guide-settings-list');
+                if (guideList) {
+                    guideList.innerHTML = this.generateGuideSettingsList(this.guideSettings);
+                }
+            } catch (error) {
+                console.error('Failed to save guide settings:', error);
+                alert('Failed to save guide settings. Please try again.');
+            }
+        });
+
+        // Select all guides functionality
+        selectAllCheckbox.addEventListener('change', () => {
+            const checkboxes = container.querySelectorAll('.guide-checkbox');
+            checkboxes.forEach(cb => cb.checked = selectAllCheckbox.checked);
+        });
+
+        // Enable selected guides
+        enableSelectedBtn.addEventListener('click', async () => {
+            const selectedQuizzes = Array.from(container.querySelectorAll('.guide-checkbox:checked'))
+                .map(cb => cb.dataset.quiz);
+            
+            if (selectedQuizzes.length === 0) {
+                alert('Please select at least one quiz');
+                return;
+            }
+
+            try {
+                for (const quiz of selectedQuizzes) {
+                    const currentSettings = guideSettings[quiz] || { url: '', enabled: false };
+                    if (currentSettings.url) {
+                        await this.saveGuideSettings(quiz, currentSettings.url, true);
+                    }
+                }
+                this.showInfo(`Enabled guides for ${selectedQuizzes.length} quizzes`);
+                // Refresh the guide settings list
+                const guideList = container.querySelector('#guide-settings-list');
+                if (guideList) {
+                    guideList.innerHTML = this.generateGuideSettingsList(this.guideSettings);
+                }
+            } catch (error) {
+                console.error('Failed to enable guides:', error);
+                alert('Failed to enable some guides. Please try again.');
+            }
+        });
+
+        // Disable selected guides
+        disableSelectedBtn.addEventListener('click', async () => {
+            const selectedQuizzes = Array.from(container.querySelectorAll('.guide-checkbox:checked'))
+                .map(cb => cb.dataset.quiz);
+            
+            if (selectedQuizzes.length === 0) {
+                alert('Please select at least one quiz');
+                return;
+            }
+
+            try {
+                for (const quiz of selectedQuizzes) {
+                    const currentSettings = guideSettings[quiz] || { url: '', enabled: false };
+                    if (currentSettings.url) {
+                        await this.saveGuideSettings(quiz, currentSettings.url, false);
+                    }
+                }
+                this.showInfo(`Disabled guides for ${selectedQuizzes.length} quizzes`);
+                // Refresh the guide settings list
+                const guideList = container.querySelector('#guide-settings-list');
+                if (guideList) {
+                    guideList.innerHTML = this.generateGuideSettingsList(this.guideSettings);
+                }
+            } catch (error) {
+                console.error('Failed to disable guides:', error);
+                alert('Failed to disable some guides. Please try again.');
+            }
+        });
+
+        // Remove selected guides
+        removeSelectedBtn.addEventListener('click', async () => {
+            const selectedQuizzes = Array.from(container.querySelectorAll('.guide-checkbox:checked'))
+                .map(cb => cb.dataset.quiz);
+            
+            if (selectedQuizzes.length === 0) {
+                alert('Please select at least one quiz');
+                return;
+            }
+
+            if (confirm(`Are you sure you want to remove guide settings for ${selectedQuizzes.length} selected quizzes?`)) {
+                try {
+                    for (const quiz of selectedQuizzes) {
+                        await this.saveGuideSettings(quiz, '', false);
+                    }
+                    this.showInfo(`Removed guide settings for ${selectedQuizzes.length} quizzes`);
+                    // Refresh the guide settings list
+                    const guideList = container.querySelector('#guide-settings-list');
+                    if (guideList) {
+                        guideList.innerHTML = this.generateGuideSettingsList(this.guideSettings);
+                    }
+                } catch (error) {
+                    console.error('Failed to remove guide settings:', error);
+                    alert('Failed to remove some guide settings. Please try again.');
+                }
+            }
+        });
+    }
+    
+    // Helper method to generate HTML for the list of guide settings
+    generateGuideSettingsList(guideSettings) {
+        const guideEntries = Object.entries(guideSettings || {})
+            .filter(([_, settings]) => settings && settings.url);
+        
+        if (guideEntries.length === 0) {
+            return '<p class="no-settings">No guide settings configured yet.</p>';
+        }
+        
+        // Sort entries by quiz name
+        guideEntries.sort((a, b) => a[0].localeCompare(b[0]));
+        
+        return `
+            <table class="settings-table">
+                <thead>
+                    <tr>
+                        <th style="width: 40px;"></th>
+                        <th>Quiz</th>
+                        <th>URL</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${guideEntries.map(([quizName, settings]) => `
+                        <tr>
+                            <td>
+                                <input type="checkbox" class="guide-checkbox" data-quiz="${quizName}">
+                            </td>
+                            <td>${quizName}</td>
+                            <td>
+                                <a href="${settings.url}" target="_blank" rel="noopener noreferrer">${settings.url}</a>
+                            </td>
+                            <td>
+                                <span class="status-badge ${settings.enabled ? 'enabled' : 'disabled'}">
+                                    ${settings.enabled ? 'Enabled' : 'Disabled'}
+                                </span>
+                            </td>
+                        </tr>
+                    `).join('')}
+                </tbody>
+            </table>
+        `;
     }
 
     async saveGuideSettings(quiz, url, enabled) {
