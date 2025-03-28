@@ -1801,47 +1801,104 @@ export class APIService {
     // Guide settings methods for quiz UI
     async fetchGuideSettings(quizName) {
         console.log(`[API] Fetching guide settings for quiz: ${quizName}`);
+        
+        // Normalize quiz name
+        const normalizedQuizName = quizName.toLowerCase().trim();
+        
+        // First try to get from localStorage cache
         try {
-            const url = `${this.baseUrl}/guide-settings/${quizName}`;
+            const cachedSettings = localStorage.getItem(`guide_settings_${normalizedQuizName}`);
+            if (cachedSettings) {
+                try {
+                    const settings = JSON.parse(cachedSettings);
+                    console.log(`[API] Using cached guide settings from localStorage:`, settings);
+                    
+                    // Only use valid cache entries with all required fields
+                    if (settings && typeof settings.url !== 'undefined' && typeof settings.enabled !== 'undefined') {
+                        return {
+                            success: true,
+                            data: settings,
+                            source: 'localStorage'
+                        };
+                    }
+                } catch (err) {
+                    console.warn(`[API] Error parsing cached settings:`, err);
+                }
+            }
+        } catch (err) {
+            console.warn(`[API] Error accessing localStorage:`, err);
+        }
+        
+        // If no valid cache, try to get from API
+        try {
+            // Construct the URL carefully
+            const url = `${this.baseUrl}/guide-settings/${encodeURIComponent(normalizedQuizName)}`;
             console.log(`[API] Guide settings URL: ${url}`);
             
-            const response = await this.fetchWithAuth(url);
-            console.log(`[API] Guide settings response:`, response);
+            // Create timeout controller
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 3000); // 3 second timeout
             
-            if (response.success && response.data) {
+            // Make the API request
+            const response = await fetch(url, {
+                method: 'GET',
+                headers: {
+                    'Authorization': `Bearer ${getAuthToken()}`,
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json'
+                },
+                signal: controller.signal
+            });
+            
+            // Clear the timeout
+            clearTimeout(timeoutId);
+            
+            if (!response.ok) {
+                throw new Error(`API error (${response.status}): ${response.statusText}`);
+            }
+            
+            // Parse the response
+            const jsonData = await response.json();
+            console.log(`[API] Guide settings response:`, jsonData);
+            
+            if (jsonData.success && jsonData.data) {
                 // Store in localStorage as a fallback
                 try {
-                    localStorage.setItem(`guide_settings_${quizName}`, JSON.stringify(response.data));
-                    console.log(`[API] Saved guide settings to localStorage for ${quizName}:`, response.data);
+                    localStorage.setItem(`guide_settings_${normalizedQuizName}`, JSON.stringify(jsonData.data));
+                    console.log(`[API] Saved guide settings to localStorage for ${normalizedQuizName}:`, jsonData.data);
                 } catch (err) {
                     console.warn(`[API] Could not save guide settings to localStorage:`, err);
                 }
                 
-                return {
-                    success: true,
-                    data: response.data
-                };
+                return jsonData;
             } else {
-                console.warn(`[API] Invalid guide settings response:`, response);
+                console.warn(`[API] Invalid guide settings response:`, jsonData);
                 throw new Error('Invalid response format');
             }
         } catch (error) {
-            console.error(`[API] Error fetching guide settings for ${quizName}:`, error);
+            console.error(`[API] Error fetching guide settings for ${normalizedQuizName}:`, error);
             
-            // Try to get from localStorage as fallback
+            // Check admin guide settings as fallback
             try {
-                const cachedSettings = localStorage.getItem(`guide_settings_${quizName}`);
-                if (cachedSettings) {
-                    const settings = JSON.parse(cachedSettings);
-                    console.log(`[API] Using cached guide settings from localStorage:`, settings);
-                    return {
-                        success: true,
-                        data: settings,
-                        source: 'localStorage'
-                    };
+                const adminGuideSettings = localStorage.getItem('guideSettings');
+                if (adminGuideSettings) {
+                    const allSettings = JSON.parse(adminGuideSettings);
+                    if (allSettings && allSettings[normalizedQuizName]) {
+                        const quizSettings = allSettings[normalizedQuizName];
+                        console.log(`[API] Using admin guide settings from localStorage:`, quizSettings);
+                        
+                        return {
+                            success: true,
+                            data: {
+                                url: quizSettings.url || null,
+                                enabled: !!quizSettings.enabled
+                            },
+                            source: 'adminSettings'
+                        };
+                    }
                 }
             } catch (err) {
-                console.warn(`[API] Error accessing localStorage:`, err);
+                console.warn(`[API] Error accessing admin settings:`, err);
             }
             
             // Return default values

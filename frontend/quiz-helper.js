@@ -17,7 +17,26 @@ export class BaseQuiz {
         
         // Attempt to get quiz name from config, URL, or data attributes
         this.quizName = config.quizName || this.detectQuizNameFromPage();
+        
+        // Hardcoded fallback for specific quizzes based on the URL
+        if (!this.quizName) {
+            const path = window.location.pathname.toLowerCase();
+            if (path.includes('communication')) {
+                this.quizName = 'communication';
+                console.log('[Quiz] Forcing quiz name to communication based on URL path');
+            } else if (path.includes('cms')) {
+                this.quizName = 'cms';
+                console.log('[Quiz] Forcing quiz name to cms based on URL path');
+            } else if (path.includes('team-portal')) {
+                this.quizName = 'team-portal';
+                console.log('[Quiz] Forcing quiz name to team-portal based on URL path');
+            }
+        }
+        
         console.log('[Quiz] Detected quiz name:', this.quizName);
+        
+        // Create a global reference immediately for debugging
+        window.quizHelper = this;
         
         // Initialize timer value with a temporary default
         // The actual value will be set by loadTimerSettings
@@ -53,33 +72,54 @@ export class BaseQuiz {
             const urlParams = new URLSearchParams(window.location.search);
             const quizParam = urlParams.get('quiz') || urlParams.get('quizName');
             if (quizParam) {
+                console.log(`[Guide] Found quiz name in URL: ${quizParam}`);
                 return quizParam.toLowerCase();
             }
             
             // Try to get from path
-            const pathMatch = window.location.pathname.match(/\/([^\/]+)-quiz\.html$/);
+            const path = window.location.pathname;
+            const pathMatch = path.match(/\/([^\/]+)-quiz\.html$/);
             if (pathMatch && pathMatch[1]) {
+                console.log(`[Guide] Extracted quiz name from path: ${pathMatch[1]}`);
                 return pathMatch[1].toLowerCase();
+            }
+            
+            // Look for common quiz names in the path
+            if (path.includes('communication')) {
+                console.log('[Guide] Detected communication quiz from path');
+                return 'communication';
+            } else if (path.includes('cms')) {
+                console.log('[Guide] Detected CMS quiz from path');
+                return 'cms';
+            } else if (path.includes('team-portal')) {
+                console.log('[Guide] Detected team portal quiz from path');
+                return 'team-portal';
             }
             
             // Try to get from page elements
             const quizTitle = document.querySelector('h1, .quiz-title');
             if (quizTitle && quizTitle.textContent) {
                 // Convert title to likely quiz name: "Communication Quiz" -> "communication"
-                return quizTitle.textContent.replace(/\s+quiz$/i, '').trim().toLowerCase();
+                const titleText = quizTitle.textContent.replace(/\s+quiz$/i, '').trim().toLowerCase();
+                console.log(`[Guide] Extracted quiz name from title: ${titleText}`);
+                return titleText;
             }
             
             // Try to get from data attribute
             const quizContainer = document.querySelector('[data-quiz-name], [data-quiz-id], [data-quiz]');
             if (quizContainer) {
-                return (quizContainer.dataset.quizName || 
+                const dataName = (quizContainer.dataset.quizName || 
                         quizContainer.dataset.quizId || 
                         quizContainer.dataset.quiz || '').toLowerCase();
+                console.log(`[Guide] Found quiz name in data attribute: ${dataName}`);
+                return dataName;
             }
             
             // Last resort: try to detect from page title
             if (document.title && document.title.includes('Quiz')) {
-                return document.title.replace(/\s+quiz$/i, '').trim().toLowerCase();
+                const titleName = document.title.replace(/\s+quiz$/i, '').trim().toLowerCase();
+                console.log(`[Guide] Extracted quiz name from document title: ${titleName}`);
+                return titleName;
             }
             
             return null;
@@ -1058,4 +1098,68 @@ export class BaseQuiz {
         window.quizHelper = this;
         console.log('[Guide] Use "window.quizHelper.forceShowGuideButton()" in console to trigger again');
     }
-} 
+
+    ensureGuideInitialized() {
+        // Make sure we have a quiz name from somewhere
+        if (!this.quizName) {
+            // Try to detect from URL or page
+            this.quizName = this.detectQuizNameFromPage();
+            
+            // If still not found, look at the path for clues
+            if (!this.quizName) {
+                const path = window.location.pathname;
+                console.log(`[Guide] Trying to extract quiz name from path: ${path}`);
+                
+                if (path.includes('communication')) {
+                    this.quizName = 'communication';
+                } else if (path.includes('cms')) {
+                    this.quizName = 'cms';
+                } else if (path.includes('team-portal')) {
+                    this.quizName = 'team-portal';
+                }
+                
+                console.log(`[Guide] Extracted quiz name: ${this.quizName}`);
+            }
+        }
+        
+        if (this.quizName) {
+            // (Re)initialize guide settings with the quiz name
+            console.log(`[Guide] Re-initializing guide settings with quiz name: ${this.quizName}`);
+            this.initializeGuideSettings();
+        } else {
+            console.error('[Guide] Could not determine quiz name, cannot initialize guide');
+        }
+        
+        // Create a global reference for debugging/troubleshooting
+        window.quizHelper = this;
+    }
+}
+
+// Add this at the end of the file
+// Add startup hook to ensure guide initialization
+(function() {
+    // Wait for the DOM to load completely
+    window.addEventListener('DOMContentLoaded', function() {
+        console.log('[Guide] Page finished loading, checking guide button');
+        // Give a short delay for other scripts to complete
+        setTimeout(function() {
+            if (window.quizHelper) {
+                console.log('[Guide] Found quizHelper, ensuring guide initialization');
+                window.quizHelper.ensureGuideInitialized();
+            } else {
+                console.log('[Guide] quizHelper not found, cannot initialize guide');
+            }
+        }, 1000);
+    });
+    
+    // Also check after a longer delay for single page apps or slow-loading pages
+    setTimeout(function() {
+        console.log('[Guide] Delayed check for guide button');
+        if (window.quizHelper) {
+            console.log('[Guide] Found quizHelper in delayed check, ensuring guide initialization');
+            window.quizHelper.ensureGuideInitialized();
+        } else {
+            console.log('[Guide] quizHelper not found in delayed check, cannot initialize guide');
+        }
+    }, 3000);
+})(); 
