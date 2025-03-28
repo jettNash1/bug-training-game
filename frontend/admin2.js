@@ -147,7 +147,10 @@ export class Admin2Dashboard extends AdminDashboard {
                 button.addEventListener('click', () => {
                     // Remove active class from all menu items and sections
                     menuItems.forEach(mi => mi.classList.remove('active'));
-                    contentSections.forEach(section => section.classList.remove('active'));
+                    contentSections.forEach(section => {
+                        section.classList.remove('active');
+                        section.style.display = 'none';
+                    });
 
                     // Add active class to clicked menu item
                     item.classList.add('active');
@@ -156,7 +159,12 @@ export class Admin2Dashboard extends AdminDashboard {
                     const sectionId = `${item.dataset.section}-section`;
                     const section = document.getElementById(sectionId);
                     if (section) {
-                        section.classList.add('active');
+                        section.style.display = 'block';
+                        // Use setTimeout to ensure display: block is applied before adding active class
+                        setTimeout(() => {
+                            section.classList.add('active');
+                        }, 0);
+                        
                         // Special handling for schedule section
                         if (item.dataset.section === 'schedule') {
                             this.refreshScheduleData();
@@ -170,8 +178,7 @@ export class Admin2Dashboard extends AdminDashboard {
         const logoutBtn = document.getElementById('logoutBtn');
         if (logoutBtn) {
             logoutBtn.addEventListener('click', () => {
-                localStorage.removeItem('adminToken');
-                window.location.href = '/login.html';
+                this.handleAdminLogout();
             });
         }
 
