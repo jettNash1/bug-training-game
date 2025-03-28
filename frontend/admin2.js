@@ -11,6 +11,13 @@ export class Admin2Dashboard extends AdminDashboard {
 
     async init2() {
         try {
+            // Wait for DOM to be fully loaded
+            if (document.readyState !== 'complete') {
+                await new Promise(resolve => {
+                    window.addEventListener('load', resolve);
+                });
+            }
+
             // Verify admin token
             const tokenVerification = await this.apiService.verifyAdminToken();
             if (!tokenVerification.success) {
@@ -140,39 +147,57 @@ export class Admin2Dashboard extends AdminDashboard {
         // Menu navigation
         const menuItems = document.querySelectorAll('.menu-item');
         const contentSections = document.querySelectorAll('.content-section');
+        
+        console.log('Setting up menu event listeners:', {
+            menuItemsCount: menuItems.length,
+            contentSectionsCount: contentSections.length
+        });
 
         menuItems.forEach(item => {
-            item.addEventListener('click', () => {
-                // Remove active class from all menu items
-                menuItems.forEach(mi => mi.classList.remove('active'));
-                
-                // Add active class to clicked menu item
-                item.classList.add('active');
-                
-                // Get the section ID from data attribute
-                const sectionId = item.getAttribute('data-section');
-                const section = document.getElementById(sectionId);
-                
-                // Hide all sections first
-                document.querySelectorAll('.content-section').forEach(s => {
-                    s.classList.remove('active');
-                    s.style.display = 'none';
-                });
-                
-                if (section) {
-                    // Set display to block and add active class after a small delay
-                    // This ensures the display property is applied before the transition
-                    section.style.display = 'block';
-                    setTimeout(() => {
-                        section.classList.add('active');
-                    }, 0);
+            const button = item.querySelector('button');
+            if (button) {
+                button.addEventListener('click', () => {
+                    console.log('Menu item clicked:', {
+                        sectionId: item.getAttribute('data-section'),
+                        buttonText: button.textContent.trim()
+                    });
                     
-                    // Special handling for schedule section
-                    if (sectionId === 'schedule-section') {
-                        this.loadScheduleData();
+                    // Remove active class from all menu items
+                    menuItems.forEach(mi => mi.classList.remove('active'));
+                    
+                    // Add active class to clicked menu item
+                    item.classList.add('active');
+                    
+                    // Get the section ID from data attribute
+                    const sectionId = item.getAttribute('data-section');
+                    const section = document.getElementById(sectionId);
+                    
+                    console.log('Looking for section:', {
+                        sectionId,
+                        sectionFound: !!section
+                    });
+                    
+                    // Hide all sections first
+                    contentSections.forEach(s => {
+                        s.classList.remove('active');
+                        s.style.display = 'none';
+                    });
+                    
+                    if (section) {
+                        // Set display to block and add active class after a small delay
+                        // This ensures the display property is applied before the transition
+                        section.style.display = 'block';
+                        setTimeout(() => {
+                            section.classList.add('active');
+                        }, 0);
+                        
+                        // Special handling for schedule section
+                        if (sectionId === 'schedule-section') {
+                            this.loadScheduleData();
+                        }
                     }
-                }
-            });
+                });
+            }
         });
 
         // Logout button
