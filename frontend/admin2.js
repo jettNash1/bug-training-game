@@ -137,103 +137,91 @@ class Admin2Dashboard extends AdminDashboard {
     }
     
     setupEventListeners() {
-        // Set up the sidebar menu navigation
+        // Menu navigation
         const menuItems = document.querySelectorAll('.menu-item');
+        const contentSections = document.querySelectorAll('.content-section');
+
         menuItems.forEach(item => {
             item.addEventListener('click', () => {
-                // Remove active class from all items and sections
-                menuItems.forEach(i => i.classList.remove('active'));
-                document.querySelectorAll('.content-section').forEach(s => s.classList.remove('active'));
-                
-                // Add active class to clicked item
+                // Remove active class from all menu items and sections
+                menuItems.forEach(mi => mi.classList.remove('active'));
+                contentSections.forEach(section => section.classList.remove('active'));
+
+                // Add active class to clicked menu item
                 item.classList.add('active');
-                
-                // Show the corresponding section
-                const sectionId = item.dataset.section;
-                document.getElementById(`${sectionId}-section`).classList.add('active');
-                
-                // If entering the schedule section, refresh the data
-                if (sectionId === 'schedule') {
-                    this.refreshScheduleData();
+
+                // Show corresponding section
+                const sectionId = `${item.dataset.section}-section`;
+                const section = document.getElementById(sectionId);
+                if (section) {
+                    section.classList.add('active');
                 }
             });
         });
-        
-        // Set up logout button
+
+        // Logout button
         const logoutBtn = document.getElementById('logoutBtn');
         if (logoutBtn) {
             logoutBtn.addEventListener('click', () => {
-                this.handleAdminLogout();
+                localStorage.removeItem('adminToken');
+                window.location.href = '/login.html';
             });
         }
-        
-        // Set up view toggle
-        const toggleButtons = document.querySelectorAll('.toggle-button');
+
+        // View toggle buttons
+        const viewToggleButtons = document.querySelectorAll('.toggle-button');
         const usersList = document.getElementById('usersList');
-        
-        if (toggleButtons.length > 0 && usersList) {
-            // Initialize with grid view by default
-            usersList.className = 'users-list grid-view';
-            toggleButtons.forEach(btn => {
-                if (btn.dataset.view === 'grid') {
-                    btn.classList.add('active');
-                    btn.setAttribute('aria-pressed', 'true');
-                } else {
-                    btn.classList.remove('active');
-                    btn.setAttribute('aria-pressed', 'false');
+
+        viewToggleButtons.forEach(button => {
+            button.addEventListener('click', () => {
+                // Remove active class from all toggle buttons
+                viewToggleButtons.forEach(btn => btn.classList.remove('active'));
+                button.classList.add('active');
+
+                // Update view class on users list
+                if (usersList) {
+                    usersList.className = `users-list ${button.dataset.view}-view`;
                 }
             });
-            
-            toggleButtons.forEach(button => {
-                button.addEventListener('click', () => {
-                    // Remove active class from all toggle buttons
-                    toggleButtons.forEach(btn => {
-                        btn.classList.remove('active');
-                        btn.setAttribute('aria-pressed', 'false');
-                    });
-                    
-                    // Add active class to clicked button
-                    button.classList.add('active');
-                    button.setAttribute('aria-pressed', 'true');
-                    
-                    // Update the users list class based on the selected view
-                    const viewType = button.dataset.view;
-                    console.log(`Switching to view type: ${viewType}`);
-                    usersList.className = `users-list ${viewType}-view`;
-                    
-                    // Force re-render user list to apply new view
-                    this.updateUserList();
-                });
-            });
-        }
-        
-        // Set up search, sort, and filter functionality
+        });
+
+        // Search input
         const searchInput = document.getElementById('userSearch');
-        const sortSelect = document.getElementById('sortBy');
-        const accountTypeSelect = document.getElementById('accountType');
-        
         if (searchInput) {
-            searchInput.addEventListener('input', () => this.updateUserList());
-        }
-        if (sortSelect) {
-            sortSelect.addEventListener('change', () => this.updateUserList());
-        }
-        if (accountTypeSelect) {
-            accountTypeSelect.addEventListener('change', () => this.updateUserList());
-        }
-        
-        // Set up export buttons
-        const exportDetailedCSV = document.getElementById('exportDetailedCSV');
-        if (exportDetailedCSV) {
-            exportDetailedCSV.addEventListener('click', () => {
-                this.exportUserDataToCSV();
+            searchInput.addEventListener('input', () => {
+                this.updateUsersList();
             });
         }
-        
-        const exportSimpleCSV = document.getElementById('exportSimpleCSV');
-        if (exportSimpleCSV) {
-            exportSimpleCSV.addEventListener('click', () => {
-                this.exportSimpleCSV();
+
+        // Sort select
+        const sortSelect = document.getElementById('sortBy');
+        if (sortSelect) {
+            sortSelect.addEventListener('change', () => {
+                this.updateUsersList();
+            });
+        }
+
+        // Account type filter
+        const accountTypeSelect = document.getElementById('accountType');
+        if (accountTypeSelect) {
+            accountTypeSelect.addEventListener('change', () => {
+                this.updateUsersList();
+            });
+        }
+
+        // Export buttons
+        const exportDetailedBtn = document.getElementById('exportDetailedCSV');
+        const exportSimpleBtn = document.getElementById('exportSimpleCSV');
+
+        if (exportDetailedBtn) {
+            exportDetailedBtn.addEventListener('click', () => {
+                this.exportUserData('detailed');
+            });
+        }
+
+        if (exportSimpleBtn) {
+            exportSimpleBtn.addEventListener('click', () => {
+                this.exportUserData('simple');
             });
         }
     }
