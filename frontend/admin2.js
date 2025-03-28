@@ -142,21 +142,28 @@ class Admin2Dashboard extends AdminDashboard {
         const contentSections = document.querySelectorAll('.content-section');
 
         menuItems.forEach(item => {
-            item.addEventListener('click', () => {
-                // Remove active class from all menu items and sections
-                menuItems.forEach(mi => mi.classList.remove('active'));
-                contentSections.forEach(section => section.classList.remove('active'));
+            const button = item.querySelector('button');
+            if (button) {
+                button.addEventListener('click', () => {
+                    // Remove active class from all menu items and sections
+                    menuItems.forEach(mi => mi.classList.remove('active'));
+                    contentSections.forEach(section => section.classList.remove('active'));
 
-                // Add active class to clicked menu item
-                item.classList.add('active');
+                    // Add active class to clicked menu item
+                    item.classList.add('active');
 
-                // Show corresponding section
-                const sectionId = `${item.dataset.section}-section`;
-                const section = document.getElementById(sectionId);
-                if (section) {
-                    section.classList.add('active');
-                }
-            });
+                    // Show corresponding section
+                    const sectionId = `${item.dataset.section}-section`;
+                    const section = document.getElementById(sectionId);
+                    if (section) {
+                        section.classList.add('active');
+                        // Special handling for schedule section
+                        if (item.dataset.section === 'schedule') {
+                            this.refreshScheduleData();
+                        }
+                    }
+                });
+            }
         });
 
         // Logout button
