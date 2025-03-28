@@ -259,6 +259,47 @@ export class BaseQuiz {
         if (this.showGuideButton && this.guideUrl) {
             console.log(`[Guide] Creating guide button for URL: ${this.guideUrl}`);
             
+            // Create button element
+            const guideButton = document.createElement('button');
+            guideButton.id = 'guide-button';
+            guideButton.className = 'guide-button';
+            guideButton.innerHTML = 'Guide';
+            guideButton.setAttribute('aria-label', 'Open quiz guide');
+            guideButton.onclick = () => window.open(this.guideUrl, '_blank');
+            
+            // Apply common styles regardless of whether Back button exists
+            guideButton.style.display = 'inline-block';
+            guideButton.style.padding = '10px 20px';
+            guideButton.style.fontSize = '16px';
+            guideButton.style.fontWeight = '400';
+            guideButton.style.borderRadius = '4px';
+            guideButton.style.border = 'none';
+            guideButton.style.backgroundColor = '#4e73df';
+            guideButton.style.color = 'white';
+            guideButton.style.cursor = 'pointer';
+            guideButton.style.textAlign = 'center';
+            guideButton.style.boxShadow = '0 2px 5px rgba(0,0,0,0.15)';
+            guideButton.style.transition = 'all 0.2s ease';
+            guideButton.style.minWidth = '100px';
+            
+            // Add hover effect
+            guideButton.onmouseover = () => {
+                guideButton.style.backgroundColor = '#3867d6';
+                guideButton.style.boxShadow = '0 4px 8px rgba(0,0,0,0.2)';
+            };
+            guideButton.onmouseout = () => {
+                guideButton.style.backgroundColor = '#4e73df';
+                guideButton.style.boxShadow = '0 2px 5px rgba(0,0,0,0.15)';
+            };
+            
+            // Create container for the button
+            const buttonContainer = document.createElement('div');
+            buttonContainer.id = 'guide-button-container';
+            buttonContainer.className = 'guide-button-container';
+            buttonContainer.style.marginTop = '0'; // Reduced spacing
+            buttonContainer.style.marginBottom = '10px';
+            buttonContainer.appendChild(guideButton);
+            
             // Find the "Back to Hub" button to position the guide button beneath it
             const backToHubButton = document.querySelector('a[href="/"], a[href="/index.html"], a[href="index.html"], a[href="./"], button[aria-label="Back to Hub"]');
             
@@ -276,90 +317,40 @@ export class BaseQuiz {
                 }
             }
             
-            // Create button element
-            const guideButton = document.createElement('button');
-            guideButton.id = 'guide-button';
-            guideButton.className = 'guide-button';
-            guideButton.innerHTML = 'Guide';
-            guideButton.setAttribute('aria-label', 'Open quiz guide');
-            guideButton.onclick = () => window.open(this.guideUrl, '_blank');
-            
-            // Apply styles - if Back button exists, copy its styles, otherwise use default styles
-            if (foundBackButton) {
-                // Try to copy as many styles as possible from the Back to Hub button
-                const computedStyle = window.getComputedStyle(foundBackButton);
-                
-                // Copy basic styles
-                guideButton.style.backgroundColor = computedStyle.backgroundColor || '#4e73df';
-                guideButton.style.color = computedStyle.color || 'white';
-                guideButton.style.border = computedStyle.border || 'none';
-                guideButton.style.borderRadius = computedStyle.borderRadius || '4px';
-                guideButton.style.padding = computedStyle.padding || '8px 16px';
-                guideButton.style.fontFamily = computedStyle.fontFamily;
-                guideButton.style.fontSize = computedStyle.fontSize;
-                guideButton.style.fontWeight = computedStyle.fontWeight;
-                guideButton.style.boxShadow = computedStyle.boxShadow;
-                guideButton.style.textDecoration = computedStyle.textDecoration;
-                guideButton.style.lineHeight = computedStyle.lineHeight;
-                guideButton.style.display = 'inline-block';
-                guideButton.style.textAlign = 'center';
-                
-                // Copy the class name if it might have styles
-                if (foundBackButton.className) {
-                    guideButton.className = `guide-button ${foundBackButton.className}`;
-                }
-                
-                console.log('[Guide] Copied styles from Back to Hub button');
-            } else {
-                // Default styles if back button not found
-                guideButton.style.backgroundColor = '#4e73df';
-                guideButton.style.color = 'white';
-                guideButton.style.border = 'none';
-                guideButton.style.borderRadius = '4px';
-                guideButton.style.padding = '8px 16px';
-                guideButton.style.cursor = 'pointer';
-                guideButton.style.fontWeight = '400';
-                guideButton.style.fontSize = '16px';
-                guideButton.style.fontFamily = '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif';
-                guideButton.style.textDecoration = 'none';
-                guideButton.style.boxShadow = '0 1px 3px rgba(0, 0, 0, 0.1)';
-                guideButton.style.transition = 'background-color 0.2s';
-                guideButton.style.display = 'inline-block';
-                guideButton.style.textAlign = 'center';
-                guideButton.style.lineHeight = '1.5';
-                
-                // Add hover effect
-                guideButton.onmouseover = () => {
-                    guideButton.style.backgroundColor = '#3867d6';
-                };
-                guideButton.onmouseout = () => {
-                    guideButton.style.backgroundColor = '#4e73df';
-                };
-            }
-            
-            // Create container for the button
-            const buttonContainer = document.createElement('div');
-            buttonContainer.id = 'guide-button-container';
-            buttonContainer.className = 'guide-button-container';
-            buttonContainer.style.marginTop = '10px';
-            buttonContainer.style.marginBottom = '20px';
-            buttonContainer.appendChild(guideButton);
-            
             if (foundBackButton) {
                 console.log('[Guide] Found Back to Hub button, positioning guide button below it');
-                const backToHubContainer = foundBackButton.parentNode;
                 
-                if (backToHubContainer) {
-                    // Position after the back to hub button (as a sibling)
-                    if (backToHubContainer.parentNode) {
-                        backToHubContainer.parentNode.insertBefore(buttonContainer, backToHubContainer.nextSibling);
-                    } else {
-                        // If no parent container, insert after the button itself
-                        foundBackButton.insertAdjacentElement('afterend', buttonContainer);
-                    }
-                    console.log('[Guide] Guide button positioned under Back to Hub button');
-                    return; // Exit early as we've found our preferred position
+                // Check if the Back to Hub button is inside a container
+                const backButtonParent = foundBackButton.parentElement;
+                
+                // Get the computed style of the back button to match exactly
+                const backButtonStyle = window.getComputedStyle(foundBackButton);
+                
+                // Apply exact same width to guide button
+                guideButton.style.width = backButtonStyle.width;
+                guideButton.style.minWidth = backButtonStyle.minWidth;
+                guideButton.style.maxWidth = backButtonStyle.maxWidth;
+                
+                // Create a wrapper if it doesn't exist, to style both buttons consistently
+                let buttonWrapper = document.getElementById('nav-buttons-wrapper');
+                if (!buttonWrapper) {
+                    buttonWrapper = document.createElement('div');
+                    buttonWrapper.id = 'nav-buttons-wrapper';
+                    buttonWrapper.style.display = 'flex';
+                    buttonWrapper.style.flexDirection = 'column';
+                    buttonWrapper.style.gap = '5px';
+                    buttonWrapper.style.margin = '0';
+                    buttonWrapper.style.padding = '0';
+                    
+                    // Replace the Back to Hub button with our wrapper
+                    foundBackButton.parentNode.insertBefore(buttonWrapper, foundBackButton);
+                    buttonWrapper.appendChild(foundBackButton);
                 }
+                
+                // Add the guide button to the wrapper
+                buttonWrapper.appendChild(buttonContainer);
+                console.log('[Guide] Guide button positioned in nav wrapper with Back to Hub button');
+                return; // Exit early as we've found our preferred position
             }
             
             // Fallback positioning approaches if Back to Hub button not found
@@ -1314,6 +1305,39 @@ export class BaseQuiz {
             guideButton.setAttribute('aria-label', 'Open quiz guide');
             guideButton.onclick = () => window.open(url, '_blank');
             
+            // Apply common styles regardless of whether Back button exists
+            guideButton.style.display = 'inline-block';
+            guideButton.style.padding = '10px 20px';
+            guideButton.style.fontSize = '16px';
+            guideButton.style.fontWeight = '400';
+            guideButton.style.borderRadius = '4px';
+            guideButton.style.border = 'none';
+            guideButton.style.backgroundColor = '#4e73df';
+            guideButton.style.color = 'white';
+            guideButton.style.cursor = 'pointer';
+            guideButton.style.textAlign = 'center';
+            guideButton.style.boxShadow = '0 2px 5px rgba(0,0,0,0.15)';
+            guideButton.style.transition = 'all 0.2s ease';
+            guideButton.style.minWidth = '100px';
+            
+            // Add hover effect
+            guideButton.onmouseover = () => {
+                guideButton.style.backgroundColor = '#3867d6';
+                guideButton.style.boxShadow = '0 4px 8px rgba(0,0,0,0.2)';
+            };
+            guideButton.onmouseout = () => {
+                guideButton.style.backgroundColor = '#4e73df';
+                guideButton.style.boxShadow = '0 2px 5px rgba(0,0,0,0.15)';
+            };
+            
+            // Create container for the button
+            const buttonContainer = document.createElement('div');
+            buttonContainer.id = 'guide-button-container';
+            buttonContainer.className = 'guide-button-container';
+            buttonContainer.style.marginTop = '0'; // Reduced spacing
+            buttonContainer.style.marginBottom = '10px';
+            buttonContainer.appendChild(guideButton);
+            
             // Find the "Back to Hub" button to position the guide button beneath it
             const backToHubButton = document.querySelector('a[href="/"], a[href="/index.html"], a[href="index.html"], a[href="./"], button[aria-label="Back to Hub"]');
             
@@ -1331,82 +1355,40 @@ export class BaseQuiz {
                 }
             }
             
-            // Apply styles - if Back button exists, copy its styles, otherwise use default styles
-            if (foundBackButton) {
-                // Try to copy as many styles as possible from the Back to Hub button
-                const computedStyle = window.getComputedStyle(foundBackButton);
-                
-                // Copy basic styles
-                guideButton.style.backgroundColor = computedStyle.backgroundColor || '#4e73df';
-                guideButton.style.color = computedStyle.color || 'white';
-                guideButton.style.border = computedStyle.border || 'none';
-                guideButton.style.borderRadius = computedStyle.borderRadius || '4px';
-                guideButton.style.padding = computedStyle.padding || '8px 16px';
-                guideButton.style.fontFamily = computedStyle.fontFamily;
-                guideButton.style.fontSize = computedStyle.fontSize;
-                guideButton.style.fontWeight = computedStyle.fontWeight;
-                guideButton.style.boxShadow = computedStyle.boxShadow;
-                guideButton.style.textDecoration = computedStyle.textDecoration;
-                guideButton.style.lineHeight = computedStyle.lineHeight;
-                guideButton.style.display = 'inline-block';
-                guideButton.style.textAlign = 'center';
-                
-                // Copy the class name if it might have styles
-                if (foundBackButton.className) {
-                    guideButton.className = `guide-button ${foundBackButton.className}`;
-                }
-                
-                console.log('[Guide] Copied styles from Back to Hub button');
-            } else {
-                // Default styles if back button not found
-                guideButton.style.backgroundColor = '#4e73df';
-                guideButton.style.color = 'white';
-                guideButton.style.border = 'none';
-                guideButton.style.borderRadius = '4px';
-                guideButton.style.padding = '8px 16px';
-                guideButton.style.cursor = 'pointer';
-                guideButton.style.fontWeight = '400';
-                guideButton.style.fontSize = '16px';
-                guideButton.style.fontFamily = '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif';
-                guideButton.style.textDecoration = 'none';
-                guideButton.style.boxShadow = '0 1px 3px rgba(0, 0, 0, 0.1)';
-                guideButton.style.transition = 'background-color 0.2s';
-                guideButton.style.display = 'inline-block';
-                guideButton.style.textAlign = 'center';
-                guideButton.style.lineHeight = '1.5';
-                
-                // Add hover effect
-                guideButton.onmouseover = () => {
-                    guideButton.style.backgroundColor = '#3867d6';
-                };
-                guideButton.onmouseout = () => {
-                    guideButton.style.backgroundColor = '#4e73df';
-                };
-            }
-            
-            // Create container for the button
-            const buttonContainer = document.createElement('div');
-            buttonContainer.id = 'guide-button-container';
-            buttonContainer.className = 'guide-button-container';
-            buttonContainer.style.marginTop = '10px';
-            buttonContainer.style.marginBottom = '20px';
-            buttonContainer.appendChild(guideButton);
-            
             if (foundBackButton) {
                 console.log('[Guide] Found Back to Hub button, positioning guide button below it');
-                const backToHubContainer = foundBackButton.parentNode;
                 
-                if (backToHubContainer) {
-                    // Position after the back to hub button (as a sibling)
-                    if (backToHubContainer.parentNode) {
-                        backToHubContainer.parentNode.insertBefore(buttonContainer, backToHubContainer.nextSibling);
-                    } else {
-                        // If no parent container, insert after the button itself
-                        foundBackButton.insertAdjacentElement('afterend', buttonContainer);
-                    }
-                    console.log('[Guide] Guide button positioned under Back to Hub button');
-                    return; // Exit early as we've found our preferred position
+                // Check if the Back to Hub button is inside a container
+                const backButtonParent = foundBackButton.parentElement;
+                
+                // Get the computed style of the back button to match exactly
+                const backButtonStyle = window.getComputedStyle(foundBackButton);
+                
+                // Apply exact same width to guide button
+                guideButton.style.width = backButtonStyle.width;
+                guideButton.style.minWidth = backButtonStyle.minWidth;
+                guideButton.style.maxWidth = backButtonStyle.maxWidth;
+                
+                // Create a wrapper if it doesn't exist, to style both buttons consistently
+                let buttonWrapper = document.getElementById('nav-buttons-wrapper');
+                if (!buttonWrapper) {
+                    buttonWrapper = document.createElement('div');
+                    buttonWrapper.id = 'nav-buttons-wrapper';
+                    buttonWrapper.style.display = 'flex';
+                    buttonWrapper.style.flexDirection = 'column';
+                    buttonWrapper.style.gap = '5px';
+                    buttonWrapper.style.margin = '0';
+                    buttonWrapper.style.padding = '0';
+                    
+                    // Replace the Back to Hub button with our wrapper
+                    foundBackButton.parentNode.insertBefore(buttonWrapper, foundBackButton);
+                    buttonWrapper.appendChild(foundBackButton);
                 }
+                
+                // Add the guide button to the wrapper
+                buttonWrapper.appendChild(buttonContainer);
+                console.log('[Guide] Guide button positioned in nav wrapper with Back to Hub button');
+                return; // Exit early as we've found our preferred position
             }
             
             // Fallback positioning approaches if Back to Hub button not found
