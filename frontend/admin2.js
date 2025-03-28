@@ -2869,6 +2869,14 @@ export class Admin2Dashboard extends AdminDashboard {
             alert('Failed to save guide settings. Please try again.');
         }
     }
+
+    async handleAdminLogout() {
+        try {
+            await this.apiService.adminLogout();
+        } finally {
+            window.location.replace('/pages/admin-login.html');
+        }
+    }
 }
 
 // Initialize the Admin2Dashboard when the document is ready
