@@ -3766,7 +3766,7 @@ export class Admin2Dashboard extends AdminDashboard {
                 item.innerHTML = `
                     <div class="auto-reset-info">
                         <h4>${this.formatQuizName(setting.quizName)}</h4>
-                        <p>Reset Period: ${this.formatResetPeriod(setting.resetPeriod)}</p>
+                        <p>Reset Period: ${this.getPeriodLabel(setting.resetPeriod)}</p>
                         <p>Status: ${setting.enabled ? 'Enabled' : 'Disabled'}</p>
                         <p class="auto-reset-countdown" data-quiz="${setting.quizName}">
                             Next reset in: ${nextReset ? this.formatCountdown(nextReset) : 'N/A'}
