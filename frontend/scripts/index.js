@@ -625,14 +625,13 @@ class IndexPage {
                         font-size: 14px;
                         font-weight: 500;
                         cursor: pointer;
-                        margin-top: 8px;
-                        margin-bottom: 5px;
-                        display: inline-block;
+                        margin: 8px auto 5px;
+                        display: block;
                         text-align: center;
                         text-decoration: none;
                         box-shadow: 0 2px 4px rgba(0,0,0,0.15);
                         transition: all 0.2s ease;
-                        width: auto;
+                        width: fit-content;
                         min-width: 80px;
                         position: relative;
                         z-index: 2;
@@ -650,10 +649,23 @@ class IndexPage {
                     }
                     .quiz-item {
                         position: relative;
+                        display: flex;
+                        flex-direction: column;
                     }
-                    /* Ensure all quiz items have space for the guide button */
-                    .quiz-item p {
-                        margin-bottom: 30px;
+                    .quiz-item .quiz-info {
+                        flex: 1;
+                        display: flex;
+                        flex-direction: column;
+                    }
+                    .guide-button-container {
+                        width: 100%;
+                        text-align: center;
+                        margin-top: auto;
+                        padding-top: 10px;
+                    }
+                    /* Ensure quiz description has proper spacing */
+                    .quiz-item .quiz-description {
+                        margin-bottom: 8px;
                     }
                 `;
                 document.head.appendChild(styles);
@@ -718,54 +730,20 @@ class IndexPage {
         guideButton.setAttribute('data-quiz-id', quizId);
         guideButton.setAttribute('aria-label', `Open guide for ${quizId}`);
         
-        // Analyze the structure of the quiz item
-        console.log(`[Index] Quiz item structure for ${quizId}:`, quizItem.innerHTML);
-        
-        // Get the appropriate quiz title and description
-        const titleElement = quizItem.querySelector('h3') || quizItem.querySelector('h2') || quizItem.querySelector('strong');
-        const scoreElement = quizItem.querySelector('.progress-indicator') || quizItem.querySelector(`#${quizId}-progress`);
-        let descriptionElement = quizItem.querySelector('p');
-        
-        // Check if we need to create a better structure
-        let needsRestructuring = false;
-        
         // Create a container for the guide button
         const buttonContainer = document.createElement('div');
         buttonContainer.className = 'guide-button-container';
-        buttonContainer.style.width = '100%';
-        buttonContainer.style.textAlign = 'center';
-        buttonContainer.style.marginTop = '10px';
         buttonContainer.appendChild(guideButton);
         
-        // Approach 1: Best case - add at end of quiz content
-        if (descriptionElement) {
-            console.log(`[Index] Found description element for ${quizId}, inserting after`);
-            
-            // Check if there's already space after the description
-            const computedStyle = window.getComputedStyle(descriptionElement);
-            const marginBottom = parseInt(computedStyle.marginBottom);
-            
-            if (marginBottom < 30) {
-                descriptionElement.style.marginBottom = '30px';
-            }
-            
-            // Insert after the description
-            descriptionElement.parentNode.insertBefore(buttonContainer, descriptionElement.nextSibling);
-            return;
+        // Find the quiz info container
+        const quizInfo = quizItem.querySelector('.quiz-info');
+        if (quizInfo) {
+            // Add the button container after the quiz info
+            quizInfo.appendChild(buttonContainer);
+        } else {
+            // Fallback: append to quiz item
+            quizItem.appendChild(buttonContainer);
         }
-        
-        // Approach 2: Try to find the bottom of the quiz item
-        const allElements = Array.from(quizItem.children);
-        if (allElements.length > 0) {
-            console.log(`[Index] No description found for ${quizId}, appending to last child`);
-            const lastElement = allElements[allElements.length - 1];
-            lastElement.parentNode.insertBefore(buttonContainer, lastElement.nextSibling);
-            return;
-        }
-        
-        // Approach 3: Just append to the quiz item as last resort
-        console.log(`[Index] Appending directly to quiz item for ${quizId}`);
-        quizItem.appendChild(buttonContainer);
     }
 }
 
