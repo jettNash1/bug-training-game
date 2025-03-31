@@ -11,14 +11,24 @@ export class Admin2Dashboard extends AdminDashboard {
 
     async init2() {
         try {
+            // Add a guard variable to prevent too frequent checks
+            this.lastScheduleCheck = 0;
+            const MIN_CHECK_INTERVAL = 30000; // 30 seconds minimum between checks
+            
             // Setup interval to check for scheduled resets that need processing
             this.scheduleCheckInterval = setInterval(() => {
-                this.checkScheduledResets().catch(error => {
-                    console.error('Error during scheduled resets check:', error);
-                });
+                const now = Date.now();
+                // Only check if enough time has passed since the last check
+                if (now - this.lastScheduleCheck >= MIN_CHECK_INTERVAL) {
+                    this.lastScheduleCheck = now;
+                    this.checkScheduledResets().catch(error => {
+                        console.error('Error during scheduled resets check:', error);
+                    });
+                }
             }, 60000); // Check every minute
             
             // Do an initial check for scheduled resets
+            this.lastScheduleCheck = Date.now();
             this.checkScheduledResets().catch(error => {
                 console.error('Error during initial scheduled resets check:', error);
             });
@@ -58,20 +68,9 @@ export class Admin2Dashboard extends AdminDashboard {
 
             // Update dashboard with initial data
             await this.updateDashboard();
-
-            // Show the default section (users)
-            const defaultSection = document.getElementById('users-section');
-            if (defaultSection) {
-                defaultSection.style.display = 'block';
-                setTimeout(() => {
-                    defaultSection.classList.add('active');
-                }, 0);
-            }
         } catch (error) {
-            console.error('Failed to initialize dashboard:', error);
-            if (error.message.includes('token')) {
-                window.location.href = '/login.html';
-            }
+            console.error('Error initializing Admin2Dashboard:', error);
+            this.showError('Failed to initialize dashboard. Please reload the page.');
         }
     }
     
@@ -3629,110 +3628,32 @@ export class Admin2Dashboard extends AdminDashboard {
     // Auto-reset settings methods
     async loadAutoResetSettings() {
         try {
-            const response = await this.apiService.getAutoResetSettings();
-            if (response.success) {
-                this.autoResetSettings = response.data;
-                this.updateAutoResetSettingsDisplay();
+            // Add debounce to prevent multiple rapid calls
+            const now = Date.now();
+            if (!this.lastAutoSettingsLoad || (now - this.lastAutoSettingsLoad) > 5000) { // Only reload if it's been at least 5 seconds
+                this.lastAutoSettingsLoad = now;
+                console.log('Loading auto-reset settings...');
+                
+                const response = await this.apiService.getAutoResetSettings();
+                if (response.success) {
+                    this.autoResetSettings = response.data;
+                    // Call updateAutoResetSettingsDisplay but set a flag to prevent it from immediately calling displayCurrentAutoResets
+                    this.updateAutoResetSettingsDisplay(false);
+                    // Then call displayCurrentAutoResets directly
+                    this.displayCurrentAutoResets();
+                } else {
+                    throw new Error(response.message || 'Failed to load auto-reset settings');
+                }
             } else {
-                throw new Error(response.message || 'Failed to load auto-reset settings');
+                console.log('Auto-reset settings were loaded recently, skipping reload');
+                // Just update display with current data
+                this.updateAutoResetSettingsDisplay(false);
+                this.displayCurrentAutoResets();
             }
         } catch (error) {
             console.error('Error loading auto-reset settings:', error);
             this.showError('Failed to load auto-reset settings');
         }
-    }
-
-    setupAutoResetSettings() {
-        const quizSelect = document.getElementById('autoResetQuiz');
-        const periodSelect = document.getElementById('resetPeriod');
-        const enabledCheckbox = document.getElementById('autoResetEnabled');
-        const saveButton = document.getElementById('saveAutoReset');
-
-        // Populate quiz dropdown
-        this.populateQuizDropdown(quizSelect);
-
-        // Load existing settings if any
-        if (this.autoResetSettings && this.autoResetSettings.length > 0) {
-            this.updateAutoResetSettingsDisplay();
-        }
-
-        // Handle save button click
-        saveButton.addEventListener('click', async () => {
-            const quizName = quizSelect.value;
-            const resetPeriod = parseInt(periodSelect.value);
-            const enabled = enabledCheckbox.checked;
-
-            if (!quizName || !resetPeriod) {
-                this.showError('Please select both quiz and reset period');
-                return;
-            }
-
-            try {
-                const response = await this.apiService.saveAutoResetSetting(quizName, resetPeriod, enabled);
-                if (response.success) {
-                    this.showSuccess('Auto-reset setting saved successfully');
-                    await this.loadAutoResetSettings(); // Reload settings
-                } else {
-                    throw new Error(response.message || 'Failed to save auto-reset setting');
-                }
-            } catch (error) {
-                console.error('Error saving auto-reset setting:', error);
-                this.showError(`Failed to save auto-reset setting: ${error.message}`);
-            }
-        });
-    }
-
-    updateAutoResetSettingsDisplay() {
-        const quizSelect = document.getElementById('autoResetQuiz');
-        const periodSelect = document.getElementById('resetPeriod');
-        const enabledCheckbox = document.getElementById('autoResetEnabled');
-
-        // Clear existing options
-        quizSelect.innerHTML = '<option value="">-- Select Quiz --</option>';
-        periodSelect.innerHTML = '<option value="">-- Select Period --</option>';
-
-        // Add period options
-        const periods = [
-            { value: 1, label: '1 minute' },
-            { value: 10, label: '10 minutes (Testing)' },
-            { value: 1440, label: '1 day' },
-            { value: 10080, label: '1 week' },
-            { value: 43200, label: '1 month' },
-            { value: 129600, label: '3 months' },
-            { value: 259200, label: '6 months' },
-            { value: 525600, label: '1 year' }
-        ];
-
-        periods.forEach(period => {
-            const option = document.createElement('option');
-            option.value = period.value;
-            option.textContent = period.label;
-            periodSelect.appendChild(option);
-        });
-
-        // Add quiz options
-        if (this.quizTypes) {
-            this.quizTypes.forEach(quiz => {
-                const option = document.createElement('option');
-                option.value = quiz;
-                option.textContent = this.formatQuizName(quiz);
-                quizSelect.appendChild(option);
-            });
-        }
-
-        // Set selected values if there are existing settings
-        if (this.autoResetSettings && this.autoResetSettings.length > 0) {
-            const selectedQuiz = quizSelect.value;
-            const setting = this.autoResetSettings.find(s => s.quizName === selectedQuiz);
-            
-            if (setting) {
-                periodSelect.value = setting.resetPeriod;
-                enabledCheckbox.checked = setting.enabled;
-            }
-        }
-
-        // Update the current auto-resets display
-        this.displayCurrentAutoResets();
     }
 
     async displayCurrentAutoResets() {
@@ -3742,8 +3663,9 @@ export class Admin2Dashboard extends AdminDashboard {
         try {
             container.innerHTML = '<p>Loading auto-reset settings...</p>';
             
-            // Refresh auto-reset settings before displaying
-            await this.loadAutoResetSettings();
+            // We no longer need to reload settings here since we're already called from updateAutoResetSettingsDisplay
+            // which already has the latest settings
+            // await this.loadAutoResetSettings(); - REMOVED TO PREVENT RECURSIVE LOOP
             
             if (!this.autoResetSettings || this.autoResetSettings.length === 0) {
                 container.innerHTML = '<p>No auto-reset settings configured.</p>';
@@ -3874,23 +3796,43 @@ export class Admin2Dashboard extends AdminDashboard {
 
     updateCountdowns() {
         const countdowns = document.querySelectorAll('.auto-reset-countdown');
+        if (countdowns.length === 0) return; // No countdowns to update
         
         countdowns.forEach(countdown => {
             const quizName = countdown.dataset.quiz;
-            const nextResetTime = new Date(countdown.dataset.nextReset);
-            const now = new Date();
-            const timeLeft = nextResetTime - now;
-
-            if (timeLeft <= 0) {
-                // Reset has occurred, recalculate next reset time
-                const setting = this.autoResetSettings.find(s => s.quizName === quizName);
+            if (!quizName) return; // Skip if no quiz name
+            
+            // Check if nextResetTime exists in the dataset
+            if (!countdown.dataset.nextReset) {
+                // If not set, try to find the setting and calculate it
+                const setting = this.autoResetSettings?.find(s => s.quizName === quizName);
                 if (setting) {
-                    const newNextReset = this.calculateNextResetTime(setting);
-                    countdown.dataset.nextReset = newNextReset;
-                    this.updateCountdownDisplay(countdown, newNextReset);
+                    const nextReset = this.calculateNextResetTime(setting);
+                    if (nextReset) {
+                        countdown.dataset.nextReset = nextReset.toISOString();
+                    }
                 }
-            } else {
-                this.updateCountdownDisplay(countdown, nextResetTime);
+            }
+            
+            // Now proceed with the update if we have a valid nextResetTime
+            if (countdown.dataset.nextReset) {
+                const nextResetTime = new Date(countdown.dataset.nextReset);
+                const now = new Date();
+                const timeLeft = nextResetTime - now;
+
+                if (timeLeft <= 0) {
+                    // Reset has occurred, recalculate next reset time
+                    const setting = this.autoResetSettings?.find(s => s.quizName === quizName);
+                    if (setting) {
+                        const newNextReset = this.calculateNextResetTime(setting);
+                        if (newNextReset) {
+                            countdown.dataset.nextReset = newNextReset.toISOString();
+                            this.updateCountdownDisplay(countdown, newNextReset);
+                        }
+                    }
+                } else {
+                    this.updateCountdownDisplay(countdown, nextResetTime);
+                }
             }
         });
     }
@@ -3958,7 +3900,8 @@ export class Admin2Dashboard extends AdminDashboard {
             );
 
             if (response.success) {
-                await this.displayCurrentAutoResets(); // Refresh the display
+                // Load settings first, then the display will be updated
+                await this.loadAutoResetSettings();
                 this.showInfo(`Auto-reset for ${quizName} ${enabled ? 'enabled' : 'disabled'}`);
             } else {
                 this.showErrorMessage('Failed to update auto-reset setting');
@@ -3975,7 +3918,8 @@ export class Admin2Dashboard extends AdminDashboard {
             const response = await this.apiService.deleteAutoResetSetting(quizName);
 
             if (response.success) {
-                await this.displayCurrentAutoResets(); // Refresh the display
+                // Load settings first, then the display will be updated
+                await this.loadAutoResetSettings();
                 this.showInfo(`Auto-reset setting for ${quizName} deleted`);
             } else {
                 this.showErrorMessage('Failed to delete auto-reset setting');
@@ -4048,8 +3992,8 @@ export class Admin2Dashboard extends AdminDashboard {
             // Show results
             this.showSuccess(`Reset processed for ${successCount} out of ${completedUsers.length} users`);
             
-            // Refresh the display
-            await this.displayCurrentAutoResets();
+            // Reload settings, then refresh the display
+            await this.loadAutoResetSettings();
         } catch (error) {
             console.error('Error triggering manual reset:', error);
             this.showErrorMessage(`Failed to trigger reset: ${error.message}`);
