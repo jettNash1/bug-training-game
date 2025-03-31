@@ -3143,7 +3143,19 @@ export class Admin2Dashboard extends AdminDashboard {
                                 const completedUsers = [];
                                 for (const user of users) {
                                     try {
-                                        // Get user's progress for this quiz
+                                        // First check quizResults (primary source of completed quizzes)
+                                        if (user.quizResults && Array.isArray(user.quizResults)) {
+                                            const quizResult = user.quizResults.find(r => 
+                                                r.quizName && r.quizName.toLowerCase() === setting.quizName.toLowerCase());
+                                            
+                                            if (quizResult && quizResult.questionsAnswered >= 15) {
+                                                console.log(`User ${user.username} has completed ${setting.quizName} quiz (from quizResults)`);
+                                                completedUsers.push(user.username);
+                                                continue; // Skip progress check if we already found completion
+                                            }
+                                        }
+                                        
+                                        // Fallback to checking quizProgress if no result found
                                         const progressResponse = await this.apiService.getUserQuizProgress(user.username, setting.quizName);
                                         
                                         if (progressResponse.success && progressResponse.data) {
@@ -3154,7 +3166,7 @@ export class Admin2Dashboard extends AdminDashboard {
                                                                (progress.questionHistory && progress.questionHistory.length >= 15);
                                             
                                             if (isCompleted) {
-                                                console.log(`User ${user.username} has completed ${setting.quizName} quiz`);
+                                                console.log(`User ${user.username} has completed ${setting.quizName} quiz (from quizProgress)`);
                                                 completedUsers.push(user.username);
                                             }
                                         }
@@ -4347,7 +4359,19 @@ export class Admin2Dashboard extends AdminDashboard {
             
             for (const user of users) {
                 try {
-                    // Get user's progress for this quiz
+                    // First check quizResults (primary source of completed quizzes)
+                    if (user.quizResults && Array.isArray(user.quizResults)) {
+                        const quizResult = user.quizResults.find(r => 
+                            r.quizName && r.quizName.toLowerCase() === quizName.toLowerCase());
+                        
+                        if (quizResult && quizResult.questionsAnswered >= 15) {
+                            console.log(`User ${user.username} has completed ${quizName} quiz (from quizResults)`);
+                            completedUsers.push(user.username);
+                            continue; // Skip progress check if we already found completion
+                        }
+                    }
+                    
+                    // Fallback to checking quizProgress if no result found
                     const progressResponse = await this.apiService.getUserQuizProgress(user.username, quizName);
                     
                     if (progressResponse.success && progressResponse.data) {
@@ -4358,7 +4382,7 @@ export class Admin2Dashboard extends AdminDashboard {
                                           (progress.questionHistory && progress.questionHistory.length >= 15);
                         
                         if (isCompleted) {
-                            console.log(`User ${user.username} has completed ${quizName} quiz`);
+                            console.log(`User ${user.username} has completed ${quizName} quiz (from quizProgress)`);
                             completedUsers.push(user.username);
                         }
                     }
