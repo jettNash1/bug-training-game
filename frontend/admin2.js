@@ -3757,7 +3757,7 @@ export class Admin2Dashboard extends AdminDashboard {
                 const countdownId = `countdown-${setting.quizName.replace(/\s+/g, '-')}`;
                 
                 html += `
-                    <div class="auto-reset-item">
+                    <div class="auto-reset-item" data-quiz="${setting.quizName}">
                         <div class="auto-reset-info">
                             <h3>${setting.quizName}</h3>
                             <div class="auto-reset-status ${setting.enabled ? 'enabled' : 'disabled'}">
@@ -3767,12 +3767,10 @@ export class Admin2Dashboard extends AdminDashboard {
                             <div id="${countdownId}" class="next-reset">Next reset: Calculating...</div>
                         </div>
                         <div class="auto-reset-actions">
-                            <button onclick="admin2Dashboard.toggleAutoReset('${setting.quizName}', ${!setting.enabled})" 
-                                    class="btn-primary">
+                            <button class="btn-primary toggle-reset" data-quiz="${setting.quizName}" data-enabled="${!setting.enabled}">
                                 ${setting.enabled ? 'Disable' : 'Enable'}
                             </button>
-                            <button onclick="admin2Dashboard.deleteAutoReset('${setting.quizName}')" 
-                                    class="btn-danger">
+                            <button class="btn-danger delete-reset" data-quiz="${setting.quizName}">
                                 Delete
                             </button>
                         </div>
@@ -3781,6 +3779,22 @@ export class Admin2Dashboard extends AdminDashboard {
             }
 
             container.innerHTML = html;
+
+            // Add event listeners after updating the HTML
+            container.querySelectorAll('.toggle-reset').forEach(button => {
+                button.addEventListener('click', async (e) => {
+                    const quizName = e.target.dataset.quiz;
+                    const enabled = e.target.dataset.enabled === 'true';
+                    await this.toggleAutoReset(quizName, enabled);
+                });
+            });
+
+            container.querySelectorAll('.delete-reset').forEach(button => {
+                button.addEventListener('click', async (e) => {
+                    const quizName = e.target.dataset.quiz;
+                    await this.deleteAutoReset(quizName);
+                });
+            });
 
             // Update countdowns for each setting
             for (const setting of settings) {
