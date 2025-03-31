@@ -3736,20 +3736,26 @@ export class Admin2Dashboard extends AdminDashboard {
     }
 
     async displayCurrentAutoResets() {
-        const container = document.getElementById('currentAutoResets');
-        if (!container) return;
+        const container = document.getElementById('currentAutoResetsList');
+        if (!container) {
+            console.error('Auto-reset container not found');
+            return;
+        }
 
         try {
+            console.log('Fetching auto-reset settings...');
             const response = await this.apiService.getAutoResetSettings();
             if (!response.success) {
                 throw new Error('Failed to fetch auto-reset settings');
             }
 
             const settings = response.data;
+            console.log('Received auto-reset settings:', settings);
+            
             container.innerHTML = '';
 
-            if (settings.length === 0) {
-                container.innerHTML = '<p>No auto-reset settings found.</p>';
+            if (!settings || settings.length === 0) {
+                container.innerHTML = '<p>No auto-reset settings configured yet.</p>';
                 return;
             }
 
@@ -3759,7 +3765,7 @@ export class Admin2Dashboard extends AdminDashboard {
                 item.className = 'auto-reset-item';
                 item.innerHTML = `
                     <div class="auto-reset-info">
-                        <h4>${setting.quizName}</h4>
+                        <h4>${this.formatQuizName(setting.quizName)}</h4>
                         <p>Reset Period: ${this.formatResetPeriod(setting.resetPeriod)}</p>
                         <p>Status: ${setting.enabled ? 'Enabled' : 'Disabled'}</p>
                         <p class="auto-reset-countdown" data-quiz="${setting.quizName}">
@@ -3886,17 +3892,15 @@ export class Admin2Dashboard extends AdminDashboard {
     }
 
     getPeriodLabel(minutes) {
-        const periods = {
-            10: '10 minutes (Testing)',
-            1440: '1 day',
-            10080: '1 week',
-            43200: '1 month',
-            129600: '3 months',
-            259200: '6 months',
-            518400: '1 year',
-            525600: '1 year'
-        };
-        return periods[minutes] || `${minutes} minutes`;
+        if (minutes === 1) return '1 Minute';
+        if (minutes === 10) return '10 Minutes';
+        if (minutes === 1440) return '1 Day';
+        if (minutes === 10080) return '1 Week';
+        if (minutes === 43200) return '1 Month';
+        if (minutes === 129600) return '3 Months';
+        if (minutes === 259200) return '6 Months';
+        if (minutes === 525600) return '1 Year';
+        return `${minutes} Minutes`;
     }
 
     async toggleAutoReset(quizName, enabled) {
