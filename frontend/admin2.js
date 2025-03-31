@@ -3151,6 +3151,7 @@ export class Admin2Dashboard extends AdminDashboard {
                                             
                                             // Check if user has completed all 15 questions
                                             const isCompleted = progress.questionsAnswered >= 15 || 
+                                                               progress.status === 'completed' ||
                                                                (progress.questionHistory && progress.questionHistory.length >= 15);
                                             
                                             if (isCompleted) {
@@ -4353,8 +4354,9 @@ export class Admin2Dashboard extends AdminDashboard {
                     if (progressResponse.success && progressResponse.data) {
                         const progress = progressResponse.data;
                         
-                        // Check if user has completed the quiz - only check question count
+                        // Check if user has completed the quiz
                         const isCompleted = progress.questionsAnswered >= 15 || 
+                                          progress.status === 'completed' ||
                                           (progress.questionHistory && progress.questionHistory.length >= 15);
                         
                         if (isCompleted) {
