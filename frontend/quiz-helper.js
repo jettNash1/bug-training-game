@@ -827,17 +827,25 @@ export class BaseQuiz {
                 if (response.success) {
                     const autoReset = response.data.find(s => s.quizName === this.quizName);
                     if (autoReset && autoReset.enabled) {
-                        // Calculate reset time based on completion time and reset period
-                        const resetTime = new Date(Date.now() + (autoReset.resetPeriod * 60 * 1000));
-                        
-                        // Create a scheduled reset
-                        await this.apiService.createScheduledReset(
-                            this.player.name,
-                            this.quizName,
-                            resetTime.toISOString()
-                        );
-                        
-                        console.log(`Scheduled auto-reset for ${this.quizName} at ${resetTime.toISOString()}`);
+                        // Get all users who have completed the quiz
+                        const completedUsersResponse = await this.apiService.getCompletedUsers(this.quizName);
+                        if (completedUsersResponse.success) {
+                            const completedUsers = completedUsersResponse.data;
+                            
+                            // Calculate reset time based on completion time and reset period
+                            const resetTime = new Date(Date.now() + (autoReset.resetPeriod * 60 * 1000));
+                            
+                            // Schedule resets for all completed users
+                            for (const username of completedUsers) {
+                                await this.apiService.createScheduledReset(
+                                    username,
+                                    this.quizName,
+                                    resetTime.toISOString()
+                                );
+                            }
+                            
+                            console.log(`Scheduled auto-reset for ${this.quizName} at ${resetTime.toISOString()} for ${completedUsers.length} users`);
+                        }
                     }
                 }
             } catch (error) {

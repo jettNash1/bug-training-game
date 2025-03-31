@@ -8,6 +8,7 @@ const fs = require('fs').promises;
 const path = require('path');
 const ScheduledReset = require('../models/scheduledReset.model');
 const AutoReset = require('../models/autoReset.model');
+const QuizUser = require('../models/quizUser.model');
 
 // Admin token verification
 router.get('/verify-token', async (req, res) => {
@@ -1546,28 +1547,41 @@ router.delete('/auto-resets/:quizName', auth, async (req, res) => {
         }
 
         const { quizName } = req.params;
-
-        // Find and delete the auto-reset setting
-        const autoReset = await AutoReset.findOneAndDelete({ quizName });
+        const deletedSetting = await AutoReset.findOneAndDelete({ quizName });
         
-        if (!autoReset) {
-            return res.status(404).json({
-                success: false,
-                message: 'Auto-reset setting not found'
-            });
+        if (!deletedSetting) {
+            return res.status(404).json({ success: false, message: 'Auto-reset setting not found' });
         }
-
-        res.json({
-            success: true,
-            message: 'Auto-reset setting deleted successfully',
-            data: autoReset
-        });
+        
+        res.json({ success: true, message: 'Auto-reset setting deleted successfully' });
     } catch (error) {
         console.error('Error deleting auto-reset setting:', error);
-        res.status(500).json({
-            success: false,
-            message: 'Failed to delete auto-reset setting',
-            error: error.message
+        res.status(500).json({ success: false, message: 'Failed to delete auto-reset setting' });
+    }
+});
+
+// Get all users who have completed a quiz
+router.get('/completed-users/:quizName', auth, async (req, res) => {
+    try {
+        const { quizName } = req.params;
+        
+        // Find all users who have completed exactly 15 questions in the quiz
+        const completedUsers = await QuizUser.find({
+            [`quizScores.${quizName}.questionsAnswered`]: 15
+        }).select('username');
+        
+        console.log(`Found ${completedUsers.length} users who have completed all 15 questions for quiz: ${quizName}`);
+        
+        res.json({ 
+            success: true, 
+            data: completedUsers.map(user => user.username)
+        });
+    } catch (error) {
+        console.error('Error getting completed users:', error);
+        res.status(500).json({ 
+            success: false, 
+            message: 'Failed to get completed users',
+            error: error.message 
         });
     }
 });

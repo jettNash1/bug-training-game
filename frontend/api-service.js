@@ -2027,28 +2027,37 @@ export class APIService {
 
     async deleteAutoResetSetting(quizName) {
         try {
-            if (!quizName) {
-                throw new Error('Quiz name is required');
-            }
-
-            console.log(`Deleting auto-reset setting for ${quizName}`);
-            
-            const response = await this.fetchWithAdminAuth(`${this.baseUrl}/admin/auto-resets/${quizName}`, {
-                method: 'DELETE'
+            console.log(`Deleting auto-reset setting for quiz: ${quizName}`);
+            const response = await fetch(`${this.baseUrl}/admin/auto-resets/${encodeURIComponent(quizName)}`, {
+                method: 'DELETE',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${this.token}`
+                }
             });
-            
-            if (response.success) {
-                console.log('Successfully deleted auto-reset setting through API:', response);
-                return response;
-            } else {
-                throw new Error(response.message || 'Failed to delete auto-reset setting');
-            }
+            const data = await response.json();
+            return { success: response.ok, data, message: data.message };
         } catch (error) {
             console.error('Error deleting auto-reset setting:', error);
-            return {
-                success: false,
-                message: error.message
-            };
+            return { success: false, message: error.message };
+        }
+    }
+
+    async getCompletedUsers(quizName) {
+        try {
+            console.log(`Getting completed users for quiz: ${quizName}`);
+            const response = await fetch(`${this.baseUrl}/admin/completed-users/${encodeURIComponent(quizName)}`, {
+                method: 'GET',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${this.token}`
+                }
+            });
+            const data = await response.json();
+            return { success: response.ok, data, message: data.message };
+        } catch (error) {
+            console.error('Error getting completed users:', error);
+            return { success: false, message: error.message };
         }
     }
 } 
