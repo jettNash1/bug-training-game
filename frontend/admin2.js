@@ -3078,28 +3078,108 @@ export class Admin2Dashboard extends AdminDashboard {
         try {
             console.log('Checking for scheduled resets that need to be executed...');
             
-            // Use the API service to check and process scheduled resets
+            // First, check explicit scheduled resets
             const result = await this.apiService.checkAndProcessScheduledResets();
+            let totalProcessed = result.processed || 0;
             
-            console.log('Schedule check complete:', result);
+            console.log('Regular schedule check complete:', result);
             
-            if (result.processed > 0) {
-                console.log(`Processed ${result.processed} scheduled resets out of ${result.total} total`);
+            // Then, also check auto-reset settings with nextResetTime in the past
+            try {
+                console.log('Checking auto-reset settings with passed nextResetTime...');
+                const autoResetResponse = await this.apiService.getAutoResetSettings();
                 
-                // Show notification
-                this.showInfo(`Successfully processed ${result.processed} scheduled quiz resets`);
+                if (autoResetResponse.success && autoResetResponse.data) {
+                    const now = new Date();
+                    const settings = Array.isArray(autoResetResponse.data) 
+                        ? autoResetResponse.data 
+                        : Object.values(autoResetResponse.data);
+                    
+                    let autoResetProcessed = 0;
+                    
+                    for (const setting of settings) {
+                        // Skip if no nextResetTime or not enabled
+                        if (!setting.nextResetTime || !setting.enabled) continue;
+                        
+                        const nextResetTime = new Date(setting.nextResetTime);
+                        if (nextResetTime <= now) {
+                            console.log(`Auto-reset time has passed for quiz ${setting.quizName}, processing...`);
+                            
+                            try {
+                                // Get all users who have completed this quiz
+                                const completedResponse = await this.apiService.getCompletedUsers(setting.quizName);
+                                
+                                if (completedResponse.success && completedResponse.data) {
+                                    const completedUsers = completedResponse.data;
+                                    console.log(`Found ${completedUsers.length} completed users for quiz ${setting.quizName}`);
+                                    
+                                    if (completedUsers.length > 0) {
+                                        // Process resets for each user
+                                        let processedCount = 0;
+                                        for (const username of completedUsers) {
+                                            try {
+                                                // Call API to reset this user's quiz
+                                                const resetResponse = await this.apiService.resetQuizProgress(username, setting.quizName);
+                                                
+                                                if (resetResponse.success) {
+                                                    processedCount++;
+                                                    console.log(`Reset ${username}'s ${setting.quizName} quiz`);
+                                                }
+                                            } catch (resetError) {
+                                                console.error(`Error resetting quiz for ${username}:`, resetError);
+                                            }
+                                        }
+                                        
+                                        console.log(`Reset ${processedCount} out of ${completedUsers.length} users for quiz ${setting.quizName}`);
+                                        autoResetProcessed += processedCount;
+                                        
+                                        // Update lastReset time
+                                        await this.apiService.updateAutoResetLastResetTime(setting.quizName);
+                                        
+                                        // Calculate and update next reset time
+                                        const newNextResetTime = this.calculateNextResetTime(setting.resetPeriod);
+                                        await this.apiService.saveAutoResetSetting(
+                                            setting.quizName, 
+                                            setting.resetPeriod, 
+                                            true, 
+                                            newNextResetTime
+                                        );
+                                    }
+                                }
+                            } catch (error) {
+                                console.error(`Error processing auto-reset for ${setting.quizName}:`, error);
+                            }
+                        }
+                    }
+                    
+                    totalProcessed += autoResetProcessed;
+                    
+                    if (autoResetProcessed > 0) {
+                        console.log(`Processed ${autoResetProcessed} auto-reset settings`);
+                        this.showInfo(`Processed ${autoResetProcessed} auto-reset quizzes`);
+                        
+                        // Force reload of auto-reset settings to get updated times
+                        await this.loadAutoResetSettings();
+                    }
+                }
+            } catch (autoResetError) {
+                console.error('Error checking auto-reset settings:', autoResetError);
+            }
+            
+            if (totalProcessed > 0) {
+                console.log(`Processed total of ${totalProcessed} resets`);
                 
-                // Refresh the display if the schedule section is active
+                // If any resets were processed, refresh the schedule section if it's active
                 const scheduleSection = document.getElementById('schedule-section');
                 if (scheduleSection && scheduleSection.classList.contains('active')) {
                     console.log('Schedule section is active, refreshing data');
                     await this.refreshScheduleData();
                 }
             } else {
-                console.log(`No scheduled resets needed processing (${result.total} total scheduled)`);
+                console.log('No resets needed processing');
             }
             
-            return result;
+            return { ...result, totalProcessed };
         } catch (error) {
             console.error('Error checking scheduled resets:', error);
             // Only show error to user if schedule section is active
@@ -4293,8 +4373,11 @@ export class Admin2Dashboard extends AdminDashboard {
     // Save auto reset setting for a quiz
     async saveAutoResetSetting(quizName, resetPeriod) {
         try {
-            // Call the API to save the setting
-            const response = await this.apiService.saveAutoResetSetting(quizName, resetPeriod);
+            // Calculate the next reset time before saving
+            const nextResetTime = this.calculateNextResetTime(resetPeriod);
+            
+            // Call the API to save the setting, including the calculated nextResetTime
+            const response = await this.apiService.saveAutoResetSetting(quizName, resetPeriod, true, nextResetTime);
             
             if (response.success) {
                 // Update local settings
@@ -4305,14 +4388,22 @@ export class Admin2Dashboard extends AdminDashboard {
                 // Store the updated settings
                 this.autoResetSettings[quizName] = response.data || { 
                     resetPeriod, 
-                    nextResetTime: this.calculateNextResetTime(resetPeriod) 
+                    nextResetTime,
+                    enabled: true
                 };
+                
+                console.log(`Auto-reset set for ${quizName} with period ${resetPeriod}, next reset at ${nextResetTime}`);
                 
                 // Update the UI
                 this.displayAutoResetSettings();
                 
                 // Show success message
                 this.showInfo(`Auto-reset for ${quizName} ${response.data ? 'updated' : 'enabled'}`);
+                
+                // Force an immediate check for scheduled resets to process any already completed quizzes
+                this.checkScheduledResets()
+                    .then(() => console.log('Checked for scheduled resets after saving setting'))
+                    .catch(err => console.error('Error checking scheduled resets:', err));
                 
                 return response.data;
             } else {

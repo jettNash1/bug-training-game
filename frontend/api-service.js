@@ -2016,24 +2016,31 @@ export class APIService {
         }
     }
 
-    async saveAutoResetSetting(quizName, resetPeriod, enabled = true) {
+    async saveAutoResetSetting(quizName, resetPeriod, enabled = true, nextResetTime = null) {
         try {
             if (!quizName || resetPeriod === undefined) {
                 throw new Error('Missing required fields: quizName and resetPeriod are required');
             }
 
-            console.log(`Saving auto-reset setting for ${quizName} with period ${resetPeriod} minutes`);
+            console.log(`Saving auto-reset setting for ${quizName} with period ${resetPeriod} minutes${nextResetTime ? `, next reset at ${nextResetTime}` : ''}`);
+            
+            const data = {
+                quizName,
+                resetPeriod,
+                enabled
+            };
+            
+            // Add nextResetTime if provided
+            if (nextResetTime) {
+                data.nextResetTime = nextResetTime;
+            }
             
             const response = await this.fetchWithAdminAuth(`${this.baseUrl}/admin/auto-resets`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
                 },
-                body: JSON.stringify({
-                    quizName,
-                    resetPeriod,
-                    enabled
-                })
+                body: JSON.stringify(data)
             });
             
             if (response.success) {
@@ -2103,6 +2110,28 @@ export class APIService {
             }
         } catch (error) {
             console.error('Error updating lastReset time:', error);
+            return { success: false, message: error.message };
+        }
+    }
+
+    async resetQuizProgress(username, quizName) {
+        try {
+            console.log(`Resetting quiz progress for ${username}'s ${quizName} quiz`);
+            const response = await this.fetchWithAdminAuth(
+                `${this.baseUrl}/admin/users/${encodeURIComponent(username)}/quiz-progress/${encodeURIComponent(quizName)}/reset`,
+                {
+                    method: 'POST'
+                }
+            );
+            
+            if (response.success) {
+                console.log(`Successfully reset ${username}'s ${quizName} quiz progress`);
+                return response;
+            } else {
+                throw new Error(response.message || 'Failed to reset quiz progress');
+            }
+        } catch (error) {
+            console.error(`Error resetting quiz progress for ${username}'s ${quizName} quiz:`, error);
             return { success: false, message: error.message };
         }
     }
