@@ -1587,8 +1587,11 @@ export class APIService {
             const now = new Date();
             const processedIds = [];
             
+            console.log(`Found ${schedules.length} scheduled resets to check`);
+            
             for (const schedule of schedules) {
                 const resetTime = new Date(schedule.resetDateTime);
+                console.log(`Checking schedule for ${schedule.username}'s ${schedule.quizName} quiz, reset time: ${resetTime}`);
                 
                 // If the reset time has passed
                 if (resetTime <= now) {
@@ -1609,7 +1612,7 @@ export class APIService {
                             
                             // Also reset quiz scores
                             try {
-                                await this.fetchWithAdminAuth(
+                                const scoreResetResponse = await this.fetchWithAdminAuth(
                                     `${this.baseUrl}/admin/users/${schedule.username}/quiz-scores/reset`,
                                     {
                                         method: 'POST',
@@ -1619,7 +1622,11 @@ export class APIService {
                                         body: JSON.stringify({ quizName: schedule.quizName })
                                     }
                                 );
-                                console.log(`Successfully reset scores for ${schedule.username}'s ${schedule.quizName} quiz`);
+                                if (scoreResetResponse.success) {
+                                    console.log(`Successfully reset scores for ${schedule.username}'s ${schedule.quizName} quiz`);
+                                } else {
+                                    console.error(`Failed to reset quiz scores:`, scoreResetResponse.message);
+                                }
                             } catch (scoreResetError) {
                                 console.error('Error resetting quiz scores:', scoreResetError);
                             }
@@ -1629,6 +1636,8 @@ export class APIService {
                     } catch (resetError) {
                         console.error(`Error resetting quiz:`, resetError);
                     }
+                } else {
+                    console.log(`Schedule for ${schedule.username}'s ${schedule.quizName} quiz is not due yet. Next reset at ${resetTime}`);
                 }
             }
             

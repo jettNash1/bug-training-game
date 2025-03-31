@@ -283,16 +283,21 @@ router.post('/users/:username/quiz-progress/:quizName/reset', auth, async (req, 
             quizName.replace(/([A-Z])/g, '-$1').toLowerCase(),        // kebab-case
             quizName.replace(/-([a-z])/g, (_, c) => c.toUpperCase()), // camelCase
             quizName.replace(/-/g, '_'),                              // snake_case
-            // Special handling for CMS
-            quizName.toLowerCase().includes('cms') ? 
+            quizName.replace(/\s+/g, '-').toLowerCase(),              // spaces to hyphens
+            quizName.replace(/\s+/g, '').toLowerCase(),               // no spaces
+            // Special handling for communication skills
+            quizName.toLowerCase().includes('communication') ? 
                 [
-                    'CMS-Testing',
-                    'cms-testing',
-                    'cmsTesting',
-                    'CMS_Testing',
-                    'cms_testing'
+                    'communication-skills',
+                    'communicationSkills',
+                    'communication_skills',
+                    'communication',
+                    'Communication',
+                    'CommunicationSkills'
                 ] : []
         ].flat();
+
+        console.log('Checking quiz variations:', quizVariations);
 
         // Reset quiz progress for all variations
         if (!user.quizProgress) {
@@ -300,16 +305,25 @@ router.post('/users/:username/quiz-progress/:quizName/reset', auth, async (req, 
         }
 
         // Delete all variations from quiz progress
+        let deletedVariations = [];
         quizVariations.forEach(variant => {
-            user.quizProgress.delete(variant);
+            if (user.quizProgress.has(variant)) {
+                user.quizProgress.delete(variant);
+                deletedVariations.push(variant);
+            }
         });
+        console.log('Deleted quiz progress for variations:', deletedVariations);
 
         // Remove quiz results for all variations
         if (user.quizResults) {
             const initialLength = user.quizResults.length;
             user.quizResults = user.quizResults.filter(result => {
                 if (!result || !result.quizName) return false;
-                return !quizVariations.includes(result.quizName);
+                const shouldKeep = !quizVariations.includes(result.quizName);
+                if (!shouldKeep) {
+                    console.log('Removing quiz result:', result.quizName);
+                }
+                return shouldKeep;
             });
             console.log(`Removed ${initialLength - user.quizResults.length} quiz results`);
         }

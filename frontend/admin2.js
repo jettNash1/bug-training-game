@@ -3736,7 +3736,7 @@ export class Admin2Dashboard extends AdminDashboard {
     }
 
     async displayCurrentAutoResets() {
-        const container = document.getElementById('currentAutoResetsList');
+        const container = document.getElementById('currentAutoResets');
         if (!container) return;
 
         try {
@@ -3746,84 +3746,71 @@ export class Admin2Dashboard extends AdminDashboard {
             }
 
             const settings = response.data;
-            if (!settings || settings.length === 0) {
-                container.innerHTML = '<p>No auto-reset settings configured yet.</p>';
+            container.innerHTML = '';
+
+            if (settings.length === 0) {
+                container.innerHTML = '<p>No auto-reset settings found.</p>';
                 return;
             }
 
-            let html = '';
-            for (const setting of settings) {
-                const nextResetTime = this.calculateNextResetTime(setting);
-                const countdownId = `countdown-${setting.quizName.replace(/\s+/g, '-')}`;
-                
-                html += `
-                    <div class="auto-reset-item" data-quiz="${setting.quizName}">
-                        <div class="auto-reset-info">
-                            <h3>${setting.quizName}</h3>
-                            <div class="auto-reset-status ${setting.enabled ? 'enabled' : 'disabled'}">
-                                ${setting.enabled ? 'Enabled' : 'Disabled'}
-                            </div>
-                            <div class="next-reset">Reset Period: ${this.getPeriodLabel(setting.resetPeriod)}</div>
-                            <div id="${countdownId}" class="next-reset">Next reset: Calculating...</div>
-                        </div>
-                        <div class="auto-reset-actions">
-                            <button class="btn-primary toggle-reset" data-quiz="${setting.quizName}" data-enabled="${!setting.enabled}">
-                                ${setting.enabled ? 'Disable' : 'Enable'}
-                            </button>
-                            <button class="btn-danger delete-reset" data-quiz="${setting.quizName}">
-                                Delete
-                            </button>
-                        </div>
+            settings.forEach(setting => {
+                const nextReset = this.calculateNextResetTime(setting);
+                const item = document.createElement('div');
+                item.className = 'auto-reset-item';
+                item.innerHTML = `
+                    <div class="auto-reset-info">
+                        <h4>${setting.quizName}</h4>
+                        <p>Reset Period: ${this.formatResetPeriod(setting.resetPeriod)}</p>
+                        <p>Status: ${setting.enabled ? 'Enabled' : 'Disabled'}</p>
+                        <p class="auto-reset-countdown" data-quiz="${setting.quizName}">
+                            Next reset in: ${nextReset ? this.formatCountdown(nextReset) : 'N/A'}
+                        </p>
+                    </div>
+                    <div class="auto-reset-actions">
+                        <button class="toggle-auto-reset" data-quiz="${setting.quizName}" data-enabled="${setting.enabled}">
+                            ${setting.enabled ? 'Disable' : 'Enable'}
+                        </button>
+                        <button class="delete-auto-reset" data-quiz="${setting.quizName}">Delete</button>
                     </div>
                 `;
-            }
 
-            container.innerHTML = html;
+                container.appendChild(item);
 
-            // Add event listeners after updating the HTML
-            container.querySelectorAll('.toggle-reset').forEach(button => {
-                button.addEventListener('click', async (e) => {
-                    const quizName = e.target.dataset.quiz;
-                    const enabled = e.target.dataset.enabled === 'true';
-                    await this.toggleAutoReset(quizName, enabled);
-                });
+                // Add event listeners
+                const toggleBtn = item.querySelector('.toggle-auto-reset');
+                const deleteBtn = item.querySelector('.delete-auto-reset');
+
+                toggleBtn.addEventListener('click', () => this.toggleAutoReset(setting.quizName, !setting.enabled));
+                deleteBtn.addEventListener('click', () => this.deleteAutoReset(setting.quizName));
             });
-
-            container.querySelectorAll('.delete-reset').forEach(button => {
-                button.addEventListener('click', async (e) => {
-                    const quizName = e.target.dataset.quiz;
-                    await this.deleteAutoReset(quizName);
-                });
-            });
-
-            // Update countdowns for each setting
-            for (const setting of settings) {
-                const nextResetTime = this.calculateNextResetTime(setting);
-                const countdownId = `countdown-${setting.quizName.replace(/\s+/g, '-')}`;
-                this.updateCountdownDisplay(countdownId, nextResetTime);
-            }
 
             // Start countdown updates
             this.startCountdownUpdates();
         } catch (error) {
             console.error('Error displaying auto-reset settings:', error);
-            container.innerHTML = '<p class="error">Error loading auto-reset settings.</p>';
+            container.innerHTML = `<p class="error">Error displaying auto-reset settings: ${error.message}</p>`;
         }
     }
 
     calculateNextResetTime(setting) {
         if (!setting.enabled) return null;
         
-        // Get the last completion time from the quiz's last reset
-        const lastReset = setting.lastReset || new Date(0);
+        const now = new Date();
+        const lastReset = setting.lastReset ? new Date(setting.lastReset) : new Date(0);
+        
+        // If there's no last reset or it's too old, schedule from now
+        if (!setting.lastReset || lastReset < new Date(0)) {
+            return new Date(now.getTime() + (setting.resetPeriod * 60 * 1000));
+        }
+        
+        // Calculate next reset based on last reset time
         const nextReset = new Date(lastReset.getTime() + (setting.resetPeriod * 60 * 1000));
         
-        // If the next reset time is in the past, calculate the next occurrence
-        if (nextReset < new Date()) {
-            const now = new Date();
+        // If next reset is in the past, calculate the next occurrence from now
+        if (nextReset < now) {
             const timeSinceLastReset = now - lastReset;
             const periodsSinceLastReset = Math.ceil(timeSinceLastReset / (setting.resetPeriod * 60 * 1000));
-            return new Date(lastReset.getTime() + (periodsSinceLastReset * setting.resetPeriod * 60 * 1000));
+            return new Date(now.getTime() + (setting.resetPeriod * 60 * 1000));
         }
         
         return nextReset;
