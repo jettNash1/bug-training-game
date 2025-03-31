@@ -246,6 +246,14 @@
                                     </div>
                                 </div>
                             </div>
+
+                            <!-- Add Current Auto-Reset Settings Display -->
+                            <div class="current-auto-resets-card">
+                                <h3>Current Auto-Reset Settings</h3>
+                                <div id="currentAutoResetsList">
+                                    <p class="no-items-message">No auto-reset settings configured yet.</p>
+                                </div>
+                            </div>
                             
                             <div class="scheduled-items-card">
                                 <h3>Scheduled Resets</h3>
@@ -1454,6 +1462,113 @@
             width: 18px;
             height: 18px;
             cursor: pointer;
+        }
+
+        /* Add styles for current auto-resets display */
+        .current-auto-resets-card {
+            background: white;
+            border-radius: 8px;
+            padding: 1.5rem;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            margin-bottom: 1.5rem;
+        }
+
+        .current-auto-resets-card h3 {
+            margin-top: 0;
+            margin-bottom: 1.5rem;
+            color: #2c3e50;
+            font-size: 1.3rem;
+            padding-bottom: 0.75rem;
+            border-bottom: 1px solid #eee;
+        }
+
+        .auto-reset-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1rem;
+            border: 1px solid #eee;
+            border-radius: 4px;
+            margin-bottom: 1rem;
+            background-color: #f9f9f9;
+        }
+
+        .auto-reset-item:hover {
+            background-color: #f2f2f2;
+        }
+
+        .auto-reset-info {
+            flex: 1;
+        }
+
+        .auto-reset-quiz {
+            font-weight: 600;
+            color: #2c3e50;
+        }
+
+        .auto-reset-period {
+            color: #3498db;
+            font-weight: 500;
+        }
+
+        .auto-reset-status {
+            display: inline-block;
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+            font-size: 0.85rem;
+            font-weight: 500;
+            margin-left: 1rem;
+        }
+
+        .auto-reset-status.enabled {
+            background-color: #28a745;
+            color: white;
+        }
+
+        .auto-reset-status.disabled {
+            background-color: #dc3545;
+            color: white;
+        }
+
+        .auto-reset-actions {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .delete-auto-reset-btn {
+            background: #e74c3c;
+            color: white;
+            border: none;
+            padding: 0.5rem 0.75rem;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .delete-auto-reset-btn:hover {
+            background: #c0392b;
+        }
+
+        .toggle-auto-reset-btn {
+            background: #3498db;
+            color: white;
+            border: none;
+            padding: 0.5rem 0.75rem;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .toggle-auto-reset-btn:hover {
+            background: #2980b9;
+        }
+
+        .toggle-auto-reset-btn.disabled {
+            background: #95a5a6;
+        }
+
+        .toggle-auto-reset-btn.disabled:hover {
+            background: #7f8c8d;
         }
     </style>
 </body>

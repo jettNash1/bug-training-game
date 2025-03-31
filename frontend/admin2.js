@@ -3729,6 +3729,91 @@ export class Admin2Dashboard extends AdminDashboard {
                 enabledCheckbox.checked = setting.enabled;
             }
         }
+
+        // Update the current auto-resets display
+        this.displayCurrentAutoResets();
+    }
+
+    displayCurrentAutoResets() {
+        const container = document.getElementById('currentAutoResetsList');
+        
+        if (!this.autoResetSettings || this.autoResetSettings.length === 0) {
+            container.innerHTML = '<p class="no-items-message">No auto-reset settings configured yet.</p>';
+            return;
+        }
+
+        const resetItems = this.autoResetSettings.map(setting => {
+            const periodLabel = this.getPeriodLabel(setting.resetPeriod);
+            return `
+                <div class="auto-reset-item">
+                    <div class="auto-reset-info">
+                        <span class="auto-reset-quiz">${this.formatQuizName(setting.quizName)}</span>
+                        <span class="auto-reset-period">${periodLabel}</span>
+                        <span class="auto-reset-status ${setting.enabled ? 'enabled' : 'disabled'}">
+                            ${setting.enabled ? 'Enabled' : 'Disabled'}
+                        </span>
+                    </div>
+                    <div class="auto-reset-actions">
+                        <button class="toggle-auto-reset-btn ${setting.enabled ? '' : 'disabled'}" 
+                                onclick="admin2Dashboard.toggleAutoReset('${setting.quizName}', ${!setting.enabled})">
+                            ${setting.enabled ? 'Disable' : 'Enable'}
+                        </button>
+                        <button class="delete-auto-reset-btn" 
+                                onclick="admin2Dashboard.deleteAutoReset('${setting.quizName}')">
+                            Delete
+                        </button>
+                    </div>
+                </div>
+            `;
+        }).join('');
+
+        container.innerHTML = resetItems;
+    }
+
+    getPeriodLabel(minutes) {
+        const periods = {
+            10: '10 minutes (Testing)',
+            1440: '1 day',
+            10080: '1 week',
+            43200: '1 month',
+            129600: '3 months',
+            259200: '6 months',
+            518400: '1 year'
+        };
+        return periods[minutes] || `${minutes} minutes`;
+    }
+
+    async toggleAutoReset(quizName, enabled) {
+        try {
+            const setting = this.autoResetSettings.find(s => s.quizName === quizName);
+            if (!setting) return;
+
+            const response = await this.apiService.saveAutoResetSetting(quizName, setting.resetPeriod, enabled);
+            if (response.success) {
+                this.showSuccess(`Auto-reset ${enabled ? 'enabled' : 'disabled'} for ${this.formatQuizName(quizName)}`);
+                await this.loadAutoResetSettings(); // Reload settings
+            } else {
+                throw new Error(response.message || 'Failed to update auto-reset setting');
+            }
+        } catch (error) {
+            console.error('Error toggling auto-reset:', error);
+            this.showError(`Failed to ${enabled ? 'enable' : 'disable'} auto-reset: ${error.message}`);
+        }
+    }
+
+    async deleteAutoReset(quizName) {
+        try {
+            const response = await this.apiService.deleteAutoResetSetting(quizName);
+            if (response.success) {
+                this.showSuccess(`Auto-reset deleted for ${this.formatQuizName(quizName)}`);
+                await this.loadAutoResetSettings(); // Reload settings
+            } else {
+                throw new Error(response.message || 'Failed to delete auto-reset setting');
+            }
+        } catch (error) {
+            console.error('Error deleting auto-reset:', error);
+            this.showError(`Failed to delete auto-reset: ${error.message}`);
+        }
     }
 }
 
