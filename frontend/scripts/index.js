@@ -625,11 +625,10 @@ class IndexPage {
                         font-size: 14px;
                         font-weight: 500;
                         cursor: pointer;
-                        display: block;
-                        margin: 0 auto;
+                        margin-top: auto;
+                        display: inline-block;
                         text-decoration: none;
                         transition: all 0.2s ease;
-                        width: fit-content;
                     }
                     .quiz-guide-button:hover {
                         background-color: #3867d6;
@@ -642,8 +641,6 @@ class IndexPage {
                         flex-direction: column;
                         padding: 16px;
                         min-height: 120px;
-                        max-width: 400px;
-                        margin: 0 auto;
                         background: #fff;
                         border-radius: 8px;
                     }
@@ -655,17 +652,13 @@ class IndexPage {
                     .quiz-item .quiz-info > div:first-child {
                         display: flex;
                         align-items: center;
-                        gap: 12px;
-                        margin-bottom: 8px;
+                        gap: 8px;
                     }
                     .quiz-item .quiz-icon {
-                        font-size: 24px;
-                        width: 32px;
-                        height: 32px;
-                        display: inline-flex;
-                        align-items: center;
-                        justify-content: center;
+                        font-size: 20px;
                         flex-shrink: 0;
+                        display: flex;
+                        align-items: center;
                     }
                     .quiz-item .quiz-title {
                         font-size: 16px;
@@ -673,23 +666,22 @@ class IndexPage {
                         color: #2c3e50;
                         margin: 0;
                         line-height: 1.4;
-                        flex: 1;
                     }
                     .quiz-item .quiz-description {
                         color: #666;
                         font-size: 14px;
                         line-height: 1.4;
-                        margin: 0 0 16px 44px;
+                        margin: 8px 0 12px 28px;
                     }
                     .guide-button-container {
                         margin-top: auto;
-                        text-align: center;
-                        padding-top: 8px;
+                        text-align: left;
+                        padding-left: 28px;
                     }
                     .quiz-completion {
                         position: absolute;
-                        bottom: 16px;
-                        right: 16px;
+                        top: 12px;
+                        right: 12px;
                         font-size: 12px;
                         font-weight: 500;
                         padding: 3px 8px;
@@ -717,11 +709,6 @@ class IndexPage {
                         grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
                         gap: 16px;
                         padding: 0 8px;
-                    }
-                    @media (min-width: 768px) {
-                        .quiz-list {
-                            grid-template-columns: repeat(auto-fill, minmax(280px, 320px));
-                        }
                     }
                 `;
                 document.head.appendChild(styles);
