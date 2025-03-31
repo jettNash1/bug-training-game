@@ -1965,4 +1965,90 @@ export class APIService {
             };
         }
     }
+
+    // Auto-reset settings methods
+    async getAutoResetSettings() {
+        try {
+            console.log('Fetching auto-reset settings from API');
+            const response = await this.fetchWithAdminAuth(`${this.baseUrl}/admin/auto-resets`);
+            
+            if (response.success) {
+                console.log('Successfully fetched auto-reset settings from API:', response.data);
+                return {
+                    success: true,
+                    data: response.data
+                };
+            } else {
+                throw new Error(response.message || 'Failed to fetch auto-reset settings');
+            }
+        } catch (error) {
+            console.error('Error fetching auto-reset settings:', error);
+            return {
+                success: false,
+                message: error.message
+            };
+        }
+    }
+
+    async saveAutoResetSetting(quizName, resetPeriod, enabled = true) {
+        try {
+            if (!quizName || resetPeriod === undefined) {
+                throw new Error('Missing required fields: quizName and resetPeriod are required');
+            }
+
+            console.log(`Saving auto-reset setting for ${quizName} with period ${resetPeriod} minutes`);
+            
+            const response = await this.fetchWithAdminAuth(`${this.baseUrl}/admin/auto-resets`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    quizName,
+                    resetPeriod,
+                    enabled
+                })
+            });
+            
+            if (response.success) {
+                console.log('Successfully saved auto-reset setting through API:', response);
+                return response;
+            } else {
+                throw new Error(response.message || 'Failed to save auto-reset setting');
+            }
+        } catch (error) {
+            console.error('Error saving auto-reset setting:', error);
+            return {
+                success: false,
+                message: error.message
+            };
+        }
+    }
+
+    async deleteAutoResetSetting(quizName) {
+        try {
+            if (!quizName) {
+                throw new Error('Quiz name is required');
+            }
+
+            console.log(`Deleting auto-reset setting for ${quizName}`);
+            
+            const response = await this.fetchWithAdminAuth(`${this.baseUrl}/admin/auto-resets/${quizName}`, {
+                method: 'DELETE'
+            });
+            
+            if (response.success) {
+                console.log('Successfully deleted auto-reset setting through API:', response);
+                return response;
+            } else {
+                throw new Error(response.message || 'Failed to delete auto-reset setting');
+            }
+        } catch (error) {
+            console.error('Error deleting auto-reset setting:', error);
+            return {
+                success: false,
+                message: error.message
+            };
+        }
+    }
 } 

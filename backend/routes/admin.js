@@ -7,6 +7,7 @@ const auth = require('../middleware/auth');
 const fs = require('fs').promises;
 const path = require('path');
 const ScheduledReset = require('../models/scheduledReset.model');
+const AutoReset = require('../models/autoReset.model');
 
 // Admin token verification
 router.get('/verify-token', async (req, res) => {
@@ -1446,6 +1447,127 @@ router.post('/guide-settings/:quizName', auth, async (req, res) => {
         res.status(500).json({
             success: false,
             message: 'Failed to update guide settings'
+        });
+    }
+});
+
+// Get all auto-reset settings
+router.get('/auto-resets', auth, async (req, res) => {
+    try {
+        // Verify admin status
+        if (!req.user.isAdmin) {
+            return res.status(403).json({
+                success: false,
+                message: 'Admin access required'
+            });
+        }
+
+        // Get all auto-reset settings from the database
+        const autoResets = await AutoReset.find().sort({ quizName: 1 });
+        
+        res.json({
+            success: true,
+            data: autoResets
+        });
+    } catch (error) {
+        console.error('Error fetching auto-reset settings:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Failed to fetch auto-reset settings',
+            error: error.message
+        });
+    }
+});
+
+// Create or update auto-reset setting
+router.post('/auto-resets', auth, async (req, res) => {
+    try {
+        // Verify admin status
+        if (!req.user.isAdmin) {
+            return res.status(403).json({
+                success: false,
+                message: 'Admin access required'
+            });
+        }
+
+        const { quizName, resetPeriod, enabled } = req.body;
+
+        // Validate inputs
+        if (!quizName || resetPeriod === undefined) {
+            return res.status(400).json({
+                success: false,
+                message: 'Missing required fields'
+            });
+        }
+
+        // Validate resetPeriod is a positive number
+        if (resetPeriod < 0) {
+            return res.status(400).json({
+                success: false,
+                message: 'Reset period must be a positive number'
+            });
+        }
+
+        // Find existing setting or create new one
+        const autoReset = await AutoReset.findOneAndUpdate(
+            { quizName },
+            {
+                resetPeriod,
+                enabled: enabled !== undefined ? enabled : true,
+                lastUpdated: new Date()
+            },
+            { new: true, upsert: true }
+        );
+
+        res.json({
+            success: true,
+            message: 'Auto-reset setting saved successfully',
+            data: autoReset
+        });
+    } catch (error) {
+        console.error('Error saving auto-reset setting:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Failed to save auto-reset setting',
+            error: error.message
+        });
+    }
+});
+
+// Delete auto-reset setting
+router.delete('/auto-resets/:quizName', auth, async (req, res) => {
+    try {
+        // Verify admin status
+        if (!req.user.isAdmin) {
+            return res.status(403).json({
+                success: false,
+                message: 'Admin access required'
+            });
+        }
+
+        const { quizName } = req.params;
+
+        // Find and delete the auto-reset setting
+        const autoReset = await AutoReset.findOneAndDelete({ quizName });
+        
+        if (!autoReset) {
+            return res.status(404).json({
+                success: false,
+                message: 'Auto-reset setting not found'
+            });
+        }
+
+        res.json({
+            success: true,
+            message: 'Auto-reset setting deleted successfully',
+            data: autoReset
+        });
+    } catch (error) {
+        console.error('Error deleting auto-reset setting:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Failed to delete auto-reset setting',
+            error: error.message
         });
     }
 });

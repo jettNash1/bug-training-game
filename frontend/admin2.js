@@ -44,7 +44,8 @@ export class Admin2Dashboard extends AdminDashboard {
             await Promise.all([
                 this.loadUsers(),
                 this.loadTimerSettings(),
-                this.loadGuideSettings()
+                this.loadGuideSettings(),
+                this.loadAutoResetSettings() // Add this line
             ]);
 
             // Set up all UI components
@@ -53,6 +54,7 @@ export class Admin2Dashboard extends AdminDashboard {
             this.setupScheduleSection();
             this.displayTimerSettings();
             this.displayGuideSettings();
+            this.setupAutoResetSettings(); // Add this line
 
             // Update dashboard with initial data
             await this.updateDashboard();
@@ -3622,6 +3624,111 @@ export class Admin2Dashboard extends AdminDashboard {
             .split('-')
             .map(word => word.charAt(0).toUpperCase() + word.slice(1))
             .join(' ');
+    }
+
+    // Auto-reset settings methods
+    async loadAutoResetSettings() {
+        try {
+            const response = await this.apiService.getAutoResetSettings();
+            if (response.success) {
+                this.autoResetSettings = response.data;
+                this.updateAutoResetSettingsDisplay();
+            } else {
+                throw new Error(response.message || 'Failed to load auto-reset settings');
+            }
+        } catch (error) {
+            console.error('Error loading auto-reset settings:', error);
+            this.showError('Failed to load auto-reset settings');
+        }
+    }
+
+    setupAutoResetSettings() {
+        const quizSelect = document.getElementById('autoResetQuiz');
+        const periodSelect = document.getElementById('resetPeriod');
+        const enabledCheckbox = document.getElementById('autoResetEnabled');
+        const saveButton = document.getElementById('saveAutoReset');
+
+        // Populate quiz dropdown
+        this.populateQuizDropdown(quizSelect);
+
+        // Load existing settings if any
+        if (this.autoResetSettings && this.autoResetSettings.length > 0) {
+            this.updateAutoResetSettingsDisplay();
+        }
+
+        // Handle save button click
+        saveButton.addEventListener('click', async () => {
+            const quizName = quizSelect.value;
+            const resetPeriod = parseInt(periodSelect.value);
+            const enabled = enabledCheckbox.checked;
+
+            if (!quizName || !resetPeriod) {
+                this.showError('Please select both quiz and reset period');
+                return;
+            }
+
+            try {
+                const response = await this.apiService.saveAutoResetSetting(quizName, resetPeriod, enabled);
+                if (response.success) {
+                    this.showSuccess('Auto-reset setting saved successfully');
+                    await this.loadAutoResetSettings(); // Reload settings
+                } else {
+                    throw new Error(response.message || 'Failed to save auto-reset setting');
+                }
+            } catch (error) {
+                console.error('Error saving auto-reset setting:', error);
+                this.showError(`Failed to save auto-reset setting: ${error.message}`);
+            }
+        });
+    }
+
+    updateAutoResetSettingsDisplay() {
+        const quizSelect = document.getElementById('autoResetQuiz');
+        const periodSelect = document.getElementById('resetPeriod');
+        const enabledCheckbox = document.getElementById('autoResetEnabled');
+
+        // Clear existing options
+        quizSelect.innerHTML = '<option value="">-- Select Quiz --</option>';
+        periodSelect.innerHTML = '<option value="">-- Select Period --</option>';
+
+        // Add period options
+        const periods = [
+            { value: 10, label: '10 minutes (Testing)' },
+            { value: 1440, label: '1 day' },
+            { value: 10080, label: '1 week' },
+            { value: 43200, label: '1 month' },
+            { value: 129600, label: '3 months' },
+            { value: 259200, label: '6 months' },
+            { value: 518400, label: '1 year' }
+        ];
+
+        periods.forEach(period => {
+            const option = document.createElement('option');
+            option.value = period.value;
+            option.textContent = period.label;
+            periodSelect.appendChild(option);
+        });
+
+        // Add quiz options
+        if (this.quizTypes) {
+            this.quizTypes.forEach(quiz => {
+                const option = document.createElement('option');
+                option.value = quiz;
+                option.textContent = this.formatQuizName(quiz);
+                quizSelect.appendChild(option);
+            });
+        }
+
+        // Set selected values if there are existing settings
+        if (this.autoResetSettings && this.autoResetSettings.length > 0) {
+            const selectedQuiz = quizSelect.value;
+            const setting = this.autoResetSettings.find(s => s.quizName === selectedQuiz);
+            
+            if (setting) {
+                periodSelect.value = setting.resetPeriod;
+                enabledCheckbox.checked = setting.enabled;
+            }
+        }
     }
 }
 

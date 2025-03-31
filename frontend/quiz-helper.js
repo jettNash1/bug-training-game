@@ -821,6 +821,30 @@ export class BaseQuiz {
                 throw new Error('Failed to update quiz score');
             }
 
+            // Check for auto-reset settings
+            try {
+                const response = await this.apiService.getAutoResetSettings();
+                if (response.success) {
+                    const autoReset = response.data.find(s => s.quizName === this.quizName);
+                    if (autoReset && autoReset.enabled) {
+                        // Calculate reset time based on completion time and reset period
+                        const resetTime = new Date(Date.now() + (autoReset.resetPeriod * 60 * 1000));
+                        
+                        // Create a scheduled reset
+                        await this.apiService.createScheduledReset(
+                            this.player.name,
+                            this.quizName,
+                            resetTime.toISOString()
+                        );
+                        
+                        console.log(`Scheduled auto-reset for ${this.quizName} at ${resetTime.toISOString()}`);
+                    }
+                }
+            } catch (error) {
+                console.error('Error checking auto-reset settings:', error);
+                // Don't throw the error, just log it
+            }
+
             // Clear any local storage data for this quiz
             this.clearQuizLocalStorage(user.username, this.quizName);
             
