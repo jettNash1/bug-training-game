@@ -3,13 +3,66 @@ import { AdminDashboard } from './admin.js';
 export class Admin2Dashboard extends AdminDashboard {
     constructor() {
         super();
-        // Additional initialization for Admin2Dashboard
-        this.isRowView = false; // Default to grid view
-        this.guideSettings = {};
-        this.init2();
+        this.autoResetSettings = [];
+        this.countdownInterval = null;
+        
+        // Initialize the dashboard
+        this.initialize();
+    }
+
+    async initialize() {
+        try {
+            // Initialize parent class
+            await super.init();
+            
+            // Add our custom styles
+            this.addAutoResetStyles();
+            
+            // Load auto-reset settings
+            await this.loadAutoResetSettings();
+            
+            // Start checking for scheduled resets
+            this.startScheduleChecks();
+        } catch (error) {
+            console.error('Error initializing Admin2Dashboard:', error);
+        }
+    }
+
+    async loadAutoResetSettings() {
+        try {
+            const response = await this.apiService.getAutoResetSettings();
+            if (response.success) {
+                this.autoResetSettings = response.data;
+                this.updateAutoResetSettingsDisplay();
+            } else {
+                console.error('Failed to load auto-reset settings:', response);
+            }
+        } catch (error) {
+            console.error('Error loading auto-reset settings:', error);
+        }
+    }
+
+    startScheduleChecks() {
+        // Setup interval to check for scheduled resets that need processing
+        setInterval(async () => {
+            try {
+                await this.checkAndProcessScheduledResets();
+            } catch (error) {
+                console.error('Error checking scheduled resets:', error);
+            }
+        }, 60000); // Check every minute
     }
 
     async init2() {
+        // Initialize parent class functionality
+        await super.init();
+        
+        // Add our custom styles
+        this.addAutoResetStyles();
+        
+        // Load auto-reset settings
+        await this.loadAutoResetSettings();
+        
         try {
             // Setup interval to check for scheduled resets that need processing
             this.scheduleCheckInterval = setInterval(() => {
@@ -3634,11 +3687,10 @@ export class Admin2Dashboard extends AdminDashboard {
                 this.autoResetSettings = response.data;
                 this.updateAutoResetSettingsDisplay();
             } else {
-                throw new Error(response.message || 'Failed to load auto-reset settings');
+                console.error('Failed to load auto-reset settings:', response);
             }
         } catch (error) {
             console.error('Error loading auto-reset settings:', error);
-            this.showError('Failed to load auto-reset settings');
         }
     }
 
