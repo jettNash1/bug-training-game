@@ -65,6 +65,7 @@ export class Admin2Dashboard extends AdminDashboard {
             this.displayTimerSettings();
             this.displayGuideSettings();
             this.setupAutoResetSettings(); // Add this line
+            this.displayAutoResetSettings(); // Add this line to display auto reset settings
 
             // Update dashboard with initial data
             await this.updateDashboard();
@@ -3656,6 +3657,115 @@ export class Admin2Dashboard extends AdminDashboard {
         }
     }
 
+    setupAutoResetSettings() {
+        const quizSelect = document.getElementById('autoResetQuiz');
+        const periodSelect = document.getElementById('resetPeriod');
+        const enabledCheckbox = document.getElementById('autoResetEnabled');
+        const saveButton = document.getElementById('saveAutoReset');
+        
+        if (!quizSelect || !periodSelect || !enabledCheckbox || !saveButton) {
+            console.warn('Auto-reset settings UI elements not found');
+            return;
+        }
+
+        // Populate quiz dropdown
+        if (this.quizTypes && Array.isArray(this.quizTypes)) {
+            // Clear existing options except first one
+            while (quizSelect.options.length > 1) {
+                quizSelect.remove(1);
+            }
+            
+            // Add quiz options
+            this.quizTypes.forEach(quiz => {
+                const option = document.createElement('option');
+                option.value = quiz;
+                option.textContent = this.formatQuizName(quiz);
+                quizSelect.appendChild(option);
+            });
+        }
+
+        // Load existing settings if any
+        if (this.autoResetSettings && this.autoResetSettings.length > 0) {
+            this.updateAutoResetSettingsDisplay();
+        }
+
+        // Handle save button click
+        saveButton.addEventListener('click', async () => {
+            const quizName = quizSelect.value;
+            const resetPeriod = parseInt(periodSelect.value);
+            const enabled = enabledCheckbox.checked;
+
+            if (!quizName || !resetPeriod) {
+                this.showError('Please select both quiz and reset period');
+                return;
+            }
+
+            try {
+                const response = await this.apiService.saveAutoResetSetting(quizName, resetPeriod, enabled);
+                if (response.success) {
+                    this.showSuccess('Auto-reset setting saved successfully');
+                    await this.loadAutoResetSettings(); // Reload settings
+                } else {
+                    throw new Error(response.message || 'Failed to save auto-reset setting');
+                }
+            } catch (error) {
+                console.error('Error saving auto-reset setting:', error);
+                this.showError(`Failed to save auto-reset setting: ${error.message}`);
+            }
+        });
+    }
+
+    updateAutoResetSettingsDisplay(shouldUpdateCurrentResets = true) {
+        const quizSelect = document.getElementById('autoResetQuiz');
+        const periodSelect = document.getElementById('resetPeriod');
+        const enabledCheckbox = document.getElementById('autoResetEnabled');
+        
+        if (!quizSelect || !periodSelect || !enabledCheckbox) {
+            console.warn('Cannot update auto-reset settings display: UI elements not found');
+            return;
+        }
+
+        // Clear existing period options
+        while (periodSelect.options.length > 1) {
+            periodSelect.remove(1);
+        }
+
+        // Add period options
+        const periods = [
+            { value: 1, label: '1 minute' },
+            { value: 10, label: '10 minutes (Testing)' },
+            { value: 1440, label: '1 day' },
+            { value: 10080, label: '1 week' },
+            { value: 43200, label: '1 month' },
+            { value: 129600, label: '3 months' },
+            { value: 259200, label: '6 months' },
+            { value: 525600, label: '1 year' }
+        ];
+
+        periods.forEach(period => {
+            const option = document.createElement('option');
+            option.value = period.value;
+            option.textContent = period.label;
+            periodSelect.appendChild(option);
+        });
+
+        // Set selected values if there are existing settings
+        if (this.autoResetSettings && this.autoResetSettings.length > 0) {
+            const selectedQuiz = quizSelect.value;
+            const setting = this.autoResetSettings.find(s => s.quizName === selectedQuiz);
+            
+            if (setting) {
+                periodSelect.value = setting.resetPeriod;
+                enabledCheckbox.checked = setting.enabled;
+            }
+        }
+
+        // Only update the current auto-resets display if the flag is true
+        if (shouldUpdateCurrentResets) {
+            this.displayCurrentAutoResets();
+        }
+    }
+
     async displayCurrentAutoResets() {
         const container = document.getElementById('currentAutoResetsList');
         if (!container) return;
@@ -3998,6 +4108,262 @@ export class Admin2Dashboard extends AdminDashboard {
             console.error('Error triggering manual reset:', error);
             this.showErrorMessage(`Failed to trigger reset: ${error.message}`);
         }
+    }
+
+    // Helper method to show success messages
+    showSuccess(message) {
+        // Use the showInfo method with 'success' type
+        this.showInfo(message, 'success');
+    }
+
+    // Display auto reset settings in the UI
+    displayAutoResetSettings() {
+        const container = document.getElementById('auto-reset-settings-container');
+        if (!container) return;
+
+        // Clear existing content
+        container.innerHTML = '';
+
+        // Check if we have any auto reset settings
+        if (!this.autoResetSettings || Object.keys(this.autoResetSettings).length === 0) {
+            container.innerHTML = '<p>No auto-reset settings configured yet.</p>';
+            return;
+        }
+
+        // Create table to display settings
+        const table = document.createElement('table');
+        table.className = 'auto-reset-table';
+        
+        // Create table header
+        const thead = document.createElement('thead');
+        thead.innerHTML = `
+            <tr>
+                <th>Quiz</th>
+                <th>Reset Period</th>
+                <th>Next Reset</th>
+                <th>Actions</th>
+            </tr>
+        `;
+        table.appendChild(thead);
+        
+        // Create table body
+        const tbody = document.createElement('tbody');
+        
+        // Loop through each quiz with auto reset setting
+        for (const [quizName, settings] of Object.entries(this.autoResetSettings)) {
+            if (!quizName) continue;
+            
+            const row = document.createElement('tr');
+            
+            // Format reset period text
+            let resetPeriodText = 'Unknown';
+            if (settings.resetPeriod) {
+                switch(settings.resetPeriod) {
+                    case 'daily':
+                        resetPeriodText = 'Daily';
+                        break;
+                    case 'weekly':
+                        resetPeriodText = 'Weekly';
+                        break;
+                    case 'monthly':
+                        resetPeriodText = 'Monthly';
+                        break;
+                    default:
+                        resetPeriodText = settings.resetPeriod;
+                }
+            }
+            
+            // Format next reset time
+            let nextResetText = 'Not scheduled';
+            if (settings.nextResetTime) {
+                const nextResetDate = new Date(settings.nextResetTime);
+                nextResetText = nextResetDate.toLocaleString();
+            }
+            
+            // Set row content
+            row.innerHTML = `
+                <td>${this.formatQuizName(quizName)}</td>
+                <td>${resetPeriodText}</td>
+                <td class="countdown" data-quiz="${quizName}">${nextResetText}</td>
+                <td>
+                    <button class="edit-auto-reset" data-quiz="${quizName}">Edit</button>
+                    <button class="delete-auto-reset" data-quiz="${quizName}">Delete</button>
+                </td>
+            `;
+            
+            tbody.appendChild(row);
+        }
+        
+        table.appendChild(tbody);
+        container.appendChild(table);
+        
+        // Set up event listeners for edit and delete buttons
+        const editButtons = container.querySelectorAll('.edit-auto-reset');
+        editButtons.forEach(button => {
+            button.addEventListener('click', () => {
+                const quizName = button.dataset.quiz;
+                this.showAutoResetEditModal(quizName);
+            });
+        });
+        
+        const deleteButtons = container.querySelectorAll('.delete-auto-reset');
+        deleteButtons.forEach(button => {
+            button.addEventListener('click', () => {
+                const quizName = button.dataset.quiz;
+                this.deleteAutoResetSetting(quizName);
+            });
+        });
+        
+        // Start countdown update interval
+        this.updateCountdowns();
+        if (!this.countdownInterval) {
+            this.countdownInterval = setInterval(() => this.updateCountdowns(), 60000); // Update every minute
+        }
+    }
+    
+    // Shows edit modal for auto reset settings
+    showAutoResetEditModal(quizName) {
+        // Get the current settings for this quiz
+        const settings = this.autoResetSettings[quizName] || {};
+        
+        // Create modal container
+        const modal = document.createElement('div');
+        modal.className = 'modal';
+        modal.innerHTML = `
+            <div class="modal-content">
+                <span class="close-modal">&times;</span>
+                <h3>Edit Auto-Reset for ${this.formatQuizName(quizName)}</h3>
+                <form id="edit-auto-reset-form">
+                    <div class="form-group">
+                        <label>Reset Period:</label>
+                        <select id="edit-reset-period">
+                            <option value="daily" ${settings.resetPeriod === 'daily' ? 'selected' : ''}>Daily</option>
+                            <option value="weekly" ${settings.resetPeriod === 'weekly' ? 'selected' : ''}>Weekly</option>
+                            <option value="monthly" ${settings.resetPeriod === 'monthly' ? 'selected' : ''}>Monthly</option>
+                        </select>
+                    </div>
+                    <button type="submit" class="action-button">Save Changes</button>
+                </form>
+            </div>
+        `;
+        
+        // Add to the page
+        document.body.appendChild(modal);
+        
+        // Setup event listeners
+        modal.querySelector('.close-modal').addEventListener('click', () => {
+            modal.remove();
+        });
+        
+        modal.querySelector('#edit-auto-reset-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const resetPeriod = modal.querySelector('#edit-reset-period').value;
+            
+            try {
+                // Update the auto reset settings
+                await this.saveAutoResetSetting(quizName, resetPeriod);
+                
+                // Close the modal
+                modal.remove();
+            } catch (error) {
+                console.error('Error saving auto-reset settings:', error);
+                this.showInfo(`Failed to save auto-reset settings: ${error.message}`, 'error');
+            }
+        });
+    }
+    
+    // Delete an auto reset setting
+    async deleteAutoResetSetting(quizName) {
+        try {
+            const confirmed = confirm(`Are you sure you want to delete the auto-reset setting for ${this.formatQuizName(quizName)}?`);
+            if (!confirmed) return;
+            
+            const response = await this.apiService.deleteAutoResetSetting(quizName);
+            
+            if (response.success) {
+                // Remove from local settings
+                if (this.autoResetSettings && this.autoResetSettings[quizName]) {
+                    delete this.autoResetSettings[quizName];
+                }
+                
+                // Update the display
+                this.displayAutoResetSettings();
+                
+                // Show success message
+                this.showInfo(`Auto-reset setting for ${quizName} deleted`);
+            } else {
+                throw new Error(response.error || 'Unknown error');
+            }
+        } catch (error) {
+            console.error('Error deleting auto-reset setting:', error);
+            this.showInfo(`Failed to delete auto-reset setting: ${error.message}`, 'error');
+        }
+    }
+
+    // Save auto reset setting for a quiz
+    async saveAutoResetSetting(quizName, resetPeriod) {
+        try {
+            // Call the API to save the setting
+            const response = await this.apiService.saveAutoResetSetting(quizName, resetPeriod);
+            
+            if (response.success) {
+                // Update local settings
+                if (!this.autoResetSettings) {
+                    this.autoResetSettings = {};
+                }
+                
+                // Store the updated settings
+                this.autoResetSettings[quizName] = response.data || { 
+                    resetPeriod, 
+                    nextResetTime: this.calculateNextResetTime(resetPeriod) 
+                };
+                
+                // Update the UI
+                this.displayAutoResetSettings();
+                
+                // Show success message
+                this.showInfo(`Auto-reset for ${quizName} ${response.data ? 'updated' : 'enabled'}`);
+                
+                return response.data;
+            } else {
+                throw new Error(response.error || 'Unknown error');
+            }
+        } catch (error) {
+            console.error('Error saving auto-reset setting:', error);
+            this.showInfo(`Failed to save auto-reset setting: ${error.message}`, 'error');
+            throw error;
+        }
+    }
+    
+    // Calculate the next reset time based on the period
+    calculateNextResetTime(resetPeriod) {
+        const now = new Date();
+        let nextReset = new Date(now);
+        
+        // Reset time to midnight
+        nextReset.setHours(0, 0, 0, 0);
+        
+        switch (resetPeriod) {
+            case 'daily':
+                // Next day at midnight
+                nextReset.setDate(nextReset.getDate() + 1);
+                break;
+            case 'weekly':
+                // Next Sunday at midnight
+                nextReset.setDate(nextReset.getDate() + (7 - nextReset.getDay()));
+                break;
+            case 'monthly':
+                // First day of next month
+                nextReset.setMonth(nextReset.getMonth() + 1);
+                nextReset.setDate(1);
+                break;
+            default:
+                // Default to daily
+                nextReset.setDate(nextReset.getDate() + 1);
+        }
+        
+        return nextReset.toISOString();
     }
 }
 
