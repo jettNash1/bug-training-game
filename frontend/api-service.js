@@ -2135,4 +2135,23 @@ export class APIService {
             return { success: false, message: error.message };
         }
     }
+
+    async getUserQuizProgress(username, quizName) {
+        try {
+            console.log(`Getting progress for ${username}'s ${quizName} quiz`);
+            const response = await this.fetchWithAdminAuth(
+                `${this.baseUrl}/admin/users/${encodeURIComponent(username)}/quiz-progress/${encodeURIComponent(quizName)}`
+            );
+            
+            if (response.success) {
+                console.log(`Successfully got progress for ${username}'s ${quizName} quiz:`, response.data);
+                return response;
+            } else {
+                throw new Error(response.message || 'Failed to get quiz progress');
+            }
+        } catch (error) {
+            console.error(`Error getting progress for ${username}'s ${quizName} quiz:`, error);
+            return { success: false, message: error.message };
+        }
+    }
 } 
