@@ -651,7 +651,7 @@ class IndexPage {
                         position: relative;
                         display: flex;
                         flex-direction: column;
-                        padding: 20px;
+                        padding: 16px;
                         min-height: 140px;
                     }
                     .quiz-item .quiz-info {
@@ -660,31 +660,30 @@ class IndexPage {
                         flex-direction: column;
                     }
                     .quiz-item .quiz-info > div:first-child {
-                        display: flex;
+                        display: inline-flex;
                         align-items: center;
-                        gap: 12px;
+                        gap: 8px;
                         margin-bottom: 8px;
                     }
                     .quiz-item .quiz-icon {
-                        font-size: 1.8em;
+                        font-size: 1.5em;
                         line-height: 1;
                         flex-shrink: 0;
-                        width: 1.8em;
-                        height: 1.8em;
-                        display: flex;
+                        display: inline-flex;
                         align-items: center;
-                        justify-content: center;
                     }
                     .quiz-item .quiz-title {
-                        font-size: 1.4em;
+                        font-size: 1.25em;
                         font-weight: 600;
-                        line-height: 1.2;
+                        line-height: 1;
                         color: #2c3e50;
+                        display: inline-flex;
+                        align-items: center;
                     }
                     .quiz-item .quiz-description {
-                        margin-top: 4px;
+                        margin-top: 6px;
                         margin-bottom: 12px;
-                        padding-left: calc(2.8em); /* Icon width (1.8em) + gap (12px) */
+                        padding-left: 32px; /* Fixed padding for description */
                         color: #666;
                         font-size: 0.95em;
                         line-height: 1.4;
