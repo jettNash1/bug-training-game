@@ -1832,50 +1832,50 @@ export class Admin2Dashboard extends AdminDashboard {
                                         quizResult?.questionHistory?.length ||
                                         quizProgress?.questionsAnswered || 
                                         quizProgress?.questionHistory?.length || 0;
-                    const experience = quizResult?.experience || quizProgress?.experience || 0;
-                    const score = quizResult?.score || 0;
-                    const lastActive = quizResult?.completedAt || quizResult?.lastActive || quizProgress?.lastUpdated || 'Never';
-                    
-                    const status = questionsAnswered === 15 ? 'Completed' : 
+                const experience = quizResult?.experience || quizProgress?.experience || 0;
+                const score = quizResult?.score || 0;
+                const lastActive = quizResult?.completedAt || quizResult?.lastActive || quizProgress?.lastUpdated || 'Never';
+                
+                const status = questionsAnswered === 15 ? 'Completed' : 
                                 questionsAnswered > 0 ? 'In Progress' : 
                                 'Not Started';
-                    
-                    // Determine background color based on XP and status
-                    let backgroundColor = '#f5f5f5'; // Default gray for not started
-                    if (questionsAnswered > 0) {
-                        if (questionsAnswered === 15) {
-                            // All questions completed
-                            if (experience >= 300 || score >= 100) {
-                                backgroundColor = '#e8f5e9'; // Light green for perfect score (300/300 or 100%)
-                            } else {
-                                backgroundColor = '#fff3e0'; // Light yellow for completed but not perfect score
-                            }
+                
+                // Determine background color based on XP and status
+                let backgroundColor = '#f5f5f5'; // Default gray for not started
+                if (questionsAnswered > 0) {
+                    if (questionsAnswered === 15) {
+                        // All questions completed
+                        if (experience >= 300 || score >= 100) {
+                            backgroundColor = '#e8f5e9'; // Light green for perfect score (300/300 or 100%)
                         } else {
-                            // Not all questions completed
-                            if (experience >= 235) {
-                                backgroundColor = '#fff3e0'; // Light yellow for pass (≥235/300)
-                            } else {
-                                backgroundColor = '#ffebee'; // Light red for fail (<235/300)
-                            }
+                            backgroundColor = '#fff3e0'; // Light yellow for completed but not perfect score
+                        }
+                    } else {
+                        // Not all questions completed
+                        if (experience >= 235) {
+                            backgroundColor = '#fff3e0'; // Light yellow for pass (≥235/300)
+                        } else {
+                            backgroundColor = '#ffebee'; // Light red for fail (<235/300)
                         }
                     }
-                    
-                    // Determine quiz status class
-                    let statusClass = 'not-started';
-                    if (questionsAnswered === 15) {
-                        if (experience >= 300 || score >= 100) {
-                            statusClass = 'completed-perfect'; // Perfect score
-                } else {
-                            statusClass = 'completed-partial'; // Completed but not perfect
-                        }
-                    } else if (questionsAnswered > 0) {
-                        statusClass = 'in-progress';
                 }
-                    
-                    // Create quiz card
-                    const quizCard = document.createElement('div');
-                    quizCard.className = `quiz-progress-item ${statusClass}`;
-                    quizCard.style.backgroundColor = backgroundColor;
+                
+                // Determine quiz status class
+                let statusClass = 'not-started';
+                if (questionsAnswered === 15) {
+                    if (experience >= 300 || score >= 100) {
+                        statusClass = 'completed-perfect'; // Perfect score
+                } else {
+                        statusClass = 'completed-partial'; // Completed but not perfect
+                    }
+                } else if (questionsAnswered > 0) {
+                    statusClass = 'in-progress';
+                }
+                
+                // Create quiz card
+                const quizCard = document.createElement('div');
+                quizCard.className = `quiz-progress-item ${statusClass}`;
+                quizCard.style.backgroundColor = backgroundColor;
                 
                 quizCard.innerHTML = `
                     <h4>${this.formatQuizName(quizType)}</h4>
@@ -3139,27 +3139,56 @@ export class Admin2Dashboard extends AdminDashboard {
                                 const users = allUsersResponse.data || [];
                                 console.log(`Checking ${users.length} users for completed ${setting.quizName} quizzes`);
                                 
+                                // Debug: Log all usernames
+                                const usernames = users.map(user => user.username);
+                                console.log(`All users: ${usernames.join(', ')}`);
+                                
                                 // Manual check for users who have completed the quiz
                                 const completedUsers = [];
+                                const skippedUsers = [];
+                                
                                 for (const user of users) {
                                     try {
+                                        console.log(`Checking user ${user.username} for completed ${setting.quizName} quiz`);
+                                        
                                         // First check quizResults (primary source of completed quizzes)
                                         if (user.quizResults && Array.isArray(user.quizResults)) {
-                                            const quizResult = user.quizResults.find(r => 
-                                                r.quizName && r.quizName.toLowerCase() === setting.quizName.toLowerCase());
+                                            console.log(`${user.username} has ${user.quizResults.length} quiz results`);
                                             
-                                            if (quizResult && quizResult.questionsAnswered >= 15) {
-                                                console.log(`User ${user.username} has completed ${setting.quizName} quiz (from quizResults)`);
-                                                completedUsers.push(user.username);
-                                                continue; // Skip progress check if we already found completion
+                                            // Log all quiz results for easier debugging
+                                            user.quizResults.forEach(result => {
+                                                console.log(`${user.username} has result for ${result.quizName}: questions=${result.questionsAnswered}, score=${result.score}`);
+                                            });
+                                            
+                                            // More robust comparison - normalize both strings
+                                            const normalizedQuizName = setting.quizName.toLowerCase().trim();
+                                            const quizResult = user.quizResults.find(r => 
+                                                r.quizName && r.quizName.toLowerCase().trim() === normalizedQuizName);
+                                            
+                                            if (quizResult) {
+                                                console.log(`${user.username} has result for ${setting.quizName}: questions=${quizResult.questionsAnswered}, score=${quizResult.score}`);
+                                                
+                                                if (quizResult.questionsAnswered >= 15) {
+                                                    console.log(`User ${user.username} has completed ${setting.quizName} quiz (from quizResults) with ${quizResult.questionsAnswered} questions`);
+                                                    completedUsers.push(user.username);
+                                                    continue; // Skip progress check if we already found completion
+                                                } else {
+                                                    console.log(`User ${user.username} has NOT completed ${setting.quizName} quiz (from quizResults), only ${quizResult.questionsAnswered} questions`);
+                                                }
+                                            } else {
+                                                console.log(`User ${user.username} has no result for ${setting.quizName} in quizResults`);
                                             }
+                                        } else {
+                                            console.log(`User ${user.username} has no quizResults array`);
                                         }
                                         
                                         // Fallback to checking quizProgress if no result found
+                                        console.log(`Checking quizProgress for ${user.username}`);
                                         const progressResponse = await this.apiService.getUserQuizProgress(user.username, setting.quizName);
                                         
                                         if (progressResponse.success && progressResponse.data) {
                                             const progress = progressResponse.data;
+                                            console.log(`${user.username} quizProgress data:`, progress);
                                             
                                             // Check if user has completed all 15 questions - ONLY check question count
                                             const isCompleted = progress.questionsAnswered >= 15 || 
@@ -3168,39 +3197,54 @@ export class Admin2Dashboard extends AdminDashboard {
                                             if (isCompleted) {
                                                 console.log(`User ${user.username} has completed ${setting.quizName} quiz (from quizProgress)`);
                                                 completedUsers.push(user.username);
+                                            } else {
+                                                console.log(`User ${user.username} has NOT completed ${setting.quizName} quiz (from quizProgress)`);
+                                                skippedUsers.push(user.username);
                                             }
+                                        } else {
+                                            console.log(`No progress data found for ${user.username} on ${setting.quizName}`);
+                                            skippedUsers.push(user.username);
                                         }
                                     } catch (userError) {
                                         console.error(`Error checking progress for user ${user.username}:`, userError);
+                                        skippedUsers.push(user.username);
                                     }
                                 }
                                 
-                                console.log(`Found ${completedUsers.length} users who completed ${setting.quizName} quiz`);
+                                console.log(`Found ${completedUsers.length} users who completed ${setting.quizName} quiz: ${completedUsers.join(', ')}`);
+                                console.log(`Skipped ${skippedUsers.length} users who haven't completed ${setting.quizName} quiz: ${skippedUsers.join(', ')}`);
                                 
-                                if (completedUsers.length > 0) {
-                                    // Process resets for each user
-                                    let processedCount = 0;
-                                    for (const username of completedUsers) {
-                                        try {
-                                            // Call API to reset this user's quiz
-                                            const resetResponse = await this.apiService.resetQuizProgress(username, setting.quizName);
-                                            
-                                            if (resetResponse.success) {
-                                                processedCount++;
-                                                console.log(`Reset ${username}'s ${setting.quizName} quiz`);
-                                            }
-                                        } catch (resetError) {
-                                            console.error(`Error resetting quiz for ${username}:`, resetError);
+                                if (completedUsers.length === 0) {
+                                    this.showInfo(`No users have completed the ${this.formatQuizName(setting.quizName)} quiz`);
+                                    return;
+                                }
+                                
+                                this.showInfo(`Processing reset for ${completedUsers.length} users...`);
+                                
+                                // Reset each user's quiz
+                                let successCount = 0;
+                                for (const username of completedUsers) {
+                                    try {
+                                        // Reset the quiz progress
+                                        const resetResponse = await this.apiService.resetQuizProgress(username, setting.quizName);
+                                        
+                                        if (resetResponse.success) {
+                                            successCount++;
+                                            console.log(`Reset ${username}'s ${setting.quizName} quiz`);
+                                        } else {
+                                            console.error(`Failed to reset ${username}'s ${setting.quizName} quiz:`, resetResponse.message);
                                         }
+                                    } catch (error) {
+                                        console.error(`Error resetting ${username}'s ${setting.quizName} quiz:`, error);
                                     }
-                                    
-                                    console.log(`Reset ${processedCount} out of ${completedUsers.length} users for quiz ${setting.quizName}`);
-                                    autoResetProcessed += processedCount;
-                                    
-                                    // Update lastReset time
-                                    await this.apiService.updateAutoResetLastResetTime(setting.quizName);
-                                    
-                                    // Calculate and update next reset time
+                                }
+                                
+                                // Update lastReset time for the auto-reset setting
+                                await this.apiService.updateAutoResetLastResetTime(setting.quizName);
+                                
+                                // Calculate and update next reset time
+                                const setting = this.autoResetSettings[setting.quizName];
+                                if (setting) {
                                     const newNextResetTime = this.calculateNextResetTime(setting.resetPeriod);
                                     await this.apiService.saveAutoResetSetting(
                                         setting.quizName, 
@@ -3210,9 +3254,14 @@ export class Admin2Dashboard extends AdminDashboard {
                                     );
                                     
                                     console.log(`Updated next reset time for ${setting.quizName} to ${newNextResetTime}`);
-                                } else {
-                                    console.log(`No users have completed ${setting.quizName} quiz, skipping reset`);
                                 }
+                                
+                                // Reload settings to update the UI
+                                await this.loadAutoResetSettings();
+                                
+                                // Show success message
+                                this.showSuccess(`Successfully reset ${successCount} out of ${completedUsers.length} users for the ${this.formatQuizName(setting.quizName)} quiz`);
+                                
                             } catch (error) {
                                 console.error(`Error processing auto-reset for ${setting.quizName}:`, error);
                             }
@@ -4354,28 +4403,76 @@ export class Admin2Dashboard extends AdminDashboard {
             const users = usersResponse.data || [];
             console.log(`Checking ${users.length} users for completed ${quizName} quizzes`);
             
+            // Debug: Specifically check for TestUser4
+            const testUser4 = users.find(user => user.username === 'TestUser4');
+            if (testUser4) {
+                console.log('Found TestUser4:', JSON.stringify(testUser4, null, 2));
+                
+                if (testUser4.quizResults) {
+                    console.log('TestUser4 quiz results:', JSON.stringify(testUser4.quizResults, null, 2));
+                } else {
+                    console.log('TestUser4 has no quiz results array');
+                }
+                
+                if (testUser4.quizProgress) {
+                    console.log('TestUser4 quiz progress:', JSON.stringify(testUser4.quizProgress, null, 2));
+                } else {
+                    console.log('TestUser4 has no quiz progress data');
+                }
+            } else {
+                console.log('TestUser4 not found in users list');
+            }
+            
+            // Debug: Log all usernames
+            const usernames = users.map(user => user.username);
+            console.log(`All users: ${usernames.join(', ')}`);
+            
             // Find users who have completed this quiz
             const completedUsers = [];
+            const skippedUsers = [];
             
             for (const user of users) {
                 try {
+                    console.log(`Checking user ${user.username} for completed ${quizName} quiz`);
+                    
                     // First check quizResults (primary source of completed quizzes)
                     if (user.quizResults && Array.isArray(user.quizResults)) {
-                        const quizResult = user.quizResults.find(r => 
-                            r.quizName && r.quizName.toLowerCase() === quizName.toLowerCase());
+                        console.log(`${user.username} has ${user.quizResults.length} quiz results`);
                         
-                        if (quizResult && quizResult.questionsAnswered >= 15) {
-                            console.log(`User ${user.username} has completed ${quizName} quiz (from quizResults)`);
-                            completedUsers.push(user.username);
-                            continue; // Skip progress check if we already found completion
+                        // Log all quiz results for easier debugging
+                        user.quizResults.forEach(result => {
+                            console.log(`${user.username} has result for ${result.quizName}: questions=${result.questionsAnswered}, score=${result.score}`);
+                        });
+                        
+                        // More robust comparison - normalize both strings
+                        const normalizedQuizName = quizName.toLowerCase().trim();
+                        const quizResult = user.quizResults.find(r => 
+                            r.quizName && r.quizName.toLowerCase().trim() === normalizedQuizName);
+                        
+                        if (quizResult) {
+                            console.log(`${user.username} has result for ${quizName}: questions=${quizResult.questionsAnswered}, score=${quizResult.score}`);
+                            
+                            if (quizResult.questionsAnswered >= 15) {
+                                console.log(`User ${user.username} has completed ${quizName} quiz (from quizResults) with ${quizResult.questionsAnswered} questions`);
+                                completedUsers.push(user.username);
+                                continue; // Skip progress check if we already found completion
+                            } else {
+                                console.log(`User ${user.username} has NOT completed ${quizName} quiz (from quizResults), only ${quizResult.questionsAnswered} questions`);
+                            }
+                        } else {
+                            console.log(`User ${user.username} has no result for ${quizName} in quizResults`);
                         }
+                    } else {
+                        console.log(`User ${user.username} has no quizResults array`);
                     }
                     
                     // Fallback to checking quizProgress if no result found
+                    console.log(`Checking quizProgress for ${user.username}`);
                     const progressResponse = await this.apiService.getUserQuizProgress(user.username, quizName);
                     
                     if (progressResponse.success && progressResponse.data) {
                         const progress = progressResponse.data;
+                        console.log(`${user.username} quizProgress data:`, progress);
                         
                         // Check if user has completed the quiz - ONLY check question count
                         const isCompleted = progress.questionsAnswered >= 15 || 
@@ -4384,14 +4481,22 @@ export class Admin2Dashboard extends AdminDashboard {
                         if (isCompleted) {
                             console.log(`User ${user.username} has completed ${quizName} quiz (from quizProgress)`);
                             completedUsers.push(user.username);
+                        } else {
+                            console.log(`User ${user.username} has NOT completed ${quizName} quiz (from quizProgress)`);
+                            skippedUsers.push(user.username);
                         }
+                    } else {
+                        console.log(`No progress data found for ${user.username} on ${quizName}`);
+                        skippedUsers.push(user.username);
                     }
                 } catch (error) {
                     console.error(`Error checking progress for user ${user.username}:`, error);
+                    skippedUsers.push(user.username);
                 }
             }
             
-            console.log(`Found ${completedUsers.length} users who completed ${quizName} quiz`);
+            console.log(`Found ${completedUsers.length} users who completed ${quizName} quiz: ${completedUsers.join(', ')}`);
+            console.log(`Skipped ${skippedUsers.length} users who haven't completed ${quizName} quiz: ${skippedUsers.join(', ')}`);
             
             if (completedUsers.length === 0) {
                 this.showInfo(`No users have completed the ${this.formatQuizName(quizName)} quiz`);
