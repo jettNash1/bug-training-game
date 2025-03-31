@@ -1574,6 +1574,48 @@ router.delete('/auto-resets/:quizName', auth, async (req, res) => {
     }
 });
 
+// Endpoint to update the lastReset field for an auto-reset setting
+router.post('/auto-resets/:quizName/update-last-reset', auth, async (req, res) => {
+    try {
+        // Verify admin status
+        if (!req.user.isAdmin) {
+            return res.status(403).json({
+                success: false,
+                message: 'Admin access required'
+            });
+        }
+
+        const { quizName } = req.params;
+        
+        // Update the lastReset field to current time
+        const autoReset = await AutoReset.findOneAndUpdate(
+            { quizName },
+            { lastReset: new Date() },
+            { new: true }
+        );
+        
+        if (!autoReset) {
+            return res.status(404).json({
+                success: false,
+                message: 'Auto-reset setting not found'
+            });
+        }
+        
+        res.json({
+            success: true,
+            message: 'Last reset time updated successfully',
+            data: autoReset
+        });
+    } catch (error) {
+        console.error('Error updating last reset time:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Failed to update last reset time',
+            error: error.message
+        });
+    }
+});
+
 // Get all users who have completed a quiz
 router.get('/completed-users/:quizName', auth, async (req, res) => {
     try {

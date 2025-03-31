@@ -1574,24 +1574,30 @@ export class APIService {
     
     async checkAndProcessScheduledResets() {
         try {
-            console.log('Checking for scheduled resets that need to be executed');
+            console.log('Checking scheduled resets');
             
-            // Get all scheduled resets
+            // First, get all scheduled resets
             const response = await this.getScheduledResets();
+            const schedules = response.data || [];
             
-            if (!response.success) {
-                throw new Error(response.message || 'Failed to fetch scheduled resets');
+            if (!schedules.length) {
+                console.log('No scheduled resets found');
+                return { success: true, processed: 0, total: 0 };
             }
             
-            const schedules = response.data || [];
-            const now = new Date();
+            console.log(`Found ${schedules.length} scheduled resets`);
+            
+            // Keep track of which schedule IDs were processed
             const processedIds = [];
+            // Keep track of which quiz names were reset
+            const processedQuizzes = new Set();
             
-            console.log(`Found ${schedules.length} scheduled resets to check`);
+            const now = new Date();
             
+            // Process each scheduled reset
             for (const schedule of schedules) {
+                // Convert reset time string to Date object
                 const resetTime = new Date(schedule.resetDateTime);
-                console.log(`Checking schedule for ${schedule.username}'s ${schedule.quizName} quiz, reset time: ${resetTime}`);
                 
                 // If the reset time has passed
                 if (resetTime <= now) {
@@ -1609,6 +1615,7 @@ export class APIService {
                         if (resetResponse.success) {
                             console.log(`Successfully reset ${schedule.username}'s ${schedule.quizName} quiz`);
                             processedIds.push(schedule.id);
+                            processedQuizzes.add(schedule.quizName);
                             
                             // Also reset quiz scores
                             try {
@@ -1638,6 +1645,16 @@ export class APIService {
                     }
                 } else {
                     console.log(`Schedule for ${schedule.username}'s ${schedule.quizName} quiz is not due yet. Next reset at ${resetTime}`);
+                }
+            }
+            
+            // Update lastReset field for all processed quizzes
+            for (const quizName of processedQuizzes) {
+                try {
+                    await this.updateAutoResetLastResetTime(quizName);
+                    console.log(`Updated lastReset time for quiz: ${quizName}`);
+                } catch (error) {
+                    console.error(`Failed to update lastReset time for quiz ${quizName}:`, error);
                 }
             }
             
@@ -2067,6 +2084,25 @@ export class APIService {
             return { success: response.ok, data, message: data.message };
         } catch (error) {
             console.error('Error getting completed users:', error);
+            return { success: false, message: error.message };
+        }
+    }
+
+    async updateAutoResetLastResetTime(quizName) {
+        try {
+            console.log(`Updating lastReset time for quiz: ${quizName}`);
+            const response = await this.fetchWithAdminAuth(`${this.baseUrl}/admin/auto-resets/${encodeURIComponent(quizName)}/update-last-reset`, {
+                method: 'POST'
+            });
+            
+            if (response.success) {
+                console.log('Successfully updated lastReset time:', response);
+                return response;
+            } else {
+                throw new Error(response.message || 'Failed to update lastReset time');
+            }
+        } catch (error) {
+            console.error('Error updating lastReset time:', error);
             return { success: false, message: error.message };
         }
     }
