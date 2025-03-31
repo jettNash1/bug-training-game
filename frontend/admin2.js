@@ -3868,34 +3868,47 @@ export class Admin2Dashboard extends AdminDashboard {
 
     async toggleAutoReset(quizName, enabled) {
         try {
-            const setting = this.autoResetSettings.find(s => s.quizName === quizName);
-            if (!setting) return;
+            console.log(`Toggling auto-reset for ${quizName} to ${enabled}`);
+            const setting = (await this.apiService.getAutoResetSettings()).data
+                .find(s => s.quizName === quizName);
+            
+            if (!setting) {
+                this.showErrorMessage('Auto-reset setting not found');
+                return;
+            }
 
-            const response = await this.apiService.saveAutoResetSetting(quizName, setting.resetPeriod, enabled);
+            const response = await this.apiService.saveAutoResetSetting(
+                quizName,
+                setting.resetPeriod,
+                enabled
+            );
+
             if (response.success) {
-                this.showSuccess(`Auto-reset ${enabled ? 'enabled' : 'disabled'} for ${this.formatQuizName(quizName)}`);
-                await this.loadAutoResetSettings(); // Reload settings
+                await this.displayCurrentAutoResets(); // Refresh the display
+                this.showInfo(`Auto-reset for ${quizName} ${enabled ? 'enabled' : 'disabled'}`);
             } else {
-                throw new Error(response.message || 'Failed to update auto-reset setting');
+                this.showErrorMessage('Failed to update auto-reset setting');
             }
         } catch (error) {
             console.error('Error toggling auto-reset:', error);
-            this.showError(`Failed to ${enabled ? 'enable' : 'disable'} auto-reset: ${error.message}`);
+            this.showErrorMessage('Failed to toggle auto-reset setting');
         }
     }
 
     async deleteAutoReset(quizName) {
         try {
+            console.log(`Deleting auto-reset for ${quizName}`);
             const response = await this.apiService.deleteAutoResetSetting(quizName);
+
             if (response.success) {
-                this.showSuccess(`Auto-reset deleted for ${this.formatQuizName(quizName)}`);
-                await this.loadAutoResetSettings(); // Reload settings
+                await this.displayCurrentAutoResets(); // Refresh the display
+                this.showInfo(`Auto-reset setting for ${quizName} deleted`);
             } else {
-                throw new Error(response.message || 'Failed to delete auto-reset setting');
+                this.showErrorMessage('Failed to delete auto-reset setting');
             }
         } catch (error) {
             console.error('Error deleting auto-reset:', error);
-            this.showError(`Failed to delete auto-reset: ${error.message}`);
+            this.showErrorMessage('Failed to delete auto-reset setting');
         }
     }
 }
