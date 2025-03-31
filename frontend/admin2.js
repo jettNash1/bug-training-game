@@ -3755,52 +3755,37 @@ export class Admin2Dashboard extends AdminDashboard {
             container.innerHTML = '';
 
             if (!settings || settings.length === 0) {
-                container.innerHTML = '<p>No auto-reset settings configured yet.</p>';
+                container.innerHTML = '<p class="no-items-message">No auto-reset settings configured yet.</p>';
                 return;
             }
 
             settings.forEach(setting => {
                 const nextReset = this.calculateNextResetTime(setting);
                 const item = document.createElement('div');
-                item.className = 'auto-reset-item';
-                
-                // Format the countdown display
-                let countdownDisplay = 'N/A';
-                if (nextReset) {
-                    const now = new Date();
-                    const resetTime = new Date(nextReset);
-                    const timeDiff = resetTime - now;
-                    
-                    if (timeDiff > 0) {
-                        const days = Math.floor(timeDiff / (1000 * 60 * 60 * 24));
-                        const hours = Math.floor((timeDiff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-                        const minutes = Math.floor((timeDiff % (1000 * 60 * 60)) / (1000 * 60));
-                        const seconds = Math.floor((timeDiff % (1000 * 60)) / 1000);
-
-                        countdownDisplay = 'Next reset in: ';
-                        if (days > 0) countdownDisplay += `${days}d `;
-                        if (hours > 0) countdownDisplay += `${hours}h `;
-                        if (minutes > 0) countdownDisplay += `${minutes}m `;
-                        countdownDisplay += `${seconds}s`;
-                    } else {
-                        countdownDisplay = 'Next reset: Pending';
-                    }
-                }
+                item.className = 'scheduled-item'; // Use same class as scheduled resets for consistency
 
                 item.innerHTML = `
-                    <div class="auto-reset-info">
-                        <h4>${this.formatQuizName(setting.quizName)}</h4>
-                        <p>Reset Period: ${this.getPeriodLabel(setting.resetPeriod)}</p>
-                        <p>Status: ${setting.enabled ? 'Enabled' : 'Disabled'}</p>
-                        <p class="auto-reset-countdown" data-quiz="${setting.quizName}">
-                            ${countdownDisplay}
-                        </p>
+                    <div class="scheduled-info">
+                        <span class="scheduled-quiz">${this.formatQuizName(setting.quizName)}</span>
+                        <div class="scheduled-details">
+                            <span>Reset Period: ${this.getPeriodLabel(setting.resetPeriod)}</span>
+                            <span class="status-badge ${setting.enabled ? 'enabled' : 'disabled'}">
+                                ${setting.enabled ? 'Enabled' : 'Disabled'}
+                            </span>
+                        </div>
+                        <div id="countdown-${setting.quizName}" class="scheduled-time auto-reset-countdown" data-quiz="${setting.quizName}">
+                            Calculating next reset...
+                        </div>
                     </div>
-                    <div class="auto-reset-actions">
-                        <button class="toggle-auto-reset" data-quiz="${setting.quizName}" data-enabled="${setting.enabled}">
+                    <div class="scheduled-actions">
+                        <button class="toggle-auto-reset action-button ${setting.enabled ? 'secondary' : 'primary'}" 
+                                data-quiz="${setting.quizName}" 
+                                data-enabled="${setting.enabled}">
                             ${setting.enabled ? 'Disable' : 'Enable'}
                         </button>
-                        <button class="delete-auto-reset" data-quiz="${setting.quizName}">Delete</button>
+                        <button class="delete-auto-reset action-button danger-btn" data-quiz="${setting.quizName}">
+                            Delete
+                        </button>
                     </div>
                 `;
 
@@ -3812,38 +3797,19 @@ export class Admin2Dashboard extends AdminDashboard {
 
                 toggleBtn.addEventListener('click', () => this.toggleAutoReset(setting.quizName, !setting.enabled));
                 deleteBtn.addEventListener('click', () => this.deleteAutoReset(setting.quizName));
+
+                // Update countdown immediately
+                this.updateCountdownDisplay(`countdown-${setting.quizName}`, nextReset);
             });
 
-            // Start countdown updates
-            this.startCountdownUpdates();
+            // Start countdown updates if not already started
+            if (!this.countdownInterval) {
+                this.startCountdownUpdates();
+            }
         } catch (error) {
             console.error('Error displaying auto-reset settings:', error);
             container.innerHTML = `<p class="error">Error displaying auto-reset settings: ${error.message}</p>`;
         }
-    }
-
-    calculateNextResetTime(setting) {
-        if (!setting.enabled) return null;
-        
-        const now = new Date();
-        const lastReset = setting.lastReset ? new Date(setting.lastReset) : new Date(0);
-        
-        // If there's no last reset or it's too old, schedule from now
-        if (!setting.lastReset || lastReset < new Date(0)) {
-            return new Date(now.getTime() + (setting.resetPeriod * 60 * 1000));
-        }
-        
-        // Calculate next reset based on last reset time
-        const nextReset = new Date(lastReset.getTime() + (setting.resetPeriod * 60 * 1000));
-        
-        // If next reset is in the past, calculate the next occurrence from now
-        if (nextReset < now) {
-            const timeSinceLastReset = now - lastReset;
-            const periodsSinceLastReset = Math.ceil(timeSinceLastReset / (setting.resetPeriod * 60 * 1000));
-            return new Date(now.getTime() + (setting.resetPeriod * 60 * 1000));
-        }
-        
-        return nextReset;
     }
 
     startCountdownUpdates() {
@@ -3852,79 +3818,141 @@ export class Admin2Dashboard extends AdminDashboard {
             clearInterval(this.countdownInterval);
         }
 
-        // Update countdowns every second
+        // Update all countdowns every second
         this.countdownInterval = setInterval(() => {
-            this.updateCountdowns();
+            const response = this.apiService.getAutoResetSettings().then(response => {
+                if (response.success && response.data) {
+                    response.data.forEach(setting => {
+                        const nextReset = this.calculateNextResetTime(setting);
+                        this.updateCountdownDisplay(`countdown-${setting.quizName}`, nextReset);
+                    });
+                }
+            }).catch(error => {
+                console.error('Error updating countdowns:', error);
+            });
         }, 1000);
     }
 
-    updateCountdowns() {
-        const countdowns = document.querySelectorAll('.auto-reset-countdown');
-        
-        countdowns.forEach(countdown => {
-            const quizName = countdown.dataset.quiz;
-            const nextResetTime = new Date(countdown.dataset.nextReset);
-            const now = new Date();
-            const timeLeft = nextResetTime - now;
+    calculateNextResetTime(setting) {
+        if (!setting.enabled) return null;
 
-            if (timeLeft <= 0) {
-                // Reset has occurred, recalculate next reset time
-                const setting = this.autoResetSettings.find(s => s.quizName === quizName);
-                if (setting) {
-                    const newNextReset = this.calculateNextResetTime(setting);
-                    countdown.dataset.nextReset = newNextReset;
-                    this.updateCountdownDisplay(countdown, newNextReset);
+        // Get all completed users for this quiz
+        return this.apiService.getCompletedUsers(setting.quizName)
+            .then(response => {
+                if (!response.success || !response.data || response.data.length === 0) {
+                    return null;
                 }
-            } else {
-                this.updateCountdownDisplay(countdown, nextResetTime);
+
+                // Calculate next reset time based on the most recent completion
+                const now = new Date();
+                const resetPeriodMs = setting.resetPeriod * 60 * 1000; // Convert minutes to milliseconds
+                
+                // If we have completion times, use those to calculate next reset
+                if (response.data.completionTimes && response.data.completionTimes.length > 0) {
+                    const lastCompletion = new Date(Math.max(...response.data.completionTimes.map(t => new Date(t))));
+                    const nextReset = new Date(lastCompletion.getTime() + resetPeriodMs);
+                    return nextReset > now ? nextReset : new Date(now.getTime() + resetPeriodMs);
+                }
+
+                // If no completion times but users have completed, schedule from now
+                return new Date(now.getTime() + resetPeriodMs);
+            })
+            .catch(error => {
+                console.error('Error calculating next reset time:', error);
+                return null;
+            });
+    }
+
+    // Add styles to match scheduled resets
+    addAutoResetStyles() {
+        const style = document.createElement('style');
+        style.textContent = `
+            .scheduled-item {
+                margin-bottom: 1rem;
+                background-color: #f9f9f9;
+                border: 1px solid #eee;
+                border-radius: 4px;
+                padding: 1rem;
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
             }
-        });
+
+            .scheduled-info {
+                flex: 1;
+            }
+
+            .scheduled-quiz {
+                font-weight: 600;
+                color: #2c3e50;
+                display: block;
+                margin-bottom: 0.5rem;
+            }
+
+            .scheduled-details {
+                display: flex;
+                gap: 1rem;
+                margin-bottom: 0.5rem;
+            }
+
+            .scheduled-time {
+                color: #7f8c8d;
+                font-size: 0.9rem;
+            }
+
+            .status-badge {
+                padding: 0.25rem 0.5rem;
+                border-radius: 4px;
+                font-size: 0.85rem;
+                font-weight: 500;
+            }
+
+            .status-badge.enabled {
+                background-color: #28a745;
+                color: white;
+            }
+
+            .status-badge.disabled {
+                background-color: #dc3545;
+                color: white;
+            }
+
+            .scheduled-actions {
+                display: flex;
+                gap: 0.5rem;
+            }
+
+            .action-button {
+                padding: 0.5rem 0.75rem;
+                border: none;
+                border-radius: 4px;
+                cursor: pointer;
+                font-weight: 500;
+                transition: background-color 0.2s;
+            }
+
+            .action-button.primary {
+                background-color: #3498db;
+                color: white;
+            }
+
+            .action-button.secondary {
+                background-color: #6c757d;
+                color: white;
+            }
+
+            .action-button.danger-btn {
+                background-color: #dc3545;
+                color: white;
+            }
+        `;
+        document.head.appendChild(style);
     }
 
-    updateCountdownDisplay(countdownId, nextResetTime) {
-        const countdownElement = document.getElementById(countdownId);
-        if (!countdownElement) return;
-
-        if (!nextResetTime) {
-            countdownElement.textContent = 'Next reset: Not scheduled';
-            return;
-        }
-
-        const now = new Date();
-        const resetTime = new Date(nextResetTime);
-        const timeDiff = resetTime - now;
-
-        if (timeDiff <= 0) {
-            countdownElement.textContent = 'Next reset: Pending';
-            return;
-        }
-
-        // Calculate time components
-        const days = Math.floor(timeDiff / (1000 * 60 * 60 * 24));
-        const hours = Math.floor((timeDiff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-        const minutes = Math.floor((timeDiff % (1000 * 60 * 60)) / (1000 * 60));
-        const seconds = Math.floor((timeDiff % (1000 * 60)) / 1000);
-
-        // Format the countdown text
-        let countdownText = 'Next reset in: ';
-        if (days > 0) countdownText += `${days}d `;
-        if (hours > 0) countdownText += `${hours}h `;
-        if (minutes > 0) countdownText += `${minutes}m `;
-        countdownText += `${seconds}s`;
-
-        countdownElement.textContent = countdownText;
-    }
-
-    getPeriodLabel(minutes) {
-        if (minutes === 1) return '1 Minute';
-        if (minutes === 10) return '10 Minutes';
-        if (minutes === 1440) return '1 Day';
-        if (minutes === 10080) return '1 Week';
-        if (minutes === 43200) return '1 Month';
-        if (minutes === 129600) return '3 Months';
-        if (minutes === 259200) return '6 Months';
-        if (minutes === 525600) return '1 Year';
-        return `${minutes} Minutes`;
+    // Call this method when initializing the dashboard
+    init2() {
+        super.init2();
+        this.addAutoResetStyles();
     }
 
     async toggleAutoReset(quizName, enabled) {
