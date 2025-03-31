@@ -823,34 +823,51 @@ export class BaseQuiz {
 
             // Check for auto-reset settings
             try {
+                console.log(`[Auto-Reset] Checking auto-reset settings for quiz: ${this.quizName}`);
                 const response = await this.apiService.getAutoResetSettings();
+                console.log('[Auto-Reset] Got settings response:', response);
+                
                 if (response.success) {
                     const autoReset = response.data.find(s => s.quizName === this.quizName);
+                    console.log('[Auto-Reset] Found setting for this quiz:', autoReset);
+                    
                     if (autoReset && autoReset.enabled) {
+                        console.log('[Auto-Reset] Setting is enabled, fetching completed users');
                         // Get all users who have completed the quiz
                         const completedUsersResponse = await this.apiService.getCompletedUsers(this.quizName);
+                        console.log('[Auto-Reset] Completed users response:', completedUsersResponse);
+                        
                         if (completedUsersResponse.success) {
                             const completedUsers = completedUsersResponse.data;
+                            console.log(`[Auto-Reset] Found ${completedUsers.length} completed users`);
                             
                             // Calculate reset time based on completion time and reset period
                             const resetTime = new Date(Date.now() + (autoReset.resetPeriod * 60 * 1000));
+                            console.log(`[Auto-Reset] Calculated reset time: ${resetTime.toISOString()}`);
                             
                             // Schedule resets for all completed users
                             for (const username of completedUsers) {
-                                await this.apiService.createScheduledReset(
+                                console.log(`[Auto-Reset] Creating scheduled reset for user: ${username}`);
+                                const scheduleResponse = await this.apiService.createScheduledReset(
                                     username,
                                     this.quizName,
                                     resetTime.toISOString()
                                 );
+                                console.log(`[Auto-Reset] Schedule creation response:`, scheduleResponse);
                             }
                             
-                            console.log(`Scheduled auto-reset for ${this.quizName} at ${resetTime.toISOString()} for ${completedUsers.length} users`);
+                            console.log(`[Auto-Reset] Scheduled auto-reset for ${this.quizName} at ${resetTime.toISOString()} for ${completedUsers.length} users`);
+                        } else {
+                            console.error('[Auto-Reset] Failed to get completed users:', completedUsersResponse);
                         }
+                    } else {
+                        console.log('[Auto-Reset] No enabled auto-reset setting found for this quiz');
                     }
+                } else {
+                    console.error('[Auto-Reset] Failed to get auto-reset settings:', response);
                 }
             } catch (error) {
-                console.error('Error checking auto-reset settings:', error);
-                // Don't throw the error, just log it
+                console.error('[Auto-Reset] Error in auto-reset process:', error);
             }
 
             // Clear any local storage data for this quiz
