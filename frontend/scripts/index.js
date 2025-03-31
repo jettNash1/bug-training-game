@@ -621,27 +621,17 @@ class IndexPage {
                         color: white;
                         border: none;
                         border-radius: 4px;
-                        padding: 6px 12px;
+                        padding: 8px 16px;
                         font-size: 14px;
                         font-weight: 500;
                         cursor: pointer;
-                        margin: 8px auto 5px;
-                        display: block;
-                        text-align: center;
+                        margin-top: auto;
+                        display: inline-block;
                         text-decoration: none;
-                        box-shadow: 0 2px 4px rgba(0,0,0,0.15);
                         transition: all 0.2s ease;
-                        width: fit-content;
-                        min-width: 80px;
                     }
                     .quiz-guide-button:hover {
                         background-color: #3867d6;
-                        box-shadow: 0 4px 8px rgba(0,0,0,0.2);
-                        text-decoration: none;
-                        color: white;
-                    }
-                    .quiz-guide-button:focus {
-                        outline: 2px solid #3867d6;
                         text-decoration: none;
                         color: white;
                     }
@@ -649,84 +639,76 @@ class IndexPage {
                         position: relative;
                         display: flex;
                         flex-direction: column;
-                        padding: 20px;
-                        min-height: 140px;
+                        padding: 16px;
+                        min-height: 120px;
+                        background: #fff;
                         border-radius: 8px;
-                        transition: all 0.2s ease;
-                    }
-                    .quiz-item:hover {
-                        transform: translateY(-2px);
-                        box-shadow: 0 4px 8px rgba(0,0,0,0.1);
                     }
                     .quiz-item .quiz-info {
-                        flex: 1;
                         display: flex;
                         flex-direction: column;
+                        flex: 1;
                     }
                     .quiz-item .quiz-info > div:first-child {
                         display: flex;
                         align-items: center;
-                        gap: 12px;
-                        margin-bottom: 10px;
+                        gap: 8px;
                     }
                     .quiz-item .quiz-icon {
-                        font-size: 24px;
-                        width: 32px;
-                        height: 32px;
+                        font-size: 20px;
+                        flex-shrink: 0;
                         display: flex;
                         align-items: center;
-                        justify-content: center;
-                        flex-shrink: 0;
                     }
                     .quiz-item .quiz-title {
-                        font-size: 18px;
+                        font-size: 16px;
                         font-weight: 600;
-                        line-height: 1.2;
                         color: #2c3e50;
-                        flex: 1;
+                        margin: 0;
+                        line-height: 1.4;
                     }
                     .quiz-item .quiz-description {
                         color: #666;
                         font-size: 14px;
-                        line-height: 1.5;
-                        margin: 0 0 16px 44px;
+                        line-height: 1.4;
+                        margin: 8px 0 12px 28px;
                     }
                     .guide-button-container {
-                        width: 100%;
-                        text-align: center;
                         margin-top: auto;
-                        padding-top: 12px;
+                        text-align: left;
+                        padding-left: 28px;
                     }
                     .quiz-completion {
                         position: absolute;
                         top: 12px;
                         right: 12px;
-                        font-size: 13px;
+                        font-size: 12px;
                         font-weight: 500;
-                        padding: 4px 8px;
+                        padding: 3px 8px;
                         border-radius: 4px;
-                        background: rgba(0,0,0,0.1);
+                        background: rgba(0,0,0,0.08);
                     }
                     .category-card {
                         background: white;
-                        border-radius: 12px;
-                        box-shadow: 0 2px 8px rgba(0,0,0,0.05);
-                        padding: 20px;
+                        border-radius: 8px;
+                        padding: 16px;
                         margin-bottom: 24px;
                     }
                     .category-header {
-                        font-size: 20px;
+                        font-size: 18px;
                         font-weight: 600;
                         color: #1a202c;
                         margin-bottom: 16px;
-                        padding-bottom: 12px;
-                        border-bottom: 2px solid #edf2f7;
+                        padding: 12px 16px;
+                        background: #2c3e50;
+                        color: white;
+                        border-radius: 6px;
                     }
                     .quiz-list {
                         display: grid;
-                        grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-                        gap: 20px;
-                        margin-bottom: 16px;
+                        grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+                        gap: 16px;
+                        padding: 0 8px;
                     }
                 `;
                 document.head.appendChild(styles);
