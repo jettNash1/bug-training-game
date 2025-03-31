@@ -3734,45 +3734,75 @@ export class Admin2Dashboard extends AdminDashboard {
         this.displayCurrentAutoResets();
     }
 
-    displayCurrentAutoResets() {
+    async displayCurrentAutoResets() {
         const container = document.getElementById('currentAutoResetsList');
-        
-        if (!this.autoResetSettings || this.autoResetSettings.length === 0) {
-            container.innerHTML = '<p class="no-items-message">No auto-reset settings configured yet.</p>';
-            return;
-        }
+        if (!container) return;
 
-        const resetItems = this.autoResetSettings.map(setting => {
-            const periodLabel = this.getPeriodLabel(setting.resetPeriod);
-            const nextResetTime = this.calculateNextResetTime(setting);
-            return `
-                <div class="auto-reset-item">
-                    <div class="auto-reset-info">
-                        <span class="auto-reset-quiz">${this.formatQuizName(setting.quizName)}</span>
-                        <span class="auto-reset-period">${periodLabel}</span>
-                        <span class="auto-reset-status ${setting.enabled ? 'enabled' : 'disabled'}">
-                            ${setting.enabled ? 'Enabled' : 'Disabled'}
-                        </span>
-                        <div class="auto-reset-countdown" data-quiz="${setting.quizName}" data-next-reset="${nextResetTime}">
-                            Next reset: <span class="countdown-timer">Calculating...</span>
+        try {
+            const response = await this.apiService.getAutoResetSettings();
+            if (!response.success) {
+                container.innerHTML = '<p>Failed to load auto-reset settings</p>';
+                return;
+            }
+
+            if (!response.data || response.data.length === 0) {
+                container.innerHTML = '<p>No auto-reset settings configured yet.</p>';
+                return;
+            }
+
+            let html = '';
+            for (const setting of response.data) {
+                const nextReset = this.calculateNextResetTime(setting);
+                const countdown = nextReset ? `<span class="countdown">${this.updateCountdownDisplay(0, nextReset)}</span>` : '';
+                
+                html += `
+                    <div class="auto-reset-item" data-quiz="${setting.quizName}">
+                        <div class="auto-reset-info">
+                            <h3>${setting.quizName}</h3>
+                            <p>${this.getPeriodLabel(setting.resetPeriod)}</p>
+                            <span class="auto-reset-status ${setting.enabled ? 'enabled' : 'disabled'}">
+                                ${setting.enabled ? 'Enabled' : 'Disabled'}
+                            </span>
+                            <p class="next-reset">Next reset: ${countdown}</p>
+                        </div>
+                        <div class="auto-reset-actions">
+                            <button class="btn btn-primary toggle-reset" data-quiz="${setting.quizName}" data-enabled="${!setting.enabled}">
+                                ${setting.enabled ? 'Disable' : 'Enable'}
+                            </button>
+                            <button class="btn btn-danger delete-reset" data-quiz="${setting.quizName}">
+                                Delete
+                            </button>
                         </div>
                     </div>
-                    <div class="auto-reset-actions">
-                        <button class="toggle-auto-reset-btn ${setting.enabled ? '' : 'disabled'}" 
-                                onclick="admin2Dashboard.toggleAutoReset('${setting.quizName}', ${!setting.enabled})">
-                            ${setting.enabled ? 'Disable' : 'Enable'}
-                        </button>
-                        <button class="delete-auto-reset-btn" 
-                                onclick="admin2Dashboard.deleteAutoReset('${setting.quizName}')">
-                            Delete
-                        </button>
-                    </div>
-                </div>
-            `;
-        }).join('');
+                `;
+            }
 
-        container.innerHTML = resetItems;
-        this.startCountdownUpdates();
+            container.innerHTML = html;
+
+            // Add event listeners after updating the HTML
+            container.querySelectorAll('.toggle-reset').forEach(button => {
+                button.addEventListener('click', (e) => {
+                    const quizName = e.target.dataset.quiz;
+                    const enabled = e.target.dataset.enabled === 'true';
+                    this.toggleAutoReset(quizName, enabled);
+                });
+            });
+
+            container.querySelectorAll('.delete-reset').forEach(button => {
+                button.addEventListener('click', (e) => {
+                    const quizName = e.target.dataset.quiz;
+                    this.deleteAutoReset(quizName);
+                });
+            });
+
+            // Start countdown updates if there are any settings
+            if (response.data.length > 0) {
+                this.startCountdownUpdates();
+            }
+        } catch (error) {
+            console.error('Error displaying auto-reset settings:', error);
+            container.innerHTML = '<p>Error loading auto-reset settings</p>';
+        }
     }
 
     calculateNextResetTime(setting) {
