@@ -657,15 +657,35 @@ class IndexPage {
                         display: flex;
                         flex-direction: column;
                     }
+                    .quiz-item .quiz-icon {
+                        display: inline-flex;
+                        align-items: center;
+                        margin-right: 8px;
+                    }
+                    .quiz-item .quiz-title {
+                        display: inline-flex;
+                        align-items: center;
+                        font-weight: 500;
+                    }
+                    .quiz-item .quiz-info {
+                        display: flex;
+                        flex-direction: column;
+                    }
+                    .quiz-item .quiz-info > div:first-child {
+                        display: flex;
+                        align-items: center;
+                        margin-bottom: 4px;
+                    }
+                    .quiz-item .quiz-description {
+                        margin-top: 4px;
+                        margin-bottom: 8px;
+                        margin-left: calc(1.5em + 8px); /* Icon width + margin */
+                    }
                     .guide-button-container {
                         width: 100%;
                         text-align: center;
                         margin-top: auto;
                         padding-top: 10px;
-                    }
-                    /* Ensure quiz description has proper spacing */
-                    .quiz-item .quiz-description {
-                        margin-bottom: 8px;
                     }
                 `;
                 document.head.appendChild(styles);
