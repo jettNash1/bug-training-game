@@ -1566,8 +1566,8 @@ router.get('/completed-users/:quizName', auth, async (req, res) => {
         const { quizName } = req.params;
         
         // Find all users who have completed exactly 15 questions in the quiz
-        const completedUsers = await QuizUser.find({
-            [`quizScores.${quizName}.questionsAnswered`]: 15
+        const completedUsers = await User.find({
+            [`quizProgress.${quizName}.questionsAnswered`]: 15
         }).select('username');
         
         console.log(`Found ${completedUsers.length} users who have completed all 15 questions for quiz: ${quizName}`);
