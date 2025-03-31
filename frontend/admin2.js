@@ -4532,6 +4532,12 @@ export class Admin2Dashboard extends AdminDashboard {
         const now = new Date();
         let nextReset = new Date(now);
         
+        // If resetPeriod is a number, it's in minutes - add it to the current time
+        if (typeof resetPeriod === 'number') {
+            console.log(`Adding ${resetPeriod} minutes to current time for next reset`);
+            return new Date(now.getTime() + (resetPeriod * 60 * 1000)).toISOString();
+        }
+        
         // Reset time to midnight
         nextReset.setHours(0, 0, 0, 0);
         
