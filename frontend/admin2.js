@@ -3744,6 +3744,7 @@ export class Admin2Dashboard extends AdminDashboard {
 
         const resetItems = this.autoResetSettings.map(setting => {
             const periodLabel = this.getPeriodLabel(setting.resetPeriod);
+            const nextResetTime = this.calculateNextResetTime(setting);
             return `
                 <div class="auto-reset-item">
                     <div class="auto-reset-info">
@@ -3752,6 +3753,9 @@ export class Admin2Dashboard extends AdminDashboard {
                         <span class="auto-reset-status ${setting.enabled ? 'enabled' : 'disabled'}">
                             ${setting.enabled ? 'Enabled' : 'Disabled'}
                         </span>
+                        <div class="auto-reset-countdown" data-quiz="${setting.quizName}" data-next-reset="${nextResetTime}">
+                            Next reset: <span class="countdown-timer">Calculating...</span>
+                        </div>
                     </div>
                     <div class="auto-reset-actions">
                         <button class="toggle-auto-reset-btn ${setting.enabled ? '' : 'disabled'}" 
@@ -3768,6 +3772,85 @@ export class Admin2Dashboard extends AdminDashboard {
         }).join('');
 
         container.innerHTML = resetItems;
+        this.startCountdownUpdates();
+    }
+
+    calculateNextResetTime(setting) {
+        if (!setting.enabled) return null;
+        
+        // Get the last completion time from the quiz's last reset
+        const lastReset = setting.lastReset || new Date(0);
+        const nextReset = new Date(lastReset.getTime() + (setting.resetPeriod * 60 * 1000));
+        
+        // If the next reset time is in the past, calculate the next occurrence
+        if (nextReset < new Date()) {
+            const now = new Date();
+            const timeSinceLastReset = now - lastReset;
+            const periodsSinceLastReset = Math.ceil(timeSinceLastReset / (setting.resetPeriod * 60 * 1000));
+            return new Date(lastReset.getTime() + (periodsSinceLastReset * setting.resetPeriod * 60 * 1000));
+        }
+        
+        return nextReset;
+    }
+
+    startCountdownUpdates() {
+        // Clear any existing interval
+        if (this.countdownInterval) {
+            clearInterval(this.countdownInterval);
+        }
+
+        // Update countdowns every second
+        this.countdownInterval = setInterval(() => {
+            this.updateCountdowns();
+        }, 1000);
+    }
+
+    updateCountdowns() {
+        const countdowns = document.querySelectorAll('.auto-reset-countdown');
+        
+        countdowns.forEach(countdown => {
+            const quizName = countdown.dataset.quiz;
+            const nextResetTime = new Date(countdown.dataset.nextReset);
+            const now = new Date();
+            const timeLeft = nextResetTime - now;
+
+            if (timeLeft <= 0) {
+                // Reset has occurred, recalculate next reset time
+                const setting = this.autoResetSettings.find(s => s.quizName === quizName);
+                if (setting) {
+                    const newNextReset = this.calculateNextResetTime(setting);
+                    countdown.dataset.nextReset = newNextReset;
+                    this.updateCountdownDisplay(countdown, newNextReset);
+                }
+            } else {
+                this.updateCountdownDisplay(countdown, nextResetTime);
+            }
+        });
+    }
+
+    updateCountdownDisplay(countdown, nextResetTime) {
+        const now = new Date();
+        const timeLeft = nextResetTime - now;
+        
+        if (timeLeft <= 0) {
+            countdown.querySelector('.countdown-timer').textContent = 'Resetting...';
+            return;
+        }
+
+        // Calculate time components
+        const days = Math.floor(timeLeft / (1000 * 60 * 60 * 24));
+        const hours = Math.floor((timeLeft % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+        const minutes = Math.floor((timeLeft % (1000 * 60 * 60)) / (1000 * 60));
+        const seconds = Math.floor((timeLeft % (1000 * 60)) / 1000);
+
+        // Format the countdown string
+        let countdownText = '';
+        if (days > 0) countdownText += `${days}d `;
+        if (hours > 0) countdownText += `${hours}h `;
+        if (minutes > 0) countdownText += `${minutes}m `;
+        countdownText += `${seconds}s`;
+
+        countdown.querySelector('.countdown-timer').textContent = countdownText;
     }
 
     getPeriodLabel(minutes) {
