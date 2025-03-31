@@ -651,6 +651,8 @@ class IndexPage {
                         position: relative;
                         display: flex;
                         flex-direction: column;
+                        padding: 20px;
+                        min-height: 140px;
                     }
                     .quiz-item .quiz-info {
                         flex: 1;
@@ -660,28 +662,46 @@ class IndexPage {
                     .quiz-item .quiz-info > div:first-child {
                         display: flex;
                         align-items: center;
-                        gap: 8px;
-                        margin-bottom: 4px;
+                        gap: 12px;
+                        margin-bottom: 8px;
                     }
                     .quiz-item .quiz-icon {
-                        font-size: 1.2em;
+                        font-size: 1.8em;
                         line-height: 1;
                         flex-shrink: 0;
+                        width: 1.8em;
+                        height: 1.8em;
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
                     }
                     .quiz-item .quiz-title {
-                        font-weight: 500;
+                        font-size: 1.4em;
+                        font-weight: 600;
                         line-height: 1.2;
+                        color: #2c3e50;
                     }
                     .quiz-item .quiz-description {
                         margin-top: 4px;
-                        margin-bottom: 8px;
-                        padding-left: calc(1.2em + 8px); /* Icon size + gap */
+                        margin-bottom: 12px;
+                        padding-left: calc(2.8em); /* Icon width (1.8em) + gap (12px) */
+                        color: #666;
+                        font-size: 0.95em;
+                        line-height: 1.4;
                     }
                     .guide-button-container {
                         width: 100%;
                         text-align: center;
                         margin-top: auto;
-                        padding-top: 10px;
+                        padding-top: 12px;
+                    }
+                    .quiz-completion {
+                        position: absolute;
+                        top: 12px;
+                        right: 12px;
+                        font-size: 0.9em;
+                        padding: 4px 8px;
+                        border-radius: 4px;
                     }
                 `;
                 document.head.appendChild(styles);
