@@ -625,6 +625,8 @@ class IndexPage {
                         font-size: 14px;
                         font-weight: 500;
                         cursor: pointer;
+                        margin-top: auto;
+                        display: inline-block;
                         text-decoration: none;
                         transition: all 0.2s ease;
                     }
@@ -638,9 +640,9 @@ class IndexPage {
                         display: flex;
                         flex-direction: column;
                         padding: 16px;
+                        min-height: 120px;
                         background: #fff;
                         border-radius: 8px;
-                        min-height: 140px;
                     }
                     .quiz-item .quiz-info {
                         display: flex;
@@ -650,12 +652,13 @@ class IndexPage {
                     .quiz-item .quiz-info > div:first-child {
                         display: flex;
                         align-items: center;
-                        gap: 12px;
-                        margin-bottom: 8px;
+                        gap: 8px;
                     }
                     .quiz-item .quiz-icon {
-                        font-size: 24px;
+                        font-size: 20px;
                         flex-shrink: 0;
+                        display: flex;
+                        align-items: center;
                     }
                     .quiz-item .quiz-title {
                         font-size: 16px;
@@ -668,21 +671,22 @@ class IndexPage {
                         color: #666;
                         font-size: 14px;
                         line-height: 1.4;
-                        margin: 0 0 16px 0;
+                        margin: 8px 0 12px 28px;
                     }
                     .guide-button-container {
-                        display: flex;
-                        align-items: center;
-                        justify-content: space-between;
                         margin-top: auto;
+                        text-align: left;
+                        padding-left: 28px;
                     }
                     .quiz-completion {
-                        font-size: 14px;
+                        position: absolute;
+                        top: 12px;
+                        right: 12px;
+                        font-size: 12px;
                         font-weight: 500;
                         padding: 3px 8px;
                         border-radius: 4px;
-                        position: static;
-                        display: inline-block;
+                        background: rgba(0,0,0,0.08);
                     }
                     .category-card {
                         background: white;
@@ -693,6 +697,7 @@ class IndexPage {
                     .category-header {
                         font-size: 18px;
                         font-weight: 600;
+                        color: #1a202c;
                         margin-bottom: 16px;
                         padding: 12px 16px;
                         background: #2c3e50;
@@ -771,16 +776,7 @@ class IndexPage {
         // Create a container for the guide button
         const buttonContainer = document.createElement('div');
         buttonContainer.className = 'guide-button-container';
-        
-        // Move the completion status into the button container
-        const progressElement = quizItem.querySelector(`#${quizId}-progress`);
-        if (progressElement) {
-            progressElement.classList.add('quiz-completion');
-            buttonContainer.appendChild(guideButton);
-            buttonContainer.appendChild(progressElement);
-        } else {
-            buttonContainer.appendChild(guideButton);
-        }
+        buttonContainer.appendChild(guideButton);
         
         // Find the quiz info container
         const quizInfo = quizItem.querySelector('.quiz-info');
