@@ -3763,13 +3763,37 @@ export class Admin2Dashboard extends AdminDashboard {
                 const nextReset = this.calculateNextResetTime(setting);
                 const item = document.createElement('div');
                 item.className = 'auto-reset-item';
+                
+                // Format the countdown display
+                let countdownDisplay = 'N/A';
+                if (nextReset) {
+                    const now = new Date();
+                    const resetTime = new Date(nextReset);
+                    const timeDiff = resetTime - now;
+                    
+                    if (timeDiff > 0) {
+                        const days = Math.floor(timeDiff / (1000 * 60 * 60 * 24));
+                        const hours = Math.floor((timeDiff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+                        const minutes = Math.floor((timeDiff % (1000 * 60 * 60)) / (1000 * 60));
+                        const seconds = Math.floor((timeDiff % (1000 * 60)) / 1000);
+
+                        countdownDisplay = 'Next reset in: ';
+                        if (days > 0) countdownDisplay += `${days}d `;
+                        if (hours > 0) countdownDisplay += `${hours}h `;
+                        if (minutes > 0) countdownDisplay += `${minutes}m `;
+                        countdownDisplay += `${seconds}s`;
+                    } else {
+                        countdownDisplay = 'Next reset: Pending';
+                    }
+                }
+
                 item.innerHTML = `
                     <div class="auto-reset-info">
                         <h4>${this.formatQuizName(setting.quizName)}</h4>
                         <p>Reset Period: ${this.getPeriodLabel(setting.resetPeriod)}</p>
                         <p>Status: ${setting.enabled ? 'Enabled' : 'Disabled'}</p>
                         <p class="auto-reset-countdown" data-quiz="${setting.quizName}">
-                            Next reset in: ${nextReset ? this.formatCountdown(nextReset) : 'N/A'}
+                            ${countdownDisplay}
                         </p>
                     </div>
                     <div class="auto-reset-actions">
