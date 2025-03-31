@@ -2028,15 +2028,16 @@ export class APIService {
     async deleteAutoResetSetting(quizName) {
         try {
             console.log(`Deleting auto-reset setting for quiz: ${quizName}`);
-            const response = await fetch(`${this.baseUrl}/admin/auto-resets/${encodeURIComponent(quizName)}`, {
-                method: 'DELETE',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${this.token}`
-                }
+            const response = await this.fetchWithAdminAuth(`${this.baseUrl}/admin/auto-resets/${encodeURIComponent(quizName)}`, {
+                method: 'DELETE'
             });
-            const data = await response.json();
-            return { success: response.ok, data, message: data.message };
+            
+            if (response.success) {
+                console.log('Successfully deleted auto-reset setting:', response);
+                return response;
+            } else {
+                throw new Error(response.message || 'Failed to delete auto-reset setting');
+            }
         } catch (error) {
             console.error('Error deleting auto-reset setting:', error);
             return { success: false, message: error.message };
