@@ -2139,9 +2139,19 @@ export class APIService {
     async getUserQuizProgress(username, quizName) {
         try {
             console.log(`Getting progress for ${username}'s ${quizName} quiz`);
-            const response = await this.fetchWithAdminAuth(
+            
+            // Create a promise that rejects after 3 seconds
+            const timeoutPromise = new Promise((_, reject) => {
+                setTimeout(() => reject(new Error(`Request timed out after 3 seconds`)), 3000);
+            });
+            
+            // Create the actual fetch promise
+            const fetchPromise = this.fetchWithAdminAuth(
                 `${this.baseUrl}/admin/users/${encodeURIComponent(username)}/quiz-progress/${encodeURIComponent(quizName)}`
             );
+            
+            // Race the two promises - whichever resolves/rejects first wins
+            const response = await Promise.race([fetchPromise, timeoutPromise]);
             
             if (response.success) {
                 console.log(`Successfully got progress for ${username}'s ${quizName} quiz:`, response.data);
