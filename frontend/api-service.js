@@ -44,126 +44,85 @@ export class APIService {
     async fetchWithAdminAuth(url, options = {}) {
         try {
             const adminToken = localStorage.getItem('adminToken');
+            if (!adminToken) {
+                throw new Error('No admin token found. Please login again.');
+            }
             
             // Ensure we have the correct URL (handle both absolute and relative URLs)
             const fullUrl = url.startsWith('http') ? url : 
                           url.startsWith('/') ? `${this.baseUrl.replace(/\/api$/, '')}${url}` : 
                           `${this.baseUrl}/${url.replace(/^api\//, '')}`;
             
-            console.log('Fetching with admin auth:', { 
-                url: fullUrl, 
-                hasToken: !!adminToken,
-                method: options.method || 'GET'
-            });
-
-            if (!adminToken) {
-                console.log('No admin token found');
-                throw new Error('No admin token found');
-            }
-
+            // Prepare headers with authentication
             const headers = {
-                'Authorization': `Bearer ${adminToken}`,
                 'Content-Type': 'application/json',
-                'Accept': 'application/json', // Explicitly request JSON response
-                ...options.headers
+                'Authorization': `Bearer ${adminToken}`,
+                ...(options.headers || {})
             };
-
-            // Create fetch options with headers and any other options
-            const fetchOptions = {
+            
+            // Merge options
+            const mergedOptions = {
+                method: 'GET',
                 ...options,
-                credentials: 'include',
-                headers
+                headers,
+                credentials: 'include'
             };
-
-            // Add signal if provided
-            if (options.signal) {
-                fetchOptions.signal = options.signal;
+            
+            console.log('Fetching with admin auth:', {
+                url: fullUrl,
+                hasToken: !!adminToken,
+                method: mergedOptions.method
+            });
+            
+            // Perform the fetch
+            const response = await fetch(fullUrl, mergedOptions);
+            
+            // Check for unauthorized response
+            if (response.status === 401) {
+                console.error('Admin fetch received 401 Unauthorized', fullUrl);
+                localStorage.removeItem('adminToken');
+                throw new Error('You have been logged out. Please login again.');
             }
-
-            const response = await fetch(fullUrl, fetchOptions);
-
-            // Check if response is HTML (indicating a redirect or error page)
-            const contentType = response.headers.get('content-type');
-            if (contentType && contentType.includes('text/html')) {
-                console.error('Received HTML response instead of JSON:', {
-                    url: fullUrl,
-                    status: response.status,
-                    contentType
-                });
-                // Instead of throwing, try to parse the response as JSON
-                const text = await response.text();
-                try {
-                    const data = JSON.parse(text);
-                    return data;
-                } catch (e) {
-                    // If we can't parse as JSON, check if it's an authentication error
-                    if (response.status === 401 || response.status === 403) {
-                        throw new Error('Admin authentication required');
-                    }
-                    throw new Error('Server returned HTML instead of JSON. Check API endpoint and authentication.');
-                }
-            }
-
-            // Try to parse response as JSON
-            let text;
-            try {
-                text = await response.text();
-                console.log('Response text:', text);
+            
+            // Better handling of error responses
+            if (!response.ok) {
+                const statusText = response.statusText || `HTTP error ${response.status}`;
+                console.error(`Admin fetch error: ${statusText}`, fullUrl);
                 
-                let data;
                 try {
-                    data = JSON.parse(text);
-                } catch (e) {
-                    console.error('Failed to parse response as JSON:', text);
-                    throw new Error('Invalid response from server');
-                }
-
-                // If we get a 500 error, it's likely a server issue
-                if (response.status === 500) {
-                    console.error('Server error:', data);
-                    return {
-                        success: false,
-                        error: data.error || data.message || 'Internal server error',
-                        data: data.data || []
-                    };
-                }
-
-                if (!response.ok) {
-                    if (response.status === 404) {
-                        throw new Error(`API endpoint not found: ${url}`);
-                    } else if (response.status === 401) {
-                        // Check if we need to refresh the token or re-verify
-                        const verificationResult = await this.verifyAdminToken();
-                        if (!verificationResult.valid) {
-                            throw new Error('Admin authentication required');
-                        }
-                        // If verification succeeded but we still got 401, throw error
-                        throw new Error('Admin authentication failed: ' + (data.message || 'Unauthorized'));
-                    } else {
-                        throw new Error(data.message || `Request failed with status ${response.status}`);
+                    // Attempt to parse error details from the response
+                    const errorData = await response.json();
+                    if (errorData && errorData.message) {
+                        throw new Error(errorData.message);
                     }
+                } catch (jsonError) {
+                    // If JSON parsing fails, throw a generic error with the status
+                    throw new Error(`Request failed: ${statusText}`);
                 }
-
+                
+                // Fallback if no error is thrown above
+                throw new Error(`Request failed: ${statusText}`);
+            }
+            
+            try {
+                // Try to parse the response as JSON
+                const data = await response.json();
                 return data;
-            } catch (error) {
-                console.error('Request failed:', error);
-                throw error;
+            } catch (jsonParseError) {
+                console.warn('Response is not valid JSON:', fullUrl);
+                // For API endpoints that don't return JSON, return the raw response
+                return { success: true, message: 'Response received but was not JSON' };
             }
         } catch (error) {
-            // If this is an AbortError, just pass it through
-            if (error.name === 'AbortError') {
-                throw error;
-            }
+            console.error('Error in fetchWithAdminAuth:', error, url);
             
-            console.error('Admin request failed:', error);
-            
-            // Only redirect on authentication errors
-            if (error.message.includes('Admin authentication required') || 
-                error.message.includes('Admin authentication failed')) {
-                localStorage.removeItem('adminToken');
-                // Add a small delay to see the error in console
-                await new Promise(resolve => setTimeout(resolve, 1000));
-                window.location.replace('/pages/admin-login.html');
+            // Special handling for network errors
+            if (error.name === 'TypeError' && error.message.includes('network')) {
+                return { 
+                    success: false, 
+                    error: 'Network error. Please check your connection.',
+                    status: 'network_error'
+                };
             }
             
             throw error;
@@ -736,14 +695,70 @@ export class APIService {
 
     async getUserProgress(username) {
         try {
-            const response = await this.fetchWithAdminAuth(`${this.baseUrl}/admin/users/${username}/progress`);
-            return {
-                success: true,
-                data: response.progress || {}
-            };
+            console.log(`Fetching progress for user: ${username}`);
+            
+            // Create a controller for the fetch request to implement a timeout
+            const controller = new AbortController();
+            const signal = controller.signal;
+            
+            // Set a timeout to abort the fetch after 10 seconds
+            const timeoutId = setTimeout(() => {
+                controller.abort();
+                console.warn(`Fetch for user progress timed out after 10 seconds: ${username}`);
+            }, 10000);
+            
+            try {
+                const response = await this.fetchWithAdminAuth(
+                    `${this.baseUrl}/admin/users/${username}/progress`,
+                    {
+                        method: 'GET',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        signal
+                    }
+                );
+                
+                // Clear the timeout since the request completed
+                clearTimeout(timeoutId);
+                
+                console.log(`Response from getUserProgress for ${username}:`, response);
+                
+                if (!response) {
+                    return {
+                        success: false,
+                        message: 'Empty response from server',
+                        data: {}
+                    };
+                }
+                
+                return {
+                    success: true,
+                    data: response.progress || response || {}
+                };
+            } catch (fetchError) {
+                // Clear the timeout to prevent memory leaks
+                clearTimeout(timeoutId);
+                
+                // Check if this was an abort error
+                if (fetchError.name === 'AbortError') {
+                    console.error(`Request for user progress timed out: ${username}`);
+                    return {
+                        success: false,
+                        message: 'Request timed out',
+                        data: {}
+                    };
+                }
+                
+                throw fetchError;
+            }
         } catch (error) {
             console.error(`Failed to fetch progress for user ${username}:`, error);
-            throw error;
+            return {
+                success: false,
+                message: error.message || 'Failed to fetch user progress',
+                data: {}
+            };
         }
     }
 
@@ -958,13 +973,47 @@ export class APIService {
             
             // Get user progress data first
             const userProgressResponse = await this.getUserProgress(username);
+            console.log('User progress response for badges:', userProgressResponse);
             
-            if (!userProgressResponse.success || !userProgressResponse.data) {
-                console.error('Failed to get user progress for badges:', userProgressResponse);
+            if (!userProgressResponse.success) {
+                console.error('Failed to get user progress for badges (success false):', userProgressResponse);
                 throw new Error('Failed to get user progress data');
             }
             
-            const quizProgress = userProgressResponse.data.quizProgress || {};
+            if (!userProgressResponse.data) {
+                console.error('Failed to get user progress data (no data):', userProgressResponse);
+                return {
+                    success: true,
+                    data: {
+                        badges: [],
+                        totalBadges: 0,
+                        earnedCount: 0
+                    }
+                };
+            }
+            
+            // Handle different possible response structures
+            let quizProgress = {};
+            
+            if (userProgressResponse.data.quizProgress) {
+                // New structure with nested quizProgress
+                quizProgress = userProgressResponse.data.quizProgress;
+                console.log('Found quiz progress in data.quizProgress');
+            } else if (typeof userProgressResponse.data === 'object' && Object.keys(userProgressResponse.data).length > 0) {
+                // Legacy structure where the data itself might be quizProgress
+                const possibleQuizzes = Object.keys(userProgressResponse.data)
+                    .filter(key => typeof userProgressResponse.data[key] === 'object' && 
+                           (userProgressResponse.data[key].questionsAnswered !== undefined ||
+                            userProgressResponse.data[key].status !== undefined ||
+                            userProgressResponse.data[key].questionHistory !== undefined));
+                
+                if (possibleQuizzes.length > 0) {
+                    quizProgress = userProgressResponse.data;
+                    console.log('Found quiz progress directly in data object');
+                }
+            }
+            
+            console.log('Quiz progress extracted:', quizProgress);
             
             // Get all quizzes from the progress data
             const allQuizzes = Object.keys(quizProgress).map(quizId => ({
@@ -972,7 +1021,7 @@ export class APIService {
                 name: this.formatQuizName(quizId)
             }));
             
-            console.log(`Found ${allQuizzes.length} quizzes for user ${username}`);
+            console.log(`Found ${allQuizzes.length} quizzes for user ${username}:`, allQuizzes);
             
             if (allQuizzes.length === 0) {
                 return {
@@ -988,14 +1037,17 @@ export class APIService {
             // Process quiz completion status
             const badges = allQuizzes.map(quiz => {
                 const progress = quizProgress[quiz.id] || {};
+                console.log(`Processing quiz ${quiz.id}:`, progress);
                 
                 // Check if quiz is complete based on status or progress
                 const isCompleted = progress && (
                     progress.status === 'completed' ||
                     progress.status === 'passed' ||
-                    (progress.questionHistory && progress.questionHistory.length === 15) ||
+                    (progress.questionHistory && progress.questionHistory.length >= 15) ||
                     (typeof progress.questionsAnswered === 'number' && progress.questionsAnswered >= 15)
                 );
+                
+                console.log(`Quiz ${quiz.id} completion status:`, isCompleted);
                 
                 return {
                     id: `quiz-${quiz.id}`,
@@ -1021,7 +1073,7 @@ export class APIService {
             // Count completed badges
             const completedCount = badges.filter(badge => badge.earned).length;
             
-            return {
+            const result = {
                 success: true,
                 data: {
                     badges,
@@ -1029,11 +1081,14 @@ export class APIService {
                     earnedCount: completedCount
                 }
             };
+            
+            console.log('Final badges result:', result);
+            return result;
         } catch (error) {
             console.error(`Error getting badges for user ${username}:`, error);
             return {
                 success: false,
-                message: error.message,
+                message: error.message || 'Failed to load badges',
                 data: {
                     badges: [],
                     totalBadges: 0,

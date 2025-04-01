@@ -4959,8 +4959,33 @@ export class Admin2Dashboard extends AdminDashboard {
                 </div>
             `;
             
+            // Set a timeout to show an error message if it takes too long
+            const timeoutId = setTimeout(() => {
+                console.warn('Badge loading is taking too long, showing timeout message');
+                badgesContainer.innerHTML = `
+                    <div style="text-align: center; padding: 40px 20px; color: #e67e22;">
+                        <div style="font-size: 60px; margin-bottom: 20px;">
+                            <i class="fa-solid fa-clock"></i>
+                        </div>
+                        <h3 style="margin-bottom: 10px;">Loading is taking longer than expected</h3>
+                        <p>The server might be slow to respond. You can try again later or refresh the page.</p>
+                        <button id="retry-badges-btn" class="btn btn-primary mt-3" style="margin-top: 15px; padding: 8px 16px; background-color: #4e73df; color: white; border: none; border-radius: 4px; cursor: pointer;">Retry Loading</button>
+                    </div>
+                `;
+                
+                // Add event listener to retry button
+                document.getElementById('retry-badges-btn')?.addEventListener('click', () => {
+                    this.loadUserBadges(username);
+                });
+            }, 15000); // 15 seconds timeout
+            
             // Call API to get user badges
+            console.log(`Requesting badges for user: ${username}`);
             const response = await this.apiService.getUserBadgesByAdmin(username);
+            console.log(`Received badges response for ${username}:`, response);
+            
+            // Clear the timeout as we got a response
+            clearTimeout(timeoutId);
             
             if (!response.success) {
                 throw new Error(response.message || 'Failed to load badges');
@@ -5033,8 +5058,14 @@ export class Admin2Dashboard extends AdminDashboard {
                     </div>
                     <h3 style="margin-bottom: 10px;">Error Loading Badges</h3>
                     <p>${error.message || 'Failed to load badges. Please try again.'}</p>
+                    <button id="retry-badges-btn" class="btn btn-danger mt-3" style="margin-top: 15px; padding: 8px 16px; background-color: #dc3545; color: white; border: none; border-radius: 4px; cursor: pointer;">Retry</button>
                 </div>
             `;
+            
+            // Add event listener to retry button
+            document.getElementById('retry-badges-btn')?.addEventListener('click', () => {
+                this.loadUserBadges(username);
+            });
         }
     }
     
