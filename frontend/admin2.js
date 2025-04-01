@@ -3961,8 +3961,38 @@ export class Admin2Dashboard extends AdminDashboard {
                 }
             }
             
-            // Format next reset time - starts with a placeholder that will be updated by the countdown timer
-            let nextResetText = 'Loading...';
+            // Create the countdown text for next reset
+            let nextResetText = 'Not scheduled';
+            
+            // If we have nextResetTime, calculate a countdown
+            if (settings.nextResetTime) {
+                const nextResetTime = new Date(settings.nextResetTime);
+                const now = new Date();
+                const timeDiff = nextResetTime - now;
+                
+                if (timeDiff <= 0) {
+                    nextResetText = 'Reset due now!';
+                } else {
+                    // Calculate time units
+                    const days = Math.floor(timeDiff / (1000 * 60 * 60 * 24));
+                    const hours = Math.floor((timeDiff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+                    const minutes = Math.floor((timeDiff % (1000 * 60 * 60)) / (1000 * 60));
+                    const seconds = Math.floor((timeDiff % (1000 * 60)) / 1000);
+                    
+                    // Format countdown text
+                    nextResetText = '';
+                    if (days > 0) {
+                        nextResetText += `${days}d `;
+                    }
+                    if (hours > 0 || days > 0) {
+                        nextResetText += `${hours}h `;
+                    }
+                    if (minutes > 0 || hours > 0 || days > 0) {
+                        nextResetText += `${minutes}m `;
+                    }
+                    nextResetText += `${seconds}s`;
+                }
+            }
             
             // Set row content
             row.innerHTML = `

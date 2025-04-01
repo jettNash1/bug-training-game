@@ -1549,6 +1549,47 @@
             color: #666;
             margin: 0.25rem 0;
         }
+
+        /* Countdown Timer Styling */
+        .countdown {
+            font-weight: bold;
+            font-family: monospace;
+            text-align: center;
+            min-width: 120px;
+        }
+
+        .countdown-overdue {
+            color: #dc3545;
+            animation: blink 1s infinite;
+        }
+
+        .auto-reset-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+        }
+
+        .auto-reset-table th,
+        .auto-reset-table td {
+            padding: 10px;
+            border-bottom: 1px solid #e0e0e0;
+            text-align: left;
+        }
+
+        .auto-reset-table th {
+            background-color: #f8f9fa;
+            font-weight: bold;
+        }
+
+        .auto-reset-table tr:hover {
+            background-color: #f1f1f1;
+        }
+
+        @keyframes blink {
+            0% { opacity: 1; }
+            50% { opacity: 0.5; }
+            100% { opacity: 1; }
+        }
     </style>
 </body>
 </html> 
