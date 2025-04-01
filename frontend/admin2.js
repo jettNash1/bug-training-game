@@ -4960,8 +4960,7 @@ export class Admin2Dashboard extends AdminDashboard {
             `;
             
             // Call API to get user badges
-            const apiService = new ApiService();
-            const response = await apiService.getUserBadgesByAdmin(username);
+            const response = await this.apiService.getUserBadgesByAdmin(username);
             
             if (!response.success) {
                 throw new Error(response.message || 'Failed to load badges');
