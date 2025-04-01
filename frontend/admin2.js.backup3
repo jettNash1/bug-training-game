@@ -4668,7 +4668,7 @@ export class Admin2Dashboard extends AdminDashboard {
         }
     }
 
-// Using ApiService for quiz questions
+    // Add implementation for showQuizQuestions matching standard admin
     async showQuizQuestions(quizType, username) {
         try {
             // Get user data
@@ -5474,6 +5474,20 @@ export class Admin2Dashboard extends AdminDashboard {
         }
     }
     
+    // Add implementation for showQuizQuestions matching standard admin
+    async showQuizQuestions(quizType, username) {
+        try {
+            // Get user data
+            const user = this.users.find(u => u.username === username);
+            if (!user) {
+                throw new Error('User not found');
+            }
+
+            console.log('Showing quiz questions for:', { username, quizType });
+            
+            // Get quiz results from API
+            try {
+                // Import ApiService from relative path
     // Using ApiService for quiz questions
     async showQuizQuestions(quizType, username) {
         try {
@@ -6259,7 +6273,7 @@ export class Admin2Dashboard extends AdminDashboard {
                 // Update the status to show it's processing
                 const statusEl = document.querySelector('#auto-reset-status-text');
                 if (statusEl) {
-// Using ApiService for quiz questions
+    // Add implementation for showQuizQuestions matching standard admin
     async showQuizQuestions(quizType, username) {
         try {
             // Get user data
@@ -9356,7 +9370,7 @@ export class Admin2Dashboard extends AdminDashboard {
         }
     }
 
-// Using ApiService for quiz questions
+    // Add implementation for showQuizQuestions matching standard admin
     async showQuizQuestions(quizType, username) {
         try {
             // Get user data
