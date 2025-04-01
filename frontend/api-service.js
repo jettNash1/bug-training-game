@@ -951,7 +951,107 @@ export class APIService {
             throw error;
         }
     }
-    
+
+    async getUserBadgesByAdmin(username) {
+        try {
+            console.log(`Getting badges for user: ${username}`);
+            
+            // Get user progress data first
+            const userProgressResponse = await this.getUserProgress(username);
+            
+            if (!userProgressResponse.success || !userProgressResponse.data) {
+                console.error('Failed to get user progress for badges:', userProgressResponse);
+                throw new Error('Failed to get user progress data');
+            }
+            
+            const quizProgress = userProgressResponse.data.quizProgress || {};
+            
+            // Get all quizzes from the progress data
+            const allQuizzes = Object.keys(quizProgress).map(quizId => ({
+                id: quizId,
+                name: this.formatQuizName(quizId)
+            }));
+            
+            console.log(`Found ${allQuizzes.length} quizzes for user ${username}`);
+            
+            if (allQuizzes.length === 0) {
+                return {
+                    success: true,
+                    data: {
+                        badges: [],
+                        totalBadges: 0,
+                        earnedCount: 0
+                    }
+                };
+            }
+            
+            // Process quiz completion status
+            const badges = allQuizzes.map(quiz => {
+                const progress = quizProgress[quiz.id] || {};
+                
+                // Check if quiz is complete based on status or progress
+                const isCompleted = progress && (
+                    progress.status === 'completed' ||
+                    progress.status === 'passed' ||
+                    (progress.questionHistory && progress.questionHistory.length === 15) ||
+                    (typeof progress.questionsAnswered === 'number' && progress.questionsAnswered >= 15)
+                );
+                
+                return {
+                    id: `quiz-${quiz.id}`,
+                    name: `${quiz.name} Master`,
+                    description: `Complete the ${quiz.name} quiz`,
+                    icon: 'fa-solid fa-check-circle',
+                    earned: isCompleted,
+                    completionDate: isCompleted ? (progress.lastUpdated || progress.completedAt || null) : null,
+                    quizId: quiz.id
+                };
+            });
+            
+            // Sort badges: completed first, then alphabetically by name
+            badges.sort((a, b) => {
+                // First sort by completion status
+                if (a.earned && !b.earned) return -1;
+                if (!a.earned && b.earned) return 1;
+                
+                // Then sort alphabetically by name
+                return a.name.localeCompare(b.name);
+            });
+            
+            // Count completed badges
+            const completedCount = badges.filter(badge => badge.earned).length;
+            
+            return {
+                success: true,
+                data: {
+                    badges,
+                    totalBadges: badges.length,
+                    earnedCount: completedCount
+                }
+            };
+        } catch (error) {
+            console.error(`Error getting badges for user ${username}:`, error);
+            return {
+                success: false,
+                message: error.message,
+                data: {
+                    badges: [],
+                    totalBadges: 0,
+                    earnedCount: 0
+                }
+            };
+        }
+    }
+
+    // Helper method to format quiz names (used by getUserBadgesByAdmin)
+    formatQuizName(quizId) {
+        if (!quizId) return '';
+        return quizId
+            .split(/[-_]/) // Split on either hyphen or underscore
+            .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+            .join(' ');
+    }
+
     // Quiz timer settings methods
     async getQuizTimerSettings() {
         try {

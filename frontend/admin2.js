@@ -67,6 +67,9 @@ export class Admin2Dashboard extends AdminDashboard {
             this.setupAutoResetSettings(); // Add this line
             this.displayAutoResetSettings(); // Add this line to display auto reset settings
 
+            // Initialize badges section
+            this.setupBadgesSection();
+
             // Update dashboard with initial data
             await this.updateDashboard();
         } catch (error) {
@@ -88,9 +91,16 @@ export class Admin2Dashboard extends AdminDashboard {
                 
                 // Update dashboard with user data
                 this.updateUsersList();
+                this.updateStatistics();
                 
                 // Load user progress for all users
                 this.loadAllUserProgress();
+                
+                // Update badges section user dropdown
+                this.populateBadgesUserDropdown();
+                
+                // Update schedule section user dropdown
+                this.populateUserDropdown();
                 
                 return response.data;
             } else {
@@ -228,6 +238,10 @@ export class Admin2Dashboard extends AdminDashboard {
                         case 'create-account-section':
                             this.setupCreateAccountForm();
                             break;
+                        case 'badges-section':
+                            // Refresh badges user dropdown when badge section is activated
+                            this.populateBadgesUserDropdown();
+                            break;
                     }
                 });
             }
@@ -297,6 +311,23 @@ export class Admin2Dashboard extends AdminDashboard {
                 this.exportUserData('simple');
             });
         }
+
+        // Badges section
+        document.getElementById('badgesUserDropdown')?.addEventListener('change', (e) => {
+            const username = e.target.value;
+            if (username) {
+                this.loadUserBadges(username);
+            } else {
+                // Reset the badges container to initial state
+                const badgesContainer = document.getElementById('userBadgesContainer');
+                badgesContainer.innerHTML = `
+                    <div class="initial-message">
+                        <i class="fas fa-user-circle"></i>
+                        <p>Select a user to view their badges</p>
+                    </div>
+                `;
+            }
+        });
     }
     
     async updateDashboard() {
@@ -4885,6 +4916,144 @@ export class Admin2Dashboard extends AdminDashboard {
                 this.showInfo(`Failed to save auto-reset settings: ${error.message}`, 'error');
             }
         });
+    }
+
+    // New methods for badges section
+    setupBadgesSection() {
+        console.log('Setting up badges section');
+        // Populate user dropdown
+        this.populateBadgesUserDropdown();
+    }
+    
+    populateBadgesUserDropdown() {
+        const userDropdown = document.getElementById('badgesUserDropdown');
+        if (!userDropdown) return;
+        
+        // Clear existing options
+        userDropdown.innerHTML = '<option value="">-- Select User --</option>';
+        
+        // Sort users alphabetically by username
+        const sortedUsers = [...this.users].sort((a, b) => 
+            a.username.localeCompare(b.username)
+        );
+        
+        // Add user options
+        sortedUsers.forEach(user => {
+            const option = document.createElement('option');
+            option.value = user.username;
+            option.textContent = user.username;
+            userDropdown.appendChild(option);
+        });
+    }
+    
+    async loadUserBadges(username) {
+        try {
+            // Show loading state
+            const badgesContainer = document.getElementById('userBadgesContainer');
+            badgesContainer.innerHTML = `
+                <div class="loading-message" style="text-align: center; padding: 40px 20px;">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="sr-only">Loading...</span>
+                    </div>
+                    <p style="margin-top: 15px;">Loading badges for ${username}...</p>
+                </div>
+            `;
+            
+            // Call API to get user badges
+            const apiService = new ApiService();
+            const response = await apiService.getUserBadgesByAdmin(username);
+            
+            if (!response.success) {
+                throw new Error(response.message || 'Failed to load badges');
+            }
+            
+            const badgesData = response.data;
+            console.log('Badges data received:', badgesData);
+            
+            // Generate badges HTML
+            let badgesHTML = '';
+            
+            // If no badges, show a message
+            if (!badgesData.badges || badgesData.badges.length === 0) {
+                badgesHTML = `
+                    <div style="text-align: center; padding: 40px 20px;">
+                        <div style="font-size: 80px; color: #ccc; margin-bottom: 20px;">
+                            <i class="fa-solid fa-award"></i>
+                        </div>
+                        <h3 style="color: #555; margin-bottom: 10px;">No Badges Available</h3>
+                        <p style="color: #777;">${username} hasn't started any quizzes yet.</p>
+                    </div>
+                `;
+            } else {
+                // Add badges summary
+                badgesHTML = `
+                    <div class="badges-summary">
+                        <div class="progress-container">
+                            <div class="progress-header">
+                                <div class="progress-title">Achievement Progress</div>
+                                <div class="progress-text">${badgesData.earnedCount}/${badgesData.totalBadges} Badges</div>
+                            </div>
+                            <div class="progress-bar">
+                                <div class="progress-fill" style="width: ${Math.round((badgesData.earnedCount / badgesData.totalBadges) * 100)}%"></div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="badges-grid">
+                `;
+                
+                // Add each badge card
+                badgesData.badges.forEach(badge => {
+                    badgesHTML += `
+                        <div class="badge-card ${badge.earned ? '' : 'locked'}" id="badge-${badge.id}">
+                            <div class="badge-icon">
+                                <i class="${badge.icon}"></i>
+                            </div>
+                            <h3 class="badge-name">${badge.name}</h3>
+                            <p class="badge-description">${badge.description}</p>
+                            ${badge.earned && badge.completionDate 
+                                ? `<div class="badge-completion-date">Completed: ${this.formatDate(badge.completionDate)}</div>` 
+                                : ''}
+                            ${!badge.earned ? '<div class="lock-icon"><i class="fa-solid fa-lock"></i></div>' : ''}
+                        </div>
+                    `;
+                });
+                
+                badgesHTML += '</div>'; // Close badges-grid
+            }
+            
+            // Update the container
+            badgesContainer.innerHTML = badgesHTML;
+            
+        } catch (error) {
+            console.error('Error loading badges:', error);
+            const badgesContainer = document.getElementById('userBadgesContainer');
+            badgesContainer.innerHTML = `
+                <div style="text-align: center; padding: 40px 20px; color: #dc3545;">
+                    <div style="font-size: 60px; margin-bottom: 20px;">
+                        <i class="fa-solid fa-exclamation-circle"></i>
+                    </div>
+                    <h3 style="margin-bottom: 10px;">Error Loading Badges</h3>
+                    <p>${error.message || 'Failed to load badges. Please try again.'}</p>
+                </div>
+            `;
+        }
+    }
+    
+    // Helper method for formatting dates in badge display
+    formatDate(dateString) {
+        if (!dateString) return 'N/A';
+        
+        try {
+            const date = new Date(dateString);
+            return date.toLocaleDateString('en-GB', {
+                day: 'numeric',
+                month: 'short',
+                year: 'numeric'
+            });
+        } catch (error) {
+            console.error('Error formatting date:', error);
+            return 'Invalid Date';
+        }
     }
 }
 
