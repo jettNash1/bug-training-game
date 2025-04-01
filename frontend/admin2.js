@@ -3076,6 +3076,4709 @@ export class Admin2Dashboard extends AdminDashboard {
     // Check for scheduled resets that need to be executed
     async checkScheduledResets() {
         try {
+            console.log('Checking for scheduled resets...');
+            
+            // Skip if auto reset is not enabled
+            if (!this.autoResetSettings?.enabled) {
+                console.log('Auto-reset is disabled, skipping check');
+                return;
+            }
+            
+            const nextResetTime = this.autoResetSettings.nextResetTime;
+            if (!nextResetTime) {
+                console.log('No next reset time set, setting one now');
+                
+                // If no reset time is set but auto-reset is enabled, set a reset time
+                const nextResetDate = new Date();
+                nextResetDate.setDate(nextResetDate.getDate() + (this.autoResetSettings?.resetPeriodDays || 30));
+                
+                // Update settings with new next reset time
+                const updatedSettings = {
+                    ...this.autoResetSettings,
+                    nextResetTime: nextResetDate.toISOString()
+                };
+                
+                console.log('Setting initial next reset time:', updatedSettings);
+                await this.apiService.updateAutoResetSettings(updatedSettings);
+                await this.loadAutoResetSettings();
+                this.displayAutoResetSettings();
+                return;
+            }
+            
+            const now = new Date();
+            const nextReset = new Date(nextResetTime);
+            
+            console.log(`Next reset scheduled for: ${nextReset.toLocaleString()}`);
+            console.log(`Current time: ${now.toLocaleString()}`);
+            
+            // Check if reset is due
+            if (nextReset <= now) {
+                console.log('Reset is due, triggering reset process');
+                
+                // Update the status to show it's processing
+                const statusEl = document.querySelector('#auto-reset-status-text');
+                if (statusEl) {
+                    statusEl.innerHTML = '<p><strong>Status:</strong> <span class="text-warning">Running reset...</span></p>';
+                }
+                
+                // Trigger the reset
+                await this.manuallyTriggerReset(true);
+                
+                // No need to update settings here as manuallyTriggerReset already does this
+                // when isAutomatic is true, but we'll ensure refresh of the display
+                this.displayAutoResetSettings();
+                
+                // Log the successful reset
+                console.log('Auto-reset completed successfully');
+            } else {
+                const timeUntilReset = nextReset.getTime() - now.getTime();
+                const hoursUntilReset = Math.round(timeUntilReset / (1000 * 60 * 60));
+                console.log(`Reset is scheduled in approximately ${hoursUntilReset} hours`);
+            }
+        } catch (error) {
+            console.error('Error checking scheduled resets:', error);
+        }
+    }
+    
+    // Add implementation for showQuizQuestions matching standard admin
+    async showQuizQuestions(quizType, username) {
+        try {
+            // Get user data
+            const user = this.users.find(u => u.username === username);
+            if (!user) {
+                throw new Error('User not found');
+            }
+
+            console.log('Showing quiz questions for:', { username, quizType });
+            
+            // Get quiz results from API
+            try {
+                // Import ApiService from relative path
+    // Add implementation for showQuizQuestions matching standard admin
+    async showQuizQuestions(quizType, username) {
+        try {
+            // Get user data
+            const user = this.users.find(u => u.username === username);
+            if (!user) {
+                throw new Error('User not found');
+            }
+
+            console.log('Showing quiz questions for:', { username, quizType });
+            
+            // Get quiz results from API
+            try {
+                // Import ApiService from relative path
+                const apiService = this.apiService; // Use the inherited apiService
+                const response = await apiService.getQuizQuestions(username, quizType);
+                console.log('Quiz questions API response:', response);
+                
+                if (response.success && response.data) {
+                    // Map the API response to the format expected by the UI
+                    const apiQuestionHistory = response.data.questionHistory || [];
+                    const questionHistory = apiQuestionHistory.map(item => {
+                        const isPassed = item.status === 'passed';
+                        const isTimedOut = item.timedOut === true;
+                        
+                        // Get the correct answer
+                        let correctAnswer = '';
+                        if (item.correctAnswer && item.correctAnswer.text) {
+                            // If the API provides the correct answer directly, use it
+                            correctAnswer = item.correctAnswer.text;
+                        } else if (!isPassed && item.selectedAnswer?.outcome) {
+                            // Otherwise try to extract from outcome text
+                            const outcomeText = item.selectedAnswer.outcome;
+                            const match = outcomeText.match(/The correct answer was: "([^"]+)"/);
+                            if (match && match[1]) {
+                                correctAnswer = match[1];
+                            } else {
+                                // If we can't extract from outcome, use the tool field
+                                // The tool field often contains the name of the correct answer for incorrect responses
+                                correctAnswer = item.selectedAnswer?.tool || 'Correct answer not available';
+                            }
+                        } else if (isPassed) {
+                            // For correct answers, the selected answer is the correct answer
+                            correctAnswer = item.selectedAnswer?.text || '';
+                        }
+                        
+                        return {
+                            question: item.scenario?.title || 'Question text not available',
+                            scenario: item.scenario?.description || '',
+                            selectedAnswer: item.selectedAnswer?.text || 'No answer selected',
+                            correctAnswer: correctAnswer || 'Correct answer not available',
+                            isCorrect: isPassed,
+                            isTimedOut: isTimedOut
+                        };
+                    });
+                    
+                    const questionsAnswered = response.data.totalQuestions || 0;
+                    const quizScore = response.data.score || 0;
+                    const quizStatus = questionsAnswered >= 15 ? 'Completed' : (questionsAnswered > 0 ? 'In Progress' : 'Not Started');
+                    
+                    console.log('Mapped question history:', questionHistory);
+                    console.log('Questions answered:', questionsAnswered);
+                    console.log('Quiz status:', quizStatus);
+                    
+                    // Create overlay container
+            const overlay = document.createElement('div');
+            overlay.className = 'user-details-overlay';
+                    overlay.style.zIndex = '1002'; // Ensure it's above other overlays
+            overlay.setAttribute('role', 'dialog');
+            overlay.setAttribute('aria-modal', 'true');
+                    overlay.setAttribute('aria-labelledby', 'questions-details-title');
+            
+            // Create content container
+            const content = document.createElement('div');
+            content.className = 'user-details-content';
+            
+                    // Determine if we should show the questions table or the "no questions" message
+                    const hasCompletedQuestions = questionHistory.length > 0 || questionsAnswered > 0;
+                    
+                    content.innerHTML = `
+                        <style>
+                            .questions-table tr.passed {
+                                background-color: rgba(75, 181, 67, 0.1);
+                            }
+                            .questions-table tr.failed {
+                                background-color: rgba(255, 68, 68, 0.1);
+                            }
+                            .questions-table tr.timed-out {
+                                background-color: rgba(158, 158, 158, 0.1);
+                            }
+                            .questions-table tr.passed td {
+                                border-bottom: 1px solid rgba(75, 181, 67, 0.2);
+                            }
+                            .questions-table tr.failed td {
+                                border-bottom: 1px solid rgba(255, 68, 68, 0.2);
+                            }
+                            .questions-table tr.timed-out td {
+                                border-bottom: 1px solid rgba(158, 158, 158, 0.2);
+                            }
+                            .questions-table tr {
+                                border-left: 4px solid transparent;
+                                height: auto;
+                                min-height: 60px;
+                            }
+                            .questions-table tr.passed {
+                                border-left: 4px solid #4bb543;
+                            }
+                            .questions-table tr.failed {
+                                border-left: 4px solid #ff4444;
+                            }
+                            .questions-table tr.timed-out {
+                                border-left: 4px solid #9e9e9e;
+                            }
+                            .questions-table tbody tr:not(:last-child) {
+                                border-bottom: 1px solid #e9ecef;
+                            }
+                            .questions-table td {
+                                padding: 12px 15px;
+                                vertical-align: top;
+                                line-height: 1.5;
+                            }
+                            .questions-table th {
+                                padding: 12px 15px;
+                                background-color: #f8f9fa;
+                                border-bottom: 2px solid #dee2e6;
+                                font-weight: 600;
+                            }
+                            .questions-table {
+                                width: 100%;
+                                border-collapse: separate;
+                                border-spacing: 0;
+                                margin-bottom: 1rem;
+                                box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+                            }
+                            .questions-table strong {
+                                font-weight: 600;
+                                display: block;
+                                margin-bottom: 6px;
+                            }
+                            .answer-content div {
+                                margin-bottom: 8px;
+                            }
+                            .answer-content strong {
+                                display: inline-block;
+                                min-width: 80px;
+                            }
+                            .status-badge {
+                                padding: 4px 8px;
+                                border-radius: 4px;
+                                font-weight: bold;
+                                font-size: 0.9em;
+                            }
+                            .status-badge.pass {
+                                background-color: rgba(75, 181, 67, 0.2);
+                                color: #2e7d32;
+                            }
+                            .status-badge.fail {
+                                background-color: rgba(255, 68, 68, 0.2);
+                                color: #c62828;
+                            }
+                            .status-badge.timeout {
+                                background-color: rgba(158, 158, 158, 0.2);
+                                color: #616161;
+                            }
+                        </style>
+                        <div class="details-header">
+                            <h3 id="questions-details-title">${this.formatQuizName(quizType)} - ${username}'s Answers</h3>
+                            <button class="close-btn" aria-label="Close questions view" tabindex="0">×</button>
+                    </div>
+                        <div class="questions-content">
+                            ${!hasCompletedQuestions ? 
+                                `<div class="not-attempted">
+                                    <p>This user has not attempted any questions in this quiz yet.</p>
+                                </div>` : 
+                                questionHistory.length > 0 ?
+                                `<table class="questions-table">
+                                    <thead>
+                                        <tr>
+                                            <th style="width: 5%;">#</th>
+                                            <th style="width: 15%;">Status</th>
+                                            <th style="width: 40%;">Question</th>
+                                            <th style="width: 40%;">Answer</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        ${questionHistory.map((question, index) => {
+                                            const isPassed = question.isCorrect;
+                                            return `
+                                                <tr class="${isPassed ? 'passed' : question.isTimedOut ? 'timed-out' : 'failed'}">
+                                                    <td>${index + 1}</td>
+                                                    <td>
+                                                        <span class="status-badge ${isPassed ? 'pass' : question.isTimedOut ? 'timeout' : 'fail'}">
+                                                            ${isPassed ? 'CORRECT' : question.isTimedOut ? 'TIMED OUT' : 'INCORRECT'}
+                                    </span>
+                                                    </td>
+                                                    <td>
+                                                        <strong>${question.question || 'Question text not available'}</strong>
+                                                        ${question.scenario ? `<p>${question.scenario}</p>` : ''}
+                                                    </td>
+                                                    <td class="answer-content">
+                                                        <div>
+                                                            <strong>Selected:</strong> ${question.selectedAnswer || 'No answer selected'}
+                                </div>
+                                                        <div>
+                                                            <strong>Correct:</strong> ${question.correctAnswer || 'Correct answer not available'}
+                            </div>
+                                                    </td>
+                                                </tr>
+                                            `;
+                                        }).join('')}
+                                    </tbody>
+                                </table>` :
+                                `<div class="not-attempted">
+                                    <p>This user has completed ${questionsAnswered} questions, but detailed history is not available.</p>
+                                </div>`
+                            }
+                        </div>
+                    `;
+                    
+            overlay.appendChild(content);
+            document.body.appendChild(overlay);
+            
+                    // Close button event listener
+                    const closeBtn = content.querySelector('.close-btn');
+                    if (closeBtn) {
+            closeBtn.addEventListener('click', () => {
+                overlay.remove();
+            });
+            
+                        // Add keyboard support for close button
+                        closeBtn.addEventListener('keydown', (e) => {
+                            if (e.key === 'Enter' || e.key === ' ') {
+                                e.preventDefault();
+                    overlay.remove();
+                }
+            });
+                    }
+            
+                    // Close on escape key
+                    const handleEscapeKey = (e) => {
+                if (e.key === 'Escape') {
+                    overlay.remove();
+                            document.removeEventListener('keydown', handleEscapeKey);
+                        }
+                    };
+                    document.addEventListener('keydown', handleEscapeKey);
+                    
+                    // Close on click outside
+                    overlay.addEventListener('click', (e) => {
+                        if (e.target === overlay) {
+                            overlay.remove();
+                        }
+                    });
+                    
+                } else {
+                    throw new Error('Quiz data not available');
+                }
+            } catch (apiError) {
+                console.error('API error:', apiError);
+                this.showError(`Failed to fetch quiz questions: ${apiError.message}`);
+            }
+            
+        } catch (error) {
+            console.error('Error showing quiz questions:', error);
+            this.showError(`Failed to show quiz questions: ${error.message}`);
+        }
+    }
+
+    // Helper method for getting question icon based on correctness
+    getQuestionIcon(isCorrect) {
+        return isCorrect ? 'fa-check-circle' : 'fa-times-circle';
+    }
+
+    // Helper method for formatting question type
+    formatQuestionType(type) {
+        if (!type) return 'Question';
+        return type.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+    }
+
+    // Helper method to update the "Select All" checkbox state based on individual checkboxes
+    updateSelectAllCheckbox() {
+        const selectAllCheckbox = document.getElementById('selectAllQuizzes');
+        const quizCheckboxes = document.querySelectorAll('input[name="quizzes"]');
+        
+        if (selectAllCheckbox && quizCheckboxes.length > 0) {
+            const allChecked = Array.from(quizCheckboxes).every(checkbox => checkbox.checked);
+            selectAllCheckbox.checked = allChecked;
+        }
+    }
+    
+    // Helper method to handle create account form submission
+    async handleCreateAccount(event) {
+        event.preventDefault();
+        
+        try {
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+            
+            // Define the valid quiz types
+            const validQuizTypes = [
+                'automation-interview', 'build-verification', 'cms-testing',
+                'communication', 'content-copy', 'email-testing',
+                'exploratory', 'fully-scripted', 'functional-interview',
+                'initiative', 'issue-tracking-tools', 'issue-verification',
+                'locale-testing', 'non-functional', 'raising-tickets',
+                'reports', 'risk-analysis', 'risk-management',
+                'sanity-smoke', 'script-metrics-troubleshooting',
+                'standard-script-testing', 'test-support', 'test-types-tricks',
+                'tester-mindset', 'time-management'
+            ];
+            
+            // Log all selected checkboxes
+            const selectedCheckboxes = document.querySelectorAll('input[name="quizzes"]:checked');
+            console.log('Selected checkboxes:', Array.from(selectedCheckboxes).map(cb => ({
+                value: cb.value,
+                dataset: cb.dataset
+            })));
+
+            // Get selected quizzes and log them
+            const selectedQuizzes = Array.from(selectedCheckboxes)
+                .map(checkbox => checkbox.value.toLowerCase());
+            console.log('Selected quizzes (before validation):', selectedQuizzes);
+
+            // Log the valid quiz types for comparison
+            console.log('Valid quiz types:', validQuizTypes);
+
+            // Validate basic requirements
+            if (username.length < 3) {
+                throw new Error('Username must be at least 3 characters long');
+            }
+
+            if (password.length < 6) {
+                throw new Error('Password must be at least 6 characters long');
+            }
+            
+            if (selectedQuizzes.length === 0) {
+                throw new Error('Please select at least one quiz');
+            }
+
+            // Log which quizzes are invalid
+            const invalidQuizzes = selectedQuizzes.filter(quiz => !validQuizTypes.includes(quiz));
+            if (invalidQuizzes.length > 0) {
+                console.error('Invalid quiz names found:', invalidQuizzes);
+                console.log('These quiz names do not match any in the valid quiz types list');
+            }
+
+            // Filter valid quizzes and log them
+            const allowedQuizzes = selectedQuizzes.filter(quiz => validQuizTypes.includes(quiz));
+            console.log('Allowed quizzes (after validation):', allowedQuizzes);
+            
+            if (allowedQuizzes.length === 0) {
+                throw new Error('No valid quiz types selected');
+            }
+
+            // Create array of hidden quizzes and log them
+            const hiddenQuizzes = validQuizTypes.filter(quiz => !allowedQuizzes.includes(quiz));
+            console.log('Hidden quizzes:', hiddenQuizzes);
+
+            // Log the final request body
+            const requestBody = {
+                username,
+                password,
+                userType: 'interview_candidate',
+                allowedQuizzes,
+                hiddenQuizzes
+            };
+            console.log('Request body:', requestBody);
+
+            const response = await this.apiService.fetchWithAdminAuth('/api/admin/create-interview-account', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(requestBody)
+            });
+
+            if (!response.success) {
+                throw new Error(response.message || 'Failed to create account');
+            }
+
+            // Show success message
+            this.showSuccess(`Account created for ${username}`);
+            
+            // Reset the form
+            document.getElementById('createInterviewForm').reset();
+            
+            // Update the users list
+            await this.loadUsers();
+            
+        } catch (error) {
+            console.error('Failed to create account:', error);
+            this.showError(error.message || 'Failed to create account');
+            throw error;
+        }
+    }
+
+    // Setup schedule section with form and event handlers
+    setupScheduleSection() {
+        console.log('Setting up schedule section');
+        
+        const scheduleForm = document.getElementById('scheduleForm');
+        const userSelect = document.getElementById('scheduleUser');
+        const quizSelect = document.getElementById('scheduleQuiz');
+        const dateInput = document.getElementById('scheduleDate');
+        const timeInput = document.getElementById('scheduleTime');
+        
+        // Add a refresh button to manually refresh scheduled resets
+        const scheduledItemsHeader = document.querySelector('.scheduled-items-header');
+        if (scheduledItemsHeader) {
+            const refreshButton = document.createElement('button');
+            refreshButton.className = 'refresh-btn action-button secondary';
+            refreshButton.innerHTML = '<i class="fas fa-sync-alt"></i> Refresh';
+            refreshButton.setAttribute('aria-label', 'Refresh scheduled resets');
+            refreshButton.addEventListener('click', () => this.refreshScheduleData());
+            
+            scheduledItemsHeader.appendChild(refreshButton);
+        }
+        
+        // Populate user dropdown
+        this.populateUserDropdown();
+        
+        // Populate quiz dropdown
+        this.populateQuizDropdown();
+        
+        // Set minimum date to today
+        const today = new Date();
+        const year = today.getFullYear();
+        const month = String(today.getMonth() + 1).padStart(2, '0');
+        const day = String(today.getDate()).padStart(2, '0');
+        dateInput.min = `${year}-${month}-${day}`;
+        
+        // Add form submit handler
+        scheduleForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            this.createSchedule();
+        });
+        
+        // Load and display existing scheduled resets
+        this.loadScheduledResets();
+        
+        // Also check for any scheduled resets that need to be executed
+        this.checkScheduledResets().catch(error => {
+            console.error('Error checking scheduled resets during setup:', error);
+        });
+    }
+    
+    // Populate user dropdown with available users
+    populateUserDropdown() {
+        const userSelect = document.getElementById('scheduleUser');
+        
+        // Clear existing options except the first one
+        while (userSelect.options.length > 1) {
+            userSelect.remove(1);
+        }
+        
+        // Add user options
+        this.users.forEach(user => {
+            const option = document.createElement('option');
+            option.value = user.username;
+            option.textContent = user.username;
+            userSelect.appendChild(option);
+        });
+    }
+    
+    // Populate quiz dropdown with available quizzes
+    populateQuizDropdown() {
+        const quizSelect = document.getElementById('scheduleQuiz');
+        
+        // Clear existing options except the first one
+        while (quizSelect.options.length > 1) {
+            quizSelect.remove(1);
+        }
+        
+        // Add quiz options sorted alphabetically
+        this.quizTypes
+            .slice()
+            .sort((a, b) => this.formatQuizName(a).localeCompare(this.formatQuizName(b)))
+            .forEach(quizType => {
+                const option = document.createElement('option');
+                option.value = quizType;
+                option.textContent = this.formatQuizName(quizType);
+                quizSelect.appendChild(option);
+            });
+    }
+    
+    // Create a new schedule based on form data
+    async createSchedule() {
+        try {
+            const username = document.getElementById('scheduleUser').value;
+            const quizName = document.getElementById('scheduleQuiz').value;
+            const resetDate = document.getElementById('scheduleDate').value;
+            const resetTime = document.getElementById('scheduleTime').value;
+            
+            // Validate inputs
+            if (!username || !quizName || !resetDate || !resetTime) {
+                this.showError('Please fill in all fields');
+                return;
+            }
+            
+            // Create datetime string
+            const resetDateTime = `${resetDate}T${resetTime}:00`;
+            
+            // Show loading state
+            const submitBtn = document.querySelector('.submit-btn');
+            submitBtn.disabled = true;
+            submitBtn.textContent = 'Scheduling...';
+            
+            // Use the API service to create the schedule
+            const response = await this.apiService.createScheduledReset(username, quizName, resetDateTime);
+            
+            if (response.success) {
+                // Reset form
+                document.getElementById('scheduleForm').reset();
+                
+                // Show success message
+                this.showSuccess(`Reset scheduled for ${this.formatQuizName(quizName)} on ${this.formatScheduleDateTime(resetDateTime)}`);
+                
+                // Refresh the schedules list
+                this.loadScheduledResets();
+            } else {
+                throw new Error(response.message || 'Failed to schedule reset');
+            }
+        } catch (error) {
+            console.error('Error creating schedule:', error);
+            this.showError(`Failed to create schedule: ${error.message}`);
+        } finally {
+            // Reset button state
+            const submitBtn = document.querySelector('.submit-btn');
+            submitBtn.disabled = false;
+            submitBtn.textContent = 'Schedule Reset';
+        }
+    }
+    
+    // Get all scheduled resets from API with localStorage fallback
+    async getScheduledResets() {
+        try {
+            const response = await this.apiService.getScheduledResets();
+            return response.data || [];
+        } catch (error) {
+            console.error('Error getting scheduled resets:', error);
+            this.showError(`Failed to load scheduled resets: ${error.message}`);
+            return [];
+        }
+    }
+    
+    // Load and display scheduled resets
+    async loadScheduledResets() {
+        try {
+            // Show loading state
+            const scheduledItemsList = document.getElementById('scheduledItemsList');
+            scheduledItemsList.innerHTML = `
+                <div class="loading-container" style="text-align: center; padding: 1rem;">
+                    <div class="loading-spinner"></div>
+                    <p>Loading scheduled resets...</p>
+                </div>
+            `;
+            
+            // Get schedules and display them
+            await this.displayScheduledResets();
+            
+            // Add a button to check for due scheduled resets
+            const scheduledItemsHeader = document.querySelector('.scheduled-items-header');
+            if (scheduledItemsHeader) {
+                // Remove any existing check button first
+                const existingCheckBtn = scheduledItemsHeader.querySelector('.check-resets-btn');
+                if (existingCheckBtn) {
+                    existingCheckBtn.remove();
+                }
+                
+                // Create and add the check button
+                const checkButton = document.createElement('button');
+                checkButton.className = 'check-resets-btn action-button secondary';
+                checkButton.innerHTML = '<i class="fas fa-clock"></i> Check Due Resets';
+                checkButton.setAttribute('aria-label', 'Check for due scheduled resets');
+                checkButton.addEventListener('click', async () => {
+                    try {
+                        checkButton.disabled = true;
+                        checkButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Checking...';
+                        await this.checkScheduledResets();
+                        checkButton.disabled = false;
+                        checkButton.innerHTML = '<i class="fas fa-clock"></i> Check Due Resets';
+                    } catch (error) {
+                        checkButton.disabled = false;
+                        checkButton.innerHTML = '<i class="fas fa-clock"></i> Check Due Resets';
+                    }
+                });
+                
+                scheduledItemsHeader.appendChild(checkButton);
+            }
+        } catch (error) {
+            console.error('Error loading scheduled resets:', error);
+            this.showInfo(`Failed to load scheduled resets: ${error.message}`, 'error');
+            
+            // Show error state
+            const scheduledItemsList = document.getElementById('scheduledItemsList');
+            scheduledItemsList.innerHTML = `
+                <div class="error-message">
+                    <p>Failed to load scheduled resets. Please try refreshing the page.</p>
+                </div>
+            `;
+        }
+    }
+    
+    // Display scheduled resets in the list
+    async displayScheduledResets() {
+        const scheduledItemsList = document.getElementById('scheduledItemsList');
+        
+        try {
+            // Get schedules from API or localStorage fallback
+            const schedules = await this.getScheduledResets();
+            
+            // Clear existing content
+            scheduledItemsList.innerHTML = '';
+            
+            if (schedules.length === 0) {
+                scheduledItemsList.innerHTML = '<p class="no-items-message">No scheduled resets yet.</p>';
+                return;
+            }
+            
+            // Sort schedules by date/time (earliest first)
+            schedules.sort((a, b) => new Date(a.resetDateTime) - new Date(b.resetDateTime));
+            
+            // Create list items for each scheduled reset
+            schedules.forEach(schedule => {
+                const scheduledItem = document.createElement('div');
+                scheduledItem.className = 'scheduled-item';
+                scheduledItem.dataset.id = schedule.id;
+                
+                scheduledItem.innerHTML = `
+                    <div class="scheduled-info">
+                        <div class="scheduled-user">${schedule.username}</div>
+                        <div class="scheduled-quiz">${this.formatQuizName(schedule.quizName)}</div>
+                        <div class="scheduled-time">Reset scheduled for: ${this.formatScheduleDateTime(schedule.resetDateTime)}</div>
+                    </div>
+                    <div class="scheduled-actions">
+                        <button class="cancel-schedule-btn" data-id="${schedule.id}" aria-label="Cancel schedule">
+                            <i class="fas fa-times"></i> Cancel
+                        </button>
+                    </div>
+                `;
+                
+                scheduledItemsList.appendChild(scheduledItem);
+            });
+            
+            // Add event listeners to cancel buttons
+            scheduledItemsList.querySelectorAll('.cancel-schedule-btn').forEach(button => {
+                button.addEventListener('click', (e) => {
+                    const scheduleId = e.currentTarget.dataset.id;
+                    this.cancelSchedule(scheduleId);
+                });
+            });
+        } catch (error) {
+            console.error('Error displaying scheduled resets:', error);
+            scheduledItemsList.innerHTML = `
+                <div class="error-message">
+                    <p>Failed to display scheduled resets. Please try refreshing the page.</p>
+                </div>
+            `;
+        }
+    }
+    
+    // Cancel a scheduled reset
+    async cancelSchedule(scheduleId) {
+        try {
+            // Find the schedule to display information in the confirmation dialog
+            const schedules = await this.getScheduledResets();
+            const scheduleToCancel = schedules.find(s => s.id === scheduleId);
+            
+            if (!scheduleToCancel) {
+                this.showError('Schedule not found');
+                return;
+            }
+            
+            // Confirm cancellation
+            if (!confirm(`Are you sure you want to cancel the scheduled reset for ${this.formatQuizName(scheduleToCancel.quizName)}?`)) {
+                return;
+            }
+            
+            // Show loading state on the button
+            const cancelBtn = document.querySelector(`.cancel-schedule-btn[data-id="${scheduleId}"]`);
+            if (cancelBtn) {
+                cancelBtn.disabled = true;
+                cancelBtn.setAttribute('aria-busy', 'true');
+                cancelBtn.innerHTML = `
+                    <i class="fas fa-spinner fa-spin" aria-hidden="true"></i>
+                    <span class="sr-only">Cancelling schedule...</span>
+                    <span aria-hidden="true">Cancelling...</span>
+                `;
+            }
+            
+            // Use the API service to cancel the schedule
+            const response = await this.apiService.cancelScheduledReset(scheduleId);
+            
+            if (response.success) {
+                // Show success message before refreshing display
+                this.showSuccess(`Successfully cancelled scheduled reset for ${this.formatQuizName(scheduleToCancel.quizName)}`);
+                
+                // Refresh the display
+                await this.loadScheduledResets();
+            } else {
+                throw new Error(response.message || 'Failed to cancel schedule');
+            }
+        } catch (error) {
+            console.error('Error cancelling schedule:', error);
+            this.showError(`Failed to cancel schedule: ${error.message}`);
+            
+            // Reset the button state if it still exists
+            const cancelBtn = document.querySelector(`.cancel-schedule-btn[data-id="${scheduleId}"]`);
+            if (cancelBtn) {
+                cancelBtn.disabled = false;
+                cancelBtn.removeAttribute('aria-busy');
+                cancelBtn.innerHTML = '<i class="fas fa-times" aria-hidden="true"></i> Cancel';
+            }
+            
+            // Refresh the display to ensure consistency
+            await this.loadScheduledResets();
+        }
+    }
+    
+    // Format schedule date/time for display
+    formatScheduleDateTime(dateTimeString) {
+        const options = {
+            weekday: 'short',
+            year: 'numeric',
+            month: 'short',
+            day: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit'
+        };
+        
+        return new Date(dateTimeString).toLocaleString(undefined, options);
+    }
+    
+    // Refresh schedule section data
+    async refreshScheduleData() {
+        this.populateUserDropdown();
+        this.populateQuizDropdown();
+        await this.loadScheduledResets();
+    }
+    
+    // Check for scheduled resets that need to be executed
+    async checkScheduledResets() {
+        try {
+            console.log('Checking for scheduled resets...');
+            
+            // Skip if auto reset is not enabled
+            if (!this.autoResetSettings?.enabled) {
+                console.log('Auto-reset is disabled, skipping check');
+                return;
+            }
+            
+            const nextResetTime = this.autoResetSettings.nextResetTime;
+            if (!nextResetTime) {
+                console.log('No next reset time set, setting one now');
+                
+                // If no reset time is set but auto-reset is enabled, set a reset time
+                const nextResetDate = new Date();
+                nextResetDate.setDate(nextResetDate.getDate() + (this.autoResetSettings?.resetPeriodDays || 30));
+                
+                // Update settings with new next reset time
+                const updatedSettings = {
+                    ...this.autoResetSettings,
+                    nextResetTime: nextResetDate.toISOString()
+                };
+                
+                console.log('Setting initial next reset time:', updatedSettings);
+                await this.apiService.updateAutoResetSettings(updatedSettings);
+                await this.loadAutoResetSettings();
+                this.displayAutoResetSettings();
+                return;
+            }
+            
+            const now = new Date();
+            const nextReset = new Date(nextResetTime);
+            
+            console.log(`Next reset scheduled for: ${nextReset.toLocaleString()}`);
+            console.log(`Current time: ${now.toLocaleString()}`);
+            
+            // Check if reset is due
+            if (nextReset <= now) {
+                console.log('Reset is due, triggering reset process');
+                
+                // Update the status to show it's processing
+                const statusEl = document.querySelector('#auto-reset-status-text');
+                if (statusEl) {
+    // Add implementation for showQuizQuestions matching standard admin
+    async showQuizQuestions(quizType, username) {
+        try {
+            // Get user data
+            const user = this.users.find(u => u.username === username);
+            if (!user) {
+                throw new Error('User not found');
+            }
+
+            console.log('Showing quiz questions for:', { username, quizType });
+            
+            // Get quiz results from API
+            try {
+                // Import ApiService from relative path
+                const apiService = this.apiService; // Use the inherited apiService
+                const response = await apiService.getQuizQuestions(username, quizType);
+                console.log('Quiz questions API response:', response);
+                
+                if (response.success && response.data) {
+                    // Map the API response to the format expected by the UI
+                    const apiQuestionHistory = response.data.questionHistory || [];
+                    const questionHistory = apiQuestionHistory.map(item => {
+                        const isPassed = item.status === 'passed';
+                        const isTimedOut = item.timedOut === true;
+                        
+                        // Get the correct answer
+                        let correctAnswer = '';
+                        if (item.correctAnswer && item.correctAnswer.text) {
+                            // If the API provides the correct answer directly, use it
+                            correctAnswer = item.correctAnswer.text;
+                        } else if (!isPassed && item.selectedAnswer?.outcome) {
+                            // Otherwise try to extract from outcome text
+                            const outcomeText = item.selectedAnswer.outcome;
+                            const match = outcomeText.match(/The correct answer was: "([^"]+)"/);
+                            if (match && match[1]) {
+                                correctAnswer = match[1];
+                            } else {
+                                // If we can't extract from outcome, use the tool field
+                                // The tool field often contains the name of the correct answer for incorrect responses
+                                correctAnswer = item.selectedAnswer?.tool || 'Correct answer not available';
+                            }
+                        } else if (isPassed) {
+                            // For correct answers, the selected answer is the correct answer
+                            correctAnswer = item.selectedAnswer?.text || '';
+                        }
+                        
+                        return {
+                            question: item.scenario?.title || 'Question text not available',
+                            scenario: item.scenario?.description || '',
+                            selectedAnswer: item.selectedAnswer?.text || 'No answer selected',
+                            correctAnswer: correctAnswer || 'Correct answer not available',
+                            isCorrect: isPassed,
+                            isTimedOut: isTimedOut
+                        };
+                    });
+                    
+                    const questionsAnswered = response.data.totalQuestions || 0;
+                    const quizScore = response.data.score || 0;
+                    const quizStatus = questionsAnswered >= 15 ? 'Completed' : (questionsAnswered > 0 ? 'In Progress' : 'Not Started');
+                    
+                    console.log('Mapped question history:', questionHistory);
+                    console.log('Questions answered:', questionsAnswered);
+                    console.log('Quiz status:', quizStatus);
+                    
+                    // Create overlay container
+            const overlay = document.createElement('div');
+            overlay.className = 'user-details-overlay';
+                    overlay.style.zIndex = '1002'; // Ensure it's above other overlays
+            overlay.setAttribute('role', 'dialog');
+            overlay.setAttribute('aria-modal', 'true');
+                    overlay.setAttribute('aria-labelledby', 'questions-details-title');
+            
+            // Create content container
+            const content = document.createElement('div');
+            content.className = 'user-details-content';
+            
+                    // Determine if we should show the questions table or the "no questions" message
+                    const hasCompletedQuestions = questionHistory.length > 0 || questionsAnswered > 0;
+                    
+                    content.innerHTML = `
+                        <style>
+                            .questions-table tr.passed {
+                                background-color: rgba(75, 181, 67, 0.1);
+                            }
+                            .questions-table tr.failed {
+                                background-color: rgba(255, 68, 68, 0.1);
+                            }
+                            .questions-table tr.timed-out {
+                                background-color: rgba(158, 158, 158, 0.1);
+                            }
+                            .questions-table tr.passed td {
+                                border-bottom: 1px solid rgba(75, 181, 67, 0.2);
+                            }
+                            .questions-table tr.failed td {
+                                border-bottom: 1px solid rgba(255, 68, 68, 0.2);
+                            }
+                            .questions-table tr.timed-out td {
+                                border-bottom: 1px solid rgba(158, 158, 158, 0.2);
+                            }
+                            .questions-table tr {
+                                border-left: 4px solid transparent;
+                                height: auto;
+                                min-height: 60px;
+                            }
+                            .questions-table tr.passed {
+                                border-left: 4px solid #4bb543;
+                            }
+                            .questions-table tr.failed {
+                                border-left: 4px solid #ff4444;
+                            }
+                            .questions-table tr.timed-out {
+                                border-left: 4px solid #9e9e9e;
+                            }
+                            .questions-table tbody tr:not(:last-child) {
+                                border-bottom: 1px solid #e9ecef;
+                            }
+                            .questions-table td {
+                                padding: 12px 15px;
+                                vertical-align: top;
+                                line-height: 1.5;
+                            }
+                            .questions-table th {
+                                padding: 12px 15px;
+                                background-color: #f8f9fa;
+                                border-bottom: 2px solid #dee2e6;
+                                font-weight: 600;
+                            }
+                            .questions-table {
+                                width: 100%;
+                                border-collapse: separate;
+                                border-spacing: 0;
+                                margin-bottom: 1rem;
+                                box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+                            }
+                            .questions-table strong {
+                                font-weight: 600;
+                                display: block;
+                                margin-bottom: 6px;
+                            }
+                            .answer-content div {
+                                margin-bottom: 8px;
+                            }
+                            .answer-content strong {
+                                display: inline-block;
+                                min-width: 80px;
+                            }
+                            .status-badge {
+                                padding: 4px 8px;
+                                border-radius: 4px;
+                                font-weight: bold;
+                                font-size: 0.9em;
+                            }
+                            .status-badge.pass {
+                                background-color: rgba(75, 181, 67, 0.2);
+                                color: #2e7d32;
+                            }
+                            .status-badge.fail {
+                                background-color: rgba(255, 68, 68, 0.2);
+                                color: #c62828;
+                            }
+                            .status-badge.timeout {
+                                background-color: rgba(158, 158, 158, 0.2);
+                                color: #616161;
+                            }
+                        </style>
+                        <div class="details-header">
+                            <h3 id="questions-details-title">${this.formatQuizName(quizType)} - ${username}'s Answers</h3>
+                            <button class="close-btn" aria-label="Close questions view" tabindex="0">×</button>
+                    </div>
+                        <div class="questions-content">
+                            ${!hasCompletedQuestions ? 
+                                `<div class="not-attempted">
+                                    <p>This user has not attempted any questions in this quiz yet.</p>
+                                </div>` : 
+                                questionHistory.length > 0 ?
+                                `<table class="questions-table">
+                                    <thead>
+                                        <tr>
+                                            <th style="width: 5%;">#</th>
+                                            <th style="width: 15%;">Status</th>
+                                            <th style="width: 40%;">Question</th>
+                                            <th style="width: 40%;">Answer</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        ${questionHistory.map((question, index) => {
+                                            const isPassed = question.isCorrect;
+                                            return `
+                                                <tr class="${isPassed ? 'passed' : question.isTimedOut ? 'timed-out' : 'failed'}">
+                                                    <td>${index + 1}</td>
+                                                    <td>
+                                                        <span class="status-badge ${isPassed ? 'pass' : question.isTimedOut ? 'timeout' : 'fail'}">
+                                                            ${isPassed ? 'CORRECT' : question.isTimedOut ? 'TIMED OUT' : 'INCORRECT'}
+                                    </span>
+                                                    </td>
+                                                    <td>
+                                                        <strong>${question.question || 'Question text not available'}</strong>
+                                                        ${question.scenario ? `<p>${question.scenario}</p>` : ''}
+                                                    </td>
+                                                    <td class="answer-content">
+                                                        <div>
+                                                            <strong>Selected:</strong> ${question.selectedAnswer || 'No answer selected'}
+                                </div>
+                                                        <div>
+                                                            <strong>Correct:</strong> ${question.correctAnswer || 'Correct answer not available'}
+                            </div>
+                                                    </td>
+                                                </tr>
+                                            `;
+                                        }).join('')}
+                                    </tbody>
+                                </table>` :
+                                `<div class="not-attempted">
+                                    <p>This user has completed ${questionsAnswered} questions, but detailed history is not available.</p>
+                                </div>`
+                            }
+                        </div>
+                    `;
+                    
+            overlay.appendChild(content);
+            document.body.appendChild(overlay);
+            
+                    // Close button event listener
+                    const closeBtn = content.querySelector('.close-btn');
+                    if (closeBtn) {
+            closeBtn.addEventListener('click', () => {
+                overlay.remove();
+            });
+            
+                        // Add keyboard support for close button
+                        closeBtn.addEventListener('keydown', (e) => {
+                            if (e.key === 'Enter' || e.key === ' ') {
+                                e.preventDefault();
+                    overlay.remove();
+                }
+            });
+                    }
+            
+                    // Close on escape key
+                    const handleEscapeKey = (e) => {
+                if (e.key === 'Escape') {
+                    overlay.remove();
+                            document.removeEventListener('keydown', handleEscapeKey);
+                        }
+                    };
+                    document.addEventListener('keydown', handleEscapeKey);
+                    
+                    // Close on click outside
+                    overlay.addEventListener('click', (e) => {
+                        if (e.target === overlay) {
+                            overlay.remove();
+                        }
+                    });
+                    
+                } else {
+                    throw new Error('Quiz data not available');
+                }
+            } catch (apiError) {
+                console.error('API error:', apiError);
+                this.showError(`Failed to fetch quiz questions: ${apiError.message}`);
+            }
+            
+        } catch (error) {
+            console.error('Error showing quiz questions:', error);
+            this.showError(`Failed to show quiz questions: ${error.message}`);
+        }
+    }
+
+    // Helper method for getting question icon based on correctness
+    getQuestionIcon(isCorrect) {
+        return isCorrect ? 'fa-check-circle' : 'fa-times-circle';
+    }
+
+    // Helper method for formatting question type
+    formatQuestionType(type) {
+        if (!type) return 'Question';
+        return type.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+    }
+
+    // Helper method to update the "Select All" checkbox state based on individual checkboxes
+    updateSelectAllCheckbox() {
+        const selectAllCheckbox = document.getElementById('selectAllQuizzes');
+        const quizCheckboxes = document.querySelectorAll('input[name="quizzes"]');
+        
+        if (selectAllCheckbox && quizCheckboxes.length > 0) {
+            const allChecked = Array.from(quizCheckboxes).every(checkbox => checkbox.checked);
+            selectAllCheckbox.checked = allChecked;
+        }
+    }
+    
+    // Helper method to handle create account form submission
+    async handleCreateAccount(event) {
+        event.preventDefault();
+        
+        try {
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+            
+            // Define the valid quiz types
+            const validQuizTypes = [
+                'automation-interview', 'build-verification', 'cms-testing',
+                'communication', 'content-copy', 'email-testing',
+                'exploratory', 'fully-scripted', 'functional-interview',
+                'initiative', 'issue-tracking-tools', 'issue-verification',
+                'locale-testing', 'non-functional', 'raising-tickets',
+                'reports', 'risk-analysis', 'risk-management',
+                'sanity-smoke', 'script-metrics-troubleshooting',
+                'standard-script-testing', 'test-support', 'test-types-tricks',
+                'tester-mindset', 'time-management'
+            ];
+            
+            // Log all selected checkboxes
+            const selectedCheckboxes = document.querySelectorAll('input[name="quizzes"]:checked');
+            console.log('Selected checkboxes:', Array.from(selectedCheckboxes).map(cb => ({
+                value: cb.value,
+                dataset: cb.dataset
+            })));
+
+            // Get selected quizzes and log them
+            const selectedQuizzes = Array.from(selectedCheckboxes)
+                .map(checkbox => checkbox.value.toLowerCase());
+            console.log('Selected quizzes (before validation):', selectedQuizzes);
+
+            // Log the valid quiz types for comparison
+            console.log('Valid quiz types:', validQuizTypes);
+
+            // Validate basic requirements
+            if (username.length < 3) {
+                throw new Error('Username must be at least 3 characters long');
+            }
+
+            if (password.length < 6) {
+                throw new Error('Password must be at least 6 characters long');
+            }
+            
+            if (selectedQuizzes.length === 0) {
+                throw new Error('Please select at least one quiz');
+            }
+
+            // Log which quizzes are invalid
+            const invalidQuizzes = selectedQuizzes.filter(quiz => !validQuizTypes.includes(quiz));
+            if (invalidQuizzes.length > 0) {
+                console.error('Invalid quiz names found:', invalidQuizzes);
+                console.log('These quiz names do not match any in the valid quiz types list');
+            }
+
+            // Filter valid quizzes and log them
+            const allowedQuizzes = selectedQuizzes.filter(quiz => validQuizTypes.includes(quiz));
+            console.log('Allowed quizzes (after validation):', allowedQuizzes);
+            
+            if (allowedQuizzes.length === 0) {
+                throw new Error('No valid quiz types selected');
+            }
+
+            // Create array of hidden quizzes and log them
+            const hiddenQuizzes = validQuizTypes.filter(quiz => !allowedQuizzes.includes(quiz));
+            console.log('Hidden quizzes:', hiddenQuizzes);
+
+            // Log the final request body
+            const requestBody = {
+                username,
+                password,
+                userType: 'interview_candidate',
+                allowedQuizzes,
+                hiddenQuizzes
+            };
+            console.log('Request body:', requestBody);
+
+            const response = await this.apiService.fetchWithAdminAuth('/api/admin/create-interview-account', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(requestBody)
+            });
+
+            if (!response.success) {
+                throw new Error(response.message || 'Failed to create account');
+            }
+
+            // Show success message
+            this.showSuccess(`Account created for ${username}`);
+            
+            // Reset the form
+            document.getElementById('createInterviewForm').reset();
+            
+            // Update the users list
+            await this.loadUsers();
+            
+        } catch (error) {
+            console.error('Failed to create account:', error);
+            this.showError(error.message || 'Failed to create account');
+            throw error;
+        }
+    }
+
+    // Setup schedule section with form and event handlers
+    setupScheduleSection() {
+        console.log('Setting up schedule section');
+        
+        const scheduleForm = document.getElementById('scheduleForm');
+        const userSelect = document.getElementById('scheduleUser');
+        const quizSelect = document.getElementById('scheduleQuiz');
+        const dateInput = document.getElementById('scheduleDate');
+        const timeInput = document.getElementById('scheduleTime');
+        
+        // Add a refresh button to manually refresh scheduled resets
+        const scheduledItemsHeader = document.querySelector('.scheduled-items-header');
+        if (scheduledItemsHeader) {
+            const refreshButton = document.createElement('button');
+            refreshButton.className = 'refresh-btn action-button secondary';
+            refreshButton.innerHTML = '<i class="fas fa-sync-alt"></i> Refresh';
+            refreshButton.setAttribute('aria-label', 'Refresh scheduled resets');
+            refreshButton.addEventListener('click', () => this.refreshScheduleData());
+            
+            scheduledItemsHeader.appendChild(refreshButton);
+        }
+        
+        // Populate user dropdown
+        this.populateUserDropdown();
+        
+        // Populate quiz dropdown
+        this.populateQuizDropdown();
+        
+        // Set minimum date to today
+        const today = new Date();
+        const year = today.getFullYear();
+        const month = String(today.getMonth() + 1).padStart(2, '0');
+        const day = String(today.getDate()).padStart(2, '0');
+        dateInput.min = `${year}-${month}-${day}`;
+        
+        // Add form submit handler
+        scheduleForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            this.createSchedule();
+        });
+        
+        // Load and display existing scheduled resets
+        this.loadScheduledResets();
+        
+        // Also check for any scheduled resets that need to be executed
+        this.checkScheduledResets().catch(error => {
+            console.error('Error checking scheduled resets during setup:', error);
+        });
+    }
+    
+    // Populate user dropdown with available users
+    populateUserDropdown() {
+        const userSelect = document.getElementById('scheduleUser');
+        
+        // Clear existing options except the first one
+        while (userSelect.options.length > 1) {
+            userSelect.remove(1);
+        }
+        
+        // Add user options
+        this.users.forEach(user => {
+            const option = document.createElement('option');
+            option.value = user.username;
+            option.textContent = user.username;
+            userSelect.appendChild(option);
+        });
+    }
+    
+    // Populate quiz dropdown with available quizzes
+    populateQuizDropdown() {
+        const quizSelect = document.getElementById('scheduleQuiz');
+        
+        // Clear existing options except the first one
+        while (quizSelect.options.length > 1) {
+            quizSelect.remove(1);
+        }
+        
+        // Add quiz options sorted alphabetically
+        this.quizTypes
+            .slice()
+            .sort((a, b) => this.formatQuizName(a).localeCompare(this.formatQuizName(b)))
+            .forEach(quizType => {
+                const option = document.createElement('option');
+                option.value = quizType;
+                option.textContent = this.formatQuizName(quizType);
+                quizSelect.appendChild(option);
+            });
+    }
+    
+    // Create a new schedule based on form data
+    async createSchedule() {
+        try {
+            const username = document.getElementById('scheduleUser').value;
+            const quizName = document.getElementById('scheduleQuiz').value;
+            const resetDate = document.getElementById('scheduleDate').value;
+            const resetTime = document.getElementById('scheduleTime').value;
+            
+            // Validate inputs
+            if (!username || !quizName || !resetDate || !resetTime) {
+                this.showError('Please fill in all fields');
+                return;
+            }
+            
+            // Create datetime string
+            const resetDateTime = `${resetDate}T${resetTime}:00`;
+            
+            // Show loading state
+            const submitBtn = document.querySelector('.submit-btn');
+            submitBtn.disabled = true;
+            submitBtn.textContent = 'Scheduling...';
+            
+            // Use the API service to create the schedule
+            const response = await this.apiService.createScheduledReset(username, quizName, resetDateTime);
+            
+            if (response.success) {
+                // Reset form
+                document.getElementById('scheduleForm').reset();
+                
+                // Show success message
+                this.showSuccess(`Reset scheduled for ${this.formatQuizName(quizName)} on ${this.formatScheduleDateTime(resetDateTime)}`);
+                
+                // Refresh the schedules list
+                this.loadScheduledResets();
+            } else {
+                throw new Error(response.message || 'Failed to schedule reset');
+            }
+        } catch (error) {
+            console.error('Error creating schedule:', error);
+            this.showError(`Failed to create schedule: ${error.message}`);
+        } finally {
+            // Reset button state
+            const submitBtn = document.querySelector('.submit-btn');
+            submitBtn.disabled = false;
+            submitBtn.textContent = 'Schedule Reset';
+        }
+    }
+    
+    // Get all scheduled resets from API with localStorage fallback
+    async getScheduledResets() {
+        try {
+            const response = await this.apiService.getScheduledResets();
+            return response.data || [];
+        } catch (error) {
+            console.error('Error getting scheduled resets:', error);
+            this.showError(`Failed to load scheduled resets: ${error.message}`);
+            return [];
+        }
+    }
+    
+    // Load and display scheduled resets
+    async loadScheduledResets() {
+        try {
+            // Show loading state
+            const scheduledItemsList = document.getElementById('scheduledItemsList');
+            scheduledItemsList.innerHTML = `
+                <div class="loading-container" style="text-align: center; padding: 1rem;">
+                    <div class="loading-spinner"></div>
+                    <p>Loading scheduled resets...</p>
+                </div>
+            `;
+            
+            // Get schedules and display them
+            await this.displayScheduledResets();
+            
+            // Add a button to check for due scheduled resets
+            const scheduledItemsHeader = document.querySelector('.scheduled-items-header');
+            if (scheduledItemsHeader) {
+                // Remove any existing check button first
+                const existingCheckBtn = scheduledItemsHeader.querySelector('.check-resets-btn');
+                if (existingCheckBtn) {
+                    existingCheckBtn.remove();
+                }
+                
+                // Create and add the check button
+                const checkButton = document.createElement('button');
+                checkButton.className = 'check-resets-btn action-button secondary';
+                checkButton.innerHTML = '<i class="fas fa-clock"></i> Check Due Resets';
+                checkButton.setAttribute('aria-label', 'Check for due scheduled resets');
+                checkButton.addEventListener('click', async () => {
+                    try {
+                        checkButton.disabled = true;
+                        checkButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Checking...';
+                        await this.checkScheduledResets();
+                        checkButton.disabled = false;
+                        checkButton.innerHTML = '<i class="fas fa-clock"></i> Check Due Resets';
+                    } catch (error) {
+                        checkButton.disabled = false;
+                        checkButton.innerHTML = '<i class="fas fa-clock"></i> Check Due Resets';
+                    }
+                });
+                
+                scheduledItemsHeader.appendChild(checkButton);
+            }
+        } catch (error) {
+            console.error('Error loading scheduled resets:', error);
+            this.showInfo(`Failed to load scheduled resets: ${error.message}`, 'error');
+            
+            // Show error state
+            const scheduledItemsList = document.getElementById('scheduledItemsList');
+            scheduledItemsList.innerHTML = `
+                <div class="error-message">
+                    <p>Failed to load scheduled resets. Please try refreshing the page.</p>
+                </div>
+            `;
+        }
+    }
+    
+    // Display scheduled resets in the list
+    async displayScheduledResets() {
+        const scheduledItemsList = document.getElementById('scheduledItemsList');
+        
+        try {
+            // Get schedules from API or localStorage fallback
+            const schedules = await this.getScheduledResets();
+            
+            // Clear existing content
+            scheduledItemsList.innerHTML = '';
+            
+            if (schedules.length === 0) {
+                scheduledItemsList.innerHTML = '<p class="no-items-message">No scheduled resets yet.</p>';
+                return;
+            }
+            
+            // Sort schedules by date/time (earliest first)
+            schedules.sort((a, b) => new Date(a.resetDateTime) - new Date(b.resetDateTime));
+            
+            // Create list items for each scheduled reset
+            schedules.forEach(schedule => {
+                const scheduledItem = document.createElement('div');
+                scheduledItem.className = 'scheduled-item';
+                scheduledItem.dataset.id = schedule.id;
+                
+                scheduledItem.innerHTML = `
+                    <div class="scheduled-info">
+                        <div class="scheduled-user">${schedule.username}</div>
+                        <div class="scheduled-quiz">${this.formatQuizName(schedule.quizName)}</div>
+                        <div class="scheduled-time">Reset scheduled for: ${this.formatScheduleDateTime(schedule.resetDateTime)}</div>
+                    </div>
+                    <div class="scheduled-actions">
+                        <button class="cancel-schedule-btn" data-id="${schedule.id}" aria-label="Cancel schedule">
+                            <i class="fas fa-times"></i> Cancel
+                        </button>
+                    </div>
+                `;
+                
+                scheduledItemsList.appendChild(scheduledItem);
+            });
+            
+            // Add event listeners to cancel buttons
+            scheduledItemsList.querySelectorAll('.cancel-schedule-btn').forEach(button => {
+                button.addEventListener('click', (e) => {
+                    const scheduleId = e.currentTarget.dataset.id;
+                    this.cancelSchedule(scheduleId);
+                });
+            });
+        } catch (error) {
+            console.error('Error displaying scheduled resets:', error);
+            scheduledItemsList.innerHTML = `
+                <div class="error-message">
+                    <p>Failed to display scheduled resets. Please try refreshing the page.</p>
+                </div>
+            `;
+        }
+    }
+    
+    // Cancel a scheduled reset
+    async cancelSchedule(scheduleId) {
+        try {
+            // Find the schedule to display information in the confirmation dialog
+            const schedules = await this.getScheduledResets();
+            const scheduleToCancel = schedules.find(s => s.id === scheduleId);
+            
+            if (!scheduleToCancel) {
+                this.showError('Schedule not found');
+                return;
+            }
+            
+            // Confirm cancellation
+            if (!confirm(`Are you sure you want to cancel the scheduled reset for ${this.formatQuizName(scheduleToCancel.quizName)}?`)) {
+                return;
+            }
+            
+            // Show loading state on the button
+            const cancelBtn = document.querySelector(`.cancel-schedule-btn[data-id="${scheduleId}"]`);
+            if (cancelBtn) {
+                cancelBtn.disabled = true;
+                cancelBtn.setAttribute('aria-busy', 'true');
+                cancelBtn.innerHTML = `
+                    <i class="fas fa-spinner fa-spin" aria-hidden="true"></i>
+                    <span class="sr-only">Cancelling schedule...</span>
+                    <span aria-hidden="true">Cancelling...</span>
+                `;
+            }
+            
+            // Use the API service to cancel the schedule
+            const response = await this.apiService.cancelScheduledReset(scheduleId);
+            
+            if (response.success) {
+                // Show success message before refreshing display
+                this.showSuccess(`Successfully cancelled scheduled reset for ${this.formatQuizName(scheduleToCancel.quizName)}`);
+                
+                // Refresh the display
+                await this.loadScheduledResets();
+            } else {
+                throw new Error(response.message || 'Failed to cancel schedule');
+            }
+        } catch (error) {
+            console.error('Error cancelling schedule:', error);
+            this.showError(`Failed to cancel schedule: ${error.message}`);
+            
+            // Reset the button state if it still exists
+            const cancelBtn = document.querySelector(`.cancel-schedule-btn[data-id="${scheduleId}"]`);
+            if (cancelBtn) {
+                cancelBtn.disabled = false;
+                cancelBtn.removeAttribute('aria-busy');
+                cancelBtn.innerHTML = '<i class="fas fa-times" aria-hidden="true"></i> Cancel';
+            }
+            
+            // Refresh the display to ensure consistency
+            await this.loadScheduledResets();
+        }
+    }
+    
+    // Format schedule date/time for display
+    formatScheduleDateTime(dateTimeString) {
+        const options = {
+            weekday: 'short',
+            year: 'numeric',
+            month: 'short',
+            day: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit'
+        };
+        
+        return new Date(dateTimeString).toLocaleString(undefined, options);
+    }
+    
+    // Refresh schedule section data
+    async refreshScheduleData() {
+        this.populateUserDropdown();
+        this.populateQuizDropdown();
+        await this.loadScheduledResets();
+    }
+    
+    // Check for scheduled resets that need to be executed
+    async checkScheduledResets() {
+        try {
+            console.log('Checking for scheduled resets...');
+            
+            // Skip if auto reset is not enabled
+            if (!this.autoResetSettings?.enabled) {
+                console.log('Auto-reset is disabled, skipping check');
+                return;
+            }
+            
+            const nextResetTime = this.autoResetSettings.nextResetTime;
+            if (!nextResetTime) {
+                console.log('No next reset time set, setting one now');
+                
+                // If no reset time is set but auto-reset is enabled, set a reset time
+                const nextResetTime = new Date();
+                nextResetTime.setDate(nextResetTime.getDate() + (this.autoResetSettings?.resetPeriodDays || 30));
+                
+                // Update settings with new next reset time
+                const updatedSettings = {
+                    ...this.autoResetSettings,
+import { AdminDashboard } from './admin.js';
+
+export class Admin2Dashboard extends AdminDashboard {
+    constructor() {
+        super();
+        // Additional initialization for Admin2Dashboard
+        this.isRowView = false; // Default to grid view
+        this.guideSettings = {};
+        this.init2();
+    }
+
+    async init2() {
+        try {
+            // Add a guard variable to prevent too frequent checks
+            this.lastScheduleCheck = 0;
+            const MIN_CHECK_INTERVAL = 30000; // 30 seconds minimum between checks
+            
+            // Setup interval to check for scheduled resets that need processing
+            this.scheduleCheckInterval = setInterval(() => {
+                const now = Date.now();
+                // Only check if enough time has passed since the last check
+                if (now - this.lastScheduleCheck >= MIN_CHECK_INTERVAL) {
+                    this.lastScheduleCheck = now;
+                this.checkScheduledResets().catch(error => {
+                    console.error('Error during scheduled resets check:', error);
+                });
+                }
+            }, 60000); // Check every minute
+            
+            // Do an initial check for scheduled resets
+            this.lastScheduleCheck = Date.now();
+            this.checkScheduledResets().catch(error => {
+                console.error('Error during initial scheduled resets check:', error);
+            });
+            
+            // Wait for DOM to be fully loaded
+            if (document.readyState !== 'complete') {
+                await new Promise(resolve => {
+                    window.addEventListener('load', resolve);
+                });
+            }
+
+            // Verify admin token
+            const tokenVerification = await this.apiService.verifyAdminToken();
+            if (!tokenVerification.success) {
+                window.location.href = '/login.html';
+                return;
+            }
+
+            // Set up event listeners first to ensure menu functionality
+            this.setupEventListeners();
+
+            // Initialize all components in parallel
+            await Promise.all([
+                this.loadUsers(),
+                this.loadTimerSettings(),
+                this.loadGuideSettings(),
+                this.loadAutoResetSettings() // Add this line
+            ]);
+
+            // Set up all UI components
+            this.setupCreateAccountForm();
+            this.setupScenariosList();
+            this.setupScheduleSection();
+            this.displayTimerSettings();
+            this.displayGuideSettings();
+            this.setupAutoResetSettings(); // Add this line
+            this.displayAutoResetSettings(); // Add this line to display auto reset settings
+
+            // Update dashboard with initial data
+            await this.updateDashboard();
+        } catch (error) {
+            console.error('Error initializing Admin2Dashboard:', error);
+            this.showError('Failed to initialize dashboard. Please reload the page.');
+        }
+    }
+    
+    async loadUsers() {
+        try {
+            // Use the apiService to properly handle authentication
+            const response = await this.apiService.getAllUsers();
+            
+            if (response.success) {
+                console.log('Loaded user data:', response.data);
+                
+                // Store users data
+                this.users = response.data;
+                
+                // Update dashboard with user data
+                this.updateUsersList();
+                
+                // Load user progress for all users
+                this.loadAllUserProgress();
+                
+                return response.data;
+            } else {
+                console.error('Failed to load users:', response.error);
+                throw new Error(`Failed to load users: ${response.error}`);
+            }
+        } catch (error) {
+            console.error('Error loading users:', error);
+            this.showError('Failed to load users. Please try refreshing the page.');
+            throw error;
+        }
+    }
+    
+    async loadAllUserProgress() {
+        try {
+            for (const user of this.users) {
+                try {
+                    await this.loadUserProgress(user.username);
+                } catch (error) {
+                    console.error(`Error loading progress for user ${user.username}:`, error);
+                }
+            }
+            // Update statistics and user list after loading all progress
+            const stats = this.updateStatistics();
+            this.updateStatisticsDisplay(stats);
+            this.updateUsersList();
+        } catch (error) {
+            console.error('Error loading all user progress:', error);
+        }
+    }
+    
+    async loadUserProgress(username) {
+        try {
+            // Use the apiService to properly handle authentication
+            const response = await this.apiService.getUserProgress(username);
+            
+            if (response.success) {
+                console.log(`Loaded progress for ${username}:`, response.data);
+                
+                // Find the user and update their progress data
+                const userIndex = this.users.findIndex(u => u.username === username);
+                if (userIndex !== -1) {
+                    // Verify data format
+                    if (typeof response.data === 'object') {
+                        // Store quiz progress data
+                        this.users[userIndex].quizProgress = response.data.quizProgress || {};
+                        
+                        // Store quiz results data if available
+                        if (response.data.quizResults && Array.isArray(response.data.quizResults)) {
+                            this.users[userIndex].quizResults = response.data.quizResults;
+                        }
+                        
+                        return response.data;
+                    } else {
+                        console.error(`Invalid progress data format for ${username}:`, response.data);
+                        throw new Error('Invalid progress data format');
+                    }
+                } else {
+                    console.error(`User ${username} not found in users list`);
+                    throw new Error(`User ${username} not found`);
+                }
+            } else {
+                console.error(`Failed to load progress for ${username}:`, response.error);
+                throw new Error(`Failed to load progress: ${response.error}`);
+            }
+        } catch (error) {
+            console.error(`Error loading progress for ${username}:`, error);
+            throw error;
+        }
+    }
+    
+    setupEventListeners() {
+        // Menu navigation
+        const menuItems = document.querySelectorAll('.menu-item');
+        const contentSections = document.querySelectorAll('.content-section');
+        
+        if (!menuItems.length || !contentSections.length) {
+            console.error('Menu items or content sections not found');
+            return;
+        }
+
+        console.log('Setting up menu event listeners:', {
+            menuItemsCount: menuItems.length,
+            contentSectionsCount: contentSections.length
+        });
+
+        menuItems.forEach(item => {
+            const button = item.querySelector('button');
+            if (button) {
+                button.addEventListener('click', () => {
+                    console.log('Menu item clicked:', {
+                        sectionId: item.getAttribute('data-section'),
+                        buttonText: button.textContent.trim()
+                    });
+                    
+                    // Remove active class from all menu items
+                    menuItems.forEach(mi => mi.classList.remove('active'));
+
+                    // Add active class to clicked menu item
+                    item.classList.add('active');
+
+                    // Get the section ID from data attribute
+                    const sectionId = item.getAttribute('data-section');
+                    const section = document.getElementById(sectionId);
+                    
+                    if (!section) {
+                        console.error(`Section not found for ID: ${sectionId}`);
+                        return;
+                    }
+                    
+                    // Hide all sections first
+                    contentSections.forEach(s => {
+                        s.classList.remove('active');
+                        s.style.display = 'none';
+                    });
+                    
+                    // Set display to block and add active class after a small delay
+                    section.style.display = 'block';
+                    setTimeout(() => {
+                        section.classList.add('active');
+                    }, 0);
+                    
+                    // Special handling for different sections
+                    switch(sectionId) {
+                        case 'schedule-section':
+                            this.refreshScheduleData();
+                            break;
+                        case 'settings-section':
+                            this.displayTimerSettings();
+                            this.displayGuideSettings();
+                            break;
+                        case 'scenarios-section':
+                            this.setupScenariosList();
+                            break;
+                        case 'create-account-section':
+                            this.setupCreateAccountForm();
+                            break;
+                    }
+                });
+            }
+        });
+
+        // Logout button
+        const logoutBtn = document.getElementById('logoutBtn');
+        if (logoutBtn) {
+            logoutBtn.addEventListener('click', () => {
+                this.handleAdminLogout();
+            });
+        }
+
+        // View toggle buttons
+        const viewToggleButtons = document.querySelectorAll('.toggle-button');
+        const usersList = document.getElementById('usersList');
+
+        viewToggleButtons.forEach(button => {
+            button.addEventListener('click', () => {
+                // Remove active class from all toggle buttons
+                viewToggleButtons.forEach(btn => btn.classList.remove('active'));
+                button.classList.add('active');
+
+                // Update view class on users list
+                if (usersList) {
+                    usersList.className = `users-list ${button.dataset.view}-view`;
+                }
+            });
+        });
+
+        // Search input
+        const searchInput = document.getElementById('userSearch');
+        if (searchInput) {
+            searchInput.addEventListener('input', () => {
+                this.updateUsersList();
+            });
+        }
+
+        // Sort select
+        const sortSelect = document.getElementById('sortBy');
+        if (sortSelect) {
+            sortSelect.addEventListener('change', () => {
+                this.updateUsersList();
+            });
+        }
+
+        // Account type filter
+        const accountTypeSelect = document.getElementById('accountType');
+        if (accountTypeSelect) {
+            accountTypeSelect.addEventListener('change', () => {
+                this.updateUsersList();
+            });
+        }
+
+        // Export buttons
+        const exportDetailedBtn = document.getElementById('exportDetailedCSV');
+        const exportSimpleBtn = document.getElementById('exportSimpleCSV');
+
+        if (exportDetailedBtn) {
+            exportDetailedBtn.addEventListener('click', () => {
+                this.exportUserData('detailed');
+            });
+        }
+
+        if (exportSimpleBtn) {
+            exportSimpleBtn.addEventListener('click', () => {
+                this.exportUserData('simple');
+            });
+        }
+    }
+    
+    async updateDashboard() {
+        try {
+            // Update statistics
+            const stats = this.updateStatistics();
+            this.updateStatisticsDisplay(stats);
+            
+            // Update user list with current filters
+            await this.updateUserList();
+            
+        } catch (error) {
+            console.error('Error updating dashboard:', error);
+            this.showError(`Failed to update dashboard: ${error.message}`);
+        }
+    }
+    
+    updateStatistics() {
+        const today = new Date().setHours(0, 0, 0, 0);
+        
+        const stats = this.users.reduce((acc, user) => {
+            // Check if user was active today
+            const lastActive = this.getLastActiveDate(user);
+            if (lastActive >= today) {
+                acc.activeUsers++;
+            }
+
+            // Calculate progress for average
+            const userProgress = this.calculateUserProgress(user);
+            acc.totalProgress += userProgress;
+            
+            return acc;
+        }, {
+            totalUsers: this.users.length,
+            activeUsers: 0,
+            totalProgress: 0
+        });
+
+        stats.averageProgress = this.users.length > 0 ? 
+            Math.round(stats.totalProgress / stats.totalUsers) : 0;
+        
+        console.log('Statistics updated:', stats);
+        return stats;
+    }
+
+    updateStatisticsDisplay(stats) {
+        // Update the statistics in the UI
+        const totalUsersElement = document.getElementById('totalUsers');
+        const activeUsersElement = document.getElementById('activeUsers');
+        const averageCompletionElement = document.getElementById('averageCompletion');
+
+        if (totalUsersElement) {
+            totalUsersElement.textContent = stats.totalUsers || 0;
+        }
+        if (activeUsersElement) {
+            activeUsersElement.textContent = stats.activeUsers || 0;
+        }
+        if (averageCompletionElement) {
+            averageCompletionElement.textContent = `${stats.averageProgress || 0}%`;
+        }
+    }
+    
+    async updateUsersList() {
+        const container = document.getElementById('usersList');
+        if (!container) return;
+
+        // Get current filter values
+        const searchQuery = document.getElementById('userSearch')?.value.toLowerCase() || '';
+        const sortBy = document.getElementById('sortBy')?.value || 'username-asc';
+        const accountType = document.getElementById('accountType')?.value || 'all';
+        const isRowView = !container.classList.contains('grid-view');
+
+        // Filter users
+        let filteredUsers = this.users.filter(user => {
+            const matchesSearch = user.username.toLowerCase().includes(searchQuery);
+            const matchesType = accountType === 'all' || 
+                              (accountType === 'regular' && user.userType !== 'interview_candidate') ||
+                              (accountType === 'interview' && user.userType === 'interview_candidate');
+            return matchesSearch && matchesType;
+        });
+
+        // Sort users based on selected criteria
+        filteredUsers.sort((a, b) => {
+            switch (sortBy) {
+                case 'username-asc':
+                    return a.username.localeCompare(b.username);
+                case 'username-desc':
+                    return b.username.localeCompare(a.username);
+                case 'progress-high':
+                    return this.calculateUserProgress(b) - this.calculateUserProgress(a);
+                case 'progress-low':
+                    return this.calculateUserProgress(a) - this.calculateUserProgress(b);
+                case 'last-active':
+                    return this.getLastActiveDate(b) - this.getLastActiveDate(a);
+                default:
+                    return 0;
+            }
+        });
+
+        // Clear existing content
+        container.innerHTML = '';
+
+        // Create and append user cards
+        filteredUsers.forEach(user => {
+            const progress = this.calculateUserProgress(user);
+            const lastActive = this.getLastActiveDate(user);
+            
+            // Calculate total questions answered and XP across all quizzes
+            let totalQuestionsAnswered = 0;
+            let totalXP = 0;
+            
+            if (this.quizTypes && Array.isArray(this.quizTypes)) {
+                this.quizTypes.forEach(quizType => {
+                    if (typeof quizType === 'string') {
+                        const progress = user.quizProgress?.[quizType.toLowerCase()];
+                        const result = user.quizResults?.find(r => r.quizName.toLowerCase() === quizType.toLowerCase());
+                        
+                        // Prioritize values from quiz results over progress
+                        const questionsAnswered = result?.questionsAnswered || 
+                                               result?.questionHistory?.length ||
+                                               progress?.questionsAnswered || 
+                                               progress?.questionHistory?.length || 0;
+                        
+                        totalQuestionsAnswered += questionsAnswered;
+                        
+                        // Get experience and ensure it's a multiple of 5
+                        let xp = progress?.experience || result?.experience || 0;
+                        xp = Math.round(xp / 5) * 5;
+                        totalXP += xp;
+                    }
+                });
+            }
+
+            const card = document.createElement('div');
+            card.className = 'user-card';
+            
+            if (isRowView) {
+                card.innerHTML = `
+                    <div class="row-content">
+                        <div class="user-info">
+                            <span class="username">${user.username}</span>
+                            <span class="account-type-badge">
+                                ${user.userType === 'interview_candidate' ? 'Interview' : 'Regular'}
+                            </span>
+                        </div>
+                        <div class="user-stats">
+                            <div class="stat">
+                                <span class="stat-label">Progress:</span>
+                                <span class="stat-value">${progress.toFixed(1)}%</span>
+                            </div>
+                            <div class="stat">
+                                <span class="stat-label">Questions:</span>
+                                <span class="stat-value">${totalQuestionsAnswered}</span>
+                            </div>
+                            <div class="stat">
+                                <span class="stat-label">XP:</span>
+                                <span class="stat-value">${totalXP}</span>
+                            </div>
+                            <div class="stat">
+                                <span class="stat-label">Last Active:</span>
+                                <span class="stat-value">${this.formatDate(lastActive)}</span>
+                            </div>
+                        </div>
+                        <button class="view-details-btn row-btn" tabindex="0" aria-label="View details for ${user.username}">View Details</button>
+                    </div>
+                `;
+                
+                const viewBtn = card.querySelector('.view-details-btn');
+                if (viewBtn) {
+                    viewBtn.addEventListener('click', () => {
+                        this.showUserDetails(user.username);
+                    });
+                    viewBtn.addEventListener('keydown', (e) => {
+                        if (e.key === 'Enter' || e.key === ' ') {
+                            e.preventDefault();
+                            this.showUserDetails(user.username);
+                        }
+                    });
+                }
+            } else {
+                card.innerHTML = `
+                    <div class="user-card-content">
+                        <div class="user-header">
+                            <span class="username">${user.username}</span>
+                            <span class="account-type-badge">
+                                ${user.userType === 'interview_candidate' ? 'Interview' : 'Regular'}
+                            </span>
+                        </div>
+                        <div class="progress-container">
+                            <div class="progress-bar" style="width: ${progress}%"></div>
+                            <span class="progress-text">${progress.toFixed(1)}%</span>
+                        </div>
+                        <div class="user-stats">
+                            <div class="stat">
+                                <span class="stat-label">Questions:</span>
+                                <span class="stat-value">${totalQuestionsAnswered}</span>
+                            </div>
+                            <div class="stat">
+                                <span class="stat-label">Total XP:</span>
+                                <span class="stat-value">${totalXP}</span>
+                            </div>
+                            <div class="stat">
+                                <span class="stat-label">Last Active:</span>
+                                <span class="stat-value">${this.formatDate(lastActive)}</span>
+                            </div>
+                        </div>
+                    </div>
+                    <button class="view-details-btn" tabindex="0" aria-label="View details for ${user.username}">
+                        View Details
+                    </button>
+                `;
+                
+                // Add event listener for view details button
+                card.querySelector('.view-details-btn').addEventListener('click', () => {
+                    this.showUserDetails(user.username);
+                });
+                card.querySelector('.view-details-btn').addEventListener('keydown', (e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault();
+                        this.showUserDetails(user.username);
+                    }
+                });
+            }
+
+            container.appendChild(card);
+        });
+
+        if (filteredUsers.length === 0) {
+            container.innerHTML = '<div class="no-users">No users match your search criteria</div>';
+        }
+        
+        // Update statistics based on filtered users
+        const stats = this.updateStatistics();
+        this.updateStatisticsDisplay(stats);
+    }
+    
+    // Display timer settings in the settings section
+    displayTimerSettings() {
+        const container = document.getElementById('timer-settings-container');
+        if (!container) return;
+
+        // Clear existing content
+        container.innerHTML = '';
+
+        const defaultSeconds = this.timerSettings?.defaultSeconds || 60;
+        const quizTimers = this.timerSettings?.quizTimers || {};
+        
+        // Use inherited quizTypes array from parent class combined with hardcoded types
+        const allQuizTypes = [...new Set([...this.quizTypes, ...this.getHardcodedQuizTypes()])].sort();
+
+        // Create the default timer settings section
+        const defaultSettingsHTML = `
+            <div class="timer-section">
+                <h4>Default Timer Setting</h4>
+                <p>This setting applies to all quizzes unless overridden by per-quiz settings.</p>
+                
+                <div class="form-row">
+                    <label>Default seconds per question (0-300):</label>
+                    <div class="input-button-group">
+                    <input type="number" 
+                            id="default-timer" 
+                            value="${defaultSeconds}" 
+                        min="0" 
+                        max="300"
+                            class="timer-seconds-input">
+                        <button class="save-default-btn action-button">Save Default</button>
+                </div>
+                </div>
+                <small>Set to 0 to disable the timer completely.</small>
+            </div>
+
+            <div class="timer-section">
+                <h4>Per-Quiz Timer Settings</h4>
+                <p>Set different time limits for specific quizzes. These override the default setting.</p>
+                
+                <div class="quiz-timer-form">
+                    <div class="form-row">
+                        <label>Select Quiz:</label>
+                        <select id="quiz-select" class="settings-input">
+                            <option value="">-- Select a Quiz --</option>
+                            ${allQuizTypes.map(quiz => 
+                                `<option value="${quiz}">${this.formatQuizName(quiz)}</option>`
+                            ).join('')}
+                        </select>
+                    </div>
+                    
+                    <div class="form-row">
+                        <label>Seconds per question for this quiz (0-300):</label>
+                        <div class="input-button-group">
+                            <input type="number" 
+                                id="quiz-timer" 
+                                value="60" 
+                                min="0" 
+                                max="300"
+                                class="timer-seconds-input settings-input">
+                            <button id="set-timer-btn" class="action-button">Set Timer</button>
+                            <button id="reset-default-btn" class="action-button secondary">Reset to Default</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="timer-section">
+                <h4>Current Timer Settings</h4>
+                <p>Default: ${defaultSeconds} seconds</p>
+                
+                <div class="current-settings">
+                    <div class="settings-header">
+                        <h5>Quiz-Specific Settings:</h5>
+                        <div class="settings-actions">
+                            <label class="checkbox-label">
+                                <input type="checkbox" id="select-all-timers">
+                                <span>Select All</span>
+                            </label>
+                            <button id="clear-selected" class="action-button danger-btn">Clear Selected</button>
+                            <button id="clear-all" class="action-button danger-btn">Clear All</button>
+                        </div>
+                    </div>
+                    <div id="quiz-timers-list">
+                        ${this.generateQuizTimersList(quizTimers)}
+                    </div>
+                </div>
+            </div>
+        `;
+
+        container.innerHTML = defaultSettingsHTML;
+
+        // Set up event listeners
+        const defaultTimerInput = container.querySelector('#default-timer');
+        const saveDefaultBtn = container.querySelector('.save-default-btn');
+        const quizSelect = container.querySelector('#quiz-select');
+        const quizTimerInput = container.querySelector('#quiz-timer');
+        const setTimerBtn = container.querySelector('#set-timer-btn');
+        const resetDefaultBtn = container.querySelector('#reset-default-btn');
+        const selectAllCheckbox = container.querySelector('#select-all-timers');
+        const clearSelectedBtn = container.querySelector('#clear-selected');
+        const clearAllBtn = container.querySelector('#clear-all');
+
+        // Save default timer setting
+        saveDefaultBtn.addEventListener('click', async () => {
+            const seconds = parseInt(defaultTimerInput.value, 10);
+            if (isNaN(seconds) || seconds < 0 || seconds > 300) {
+                this.showInfo('Please enter a valid number between 0 and 300', 'error');
+                return;
+            }
+            
+            try {
+                // Use apiService directly to update default timer
+                const response = await this.apiService.updateQuizTimerSettings(seconds);
+                
+                if (response.success) {
+                    this.timerSettings = response.data;
+                    this.showInfo(`Default timer set to ${seconds} seconds`);
+                    
+                    // Update the quiz timers list
+                    const timersList = container.querySelector('#quiz-timers-list');
+                    if (timersList) {
+                        timersList.innerHTML = this.generateQuizTimersList(this.timerSettings.quizTimers);
+                    }
+                } else {
+                    throw new Error(response.message || 'Failed to save default timer');
+                }
+            } catch (error) {
+                console.error('Failed to save default timer:', error);
+                this.showInfo(`Failed to save default timer: ${error.message}`, 'error');
+            }
+        });
+
+        // Update quiz timer input when a quiz is selected
+        quizSelect.addEventListener('change', () => {
+            const selectedQuiz = quizSelect.value;
+            if (selectedQuiz) {
+                const currentSetting = quizTimers[selectedQuiz] || defaultSeconds;
+                quizTimerInput.value = currentSetting;
+            }
+        });
+
+        // Set timer for specific quiz
+        setTimerBtn.addEventListener('click', async () => {
+            const selectedQuiz = quizSelect.value;
+            if (!selectedQuiz) {
+                this.showInfo('Please select a quiz', 'error');
+                return;
+            }
+            
+            const seconds = parseInt(quizTimerInput.value, 10);
+            if (isNaN(seconds) || seconds < 0 || seconds > 300) {
+                this.showInfo('Please enter a valid number between 0 and 300', 'error');
+                return;
+            }
+            
+            try {
+                // Use the apiService to directly update the timer
+                const response = await this.apiService.updateSingleQuizTimer(selectedQuiz, seconds);
+                
+                if (response.success) {
+                    // Update local data
+                    this.timerSettings = response.data;
+                    
+                    // Show success message
+                    this.showInfo(`Timer for ${selectedQuiz} set to ${seconds} seconds`);
+                    
+                    // Refresh the current settings display
+                    const timersList = container.querySelector('#quiz-timers-list');
+                    if (timersList) {
+                        timersList.innerHTML = this.generateQuizTimersList(this.timerSettings.quizTimers);
+                    }
+                } else {
+                    throw new Error(response.message || 'Failed to save quiz timer');
+                }
+            } catch (error) {
+                console.error('Failed to save quiz timer:', error);
+                this.showInfo(`Failed to save quiz timer: ${error.message}`, 'error');
+            }
+        });
+
+        // Reset quiz timer to default
+        resetDefaultBtn.addEventListener('click', async () => {
+            const selectedQuiz = quizSelect.value;
+            if (!selectedQuiz) {
+                this.showInfo('Please select a quiz', 'error');
+                return;
+            }
+            
+            try {
+                // Use apiService to reset the timer
+                const response = await this.apiService.resetQuizTimer(selectedQuiz);
+                
+                if (response.success) {
+                    // Update local data
+                    this.timerSettings = response.data;
+                    
+                    // Update input field to show default
+                    quizTimerInput.value = this.timerSettings.defaultSeconds;
+                    
+                    // Show success message
+                    this.showInfo(`Timer for ${selectedQuiz} reset to default (${this.timerSettings.defaultSeconds} seconds)`);
+                    
+                    // Refresh the current settings display
+                    const timersList = container.querySelector('#quiz-timers-list');
+                    if (timersList) {
+                        timersList.innerHTML = this.generateQuizTimersList(this.timerSettings.quizTimers);
+                    }
+                } else {
+                    throw new Error(response.message || 'Failed to reset quiz timer');
+                }
+            } catch (error) {
+                console.error('Failed to reset quiz timer:', error);
+                this.showInfo(`Failed to reset quiz timer: ${error.message}`, 'error');
+            }
+        });
+
+        // Select all timers functionality
+        selectAllCheckbox.addEventListener('change', () => {
+            const checkboxes = container.querySelectorAll('.timer-checkbox');
+            checkboxes.forEach(cb => cb.checked = selectAllCheckbox.checked);
+        });
+
+        // Clear selected timer settings
+        clearSelectedBtn.addEventListener('click', async () => {
+            const selectedQuizzes = Array.from(container.querySelectorAll('.timer-checkbox:checked'))
+                .map(cb => cb.dataset.quiz);
+            
+            if (selectedQuizzes.length === 0) {
+                this.showInfo('Please select at least one quiz', 'error');
+                return;
+            }
+
+            if (confirm(`Are you sure you want to clear timer settings for ${selectedQuizzes.length} selected quizzes?`)) {
+                try {
+                    const successfulResets = [];
+                    const failedResets = [];
+                    
+                    // Process one quiz at a time
+                    for (const quiz of selectedQuizzes) {
+                        try {
+                            const response = await this.apiService.resetQuizTimer(quiz);
+                            if (response.success) {
+                                successfulResets.push(quiz);
+                            } else {
+                                failedResets.push(quiz);
+                            }
+                        } catch (error) {
+                            console.error(`Failed to reset timer for quiz ${quiz}:`, error);
+                            failedResets.push(quiz);
+                        }
+                    }
+                    
+                    // Update local timer settings from the last response if available
+                    if (successfulResets.length > 0) {
+                        // Get the latest timer settings
+                        const settingsResponse = await this.apiService.getQuizTimerSettings();
+                        if (settingsResponse.success) {
+                            this.timerSettings = settingsResponse.data;
+                        }
+                    }
+                    
+                    // Show appropriate message
+                    if (successfulResets.length > 0) {
+                        this.showInfo(`Cleared timer settings for ${successfulResets.length} quizzes`);
+                        
+                        // If some failed, also show warning
+                        if (failedResets.length > 0) {
+                            this.showInfo(`Failed to clear settings for ${failedResets.length} quizzes`, 'warning');
+                        }
+                    } else {
+                        this.showInfo('Failed to clear any timer settings', 'error');
+                    }
+                    
+                    // Refresh the current settings display
+                    const timersList = container.querySelector('#quiz-timers-list');
+                    if (timersList) {
+                        timersList.innerHTML = this.generateQuizTimersList(this.timerSettings.quizTimers);
+                    }
+                } catch (error) {
+                    console.error('Failed to clear selected timer settings:', error);
+                    this.showInfo(`Failed to clear timer settings: ${error.message}`, 'error');
+                }
+            }
+        });
+
+        // Clear all timer settings
+        clearAllBtn.addEventListener('click', async () => {
+            if (confirm('Are you sure you want to clear ALL quiz-specific timer settings?')) {
+                try {
+                    // Get the current list of quizzes with custom timers
+                    const quizzes = Object.keys(this.timerSettings?.quizTimers || {});
+                    
+                    if (quizzes.length === 0) {
+                        this.showInfo('No custom timer settings to clear', 'info');
+                        return;
+                    }
+                    
+                    const successfulResets = [];
+                    const failedResets = [];
+                    
+                    // Process each quiz
+                    for (const quiz of quizzes) {
+                        try {
+                            const response = await this.apiService.resetQuizTimer(quiz);
+                            if (response.success) {
+                                successfulResets.push(quiz);
+                                
+                                // Update local settings after each successful reset
+                                this.timerSettings = response.data;
+                            } else {
+                                failedResets.push(quiz);
+                            }
+                        } catch (error) {
+                            console.error(`Failed to reset timer for quiz ${quiz}:`, error);
+                            failedResets.push(quiz);
+                        }
+                    }
+                    
+                    // Show appropriate message
+                    if (successfulResets.length > 0) {
+                        this.showInfo(`Cleared timer settings for ${successfulResets.length} quizzes`);
+                        
+                        // If some failed, also show warning
+                        if (failedResets.length > 0) {
+                            this.showInfo(`Failed to clear settings for ${failedResets.length} quizzes`, 'warning');
+                        }
+                    } else if (failedResets.length > 0) {
+                        this.showInfo('Failed to clear any timer settings', 'error');
+                    } else {
+                        this.showInfo('No timer settings to clear', 'info');
+                    }
+                    
+                    // Refresh the current settings display
+                    const timersList = container.querySelector('#quiz-timers-list');
+                    if (timersList) {
+                        timersList.innerHTML = this.generateQuizTimersList(this.timerSettings.quizTimers);
+                    }
+                } catch (error) {
+                    console.error('Failed to clear all timer settings:', error);
+                    this.showInfo(`Failed to clear all timer settings: ${error.message}`, 'error');
+                }
+            }
+        });
+    }
+    
+    // Helper method to generate HTML for the list of quiz-specific timer settings
+    generateQuizTimersList(quizTimers) {
+        const quizTimerEntries = Object.entries(quizTimers || {});
+        
+        if (quizTimerEntries.length === 0) {
+            return '<p class="no-custom-timers">No quiz-specific settings configured yet.</p>';
+        }
+        
+        // Sort entries by quiz name
+        quizTimerEntries.sort((a, b) => this.formatQuizName(a[0]).localeCompare(this.formatQuizName(b[0])));
+        
+        return `
+            <table class="timer-table">
+                <thead>
+                    <tr>
+                        <th style="width: 40px;"></th>
+                        <th>Quiz</th>
+                        <th>Timer Setting</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${quizTimerEntries.map(([quizName, seconds]) => `
+                        <tr>
+                            <td>
+                                <input type="checkbox" class="timer-checkbox" data-quiz="${quizName}">
+                            </td>
+                            <td>${this.formatQuizName(quizName)}</td>
+                            <td>${seconds === 0 ? 'Disabled' : `${seconds} seconds`}</td>
+                        </tr>
+                    `).join('')}
+                </tbody>
+            </table>
+        `;
+    }
+    
+    // Helper method to show info messages (neutral)
+    showInfo(message, type = 'info') {
+        const infoContainer = document.createElement('div');
+        infoContainer.className = `message ${type}-message`;
+        infoContainer.innerHTML = `
+            <span>${message}</span>
+            <button class="close-message">&times;</button>
+        `;
+        
+        // Add to the page
+        document.body.appendChild(infoContainer);
+        
+        // Add event listener to close the message
+        infoContainer.querySelector('.close-message').addEventListener('click', () => {
+            infoContainer.remove();
+        });
+        
+        // Automatically remove after 5 seconds
+        setTimeout(() => {
+            if (infoContainer.parentNode) {
+                infoContainer.remove();
+            }
+        }, 5000);
+    }
+    
+    // Set up the create account form in the create account section
+    setupCreateAccountForm() {
+        const createAccountContainer = document.getElementById('create-account-container');
+        if (!createAccountContainer) return;
+        
+        // Show loading state
+        createAccountContainer.innerHTML = `
+            <div class="loading-container" style="text-align: center; padding: 2rem;">
+                <div class="loading-spinner"></div>
+                <p>Loading quiz types...</p>
+            </div>
+        `;
+        
+        // Set a timeout to ensure the UI updates even if the quiz types fetch hangs
+        let timeoutId = setTimeout(() => {
+            console.warn('Quiz types fetch timeout after 10 seconds - using fallback');
+            renderForm(this.getHardcodedQuizTypes());
+        }, 10000); // Increased timeout to 10 seconds
+        
+        // Fetch the latest quiz types before setting up the form
+        this.fetchQuizTypes()
+            .then(quizTypes => {
+                clearTimeout(timeoutId); // Clear the timeout since we got a response
+                renderForm(quizTypes);
+            })
+            .catch(error => {
+                clearTimeout(timeoutId); // Clear the timeout if there's an error
+                console.error('Error loading quiz types:', error);
+                renderForm(this.getHardcodedQuizTypes());
+            });
+            
+        // Function to render the form with quiz types
+        const renderForm = (quizTypes) => {
+            // Sort quiz types by category for better organization
+            const categorizedQuizzes = this.categorizeQuizzesForForm(quizTypes);
+            
+            createAccountContainer.innerHTML = `
+                <div class="create-account-form">
+                    <form id="createInterviewForm" autocomplete="off">
+                        <div class="form-group">
+                            <label for="username">Username: (min. 3 characters)</label>
+                            <input type="text" 
+                                   id="username" 
+                                   name="username" 
+                                   required 
+                                   minlength="3"
+                                   autocomplete="off"
+                                   autocorrect="off"
+                                   autocapitalize="off">
+                        </div>
+                        <div class="form-group">
+                            <label for="password">Password: (min. 6 characters)</label>
+                            <div class="password-input-container">
+                                <input type="password" 
+                                       id="password" 
+                                       name="password"
+                                       required 
+                                       minlength="6"
+                                       autocomplete="new-password">
+                                <button type="button" class="password-toggle" aria-label="Toggle password visibility">
+                                    <i class="fas fa-eye"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="form-group quiz-selection-container">
+                            <label>Select Quizzes:</label>
+                            <div class="quiz-selection" id="quizTypesList">
+                                <div class="select-all-option">
+                                    <label>
+                                        <input type="checkbox" id="selectAllQuizzes">
+                                        <span>Select All Quizzes</span>
+                                    </label>
+                                </div>
+                                
+                                <div class="quiz-options">
+                                    ${Object.entries(categorizedQuizzes).map(([category, quizzes]) => `
+                                        <div class="quiz-category">
+                                            <div class="category-header">
+                                                <h4>${category}</h4>
+                                                <button type="button" class="select-category-btn" data-category="${category}">
+                                                    Select All
+                                                </button>
+                                            </div>
+                                            <div class="category-quizzes">
+                                                ${quizzes.map(quiz => `
+                                                    <div class="quiz-option">
+                                                        <label>
+                                                            <input type="checkbox" 
+                                                                   name="quizzes" 
+                                                                   value="${quiz}" 
+                                                                   data-category="${category}">
+                                                            <span>${this.formatQuizName(quiz)}</span>
+                                                        </label>
+                                                    </div>
+                                                `).join('')}
+                                            </div>
+                                        </div>
+                                    `).join('')}
+                                </div>
+                            </div>
+                        </div>
+                        <button type="submit" class="action-button">Create Account</button>
+                    </form>
+                </div>
+            `;
+            
+            // Add event listeners
+            // For the category buttons
+            const selectCategoryButtons = document.querySelectorAll('.select-category-btn');
+            selectCategoryButtons.forEach(button => {
+                button.addEventListener('click', () => {
+                    const category = button.dataset.category;
+                    const categoryCheckboxes = document.querySelectorAll(`input[data-category="${category}"]`);
+                    const allChecked = Array.from(categoryCheckboxes).every(checkbox => checkbox.checked);
+                    
+                    categoryCheckboxes.forEach(checkbox => {
+                        checkbox.checked = !allChecked;
+                    });
+                    
+                    this.updateSelectAllCheckbox();
+                });
+            });
+            
+            // For the select all checkbox
+            const selectAllCheckbox = document.getElementById('selectAllQuizzes');
+            if (selectAllCheckbox) {
+                selectAllCheckbox.addEventListener('change', () => {
+                    const allCheckboxes = document.querySelectorAll('input[name="quizzes"]');
+                    allCheckboxes.forEach(checkbox => {
+                        checkbox.checked = selectAllCheckbox.checked;
+                    });
+                });
+            }
+            
+            // For individual checkboxes to update select all state
+            const quizCheckboxes = document.querySelectorAll('input[name="quizzes"]');
+            quizCheckboxes.forEach(checkbox => {
+                checkbox.addEventListener('change', () => {
+                    this.updateSelectAllCheckbox();
+                });
+            });
+            
+            // For the form submission
+            const createAccountForm = document.getElementById('createInterviewForm');
+            if (createAccountForm) {
+                createAccountForm.addEventListener('submit', this.handleCreateAccount.bind(this));
+            }
+            
+            // For password toggling
+            const passwordToggle = document.querySelector('.password-toggle');
+            const passwordInput = document.getElementById('password');
+            if (passwordToggle && passwordInput) {
+                passwordToggle.addEventListener('click', () => {
+                    const type = passwordInput.getAttribute('type') === 'password' ? 'text' : 'password';
+                    passwordInput.setAttribute('type', type);
+                    passwordToggle.querySelector('i').className = type === 'password' ? 'fas fa-eye' : 'fas fa-eye-slash';
+                });
+            }
+        };
+    }
+    
+    // Set up the scenarios list in the scenarios section
+    setupScenariosList() {
+        const scenariosList = document.getElementById('scenarios-list');
+        if (!scenariosList) {
+            console.error('Scenarios list container not found');
+            return;
+        }
+        
+        // Show loading state
+        scenariosList.innerHTML = `
+            <div class="loading-container" style="text-align: center; padding: 2rem;">
+                <div class="loading-spinner"></div>
+                <p>Loading quiz types...</p>
+            </div>
+        `;
+        
+        // Set a timeout to ensure the UI updates even if the quiz types fetch hangs
+        let timeoutId = setTimeout(() => {
+            console.warn('Quiz types fetch timeout after 10 seconds - using fallback for scenarios');
+            renderScenarios(this.getHardcodedQuizTypes());
+        }, 10000); // Increased timeout to 10 seconds
+        
+        // Get quiz types using the fixed fetchQuizTypes method
+        this.fetchQuizTypes()
+            .then(quizTypes => {
+                clearTimeout(timeoutId); // Clear the timeout since we got a response
+                renderScenarios(quizTypes);
+            })
+            .catch(error => {
+                clearTimeout(timeoutId); // Clear the timeout if there's an error
+                console.error('Error loading quiz types for scenarios:', error);
+                renderScenarios(this.getHardcodedQuizTypes());
+            });
+            
+        // Function to render the scenarios list with quiz types
+        const renderScenarios = (quizTypes) => {
+            if (!quizTypes || quizTypes.length === 0) {
+                scenariosList.innerHTML = `<div class="error-message">No quiz types available</div>`;
+                return;
+            }
+            
+            console.log(`Successfully loaded ${quizTypes.length} quiz types for scenarios list`);
+            
+            // Create matching structure to standard admin page
+            scenariosList.innerHTML = `
+                <div class="scenarios-wrapper">
+                    <p class="scenarios-intro">Select a quiz type to view its scenarios:</p>
+                    <div class="scenario-categories"></div>
+                </div>
+            `;
+            
+            const categoriesContainer = scenariosList.querySelector('.scenario-categories');
+            
+            // Define the same categories as in standard admin page
+            const categories = {
+                'Technical Skills': [],
+                'Soft Skills': [],
+                'QA Processes': [],
+                'Content Testing': [],
+                'Tools & Documentation': [],
+                'Interview Quizzes': [],
+                'Other Quizzes': []
+            };
+            
+            // Categorize quizzes
+            quizTypes.forEach(quiz => {
+                const category = this.categorizeQuiz(quiz);
+                if (categories[category]) {
+                    categories[category].push(quiz);
+                } else {
+                    categories['Other Quizzes'].push(quiz);
+                }
+            });
+            
+            // Create HTML for each category
+            Object.keys(categories).forEach(category => {
+                // Skip empty categories
+                if (!categories[category] || categories[category].length === 0) return;
+                
+                const categoryDiv = document.createElement('div');
+                categoryDiv.className = 'scenario-category';
+                categoryDiv.dataset.category = category.toLowerCase().replace(/\s+/g, '-');
+                
+                // Add heading
+                const heading = document.createElement('h3');
+                heading.className = 'category-heading';
+                heading.textContent = category;
+                categoryDiv.appendChild(heading);
+                
+                // Add quizzes container
+                const quizzesGrid = document.createElement('div');
+                quizzesGrid.className = 'category-quizzes';
+                
+                // Add quiz cards
+                categories[category].forEach(quiz => {
+                    const quizCard = document.createElement('div');
+                    quizCard.className = 'quiz-type-card';
+                    quizCard.dataset.quizType = quiz;
+                    
+                    // Create a container for the quiz name
+                    const quizName = document.createElement('h3');
+                    quizName.textContent = this.formatQuizName(quiz);
+                    
+                    // Create the button
+                    const viewButton = document.createElement('button');
+                    viewButton.className = 'view-scenarios-btn';
+                    viewButton.dataset.quizId = quiz;
+                    viewButton.textContent = 'View Scenarios';
+                    viewButton.setAttribute('tabindex', '0');
+                    viewButton.setAttribute('aria-label', `View scenarios for ${this.formatQuizName(quiz)}`);
+                    
+                    // Add event listener to button
+                    viewButton.addEventListener('click', async (e) => {
+                        e.preventDefault();
+                        await this.showQuizScenarios(quiz);
+                    });
+                    
+                    quizCard.appendChild(quizName);
+                    quizCard.appendChild(viewButton);
+                    
+                    // Wrap the card in a container to ensure proper spacing
+                    const cardWrapper = document.createElement('div');
+                    cardWrapper.className = 'quiz-card-wrapper';
+                    cardWrapper.appendChild(quizCard);
+                    quizzesGrid.appendChild(cardWrapper);
+                });
+                
+                categoryDiv.appendChild(quizzesGrid);
+                categoriesContainer.appendChild(categoryDiv);
+            });
+        };
+    }
+
+    // Override categorizeQuiz to match standard admin page
+    categorizeQuiz(quizName) {
+        const lowerName = quizName.toLowerCase();
+        
+        if (['automation-interview', 'automation', 'api', 'script', 'script-metrics', 'technical', 'accessibility', 'performance', 'security', 'mobile'].includes(lowerName)) {
+            return 'Technical Skills';
+        }
+        
+        if (['communication', 'soft-skills'].includes(lowerName)) {
+            return 'Soft Skills';
+        }
+        
+        if (['general', 'process', 'uat', 'test-process'].includes(lowerName)) {
+            return 'QA Processes';
+        }
+        
+        if (['cms', 'cms-testing', 'content', 'email', 'email-testing'].includes(lowerName)) {
+            return 'Content Testing';
+        }
+        
+        if (['documentation', 'tools'].includes(lowerName)) {
+            return 'Tools & Documentation';
+        }
+        
+        if (['interview'].includes(lowerName)) {
+            return 'Interview Quizzes';
+        }
+        
+        return 'Other Quizzes';
+    }
+
+    // Implement a hardcoded fetchQuizTypes method that handles API failures gracefully
+    async fetchQuizTypes() {
+        try {
+            console.log('Fetching quiz types from API...');
+            // Use the correct API endpoint without /api prefix since it's handled by fetchWithAdminAuth
+            const response = await this.apiService.fetchWithAdminAuth('admin/quiz-types');
+            
+            // Check if the response is successful and has data
+            if (response.success && response.data) {
+                console.log('Successfully fetched quiz types:', response.data);
+                return response.data;
+            } else {
+                console.warn('Quiz types response was not successful:', response);
+                throw new Error(response.message || 'Failed to fetch quiz types');
+            }
+        } catch (error) {
+            console.error('Error fetching quiz types:', error);
+            // Fallback to hardcoded quiz types if API fails
+            console.log('Using hardcoded quiz types as fallback');
+            return this.getHardcodedQuizTypes();
+        }
+    }
+
+    // Helper method to provide hardcoded quiz types
+    getHardcodedQuizTypes() {
+        return [
+            'cms-testing',
+            'web-testing',
+            'mobile-testing',
+            'api-testing',
+            'accessibility-testing',
+            'security-testing',
+            'performance-testing',
+            'automation-testing',
+            'game-testing',
+            'localization-testing'
+        ];
+    }
+
+    // Add fetchQuizScenarios method to match the parent class
+    async fetchQuizScenarios(quizName) {
+        try {
+            console.log(`Fetching quiz scenarios for ${quizName} using API endpoint`);
+            
+            // Normalize the quiz name to match API expectations
+            const normalizedQuizName = quizName.toLowerCase();
+            
+            // Get the token
+            const token = localStorage.getItem('adminToken');
+            
+            if (!token) {
+                throw new Error('No admin token found. Please log in again.');
+            }
+            
+            // Get the API URL from config or use a fallback
+            let apiUrl;
+            try {
+                // Try to import the config
+                const { config } = await import('./config.js');
+                apiUrl = config.apiUrl;
+                console.log(`Using API URL from config: ${apiUrl}`);
+            } catch (importError) {
+                console.warn('Failed to import config.js, using fallback API URL', importError);
+                
+                // Fallback logic to determine API URL
+                if (window.location.hostname.includes('render.com') || 
+                    window.location.hostname === 'bug-training-game.onrender.com') {
+                    apiUrl = 'https://bug-training-game-api.onrender.com/api';
+                } 
+                else if (window.location.hostname.includes('amazonaws.com') || 
+                         window.location.hostname.includes('s3-website') ||
+                         window.location.hostname.includes('learning-hub')) {
+                    apiUrl = 'http://13.42.151.152/api';
+                }
+                else {
+                    apiUrl = '/api'; // Local development
+                }
+                
+                console.log(`Using fallback API URL: ${apiUrl}`);
+            }
+            
+            const response = await fetch(`${apiUrl}/admin/quizzes/${normalizedQuizName}/scenarios`, {
+                method: 'GET',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                }
+            });
+            
+            if (!response.ok) {
+                const errorData = await response.json().catch(() => ({}));
+                const errorMessage = errorData.message || `Failed to fetch scenarios: ${response.status}`;
+                
+                // Check for specific error about extracting scenarios
+                if (errorMessage.includes('Could not extract scenarios from source code')) {
+                    throw new Error(`The quiz file format for ${this.formatQuizName(quizName)} is not compatible with the scenario viewer. This is likely due to the quiz file using JavaScript objects that cannot be parsed as JSON.`);
+                }
+                
+                throw new Error(errorMessage);
+            }
+            
+            const data = await response.json();
+            
+            if (!data.success) {
+                throw new Error(data.message || 'Failed to fetch scenarios from API');
+            }
+            
+            console.log(`Successfully fetched scenarios for ${quizName} from API`);
+            return data;
+        } catch (error) {
+            console.error(`Error in fetchQuizScenarios for ${quizName}:`, error);
+            throw error;
+        }
+    }
+
+    // Override the parent showQuizScenarios method to handle file loading errors better
+    async showQuizScenarios(quizName) {
+        try {
+            // Show loading indicator
+            const loadingOverlay = document.createElement('div');
+            loadingOverlay.className = 'modal-overlay';
+            loadingOverlay.id = 'scenarios-loading-overlay';
+            loadingOverlay.innerHTML = `
+                <div style="
+                    background: white;
+                    padding: 2rem;
+                    border-radius: 8px;
+                    text-align: center;">
+                    <h3>Loading Scenarios for ${this.formatQuizName(quizName)}...</h3>
+                    <div class="loading-spinner"></div>
+                    <p style="margin-top: 1rem; color: #6c757d;">This may take a few seconds...</p>
+                </div>
+            `;
+            document.body.appendChild(loadingOverlay);
+
+            // Fetch quiz scenarios
+            let scenarios;
+            
+            try {
+                // Set a timeout for the fetch operation
+                const timeoutPromise = new Promise((_, reject) => {
+                    setTimeout(() => reject(new Error('Request timed out after 10 seconds')), 10000);
+                });
+                
+                // Race the fetch against the timeout
+                scenarios = await Promise.race([
+                    this.fetchQuizScenarios(quizName),
+                    timeoutPromise
+                ]);
+                
+                // Check if scenarios data is valid
+                if (!scenarios) {
+                    throw new Error(`No valid scenarios data found for ${this.formatQuizName(quizName)}`);
+                }
+                
+                // Extract the data property if it exists (API response format)
+                if (scenarios.data) {
+                    scenarios = scenarios.data;
+                }
+                
+                // Ensure we have the expected structure
+                if (!scenarios.basic && !scenarios.intermediate && !scenarios.advanced) {
+                    console.warn(`Unexpected scenarios format for ${quizName}:`, scenarios);
+                    throw new Error(`Invalid scenarios format for ${this.formatQuizName(quizName)}`);
+                }
+                
+                // Check if we have any scenarios to display
+                const hasScenarios = 
+                    (scenarios.basic && scenarios.basic.length > 0) || 
+                    (scenarios.intermediate && scenarios.intermediate.length > 0) || 
+                    (scenarios.advanced && scenarios.advanced.length > 0);
+                    
+                if (!hasScenarios) {
+                    throw new Error(`No scenarios found for ${this.formatQuizName(quizName)}`);
+                }
+                
+            } catch (fetchError) {
+                console.error(`Error fetching scenarios for ${quizName}:`, fetchError);
+                
+                // Determine if this is a parsing error
+                const isParsingError = fetchError.message.includes('not compatible with the scenario viewer') || 
+                                      fetchError.message.includes('Could not extract scenarios');
+                
+                // Show error message in the loading overlay
+                loadingOverlay.innerHTML = `
+                    <div style="
+                        background: white;
+                        padding: 2rem;
+                        border-radius: 8px;
+                        text-align: center;
+                        max-width: 600px;">
+                        <h3 style="color: #dc3545;">Error</h3>
+                        <p>${fetchError.message || `Failed to load scenarios for ${this.formatQuizName(quizName)}`}</p>
+                        <p style="margin-top: 0.5rem; font-size: 0.9rem; color: #6c757d;">
+                            ${isParsingError ? 
+                              `The quiz file structure may be using JavaScript features that cannot be automatically extracted.
+                               You can still view the quiz file directly to see the scenarios.` : 
+                              `This could be due to network issues or the quiz file not being available.
+                               Please try again later or contact the administrator.`}
+                        </p>
+                        <div style="margin-top: 20px; display: flex; gap: 10px; justify-content: center; flex-wrap: wrap;">
+                            ${isParsingError ? 
+                              `<button id="viewFileBtn" class="action-button" style="
+                                  background: var(--primary-color);
+                                  color: white;
+                                  border: none;
+                                  padding: 8px 16px;
+                                  border-radius: 4px;
+                                  cursor: pointer;">
+                                  View Quiz File
+                              </button>` : ''}
+                            <button id="retryBtn" class="action-button" style="
+                                background: ${isParsingError ? '#6c757d' : 'var(--primary-color)'};
+                                color: white;
+                                border: none;
+                                padding: 8px 16px;
+                                border-radius: 4px;
+                                cursor: pointer;">
+                                Retry
+                            </button>
+                            <button id="closeErrorBtn" class="action-button" style="
+                                background: #6c757d;
+                                color: white;
+                                border: none;
+                                padding: 8px 16px;
+                                border-radius: 4px;
+                                cursor: pointer;">
+                                Close
+                            </button>
+                        </div>
+                    </div>
+                `;
+                
+                // Add event listener for close button
+                const closeErrorBtn = document.getElementById('closeErrorBtn');
+                if (closeErrorBtn) {
+                    closeErrorBtn.addEventListener('click', () => {
+                        loadingOverlay.remove();
+                    });
+                }
+                
+                // Add event listener for retry button
+                const retryBtn = document.getElementById('retryBtn');
+                if (retryBtn) {
+                    retryBtn.addEventListener('click', () => {
+                        loadingOverlay.remove();
+                        this.showQuizScenarios(quizName);
+                    });
+                }
+                
+                // Add event listener for view file button if it exists
+                const viewFileBtn = document.getElementById('viewFileBtn');
+                if (viewFileBtn) {
+                    viewFileBtn.addEventListener('click', () => {
+                        loadingOverlay.remove();
+                        
+                        // Open the quiz file in a new tab/window
+                        const quizFileName = `${quizName.toLowerCase()}-quiz.js`;
+                        
+                        // Create a modal to show the file path
+                        const filePathModal = document.createElement('div');
+                        filePathModal.className = 'modal-overlay';
+                        filePathModal.innerHTML = `
+                            <div style="
+                                background: white;
+                                padding: 2rem;
+                                border-radius: 8px;
+                                text-align: center;
+                                max-width: 600px;">
+                                <h3>Quiz File Information</h3>
+                                <p>To view the quiz file, you can navigate to:</p>
+                                <code style="
+                                    display: block;
+                                    background: #f8f9fa;
+                                    padding: 1rem;
+                                    border-radius: 4px;
+                                    margin: 1rem 0;
+                                    text-align: left;
+                                    overflow-x: auto;">
+                                    frontend/quizzes/${quizName.toLowerCase()}-quiz.js
+                                </code>
+                                <p>This file contains the scenarios for the ${this.formatQuizName(quizName)} quiz.</p>
+                                <button id="closeFilePathBtn" class="action-button" style="
+                                    background: var(--primary-color);
+                                    color: white;
+                                    border: none;
+                                    padding: 8px 16px;
+                                    border-radius: 4px;
+                                    cursor: pointer;">
+                                    Close
+                                </button>
+                            </div>
+                        `;
+                        document.body.appendChild(filePathModal);
+                        
+                        // Add event listener for close button
+                        const closeFilePathBtn = document.getElementById('closeFilePathBtn');
+                        if (closeFilePathBtn) {
+                            closeFilePathBtn.addEventListener('click', () => {
+                                filePathModal.remove();
+                            });
+                        }
+                    });
+                }
+                
+                return; // Exit the function early
+            }
+            
+            // Remove loading indicator
+            loadingOverlay.remove();
+            
+            // Create the overlay
+            const overlay = document.createElement('div');
+            overlay.className = 'user-details-overlay';
+            overlay.setAttribute('role', 'dialog');
+            overlay.setAttribute('aria-modal', 'true');
+            overlay.setAttribute('aria-labelledby', 'scenarios-title');
+            
+            const content = document.createElement('div');
+            content.className = 'user-details-content';
+            content.style.width = '90%';
+            content.style.maxWidth = '1200px';
+            
+            // Start building scenarios HTML
+            let scenariosHTML = `
+                <div class="details-header">
+                    <h3 id="scenarios-title">${this.formatQuizName(quizName)} Scenarios</h3>
+                    <button class="close-btn" aria-label="Close details">×</button>
+                </div>
+            `;
+            
+            // Check if we have any scenarios
+            const hasScenarios = 
+                (scenarios.basic && scenarios.basic.length > 0) ||
+                (scenarios.intermediate && scenarios.intermediate.length > 0) ||
+                (scenarios.advanced && scenarios.advanced.length > 0);
+                
+            if (!hasScenarios) {
+                scenariosHTML += `
+                    <div class="no-scenarios" style="text-align: center; padding: 2rem;">
+                        <p>No scenarios found for this quiz.</p>
+                    </div>
+                `;
+            } else {
+                // Add basic scenarios
+                if (scenarios.basic && scenarios.basic.length > 0) {
+                    scenariosHTML += `
+                        <div class="scenario-section">
+                            <h3 class="scenario-level-title">Basic Level</h3>
+                            <div class="scenarios-list">
+                                ${this.generateScenariosHTML(scenarios.basic)}
+                            </div>
+                        </div>
+                    `;
+                }
+                
+                // Add intermediate scenarios
+                if (scenarios.intermediate && scenarios.intermediate.length > 0) {
+                    scenariosHTML += `
+                        <div class="scenario-section">
+                            <h3 class="scenario-level-title">Intermediate Level</h3>
+                            <div class="scenarios-list">
+                                ${this.generateScenariosHTML(scenarios.intermediate)}
+                            </div>
+                        </div>
+                    `;
+                }
+                
+                // Add advanced scenarios
+                if (scenarios.advanced && scenarios.advanced.length > 0) {
+                    scenariosHTML += `
+                        <div class="scenario-section">
+                            <h3 class="scenario-level-title">Advanced Level</h3>
+                            <div class="scenarios-list">
+                                ${this.generateScenariosHTML(scenarios.advanced)}
+                            </div>
+                        </div>
+                    `;
+                }
+            }
+            
+            // Set the content HTML
+            content.innerHTML = scenariosHTML;
+            overlay.appendChild(content);
+            document.body.appendChild(overlay);
+            
+            // Add event listener for close button
+            const closeBtn = content.querySelector('.close-btn');
+            if (closeBtn) {
+                closeBtn.addEventListener('click', () => {
+                    overlay.remove();
+                });
+            }
+            
+            // Add event listener for clicking outside the modal to close it
+            overlay.addEventListener('click', (e) => {
+                if (e.target === overlay) {
+                    overlay.remove();
+                }
+            });
+        } catch (error) {
+            console.error(`Error showing scenarios for ${quizName}:`, error);
+            
+            // Remove any existing loading overlay
+            const existingOverlay = document.getElementById('scenarios-loading-overlay');
+            if (existingOverlay) {
+                existingOverlay.remove();
+            }
+            
+            this.showError(`Failed to load scenarios for ${this.formatQuizName(quizName)}: ${error.message}`);
+        }
+    }
+
+    // Helper method to generate HTML for scenarios
+    generateScenariosHTML(scenarios) {
+        if (!scenarios || !scenarios.length) return '<p>No scenarios found.</p>';
+        
+        return scenarios.map(scenario => `
+            <div class="scenario-card">
+                <h4>${scenario.title || 'Untitled Scenario'}</h4>
+                <div class="scenario-description">${scenario.description || 'No description available.'}</div>
+                <div class="scenario-options">
+                    <strong>Options:</strong>
+                    <ul class="options-list">
+                        ${scenario.options.map((option, index) => `
+                            <li class="option-item ${option.experience > 0 ? 'correct-option' : ''}">
+                                <div class="option-text">${option.text}</div>
+                                ${option.experience > 0 ? `<div class="option-outcome"><em>Outcome: ${option.outcome}</em></div>` : ''}
+                            </li>
+                        `).join('')}
+                    </ul>
+                </div>
+            </div>
+        `).join('');
+    }
+
+    // Override categorizeQuiz to ensure automation-interview is properly categorized
+    categorizeQuiz(quizName) {
+        if (quizName === 'automation-interview') {
+            return 'Technical Skills';
+        }
+        return super.categorizeQuiz(quizName);
+    }
+
+    // Override the parent showUserDetails method for a tabbed interface like standard admin
+    async showUserDetails(username) {
+        try {
+            // Get user data
+            const user = this.users.find(u => u.username === username);
+            if (!user) {
+                throw new Error('User not found');
+            }
+
+            const isInterviewAccount = user.userType === 'interview_candidate';
+            // For interview accounts, allowedQuizzes means visible, everything else is hidden
+            // For regular accounts, hiddenQuizzes means hidden, everything else is visible
+            const allowedQuizzes = (user.allowedQuizzes || []).map(q => q.toLowerCase());
+            const hiddenQuizzes = (user.hiddenQuizzes || []).map(q => q.toLowerCase());
+
+            console.log('User details:', {
+                username,
+                isInterviewAccount,
+                userType: user.userType,
+                allowedQuizzes,
+                hiddenQuizzes
+            });
+
+            // Create the overlay
+            const overlay = document.createElement('div');
+            overlay.className = 'user-details-overlay';
+            overlay.setAttribute('role', 'dialog');
+            overlay.setAttribute('aria-modal', 'true');
+            overlay.setAttribute('aria-labelledby', 'user-details-title');
+            
+            const content = document.createElement('div');
+            content.className = 'user-details-content';
+            
+            // Create header
+            const header = document.createElement('div');
+            header.className = 'details-header';
+            
+            const title = document.createElement('h3');
+            title.id = 'user-details-title';
+            title.textContent = `${username}'s Details`;
+            
+            const closeBtn = document.createElement('button');
+            closeBtn.className = 'close-btn';
+            closeBtn.setAttribute('aria-label', 'Close details');
+            closeBtn.setAttribute('tabindex', '0');
+            closeBtn.innerHTML = '×';
+            
+            header.appendChild(title);
+            header.appendChild(closeBtn);
+            
+            // Only create the Overview content - remove tabs since they're not needed
+            const overviewContent = document.createElement('div');
+            overviewContent.className = 'overview-content';
+            
+            // User Information Section
+            overviewContent.innerHTML = `
+                <div class="user-information">
+                    <h4>User Information</h4>
+                    <div class="info-grid">
+                        <div class="info-row">
+                            <div class="info-label">Username:</div>
+                            <div class="info-value">${username}</div>
+                        </div>
+                        <div class="info-row">
+                            <div class="info-label">Account Type:</div>
+                            <div class="info-value">${isInterviewAccount ? 'Interview Candidate' : 'Regular'}</div>
+                        </div>
+                        <div class="info-row">
+                            <div class="info-label">Last Active:</div>
+                            <div class="info-value">${this.formatDate(this.getLastActiveDate(user))}</div>
+                        </div>
+                        <div class="info-row">
+                            <div class="info-label">Overall Progress:</div>
+                            <div class="info-value">${this.calculateUserProgress(user).toFixed(1)}%</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="progress-summary">
+                    <h4>Progress Summary</h4>
+                    <div class="quiz-progress-list"></div>
+                </div>
+            `;
+            
+            // Populate quiz progress list
+            const quizProgressList = overviewContent.querySelector('.quiz-progress-list');
+            
+            // Generate quiz progress items to match standard admin
+            this.quizTypes
+                .slice()
+                .sort((a, b) => this.formatQuizName(a).localeCompare(this.formatQuizName(b)))
+                .forEach(quizType => {
+                    const quizLower = quizType.toLowerCase();
+                    
+                    // For interview accounts:
+                    //   - Visible (checked) if in allowedQuizzes
+                    //   - Hidden (unchecked) if not in allowedQuizzes
+                    // For regular accounts:
+                    //   - Visible (checked) if not in hiddenQuizzes
+                    //   - Hidden (unchecked) if in hiddenQuizzes
+                    const isInAllowedQuizzes = allowedQuizzes.includes(quizLower);
+                    const isInHiddenQuizzes = hiddenQuizzes.includes(quizLower);
+                    
+                    // Determine visibility based on account type
+                    const isVisible = isInterviewAccount ? isInAllowedQuizzes : !isInHiddenQuizzes;
+                    
+                    console.log('Quiz visibility details:', {
+                        quizName: quizType,
+                        quizLower,
+                        isInterviewAccount,
+                        allowedQuizzes,
+                        hiddenQuizzes,
+                        isInAllowedQuizzes,
+                        isInHiddenQuizzes,
+                        isVisible
+                    });
+                
+                    const quizProgress = user.quizProgress?.[quizLower] || {};
+                    const quizResult = user.quizResults?.find(r => r.quizName.toLowerCase() === quizLower);
+                
+                // Use data from either progress or results, prioritizing results
+                const questionsAnswered = quizResult?.questionsAnswered || 
+                                        quizResult?.questionHistory?.length ||
+                                        quizProgress?.questionsAnswered || 
+                                        quizProgress?.questionHistory?.length || 0;
+                    const experience = quizResult?.experience || quizProgress?.experience || 0;
+                    const score = quizResult?.score || 0;
+                    const lastActive = quizResult?.completedAt || quizResult?.lastActive || quizProgress?.lastUpdated || 'Never';
+                    
+                    const status = questionsAnswered === 15 ? 'Completed' : 
+                                questionsAnswered > 0 ? 'In Progress' : 
+                                'Not Started';
+                    
+                    // Determine background color based on XP and status
+                    let backgroundColor = '#f5f5f5'; // Default gray for not started
+                    if (questionsAnswered > 0) {
+                        if (questionsAnswered === 15) {
+                            // All questions completed
+                            if (experience >= 300 || score >= 100) {
+                                backgroundColor = '#e8f5e9'; // Light green for perfect score (300/300 or 100%)
+                            } else {
+                                backgroundColor = '#fff3e0'; // Light yellow for completed but not perfect score
+                            }
+                        } else {
+                            // Not all questions completed
+                            if (experience >= 235) {
+                                backgroundColor = '#fff3e0'; // Light yellow for pass (≥235/300)
+                            } else {
+                                backgroundColor = '#ffebee'; // Light red for fail (<235/300)
+                            }
+                        }
+                    }
+                    
+                    // Determine quiz status class
+                    let statusClass = 'not-started';
+                    if (questionsAnswered === 15) {
+                        if (experience >= 300 || score >= 100) {
+                            statusClass = 'completed-perfect'; // Perfect score
+                } else {
+                            statusClass = 'completed-partial'; // Completed but not perfect
+                        }
+                    } else if (questionsAnswered > 0) {
+                        statusClass = 'in-progress';
+                }
+                    
+                    // Create quiz card
+                    const quizCard = document.createElement('div');
+                    quizCard.className = `quiz-progress-item ${statusClass}`;
+                    quizCard.style.backgroundColor = backgroundColor;
+                
+                quizCard.innerHTML = `
+                    <h4>${this.formatQuizName(quizType)}</h4>
+                    <div class="progress-details">
+                        <div>
+                            <strong>Progress:</strong>
+                                <span class="${status === 'Completed' ? 'text-success' : 
+                                            status === 'In Progress' ? 'text-warning' : 
+                                            'text-muted'}">${status}</span>
+                        </div>
+                        <div>
+                                <strong>Score:</strong> 
+                                <span>${score}%</span>
+                        </div>
+                        <div>
+                            <strong>Questions:</strong>
+                                <span>${questionsAnswered}/15</span>
+                        </div>
+                        <div>
+                                <strong>XP:</strong> 
+                                <span>${experience}/300</span>
+                            </div>
+                            <div>
+                                <strong>Last Active:</strong> 
+                                <span>${this.formatDate(lastActive)}</span>
+                            </div>
+                            <div>
+                                <strong>Visibility:</strong>
+                                <label class="visibility-toggle">
+                                    <input type="checkbox" 
+                                        class="quiz-visibility-toggle"
+                                        data-quiz-name="${quizType}"
+                                        ${isVisible ? 'checked' : ''}
+                                        aria-label="Toggle visibility for ${this.formatQuizName(quizType)}"
+                                        tabindex="0">
+                                    <span>Make visible to user</span>
+                                </label>
+                        </div>
+                    </div>
+                    <div class="quiz-actions">
+                            <button class="reset-quiz-btn"
+                                data-quiz-name="${quizType}"
+                                data-username="${username}"
+                                aria-label="Reset progress for ${this.formatQuizName(quizType)}"
+                                tabindex="0">
+                            Reset Progress
+                        </button>
+                            <button class="view-questions-btn"
+                                data-quiz-name="${quizType}"
+                                data-username="${username}"
+                                aria-label="View questions for ${this.formatQuizName(quizType)}"
+                                tabindex="0">
+                                View Questions
+                        </button>
+                    </div>
+                `;
+                
+                quizProgressList.appendChild(quizCard);
+            });
+            
+            // User actions
+            const userActions = document.createElement('div');
+            userActions.className = 'user-actions';
+            userActions.innerHTML = `
+                <button id="resetUserProgress" class="reset-all-btn" 
+                    style="background-color: #dc3545; color: white;"
+                    aria-label="Reset all progress for ${username}"
+                    tabindex="0">
+                    Reset All Progress
+                </button>
+                <button id="resetUserPassword" class="reset-password-btn" 
+                    style="background-color: var(--secondary-color); color: white;"
+                    aria-label="Reset password for ${username}"
+                    tabindex="0">
+                    Reset Password
+                </button>
+                <button id="deleteUserAccount" class="delete-user-btn" 
+                    style="background-color: #dc3545; color: white; border: 2px solid #dc3545;"
+                    aria-label="Delete user ${username}"
+                    tabindex="0">
+                    Delete User
+                </button>
+            `;
+            
+            // Assemble content
+            content.appendChild(header);
+            content.appendChild(overviewContent);
+            content.appendChild(userActions);
+            overlay.appendChild(content);
+            document.body.appendChild(overlay);
+            
+            // Add event listener for close button
+            closeBtn.addEventListener('click', () => {
+                overlay.remove();
+            });
+            
+            // Add keyboard support for close button
+            closeBtn.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    overlay.remove();
+                }
+            });
+            
+            // Add event listener for clicking outside the modal
+            overlay.addEventListener('click', (e) => {
+                if (e.target === overlay) {
+                    overlay.remove();
+                }
+            });
+            
+            // Add escape key handler
+            const handleEscape = (e) => {
+                if (e.key === 'Escape') {
+                    overlay.remove();
+                    document.removeEventListener('keydown', handleEscape);
+                }
+            };
+            document.addEventListener('keydown', handleEscape);
+            
+            // Add event listeners for quiz visibility toggles
+            content.querySelectorAll('.quiz-visibility-toggle').forEach(toggle => {
+                toggle.addEventListener('change', async (e) => {
+                    const quizName = e.target.dataset.quizName;
+                    const isVisible = e.target.checked;
+                    
+                    console.log(`Visibility toggle changed for ${quizName}: isVisible=${isVisible}`);
+                    
+                    try {
+                        const apiService = new ApiService();
+                        await apiService.updateQuizVisibility(username, quizName, isVisible);
+                        this.showSuccess(`Updated visibility for ${this.formatQuizName(quizName)}`);
+                    } catch (error) {
+                        console.error('Failed to update quiz visibility:', error);
+                        this.showError(`Failed to update visibility for ${this.formatQuizName(quizName)}`);
+                        e.target.checked = !isVisible; // Revert the checkbox
+                    }
+                });
+                
+                // Add keyboard support for visibility toggle
+                toggle.addEventListener('keydown', (e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault();
+                        toggle.checked = !toggle.checked;
+                        toggle.dispatchEvent(new Event('change'));
+                    }
+                });
+            });
+            
+            // Add event listeners for reset quiz buttons
+            content.querySelectorAll('.reset-quiz-btn').forEach(button => {
+                button.addEventListener('click', async (e) => {
+                    const quizName = e.target.dataset.quizName;
+                    const userName = e.target.dataset.username;
+                    
+                    if (confirm(`Are you sure you want to reset progress for ${this.formatQuizName(quizName)}?`)) {
+                        try {
+                            await this.resetQuizProgress(userName, quizName);
+                            // Refresh the user list and details view
+                            await this.loadUsers();
+                            overlay.remove();
+                            this.showSuccess(`Reset progress for ${this.formatQuizName(quizName)}`);
+                            this.showUserDetails(userName);
+                        } catch (error) {
+                            console.error('Failed to reset quiz:', error);
+                            this.showError(`Failed to reset ${this.formatQuizName(quizName)}`);
+                        }
+                    }
+                });
+                
+                // Add keyboard support for reset quiz button
+                button.addEventListener('keydown', (e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault();
+                        button.click();
+                    }
+                });
+            });
+            
+            // Add event listeners for view questions buttons
+            content.querySelectorAll('.view-questions-btn').forEach(button => {
+                button.addEventListener('click', async (e) => {
+                    const quizName = e.target.dataset.quizName;
+                    const userName = e.target.dataset.username;
+                    
+                    await this.showQuizQuestions(quizName, userName);
+                });
+                
+                // Add keyboard support for view questions button
+                button.addEventListener('keydown', (e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault();
+                        button.click();
+                    }
+                });
+            });
+            
+            // Add event listener for reset all progress button
+            const resetAllBtn = overlay.querySelector('#resetUserProgress');
+            if (resetAllBtn) {
+                resetAllBtn.addEventListener('click', async () => {
+                    if (confirm(`Are you sure you want to reset all progress for ${username}? This cannot be undone.`)) {
+                        try {
+                            await this.resetAllProgress(username);
+                            overlay.remove();
+                            this.showSuccess(`Progress reset for ${username}`);
+                            this.updateUserList();
+                        } catch (error) {
+                            this.showError(`Failed to reset progress: ${error.message}`);
+                        }
+                    }
+                });
+                
+                // Add keyboard support for reset all button
+                resetAllBtn.addEventListener('keydown', (e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault();
+                        resetAllBtn.click();
+                    }
+                });
+            }
+            
+            // Add event listener for reset password button
+            const resetPasswordBtn = overlay.querySelector('#resetUserPassword');
+            if (resetPasswordBtn) {
+                resetPasswordBtn.addEventListener('click', async () => {
+                    if (confirm(`Are you sure you want to reset the password for ${username}?`)) {
+                        try {
+                            // Use this.apiService instead of creating a new instance
+                            const response = await this.apiService.resetUserPassword(username);
+                            
+                            this.showSuccess(`Password reset for ${username}: ${response.newPassword}`);
+                            console.log('Password reset successful:', response);
+                        } catch (error) {
+                            console.error('Failed to reset password:', error);
+                            this.showError(`Failed to reset password for ${username}`);
+                        }
+                    }
+                });
+                
+                // Add keyboard support for reset password button
+                resetPasswordBtn.addEventListener('keydown', (e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault();
+                        resetPasswordBtn.click();
+                    }
+                });
+            }
+            
+            // Add event listener for delete user button
+            const deleteUserBtn = overlay.querySelector('#deleteUserAccount');
+            if (deleteUserBtn) {
+                deleteUserBtn.addEventListener('click', async () => {
+                    if (confirm(`Are you sure you want to delete ${username}'s account? This cannot be undone.`)) {
+                        try {
+                            await this.deleteUser(username);
+                            overlay.remove();
+                            this.showSuccess(`Account deleted for ${username}`);
+                            this.updateUserList();
+                        } catch (error) {
+                            this.showError(`Failed to delete account: ${error.message}`);
+                        }
+                    }
+                });
+                
+                // Add keyboard support for delete user button
+                deleteUserBtn.addEventListener('keydown', (e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault();
+                        deleteUserBtn.click();
+                    }
+                });
+            }
+        } catch (error) {
+            console.error('Error showing user details:', error);
+            this.showError(`Failed to show user details: ${error.message}`);
+        }
+    }
+
+    // Helper methods for user details display
+    estimateTotalQuestions(quizType) {
+        // Estimate total questions based on quiz type
+        if (quizType.toLowerCase().includes('interview')) {
+            return 15;
+        }
+        return 20; // Default estimate
+    }
+
+    getStatusClass(percentComplete) {
+        if (percentComplete === 0) return 'text-muted';
+        if (percentComplete < 50) return 'text-warning';
+        if (percentComplete === 100) return 'text-success';
+        return 'text-primary';
+    }
+
+    getStatusText(percentComplete) {
+        if (percentComplete === 0) return 'Not Started';
+        if (percentComplete < 50) return 'In Progress';
+        if (percentComplete === 100) return 'Completed';
+        return 'Partially Complete';
+    }
+
+    // Helper method for formatting activity type
+    formatActivityType(type) {
+        switch (type) {
+            case 'login':
+                return 'Login';
+            case 'quiz_start':
+                return 'Started Quiz';
+            case 'quiz_complete':
+                return 'Completed Quiz';
+            case 'answer_question':
+                return 'Answered Question';
+            default:
+                return type.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+        }
+    }
+
+    // Helper method for getting activity icon
+    getActivityIcon(type) {
+        switch (type) {
+            case 'login':
+                return 'fa-sign-in-alt';
+            case 'quiz_start':
+                return 'fa-play';
+            case 'quiz_complete':
+                return 'fa-check-circle';
+            case 'answer_question':
+                return 'fa-question';
+            default:
+                return 'fa-history';
+        }
+    }
+
+    // Calculate quiz progress percent
+    calculateQuizProgressPercent(quizType, questionsAnswered) {
+        // Estimate total questions based on quiz type
+        let totalQuestions = 20; // Default estimate
+        
+        // Customize based on quiz type if needed
+        if (quizType.toLowerCase().includes('interview')) {
+            totalQuestions = 15;
+        }
+        
+        // Calculate percentage
+        const percent = Math.min(100, (questionsAnswered / totalQuestions) * 100);
+        return percent;
+    }
+
+    // Helper method to categorize quizzes for the form
+    categorizeQuizzesForForm(quizTypes) {
+        if (!quizTypes || !Array.isArray(quizTypes)) {
+            console.error('Invalid quizTypes provided to categorizeQuizzesForForm:', quizTypes);
+            quizTypes = [
+                'communication', 'initiative', 'time-management', 'tester-mindset',
+                'risk-analysis', 'risk-management', 'non-functional', 'test-support',
+                'issue-verification', 'build-verification', 'issue-tracking-tools',
+                'raising-tickets', 'reports', 'cms-testing', 'email-testing', 'content-copy',
+                'locale-testing', 'script-metrics-troubleshooting','standard-script-testing',
+                'test-types-tricks', 'automation-interview', 'fully-scripted', 'exploratory',
+                'sanity-smoke', 'functional-interview'
+            ];
+        }
+        
+        const categories = {
+            'Technical Skills': [],
+            'QA Processes': [],
+            'Content Testing': [],
+            'Tools & Documentation': [],
+            'Soft Skills': [],
+            'Interview Quizzes': [],
+            'Other': []
+        };
+        
+        quizTypes.forEach(quiz => {
+            if (!quiz) return; // Skip undefined quiz types
+            
+            const lowerQuiz = quiz.toLowerCase();
+            
+            // Map quiz types to categories based on the valid quiz types
+            if (['non-functional', 'script-metrics-troubleshooting', 'standard-script-testing'].includes(lowerQuiz)) {
+                categories['Technical Skills'].push(quiz);
+            } 
+            else if (['test-support', 'issue-verification', 'build-verification', 'fully-scripted', 'exploratory', 'sanity-smoke'].includes(lowerQuiz)) {
+                categories['QA Processes'].push(quiz);
+            }
+            else if (['cms-testing', 'email-testing', 'content-copy', 'locale-testing'].includes(lowerQuiz)) {
+                categories['Content Testing'].push(quiz);
+            }
+            else if (['issue-tracking-tools', 'raising-tickets', 'reports'].includes(lowerQuiz)) {
+                categories['Tools & Documentation'].push(quiz);
+            }
+            else if (['communication', 'initiative', 'time-management', 'tester-mindset', 'risk-analysis', 'risk-management'].includes(lowerQuiz)) {
+                categories['Soft Skills'].push(quiz);
+            }
+            else if (['automation-interview', 'functional-interview'].includes(lowerQuiz)) {
+                categories['Interview Quizzes'].push(quiz);
+            }
+            else {
+                categories['Other'].push(quiz);
+            }
+        });
+        
+        // Remove empty categories
+        Object.keys(categories).forEach(key => {
+            if (categories[key].length === 0) {
+                delete categories[key];
+            }
+        });
+        
+        return categories;
+    }
+
+    // Implement resetAllProgress to match the method name used in the showUserDetails method
+    async resetAllProgress(username) {
+        try {
+            // Use apiService instead of direct fetch
+            const response = await this.apiService.fetchWithAdminAuth(`${this.apiService.baseUrl}/admin/users/${username}/reset-progress`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            });
+
+            if (!response.success) {
+                throw new Error(response.message || 'Failed to reset user progress');
+            }
+
+            return response;
+        } catch (error) {
+            console.error('Error resetting user progress:', error);
+            throw error;
+        }
+    }
+
+    // Implement resetQuizProgress for individual quiz reset functionality
+    async resetQuizProgress(username, quizType) {
+        try {
+            // Use apiService instead of direct fetch
+            const response = await this.apiService.fetchWithAdminAuth(`${this.apiService.baseUrl}/admin/users/${username}/quiz/${quizType}/reset`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            });
+
+            if (!response.success) {
+                throw new Error(response.message || 'Failed to reset quiz progress');
+            }
+
+            return response;
+        } catch (error) {
+            console.error('Error resetting quiz progress:', error);
+            throw error;
+        }
+    }
+
+    // Add implementation for showQuizQuestions matching standard admin
+    async showQuizQuestions(quizType, username) {
+        try {
+            // Get user data
+            const user = this.users.find(u => u.username === username);
+            if (!user) {
+                throw new Error('User not found');
+            }
+
+            console.log('Showing quiz questions for:', { username, quizType });
+            
+            // Get quiz results from API
+            try {
+                // Import ApiService from relative path
+                const apiService = this.apiService; // Use the inherited apiService
+                const response = await apiService.getQuizQuestions(username, quizType);
+                console.log('Quiz questions API response:', response);
+                
+                if (response.success && response.data) {
+                    // Map the API response to the format expected by the UI
+                    const apiQuestionHistory = response.data.questionHistory || [];
+                    const questionHistory = apiQuestionHistory.map(item => {
+                        const isPassed = item.status === 'passed';
+                        const isTimedOut = item.timedOut === true;
+                        
+                        // Get the correct answer
+                        let correctAnswer = '';
+                        if (item.correctAnswer && item.correctAnswer.text) {
+                            // If the API provides the correct answer directly, use it
+                            correctAnswer = item.correctAnswer.text;
+                        } else if (!isPassed && item.selectedAnswer?.outcome) {
+                            // Otherwise try to extract from outcome text
+                            const outcomeText = item.selectedAnswer.outcome;
+                            const match = outcomeText.match(/The correct answer was: "([^"]+)"/);
+                            if (match && match[1]) {
+                                correctAnswer = match[1];
+                            } else {
+                                // If we can't extract from outcome, use the tool field
+                                // The tool field often contains the name of the correct answer for incorrect responses
+                                correctAnswer = item.selectedAnswer?.tool || 'Correct answer not available';
+                            }
+                        } else if (isPassed) {
+                            // For correct answers, the selected answer is the correct answer
+                            correctAnswer = item.selectedAnswer?.text || '';
+                        }
+                        
+                        return {
+                            question: item.scenario?.title || 'Question text not available',
+                            scenario: item.scenario?.description || '',
+                            selectedAnswer: item.selectedAnswer?.text || 'No answer selected',
+                            correctAnswer: correctAnswer || 'Correct answer not available',
+                            isCorrect: isPassed,
+                            isTimedOut: isTimedOut
+                        };
+                    });
+                    
+                    const questionsAnswered = response.data.totalQuestions || 0;
+                    const quizScore = response.data.score || 0;
+                    const quizStatus = questionsAnswered >= 15 ? 'Completed' : (questionsAnswered > 0 ? 'In Progress' : 'Not Started');
+                    
+                    console.log('Mapped question history:', questionHistory);
+                    console.log('Questions answered:', questionsAnswered);
+                    console.log('Quiz status:', quizStatus);
+                    
+                    // Create overlay container
+            const overlay = document.createElement('div');
+            overlay.className = 'user-details-overlay';
+                    overlay.style.zIndex = '1002'; // Ensure it's above other overlays
+            overlay.setAttribute('role', 'dialog');
+            overlay.setAttribute('aria-modal', 'true');
+                    overlay.setAttribute('aria-labelledby', 'questions-details-title');
+            
+            // Create content container
+            const content = document.createElement('div');
+            content.className = 'user-details-content';
+            
+                    // Determine if we should show the questions table or the "no questions" message
+                    const hasCompletedQuestions = questionHistory.length > 0 || questionsAnswered > 0;
+                    
+                    content.innerHTML = `
+                        <style>
+                            .questions-table tr.passed {
+                                background-color: rgba(75, 181, 67, 0.1);
+                            }
+                            .questions-table tr.failed {
+                                background-color: rgba(255, 68, 68, 0.1);
+                            }
+                            .questions-table tr.timed-out {
+                                background-color: rgba(158, 158, 158, 0.1);
+                            }
+                            .questions-table tr.passed td {
+                                border-bottom: 1px solid rgba(75, 181, 67, 0.2);
+                            }
+                            .questions-table tr.failed td {
+                                border-bottom: 1px solid rgba(255, 68, 68, 0.2);
+                            }
+                            .questions-table tr.timed-out td {
+                                border-bottom: 1px solid rgba(158, 158, 158, 0.2);
+                            }
+                            .questions-table tr {
+                                border-left: 4px solid transparent;
+                                height: auto;
+                                min-height: 60px;
+                            }
+                            .questions-table tr.passed {
+                                border-left: 4px solid #4bb543;
+                            }
+                            .questions-table tr.failed {
+                                border-left: 4px solid #ff4444;
+                            }
+                            .questions-table tr.timed-out {
+                                border-left: 4px solid #9e9e9e;
+                            }
+                            .questions-table tbody tr:not(:last-child) {
+                                border-bottom: 1px solid #e9ecef;
+                            }
+                            .questions-table td {
+                                padding: 12px 15px;
+                                vertical-align: top;
+                                line-height: 1.5;
+                            }
+                            .questions-table th {
+                                padding: 12px 15px;
+                                background-color: #f8f9fa;
+                                border-bottom: 2px solid #dee2e6;
+                                font-weight: 600;
+                            }
+                            .questions-table {
+                                width: 100%;
+                                border-collapse: separate;
+                                border-spacing: 0;
+                                margin-bottom: 1rem;
+                                box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+                            }
+                            .questions-table strong {
+                                font-weight: 600;
+                                display: block;
+                                margin-bottom: 6px;
+                            }
+                            .answer-content div {
+                                margin-bottom: 8px;
+                            }
+                            .answer-content strong {
+                                display: inline-block;
+                                min-width: 80px;
+                            }
+                            .status-badge {
+                                padding: 4px 8px;
+                                border-radius: 4px;
+                                font-weight: bold;
+                                font-size: 0.9em;
+                            }
+                            .status-badge.pass {
+                                background-color: rgba(75, 181, 67, 0.2);
+                                color: #2e7d32;
+                            }
+                            .status-badge.fail {
+                                background-color: rgba(255, 68, 68, 0.2);
+                                color: #c62828;
+                            }
+                            .status-badge.timeout {
+                                background-color: rgba(158, 158, 158, 0.2);
+                                color: #616161;
+                            }
+                        </style>
+                        <div class="details-header">
+                            <h3 id="questions-details-title">${this.formatQuizName(quizType)} - ${username}'s Answers</h3>
+                            <button class="close-btn" aria-label="Close questions view" tabindex="0">×</button>
+                    </div>
+                        <div class="questions-content">
+                            ${!hasCompletedQuestions ? 
+                                `<div class="not-attempted">
+                                    <p>This user has not attempted any questions in this quiz yet.</p>
+                                </div>` : 
+                                questionHistory.length > 0 ?
+                                `<table class="questions-table">
+                                    <thead>
+                                        <tr>
+                                            <th style="width: 5%;">#</th>
+                                            <th style="width: 15%;">Status</th>
+                                            <th style="width: 40%;">Question</th>
+                                            <th style="width: 40%;">Answer</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        ${questionHistory.map((question, index) => {
+                                            const isPassed = question.isCorrect;
+                                            return `
+                                                <tr class="${isPassed ? 'passed' : question.isTimedOut ? 'timed-out' : 'failed'}">
+                                                    <td>${index + 1}</td>
+                                                    <td>
+                                                        <span class="status-badge ${isPassed ? 'pass' : question.isTimedOut ? 'timeout' : 'fail'}">
+                                                            ${isPassed ? 'CORRECT' : question.isTimedOut ? 'TIMED OUT' : 'INCORRECT'}
+                                    </span>
+                                                    </td>
+                                                    <td>
+                                                        <strong>${question.question || 'Question text not available'}</strong>
+                                                        ${question.scenario ? `<p>${question.scenario}</p>` : ''}
+                                                    </td>
+                                                    <td class="answer-content">
+                                                        <div>
+                                                            <strong>Selected:</strong> ${question.selectedAnswer || 'No answer selected'}
+                                </div>
+                                                        <div>
+                                                            <strong>Correct:</strong> ${question.correctAnswer || 'Correct answer not available'}
+                            </div>
+                                                    </td>
+                                                </tr>
+                                            `;
+                                        }).join('')}
+                                    </tbody>
+                                </table>` :
+                                `<div class="not-attempted">
+                                    <p>This user has completed ${questionsAnswered} questions, but detailed history is not available.</p>
+                                </div>`
+                            }
+                        </div>
+                    `;
+                    
+            overlay.appendChild(content);
+            document.body.appendChild(overlay);
+            
+                    // Close button event listener
+                    const closeBtn = content.querySelector('.close-btn');
+                    if (closeBtn) {
+            closeBtn.addEventListener('click', () => {
+                overlay.remove();
+            });
+            
+                        // Add keyboard support for close button
+                        closeBtn.addEventListener('keydown', (e) => {
+                            if (e.key === 'Enter' || e.key === ' ') {
+                                e.preventDefault();
+                    overlay.remove();
+                }
+            });
+                    }
+            
+                    // Close on escape key
+                    const handleEscapeKey = (e) => {
+                if (e.key === 'Escape') {
+                    overlay.remove();
+                            document.removeEventListener('keydown', handleEscapeKey);
+                        }
+                    };
+                    document.addEventListener('keydown', handleEscapeKey);
+                    
+                    // Close on click outside
+                    overlay.addEventListener('click', (e) => {
+                        if (e.target === overlay) {
+                            overlay.remove();
+                        }
+                    });
+                    
+                } else {
+                    throw new Error('Quiz data not available');
+                }
+            } catch (apiError) {
+                console.error('API error:', apiError);
+                this.showError(`Failed to fetch quiz questions: ${apiError.message}`);
+            }
+            
+        } catch (error) {
+            console.error('Error showing quiz questions:', error);
+            this.showError(`Failed to show quiz questions: ${error.message}`);
+        }
+    }
+
+    // Helper method for getting question icon based on correctness
+    getQuestionIcon(isCorrect) {
+        return isCorrect ? 'fa-check-circle' : 'fa-times-circle';
+    }
+
+    // Helper method for formatting question type
+    formatQuestionType(type) {
+        if (!type) return 'Question';
+        return type.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+    }
+
+    // Helper method to update the "Select All" checkbox state based on individual checkboxes
+    updateSelectAllCheckbox() {
+        const selectAllCheckbox = document.getElementById('selectAllQuizzes');
+        const quizCheckboxes = document.querySelectorAll('input[name="quizzes"]');
+        
+        if (selectAllCheckbox && quizCheckboxes.length > 0) {
+            const allChecked = Array.from(quizCheckboxes).every(checkbox => checkbox.checked);
+            selectAllCheckbox.checked = allChecked;
+        }
+    }
+    
+    // Helper method to handle create account form submission
+    async handleCreateAccount(event) {
+        event.preventDefault();
+        
+        try {
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+            
+            // Define the valid quiz types
+            const validQuizTypes = [
+                'automation-interview', 'build-verification', 'cms-testing',
+                'communication', 'content-copy', 'email-testing',
+                'exploratory', 'fully-scripted', 'functional-interview',
+                'initiative', 'issue-tracking-tools', 'issue-verification',
+                'locale-testing', 'non-functional', 'raising-tickets',
+                'reports', 'risk-analysis', 'risk-management',
+                'sanity-smoke', 'script-metrics-troubleshooting',
+                'standard-script-testing', 'test-support', 'test-types-tricks',
+                'tester-mindset', 'time-management'
+            ];
+            
+            // Log all selected checkboxes
+            const selectedCheckboxes = document.querySelectorAll('input[name="quizzes"]:checked');
+            console.log('Selected checkboxes:', Array.from(selectedCheckboxes).map(cb => ({
+                value: cb.value,
+                dataset: cb.dataset
+            })));
+
+            // Get selected quizzes and log them
+            const selectedQuizzes = Array.from(selectedCheckboxes)
+                .map(checkbox => checkbox.value.toLowerCase());
+            console.log('Selected quizzes (before validation):', selectedQuizzes);
+
+            // Log the valid quiz types for comparison
+            console.log('Valid quiz types:', validQuizTypes);
+
+            // Validate basic requirements
+            if (username.length < 3) {
+                throw new Error('Username must be at least 3 characters long');
+            }
+
+            if (password.length < 6) {
+                throw new Error('Password must be at least 6 characters long');
+            }
+            
+            if (selectedQuizzes.length === 0) {
+                throw new Error('Please select at least one quiz');
+            }
+
+            // Log which quizzes are invalid
+            const invalidQuizzes = selectedQuizzes.filter(quiz => !validQuizTypes.includes(quiz));
+            if (invalidQuizzes.length > 0) {
+                console.error('Invalid quiz names found:', invalidQuizzes);
+                console.log('These quiz names do not match any in the valid quiz types list');
+            }
+
+            // Filter valid quizzes and log them
+            const allowedQuizzes = selectedQuizzes.filter(quiz => validQuizTypes.includes(quiz));
+            console.log('Allowed quizzes (after validation):', allowedQuizzes);
+            
+            if (allowedQuizzes.length === 0) {
+                throw new Error('No valid quiz types selected');
+            }
+
+            // Create array of hidden quizzes and log them
+            const hiddenQuizzes = validQuizTypes.filter(quiz => !allowedQuizzes.includes(quiz));
+            console.log('Hidden quizzes:', hiddenQuizzes);
+
+            // Log the final request body
+            const requestBody = {
+                username,
+                password,
+                userType: 'interview_candidate',
+                allowedQuizzes,
+                hiddenQuizzes
+            };
+            console.log('Request body:', requestBody);
+
+            const response = await this.apiService.fetchWithAdminAuth('/api/admin/create-interview-account', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(requestBody)
+            });
+
+            if (!response.success) {
+                throw new Error(response.message || 'Failed to create account');
+            }
+
+            // Show success message
+            this.showSuccess(`Account created for ${username}`);
+            
+            // Reset the form
+            document.getElementById('createInterviewForm').reset();
+            
+            // Update the users list
+            await this.loadUsers();
+            
+        } catch (error) {
+            console.error('Failed to create account:', error);
+            this.showError(error.message || 'Failed to create account');
+            throw error;
+        }
+    }
+
+    // Setup schedule section with form and event handlers
+    setupScheduleSection() {
+        console.log('Setting up schedule section');
+        
+        const scheduleForm = document.getElementById('scheduleForm');
+        const userSelect = document.getElementById('scheduleUser');
+        const quizSelect = document.getElementById('scheduleQuiz');
+        const dateInput = document.getElementById('scheduleDate');
+        const timeInput = document.getElementById('scheduleTime');
+        
+        // Add a refresh button to manually refresh scheduled resets
+        const scheduledItemsHeader = document.querySelector('.scheduled-items-header');
+        if (scheduledItemsHeader) {
+            const refreshButton = document.createElement('button');
+            refreshButton.className = 'refresh-btn action-button secondary';
+            refreshButton.innerHTML = '<i class="fas fa-sync-alt"></i> Refresh';
+            refreshButton.setAttribute('aria-label', 'Refresh scheduled resets');
+            refreshButton.addEventListener('click', () => this.refreshScheduleData());
+            
+            scheduledItemsHeader.appendChild(refreshButton);
+        }
+        
+        // Populate user dropdown
+        this.populateUserDropdown();
+        
+        // Populate quiz dropdown
+        this.populateQuizDropdown();
+        
+        // Set minimum date to today
+        const today = new Date();
+        const year = today.getFullYear();
+        const month = String(today.getMonth() + 1).padStart(2, '0');
+        const day = String(today.getDate()).padStart(2, '0');
+        dateInput.min = `${year}-${month}-${day}`;
+        
+        // Add form submit handler
+        scheduleForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            this.createSchedule();
+        });
+        
+        // Load and display existing scheduled resets
+        this.loadScheduledResets();
+        
+        // Also check for any scheduled resets that need to be executed
+        this.checkScheduledResets().catch(error => {
+            console.error('Error checking scheduled resets during setup:', error);
+        });
+    }
+    
+    // Populate user dropdown with available users
+    populateUserDropdown() {
+        const userSelect = document.getElementById('scheduleUser');
+        
+        // Clear existing options except the first one
+        while (userSelect.options.length > 1) {
+            userSelect.remove(1);
+        }
+        
+        // Add user options
+        this.users.forEach(user => {
+            const option = document.createElement('option');
+            option.value = user.username;
+            option.textContent = user.username;
+            userSelect.appendChild(option);
+        });
+    }
+    
+    // Populate quiz dropdown with available quizzes
+    populateQuizDropdown() {
+        const quizSelect = document.getElementById('scheduleQuiz');
+        
+        // Clear existing options except the first one
+        while (quizSelect.options.length > 1) {
+            quizSelect.remove(1);
+        }
+        
+        // Add quiz options sorted alphabetically
+        this.quizTypes
+            .slice()
+            .sort((a, b) => this.formatQuizName(a).localeCompare(this.formatQuizName(b)))
+            .forEach(quizType => {
+                const option = document.createElement('option');
+                option.value = quizType;
+                option.textContent = this.formatQuizName(quizType);
+                quizSelect.appendChild(option);
+            });
+    }
+    
+    // Create a new schedule based on form data
+    async createSchedule() {
+        try {
+            const username = document.getElementById('scheduleUser').value;
+            const quizName = document.getElementById('scheduleQuiz').value;
+            const resetDate = document.getElementById('scheduleDate').value;
+            const resetTime = document.getElementById('scheduleTime').value;
+            
+            // Validate inputs
+            if (!username || !quizName || !resetDate || !resetTime) {
+                this.showError('Please fill in all fields');
+                return;
+            }
+            
+            // Create datetime string
+            const resetDateTime = `${resetDate}T${resetTime}:00`;
+            
+            // Show loading state
+            const submitBtn = document.querySelector('.submit-btn');
+            submitBtn.disabled = true;
+            submitBtn.textContent = 'Scheduling...';
+            
+            // Use the API service to create the schedule
+            const response = await this.apiService.createScheduledReset(username, quizName, resetDateTime);
+            
+            if (response.success) {
+                // Reset form
+                document.getElementById('scheduleForm').reset();
+                
+                // Show success message
+                this.showSuccess(`Reset scheduled for ${this.formatQuizName(quizName)} on ${this.formatScheduleDateTime(resetDateTime)}`);
+                
+                // Refresh the schedules list
+                this.loadScheduledResets();
+            } else {
+                throw new Error(response.message || 'Failed to schedule reset');
+            }
+        } catch (error) {
+            console.error('Error creating schedule:', error);
+            this.showError(`Failed to create schedule: ${error.message}`);
+        } finally {
+            // Reset button state
+            const submitBtn = document.querySelector('.submit-btn');
+            submitBtn.disabled = false;
+            submitBtn.textContent = 'Schedule Reset';
+        }
+    }
+    
+    // Get all scheduled resets from API with localStorage fallback
+    async getScheduledResets() {
+        try {
+            const response = await this.apiService.getScheduledResets();
+            return response.data || [];
+        } catch (error) {
+            console.error('Error getting scheduled resets:', error);
+            this.showError(`Failed to load scheduled resets: ${error.message}`);
+            return [];
+        }
+    }
+    
+    // Load and display scheduled resets
+    async loadScheduledResets() {
+        try {
+            // Show loading state
+            const scheduledItemsList = document.getElementById('scheduledItemsList');
+            scheduledItemsList.innerHTML = `
+                <div class="loading-container" style="text-align: center; padding: 1rem;">
+                    <div class="loading-spinner"></div>
+                    <p>Loading scheduled resets...</p>
+                </div>
+            `;
+            
+            // Get schedules and display them
+            await this.displayScheduledResets();
+            
+            // Add a button to check for due scheduled resets
+            const scheduledItemsHeader = document.querySelector('.scheduled-items-header');
+            if (scheduledItemsHeader) {
+                // Remove any existing check button first
+                const existingCheckBtn = scheduledItemsHeader.querySelector('.check-resets-btn');
+                if (existingCheckBtn) {
+                    existingCheckBtn.remove();
+                }
+                
+                // Create and add the check button
+                const checkButton = document.createElement('button');
+                checkButton.className = 'check-resets-btn action-button secondary';
+                checkButton.innerHTML = '<i class="fas fa-clock"></i> Check Due Resets';
+                checkButton.setAttribute('aria-label', 'Check for due scheduled resets');
+                checkButton.addEventListener('click', async () => {
+                    try {
+                        checkButton.disabled = true;
+                        checkButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Checking...';
+                        await this.checkScheduledResets();
+                        checkButton.disabled = false;
+                        checkButton.innerHTML = '<i class="fas fa-clock"></i> Check Due Resets';
+                    } catch (error) {
+                        checkButton.disabled = false;
+                        checkButton.innerHTML = '<i class="fas fa-clock"></i> Check Due Resets';
+                    }
+                });
+                
+                scheduledItemsHeader.appendChild(checkButton);
+            }
+        } catch (error) {
+            console.error('Error loading scheduled resets:', error);
+            this.showInfo(`Failed to load scheduled resets: ${error.message}`, 'error');
+            
+            // Show error state
+            const scheduledItemsList = document.getElementById('scheduledItemsList');
+            scheduledItemsList.innerHTML = `
+                <div class="error-message">
+                    <p>Failed to load scheduled resets. Please try refreshing the page.</p>
+                </div>
+            `;
+        }
+    }
+    
+    // Display scheduled resets in the list
+    async displayScheduledResets() {
+        const scheduledItemsList = document.getElementById('scheduledItemsList');
+        
+        try {
+            // Get schedules from API or localStorage fallback
+            const schedules = await this.getScheduledResets();
+            
+            // Clear existing content
+            scheduledItemsList.innerHTML = '';
+            
+            if (schedules.length === 0) {
+                scheduledItemsList.innerHTML = '<p class="no-items-message">No scheduled resets yet.</p>';
+                return;
+            }
+            
+            // Sort schedules by date/time (earliest first)
+            schedules.sort((a, b) => new Date(a.resetDateTime) - new Date(b.resetDateTime));
+            
+            // Create list items for each scheduled reset
+            schedules.forEach(schedule => {
+                const scheduledItem = document.createElement('div');
+                scheduledItem.className = 'scheduled-item';
+                scheduledItem.dataset.id = schedule.id;
+                
+                scheduledItem.innerHTML = `
+                    <div class="scheduled-info">
+                        <div class="scheduled-user">${schedule.username}</div>
+                        <div class="scheduled-quiz">${this.formatQuizName(schedule.quizName)}</div>
+                        <div class="scheduled-time">Reset scheduled for: ${this.formatScheduleDateTime(schedule.resetDateTime)}</div>
+                    </div>
+                    <div class="scheduled-actions">
+                        <button class="cancel-schedule-btn" data-id="${schedule.id}" aria-label="Cancel schedule">
+                            <i class="fas fa-times"></i> Cancel
+                        </button>
+                    </div>
+                `;
+                
+                scheduledItemsList.appendChild(scheduledItem);
+            });
+            
+            // Add event listeners to cancel buttons
+            scheduledItemsList.querySelectorAll('.cancel-schedule-btn').forEach(button => {
+                button.addEventListener('click', (e) => {
+                    const scheduleId = e.currentTarget.dataset.id;
+                    this.cancelSchedule(scheduleId);
+                });
+            });
+        } catch (error) {
+            console.error('Error displaying scheduled resets:', error);
+            scheduledItemsList.innerHTML = `
+                <div class="error-message">
+                    <p>Failed to display scheduled resets. Please try refreshing the page.</p>
+                </div>
+            `;
+        }
+    }
+    
+    // Cancel a scheduled reset
+    async cancelSchedule(scheduleId) {
+        try {
+            // Find the schedule to display information in the confirmation dialog
+            const schedules = await this.getScheduledResets();
+            const scheduleToCancel = schedules.find(s => s.id === scheduleId);
+            
+            if (!scheduleToCancel) {
+                this.showError('Schedule not found');
+                return;
+            }
+            
+            // Confirm cancellation
+            if (!confirm(`Are you sure you want to cancel the scheduled reset for ${this.formatQuizName(scheduleToCancel.quizName)}?`)) {
+                return;
+            }
+            
+            // Show loading state on the button
+            const cancelBtn = document.querySelector(`.cancel-schedule-btn[data-id="${scheduleId}"]`);
+            if (cancelBtn) {
+                cancelBtn.disabled = true;
+                cancelBtn.setAttribute('aria-busy', 'true');
+                cancelBtn.innerHTML = `
+                    <i class="fas fa-spinner fa-spin" aria-hidden="true"></i>
+                    <span class="sr-only">Cancelling schedule...</span>
+                    <span aria-hidden="true">Cancelling...</span>
+                `;
+            }
+            
+            // Use the API service to cancel the schedule
+            const response = await this.apiService.cancelScheduledReset(scheduleId);
+            
+            if (response.success) {
+                // Show success message before refreshing display
+                this.showSuccess(`Successfully cancelled scheduled reset for ${this.formatQuizName(scheduleToCancel.quizName)}`);
+                
+                // Refresh the display
+                await this.loadScheduledResets();
+            } else {
+                throw new Error(response.message || 'Failed to cancel schedule');
+            }
+        } catch (error) {
+            console.error('Error cancelling schedule:', error);
+            this.showError(`Failed to cancel schedule: ${error.message}`);
+            
+            // Reset the button state if it still exists
+            const cancelBtn = document.querySelector(`.cancel-schedule-btn[data-id="${scheduleId}"]`);
+            if (cancelBtn) {
+                cancelBtn.disabled = false;
+                cancelBtn.removeAttribute('aria-busy');
+                cancelBtn.innerHTML = '<i class="fas fa-times" aria-hidden="true"></i> Cancel';
+            }
+            
+            // Refresh the display to ensure consistency
+            await this.loadScheduledResets();
+        }
+    }
+    
+    // Format schedule date/time for display
+    formatScheduleDateTime(dateTimeString) {
+        const options = {
+            weekday: 'short',
+            year: 'numeric',
+            month: 'short',
+            day: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit'
+        };
+        
+        return new Date(dateTimeString).toLocaleString(undefined, options);
+    }
+    
+    // Refresh schedule section data
+    async refreshScheduleData() {
+        this.populateUserDropdown();
+        this.populateQuizDropdown();
+        await this.loadScheduledResets();
+    }
+    
+    // Check for scheduled resets that need to be executed
+    async checkScheduledResets() {
+        try {
             console.log('Checking for scheduled resets that need to be executed...');
             
             // First, check explicit scheduled resets
@@ -3817,60 +8520,76 @@ export class Admin2Dashboard extends AdminDashboard {
     // Helper method to generate HTML for the list of guide settings
     generateGuideSettingsList(guideSettings) {
         if (!guideSettings || Object.keys(guideSettings).length === 0) {
-            return '<p>No guide settings configured yet.</p>';
+            return '<p class="no-settings">No guide settings configured yet.</p>';
         }
 
         console.log('Generating guide settings list for:', guideSettings);
         
-        let html = '';
-        
-        // Sort quiz names alphabetically
-        const quizNames = Object.keys(guideSettings).sort();
-        
-        for (const quizName of quizNames) {
-            const setting = guideSettings[quizName] || {};
+        // Filter out any invalid settings and sort by quiz name
+        const validSettings = Object.entries(guideSettings)
+            .filter(([quizName, setting]) => quizName && setting)
+            .sort((a, b) => this.formatQuizName(a[0]).localeCompare(this.formatQuizName(b[0])));
             
-            // Skip invalid settings (no quiz name or undefined settings)
-            if (!quizName || !setting) continue;
-            
-            // Handle potentially missing properties - provide defaults
-            const guideUrl = setting.url || '';
-            const isEnabled = setting.enabled === true; // Explicit check for true
-            
-            console.log(`Guide setting for ${quizName}:`, setting);
-            
-            html += `
-                <div class="settings-item">
-                    <div class="setting-info">
-                        <input type="checkbox" 
-                            class="guide-selector" 
-                            data-quiz="${quizName}" 
-                            id="guide-select-${quizName}"
-                            aria-label="Select ${this.formatQuizName(quizName)} guide">
-                        <label for="guide-select-${quizName}" class="setting-name">
-                            ${this.formatQuizName(quizName)}
-                        </label>
-                        <div class="setting-details">
-                            <span class="guide-url" title="${guideUrl}">${guideUrl || 'No URL set'}</span>
-                            <span class="guide-status ${isEnabled ? 'enabled' : 'disabled'}">
-                                ${isEnabled ? 'Enabled' : 'Disabled'}
-                            </span>
-                        </div>
-                    </div>
-                    <div class="setting-actions">
-                        <button class="edit-guide-btn" data-quiz="${quizName}">
-                            Edit
-                        </button>
-                        <button class="test-guide-btn" data-quiz="${quizName}" data-url="${guideUrl}" 
-                            ${guideUrl ? '' : 'disabled'}>
-                            Test
-                        </button>
-                    </div>
-                </div>
-            `;
+        if (validSettings.length === 0) {
+            return '<p class="no-settings">No guide settings configured yet.</p>';
         }
         
-        return html || '<p>No guide settings configured yet.</p>';
+        // Create a table format similar to the original UI
+        return `
+            <table class="settings-table">
+                <thead>
+                    <tr>
+                        <th style="width: 40px;"></th>
+                        <th>Quiz</th>
+                        <th>URL</th>
+                        <th>Status</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${validSettings.map(([quizName, setting]) => {
+                        // Handle potentially missing properties - provide defaults
+                        const guideUrl = setting.url || '';
+                        const isEnabled = setting.enabled === true; // Explicit check for true
+                        
+                        console.log(`Guide setting for ${quizName}:`, setting);
+                        
+                        return `
+                            <tr>
+                                <td>
+                                    <input type="checkbox" 
+                                        class="guide-selector" 
+                                        data-quiz="${quizName}" 
+                                        id="guide-select-${quizName}"
+                                        aria-label="Select ${this.formatQuizName(quizName)} guide">
+                                </td>
+                                <td>${this.formatQuizName(quizName)}</td>
+                                <td>
+                                    ${guideUrl ? 
+                                        `<a href="${guideUrl}" target="_blank" rel="noopener noreferrer" class="guide-url" title="${guideUrl}">${guideUrl}</a>` :
+                                        '<span class="guide-url empty">No URL set</span>'
+                                    }
+                                </td>
+                                <td>
+                                    <span class="guide-status ${isEnabled ? 'enabled' : 'disabled'}">
+                                        ${isEnabled ? 'Enabled' : 'Disabled'}
+                                    </span>
+                                </td>
+                                <td>
+                                    <button class="edit-guide-btn" data-quiz="${quizName}">
+                                        Edit
+                                    </button>
+                                    <button class="test-guide-btn" data-quiz="${quizName}" data-url="${guideUrl}" 
+                                        ${guideUrl ? '' : 'disabled'}>
+                                        Test
+                                    </button>
+                                </td>
+                            </tr>
+                        `;
+                    }).join('')}
+                </tbody>
+            </table>
+        `;
     }
 
     // Helper function to format quiz names from kebab-case to Title Case
@@ -3885,1007 +8604,331 @@ export class Admin2Dashboard extends AdminDashboard {
     // Auto-reset settings methods
     async loadAutoResetSettings() {
         try {
-            // Add debounce to prevent multiple rapid calls
-            const now = Date.now();
-            if (!this.lastAutoSettingsLoad || (now - this.lastAutoSettingsLoad) > 5000) { // Only reload if it's been at least 5 seconds
-                this.lastAutoSettingsLoad = now;
-                console.log('Loading auto-reset settings...');
-                
             const response = await this.apiService.getAutoResetSettings();
-                if (response.success && response.data) {
-                    // Convert from array to object if needed
-                    if (Array.isArray(response.data)) {
-                        this.autoResetSettings = {};
-                        response.data.forEach(setting => {
-                            if (setting.quizName) {
-                                this.autoResetSettings[setting.quizName] = setting;
-                            }
-                        });
-                    } else if (typeof response.data === 'object') {
-                this.autoResetSettings = response.data;
-                    } else {
-                        this.autoResetSettings = {};
-                    }
-                    
-                    console.log('Auto reset settings loaded:', this.autoResetSettings);
-                    
-                    // Then call displayAutoResetSettings directly
-                    this.displayAutoResetSettings();
+            if (response.success) {
+                this.autoResetSettings = response.data || {};
+                console.log('Loaded auto-reset settings:', this.autoResetSettings);
+                return this.autoResetSettings;
             } else {
-                throw new Error(response.message || 'Failed to load auto-reset settings');
-                }
-            } else {
-                console.log('Auto-reset settings were loaded recently, skipping reload');
-                // Just update display with current data
-                this.displayAutoResetSettings();
+                console.error('Failed to load auto-reset settings:', response.error);
+                throw new Error(`Failed to load auto-reset settings: ${response.error}`);
             }
         } catch (error) {
             console.error('Error loading auto-reset settings:', error);
-            this.showError('Failed to load auto-reset settings');
+            this.autoResetSettings = {};
+            return this.autoResetSettings;
         }
+    }
+
+    setupAutoResetSettings() {
+        const container = document.getElementById('auto-reset-settings-container');
+        if (!container) return;
+
+        // Create the UI for auto reset settings
+        container.innerHTML = `
+            <div class="auto-reset-section">
+                <h4>Auto-Reset Settings</h4>
+                <p>Configure automatic quiz resets. These will run at the specified interval.</p>
+                
+                <div class="form-row">
+                    <label>Reset Interval (days):</label>
+                    <div class="input-button-group">
+                        <input type="number" 
+                            id="reset-interval" 
+                            value="${this.autoResetSettings?.resetPeriodDays || 30}" 
+                            min="1" 
+                            max="365"
+                            class="settings-input">
+                        <button id="save-auto-reset" class="action-button">Save Settings</button>
+                    </div>
+                </div>
+                
+                <div class="form-row">
+                    <div class="checkbox-group">
+                        <label class="checkbox-label">
+                            <input type="checkbox" id="auto-reset-enabled" ${this.autoResetSettings?.enabled ? 'checked' : ''}>
+                            <span>Enable Auto-Reset</span>
+                        </label>
+                    </div>
+                </div>
+                
+                <div class="auto-reset-status">
+                    <h5>Current Status:</h5>
+                    <div id="auto-reset-status-text">
+                        ${this.formatAutoResetStatus()}
+                    </div>
+                    <button id="run-reset-now" class="action-button">Run Reset Now</button>
+                </div>
+            </div>
+        `;
+
+        // Add event listeners
+        const saveButton = container.querySelector('#save-auto-reset');
+        const intervalInput = container.querySelector('#reset-interval');
+        const enabledCheckbox = container.querySelector('#auto-reset-enabled');
+        const runResetButton = container.querySelector('#run-reset-now');
+        
+        saveButton.addEventListener('click', async () => {
+            const days = parseInt(intervalInput.value, 10);
+            if (isNaN(days) || days < 1 || days > 365) {
+                this.showError('Please enter a valid number of days (1-365)');
+                return;
+            }
+            
+            const enabled = enabledCheckbox.checked;
+            
+            try {
+                const settings = {
+                    enabled,
+                    resetPeriodDays: days
+                };
+                
+                const response = await this.apiService.updateAutoResetSettings(settings);
+                if (response.success) {
+                    this.autoResetSettings = response.data;
+                    this.displayAutoResetSettings();
+                    this.showSuccess('Auto-reset settings updated');
+                } else {
+                    throw new Error(response.message || 'Failed to update settings');
+                }
+            } catch (error) {
+                this.showError(`Failed to save auto-reset settings: ${error.message}`);
+            }
+        });
+        
+        runResetButton.addEventListener('click', async () => {
+            if (confirm('Are you sure you want to run a manual reset for all completed quizzes?')) {
+                await this.manuallyTriggerReset();
+            }
+        });
     }
 
     displayAutoResetSettings() {
         const container = document.getElementById('auto-reset-settings-container');
-        if (!container) {
-            console.error('Auto-reset settings container not found');
-            return;
-        }
-
-        // Clear existing content
-        container.innerHTML = '';
-
-        console.log('Displaying auto-reset settings:', this.autoResetSettings);
-
-        // Check if we have any auto reset settings
-        if (!this.autoResetSettings || Object.keys(this.autoResetSettings).length === 0) {
-            container.innerHTML = '<p>No auto-reset settings configured yet.</p>';
-            return;
-        }
-
-        // Create table to display settings
-        const table = document.createElement('table');
-        table.className = 'auto-reset-table';
-        
-        // Create table header
-        const thead = document.createElement('thead');
-        thead.innerHTML = `
-            <tr>
-                <th>Quiz</th>
-                <th>Reset Period</th>
-                <th>Next Reset</th>
-                <th>Actions</th>
-            </tr>
-        `;
-        table.appendChild(thead);
-        
-        // Create table body
-        const tbody = document.createElement('tbody');
-        
-        // Loop through each quiz with auto reset setting
-        for (const [quizName, settings] of Object.entries(this.autoResetSettings)) {
-            if (!quizName) continue;
-            
-            console.log(`Rendering settings for ${quizName}:`, settings);
-            console.log(`nextResetTime for ${quizName}:`, settings.nextResetTime);
-            
-            // If nextResetTime is missing but resetPeriod exists and enabled, calculate it
-            if (!settings.nextResetTime && settings.resetPeriod && settings.enabled) {
-                settings.nextResetTime = this.calculateNextResetTime(settings.resetPeriod);
-                console.log(`Calculated nextResetTime for ${quizName}: ${settings.nextResetTime}`);
-                
-                // Update the global settings
-                this.autoResetSettings[quizName] = settings;
-            }
-            
-            const row = document.createElement('tr');
-            
-            // Format reset period text
-            let resetPeriodText = 'Unknown';
-            if (settings.resetPeriod) {
-                // Check if resetPeriod is a string (daily, weekly, monthly) or a number (minutes)
-                if (typeof settings.resetPeriod === 'string') {
-                    switch(settings.resetPeriod) {
-                        case 'daily':
-                            resetPeriodText = 'Daily';
-                            break;
-                        case 'weekly':
-                            resetPeriodText = 'Weekly';
-                            break;
-                        case 'monthly':
-                            resetPeriodText = 'Monthly';
-                            break;
-                        default:
-                            resetPeriodText = settings.resetPeriod;
-                    }
-                } else if (typeof settings.resetPeriod === 'number') {
-                    // Convert minutes to a readable format
-                    const minutes = settings.resetPeriod;
-                    if (minutes < 60) {
-                        resetPeriodText = `${minutes} minute${minutes !== 1 ? 's' : ''}`;
-                    } else if (minutes < 1440) {
-                        const hours = minutes / 60;
-                        resetPeriodText = `${hours} hour${hours !== 1 ? 's' : ''}`;
-                    } else if (minutes < 10080) {
-                        const days = minutes / 1440;
-                        resetPeriodText = `${days} day${days !== 1 ? 's' : ''}`;
-                    } else if (minutes < 43200) {
-                        const weeks = minutes / 10080;
-                        resetPeriodText = `${weeks} week${weeks !== 1 ? 's' : ''}`;
-                    } else {
-                        const months = minutes / 43200;
-                        resetPeriodText = `${months} month${months !== 1 ? 's' : ''}`;
-                    }
-                }
-            }
-            
-            // Create the countdown text for next reset
-            let nextResetText = 'Not scheduled';
-            
-            // If we have nextResetTime, calculate a countdown
-            if (settings.nextResetTime) {
-                const nextResetTime = new Date(settings.nextResetTime);
-                const now = new Date();
-                const timeDiff = nextResetTime - now;
-                
-                if (timeDiff <= 0) {
-                    nextResetText = 'Reset due now!';
-                } else {
-                    // Calculate time units
-                    const days = Math.floor(timeDiff / (1000 * 60 * 60 * 24));
-                    const hours = Math.floor((timeDiff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-                    const minutes = Math.floor((timeDiff % (1000 * 60 * 60)) / (1000 * 60));
-                    const seconds = Math.floor((timeDiff % (1000 * 60)) / 1000);
-                    
-                    // Format countdown text
-                    nextResetText = '';
-                    if (days > 0) {
-                        nextResetText += `${days}d `;
-                    }
-                    if (hours > 0 || days > 0) {
-                        nextResetText += `${hours}h `;
-                    }
-                    if (minutes > 0 || hours > 0 || days > 0) {
-                        nextResetText += `${minutes}m `;
-                    }
-                    nextResetText += `${seconds}s`;
-                }
-            }
-            
-            // Set row content
-            row.innerHTML = `
-                <td>${this.formatQuizName(quizName)}</td>
-                <td>${resetPeriodText}</td>
-                <td class="countdown" data-quiz="${quizName}">${nextResetText}</td>
-                <td>
-                    <button class="edit-auto-reset" data-quiz="${quizName}">Edit</button>
-                    <button class="delete-auto-reset" data-quiz="${quizName}">Delete</button>
-                    <button class="reset-now" data-quiz="${quizName}">Reset Now</button>
-                </td>
-            `;
-            
-            tbody.appendChild(row);
-        }
-        
-        table.appendChild(tbody);
-        container.appendChild(table);
-        
-        // Set up event listeners for edit and delete buttons
-        const editButtons = container.querySelectorAll('.edit-auto-reset');
-        editButtons.forEach(button => {
-            button.addEventListener('click', () => {
-                const quizName = button.dataset.quiz;
-                this.showAutoResetEditModal(quizName);
-            });
-        });
-        
-        const deleteButtons = container.querySelectorAll('.delete-auto-reset');
-        deleteButtons.forEach(button => {
-            button.addEventListener('click', () => {
-                const quizName = button.dataset.quiz;
-                this.deleteAutoResetSetting(quizName);
-            });
-        });
-
-        // Add event listeners for Reset Now buttons
-        const resetNowButtons = container.querySelectorAll('.reset-now');
-        resetNowButtons.forEach(button => {
-            button.addEventListener('click', () => {
-                const quizName = button.dataset.quiz;
-                this.manuallyTriggerReset(quizName);
-            });
-        });
-        
-        // Start countdown update interval
-        this.updateCountdowns();
-    }
-
-    setupAutoResetSettings() {
-        const quizSelect = document.getElementById('autoResetQuiz');
-        const periodSelect = document.getElementById('resetPeriod');
-        const enabledCheckbox = document.getElementById('autoResetEnabled');
-        const saveButton = document.getElementById('saveAutoReset');
-        
-        if (!quizSelect || !periodSelect || !enabledCheckbox || !saveButton) {
-            console.warn('Auto-reset settings UI elements not found');
-            return;
-        }
-
-        // Populate quiz dropdown
-        if (this.quizTypes && Array.isArray(this.quizTypes)) {
-            // Clear existing options except first one
-            while (quizSelect.options.length > 1) {
-                quizSelect.remove(1);
-            }
-            
-            // Add quiz options
-            this.quizTypes.forEach(quiz => {
-                const option = document.createElement('option');
-                option.value = quiz;
-                option.textContent = this.formatQuizName(quiz);
-                quizSelect.appendChild(option);
-            });
-        }
-
-        // Load existing settings if any
-        if (this.autoResetSettings && this.autoResetSettings.length > 0) {
-            this.updateAutoResetSettingsDisplay();
-        }
-
-        // Handle save button click
-        saveButton.addEventListener('click', async () => {
-            const quizName = quizSelect.value;
-            const resetPeriod = parseInt(periodSelect.value);
-            const enabled = enabledCheckbox.checked;
-
-            if (!quizName || !resetPeriod) {
-                this.showError('Please select both quiz and reset period');
-                return;
-            }
-
-            try {
-                const response = await this.apiService.saveAutoResetSetting(quizName, resetPeriod, enabled);
-                if (response.success) {
-                    this.showSuccess('Auto-reset setting saved successfully');
-                    await this.loadAutoResetSettings(); // Reload settings
-                } else {
-                    throw new Error(response.message || 'Failed to save auto-reset setting');
-                }
-            } catch (error) {
-                console.error('Error saving auto-reset setting:', error);
-                this.showError(`Failed to save auto-reset setting: ${error.message}`);
-            }
-        });
-    }
-
-    updateAutoResetSettingsDisplay(shouldUpdateCurrentResets = true) {
-        const quizSelect = document.getElementById('autoResetQuiz');
-        const periodSelect = document.getElementById('resetPeriod');
-        const enabledCheckbox = document.getElementById('autoResetEnabled');
-
-        if (!quizSelect || !periodSelect || !enabledCheckbox) {
-            console.warn('Cannot update auto-reset settings display: UI elements not found');
-            return;
-        }
-
-        // Clear existing period options
-        while (periodSelect.options.length > 1) {
-            periodSelect.remove(1);
-        }
-
-        // Add period options
-        const periods = [
-            { value: 1, label: '1 minute' },
-            { value: 10, label: '10 minutes (Testing)' },
-            { value: 1440, label: '1 day' },
-            { value: 10080, label: '1 week' },
-            { value: 43200, label: '1 month' },
-            { value: 129600, label: '3 months' },
-            { value: 259200, label: '6 months' },
-            { value: 525600, label: '1 year' }
-        ];
-
-        periods.forEach(period => {
-            const option = document.createElement('option');
-            option.value = period.value;
-            option.textContent = period.label;
-            periodSelect.appendChild(option);
-        });
-
-        // Set selected values if there are existing settings
-        if (this.autoResetSettings && this.autoResetSettings.length > 0) {
-            const selectedQuiz = quizSelect.value;
-            const setting = this.autoResetSettings.find(s => s.quizName === selectedQuiz);
-            
-            if (setting) {
-                periodSelect.value = setting.resetPeriod;
-                enabledCheckbox.checked = setting.enabled;
-            }
-        }
-
-        // Only update the current auto-resets display if the flag is true
-        if (shouldUpdateCurrentResets) {
-        this.displayCurrentAutoResets();
-        }
-    }
-
-    async displayCurrentAutoResets() {
-        const container = document.getElementById('currentAutoResetsList');
         if (!container) return;
+        
+        const statusText = container.querySelector('#auto-reset-status-text');
+        if (statusText) {
+            statusText.innerHTML = this.formatAutoResetStatus();
+        }
+        
+        const intervalInput = container.querySelector('#reset-interval');
+        if (intervalInput) {
+            intervalInput.value = this.autoResetSettings?.resetPeriodDays || 30;
+        }
+        
+        const enabledCheckbox = container.querySelector('#auto-reset-enabled');
+        if (enabledCheckbox) {
+            enabledCheckbox.checked = !!this.autoResetSettings?.enabled;
+        }
+    }
 
+    formatAutoResetStatus() {
+        if (!this.autoResetSettings) {
+            return '<p>Auto-reset is not configured.</p>';
+        }
+        
+        const enabled = this.autoResetSettings.enabled;
+        const nextReset = this.autoResetSettings.nextResetTime ? new Date(this.autoResetSettings.nextResetTime) : null;
+        const lastReset = this.autoResetSettings.lastResetTime ? new Date(this.autoResetSettings.lastResetTime) : null;
+        
+        let statusHtml = `<p><strong>Status:</strong> ${enabled ? 'Enabled' : 'Disabled'}</p>`;
+        
+        if (lastReset) {
+            statusHtml += `<p><strong>Last Reset:</strong> ${this.formatDate(lastReset)}</p>`;
+        } else {
+            statusHtml += `<p><strong>Last Reset:</strong> Never</p>`;
+        }
+        
+        if (nextReset) {
+            const now = new Date();
+            const resetDue = nextReset <= now;
+            
+            statusHtml += `<p>
+                <strong>Next Reset:</strong> 
+                <span class="${resetDue ? 'text-danger' : ''}">${resetDue ? 'Reset due now!' : this.formatDate(nextReset)}</span>
+            </p>`;
+        } else if (enabled) {
+            statusHtml += `<p><strong>Next Reset:</strong> Not scheduled yet</p>`;
+        }
+        
+        return statusHtml;
+    }
+
+    async checkScheduledResets() {
         try {
-            container.innerHTML = '<p>Loading auto-reset settings...</p>';
+            console.log('Checking for scheduled resets...');
             
-            // We no longer need to reload settings here since we're already called from updateAutoResetSettingsDisplay
-            // which already has the latest settings
-            // await this.loadAutoResetSettings(); - REMOVED TO PREVENT RECURSIVE LOOP
-            
-            if (!this.autoResetSettings || this.autoResetSettings.length === 0) {
-                container.innerHTML = '<p>No auto-reset settings configured.</p>';
+            // Skip if auto reset is not enabled
+            if (!this.autoResetSettings?.enabled) {
+                console.log('Auto-reset is disabled, skipping check');
                 return;
             }
             
-            container.innerHTML = '';
-            
-            // Sort settings by quiz name
-            const settings = [...this.autoResetSettings].sort((a, b) => {
-                return a.quizName.localeCompare(b.quizName);
-            });
-
-            settings.forEach(setting => {
-                const nextReset = this.calculateNextResetTime(setting);
-                const item = document.createElement('div');
-                item.className = 'auto-reset-item';
-                
-                // Format the countdown display
-                let countdownDisplay = 'N/A';
-                if (nextReset) {
-                    const now = new Date();
-                    const resetTime = new Date(nextReset);
-                    const timeDiff = resetTime - now;
-                    
-                    if (timeDiff > 0) {
-                        const days = Math.floor(timeDiff / (1000 * 60 * 60 * 24));
-                        const hours = Math.floor((timeDiff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-                        const minutes = Math.floor((timeDiff % (1000 * 60 * 60)) / (1000 * 60));
-                        const seconds = Math.floor((timeDiff % (1000 * 60)) / 1000);
-
-                        countdownDisplay = 'Next reset in: ';
-                        if (days > 0) countdownDisplay += `${days}d `;
-                        if (hours > 0) countdownDisplay += `${hours}h `;
-                        if (minutes > 0) countdownDisplay += `${minutes}m `;
-                        countdownDisplay += `${seconds}s`;
-                    } else {
-                        countdownDisplay = 'Next reset: Pending';
-                    }
-                }
-                
-                // Format last reset time if available
-                let lastResetDisplay = 'Never reset';
-                if (setting.lastReset) {
-                    const lastResetDate = new Date(setting.lastReset);
-                    lastResetDisplay = `Last reset: ${lastResetDate.toLocaleString()}`;
-                }
-
-                item.innerHTML = `
-                    <div class="auto-reset-info">
-                        <h4>${this.formatQuizName(setting.quizName)}</h4>
-                        <p>Reset Period: ${this.getPeriodLabel(setting.resetPeriod)}</p>
-                        <p>Status: ${setting.enabled ? 'Enabled' : 'Disabled'}</p>
-                        <p class="last-reset-info">${lastResetDisplay}</p>
-                        <p class="auto-reset-countdown" 
-                           data-quiz="${setting.quizName}" 
-                           data-next-reset="${nextReset ? nextReset.toISOString() : ''}">
-                            ${countdownDisplay}
-                        </p>
-                    </div>
-                    <div class="auto-reset-actions">
-                        <button class="toggle-auto-reset" data-quiz="${setting.quizName}" data-enabled="${setting.enabled}">
-                            ${setting.enabled ? 'Disable' : 'Enable'}
-                        </button>
-                        <button class="manual-reset" data-quiz="${setting.quizName}">Manual Reset</button>
-                        <button class="delete-auto-reset" data-quiz="${setting.quizName}">Delete</button>
-                    </div>
-                `;
-
-                container.appendChild(item);
-
-                // Add event listeners
-                const toggleBtn = item.querySelector('.toggle-auto-reset');
-                const deleteBtn = item.querySelector('.delete-auto-reset');
-                const manualResetBtn = item.querySelector('.manual-reset');
-
-                toggleBtn.addEventListener('click', () => this.toggleAutoReset(setting.quizName, !setting.enabled));
-                deleteBtn.addEventListener('click', () => this.deleteAutoReset(setting.quizName));
-                manualResetBtn.addEventListener('click', () => this.manuallyTriggerReset(setting.quizName));
-            });
-
-            // Start countdown updates
-            this.startCountdownUpdates();
-        } catch (error) {
-            console.error('Error displaying auto-reset settings:', error);
-            container.innerHTML = `<p class="error">Error displaying auto-reset settings: ${error.message}</p>`;
-        }
-    }
-
-    calculateNextResetTime(setting) {
-        if (!setting.enabled) return null;
-        
-        const now = new Date();
-        const lastReset = setting.lastReset ? new Date(setting.lastReset) : null;
-        
-        // If there's no last reset, schedule from now
-        if (!lastReset) {
-            return new Date(now.getTime() + (setting.resetPeriod * 60 * 1000));
-        }
-        
-        // Calculate next reset based on last reset time
-        const nextReset = new Date(lastReset.getTime() + (setting.resetPeriod * 60 * 1000));
-        
-        // If next reset is in the past, calculate the next occurrence from now
-        if (nextReset < now) {
-            // Calculate how many periods have passed since the last reset
-            const timeSinceLastReset = now - lastReset;
-            const periodsSinceLastReset = Math.ceil(timeSinceLastReset / (setting.resetPeriod * 60 * 1000));
-            
-            // Calculate the next reset time by adding the appropriate number of periods to the last reset
-            return new Date(lastReset.getTime() + (periodsSinceLastReset * setting.resetPeriod * 60 * 1000));
-        }
-        
-        return nextReset;
-    }
-
-    startCountdownUpdates() {
-        // Clear any existing interval
-        if (this.countdownInterval) {
-            clearInterval(this.countdownInterval);
-        }
-
-        // Update countdowns every second
-        this.countdownInterval = setInterval(() => {
-            this.updateCountdowns();
-        }, 1000);
-    }
-
-    updateCountdowns() {
-        const countdownElements = document.querySelectorAll('.countdown[data-quiz]');
-        if (!countdownElements.length) return;
-
-        countdownElements.forEach(element => {
-            const quizName = element.dataset.quiz;
-            if (!quizName || !this.autoResetSettings || !this.autoResetSettings[quizName]) return;
-
-            const settings = this.autoResetSettings[quizName];
-            
-            // If nextResetTime is missing but we have resetPeriod and the setting is enabled,
-            // calculate the nextResetTime dynamically
-            if (!settings.nextResetTime && settings.resetPeriod && settings.enabled) {
-                // Use the second calculateNextResetTime that accepts just resetPeriod
-                const calculatedNextReset = this.calculateNextResetTime(settings.resetPeriod);
-                console.log(`Dynamically calculated next reset for ${quizName}: ${calculatedNextReset}`);
-                
-                // Store the calculated time so we don't recalculate every second
-                settings.nextResetTime = calculatedNextReset;
-                
-                // Update the autoResetSettings object with the calculated time
-                this.autoResetSettings[quizName] = settings;
-            }
-            
-            if (!settings.nextResetTime) {
-                element.textContent = 'Not scheduled';
-                return;
-            }
-
-            const nextResetTime = new Date(settings.nextResetTime);
-            this.updateCountdownDisplay(element, nextResetTime);
-        });
-
-        // Ensure we have an interval running to update countdowns every second
-        if (!this.countdownInterval) {
-            this.countdownInterval = setInterval(() => this.updateCountdowns(), 1000); // Update every second
-        }
-    }
-
-    updateCountdownDisplay(countdownElement, nextResetTime) {
-        try {
-            // Ensure nextResetTime is a valid Date object
-            let resetDate;
-            
-            if (typeof nextResetTime === 'string') {
-                resetDate = new Date(nextResetTime);
-                console.log(`Converted string date: ${nextResetTime} to Date object: ${resetDate}`);
-            } else if (nextResetTime instanceof Date) {
-                resetDate = nextResetTime;
-            } else {
-                console.error('Invalid nextResetTime format:', nextResetTime);
-                countdownElement.textContent = 'Invalid date';
-                return;
-            }
-            
-            // Check if date is valid
-            if (isNaN(resetDate.getTime())) {
-                console.error('Invalid date object:', resetDate);
-                countdownElement.textContent = 'Invalid date';
+            const nextResetTime = this.autoResetSettings.nextResetTime;
+            if (!nextResetTime) {
+                console.log('No next reset time set, skipping check');
                 return;
             }
             
             const now = new Date();
-            const timeDiff = resetDate - now;
+            const nextReset = new Date(nextResetTime);
             
-            console.log(`Countdown calculation: nextResetTime=${resetDate}, now=${now}, diff=${timeDiff}ms`);
-
-            if (timeDiff <= 0) {
-                countdownElement.textContent = 'Reset due now!';
-                countdownElement.classList.add('countdown-overdue');
+            console.log(`Next reset scheduled for: ${nextReset.toLocaleString()}`);
+            console.log(`Current time: ${now.toLocaleString()}`);
+            
+            // Check if reset is due
+            if (nextReset <= now) {
+                console.log('Reset is due, triggering reset process');
                 
-                // Trigger a check for auto-resets that need processing
-                this.checkScheduledResets().catch(err => {
-                    console.error('Error checking scheduled resets:', err);
-                });
+                // Update the status to show it's processing
+                const statusEl = document.querySelector('#auto-reset-status-text');
+                if (statusEl) {
+                    statusEl.innerHTML = '<p><strong>Status:</strong> Running reset...</p>';
+                }
                 
-                return;
-            }
-
-            // Remove overdue class if it exists
-            countdownElement.classList.remove('countdown-overdue');
-
-            // Calculate time units
-            const days = Math.floor(timeDiff / (1000 * 60 * 60 * 24));
-            const hours = Math.floor((timeDiff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-            const minutes = Math.floor((timeDiff % (1000 * 60 * 60)) / (1000 * 60));
-            const seconds = Math.floor((timeDiff % (1000 * 60)) / 1000);
-
-            // Format countdown text
-            let countdownText = '';
-            if (days > 0) {
-                countdownText += `${days}d `;
-            }
-            if (hours > 0 || days > 0) {
-                countdownText += `${hours}h `;
-            }
-            if (minutes > 0 || hours > 0 || days > 0) {
-                countdownText += `${minutes}m `;
-            }
-            countdownText += `${seconds}s`;
-
-            // Show full date on hover
-            const fullDateStr = resetDate.toLocaleString();
-            countdownElement.title = `Next reset at: ${fullDateStr}`;
-            
-            // Update the element with the countdown
-            countdownElement.textContent = countdownText;
-        } catch (error) {
-            console.error('Error updating countdown display:', error);
-            countdownElement.textContent = 'Error';
-        }
-    }
-
-    getPeriodLabel(minutes) {
-        if (minutes === 1) return '1 Minute';
-        if (minutes === 10) return '10 Minutes';
-        if (minutes === 1440) return '1 Day';
-        if (minutes === 10080) return '1 Week';
-        if (minutes === 43200) return '1 Month';
-        if (minutes === 129600) return '3 Months';
-        if (minutes === 259200) return '6 Months';
-        if (minutes === 525600) return '1 Year';
-        return `${minutes} Minutes`;
-    }
-
-    async toggleAutoReset(quizName, enabled) {
-        try {
-            console.log(`Toggling auto-reset for ${quizName} to ${enabled}`);
-            const setting = (await this.apiService.getAutoResetSettings()).data
-                .find(s => s.quizName === quizName);
-            
-            if (!setting) {
-                this.showErrorMessage('Auto-reset setting not found');
-                return;
-            }
-
-            const response = await this.apiService.saveAutoResetSetting(
-                quizName,
-                setting.resetPeriod,
-                enabled
-            );
-
-            if (response.success) {
-                // Load settings first, then the display will be updated
-                await this.loadAutoResetSettings();
-                this.showInfo(`Auto-reset for ${quizName} ${enabled ? 'enabled' : 'disabled'}`);
+                // Trigger the reset
+                await this.manuallyTriggerReset(true);
+                
+                // Refresh the settings display
+                this.displayAutoResetSettings();
             } else {
-                this.showErrorMessage('Failed to update auto-reset setting');
+                const timeUntilReset = nextReset.getTime() - now.getTime();
+                const hoursUntilReset = Math.round(timeUntilReset / (1000 * 60 * 60));
+                console.log(`Reset is scheduled in approximately ${hoursUntilReset} hours`);
             }
         } catch (error) {
-            console.error('Error toggling auto-reset:', error);
-            this.showErrorMessage('Failed to toggle auto-reset setting');
+            console.error('Error checking scheduled resets:', error);
         }
     }
 
-    async deleteAutoReset(quizName) {
-        try {
-            console.log(`Deleting auto-reset for ${quizName}`);
-            const response = await this.apiService.deleteAutoResetSetting(quizName);
-
-            if (response.success) {
-                // Load settings first, then the display will be updated
-                await this.loadAutoResetSettings();
-                this.showInfo(`Auto-reset setting for ${quizName} deleted`);
-            } else {
-                this.showErrorMessage('Failed to delete auto-reset setting');
-            }
-        } catch (error) {
-            console.error('Error deleting auto-reset:', error);
-            this.showErrorMessage('Failed to delete auto-reset setting');
+    async manuallyTriggerReset(isAutomatic = false) {
+        // Confirm only if manual trigger (not automatic)
+        if (!isAutomatic && !confirm('Are you sure you want to reset progress for all users who have completed quizzes? This cannot be undone.')) {
+            return;
         }
-    }
 
-    // Add this method after displayCurrentAutoResets
-    async manuallyTriggerReset(quizName) {
         try {
-            console.log(`Manually triggering reset for quiz: ${quizName}`);
-            
-            // Confirm with the user
-            const confirmed = confirm(`Are you sure you want to reset all completed ${this.formatQuizName(quizName)} quizzes? This will reset progress for all users who have completed this quiz.`);
-            
-            if (!confirmed) {
-                console.log('Reset cancelled by user');
-                return;
-            }
-            
             // Show loading notification
-            this.showInfo(`Processing reset for ${this.formatQuizName(quizName)} quiz...`);
+            this.showInfo(`${isAutomatic ? 'Auto reset' : 'Manual reset'} in progress...`, 'info');
             
             // Get all users
             const usersResponse = await this.apiService.getAllUsers();
-            
             if (!usersResponse.success) {
-                throw new Error(`Failed to get users: ${usersResponse.message}`);
+                throw new Error(`Failed to fetch users: ${usersResponse.error}`);
             }
             
-            const users = usersResponse.data || [];
-            console.log(`Checking ${users.length} users for completed ${quizName} quizzes`);
+            const users = usersResponse.data;
+            console.log(`Checking ${users.length} users for completed quizzes...`);
             
-            // First pass: check all users' quizResults to find completed quizzes
-            // without making API calls (more efficient)
-            console.log("First pass: checking quizResults for all users");
-            const normalizedQuizName = quizName.toLowerCase().trim();
-            let completedUsers = [];
+            // First pass: Find users with completed quizzes based on local data
+            const completedUsers = [];
             
+            // Check for completed quizzes in each user's data
             for (const user of users) {
-                if (user.quizResults && Array.isArray(user.quizResults)) {
-                    const quizResult = user.quizResults.find(r => 
-                        r.quizName && r.quizName.toLowerCase().trim() === normalizedQuizName);
-                    
-                    if (quizResult && quizResult.questionsAnswered >= 15) {
-                        console.log(`First pass: User ${user.username} has completed ${quizName} quiz with ${quizResult.questionsAnswered} questions`);
-                        completedUsers.push(user.username);
-                    }
+                // Format: { username, quizName }
+                const userCompletedQuizzes = this.findCompletedQuizzes(user);
+                
+                if (userCompletedQuizzes.length > 0) {
+                    userCompletedQuizzes.forEach(item => {
+                        console.log(`Found completed quiz: ${item.quizName} for user ${item.username}`);
+                        completedUsers.push(item);
+                    });
                 }
             }
             
-            console.log(`First pass found ${completedUsers.length} users who completed the quiz`);
+            console.log(`Found ${completedUsers.length} completed quizzes in first pass`);
             
-            // Second pass: check remaining users with API calls
-            console.log("Second pass: checking quizProgress with API for remaining users");
-            const skippedUsers = [];
+            // Second pass: Make API calls for users who didn't have local data
+            let resetCount = 0;
             
-            for (const user of users) {
-                // Skip users already identified as having completed the quiz
-                if (completedUsers.includes(user.username)) {
-                    console.log(`Skipping API check for ${user.username} - already identified as completed`);
-                    continue;
-                }
-                
-                console.log(`Checking user ${user.username} for completed ${quizName} quiz`);
-                
+            // Process the completed users
+            for (const item of completedUsers) {
                 try {
-                    console.log(`Checking quizProgress for ${user.username}`);
-                    
-                    // Add a timeout to prevent hanging on unresponsive API calls
-                    const progressResponse = await Promise.race([
-                        this.apiService.getUserQuizProgress(user.username, quizName),
-                        new Promise((_, reject) => setTimeout(() => reject(new Error('API call timeout')), 5000))
-                    ]);
-                    
-                    if (progressResponse.success && progressResponse.data) {
-                        const progress = progressResponse.data;
-                        console.log(`${user.username} quizProgress data:`, progress);
-                        
-                        // Check if user has completed the quiz - ONLY check question count
-                        const isCompleted = progress.questionsAnswered >= 15 || 
-                                         (progress.questionHistory && progress.questionHistory.length >= 15);
-                        
-                        if (isCompleted) {
-                            console.log(`User ${user.username} has completed ${quizName} quiz (from quizProgress)`);
-                            completedUsers.push(user.username);
-                        } else {
-                            console.log(`User ${user.username} has NOT completed ${quizName} quiz (from quizProgress)`);
-                            skippedUsers.push(user.username);
-                        }
-                    } else {
-                        console.log(`No progress data found for ${user.username} on ${quizName}`);
-                        skippedUsers.push(user.username);
-                    }
+                    console.log(`Resetting quiz '${item.quizName}' for user '${item.username}'`);
+                    await this.apiService.resetQuizProgress(item.username, item.quizName);
+                    resetCount++;
                 } catch (error) {
-                    console.error(`Error checking progress for user ${user.username}:`, error);
-                    skippedUsers.push(user.username);
+                    console.error(`Error resetting quiz '${item.quizName}' for user '${item.username}':`, error);
+                    // Continue with other users even if one fails
                 }
             }
             
-            console.log(`Found ${completedUsers.length} users who completed ${quizName} quiz: ${completedUsers.join(', ')}`);
-            console.log(`Skipped ${skippedUsers.length} users who haven't completed ${quizName} quiz: ${skippedUsers.join(', ')}`);
-            
-            if (completedUsers.length === 0) {
-                this.showInfo(`No users have completed the ${this.formatQuizName(quizName)} quiz`);
-                return;
-            }
-            
-            this.showInfo(`Processing reset for ${completedUsers.length} users...`);
-            
-            // Reset each user's quiz
-            let successCount = 0;
-            for (const username of completedUsers) {
-                try {
-                    // Reset the quiz progress
-                    const resetResponse = await this.apiService.resetQuizProgress(username, quizName);
-                    
-                    if (resetResponse.success) {
-                        successCount++;
-                        console.log(`Reset ${username}'s ${quizName} quiz`);
-                    } else {
-                        console.error(`Failed to reset ${username}'s ${quizName} quiz:`, resetResponse.message);
-                    }
-                } catch (error) {
-                    console.error(`Error resetting ${username}'s ${quizName} quiz:`, error);
-                }
-            }
-            
-            // Update lastReset time for the auto-reset setting
-            await this.apiService.updateAutoResetLastResetTime(quizName);
-            
-            // Calculate and update next reset time
-            const setting = this.autoResetSettings[quizName];
-            if (setting) {
-                const newNextResetTime = this.calculateNextResetTime(setting.resetPeriod);
-                await this.apiService.saveAutoResetSetting(
-                    quizName, 
-                    setting.resetPeriod, 
-                    true, 
-                    newNextResetTime
-                );
+            // Update auto-reset settings if needed
+            if (isAutomatic || this.autoResetSettings?.enabled) {
+                // Calculate the next reset time based on the reset period
+                const nextResetTime = new Date();
+                nextResetTime.setDate(nextResetTime.getDate() + (this.autoResetSettings?.resetPeriodDays || 30));
                 
-                console.log(`Updated next reset time for ${quizName} to ${newNextResetTime}`);
-            }
-            
-            // Reload settings to update the UI
-            await this.loadAutoResetSettings();
-            
-            // Show success message
-            this.showSuccess(`Successfully reset ${successCount} out of ${completedUsers.length} users for the ${this.formatQuizName(quizName)} quiz`);
-            
-        } catch (error) {
-            console.error(`Error manually triggering reset for ${quizName}:`, error);
-            this.showInfo(`Failed to reset quiz: ${error.message}`, 'error');
-        }
-    }
-
-    // Helper method to show success messages
-    showSuccess(message) {
-        // Use the showInfo method with 'success' type
-        this.showInfo(message, 'success');
-    }
-
-    // Delete an auto reset setting
-    async deleteAutoResetSetting(quizName) {
-        try {
-            const confirmed = confirm(`Are you sure you want to delete the auto-reset setting for ${this.formatQuizName(quizName)}?`);
-            if (!confirmed) return;
-            
-            const response = await this.apiService.deleteAutoResetSetting(quizName);
-            
-            if (response.success) {
-                // Remove from local settings
-                if (this.autoResetSettings && this.autoResetSettings[quizName]) {
-                    delete this.autoResetSettings[quizName];
-                }
-                
-                // Update the display
-                this.displayAutoResetSettings();
-                
-                // Show success message
-                this.showInfo(`Auto-reset setting for ${quizName} deleted`);
-            } else {
-                throw new Error(response.error || 'Unknown error');
-            }
-        } catch (error) {
-            console.error('Error deleting auto-reset setting:', error);
-            this.showInfo(`Failed to delete auto-reset setting: ${error.message}`, 'error');
-        }
-    }
-
-    // Save auto reset setting for a quiz
-    async saveAutoResetSetting(quizName, resetPeriod) {
-        try {
-            // Calculate the next reset time before saving
-            const nextResetTime = this.calculateNextResetTime(resetPeriod);
-            
-            // Call the API to save the setting, including the calculated nextResetTime
-            const response = await this.apiService.saveAutoResetSetting(quizName, resetPeriod, true, nextResetTime);
-            
-            if (response.success) {
-                // Update local settings
-                if (!this.autoResetSettings) {
-                    this.autoResetSettings = {};
-                }
-                
-                // Store the updated settings
-                this.autoResetSettings[quizName] = response.data || { 
-                    resetPeriod, 
-                    nextResetTime,
-                    enabled: true
+                // Update auto-reset settings with new last reset time and next reset time
+                const updatedSettings = {
+                    ...this.autoResetSettings,
+                    lastResetTime: new Date().toISOString(),
+                    nextResetTime: nextResetTime.toISOString()
                 };
                 
-                console.log(`Auto-reset set for ${quizName} with period ${resetPeriod}, next reset at ${nextResetTime}`);
+                await this.apiService.updateAutoResetSettings(updatedSettings);
                 
-                // Update the UI
+                // Reload settings to update UI
+                await this.loadAutoResetSettings();
                 this.displayAutoResetSettings();
-                
-                // Show success message
-                this.showInfo(`Auto-reset for ${quizName} ${response.data ? 'updated' : 'enabled'}`);
-                
-                // Force an immediate check for scheduled resets to process any already completed quizzes
-                this.checkScheduledResets()
-                    .then(() => console.log('Checked for scheduled resets after saving setting'))
-                    .catch(err => console.error('Error checking scheduled resets:', err));
-                
-                return response.data;
-            } else {
-                throw new Error(response.error || 'Unknown error');
             }
+            
+            // Reload users data to reflect changes
+            await this.loadUsers();
+            
+            this.showSuccess(`Reset completed. ${resetCount} quizzes were reset for ${completedUsers.length} users.`);
         } catch (error) {
-            console.error('Error saving auto-reset setting:', error);
-            this.showInfo(`Failed to save auto-reset setting: ${error.message}`, 'error');
-            throw error;
+            console.error('Error during reset process:', error);
+            this.showError(`Reset failed: ${error.message}`);
         }
-    }
-    
-    // Calculate the next reset time based on the period
-    calculateNextResetTime(resetPeriod) {
-        const now = new Date();
-        let nextReset = new Date(now);
-        
-        // If resetPeriod is a number, it's in minutes - add it to the current time
-        if (typeof resetPeriod === 'number') {
-            console.log(`Adding ${resetPeriod} minutes to current time for next reset`);
-            return new Date(now.getTime() + (resetPeriod * 60 * 1000)).toISOString();
-        }
-        
-        // Reset time to midnight
-        nextReset.setHours(0, 0, 0, 0);
-        
-        switch (resetPeriod) {
-            case 'daily':
-                // Next day at midnight
-                nextReset.setDate(nextReset.getDate() + 1);
-                break;
-            case 'weekly':
-                // Next Sunday at midnight
-                nextReset.setDate(nextReset.getDate() + (7 - nextReset.getDay()));
-                break;
-            case 'monthly':
-                // First day of next month
-                nextReset.setMonth(nextReset.getMonth() + 1);
-                nextReset.setDate(1);
-                break;
-            default:
-                // Default to daily
-                nextReset.setDate(nextReset.getDate() + 1);
-        }
-        
-        return nextReset.toISOString();
     }
 
-    // Shows edit modal for auto reset settings
-    showAutoResetEditModal(quizName) {
-        // Get the current settings for this quiz
-        const settings = this.autoResetSettings[quizName] || {};
+    findCompletedQuizzes(user) {
+        const completedQuizzes = [];
         
-        // Create modal container
-        const modal = document.createElement('div');
-        modal.className = 'modal';
-        modal.innerHTML = `
-            <div class="modal-content">
-                <span class="close-modal">&times;</span>
-                <h3>Edit Auto-Reset for ${this.formatQuizName(quizName)}</h3>
-                <form id="edit-auto-reset-form">
-                    <div class="form-group">
-                        <label>Reset Period:</label>
-                        <select id="edit-reset-period">
-                            <option value="1" ${settings.resetPeriod === 1 ? 'selected' : ''}>1 Minute</option>
-                            <option value="10" ${settings.resetPeriod === 10 ? 'selected' : ''}>10 Minutes</option>
-                            <option value="1440" ${settings.resetPeriod === 1440 ? 'selected' : ''}>1 Day</option>
-                            <option value="10080" ${settings.resetPeriod === 10080 ? 'selected' : ''}>1 Week</option>
-                            <option value="43200" ${settings.resetPeriod === 43200 ? 'selected' : ''}>1 Month</option>
-                            <option value="129600" ${settings.resetPeriod === 129600 ? 'selected' : ''}>3 Months</option>
-                            <option value="259200" ${settings.resetPeriod === 259200 ? 'selected' : ''}>6 Months</option>
-                            <option value="525600" ${settings.resetPeriod === 525600 ? 'selected' : ''}>1 Year</option>
-                        </select>
-                    </div>
-                    <button type="submit" class="action-button">Save Changes</button>
-                </form>
-            </div>
-        `;
+        // Skip if no user data
+        if (!user || !user.username) return completedQuizzes;
         
-        // Add modal styles if they don't exist
-        if (!document.getElementById('auto-reset-modal-styles')) {
-            const styleElement = document.createElement('style');
-            styleElement.id = 'auto-reset-modal-styles';
-            styleElement.textContent = `
-                .modal {
-                    display: flex;
-                    position: fixed;
-                    z-index: 1000;
-                    left: 0;
-                    top: 0;
-                    width: 100%;
-                    height: 100%;
-                    background-color: rgba(0,0,0,0.5);
-                    justify-content: center;
-                    align-items: center;
+        // Check quiz results first (more reliable)
+        if (user.quizResults && Array.isArray(user.quizResults)) {
+            user.quizResults.forEach(result => {
+                // Consider completed if at least 15 questions answered
+                if (result.quizName && 
+                    (result.questionsAnswered >= 15 || 
+                    (result.questionHistory && result.questionHistory.length >= 15))) {
+                    
+                    completedQuizzes.push({
+                        username: user.username,
+                        quizName: result.quizName.toLowerCase()
+                    });
                 }
-                
-                .modal-content {
-                    background-color: white;
-                    padding: 25px;
-                    border-radius: 8px;
-                    box-shadow: 0 4px 12px rgba(0,0,0,0.2);
-                    width: 90%;
-                    max-width: 500px;
-                    position: relative;
-                }
-                
-                .close-modal {
-                    position: absolute;
-                    right: 15px;
-                    top: 15px;
-                    font-size: 24px;
-                    color: #aaa;
-                    cursor: pointer;
-                }
-                
-                .close-modal:hover {
-                    color: #333;
-                }
-            `;
-            document.head.appendChild(styleElement);
+            });
         }
         
-        // Add to the page
-        document.body.appendChild(modal);
+        // If we already found completed quizzes in quizResults, no need to check quizProgress
+        if (completedQuizzes.length > 0) return completedQuizzes;
         
-        // Setup event listeners
-        modal.querySelector('.close-modal').addEventListener('click', () => {
-            modal.remove();
-        });
-        
-        modal.querySelector('#edit-auto-reset-form').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            
-            const resetPeriod = parseInt(modal.querySelector('#edit-reset-period').value);
-            
-            try {
-                // Update the auto reset settings
-                await this.saveAutoResetSetting(quizName, resetPeriod);
-                
-                // Close the modal
-                modal.remove();
-            } catch (error) {
-                console.error('Error saving auto-reset settings:', error);
-                this.showInfo(`Failed to save auto-reset settings: ${error.message}`, 'error');
+        // Check quiz progress if no completions found in results
+        if (user.quizProgress) {
+            for (const [quizName, progress] of Object.entries(user.quizProgress)) {
+                // Consider completed if at least 15 questions answered
+                if (progress && 
+                    (progress.questionsAnswered >= 15 || 
+                    (progress.questionHistory && progress.questionHistory.length >= 15))) {
+                    
+                    completedQuizzes.push({
+                        username: user.username,
+                        quizName: quizName.toLowerCase()
+                    });
+                }
             }
-        });
+        }
+        
+        return completedQuizzes;
     }
+
+    // ... existing code ...
 }
 
 // Initialize the Admin2Dashboard when the document is ready
