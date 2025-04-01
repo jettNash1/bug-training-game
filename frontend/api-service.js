@@ -1704,8 +1704,16 @@ export class APIService {
             const response = await this.fetchWithAdminAuth(`${this.baseUrl}/admin/guide-settings`);
             
             if (response.success && response.data) {
-                // Save to localStorage as a backup
-                localStorage.setItem('guideSettings', JSON.stringify(response.data));
+                // Save to localStorage as a backup - ensure all guide settings are saved
+                try {
+                    localStorage.setItem('guideSettings', JSON.stringify(response.data));
+                    console.log('[API] Saved complete guide settings to localStorage:', response.data);
+                    
+                    // Log all available quiz guides for debugging
+                    this.debugLogGuideSettings();
+                } catch (storageError) {
+                    console.warn('[API] Failed to save guide settings to localStorage:', storageError);
+                }
                 
                 return {
                     success: true,
@@ -1723,6 +1731,10 @@ export class APIService {
                 const localSettings = localStorage.getItem('guideSettings');
                 if (localSettings) {
                     const settings = JSON.parse(localSettings);
+                    
+                    // Log all available quiz guides for debugging
+                    this.debugLogGuideSettings();
+                    
                     return {
                         success: true,
                         data: settings,
@@ -1742,6 +1754,33 @@ export class APIService {
         }
     }
     
+    // Debug method to log all guide settings stored in localStorage
+    debugLogGuideSettings() {
+        try {
+            const settingsJson = localStorage.getItem('guideSettings');
+            if (settingsJson) {
+                const settings = JSON.parse(settingsJson);
+                console.log('[API] === GUIDE SETTINGS DEBUG ===');
+                console.log('[API] All guide settings in localStorage:', settings);
+                
+                // Log each individual quiz guide
+                if (settings && typeof settings === 'object') {
+                    console.log('[API] Individual quiz guides:');
+                    for (const [quizName, guideSetting] of Object.entries(settings)) {
+                        console.log(`[API] - ${quizName}: url=${guideSetting.url}, enabled=${guideSetting.enabled}`);
+                    }
+                } else {
+                    console.log('[API] No valid guide settings found in localStorage');
+                }
+                console.log('[API] === END GUIDE SETTINGS DEBUG ===');
+            } else {
+                console.log('[API] No guide settings found in localStorage');
+            }
+        } catch (e) {
+            console.error('[API] Error logging guide settings:', e);
+        }
+    }
+
     async saveGuideSetting(quizName, url, enabled) {
         try {
             // Sanitize inputs
@@ -1842,30 +1881,25 @@ export class APIService {
         // Normalize quiz name
         const normalizedQuizName = quizName.toLowerCase().trim();
         
-        // Special case for communication quiz to ensure it always works
-        if (normalizedQuizName === 'communication') {
-            console.log('[API] Using special handler for communication quiz');
-            
-            // Check if guide settings exist in localStorage first
-            try {
-                const settingsJson = localStorage.getItem('guideSettings');
-                if (settingsJson) {
-                    const settings = JSON.parse(settingsJson);
-                    if (settings && settings.communication && settings.communication.url) {
-                        console.log('[API] Found communication guide settings in localStorage:', settings.communication);
-                        return {
-                            success: true,
-                            data: {
-                                url: settings.communication.url,
-                                enabled: settings.communication.enabled === true
-                            },
-                            source: 'localStorage'
-                        };
-                    }
+        // Check if guide settings exist in localStorage first for any quiz
+        try {
+            const settingsJson = localStorage.getItem('guideSettings');
+            if (settingsJson) {
+                const settings = JSON.parse(settingsJson);
+                if (settings && settings[normalizedQuizName] && settings[normalizedQuizName].url) {
+                    console.log(`[API] Found guide settings in localStorage for ${normalizedQuizName}:`, settings[normalizedQuizName]);
+                    return {
+                        success: true,
+                        data: {
+                            url: settings[normalizedQuizName].url,
+                            enabled: settings[normalizedQuizName].enabled === true
+                        },
+                        source: 'localStorage'
+                    };
                 }
-            } catch (e) {
-                console.warn('[API] Error checking localStorage for communication guide:', e);
             }
+        } catch (e) {
+            console.warn(`[API] Error checking localStorage for ${normalizedQuizName} guide:`, e);
         }
         
         try {
@@ -1885,17 +1919,25 @@ export class APIService {
             if (!response.ok) {
                 console.warn(`[API] Error response from guide settings API: ${response.status}`);
                 
-                // Special case for communication quiz
-                if (normalizedQuizName === 'communication') {
-                    console.log('[API] Using fallback for communication quiz guide');
-                    return {
-                        success: true,
-                        data: {
-                            url: 'https://example.com/communication-guide',
-                            enabled: true
-                        },
-                        source: 'fallback'
-                    };
+                // Try localStorage again as fallback for any quiz
+                try {
+                    const settingsJson = localStorage.getItem('guideSettings');
+                    if (settingsJson) {
+                        const settings = JSON.parse(settingsJson);
+                        if (settings && settings[normalizedQuizName]) {
+                            console.log(`[API] Using localStorage fallback for ${normalizedQuizName} after API error`);
+                            return {
+                                success: true,
+                                data: {
+                                    url: settings[normalizedQuizName].url || null,
+                                    enabled: settings[normalizedQuizName].enabled === true
+                                },
+                                source: 'localStorage-fallback'
+                            };
+                        }
+                    }
+                } catch (e) {
+                    console.warn(`[API] Error checking localStorage fallback for ${normalizedQuizName}:`, e);
                 }
                 
                 return {
@@ -1920,17 +1962,25 @@ export class APIService {
                 } else {
                     console.warn(`[API] Invalid guide settings response:`, jsonData);
                     
-                    // Special case for communication quiz
-                    if (normalizedQuizName === 'communication') {
-                        console.log('[API] Using fallback for communication quiz guide after invalid response');
-                        return {
-                            success: true,
-                            data: {
-                                url: 'https://example.com/communication-guide',
-                                enabled: true
-                            },
-                            source: 'fallback'
-                        };
+                    // Try localStorage once more as final fallback
+                    try {
+                        const settingsJson = localStorage.getItem('guideSettings');
+                        if (settingsJson) {
+                            const settings = JSON.parse(settingsJson);
+                            if (settings && settings[normalizedQuizName]) {
+                                console.log(`[API] Using localStorage fallback for ${normalizedQuizName} after invalid response`);
+                                return {
+                                    success: true,
+                                    data: {
+                                        url: settings[normalizedQuizName].url || null,
+                                        enabled: settings[normalizedQuizName].enabled === true
+                                    },
+                                    source: 'localStorage-fallback'
+                                };
+                            }
+                        }
+                    } catch (e) {
+                        console.warn(`[API] Error checking localStorage fallback for ${normalizedQuizName}:`, e);
                     }
                     
                     return {
@@ -1944,17 +1994,25 @@ export class APIService {
             } catch (parseError) {
                 console.error(`[API] Error parsing guide settings JSON:`, parseError);
                 
-                // Special case for communication quiz
-                if (normalizedQuizName === 'communication') {
-                    console.log('[API] Using fallback for communication quiz guide after parse error');
-                    return {
-                        success: true,
-                        data: {
-                            url: 'https://example.com/communication-guide',
-                            enabled: true
-                        },
-                        source: 'fallback'
-                    };
+                // Final localStorage fallback attempt
+                try {
+                    const settingsJson = localStorage.getItem('guideSettings');
+                    if (settingsJson) {
+                        const settings = JSON.parse(settingsJson);
+                        if (settings && settings[normalizedQuizName]) {
+                            console.log(`[API] Using localStorage fallback for ${normalizedQuizName} after parse error`);
+                            return {
+                                success: true,
+                                data: {
+                                    url: settings[normalizedQuizName].url || null,
+                                    enabled: settings[normalizedQuizName].enabled === true
+                                },
+                                source: 'localStorage-fallback'
+                            };
+                        }
+                    }
+                } catch (e) {
+                    console.warn(`[API] Error checking localStorage after parse error:`, e);
                 }
                 
                 return {
@@ -1968,17 +2026,25 @@ export class APIService {
         } catch (error) {
             console.error(`[API] Error fetching guide settings for ${normalizedQuizName}:`, error);
             
-            // Special case for communication quiz
-            if (normalizedQuizName === 'communication') {
-                console.log('[API] Using fallback for communication quiz guide after fetch error');
-                return {
-                    success: true,
-                    data: {
-                        url: 'https://example.com/communication-guide',
-                        enabled: true
-                    },
-                    source: 'fallback'
-                };
+            // Try localStorage as fallback for any quiz
+            try {
+                const settingsJson = localStorage.getItem('guideSettings');
+                if (settingsJson) {
+                    const settings = JSON.parse(settingsJson);
+                    if (settings && settings[normalizedQuizName]) {
+                        console.log(`[API] Using localStorage fallback for ${normalizedQuizName} after fetch error`);
+                        return {
+                            success: true,
+                            data: {
+                                url: settings[normalizedQuizName].url || null,
+                                enabled: settings[normalizedQuizName].enabled === true
+                            },
+                            source: 'localStorage-fallback'
+                        };
+                    }
+                }
+            } catch (localError) {
+                console.warn(`[API] Error checking localStorage for ${normalizedQuizName} after fetch error:`, localError);
             }
             
             // Return default values with no fallback

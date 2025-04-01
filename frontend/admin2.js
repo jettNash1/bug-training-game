@@ -3408,21 +3408,52 @@ export class Admin2Dashboard extends AdminDashboard {
 
     async loadGuideSettings() {
         try {
+            console.log('Loading guide settings from API...');
+            
             const response = await this.apiService.getGuideSettings();
+            
             if (response.success) {
-                this.guideSettings = response.data || {};
-                console.log('Loaded guide settings:', this.guideSettings, 'from', response.source || 'unknown');
+                console.log('Guide settings loaded successfully from', response.source);
+                console.log('Guide settings data:', response.data);
                 
-                if (response.source === 'localStorage') {
-                    console.warn('Using guide settings from localStorage (API may be unavailable)');
+                // Store guide settings in instance variable
+                this.guideSettings = response.data || {};
+                
+                // Make sure we have a complete guide settings object in localStorage
+                try {
+                    const localSettingsJson = localStorage.getItem('guideSettings');
+                    const localSettings = localSettingsJson ? JSON.parse(localSettingsJson) : {};
+                    
+                    // Merge any missing settings from API into localStorage
+                    const mergedSettings = { ...localSettings, ...this.guideSettings };
+                    localStorage.setItem('guideSettings', JSON.stringify(mergedSettings));
+                    
+                    // Debug: log all guide settings for verification
+                    console.log('Guide settings saved to localStorage:', mergedSettings);
+                    
+                    // Log individual settings for better debugging
+                    console.log('Available guide settings:');
+                    for (const [quizName, setting] of Object.entries(mergedSettings)) {
+                        console.log(`- ${quizName}: url=${setting.url}, enabled=${setting.enabled}`);
+                    }
+                } catch (storageError) {
+                    console.warn('Failed to save guide settings to localStorage:', storageError);
                 }
+                
+                // Display the guide settings
+                this.displayGuideSettings();
+                
+                return response.data;
             } else {
-                console.warn('Failed to load guide settings:', response);
-                this.guideSettings = {};
+                throw new Error('Failed to load guide settings');
             }
         } catch (error) {
             console.error('Error loading guide settings:', error);
+            this.showError('Failed to load guide settings');
+            
+            // Use empty object as fallback
             this.guideSettings = {};
+            return {};
         }
     }
 
@@ -3785,46 +3816,61 @@ export class Admin2Dashboard extends AdminDashboard {
 
     // Helper method to generate HTML for the list of guide settings
     generateGuideSettingsList(guideSettings) {
-        const guideEntries = Object.entries(guideSettings || {})
-            .filter(([_, settings]) => settings && settings.url);
+        if (!guideSettings || Object.keys(guideSettings).length === 0) {
+            return '<p>No guide settings configured yet.</p>';
+        }
+
+        console.log('Generating guide settings list for:', guideSettings);
         
-        if (guideEntries.length === 0) {
-            return '<p class="no-settings">No guide settings configured yet.</p>';
+        let html = '';
+        
+        // Sort quiz names alphabetically
+        const quizNames = Object.keys(guideSettings).sort();
+        
+        for (const quizName of quizNames) {
+            const setting = guideSettings[quizName] || {};
+            
+            // Skip invalid settings (no quiz name or undefined settings)
+            if (!quizName || !setting) continue;
+            
+            // Handle potentially missing properties - provide defaults
+            const guideUrl = setting.url || '';
+            const isEnabled = setting.enabled === true; // Explicit check for true
+            
+            console.log(`Guide setting for ${quizName}:`, setting);
+            
+            html += `
+                <div class="settings-item">
+                    <div class="setting-info">
+                        <input type="checkbox" 
+                            class="guide-selector" 
+                            data-quiz="${quizName}" 
+                            id="guide-select-${quizName}"
+                            aria-label="Select ${this.formatQuizName(quizName)} guide">
+                        <label for="guide-select-${quizName}" class="setting-name">
+                            ${this.formatQuizName(quizName)}
+                        </label>
+                        <div class="setting-details">
+                            <span class="guide-url" title="${guideUrl}">${guideUrl || 'No URL set'}</span>
+                            <span class="guide-status ${isEnabled ? 'enabled' : 'disabled'}">
+                                ${isEnabled ? 'Enabled' : 'Disabled'}
+                            </span>
+                        </div>
+                    </div>
+                    <div class="setting-actions">
+                        <button class="edit-guide-btn" data-quiz="${quizName}">
+                            Edit
+                        </button>
+                        <button class="test-guide-btn" data-quiz="${quizName}" data-url="${guideUrl}" 
+                            ${guideUrl ? '' : 'disabled'}>
+                            Test
+                        </button>
+                    </div>
+                </div>
+            `;
         }
         
-        // Sort entries by quiz name
-        guideEntries.sort((a, b) => this.formatQuizName(a[0]).localeCompare(this.formatQuizName(b[0])));
-        
-        return `
-            <table class="settings-table">
-                <thead>
-                    <tr>
-                        <th style="width: 40px;"></th>
-                        <th>Quiz</th>
-                        <th>URL</th>
-                        <th>Status</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    ${guideEntries.map(([quizName, settings]) => `
-                        <tr>
-                            <td>
-                                <input type="checkbox" class="guide-checkbox" data-quiz="${quizName}">
-                            </td>
-                            <td>${this.formatQuizName(quizName)}</td>
-                            <td>
-                                <a href="${settings.url}" target="_blank" rel="noopener noreferrer">${settings.url}</a>
-                            </td>
-                            <td>
-                                <span class="status-badge ${settings.enabled ? 'enabled' : 'disabled'}">
-                                    ${settings.enabled ? 'Enabled' : 'Disabled'}
-                                </span>
-                            </td>
-                        </tr>
-                    `).join('')}
-                </tbody>
-            </table>
-        `;
+        return html || '<p>No guide settings configured yet.</p>';
     }
 
     // Helper function to format quiz names from kebab-case to Title Case
@@ -3919,6 +3965,18 @@ export class Admin2Dashboard extends AdminDashboard {
         // Loop through each quiz with auto reset setting
         for (const [quizName, settings] of Object.entries(this.autoResetSettings)) {
             if (!quizName) continue;
+            
+            console.log(`Rendering settings for ${quizName}:`, settings);
+            console.log(`nextResetTime for ${quizName}:`, settings.nextResetTime);
+            
+            // If nextResetTime is missing but resetPeriod exists and enabled, calculate it
+            if (!settings.nextResetTime && settings.resetPeriod && settings.enabled) {
+                settings.nextResetTime = this.calculateNextResetTime(settings.resetPeriod);
+                console.log(`Calculated nextResetTime for ${quizName}: ${settings.nextResetTime}`);
+                
+                // Update the global settings
+                this.autoResetSettings[quizName] = settings;
+            }
             
             const row = document.createElement('tr');
             
@@ -4298,6 +4356,21 @@ export class Admin2Dashboard extends AdminDashboard {
             if (!quizName || !this.autoResetSettings || !this.autoResetSettings[quizName]) return;
 
             const settings = this.autoResetSettings[quizName];
+            
+            // If nextResetTime is missing but we have resetPeriod and the setting is enabled,
+            // calculate the nextResetTime dynamically
+            if (!settings.nextResetTime && settings.resetPeriod && settings.enabled) {
+                // Use the second calculateNextResetTime that accepts just resetPeriod
+                const calculatedNextReset = this.calculateNextResetTime(settings.resetPeriod);
+                console.log(`Dynamically calculated next reset for ${quizName}: ${calculatedNextReset}`);
+                
+                // Store the calculated time so we don't recalculate every second
+                settings.nextResetTime = calculatedNextReset;
+                
+                // Update the autoResetSettings object with the calculated time
+                this.autoResetSettings[quizName] = settings;
+            }
+            
             if (!settings.nextResetTime) {
                 element.textContent = 'Not scheduled';
                 return;
@@ -4314,49 +4387,77 @@ export class Admin2Dashboard extends AdminDashboard {
     }
 
     updateCountdownDisplay(countdownElement, nextResetTime) {
-        const now = new Date();
-        const timeDiff = nextResetTime - now;
-
-        if (timeDiff <= 0) {
-            countdownElement.textContent = 'Reset due now!';
-            countdownElement.classList.add('countdown-overdue');
+        try {
+            // Ensure nextResetTime is a valid Date object
+            let resetDate;
             
-            // Trigger a check for auto-resets that need processing
-            this.checkScheduledResets().catch(err => {
-                console.error('Error checking scheduled resets:', err);
-            });
+            if (typeof nextResetTime === 'string') {
+                resetDate = new Date(nextResetTime);
+                console.log(`Converted string date: ${nextResetTime} to Date object: ${resetDate}`);
+            } else if (nextResetTime instanceof Date) {
+                resetDate = nextResetTime;
+            } else {
+                console.error('Invalid nextResetTime format:', nextResetTime);
+                countdownElement.textContent = 'Invalid date';
+                return;
+            }
             
-            return;
-        }
+            // Check if date is valid
+            if (isNaN(resetDate.getTime())) {
+                console.error('Invalid date object:', resetDate);
+                countdownElement.textContent = 'Invalid date';
+                return;
+            }
+            
+            const now = new Date();
+            const timeDiff = resetDate - now;
+            
+            console.log(`Countdown calculation: nextResetTime=${resetDate}, now=${now}, diff=${timeDiff}ms`);
 
-        // Remove overdue class if it exists
-        countdownElement.classList.remove('countdown-overdue');
+            if (timeDiff <= 0) {
+                countdownElement.textContent = 'Reset due now!';
+                countdownElement.classList.add('countdown-overdue');
+                
+                // Trigger a check for auto-resets that need processing
+                this.checkScheduledResets().catch(err => {
+                    console.error('Error checking scheduled resets:', err);
+                });
+                
+                return;
+            }
 
-        // Calculate time units
-        const days = Math.floor(timeDiff / (1000 * 60 * 60 * 24));
-        const hours = Math.floor((timeDiff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-        const minutes = Math.floor((timeDiff % (1000 * 60 * 60)) / (1000 * 60));
-        const seconds = Math.floor((timeDiff % (1000 * 60)) / 1000);
+            // Remove overdue class if it exists
+            countdownElement.classList.remove('countdown-overdue');
 
-        // Format countdown text
-        let countdownText = '';
-        if (days > 0) {
-            countdownText += `${days}d `;
-        }
-        if (hours > 0 || days > 0) {
-            countdownText += `${hours}h `;
-        }
-        if (minutes > 0 || hours > 0 || days > 0) {
-            countdownText += `${minutes}m `;
-        }
-        countdownText += `${seconds}s`;
+            // Calculate time units
+            const days = Math.floor(timeDiff / (1000 * 60 * 60 * 24));
+            const hours = Math.floor((timeDiff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+            const minutes = Math.floor((timeDiff % (1000 * 60 * 60)) / (1000 * 60));
+            const seconds = Math.floor((timeDiff % (1000 * 60)) / 1000);
 
-        // Show full date on hover
-        const fullDateStr = nextResetTime.toLocaleString();
-        countdownElement.title = `Next reset at: ${fullDateStr}`;
-        
-        // Update the element with the countdown
-        countdownElement.textContent = countdownText;
+            // Format countdown text
+            let countdownText = '';
+            if (days > 0) {
+                countdownText += `${days}d `;
+            }
+            if (hours > 0 || days > 0) {
+                countdownText += `${hours}h `;
+            }
+            if (minutes > 0 || hours > 0 || days > 0) {
+                countdownText += `${minutes}m `;
+            }
+            countdownText += `${seconds}s`;
+
+            // Show full date on hover
+            const fullDateStr = resetDate.toLocaleString();
+            countdownElement.title = `Next reset at: ${fullDateStr}`;
+            
+            // Update the element with the countdown
+            countdownElement.textContent = countdownText;
+        } catch (error) {
+            console.error('Error updating countdown display:', error);
+            countdownElement.textContent = 'Error';
+        }
     }
 
     getPeriodLabel(minutes) {
