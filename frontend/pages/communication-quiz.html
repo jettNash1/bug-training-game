@@ -11,11 +11,9 @@
         /* Progress card styling */
         .quiz-header-progress {
             position: absolute;
-            top: 0;
-            right: 0;
+            top: 15px;
+            right: 15px;
             z-index: 100;
-            margin-top: 65px;
-            margin-right: 15px;
         }
         .quiz-progress-card {
             background-color: white;
@@ -41,6 +39,32 @@
         /* Ensure proper positioning context */
         .quiz-container {
             position: relative;
+            padding-top: 20px;
+        }
+        
+        /* Override timer container position */
+        #timer-container {
+            position: absolute !important;
+            top: 15px !important;
+            right: 200px !important; /* Position to the left of the progress card */
+            background-color: #f8f9fa;
+            padding: 10px 15px;
+            border-radius: 8px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.08);
+            font-weight: 500;
+            color: #333;
+            font-size: 14px;
+        }
+        
+        /* Adjust game screen to make room for the UI elements at the top */
+        #game-screen {
+            margin-top: 80px !important; /* Increase margin to make room for timer and progress card */
+        }
+        
+        /* Back button adjustment */
+        .back-link {
+            position: relative;
+            z-index: 101; /* Ensure back button is above other elements */
         }
     </style>
     <script type="module" src="../config.js"></script>
@@ -82,11 +106,16 @@
             </div>
         </div>
         
+        <!-- Timer moved outside of game-screen -->
+        <div id="timer-container" class="timer-container" aria-live="polite">
+            <span id="timer-display">Time remaining: 24s</span>
+        </div>
+        
         <!-- New styled progress card - moved outside quiz-header -->
         <div class="quiz-header-progress">
             <div class="quiz-progress-card">
                 <div class="level-info">Level: Basic</div>
-                <div class="question-info">Question: 1/15</div>
+                <div class="question-info">Question: 5/15</div>
             </div>
         </div>
 
@@ -94,10 +123,6 @@
         <div id="game-screen" class="quiz-card" role="main" aria-live="polite">
             <div id="level-transition-container"></div>
             
-            <div id="timer-container" class="timer-container" aria-live="polite">
-                <span id="timer-display">30</span>
-            </div>
-
             <div class="question-section">
                 <h2 id="scenario-title" tabindex="0"></h2>
                 <p id="scenario-description" tabindex="0"></p>
