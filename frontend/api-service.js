@@ -292,7 +292,7 @@ export class APIService {
                 `${this.baseUrl.replace(/\/api$/, '')}${url}` : 
                 `${this.baseUrl}/${url.replace(/^api\//, '')}`;
             
-            console.log(`Fetching with auth: ${fullUrl}`);
+            console.log(`[API] Fetching with auth: ${fullUrl}`);
             
             // Add signal to options if not already present
             const fetchOptions = {
@@ -308,7 +308,6 @@ export class APIService {
                 signal: options.signal || controller.signal
             };
 
-            // Remove mock data check and proceed with actual API call
             const response = await fetch(fullUrl, fetchOptions);
             
             // Clear timeout since fetch completed
@@ -353,13 +352,20 @@ export class APIService {
                 }
             }
             
-            // Try to parse the response as JSON, but handle text responses too
+            // Try to parse the response as JSON
             const responseText = await response.text();
             try {
-                return JSON.parse(responseText);
+                const data = JSON.parse(responseText);
+                return {
+                    success: true,
+                    data: data.data || data
+                };
             } catch (e) {
-                console.warn('Response is not valid JSON, returning as text:', responseText);
-                return { success: true, data: responseText };
+                console.warn('[API] Response is not valid JSON:', responseText);
+                return {
+                    success: true,
+                    data: responseText
+                };
             }
         } catch (error) {
             // Clear timeout in case of error
@@ -375,7 +381,7 @@ export class APIService {
                 throw new Error('Network error. Please check your internet connection and try again.');
             }
             
-            console.error('API request failed:', error);
+            console.error('[API] Request failed:', error);
             throw error;
         }
     }
@@ -385,12 +391,10 @@ export class APIService {
             console.log(`[API] Getting progress for quiz: ${quizName}`);
             
             const response = await this.fetchWithAuth(`${this.baseUrl}/users/quiz-progress/${quizName}`);
-            const data = await response.json();
-            
-            console.log(`[API] Raw quiz progress response:`, data);
+            console.log(`[API] Raw quiz progress response:`, response);
             
             // If no data found, return default structure
-            if (!data || !data.data) {
+            if (!response || !response.data) {
                 console.log(`[API] No progress found for quiz ${quizName}, returning default`);
                 return {
                     success: true,
@@ -407,13 +411,13 @@ export class APIService {
 
             // Ensure all required fields are present
             const progress = {
-                ...data.data,
-                experience: data.data.experience || 0,
-                questionsAnswered: data.data.questionsAnswered || 0,
-                status: data.data.status || 'not-started',
-                scorePercentage: data.data.scorePercentage || 0,
-                tools: data.data.tools || [],
-                questionHistory: data.data.questionHistory || []
+                ...response.data,
+                experience: response.data.experience || 0,
+                questionsAnswered: response.data.questionsAnswered || 0,
+                status: response.data.status || 'not-started',
+                scorePercentage: response.data.scorePercentage || 0,
+                tools: response.data.tools || [],
+                questionHistory: response.data.questionHistory || []
             };
 
             return {
@@ -422,9 +426,9 @@ export class APIService {
             };
         } catch (error) {
             console.error(`[API] Error getting quiz progress for ${quizName}:`, error);
-            // Return a default structure even in case of error
             return {
                 success: false,
+                error: error.message,
                 data: {
                     experience: 0,
                     questionsAnswered: 0,
@@ -432,8 +436,7 @@ export class APIService {
                     scorePercentage: 0,
                     tools: [],
                     questionHistory: []
-                },
-                error: error.message
+                }
             };
         }
     }
