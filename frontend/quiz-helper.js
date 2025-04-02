@@ -1049,30 +1049,8 @@ export class BaseQuiz {
                 }
             }
 
-            // Show outcome screen
-            if (this.gameScreen && this.outcomeScreen) {
-                this.gameScreen.classList.add('hidden');
-                this.outcomeScreen.classList.remove('hidden');
-            }
-            
-            // Update outcome display with only the selected answer outcome
-            let outcomeText = selectedAnswer.outcome;
-            // No longer showing the correct answer text
-            document.getElementById('outcome-text').textContent = outcomeText;
-            
-            const xpText = selectedAnswer.experience >= 0 ? 
-                `Experience gained: +${selectedAnswer.experience}` : 
-                `Experience: ${selectedAnswer.experience}`;
-            document.getElementById('xp-gained').textContent = xpText;
-            
-            if (selectedAnswer.tool) {
-                document.getElementById('tool-gained').textContent = `Tool acquired: ${selectedAnswer.tool}`;
-                if (!this.player.tools.includes(selectedAnswer.tool)) {
-                    this.player.tools.push(selectedAnswer.tool);
-                }
-            } else {
-                document.getElementById('tool-gained').textContent = '';
-            }
+            // Show outcome screen and update display with answer outcome
+            this.displayOutcome(selectedAnswer);
 
             this.updateProgress();
         } catch (error) {
@@ -1153,6 +1131,43 @@ export class BaseQuiz {
         } catch (error) {
             console.error('Failed to save final progress:', error);
             throw error;
+        }
+    }
+
+    // Display the outcome of an answer, without showing XP
+    displayOutcome(selectedAnswer) {
+        if (!this.outcomeScreen) return;
+        
+        // Show outcome screen
+        if (this.gameScreen) {
+            this.gameScreen.classList.add('hidden');
+            this.outcomeScreen.classList.remove('hidden');
+        }
+        
+        // Update outcome display with only the selected answer outcome
+        let outcomeText = selectedAnswer.outcome;
+        const outcomeElement = document.getElementById('outcome-text');
+        if (outcomeElement) {
+            outcomeElement.textContent = outcomeText;
+        }
+        
+        // Clear XP gained element (no longer showing experience points)
+        const xpElement = document.getElementById('xp-gained');
+        if (xpElement) {
+            xpElement.textContent = '';
+        }
+        
+        // Show tool acquired if present
+        const toolElement = document.getElementById('tool-gained');
+        if (toolElement) {
+            if (selectedAnswer.tool) {
+                toolElement.textContent = `Tool acquired: ${selectedAnswer.tool}`;
+                if (this.player && !this.player.tools.includes(selectedAnswer.tool)) {
+                    this.player.tools.push(selectedAnswer.tool);
+                }
+            } else {
+                toolElement.textContent = '';
+            }
         }
     }
 }

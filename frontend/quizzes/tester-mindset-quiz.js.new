@@ -2,7 +2,7 @@ import { APIService } from '../api-service.js';
 import { BaseQuiz } from '../quiz-helper.js';
 import { QuizUser } from '../QuizUser.js';
 
-export class ReportsQuiz extends BaseQuiz {
+export class TesterMindsetQuiz extends BaseQuiz {
     constructor() {
         const config = {
             maxXP: 300,
@@ -12,23 +12,23 @@ export class ReportsQuiz extends BaseQuiz {
                 advanced: { questions: 15, minXP: 235 }
             },
             performanceThresholds: [
-                { threshold: 250, message: '🏆 Outstanding! You\'re a reporting expert!' },
-                { threshold: 200, message: '👏 Great job! You\'ve shown strong reporting skills!' },
+                { threshold: 250, message: '🏆 Outstanding! You\'re a testing mindset expert!' },
+                { threshold: 200, message: '👏 Great job! You\'ve shown strong testing instincts!' },
                 { threshold: 150, message: '👍 Good work! Keep practicing to improve further.' },
-                { threshold: 0, message: '📚 Consider reviewing reporting best practices and try again!' }
+                { threshold: 0, message: '📚 Consider reviewing testing mindset best practices and try again!' }
             ]
         };
         
         super(config);
-        
-        // Set the quiz name
+
+        // Set quiz name
         Object.defineProperty(this, 'quizName', {
-            value: 'reports',
+            value: 'tester-mindset',
             writable: false,
             configurable: false,
             enumerable: true
         });
-        
+
         // Initialize player state
         this.player = {
             name: '',
@@ -65,62 +65,62 @@ export class ReportsQuiz extends BaseQuiz {
             return;
         }
 
-        // Basic Scenarios (IDs 1-5)
+        // Basic Scenarios (Focus on Fundamental Mindset Concepts)
         this.basicScenarios = [
             {
                 id: 1,
                 level: 'Basic',
-                title: 'Report Timing',
-                description: 'When should you start writing a daily report?',
+                title: 'Project Context',
+                description: "You're starting a new testing project. What's your first priority?",
                 options: [
                     {
-                        text: 'Start at 16:45 for standard reports, 16:30 if peer review needed, deliver by 17:00',
-                        outcome: 'Perfect! This ensures timely delivery with review time.',
+                        text: 'Review all the requirements for the project provided by the client',
+                        outcome: 'Excellent! Understanding context is crucial for effective testing.',
                         experience: 15,
-                        tool: 'Time Management'
+                        tool: 'Context Analysis Framework'
                     },
                     {
-                        text: 'Start writing the report at end of the working day',
-                        outcome: 'Reports need time for review from the project manager and any revisions needed.',
-                        experience: -10
-                    },
-                    {
-                        text: 'Write the report throughout day and submit what has been observed at the time of documenting',
-                        outcome: 'A final report requires the latest updated information at the point of submitting.',
+                        text: 'Begin extensive exploratory testing sessions to identify potential issues and document findings for immediate stakeholder review',
+                        outcome: 'Without understanding context first, testing straight away may miss critical issues.',
                         experience: -5
                     },
                     {
-                        text: 'Start after 17:00',
-                        outcome: 'Reports must be delivered before the end of day and starting too late may potentially not leave enough time for reviews and revisions.',
-                        experience: 0
+                        text: 'Create comprehensive test cases based on industry best practices and previous project experience',
+                        outcome: 'Test cases should be based on project context and requirements.',
+                        experience: -5
+                    },
+                    {
+                        text: 'Analyse historical test results of older releases of the same project',
+                        outcome: 'While helpful, previous results don\'t replace understanding of current project context.',
+                        experience: 5
                     }
                 ]
             },
             {
                 id: 2,
                 level: 'Basic',
-                title: 'Writing Style',
-                description: 'How should you write the report summary?',
+                title: 'Understanding the Audience',
+                description: 'How do you approach understanding the target audience for a new project?',
                 options: [
                     {
-                        text: 'Use third person, present tense, objective language without technical jargon',
-                        outcome: 'Excellent! This maintains a professional tone.',
+                        text: 'Research user needs to gather information on target audiences',
+                        outcome: 'Perfect! User-centric thinking is essential for effective testing.',
                         experience: 15,
-                        tool: 'Writing Standards'
+                        tool: 'User Persona Template'
                     },
                     {
-                        text: 'Use a first person approach to keep the report to a personal level',
-                        outcome: 'Reports require a third person approach to keep to keep the tone objective.',
-                        experience: -10
-                    },
-                    {
-                        text: 'Include technical references so developers can identify issues quickly',
-                        outcome: 'The language used should be accessible to all stakeholders and technical references should not be included unless absolutely required.',
+                        text: 'Apply personal usage patterns and preferences to determine the most likely user behaviours and testing scenarios',
+                        outcome: 'Users have diverse needs and characteristics that must be considered and not just that of a testers own usage pattern.',
                         experience: -5
                     },
                     {
-                        text: 'Use a past tense approach when writing the summary section',
-                        outcome: 'Present tense writing should be used as it shows the current state of a project.',
+                        text: 'Conduct detailed technical analysis of system architecture and performance metrics to establish testing priorities',
+                        outcome: 'Technical aspects are important but user needs are crucial for understanding of a target audience.',
+                        experience: -5
+                    },
+                    {
+                        text: 'Wait for post-release feedback to gather user trends and behaviour',
+                        outcome: 'Understanding users before testing begins, can help prevent issues in the testing process.',
                         experience: 0
                     }
                 ]
@@ -128,206 +128,206 @@ export class ReportsQuiz extends BaseQuiz {
             {
                 id: 3,
                 level: 'Basic',
-                title: 'Summary Structure',
-                description: 'What are the four main sections of a report summary?',
+                title: 'Test Environment Setup',
+                description: "The test environment is different from production. What's your approach?",
                 options: [
                     {
-                        text: 'Introduction, what went well, what could be better, conclusion',
-                        outcome: 'Perfect! This covers all key aspects.',
+                        text: 'Document the environment differences to be taken into consideration for test results',
+                        outcome: 'Excellent! Understanding environment differences is crucial for testing and can be factored into any results.',
                         experience: 15,
-                        tool: 'Report Structure'
+                        tool: 'Environment Comparison Tool'
                     },
                     {
-                        text: 'Issues found, blocking issues, resolved issues and queries',
-                        outcome: 'This approach only refers to issues and balanced coverage of all aspects is required.',
-                        experience: -10
-                    },
-                    {
-                        text: 'Introduction, technical details, what went well, conclusion',
-                        outcome: 'Technical details should not be included in the summary as it should be accessible to all stakeholders.',
+                        text: 'Proceed with testing while monitoring for any potential environmental impact on test results.',
+                        outcome: 'Environment differences can affect testing activities and result in missed issues if not documented for reference first.',
                         experience: -5
                     },
                     {
-                        text: 'Sections related to observations from the days testing activities based on the testers preference',
-                        outcome: 'A structured approach is required to maintain consistency across all reports.',
-                        experience: 0
+                        text: 'Execute test cases in the production environment to ensure accurate results',
+                        outcome: 'Testing in production without correct user control can lead to unwarranted risks within the system.',
+                        experience: -10
+                    },
+                    {
+                        text: 'Request environment replication to safely conduct testing activities.',
+                        outcome: 'Good thinking, but first, the current differences must be documented.',
+                        experience: 10
                     }
                 ]
             },
             {
                 id: 4,
                 level: 'Basic',
-                title: 'Metrics Inclusion',
-                description: 'What metrics should be included in the report?',
+                title: 'Test Documentation',
+                description: "You've found several issues. How do you document them?",
                 options: [
                     {
-                        text: 'New issues, closed issues, outstanding issues, and relevant progress tables',
-                        outcome: 'Excellent! This provides comprehensive metrics.',
+                        text: 'Document the issues with steps and results for ease of replication',
+                        outcome: 'Perfect! Clear documentation helps developers fix issues efficiently.',
                         experience: 15,
-                        tool: 'Metrics Documentation'
+                        tool: 'Issue Documentation Template'
                     },
                     {
-                        text: 'New issue metrics, as this is the current relevant information for the client',
-                        outcome: 'All relevant metrics including progress, closed and outstanding issues are required for traceability purposes.',
-                        experience: -10
-                    },
-                    {
-                        text: 'Project progress as this is crucial for the project manger to gauge resources for the agreed test time frame',
-                        outcome: 'Whilst this is an important metric, other metrics are also required for full project understanding.',
+                        text: 'Initiate multiple communication channels including chat messages, emails, and verbal discussions for each discovered issue.',
+                        outcome: 'Informal communication isn\'t sufficient for tracking issues, as important information can become lost.',
                         experience: -5
                     },
                     {
-                        text: 'Closed ticket metrics as this informs the client on developer performance',
-                        outcome: 'All metrics are crucial for reports, including new, closed, outstanding issues, and relevant progress.',
-                        experience: 0
+                        text: 'Capture and archive comprehensive visual documentation through multiple screenshot angles and screen recordings',
+                        outcome: 'Screenshots alone don\'t provide enough context and more detail is required such as steps and results.',
+                        experience: -10
+                    },
+                    {
+                        text: 'Create brief descriptions for all the issues raised to make sure project time management can be met.',
+                        outcome: 'More detail would help developers understand and fix issues.',
+                        experience: 5
                     }
                 ]
             },
             {
                 id: 5,
                 level: 'Basic',
-                title: 'Graph Presentation',
-                description: 'How should graphs be presented in the report?',
+                title: 'Test Planning',
+                description: 'How do you prepare for a new testing project?',
                 options: [
                     {
-                        text: 'Consistent width, visible labels, appropriate legends, and alt text',
-                        outcome: 'Perfect! This ensures accessible presentation.',
+                        text: 'Review requirements, create test strategy, and identify risks',
+                        outcome: 'Excellent! Thorough preparation leads to effective testing.',
                         experience: 15,
-                        tool: 'Visual Documentation'
+                        tool: 'Test Planning Framework'
                     },
                     {
-                        text: 'With emphasis focused on each specific data element related to the graph and sized to fit the data',
-                        outcome: 'Consistency is required in size throughout the report.',
-                        experience: -10
-                    },
-                    {
-                        text: 'Without labels as the graphs themselves provide enough data and information',
-                        outcome: 'Labels for graphs and data are required for clarity.',
+                        text: 'Start testing straight away to meet project timeline and deliverables',
+                        outcome: 'A lack of planning can lead to inefficient testing.',
                         experience: -5
                     },
                     {
-                        text: 'With placement preference based on experience of the tester',
-                        outcome: 'Organized and structured presentation is required for all reports for consistency throughout.',
-                        experience: 0
+                        text: 'Copy a test plan from previous project for efficiency',
+                        outcome: 'Each project needs its own test approach and the need for specific testing tailored to each project is essential.',
+                        experience: -5
+                    },
+                    {
+                        text: 'Ask developers what and which areas to test within the project',
+                        outcome: 'Developer input helps but thorough planning is required as a developer mindset is not always the same as an end user.',
+                        experience: 5
                     }
                 ]
             }
         ];
 
-        // Intermediate Scenarios (IDs 6-10)
+        // Intermediate Scenarios (Different Testing Approaches)
         this.intermediateScenarios = [
             {
                 id: 6,
                 level: 'Intermediate',
-                title: 'Peer Review Process',
-                description: 'How should you handle peer review feedback?',
+                title: 'Exploratory Testing',
+                description: "You're conducting exploratory testing. What's your mindset?",
                 options: [
                     {
-                        text: 'Review all comments, address each point, resolve comments after fixing and discuss if clarification needed',
-                        outcome: 'Perfect! This ensures thorough review process.',
+                        text: 'Be curious, investigative, and think outside the box',
+                        outcome: 'Perfect! Exploratory testing requires creative thinking.',
                         experience: 20,
-                        tool: 'Peer Review'
+                        tool: 'Exploratory Testing Guide'
                     },
                     {
-                        text: 'Respond to feedback that is considered an improvement on what is currently stated',
-                        outcome: 'All feedback requires consideration and a response stating the authors views.',
-                        experience: -15
-                    },
-                    {
-                        text: 'Delete any comments without fixing potential changes if they are not deemed to improve the report',
-                        outcome: 'Comments correct resolution with feedback and documented information.',
+                        text: 'Follow a strictly set out test script to gain the best coverage',
+                        outcome: 'Exploratory testing requires flexibility and creativity to think outside the box of a specified testing route.',
                         experience: -10
                     },
                     {
-                        text: 'Update any areas suggested from the review without marking comments as resolved',
-                        outcome: 'Comment resolution is required for tracking purposes.',
-                        experience: 0
+                        text: 'Test only happy paths to check the desired outcome',
+                        outcome: 'Exploratory testing should cover various scenarios, including unhappy paths.',
+                        experience: -10
+                    },
+                    {
+                        text: 'Focus only on finding bugs within the required scope of the project',
+                        outcome: 'Understanding the system and user journey paths are also important in exploratory testing.',
+                        experience: 5
                     }
                 ]
             },
             {
                 id: 7,
                 level: 'Intermediate',
-                title: 'Environment Documentation',
-                description: 'How do you document test environments in the report?',
+                title: 'Scripted Testing',
+                description: 'During scripted testing, you notice an issue outside the test cases. What do you do?',
                 options: [
                     {
-                        text: 'Include a matrix with accurate versions, consistent formatting, and relevant environment details',
-                        outcome: 'Excellent! This provides clear environment context.',
+                        text: 'Document the issue for client consideration and continue with test cases',
+                        outcome: 'Excellent! Balance following scripts while noting other issues.',
                         experience: 20,
-                        tool: 'Environment Documentation'
+                        tool: 'Test Case Management'
                     },
                     {
-                        text: 'Incorporate a matrix with device names listed for each environment',
-                        outcome: 'Other information is required for an environment matrix such as version details.',
+                        text: 'Continue with testing as the particular focus is not documented to be covered within the test cases',
+                        outcome: 'All issues should be documented, even if outside of stated test cases.',
                         experience: -15
                     },
                     {
-                        text: 'Include a matrix with primary environment details stated',
-                        outcome: 'Environment documentation for all environments tested are required for traceability.',
-                        experience: -10
+                        text: 'Stop scripted testing to investigate and find the root cause',
+                        outcome: 'The issue should be documented although, planned testing should be continued with.',
+                        experience: 0
                     },
                     {
-                        text: 'Use the summary to outline environment coverage',
-                        outcome: 'Whilst some environment coverage can be stated in the summary, a more detailed approach is required in the form of an environment matrix for full traceability.',
-                        experience: 0
+                        text: 'Add new test cases immediately to address the areas that return the issue',
+                        outcome: 'Whilst adding new test cases is required as testing evolves on a project. The issues should be document first and test case updates can be performed after the current execution.',
+                        experience: 10
                     }
                 ]
             },
             {
                 id: 8,
                 level: 'Intermediate',
-                title: 'Issue Summary Presentation',
-                description: 'How should you present the top issues in the report?',
+                title: 'Test Support Approach',
+                description: 'You\'re providing ongoing test support. How do you maintain effectiveness?',
                 options: [
                     {
-                        text: 'List most functionally impactive issues, include blocking issues separately, hyperlink all references',
-                        outcome: 'Perfect! This provides organized issue overview.',
+                        text: 'Stay adaptable and maintain clear communication with the team',
+                        outcome: 'Perfect! Flexibility and communication are key for support.',
                         experience: 20,
-                        tool: 'Issue Documentation'
+                        tool: 'Support Communication Template'
                     },
                     {
-                        text: 'List issues by tester preference based on experience of the project',
-                        outcome: 'Issue need to be prioritised by impact on the system under test.',
-                        experience: -15
-                    },
-                    {
-                        text: 'List issues in standard text format in priority order',
-                        outcome: 'Tickets in the top issues section require hyperlinks that direct to the correct bug tracker.',
+                        text: 'Stick to the initial test plan throughout test activities only',
+                        outcome: 'Test support requires adapting to clients changing needs.',
                         experience: -10
                     },
                     {
-                        text: 'State the top issues in priority order with any blockers stated first',
-                        outcome: 'Blocking issues should be kept separate and documented in their own section in the report.',
-                        experience: 0
+                        text: 'Wait for the client to assign you tasks to stay within scope of the project',
+                        outcome: 'Proactive support is more valuable than reactive support.',
+                        experience: -5
+                    },
+                    {
+                        text: 'Focus only on new features within a release to keep testing activities current',
+                        outcome: 'Support should include both new and existing functionality testing.',
+                        experience: 5
                     }
                 ]
             },
             {
                 id: 9,
                 level: 'Intermediate',
-                title: 'Weekly Report Management',
-                description: 'How do you manage content for a weekly report?',
+                title: 'Risk Assessment',
+                description: 'You identify a potential risk in the project. How do you handle it?',
                 options: [
                     {
-                        text: 'Set up template first day, add draft notes daily, compile and refine at week end',
-                        outcome: 'Excellent! This ensures comprehensive coverage.',
+                        text: 'Document the risk and communicate it to stakeholders promptly',
+                        outcome: 'Excellent! Early risk communication allows better mitigation.',
                         experience: 20,
-                        tool: 'Report Management'
+                        tool: 'Risk Assessment Matrix'
                     },
                     {
-                        text: 'Document everything from the week on the last working day',
-                        outcome: 'Progressive documentation is the best approach as its difficult to retain all information from the weeks testing activities.',
+                        text: 'Wait to see the risk identified becomes an issue that could affect the system under test',
+                        outcome: 'Early risk identification helps prevent issues with test activities further along into the process.',
                         experience: -15
                     },
                     {
-                        text: 'Use daily reports collated from weekly testing activities and include them into the weekly report',
-                        outcome: 'A dedicated weekly report is required for consistency and ease of use for the client.',
-                        experience: -10
+                        text: 'Research a solution for the risk yourself and present this to developers',
+                        outcome: 'Risks should be communicated to appropriate stakeholders for an appropriate outcome to be confirmed.',
+                        experience: -5
                     },
                     {
-                        text: 'Include information from later in the week to keep in line with more current activities',
-                        outcome: 'A full week approach is required to specify all coverage attained from testing.',
+                        text: 'Mention the identified risk in the next meeting or stand up for the project',
+                        outcome: 'Risks need prompt communication to mitigate an issue early, rather than having delayed reporting.',
                         experience: 0
                     }
                 ]
@@ -335,148 +335,148 @@ export class ReportsQuiz extends BaseQuiz {
             {
                 id: 10,
                 level: 'Intermediate',
-                title: 'Stakeholder Communication',
-                description: 'How do you adapt report content for different stakeholders?',
+                title: 'Test Coverage',
+                description: 'How do you ensure adequate test coverage for a feature?',
                 options: [
                     {
-                        text: 'Use clear language, avoid jargon, focus on business impact, maintain professional tone',
-                        outcome: 'Perfect! This ensures wide accessibility.',
+                        text: 'Implement comprehensive testing methodologies across all possible test scenarios and edge cases with detailed documentation',
+                        outcome: 'This is too broad an approach and can be an inefficient way of testing.',
+                        experience: -5
+                    },
+                    {
+                        text: 'Use risk-based testing to prioritise areas that are of the most importance to the user and client',
+                        outcome: 'Perfect! Prioritising tests based on risk is one of the most efficient approaches.',
                         experience: 20,
-                        tool: 'Stakeholder Management'
+                        tool: 'Risk Assessment Matrix'
                     },
                     {
-                        text: 'Use technical terms so developers can pinpoint and debug root causes',
-                        outcome: 'Language used in reports needs to be accessible and understandable for all stakeholders involved in a project.',
-                        experience: -15
-                    },
-                    {
-                        text: 'Use language that focuses on Quality Assurance terminology',
-                        outcome: 'All stakeholders must be considered, and language must be simple and fully inclusive.',
+                        text: 'Execute extensive regression testing protocols while maintaining detailed coverage metrics and trend analysis',
+                        outcome: 'Regression testing alone doesn\'t ensure the most sufficient coverage.',
                         experience: -10
                     },
                     {
-                        text: 'Use informal language to keep a friendly tone and maintain a good personal relationship',
-                        outcome: 'A professional tone must be used throughout reports to keep a level of consistency and good business standard.',
-                        experience: 0
+                        text: 'Conduct thorough analysis of all system components and their interconnected dependencies',
+                        outcome: 'System analysis is important but should be guided by risk assessment.',
+                        experience: 5
                     }
                 ]
             }
         ];
 
-        // Advanced Scenarios (IDs 11-15)
+        // Advanced Scenarios (Complex situations)
         this.advancedScenarios = [
             {
                 id: 11,
                 level: 'Advanced',
-                title: 'Report Format Adaptation',
-                description: 'The client requests a different report format mid-project. How do you handle it?',
+                title: 'Critical Production Issue',
+                description: 'A critical bug is reported in production affecting user data. What\'s your immediate response?',
                 options: [
                     {
-                        text: 'Discuss the change with the Project Manager, adapt templates while maintaining key information and ensure consistent transition',
-                        outcome: 'Perfect! This ensures proper format adaptation.',
+                        text: 'Alert the incident team with evidence and begin systematic investigation',
+                        outcome: 'Excellent! Quick escalation and a systematic approach is crucial.',
                         experience: 25,
-                        tool: 'Format Management'
+                        tool: 'Incident Response Protocol'
                     },
                     {
-                        text: 'Use both the current format and the new requested format on data you see fit for purpose',
-                        outcome: 'The client requirements require consideration, clarification with the project manager and consistency.',
+                        text: 'Start researching a fix for the bug immediately',
+                        outcome: 'Incident response process should be followed before attempting to find a route cause for developers to investigate and fix.',
                         experience: -15
                     },
                     {
-                        text: 'Create the new report format straight away and submit this at the usual time to the Project Manager',
-                        outcome: 'Project Manager coordination required before making any changes to report formats to ensure consistency and clarity.',
-                        experience: -10
+                        text: 'Document the issue to be included in the next sprint for developer attention',
+                        outcome: 'Critical issues within the production environment require immediate attention.',
+                        experience: -15
                     },
                     {
-                        text: 'Inform the client that the business use a structured guideline that needs to be followed for consistency',
-                        outcome: 'While consistency is important, the client can essentially request how they receive the data they require and the way they want the data to be reported.',
-                        experience: -5
+                        text: 'Start investigating the root cause of the bug immediately',
+                        outcome: 'Incident response process should be followed before attempting to find the cause so all interested parties are aware of the issue.',
+                        experience: 5
                     }
                 ]
             },
             {
                 id: 12,
                 level: 'Advanced',
-                title: 'Complex Metrics Analysis',
-                description: 'How do you handle conflicting metrics in the report?',
+                title: 'Test Strategy Evolution',
+                description: 'The project scope has significantly changed mid-way. How do you adapt your test strategy?',
                 options: [
                     {
-                        text: 'Verify source data, cross-reference scripts, document discrepancies, consult the project manager if needed',
-                        outcome: 'Excellent! This ensures accurate reporting.',
+                        text: 'Review changes, update strategy, and communicate any impact on the project',
+                        outcome: 'Perfect! Systematic adaptation ensures continued effectiveness.',
                         experience: 25,
-                        tool: 'Data Analysis'
+                        tool: 'Strategy Adaptation Framework'
                     },
                     {
-                        text: 'Adjust the formulas within the script to fit the numbers stated in the report',
-                        outcome: 'Formulas should not be updated as this can return inconsistent results.',
-                        experience: -15
+                        text: 'Continue the testing activities outlined in the original strategy to stay in line with initial client expectation',
+                        outcome: 'The strategy must evolve with project changes as important features could missed.',
+                        experience: -20
                     },
                     {
-                        text: 'Conflicting metrics should be reported to the project manager straight away',
-                        outcome: 'In this instance other avenues should be visited first, such as source data and troubleshooting guides. Project managers have multiple reports to review at the end of the working day.',
+                        text: 'Create an entirely new strategy to come into line with the new requirements',
+                        outcome: 'Modifying the existing strategy is the preferred approach to time management and constraints.',
                         experience: -10
                     },
                     {
-                        text: 'Take an average of the numbers stated in the test script and which have been stated in the report',
-                        outcome: 'Accurate data is required for reporting and verifying source data should be performed first.',
-                        experience: -5
+                        text: 'Focus only on the new requirements set out in the updated scope',
+                        outcome: 'Both new and existing requirements need to be taken into consideration as issues could be missed if existing requirements are ignored.',
+                        experience: 0
                     }
                 ]
             },
             {
                 id: 13,
                 level: 'Advanced',
-                title: 'Multi-Environment Reporting',
-                description: 'How do you report on testing across multiple complex environments?',
+                title: 'Resource Constraints',
+                description: 'You have limited time and resources for testing. How do you proceed?',
                 options: [
                     {
-                        text: 'Create clear environment matrix, document specific behaviours, highlight key differences',
-                        outcome: 'Perfect! This provides comprehensive environment coverage.',
+                        text: 'Prioritise critical functionality and communicate constraints',
+                        outcome: 'Excellent! Risk-based prioritisation maximizes testing value.',
                         experience: 25,
-                        tool: 'Environment Analysis'
+                        tool: 'Test Prioritization Matrix'
                     },
                     {
-                        text: 'Group all environment data together and report as one metric',
-                        outcome: 'Specific details required per environment for traceability.',
-                        experience: -15
+                        text: 'Test everything as quick as possible to meet project timeframe deliverables',
+                        outcome: 'Rushed testing may miss critical issues.',
+                        experience: -20
                     },
                     {
-                        text: 'Ensure the report includes primary environment testing data',
-                        outcome: 'Data for testing activities across all environments are required for coverage reporting.',
+                        text: 'Leave lower priority items to meet project timeframe deliverables',
+                        outcome: 'Scope reduction needs to be communicated and agreed upon with stakeholders first.',
                         experience: -10
                     },
                     {
-                        text: 'Specify the hardware used for each environment that has been tested',
-                        outcome: 'Full environment documentation including, device, operating system and browser version details is essential.',
-                        experience: -5
+                        text: 'Request a deadline extension to achieve the required test coverage',
+                        outcome: 'Test case and scope prioritisation is required first, even with an extended deadline.',
+                        experience: 0
                     }
                 ]
             },
             {
                 id: 14,
                 level: 'Advanced',
-                title: 'Critical Issue Reporting',
-                description: 'How do you report different multiple critical issues found late in the day?',
+                title: 'Team Collaboration',
+                description: 'Different team members have conflicting test approaches. How do you handle this?',
                 options: [
                     {
-                        text: 'Immediately notify project manager, document thoroughly in report, highlight business impact',
-                        outcome: 'Excellent! This ensures proper critical issue handling.',
+                        text: 'Facilitate discussion to align on best practices and document any agreements',
+                        outcome: 'Perfect! Collaborative alignment improves team effectiveness.',
                         experience: 25,
-                        tool: 'Critical Issue Management'
+                        tool: 'Test Approach Alignment Guide'
                     },
                     {
-                        text: 'Include the issues within the report and submit this at the agreed time',
-                        outcome: 'Immediate notification to the project manager is the best approach in this instance so clients are aware of any alternative planning that may be required.',
+                        text: 'Let each person use their preferred approach to aid in meeting deliverables',
+                        outcome: 'Inconsistent approaches can affect testing quality.',
+                        experience: -20
+                    },
+                    {
+                        text: 'Enforce your preferred approach to be able to manage progress more efficiently',
+                        outcome: 'Collaboration is better than enforcement as each colleague brings a different skill set.',
                         experience: -15
                     },
                     {
-                        text: 'Collate all critical issues into one ticket for ease and speed of client delegation',
-                        outcome: 'If issues are not related they require individual tickets raising regardless of time of working day.',
-                        experience: -10
-                    },
-                    {
-                        text: 'Leave the detail out of the report and communicate the issues with the project manager',
-                        outcome: 'Thorough documentation as well as communication with the project manager on these critical issues required.',
+                        text: 'Escalate to management immediately so they can set a company wide approach',
+                        outcome: 'It is preferred to initiate a team discussion first to potentially come to a collaborative agreement before escalation.',
                         experience: -5
                     }
                 ]
@@ -484,35 +484,35 @@ export class ReportsQuiz extends BaseQuiz {
             {
                 id: 15,
                 level: 'Advanced',
-                title: 'Report Quality Assurance',
-                description: 'How do you ensure report quality before submission?',
+                title: 'Quality Advocacy',
+                description: 'The team is pressured to reduce testing time. How do you respond?',
                 options: [
                     {
-                        text: 'Review content, verify metrics, check formatting, validate links, run spell check, read aloud',
-                        outcome: 'Perfect! This ensures comprehensive quality check.',
+                        text: 'Present data-driven analysis of risks and quality impacts',
+                        outcome: 'Excellent! Data-driven advocacy helps maintain quality.',
                         experience: 25,
-                        tool: 'Quality Assurance'
+                        tool: 'Quality Impact Analysis'
                     },
                     {
-                        text: 'Run the report through a spellchecker to make sure a professional standard is maintained',
-                        outcome: 'Whilst good grammar is important, a thorough review of all data and formatting is required.',
+                        text: 'Accept the reduced timeline and continue with testing activities',
+                        outcome: 'Quality concerns should be raised professionally as issues could be missed with reduced coverage.',
+                        experience: -30
+                    },
+                    {
+                        text: 'Refuse to reduce the testing time as this will affect testing coverage and quality',
+                        outcome: 'It is preferred and professional to collaborate with stakeholders to find balanced solutions.',
+                        experience: -20
+                    },
+                    {
+                        text: 'Reduce test coverage without any risk analysis',
+                        outcome: 'Impact analysis is required and should be communicated with stakeholders before reducing coverage.',
                         experience: -15
-                    },
-                    {
-                        text: 'Once all information has been collated a review is only required by the project manager',
-                        outcome: 'A quality check is crucial before submitting to the project manager as they should not have to change anything or only make minimal changes.',
-                        experience: -10
-                    },
-                    {
-                        text: 'Thoroughly check all metrics data adds up correctly and is representative of testing activities carried out',
-                        outcome: 'While metrics data is important, all aspects of reporting need thorough review.',
-                        experience: -5
                     }
                 ]
             }
         ];
 
-        // Initialize UI and add event listeners
+        // Initialize UI and event listeners
         this.initializeEventListeners();
 
         this.isLoading = false;
@@ -909,13 +909,13 @@ export class ReportsQuiz extends BaseQuiz {
                 newExperience = Math.max(this.levelThresholds.intermediate.minXP, newExperience);
             }
 
-            // Update player experience with bounds
+            // Update player state
             this.player.experience = Math.max(0, Math.min(this.maxXP, newExperience));
 
             // Calculate time spent on this question
             const timeSpent = this.questionStartTime ? Date.now() - this.questionStartTime : null;
-            
-            // Add status to question history
+
+            // Record the answer
             this.player.questionHistory.push({
                 scenario: scenario,
                 selectedAnswer: selectedAnswer,
@@ -960,12 +960,12 @@ export class ReportsQuiz extends BaseQuiz {
             }
 
             // Show outcome screen and update display with answer outcome
-            BaseQuiz.prototype.displayOutcome.call(this, selectedAnswer);
+            this.displayOutcome(selectedAnswer);
 
             this.updateProgress();
         } catch (error) {
             console.error('Failed to handle answer:', error);
-            this.showError('Failed to save your answer. Please try again.');
+            this.showError('Failed to process your answer. Please try again.');
         } finally {
             this.isLoading = false;
             if (submitButton) {
@@ -1101,9 +1101,9 @@ export class ReportsQuiz extends BaseQuiz {
         let recommendationsHTML = '';
 
         if (score >= 95 && weakAreas.length === 0) {
-            recommendationsHTML = '<p>🌟 Outstanding! You have demonstrated mastery in all aspects of reports. You clearly understand the nuances of reports and are well-equipped to handle any reports challenges!</p>';
+            recommendationsHTML = '<p>🌟 Outstanding! You have demonstrated mastery in all aspects of tester mindset. You clearly understand the nuances of tester mindset and are well-equipped to handle any tester mindset challenges!</p>';
         } else if (score >= 80) {
-            recommendationsHTML = '<p>🌟 Excellent performance! Your reports skills are very strong. To achieve complete mastery, consider focusing on:</p>';
+            recommendationsHTML = '<p>🌟 Excellent performance! Your tester mindset skills are very strong. To achieve complete mastery, consider focusing on:</p>';
             recommendationsHTML += '<ul>';
             if (weakAreas.length > 0) {
                 weakAreas.forEach(area => {
@@ -1135,38 +1135,38 @@ export class ReportsQuiz extends BaseQuiz {
         const title = scenario.title.toLowerCase();
         const description = scenario.description.toLowerCase();
 
-        if (title.includes('timing') || description.includes('when')) {
-            return 'Report Timing';
-        } else if (title.includes('style') || description.includes('write')) {
-            return 'Writing Style';
-        } else if (title.includes('peer review') || description.includes('review')) {
-            return 'Review Process';
-        } else if (title.includes('weekly') || description.includes('weekly')) {
-            return 'Weekly Reporting';
-        } else if (title.includes('stakeholder') || description.includes('stakeholder')) {
-            return 'Stakeholder Communication';
-        } else if (title.includes('metrics') || description.includes('metrics')) {
-            return 'Metrics Analysis';
-        } else if (title.includes('quality') || description.includes('quality')) {
-            return 'Quality Assurance';
+        if (title.includes('context') || description.includes('context')) {
+            return 'Project Context Understanding';
+        } else if (title.includes('environment') || description.includes('environment')) {
+            return 'Test Environment Management';
+        } else if (title.includes('documentation') || description.includes('documentation')) {
+            return 'Test Documentation';
+        } else if (title.includes('planning') || description.includes('planning')) {
+            return 'Test Planning';
+        } else if (title.includes('risk') || description.includes('risk')) {
+            return 'Risk Assessment';
+        } else if (title.includes('coverage') || description.includes('coverage')) {
+            return 'Test Coverage';
+        } else if (title.includes('collaboration') || description.includes('collaboration')) {
+            return 'Team Collaboration';
         } else {
-            return 'General Reporting';
+            return 'General Testing Approach';
         }
     }
 
     getRecommendation(area) {
         const recommendations = {
-            'Report Timing': 'Focus on proper time management for report preparation, ensuring adequate review time before deadlines.',
-            'Writing Style': 'Improve professional writing skills using third person, present tense, and clear, objective language.',
-            'Review Process': 'Strengthen peer review practices by systematically addressing feedback and maintaining proper documentation.',
-            'Weekly Reporting': 'Develop better weekly report management through progressive documentation and proper summarization.',
-            'Stakeholder Communication': 'Enhance ability to adapt report content for different audiences while maintaining professionalism.',
-            'Metrics Analysis': 'Work on handling complex metrics, including verification, cross-referencing, and proper documentation.',
-            'Quality Assurance': 'Practice comprehensive quality checks including content review, metric verification, and formatting.',
-            'General Reporting': 'Continue developing fundamental report writing and management skills.'
+            'Project Context Understanding': 'Focus on improving requirement analysis and understanding business context before testing.',
+            'Test Environment Management': 'Enhance your ability to identify and document environment differences and their impact on testing.',
+            'Test Documentation': 'Practice creating clear, detailed test documentation that helps track issues and communicate effectively.',
+            'Test Planning': 'Work on developing comprehensive test strategies that consider project scope and risks.',
+            'Risk Assessment': 'Strengthen your ability to identify, prioritize, and communicate potential risks in testing.',
+            'Test Coverage': 'Improve your approach to ensuring adequate test coverage across different testing types and scenarios.',
+            'Team Collaboration': 'Enhance communication with team members and stakeholders during the testing process.',
+            'General Testing Approach': 'Continue developing fundamental testing principles and methodologies.'
         };
 
-        return recommendations[area] || 'Continue practicing core reporting principles.';
+        return recommendations[area] || 'Continue practicing core testing mindset principles.';
     }
 
     async endGame(failed = false) {
@@ -1223,7 +1223,7 @@ export class ReportsQuiz extends BaseQuiz {
         }
 
         document.getElementById('final-score').textContent = `Final Score: ${finalScore}/${this.maxXP}`;
-
+        
         // Update the quiz complete header based on status
         const quizCompleteHeader = document.querySelector('#end-screen h2');
         if (quizCompleteHeader) {
@@ -1280,10 +1280,3 @@ export class ReportsQuiz extends BaseQuiz {
 
         this.generateRecommendations();
     }
-}
-
-// Start the quiz when the page loads
-document.addEventListener('DOMContentLoaded', () => {
-    const quiz = new ReportsQuiz();
-    quiz.startGame();
-}); 

@@ -959,33 +959,8 @@ export class TesterMindsetQuiz extends BaseQuiz {
                 );
             }
 
-            // Show outcome screen
-            if (this.gameScreen && this.outcomeScreen) {
-                this.gameScreen.classList.add('hidden');
-                this.outcomeScreen.classList.remove('hidden');
-            }
-            
-            // Update outcome display
-            const correctAnswer = scenario.options.reduce((prev, current) => 
-                (prev.experience > current.experience) ? prev : current
-            );
-
-            let outcomeText = selectedAnswer.outcome;
-            document.getElementById('outcome-text').textContent = outcomeText;
-            
-            const xpText = selectedAnswer.experience >= 0 ? 
-                `Experience gained: +${selectedAnswer.experience}` : 
-                `Experience: ${selectedAnswer.experience}`;
-            document.getElementById('xp-gained').textContent = xpText;
-            
-            if (selectedAnswer.tool) {
-                document.getElementById('tool-gained').textContent = `Tool acquired: ${selectedAnswer.tool}`;
-                if (!this.player.tools.includes(selectedAnswer.tool)) {
-                    this.player.tools.push(selectedAnswer.tool);
-                }
-            } else {
-                document.getElementById('tool-gained').textContent = '';
-            }
+            // Show outcome screen and update display with answer outcome
+            BaseQuiz.prototype.displayOutcome.call(this, selectedAnswer);
 
             this.updateProgress();
         } catch (error) {
@@ -1304,6 +1279,27 @@ export class TesterMindsetQuiz extends BaseQuiz {
         }
 
         this.generateRecommendations();
+    }
+
+    displayOutcome(selectedAnswer) {
+        // Show outcome screen and update display with answer outcome
+        this.gameScreen.classList.add('hidden');
+        this.outcomeScreen.classList.remove('hidden');
+        
+        let outcomeText = selectedAnswer.outcome;
+        document.getElementById('outcome-text').textContent = outcomeText;
+        
+        // Remove XP display - no longer showing experience points
+        document.getElementById('xp-gained').textContent = '';
+        
+        if (selectedAnswer.tool) {
+            document.getElementById('tool-gained').textContent = `Tool acquired: ${selectedAnswer.tool}`;
+            if (!this.player.tools.includes(selectedAnswer.tool)) {
+                this.player.tools.push(selectedAnswer.tool);
+            }
+        } else {
+            document.getElementById('tool-gained').textContent = '';
+        }
     }
 }
 
