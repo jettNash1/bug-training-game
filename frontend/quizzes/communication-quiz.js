@@ -854,81 +854,27 @@ export class CommunicationQuiz extends BaseQuiz {
     }
 
     updateProgress() {
-        // Create or update progress container
-        let progressContainer = document.getElementById('progress-container');
-        
         // Get current level and question count
         const currentLevel = this.getCurrentLevel();
         const totalAnswered = this.player.questionHistory.length;
         const questionNumber = totalAnswered + 1;
         
-        // Add the level and question information directly to the page header
-        // Find or create the header progress elements
-        let levelElement = document.querySelector('.quiz-header-progress');
-        if (!levelElement) {
-            levelElement = document.createElement('div');
-            levelElement.className = 'quiz-header-progress';
-            
-            // Insert it in the appropriate location
-            const headerElement = document.querySelector('.quiz-header');
-            if (headerElement) {
-                // Insert after the back link
-                const backLink = headerElement.querySelector('.back-link');
-                if (backLink && backLink.nextSibling) {
-                    headerElement.insertBefore(levelElement, backLink.nextSibling);
-                } else {
-                    headerElement.appendChild(levelElement);
-                }
-            } else {
-                // Alternative - insert at the top of the quiz-card
-                const quizCard = document.querySelector('.quiz-card:not(.hidden)');
-                if (quizCard) {
-                    quizCard.insertBefore(levelElement, quizCard.firstChild);
-                }
-            }
+        // Update the existing progress card elements
+        const levelInfoElement = document.querySelector('.level-info');
+        const questionInfoElement = document.querySelector('.question-info');
+        
+        if (levelInfoElement) {
+            levelInfoElement.textContent = `Level: ${currentLevel}`;
         }
         
-        // Update content
-        levelElement.innerHTML = `
-            <div class="quiz-progress-card">
-                <div class="level-info">Level: ${currentLevel}</div>
-                <div class="question-info">Question: ${questionNumber}/15</div>
-            </div>
-        `;
+        if (questionInfoElement) {
+            questionInfoElement.textContent = `Question: ${questionNumber}/15`;
+        }
         
-        // Add styles specifically for the header progress card
-        const style = document.createElement('style');
-        if (!document.getElementById('progress-styles')) {
-            style.id = 'progress-styles';
-            style.textContent = `
-                .quiz-header-progress {
-                    position: absolute;
-                    top: 15px;
-                    right: 15px;
-                    z-index: 10;
-                }
-                .quiz-progress-card {
-                    background-color: white;
-                    border-radius: 8px;
-                    padding: 12px 18px;
-                    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
-                    display: flex;
-                    flex-direction: column;
-                    text-align: right;
-                    min-width: 150px;
-                }
-                .level-info {
-                    font-weight: 500;
-                    color: #333;
-                    font-size: 14px;
-                    margin-bottom: 5px;
-                }
-                .question-info {
-                    color: #666;
-                    font-size: 14px;
-                }
-            `;
-            document.head.appendChild(style);
+        // Ensure the card is visible
+        const progressCard = document.querySelector('.quiz-header-progress');
+        if (progressCard) {
+            progressCard.style.display = 'block';
         }
         
         // Update legacy progress elements if they exist
