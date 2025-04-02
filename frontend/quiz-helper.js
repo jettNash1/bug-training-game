@@ -132,35 +132,12 @@ export class BaseQuiz {
 
     async initializeTimerSettings() {
         try {
-            // Wait for timer settings to be loaded before proceeding
-            await this.loadTimerSettings();
-            console.log('Timer settings initialized:', this.timePerQuestion / 1000, 'seconds');
+            // Set a default timer value (30 seconds)
+            this.timePerQuestion = 30;
+            console.log('[Quiz] Using default timer value:', this.timePerQuestion);
         } catch (error) {
-            console.error('Failed to initialize timer settings:', error);
-            // Set default values only if loading fails
-            this.timePerQuestion = 60000; // Default 60 seconds
-            this.remainingTime = this.timePerQuestion;
-        }
-    }
-
-    async loadTimerSettings() {
-        try {
-            // Get quiz-specific timer value
-            const timerValue = await this.apiService.getQuizTimerValue(this.quizName);
-            console.log('Loaded timer value for quiz:', this.quizName, timerValue, 'seconds');
-            
-            // Convert to milliseconds and update timer settings
-            this.timePerQuestion = timerValue * 1000;
-            this.remainingTime = this.timePerQuestion;
-            
-            // Update timer display if it exists
-            const timerContainer = document.getElementById('timer-container');
-            if (timerContainer) {
-                this.updateTimerDisplay();
-            }
-        } catch (error) {
-            console.error('Failed to load timer settings:', error);
-            throw error; // Let the caller handle the error
+            console.warn('Failed to load timer settings, using default value:', error);
+            this.timePerQuestion = 30;
         }
     }
 
@@ -402,58 +379,40 @@ export class BaseQuiz {
         this.showQuestion();
     }
 
-    async initializeTimer() {
-        // If timer is disabled (value is 0), don't create timer UI
-        if (this.timePerQuestion === 0) {
-            // Clear any existing timer if it exists
-            if (this.questionTimer) {
-                clearInterval(this.questionTimer);
-                this.questionTimer = null;
-            }
-            
-            // Remove timer container if it exists
-            const existingTimer = document.getElementById('timer-container');
-            if (existingTimer) {
-                existingTimer.remove();
-            }
-            
-            return;
-        }
-    
-        // Create timer UI if it doesn't exist
-        let timerContainer = document.getElementById('timer-container');
-        if (!timerContainer) {
-            timerContainer = document.createElement('div');
-            timerContainer.id = 'timer-container';
-            timerContainer.setAttribute('role', 'timer');
-            timerContainer.setAttribute('aria-label', 'Question timer');
-            this.gameScreen.insertBefore(timerContainer, this.gameScreen.firstChild);
-        }
-
-        // Ensure timer value is up to date by checking API
-        try {
-            const timerValue = await this.apiService.getQuizTimerValue(this.quizName);
-            this.timePerQuestion = timerValue * 1000; // convert to milliseconds
-        } catch (error) {
-            console.error('Failed to refresh timer settings:', error);
-            // Keep using current timer value if API call fails
-        }
-
-        // Reset and start timer
-        this.remainingTime = this.timePerQuestion;
-        this.updateTimerDisplay();
-        
+    initializeTimer() {
         // Clear any existing timer
         if (this.questionTimer) {
             clearInterval(this.questionTimer);
         }
 
-        // Start new timer
-        this.questionTimer = setInterval(() => {
-            this.remainingTime -= 1000;
-            this.updateTimerDisplay();
+        // Set default timer value (30 seconds) if not set
+        if (!this.timePerQuestion) {
+            this.timePerQuestion = 30;
+            console.log('[Quiz] Using default timer value:', this.timePerQuestion);
+        }
 
+        // Reset remaining time
+        this.remainingTime = this.timePerQuestion;
+        this.questionStartTime = Date.now();
+
+        // Update timer display
+        const timerDisplay = document.getElementById('timer-display');
+        if (timerDisplay) {
+            timerDisplay.textContent = `Time remaining: ${this.remainingTime}s`;
+        }
+
+        // Start the countdown
+        this.questionTimer = setInterval(() => {
+            this.remainingTime--;
+            
+            // Update timer display
+            if (timerDisplay) {
+                timerDisplay.textContent = `Time remaining: ${this.remainingTime}s`;
+            }
+
+            // Check if time is up
             if (this.remainingTime <= 0) {
+                clearInterval(this.questionTimer);
                 this.handleTimeUp();
             }
         }, 1000);

@@ -532,31 +532,21 @@ export class CommunicationQuiz extends BaseQuiz {
         // First determine the status based on clear conditions
         let status = 'in-progress';
         
-        // Check for completion (all 15 questions answered)
-        if (this.player.questionHistory.length >= 15) {
-            // Check if they met the advanced XP requirement
-            if (this.player.experience >= this.levelThresholds.advanced.minXP) {
-                status = 'completed';
-            } else {
-                status = 'failed';
-            }
-        } 
-        // Check for early failure conditions
-        else if (
-            (this.player.questionHistory.length >= 10 && this.player.experience < this.levelThresholds.intermediate.minXP) ||
-            (this.player.questionHistory.length >= 5 && this.player.experience < this.levelThresholds.basic.minXP)
-        ) {
-            status = 'failed';
+        // Check for completion (all questions answered)
+        if (this.player.questionHistory.length >= this.totalQuestions) {
+            const scorePercentage = this.calculateScore();
+            status = scorePercentage >= this.passPercentage ? 'completed' : 'failed';
         }
 
         const progress = {
             data: {
-                experience: this.player.experience,
-                tools: this.player.tools,
-                currentScenario: this.player.currentScenario,
-                questionHistory: this.player.questionHistory,
+                experience: this.player.experience || 0,
+                tools: this.player.tools || [],
+                currentScenario: this.player.currentScenario || 0,
+                questionHistory: this.player.questionHistory || [],
                 lastUpdated: new Date().toISOString(),
                 questionsAnswered: this.player.questionHistory.length,
+                scorePercentage: this.calculateScore(),
                 status: status
             }
         };
@@ -866,30 +856,32 @@ export class CommunicationQuiz extends BaseQuiz {
             const selectedOption = document.querySelector('input[name="option"]:checked');
             if (!selectedOption) return;
 
-            const currentScenarios = this.getCurrentScenarios();
-            const scenario = currentScenarios[this.player.currentScenario];
-            const originalIndex = parseInt(selectedOption.value);
+            // Get the current scenario based on question count
+            const questionCount = this.player.questionHistory.length;
+            let scenario;
             
+            if (questionCount < 5) {
+                scenario = this.basicScenarios[questionCount];
+            } else if (questionCount < 10) {
+                scenario = this.intermediateScenarios[questionCount - 5];
+            } else if (questionCount < 15) {
+                scenario = this.advancedScenarios[questionCount - 10];
+            }
+
+            if (!scenario) {
+                console.error('No scenario found for question count:', questionCount);
+                return;
+            }
+
+            const originalIndex = parseInt(selectedOption.value);
             const selectedAnswer = scenario.options[originalIndex];
 
-            // Calculate new experience with level-based minimum thresholds
-            let newExperience = this.player.experience + selectedAnswer.experience;
+            // Update player experience
+            this.player.experience = Math.max(0, Math.min(this.maxXP, this.player.experience + selectedAnswer.experience));
             
             // Calculate time spent on this question
             const timeSpent = this.questionStartTime ? Date.now() - this.questionStartTime : null;
 
-            // Apply minimum thresholds based on current level
-            const questionCount = this.player.questionHistory.length;
-            if (questionCount >= 5) { // Intermediate level
-                newExperience = Math.max(this.levelThresholds.basic.minXP, newExperience);
-            }
-            if (questionCount >= 10) { // Advanced level
-                newExperience = Math.max(this.levelThresholds.intermediate.minXP, newExperience);
-            }
-
-            // Update player experience with bounds
-            this.player.experience = Math.max(0, Math.min(this.maxXP, newExperience));
-            
             // Add status to question history
             this.player.questionHistory.push({
                 scenario: scenario,
@@ -907,7 +899,7 @@ export class CommunicationQuiz extends BaseQuiz {
             await this.saveProgress();
 
             // Calculate the score and experience
-            const totalQuestions = 15;
+            const totalQuestions = this.totalQuestions;
             const completedQuestions = this.player.questionHistory.length;
             const percentComplete = Math.round((completedQuestions / totalQuestions) * 100);
             
