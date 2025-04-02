@@ -1147,13 +1147,8 @@ export class CommunicationQuiz extends BaseQuiz {
         this.outcomeScreen.classList.add('hidden');
         this.endScreen.classList.remove('hidden');
 
-        // Calculate score based on correct answers
-        const totalQuestions = this.player.questionHistory.length;
-        const correctAnswers = this.player.questionHistory.filter(record => 
-            record.selectedAnswer.experience > 0
-        ).length;
-        
-        const scorePercentage = Math.round((correctAnswers / totalQuestions) * 100);
+        // Calculate score based on experience points instead of correct answers count
+        const scorePercentage = Math.round((this.player.experience / this.maxXP) * 100);
         const passed = scorePercentage >= this.passPercentage;
 
         // Save the final quiz result with pass/fail status

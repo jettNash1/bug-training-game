@@ -1113,12 +1113,8 @@ export class BaseQuiz {
     }
 
     async endGame() {
-        // Calculate final score percentage
-        const totalQuestions = this.totalQuestions;
-        const correctAnswers = this.player.questionHistory.filter(q => 
-            q.selectedAnswer && q.selectedAnswer.experience > 0
-        ).length;
-        const scorePercentage = Math.round((correctAnswers / totalQuestions) * 100);
+        // Calculate final score percentage using experience points instead of correct answers count
+        const scorePercentage = Math.round((this.player.experience / this.maxXP) * 100);
         
         // Determine status based on score percentage
         const status = scorePercentage >= this.passPercentage ? 'completed' : 'failed';
@@ -1126,7 +1122,7 @@ export class BaseQuiz {
         // Create the final progress object
         const progress = {
             experience: this.player.experience,
-            questionsAnswered: totalQuestions,
+            questionsAnswered: this.totalQuestions || 15, // Default to 15 if totalQuestions is not defined
             questionHistory: this.player.questionHistory,
             status: status,
             scorePercentage: scorePercentage,
