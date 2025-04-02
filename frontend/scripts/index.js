@@ -174,13 +174,17 @@ class IndexPage {
                     }
 
                     const progress = savedProgress.data;
+                    
+                    // Ensure we have all required fields with proper defaults
                     return {
                         quizName: quizId,
                         score: progress.scorePercentage || 0,
                         questionsAnswered: progress.questionsAnswered || 0,
                         status: progress.status || 'not-started',
                         scorePercentage: progress.scorePercentage || 0,
-                        experience: progress.experience || 0
+                        experience: progress.experience || 0,
+                        tools: progress.tools || [],
+                        questionHistory: progress.questionHistory || []
                     };
                 } catch (error) {
                     console.error(`Error loading progress for quiz ${quizId}:`, error);
@@ -226,9 +230,9 @@ class IndexPage {
                 return;
             }
             
-            console.log(`Quiz ${quizId}: status=${quizScore.status}, questions=${quizScore.questionsAnswered}, scorePercentage=${quizScore.scorePercentage}`);
+            console.log(`Quiz ${quizId}: status=${quizScore.status}, questions=${quizScore.questionsAnswered}, scorePercentage=${quizScore.scorePercentage}, experience=${quizScore.experience}`);
             
-            // Get the score percentage, defaulting to 0 if not available
+            // Get the score percentage from the API response data
             const scorePercentage = quizScore.scorePercentage || 0;
 
             if (quizScore.locked) {
@@ -237,7 +241,7 @@ class IndexPage {
                 progressElement.setAttribute('style', 'display: none !important;');
             } else if (quizScore.status === 'failed') {
                 // Failed state - Light pink/salmon with thicker, darker border
-                item.setAttribute('style', 'background-color: #FFCCCB !important; border: 2px solid #FFB6B6 !important; color: #000000 !important; pointer-events: none !important; border-radius: 12px !important;');
+                item.setAttribute('style', 'background-color: #FFCCCB !important; border: 2px solid #FFB6B6 !important; color: #000000 !important; border-radius: 12px !important;');
                 progressElement.setAttribute('style', 'background-color: #FFCCCB !important; color: #000000 !important; display: block !important;');
                 progressElement.textContent = `${scorePercentage}%`;
             } else if (quizScore.questionsAnswered === 15) {
