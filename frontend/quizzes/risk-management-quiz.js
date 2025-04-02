@@ -1010,32 +1010,45 @@ export class RiskManagementQuiz extends BaseQuiz {
     }
 
     updateProgress() {
-        // Update experience display
-        const experienceDisplay = document.getElementById('experience-display');
-        if (experienceDisplay) {
-            experienceDisplay.textContent = `XP: ${this.player.experience}/${this.maxXP}`;
+        // Get current level and question count
+        const currentLevel = this.getCurrentLevel();
+        const totalAnswered = this.player.questionHistory.length;
+        const questionNumber = totalAnswered + 1;
+        
+        // Update the existing progress card elements
+        const levelInfoElement = document.querySelector('.level-info');
+        const questionInfoElement = document.querySelector('.question-info');
+        
+        if (levelInfoElement) {
+            levelInfoElement.textContent = `Level: ${currentLevel}`;
         }
-
-        // Update question progress
+        
+        if (questionInfoElement) {
+            questionInfoElement.textContent = `Question: ${questionNumber}/15`;
+        }
+        
+        // Ensure the card is visible
+        const progressCard = document.querySelector('.quiz-header-progress');
+        if (progressCard) {
+            progressCard.style.display = 'block';
+        }
+        
+        // Update legacy progress elements if they exist
+        const levelIndicator = document.getElementById('level-indicator');
         const questionProgress = document.getElementById('question-progress');
         const progressFill = document.getElementById('progress-fill');
-        if (questionProgress && progressFill) {
-            const totalQuestions = 15;
-            const completedQuestions = Math.min(this.player.questionHistory.length, totalQuestions);
-            
-            // Use stored question number for consistency
-            questionProgress.textContent = `Question: ${this.currentQuestionNumber || completedQuestions}/15`;
-            
-            // Update progress bar
-            const progressPercentage = (completedQuestions / totalQuestions) * 100;
-            progressFill.style.width = `${progressPercentage}%`;
-        }
-
-        // Update level indicator
-        const levelIndicator = document.getElementById('level-indicator');
+        
         if (levelIndicator) {
-            const currentLevel = this.getCurrentLevel();
             levelIndicator.textContent = `Level: ${currentLevel}`;
+        }
+        
+        if (questionProgress) {
+            questionProgress.textContent = `Question: ${questionNumber}/${this.totalQuestions || 15}`;
+        }
+        
+        if (progressFill) {
+            const progressPercentage = (totalAnswered / (this.totalQuestions || 15)) * 100;
+            progressFill.style.width = `${progressPercentage}%`;
         }
     }
 
@@ -1197,6 +1210,12 @@ export class RiskManagementQuiz extends BaseQuiz {
         this.gameScreen.classList.add('hidden');
         this.outcomeScreen.classList.add('hidden');
         this.endScreen.classList.remove('hidden');
+
+        // Hide the progress card on the end screen
+        const progressCard = document.querySelector('.quiz-header-progress');
+        if (progressCard) {
+            progressCard.style.display = 'none';
+        }
 
         const finalScore = Math.min(this.player.experience, this.maxXP);
         const scorePercentage = Math.round((finalScore / this.maxXP) * 100);
