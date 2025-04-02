@@ -389,13 +389,11 @@ export class APIService {
     async getQuizProgress(quizName) {
         try {
             console.log(`[API] Getting progress for quiz: ${quizName}`);
-            
             const response = await this.fetchWithAuth(`${this.baseUrl}/users/quiz-progress/${quizName}`);
             console.log(`[API] Raw quiz progress response:`, response);
-            
-            // If no data found, return default structure
-            if (!response || !response.data) {
-                console.log(`[API] No progress found for quiz ${quizName}, returning default`);
+
+            if (!response.success || !response.data) {
+                console.log(`[API] No progress found for quiz ${quizName}, returning default values`);
                 return {
                     success: true,
                     data: {
@@ -409,8 +407,8 @@ export class APIService {
                 };
             }
 
-            // Ensure all required fields are present
-            const progress = {
+            // Ensure we have all required fields
+            const progressData = {
                 ...response.data,
                 experience: response.data.experience || 0,
                 questionsAnswered: response.data.questionsAnswered || 0,
@@ -420,15 +418,16 @@ export class APIService {
                 questionHistory: response.data.questionHistory || []
             };
 
+            console.log(`[API] Processed progress data for ${quizName}:`, progressData);
             return {
                 success: true,
-                data: progress
+                data: progressData
             };
         } catch (error) {
-            console.error(`[API] Error getting quiz progress for ${quizName}:`, error);
+            console.error(`[API] Error getting quiz progress:`, error);
             return {
                 success: false,
-                error: error.message,
+                message: error.message,
                 data: {
                     experience: 0,
                     questionsAnswered: 0,

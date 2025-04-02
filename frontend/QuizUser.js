@@ -231,71 +231,36 @@ export class QuizUser {
         }
     }
 
-    async updateQuizScore(quizName, score, experience = 0, tools = [], questionHistory = [], questionsAnswered = null) {
+    async updateQuizScore(quizName, scorePercentage, experience = 0, tools = [], questionHistory = [], questionsAnswered = 0, status = 'completed') {
         try {
-            if (!this.api) {
-                throw new Error('API service not initialized');
-            }
-            
-            // Get the current quiz progress to include question history
-            const progress = await this.getQuizProgress(quizName);
-            
-            // Create the quiz data with all necessary fields
-            const quizData = {
-                quizName,
-                score: Math.round(score),
-                experience: Math.round(experience || score),
-                tools: tools || [],
-                questionHistory: questionHistory || [],
-                questionsAnswered: questionsAnswered !== null ? questionsAnswered : (questionHistory ? questionHistory.length : 0),
-                completedAt: new Date().toISOString()
+            console.log(`[QuizUser] Updating quiz score for ${quizName}:`, {
+                scorePercentage,
+                experience,
+                questionsAnswered,
+                status
+            });
+
+            // Save progress to API
+            const progress = {
+                experience: experience,
+                questionsAnswered: questionsAnswered,
+                status: status,
+                scorePercentage: scorePercentage,
+                tools: tools,
+                questionHistory: questionHistory,
+                lastUpdated: new Date().toISOString()
             };
 
-            // Use the apiService to save quiz results
-            try {
-                // Save to server using the appropriate API method
-                const response = await this.api.fetchWithAuth(`${config.apiUrl}/users/quiz-results`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify(quizData)
-                });
-                
-                // Process response (fetchWithAuth now returns parsed JSON directly)
-                const data = response; // No need to call response.json() anymore
-                if (data.success) {
-                    this.quizResults = data.data;
-                    
-                    // Also update the quiz progress
-                    const progressData = {
-                        experience: quizData.experience,
-                        tools: quizData.tools,
-                        questionHistory: quizData.questionHistory,
-                        questionsAnswered: quizData.questionsAnswered,
-                        currentScenario: quizData.questionsAnswered % 5, // Keep track of position within current level
-                        lastUpdated: quizData.completedAt
-                    };
-                    
-                    // Save progress using the API service
-                    await this.api.saveQuizProgress(quizName, progressData);
-                    return true;
-                }
-                
-                // If we get here, saving failed
-                console.warn('Failed to save quiz result to server. Success = false');
-                return false;
-            } catch (apiError) {
-                console.error('API error when saving quiz result:', apiError);
-                
-                // Fall back to local storage
-                this.saveToLocalStorage(quizData);
-                
-                // Still return false to indicate API save failed
-                return false;
+            const result = await this.api.saveQuizProgress(quizName, progress);
+            
+            if (!result.success) {
+                throw new Error(result.message || 'Failed to save quiz progress');
             }
+
+            console.log(`[QuizUser] Successfully updated quiz score for ${quizName}`);
+            return true;
         } catch (error) {
-            console.error('Failed to save quiz result:', error);
+            console.error(`[QuizUser] Error updating quiz score:`, error);
             return false;
         }
     }
