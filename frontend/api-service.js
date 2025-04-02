@@ -382,65 +382,49 @@ export class APIService {
 
     async getQuizProgress(quizName) {
         try {
-            const data = await this.fetchWithAuth(`${this.baseUrl}/users/quiz-progress/${quizName}`);
-            
-            // If data is missing status, determine it based on the progress
-            if (data && data.data && !data.data.status) {
-                const progress = data.data;
-                if (progress.questionsAnswered >= 15) {
-                    progress.status = progress.experience >= 300 ? 'completed' : 'failed';
-                } else if (progress.questionsAnswered >= 10 && progress.experience < 150) {
-                    progress.status = 'failed';
-                } else if (progress.questionsAnswered >= 5 && progress.experience < 50) {
-                    progress.status = 'failed';
-                } else if (progress.questionsAnswered > 0) {
-                    progress.status = 'in-progress';
-                }
+            const response = await this.fetchWithAuth(`${this.getApiBaseUrl()}/quiz-progress/${quizName}`);
+            if (!response.ok) {
+                throw new Error(`Failed to get quiz progress: ${response.statusText}`);
             }
-            
-            console.log('Quiz progress received from API:', { quizName, data });
+
+            const data = await response.json();
+            console.log(`Retrieved progress for quiz ${quizName}:`, data);
             return data;
         } catch (error) {
-            console.error('Failed to get quiz progress:', error);
-            return null;
+            console.error('Error getting quiz progress:', error);
+            throw error;
         }
     }
 
     async saveQuizProgress(quizName, progress) {
         try {
-            // Ensure status is set before saving
-            if (!progress.status) {
-                if (progress.questionsAnswered >= 15) {
-                    progress.status = progress.experience >= 300 ? 'completed' : 'failed';
-                } else if (progress.questionsAnswered >= 10 && progress.experience < 150) {
-                    progress.status = 'failed';
-                } else if (progress.questionsAnswered >= 5 && progress.experience < 50) {
-                    progress.status = 'failed';
-                } else if (progress.questionsAnswered > 0) {
-                    progress.status = 'in-progress';
-                }
-            }
-
-            console.log('Saving quiz progress to API:', { quizName, progress });
-            const data = await this.fetchWithAuth(`${this.baseUrl}/users/quiz-progress`, {
+            console.log(`Saving progress for quiz ${quizName}:`, progress);
+            
+            const response = await this.fetchWithAuth(`${this.getApiBaseUrl()}/quiz-progress/${quizName}`, {
                 method: 'POST',
                 headers: {
-                    'Content-Type': 'application/json'
+                    'Content-Type': 'application/json',
                 },
-                body: JSON.stringify({ 
-                    quizName, 
+                body: JSON.stringify({
+                    quizName: quizName,
                     progress: {
                         ...progress,
-                        status: progress.status // Ensure status is included
+                        scorePercentage: progress.scorePercentage || 0,
+                        lastUpdated: new Date().toISOString()
                     }
                 })
             });
 
-            console.log('Quiz progress saved successfully:', { quizName, data });
+            if (!response.ok) {
+                throw new Error(`Failed to save quiz progress: ${response.statusText}`);
+            }
+
+            const data = await response.json();
+            console.log('Progress save response:', data);
             return data;
         } catch (error) {
-            console.error('Failed to save quiz progress:', error);
-            return null;
+            console.error('Error saving quiz progress:', error);
+            throw error;
         }
     }
 

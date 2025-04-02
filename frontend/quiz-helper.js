@@ -1115,6 +1115,54 @@ export class BaseQuiz {
             message: "Guide buttons only appear on the index page"
         };
     }
+
+    async endGame() {
+        // Calculate final score percentage
+        const totalQuestions = this.totalQuestions;
+        const correctAnswers = this.player.questionHistory.filter(q => 
+            q.selectedAnswer && q.selectedAnswer.experience > 0
+        ).length;
+        const scorePercentage = Math.round((correctAnswers / totalQuestions) * 100);
+        
+        // Determine status based on score percentage
+        const status = scorePercentage >= this.passPercentage ? 'completed' : 'failed';
+        
+        // Create the final progress object
+        const progress = {
+            experience: this.player.experience,
+            questionsAnswered: totalQuestions,
+            questionHistory: this.player.questionHistory,
+            status: status,
+            scorePercentage: scorePercentage,
+            lastUpdated: new Date().toISOString()
+        };
+
+        try {
+            // Save progress to API
+            const username = localStorage.getItem('username');
+            if (!username) {
+                throw new Error('No username found');
+            }
+
+            // Save to API
+            await this.apiService.saveQuizProgress(this.quizName, progress);
+            console.log('Final progress saved:', progress);
+
+            // Update quiz score in user's record
+            const quizUser = new QuizUser(username);
+            await quizUser.updateQuizScore(this.quizName, scorePercentage);
+            console.log('Quiz score updated:', scorePercentage);
+
+            // Clear local storage for this quiz
+            this.clearQuizLocalStorage(username, this.quizName);
+
+            // Redirect to home page
+            window.location.href = '/';
+        } catch (error) {
+            console.error('Failed to save final progress:', error);
+            throw error;
+        }
+    }
 }
 
 // Self-executing function to initialize guide buttons

@@ -233,7 +233,7 @@ class IndexPage {
                 return;
             }
             
-            console.log(`Quiz ${quizId}: status=${quizScore.status}, questions=${quizScore.questionsAnswered}, score=${quizScore.score}, scorePercentage=${quizScore.scorePercentage}`);
+            console.log(`Quiz ${quizId}: status=${quizScore.status}, questions=${quizScore.questionsAnswered}, scorePercentage=${quizScore.scorePercentage}`);
             
             // Get the score percentage, defaulting to 0 if not available
             const scorePercentage = quizScore.scorePercentage || 0;
@@ -245,10 +245,10 @@ class IndexPage {
             } else if (quizScore.status === 'failed') {
                 // Failed state - Light pink/salmon with thicker, darker border
                 item.setAttribute('style', 'background-color: #FFCCCB !important; border: 2px solid #FFB6B6 !important; color: #000000 !important; pointer-events: none !important; border-radius: 12px !important;');
-                item.setAttribute('aria-disabled', 'true');
                 progressElement.setAttribute('style', 'background-color: #FFCCCB !important; color: #000000 !important; display: block !important;');
                 progressElement.textContent = `${scorePercentage}%`;
             } else if (quizScore.questionsAnswered === 15) {
+                // Completed quiz - color based on score percentage
                 if (scorePercentage >= 70) {
                     // >=70% - Light Green with thicker, darker border
                     item.setAttribute('style', 'background-color: #90EE90 !important; border: 2px solid #70CF70 !important; color: #000000 !important; border-radius: 12px !important;');
