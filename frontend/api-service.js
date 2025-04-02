@@ -383,10 +383,15 @@ export class APIService {
     async getQuizProgress(quizName) {
         try {
             const response = await this.fetchWithAuth(`${this.baseUrl}/users/quiz-progress/${quizName}`);
-            console.log(`Raw quiz progress response for ${quizName}:`, response);
             
-            if (!response || !response.data) {
-                console.log(`No progress data found for quiz ${quizName}`);
+            if (!response.ok) {
+                throw new Error(`Failed to get quiz progress: ${response.statusText}`);
+            }
+
+            const data = await response.json();
+            console.log(`Retrieved progress for quiz ${quizName}:`, data);
+
+            if (!data || !data.data) {
                 return {
                     success: true,
                     data: {
@@ -398,17 +403,11 @@ export class APIService {
                 };
             }
 
-            // Ensure the response has the correct structure
-            const progress = response.data;
             return {
                 success: true,
                 data: {
-                    experience: progress.experience || 0,
-                    questionsAnswered: progress.questionsAnswered || 0,
-                    status: progress.status || 'not-started',
-                    scorePercentage: progress.scorePercentage || 0,
-                    tools: progress.tools || [],
-                    questionHistory: progress.questionHistory || []
+                    ...data.data,
+                    scorePercentage: data.data.scorePercentage || 0
                 }
             };
         } catch (error) {
@@ -424,7 +423,7 @@ export class APIService {
         try {
             console.log(`Saving progress for quiz ${quizName}:`, progress);
             
-            const response = await this.fetchWithAuth(`${this.baseUrl}/quiz-progress/${quizName}`, {
+            const response = await this.fetchWithAuth(`${this.baseUrl}/users/quiz-progress`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -434,6 +433,7 @@ export class APIService {
                     progress: {
                         ...progress,
                         scorePercentage: progress.scorePercentage || 0,
+                        status: progress.status || 'in-progress',
                         lastUpdated: new Date().toISOString()
                     }
                 })

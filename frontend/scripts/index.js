@@ -206,7 +206,7 @@ class IndexPage {
         }
     }
 
-    updateQuizProgress() {
+    async updateQuizProgress() {
         if (!this.quizScores) return;
         
         console.log("All quiz scores:", JSON.stringify(this.quizScores, null, 2));
