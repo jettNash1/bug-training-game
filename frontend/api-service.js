@@ -382,38 +382,57 @@ export class APIService {
 
     async getQuizProgress(quizName) {
         try {
-            const response = await this.fetchWithAuth(`${this.baseUrl}/users/quiz-progress/${quizName}`);
+            console.log(`[API] Getting progress for quiz: ${quizName}`);
             
-            if (!response.ok) {
-                throw new Error(`Failed to get quiz progress: ${response.statusText}`);
-            }
-
+            const response = await this.fetchWithAuth(`${this.baseUrl}/users/quiz-progress/${quizName}`);
             const data = await response.json();
-            console.log(`Retrieved progress for quiz ${quizName}:`, data);
-
+            
+            console.log(`[API] Raw quiz progress response:`, data);
+            
+            // If no data found, return default structure
             if (!data || !data.data) {
+                console.log(`[API] No progress found for quiz ${quizName}, returning default`);
                 return {
                     success: true,
                     data: {
                         experience: 0,
                         questionsAnswered: 0,
                         status: 'not-started',
-                        scorePercentage: 0
+                        scorePercentage: 0,
+                        tools: [],
+                        questionHistory: []
                     }
                 };
             }
 
+            // Ensure all required fields are present
+            const progress = {
+                ...data.data,
+                experience: data.data.experience || 0,
+                questionsAnswered: data.data.questionsAnswered || 0,
+                status: data.data.status || 'not-started',
+                scorePercentage: data.data.scorePercentage || 0,
+                tools: data.data.tools || [],
+                questionHistory: data.data.questionHistory || []
+            };
+
             return {
                 success: true,
-                data: {
-                    ...data.data,
-                    scorePercentage: data.data.scorePercentage || 0
-                }
+                data: progress
             };
         } catch (error) {
-            console.error('Error getting quiz progress:', error);
+            console.error(`[API] Error getting quiz progress for ${quizName}:`, error);
+            // Return a default structure even in case of error
             return {
                 success: false,
+                data: {
+                    experience: 0,
+                    questionsAnswered: 0,
+                    status: 'not-started',
+                    scorePercentage: 0,
+                    tools: [],
+                    questionHistory: []
+                },
                 error: error.message
             };
         }
@@ -421,8 +440,20 @@ export class APIService {
 
     async saveQuizProgress(quizName, progress) {
         try {
-            console.log(`Saving progress for quiz ${quizName}:`, progress);
+            console.log(`[API] Saving progress for quiz ${quizName}:`, progress);
             
+            // Ensure all required fields are present
+            const progressData = {
+                ...progress,
+                experience: progress.experience || 0,
+                questionsAnswered: progress.questionsAnswered || 0,
+                status: progress.status || 'in-progress',
+                scorePercentage: progress.scorePercentage || 0,
+                tools: progress.tools || [],
+                questionHistory: progress.questionHistory || [],
+                lastUpdated: new Date().toISOString()
+            };
+
             const response = await this.fetchWithAuth(`${this.baseUrl}/users/quiz-progress`, {
                 method: 'POST',
                 headers: {
@@ -430,25 +461,28 @@ export class APIService {
                 },
                 body: JSON.stringify({
                     quizName: quizName,
-                    progress: {
-                        ...progress,
-                        scorePercentage: progress.scorePercentage || 0,
-                        status: progress.status || 'in-progress',
-                        lastUpdated: new Date().toISOString()
-                    }
+                    progress: progressData
                 })
             });
 
-            if (!response.ok) {
-                throw new Error(`Failed to save quiz progress: ${response.statusText}`);
+            const data = await response.json();
+            console.log('[API] Progress save response:', data);
+
+            if (!data.success) {
+                throw new Error(data.message || 'Failed to save quiz progress');
             }
 
-            const data = await response.json();
-            console.log('Progress save response:', data);
-            return data;
+            return {
+                success: true,
+                data: progressData
+            };
         } catch (error) {
-            console.error('Error saving quiz progress:', error);
-            throw error;
+            console.error('[API] Error saving quiz progress:', error);
+            return {
+                success: false,
+                error: error.message,
+                data: progress // Return original progress in case of error
+            };
         }
     }
 
