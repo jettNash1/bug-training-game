@@ -978,17 +978,18 @@ export class CommunicationQuiz extends BaseQuiz {
     }
 
     updateProgress() {
-        // Update experience display
-        const experienceDisplay = document.getElementById('experience-display');
-        if (experienceDisplay) {
-            experienceDisplay.textContent = `XP: ${this.player.experience}/${this.maxXP}`;
+        // Update level indicator
+        const levelIndicator = document.getElementById('level-indicator');
+        if (levelIndicator) {
+            const currentLevel = this.getCurrentLevel();
+            levelIndicator.textContent = `Level: ${currentLevel}`;
         }
 
         // Update question progress
         const questionProgress = document.getElementById('question-progress');
         const progressFill = document.getElementById('progress-fill');
         if (questionProgress && progressFill) {
-            const totalQuestions = 15;
+            const totalQuestions = this.totalQuestions;
             const completedQuestions = Math.min(this.player.questionHistory.length, totalQuestions);
             
             // Use stored question number for consistency
@@ -997,13 +998,6 @@ export class CommunicationQuiz extends BaseQuiz {
             // Update progress bar
             const progressPercentage = (completedQuestions / totalQuestions) * 100;
             progressFill.style.width = `${progressPercentage}%`;
-        }
-
-        // Update level indicator
-        const levelIndicator = document.getElementById('level-indicator');
-        if (levelIndicator) {
-            const currentLevel = this.getCurrentLevel();
-            levelIndicator.textContent = `Level: ${currentLevel}`;
         }
     }
 
