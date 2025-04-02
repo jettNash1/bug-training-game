@@ -690,131 +690,46 @@ export class CommunicationQuiz extends BaseQuiz {
 
     displayScenario() {
         const currentScenarios = this.getCurrentScenarios();
-        
-        // Check if all questions are completed
-        if (this.player.questionHistory.length >= 15) {
-            this.endGame();
-            return;
-        }
-
-        // Get the next scenario based on current progress
-        let scenario;
-        const questionCount = this.player.questionHistory.length;
-        
-        // Reset currentScenario based on the current level
-        if (questionCount < 5) {
-            // Basic questions (0-4)
-            scenario = this.basicScenarios[questionCount];
-            this.player.currentScenario = questionCount;
-        } else if (questionCount < 10) {
-            // Intermediate questions (5-9)
-            scenario = this.intermediateScenarios[questionCount - 5];
-            this.player.currentScenario = questionCount - 5;
-        } else if (questionCount < 15) {
-            // Advanced questions (10-14)
-            scenario = this.advancedScenarios[questionCount - 10];
-            this.player.currentScenario = questionCount - 10;
-        }
+        const scenario = currentScenarios[this.player.currentScenario];
 
         if (!scenario) {
-            console.error('No scenario found for current progress. Question count:', questionCount);
             this.endGame();
             return;
         }
 
-        // Store current question number for consistency
-        this.currentQuestionNumber = questionCount + 1;
-        
-        // Show level transition message at the start of each level or when level changes
-        const currentLevel = this.getCurrentLevel();
-        const previousLevel = questionCount > 0 ? 
-            (questionCount <= 5 ? 'Basic' : 
-             questionCount <= 10 ? 'Intermediate' : 'Advanced') : null;
-            
-        if (questionCount === 0 || 
-            (questionCount === 5 && currentLevel === 'Intermediate') || 
-            (questionCount === 10 && currentLevel === 'Advanced')) {
-            const transitionContainer = document.getElementById('level-transition-container');
-            if (transitionContainer) {
-                transitionContainer.innerHTML = ''; // Clear any existing messages
-                
-                const levelMessage = document.createElement('div');
-                levelMessage.className = 'level-transition';
-                levelMessage.setAttribute('role', 'alert');
-                levelMessage.textContent = `Starting ${currentLevel} Questions`;
-                
-                transitionContainer.appendChild(levelMessage);
-                transitionContainer.classList.add('active');
-                
-                // Update the level indicator
-                const levelIndicator = document.getElementById('level-indicator');
-                if (levelIndicator) {
-                    levelIndicator.textContent = `Level: ${currentLevel}`;
-                }
-                
-                // Remove the message and container height after animation
-                setTimeout(() => {
-                    transitionContainer.classList.remove('active');
-                    setTimeout(() => {
-                        transitionContainer.innerHTML = '';
-                    }, 300); // Wait for height transition to complete
-                }, 3000);
-            }
-        }
-
-        // Update scenario display
+        // Update UI with current scenario
         const titleElement = document.getElementById('scenario-title');
         const descriptionElement = document.getElementById('scenario-description');
         const optionsContainer = document.getElementById('options-container');
 
-        if (!titleElement || !descriptionElement || !optionsContainer) {
-            console.error('Required elements not found');
-            return;
+        if (titleElement) titleElement.textContent = scenario.title;
+        if (descriptionElement) descriptionElement.textContent = scenario.description;
+        if (optionsContainer) {
+            optionsContainer.innerHTML = '';
+            scenario.options.forEach((option, index) => {
+                const optionDiv = document.createElement('div');
+                optionDiv.className = 'option';
+                optionDiv.innerHTML = `
+                    <input type="radio" 
+                        name="option" 
+                        value="${index}" 
+                        id="option${index}"
+                        tabindex="0"
+                        aria-label="${option.text}">
+                    <label for="option${index}">${option.text}</label>
+                `;
+                optionsContainer.appendChild(optionDiv);
+            });
         }
 
-        titleElement.textContent = scenario.title;
-        descriptionElement.textContent = scenario.description;
-
-        // Update question counter immediately
-        const questionProgress = document.getElementById('question-progress');
-        if (questionProgress) {
-            questionProgress.textContent = `Question: ${this.currentQuestionNumber}/15`;
-        }
-
-        // Create a copy of options with their original indices
-        const shuffledOptions = scenario.options.map((option, index) => ({
-            ...option,
-            originalIndex: index
-        }));
-
-        // Shuffle the options
-        for (let i = shuffledOptions.length - 1; i > 0; i--) {
-            const j = Math.floor(Math.random() * (i + 1));
-            [shuffledOptions[i], shuffledOptions[j]] = [shuffledOptions[j], shuffledOptions[i]];
-        }
-
-        optionsContainer.innerHTML = '';
-
-        shuffledOptions.forEach((option, index) => {
-            const optionElement = document.createElement('div');
-            optionElement.className = 'option';
-            optionElement.innerHTML = `
-                <input type="radio" 
-                    name="option" 
-                    value="${option.originalIndex}" 
-                    id="option${index}"
-                    tabindex="0"
-                    aria-label="${option.text}"
-                    role="radio">
-                <label for="option${index}">${option.text}</label>
-            `;
-            optionsContainer.appendChild(optionElement);
-        });
-
-        this.updateProgress();
+        // Record start time for this question
+        this.questionStartTime = Date.now();
 
         // Initialize timer for the new question
         this.initializeTimer();
+
+        // Update progress display including the new progress card
+        this.updateProgress();
     }
 
     async handleAnswer() {
@@ -932,37 +847,80 @@ export class CommunicationQuiz extends BaseQuiz {
     }
 
     updateProgress() {
+        // Create or update progress container
+        let progressContainer = document.getElementById('progress-container');
+        if (!progressContainer) {
+            progressContainer = document.createElement('div');
+            progressContainer.id = 'progress-container';
+            
+            // Insert the progress container at the top of the quiz-card
+            const quizCard = document.querySelector('.quiz-card:not(.hidden)');
+            if (quizCard) {
+                quizCard.insertBefore(progressContainer, quizCard.firstChild);
+            }
+        }
+        
+        // Get current level and question count
+        const currentLevel = this.getCurrentLevel();
+        const totalAnswered = this.player.questionHistory.length;
+        const questionNumber = totalAnswered + 1;
+        
+        // Update the progress container with styled content
+        progressContainer.innerHTML = `
+            <div class="progress-card">
+                <div class="progress-item">
+                    <div>Level: ${currentLevel}</div>
+                </div>
+                <div class="progress-item question-count">
+                    <div>Question: ${questionNumber}/15</div>
+                </div>
+            </div>
+        `;
+        
+        // Add styles to the progress container
+        const style = document.createElement('style');
+        if (!document.getElementById('progress-styles')) {
+            style.id = 'progress-styles';
+            style.textContent = `
+                .progress-card {
+                    background-color: white;
+                    border-radius: 10px;
+                    padding: 12px 16px;
+                    margin-bottom: 20px;
+                    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+                    display: flex;
+                    justify-content: space-between;
+                    font-size: 14px;
+                    line-height: 1.4;
+                    color: #333;
+                }
+                .progress-item {
+                    font-weight: 500;
+                }
+                .question-count {
+                    text-align: right;
+                    color: #666;
+                }
+            `;
+            document.head.appendChild(style);
+        }
+        
+        // Update level indicator and question progress for legacy elements
         const levelIndicator = document.getElementById('level-indicator');
-        const questionCounter = document.getElementById('question-counter');
+        const questionProgress = document.getElementById('question-progress');
+        const progressFill = document.getElementById('progress-fill');
         
         if (levelIndicator) {
-            const currentLevel = this.getCurrentLevel();
             levelIndicator.textContent = `Level: ${currentLevel}`;
-            levelIndicator.style.backgroundColor = '#f0f0f0';
-            levelIndicator.style.padding = '5px 10px';
-            levelIndicator.style.borderRadius = '4px';
-            levelIndicator.style.marginRight = '10px';
-            levelIndicator.style.display = 'inline-block';
         }
-
-        if (questionCounter) {
-            const totalAnswered = this.player.questionHistory.length;
-            questionCounter.textContent = `Question: ${totalAnswered + 1}/${this.totalQuestions}`;
-            questionCounter.style.backgroundColor = '#f0f0f0';
-            questionCounter.style.padding = '5px 10px';
-            questionCounter.style.borderRadius = '4px';
-            questionCounter.style.display = 'inline-block';
+        
+        if (questionProgress) {
+            questionProgress.textContent = `Question: ${questionNumber}/${this.totalQuestions || 15}`;
         }
-
-        // Style the progress container
-        const progressContainer = document.getElementById('progress-container');
-        if (progressContainer) {
-            progressContainer.style.margin = '10px 0';
-            progressContainer.style.textAlign = 'center';
-            progressContainer.style.backgroundColor = '#ffffff';
-            progressContainer.style.padding = '10px';
-            progressContainer.style.borderRadius = '8px';
-            progressContainer.style.boxShadow = '0 2px 4px rgba(0,0,0,0.1)';
+        
+        if (progressFill) {
+            const progressPercentage = (totalAnswered / (this.totalQuestions || 15)) * 100;
+            progressFill.style.width = `${progressPercentage}%`;
         }
     }
 
