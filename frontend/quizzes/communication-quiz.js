@@ -539,16 +539,14 @@ export class CommunicationQuiz extends BaseQuiz {
         }
 
         const progress = {
-            data: {
-                experience: this.player.experience || 0,
-                tools: this.player.tools || [],
-                currentScenario: this.player.currentScenario || 0,
-                questionHistory: this.player.questionHistory || [],
-                lastUpdated: new Date().toISOString(),
-                questionsAnswered: this.player.questionHistory.length,
-                scorePercentage: scorePercentage,
-                status: status
-            }
+            experience: this.player.experience || 0,
+            tools: this.player.tools || [],
+            currentScenario: this.player.currentScenario || 0,
+            questionHistory: this.player.questionHistory || [],
+            lastUpdated: new Date().toISOString(),
+            questionsAnswered: this.player.questionHistory.length,
+            scorePercentage: scorePercentage,
+            status: status
         };
 
         try {
@@ -563,7 +561,7 @@ export class CommunicationQuiz extends BaseQuiz {
             localStorage.setItem(storageKey, JSON.stringify(progress));
             
             console.log('Saving progress with status:', status, 'and score:', scorePercentage);
-            await this.apiService.saveQuizProgress(this.quizName, progress.data);
+            await this.apiService.saveQuizProgress(this.quizName, progress);
         } catch (error) {
             console.error('Failed to save progress:', error);
         }
@@ -1191,7 +1189,9 @@ export class CommunicationQuiz extends BaseQuiz {
                 console.log('Saving final progress to API:', result);
                 await this.apiService.saveQuizProgress(this.quizName, {
                     ...result,
-                    score: scorePercentage  // Include both score and scorePercentage for compatibility
+                    score: scorePercentage,  // Include both score and scorePercentage for compatibility
+                    tools: this.player.tools,
+                    currentScenario: this.player.currentScenario
                 });
             } catch (error) {
                 console.error('Error saving final quiz score:', error);
