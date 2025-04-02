@@ -447,7 +447,6 @@ export class APIService {
             
             // Ensure all required fields are present
             const progressData = {
-                ...progress,
                 experience: progress.experience || 0,
                 questionsAnswered: progress.questionsAnswered || 0,
                 status: progress.status || 'in-progress',
@@ -457,33 +456,31 @@ export class APIService {
                 lastUpdated: new Date().toISOString()
             };
 
-            const response = await this.fetchWithAuth(`${this.baseUrl}/users/quiz-progress`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    quizName: quizName,
-                    progress: progressData
-                })
-            });
+            const response = await this.fetchWithAuth(
+                `${this.baseUrl}/users/quiz-progress/${quizName}`,
+                {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(progressData)
+                }
+            );
 
-            const data = await response.json();
-            console.log('[API] Progress save response:', data);
-
-            if (!data.success) {
-                throw new Error(data.message || 'Failed to save quiz progress');
+            if (!response.success) {
+                throw new Error(response.message || 'Failed to save quiz progress');
             }
 
+            console.log(`[API] Successfully saved progress for quiz ${quizName}`);
             return {
                 success: true,
                 data: progressData
             };
         } catch (error) {
-            console.error('[API] Error saving quiz progress:', error);
+            console.error(`[API] Error saving quiz progress:`, error);
             return {
                 success: false,
-                error: error.message,
+                message: error.message || 'Failed to save quiz progress',
                 data: progress // Return original progress in case of error
             };
         }

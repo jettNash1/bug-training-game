@@ -1156,7 +1156,7 @@ export class CommunicationQuiz extends BaseQuiz {
         ).length;
         
         const scorePercentage = Math.round((correctAnswers / totalQuestions) * 100);
-        const passed = scorePercentage >= 70; // Using 70% as pass threshold
+        const passed = scorePercentage >= this.passPercentage;
 
         // Save the final quiz result with pass/fail status
         const username = localStorage.getItem('username');
@@ -1167,37 +1167,29 @@ export class CommunicationQuiz extends BaseQuiz {
                 console.log('Setting final quiz status:', { status, score: scorePercentage });
                 
                 const result = {
-                    score: scorePercentage,
-                    status: status,
                     experience: this.player.experience,
-                    questionHistory: this.player.questionHistory,
                     questionsAnswered: this.player.questionHistory.length,
-                    lastActive: new Date().toISOString()
+                    questionHistory: this.player.questionHistory,
+                    tools: this.player.tools || [],
+                    status: status,
+                    scorePercentage: scorePercentage,
+                    lastUpdated: new Date().toISOString()
                 };
 
                 // Save to QuizUser
-                user.updateQuizScore(
+                await user.updateQuizScore(
                     this.quizName,
-                    result.score,
+                    scorePercentage,
                     result.experience,
-                    this.player.tools,
+                    result.tools,
                     result.questionHistory,
                     result.questionsAnswered,
                     status
                 );
 
-                // Save to API with proper structure
-                const apiProgress = {
-                    data: {
-                        ...result,
-                        tools: this.player.tools,
-                        currentScenario: this.player.currentScenario
-                    }
-                };
-
-                // Save directly via API to ensure status is updated
-                console.log('Saving final progress to API:', apiProgress);
-                await this.apiService.saveQuizProgress(this.quizName, apiProgress.data);
+                // Save to API
+                console.log('Saving final progress to API:', result);
+                await this.apiService.saveQuizProgress(this.quizName, result);
             } catch (error) {
                 console.error('Error saving final quiz score:', error);
             }
