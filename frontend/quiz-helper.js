@@ -517,51 +517,45 @@ export class BaseQuiz {
     // Default saveProgress method that will be called by handleTimeUp
     // if the quiz implementation doesn't override it
     async saveProgress() {
-        // Determine status based on progress
         let status = 'in-progress';
-        const scorePercentage = this.calculateScore();
+        const totalAnswered = this.player.questionHistory.length;
         
-        // Check for completion (all questions answered)
-        if (this.player.questionHistory.length >= this.totalQuestions) {
-            status = scorePercentage >= this.passPercentage ? 'completed' : 'failed';
+        // Calculate score percentage
+        const correctAnswers = this.player.questionHistory.filter(q => q.wasCorrect).length;
+        const scorePercentage = totalAnswered > 0 ? Math.round((correctAnswers / totalAnswered) * 100) : 0;
+        
+        // Determine status based on completion and score percentage
+        if (totalAnswered >= this.totalQuestions) {
+            status = scorePercentage >= 70 ? 'completed' : 'failed';
         }
 
+        // Create progress object with all necessary data
         const progress = {
-            data: {
-                experience: this.player.experience || 0,
-                tools: this.player.tools || [],
-                currentScenario: this.player.currentScenario || 0,
-                questionHistory: this.player.questionHistory || [],
-                lastUpdated: new Date().toISOString(),
-                questionsAnswered: this.player.questionHistory?.length || 0,
-                scorePercentage: scorePercentage,
-                status: status
-            }
+            experience: this.player.experience,
+            questionsAnswered: totalAnswered,
+            questionHistory: this.player.questionHistory,
+            currentScenario: this.currentScenario,
+            tools: this.player.tools,
+            lastUpdated: new Date().toISOString(),
+            status: status,
+            scorePercentage: scorePercentage
         };
 
-        try {
-            const username = localStorage.getItem('username');
-            if (!username) {
-                console.error('No user found, cannot save progress');
-                return;
+        // Save progress to localStorage
+        localStorage.setItem('quizProgress', JSON.stringify(progress));
+
+        // Save to API if username exists
+        const username = localStorage.getItem('username');
+        if (username) {
+            try {
+                await this.apiService.saveQuizProgress(this.quizName, progress);
+                console.log('Progress saved successfully:', progress);
+            } catch (error) {
+                console.error('Failed to save progress:', error);
             }
-            
-            // Use user-specific key for localStorage
-            const storageKey = `quiz_progress_${username}_${this.quizName}`;
-            localStorage.setItem(storageKey, JSON.stringify(progress));
-            
-            console.log('Saving progress (BaseQuiz) with status:', status, 'scorePercentage:', scorePercentage);
-            
-            // If apiService is available, use it to save progress to the server
-            if (this.apiService && typeof this.apiService.saveQuizProgress === 'function') {
-                await this.apiService.saveQuizProgress(this.quizName, progress.data);
-            } else {
-                console.warn('No apiService available to save progress to server');
-            }
-        } catch (error) {
-            console.error('Failed to save progress in BaseQuiz:', error);
-            throw error;
         }
+
+        return progress;
     }
 
     showQuestion() {

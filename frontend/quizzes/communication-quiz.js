@@ -984,27 +984,26 @@ export class CommunicationQuiz extends BaseQuiz {
         if (levelIndicator) {
             const currentLevel = this.getCurrentLevel();
             levelIndicator.textContent = `Level: ${currentLevel}`;
-            levelIndicator.style.backgroundColor = '#f8f9fa';
+            levelIndicator.style.backgroundColor = '#f0f0f0';
             levelIndicator.style.padding = '5px 10px';
             levelIndicator.style.borderRadius = '4px';
-            levelIndicator.style.marginBottom = '10px';
+            levelIndicator.style.marginRight = '10px';
             levelIndicator.style.display = 'inline-block';
         }
-        
+
         if (questionCounter) {
             const totalAnswered = this.player.questionHistory.length;
             questionCounter.textContent = `Question: ${totalAnswered + 1}/${this.totalQuestions}`;
-            questionCounter.style.backgroundColor = '#f8f9fa';
+            questionCounter.style.backgroundColor = '#f0f0f0';
             questionCounter.style.padding = '5px 10px';
             questionCounter.style.borderRadius = '4px';
-            questionCounter.style.marginLeft = '10px';
             questionCounter.style.display = 'inline-block';
         }
 
-        // Add progress bar styling
+        // Style the progress container
         const progressContainer = document.getElementById('progress-container');
         if (progressContainer) {
-            progressContainer.style.marginBottom = '20px';
+            progressContainer.style.margin = '10px 0';
             progressContainer.style.textAlign = 'center';
             progressContainer.style.backgroundColor = '#ffffff';
             progressContainer.style.padding = '10px';
