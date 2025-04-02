@@ -457,13 +457,16 @@ export class APIService {
             };
 
             const response = await this.fetchWithAuth(
-                `${this.baseUrl}/users/quiz-progress/${quizName}`,
+                `${this.baseUrl}/users/quiz-progress`,
                 {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'
                     },
-                    body: JSON.stringify(progressData)
+                    body: JSON.stringify({
+                        quizName: quizName,
+                        progress: progressData
+                    })
                 }
             );
 
