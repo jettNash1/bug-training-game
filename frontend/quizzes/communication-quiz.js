@@ -842,6 +842,13 @@ export class CommunicationQuiz extends BaseQuiz {
             this.gameScreen.classList.remove('hidden');
         }
         
+        // Ensure the progress card is attached to the visible screen
+        const progressCard = document.querySelector('.quiz-header-progress');
+        if (progressCard) {
+            // Make sure it's still visible after screen transition
+            progressCard.style.display = 'block';
+        }
+        
         // Display next scenario
         this.displayScenario();
     }
@@ -849,63 +856,82 @@ export class CommunicationQuiz extends BaseQuiz {
     updateProgress() {
         // Create or update progress container
         let progressContainer = document.getElementById('progress-container');
-        if (!progressContainer) {
-            progressContainer = document.createElement('div');
-            progressContainer.id = 'progress-container';
-            
-            // Insert the progress container at the top of the quiz-card
-            const quizCard = document.querySelector('.quiz-card:not(.hidden)');
-            if (quizCard) {
-                quizCard.insertBefore(progressContainer, quizCard.firstChild);
-            }
-        }
         
         // Get current level and question count
         const currentLevel = this.getCurrentLevel();
         const totalAnswered = this.player.questionHistory.length;
         const questionNumber = totalAnswered + 1;
         
-        // Update the progress container with styled content
-        progressContainer.innerHTML = `
-            <div class="progress-card">
-                <div class="progress-item">
-                    <div>Level: ${currentLevel}</div>
-                </div>
-                <div class="progress-item question-count">
-                    <div>Question: ${questionNumber}/15</div>
-                </div>
+        // Add the level and question information directly to the page header
+        // Find or create the header progress elements
+        let levelElement = document.querySelector('.quiz-header-progress');
+        if (!levelElement) {
+            levelElement = document.createElement('div');
+            levelElement.className = 'quiz-header-progress';
+            
+            // Insert it in the appropriate location
+            const headerElement = document.querySelector('.quiz-header');
+            if (headerElement) {
+                // Insert after the back link
+                const backLink = headerElement.querySelector('.back-link');
+                if (backLink && backLink.nextSibling) {
+                    headerElement.insertBefore(levelElement, backLink.nextSibling);
+                } else {
+                    headerElement.appendChild(levelElement);
+                }
+            } else {
+                // Alternative - insert at the top of the quiz-card
+                const quizCard = document.querySelector('.quiz-card:not(.hidden)');
+                if (quizCard) {
+                    quizCard.insertBefore(levelElement, quizCard.firstChild);
+                }
+            }
+        }
+        
+        // Update content
+        levelElement.innerHTML = `
+            <div class="quiz-progress-card">
+                <div class="level-info">Level: ${currentLevel}</div>
+                <div class="question-info">Question: ${questionNumber}/15</div>
             </div>
         `;
         
-        // Add styles to the progress container
+        // Add styles specifically for the header progress card
         const style = document.createElement('style');
         if (!document.getElementById('progress-styles')) {
             style.id = 'progress-styles';
             style.textContent = `
-                .progress-card {
+                .quiz-header-progress {
+                    position: absolute;
+                    top: 15px;
+                    right: 15px;
+                    z-index: 10;
+                }
+                .quiz-progress-card {
                     background-color: white;
-                    border-radius: 10px;
-                    padding: 12px 16px;
-                    margin-bottom: 20px;
-                    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+                    border-radius: 8px;
+                    padding: 12px 18px;
+                    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
                     display: flex;
-                    justify-content: space-between;
-                    font-size: 14px;
-                    line-height: 1.4;
-                    color: #333;
-                }
-                .progress-item {
-                    font-weight: 500;
-                }
-                .question-count {
+                    flex-direction: column;
                     text-align: right;
+                    min-width: 150px;
+                }
+                .level-info {
+                    font-weight: 500;
+                    color: #333;
+                    font-size: 14px;
+                    margin-bottom: 5px;
+                }
+                .question-info {
                     color: #666;
+                    font-size: 14px;
                 }
             `;
             document.head.appendChild(style);
         }
         
-        // Update level indicator and question progress for legacy elements
+        // Update legacy progress elements if they exist
         const levelIndicator = document.getElementById('level-indicator');
         const questionProgress = document.getElementById('question-progress');
         const progressFill = document.getElementById('progress-fill');
@@ -1079,6 +1105,12 @@ export class CommunicationQuiz extends BaseQuiz {
         this.gameScreen.classList.add('hidden');
         this.outcomeScreen.classList.add('hidden');
         this.endScreen.classList.remove('hidden');
+
+        // Hide the progress card on the end screen
+        const progressCard = document.querySelector('.quiz-header-progress');
+        if (progressCard) {
+            progressCard.style.display = 'none';
+        }
 
         // Calculate score based on experience points instead of correct answers count
         const scorePercentage = Math.round((this.player.experience / this.maxXP) * 100);
