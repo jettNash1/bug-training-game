@@ -978,26 +978,38 @@ export class CommunicationQuiz extends BaseQuiz {
     }
 
     updateProgress() {
-        // Update level indicator
         const levelIndicator = document.getElementById('level-indicator');
+        const questionCounter = document.getElementById('question-counter');
+        
         if (levelIndicator) {
             const currentLevel = this.getCurrentLevel();
             levelIndicator.textContent = `Level: ${currentLevel}`;
+            levelIndicator.style.backgroundColor = '#f8f9fa';
+            levelIndicator.style.padding = '5px 10px';
+            levelIndicator.style.borderRadius = '4px';
+            levelIndicator.style.marginBottom = '10px';
+            levelIndicator.style.display = 'inline-block';
+        }
+        
+        if (questionCounter) {
+            const totalAnswered = this.player.questionHistory.length;
+            questionCounter.textContent = `Question: ${totalAnswered + 1}/${this.totalQuestions}`;
+            questionCounter.style.backgroundColor = '#f8f9fa';
+            questionCounter.style.padding = '5px 10px';
+            questionCounter.style.borderRadius = '4px';
+            questionCounter.style.marginLeft = '10px';
+            questionCounter.style.display = 'inline-block';
         }
 
-        // Update question progress
-        const questionProgress = document.getElementById('question-progress');
-        const progressFill = document.getElementById('progress-fill');
-        if (questionProgress && progressFill) {
-            const totalQuestions = this.totalQuestions;
-            const completedQuestions = Math.min(this.player.questionHistory.length, totalQuestions);
-            
-            // Use stored question number for consistency
-            questionProgress.textContent = `Question: ${this.currentQuestionNumber || completedQuestions}/15`;
-            
-            // Update progress bar
-            const progressPercentage = (completedQuestions / totalQuestions) * 100;
-            progressFill.style.width = `${progressPercentage}%`;
+        // Add progress bar styling
+        const progressContainer = document.getElementById('progress-container');
+        if (progressContainer) {
+            progressContainer.style.marginBottom = '20px';
+            progressContainer.style.textAlign = 'center';
+            progressContainer.style.backgroundColor = '#ffffff';
+            progressContainer.style.padding = '10px';
+            progressContainer.style.borderRadius = '8px';
+            progressContainer.style.boxShadow = '0 2px 4px rgba(0,0,0,0.1)';
         }
     }
 

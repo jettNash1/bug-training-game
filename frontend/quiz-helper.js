@@ -519,10 +519,10 @@ export class BaseQuiz {
     async saveProgress() {
         // Determine status based on progress
         let status = 'in-progress';
+        const scorePercentage = this.calculateScore();
         
         // Check for completion (all questions answered)
         if (this.player.questionHistory.length >= this.totalQuestions) {
-            const scorePercentage = this.calculateScore();
             status = scorePercentage >= this.passPercentage ? 'completed' : 'failed';
         }
 
@@ -534,7 +534,7 @@ export class BaseQuiz {
                 questionHistory: this.player.questionHistory || [],
                 lastUpdated: new Date().toISOString(),
                 questionsAnswered: this.player.questionHistory?.length || 0,
-                scorePercentage: this.calculateScore(),
+                scorePercentage: scorePercentage,
                 status: status
             }
         };
@@ -550,7 +550,7 @@ export class BaseQuiz {
             const storageKey = `quiz_progress_${username}_${this.quizName}`;
             localStorage.setItem(storageKey, JSON.stringify(progress));
             
-            console.log('Saving progress (BaseQuiz) with status:', status);
+            console.log('Saving progress (BaseQuiz) with status:', status, 'scorePercentage:', scorePercentage);
             
             // If apiService is available, use it to save progress to the server
             if (this.apiService && typeof this.apiService.saveQuizProgress === 'function') {

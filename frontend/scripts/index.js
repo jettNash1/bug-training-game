@@ -157,96 +157,36 @@ class IndexPage {
             const allowedQuizzes = userData.data.allowedQuizzes || [];
             const hiddenQuizzes = userData.data.hiddenQuizzes || [];
 
-            console.log('Quiz visibility check:', {
-                username,
-                isInterviewAccount,
-                userType: userData.data.userType,
-                allowedQuizzes,
-                hiddenQuizzes,
-                totalQuizzes: this.quizItems.length
-            });
-
-            // If allowedQuizzes has entries, only show those quizzes
-            const useWhitelist = allowedQuizzes.length > 0;
-
-            // First, hide all quizzes and categories
-            document.querySelectorAll('.category-card').forEach(card => {
-                card.classList.add('quiz-hidden');
-            });
-            this.quizItems.forEach(item => {
-                item.classList.add('quiz-hidden');
-            });
-
             // Track visible quizzes per category
             const categoryVisibility = new Map();
 
             // First pass: Check quiz visibility and track per category
             const progressPromises = Array.from(this.quizItems).map(async item => {
                 const quizId = item.dataset.quiz;
-                const quizLower = quizId.toLowerCase();
-                const categoryCard = item.closest('.category-card');
-                const categoryName = categoryCard ? categoryCard.querySelector('.category-header').textContent.trim() : null;
-
-                // Debug each quiz visibility decision
-                console.log(`Checking visibility for quiz ${quizId}:`, {
-                    quizLower,
-                    useWhitelist,
-                    isAllowed: allowedQuizzes.includes(quizLower),
-                    isHidden: hiddenQuizzes.includes(quizLower),
-                    category: categoryName
-                });
-
-                let isVisible = false;
-                // If using whitelist (allowedQuizzes has entries), only show allowed quizzes
-                if (useWhitelist) {
-                    isVisible = allowedQuizzes.includes(quizLower);
-                } else {
-                    isVisible = !hiddenQuizzes.includes(quizLower);
-                }
-
-                // Apply visibility using CSS classes
-                if (isVisible) {
-                    console.log(`Showing quiz ${quizId}`);
-                    item.classList.remove('quiz-hidden');
-                    if (categoryCard) {
-                        categoryCard.classList.remove('quiz-hidden');
-                    }
-                } else {
-                    console.log(`Hiding quiz ${quizId} - ${useWhitelist ? 'not in allowed list' : 'in hidden list'}`);
-                    item.classList.add('quiz-hidden');
-                }
-
-                // Track category visibility
-                if (categoryName) {
-                    if (!categoryVisibility.has(categoryName)) {
-                        categoryVisibility.set(categoryName, []);
-                    }
-                    categoryVisibility.get(categoryName).push(isVisible);
-                }
-
-                // Continue with progress checking only for visible quizzes
-                if (!isVisible) return null;
+                if (!quizId) return null;
 
                 try {
                     // Get the saved progress
                     const savedProgress = await this.apiService.getQuizProgress(quizId);
-                    const progress = savedProgress?.data;
-
-                    if (!progress) {
+                    console.log(`Progress data for ${quizId}:`, savedProgress);
+                    
+                    if (!savedProgress?.data) {
                         return { 
                             quizName: quizId, 
                             score: 0, 
                             questionsAnswered: 0, 
-                            status: 'in-progress',
-                            experience: 0
+                            status: 'not-started',
+                            scorePercentage: 0
                         };
                     }
 
+                    const progress = savedProgress.data;
                     return {
                         quizName: quizId,
                         score: progress.score || 0,
                         questionsAnswered: progress.questionsAnswered || 0,
                         status: progress.status || 'in-progress',
+                        scorePercentage: progress.scorePercentage || 0,
                         experience: progress.experience || 0
                     };
                 } catch (error) {
@@ -255,37 +195,15 @@ class IndexPage {
                         quizName: quizId, 
                         score: 0, 
                         questionsAnswered: 0, 
-                        status: 'in-progress',
-                        experience: 0
+                        status: 'not-started',
+                        scorePercentage: 0
                     };
-                }
-            });
-
-            // Second pass: Hide categories with no visible quizzes
-            document.querySelectorAll('.category-card').forEach(categoryCard => {
-                const categoryName = categoryCard.querySelector('.category-header').textContent.trim();
-                const visibleQuizzes = categoryVisibility.get(categoryName) || [];
-                const hasVisibleQuizzes = visibleQuizzes.some(isVisible => isVisible);
-                
-                console.log(`Category visibility check: ${categoryName}`, {
-                    visibleQuizzes,
-                    hasVisibleQuizzes
-                });
-
-                if (!hasVisibleQuizzes) {
-                    console.log(`Hiding category: ${categoryName}`);
-                    categoryCard.classList.add('quiz-hidden');
                 }
             });
 
             // Wait for all progress data to load
             this.quizScores = (await Promise.all(progressPromises)).filter(Boolean);
             console.log('Loaded quiz scores:', this.quizScores);
-
-            // Force a repaint to ensure visibility changes are applied
-            document.body.style.display = 'none';
-            document.body.offsetHeight; // Force reflow
-            document.body.style.display = '';
 
             return true;
         } catch (error) {
