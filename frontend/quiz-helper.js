@@ -871,11 +871,7 @@ export class BaseQuiz {
     }
 
     calculateScore() {
-        const totalQuestions = this.player.questionHistory.length;
-        const correctAnswers = this.player.questionHistory.filter(record => 
-            record.selectedAnswer.experience > 0
-        ).length;
-        return Math.round((correctAnswers / totalQuestions) * 100);
+        return Math.round((this.player.experience / this.maxXP) * 100);
     }
 
     getCurrentScenario() {

@@ -415,10 +415,12 @@ export class APIService {
                 experience: response.data.experience || 0,
                 questionsAnswered: response.data.questionsAnswered || 0,
                 status: response.data.status || 'not-started',
-                scorePercentage: response.data.scorePercentage || 0,
+                scorePercentage: typeof response.data.scorePercentage === 'number' ? response.data.scorePercentage : 0,
                 tools: response.data.tools || [],
                 questionHistory: response.data.questionHistory || []
             };
+
+            console.log(`[API] Processed quiz progress:`, progress);
 
             return {
                 success: true,
@@ -450,11 +452,13 @@ export class APIService {
                 experience: progress.experience || 0,
                 questionsAnswered: progress.questionsAnswered || 0,
                 status: progress.status || 'in-progress',
-                scorePercentage: progress.scorePercentage || 0,
+                scorePercentage: typeof progress.scorePercentage === 'number' ? progress.scorePercentage : 0,
                 tools: progress.tools || [],
                 questionHistory: progress.questionHistory || [],
                 lastUpdated: new Date().toISOString()
             };
+
+            console.log(`[API] Processed progress data:`, progressData);
 
             const response = await this.fetchWithAuth(
                 `${this.baseUrl}/users/quiz-progress`,

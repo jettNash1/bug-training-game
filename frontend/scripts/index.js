@@ -181,7 +181,7 @@ class IndexPage {
                         score: progress.scorePercentage || 0,
                         questionsAnswered: progress.questionsAnswered || 0,
                         status: progress.status || 'not-started',
-                        scorePercentage: progress.scorePercentage || 0,
+                        scorePercentage: typeof progress.scorePercentage === 'number' ? progress.scorePercentage : 0,
                         experience: progress.experience || 0,
                         tools: progress.tools || [],
                         questionHistory: progress.questionHistory || []
@@ -233,7 +233,8 @@ class IndexPage {
             console.log(`Quiz ${quizId}: status=${quizScore.status}, questions=${quizScore.questionsAnswered}, scorePercentage=${quizScore.scorePercentage}, experience=${quizScore.experience}`);
             
             // Get the score percentage from the API response data
-            const scorePercentage = quizScore.scorePercentage || 0;
+            // Make sure we're using the actual scorePercentage value, not defaulting to 0
+            const scorePercentage = quizScore.scorePercentage !== undefined ? quizScore.scorePercentage : 0;
 
             if (quizScore.locked) {
                 // Locked state - gray background with striped pattern
