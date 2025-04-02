@@ -315,63 +315,44 @@ class IndexPage {
                 return;
             }
             
-            console.log(`Quiz ${quizId}: status=${quizScore.status}, questions=${quizScore.questionsAnswered}, score=${quizScore.score}, exp=${quizScore.experience}`);
+            console.log(`Quiz ${quizId}: status=${quizScore.status}, questions=${quizScore.questionsAnswered}, score=${quizScore.score}, scorePercentage=${quizScore.scorePercentage}`);
             
-            // Debug: Check if this should be a perfect score
-            const isPerfect = quizScore.questionsAnswered === 15 && quizScore.score === 100 && quizScore.experience >= 300;
-            console.log(`${quizId} isPerfect=${isPerfect}, conditions: questionsAnswered=${quizScore.questionsAnswered}===15, score=${quizScore.score}===100, experience=${quizScore.experience}>=300`);
-            
-            // Handle the four different states
+            // Get the score percentage, defaulting to 0 if not available
+            const scorePercentage = quizScore.scorePercentage || 0;
+
             if (quizScore.locked) {
                 // Locked state - gray background with striped pattern
                 item.classList.add('locked-quiz');
                 progressElement.setAttribute('style', 'display: none !important;');
-            } else if (quizScore.status === 'failed' && quizScore.questionsAnswered < 15) {
+            } else if (quizScore.status === 'failed') {
                 // Failed state - Light pink/salmon with thicker, darker border
-                console.log(`Failed quiz: ${quizId}`);
-                
-                // Apply styles directly with setAttribute
                 item.setAttribute('style', 'background-color: #FFCCCB !important; border: 2px solid #FFB6B6 !important; color: #000000 !important; pointer-events: none !important; border-radius: 12px !important;');
                 item.setAttribute('aria-disabled', 'true');
-                
                 progressElement.setAttribute('style', 'background-color: #FFCCCB !important; color: #000000 !important; display: block !important;');
-                progressElement.textContent = `${quizScore.questionsAnswered}/15`;
+                progressElement.textContent = `${scorePercentage}%`;
             } else if (quizScore.questionsAnswered === 15) {
-                // Completed all questions
-                if (quizScore.experience >= 300) {
-                    // Perfect score - Light Green with thicker, darker border
-                    console.log(`Perfect score in index.js: experience=${quizScore.experience} >= 300`);
-                    
-                    // Apply styles directly with setAttribute
+                if (scorePercentage >= 70) {
+                    // >=70% - Light Green with thicker, darker border
                     item.setAttribute('style', 'background-color: #90EE90 !important; border: 2px solid #70CF70 !important; color: #000000 !important; border-radius: 12px !important;');
-                    
                     progressElement.setAttribute('style', 'background-color: #90EE90 !important; color: #000000 !important; display: block !important;');
-                } else {
-                    // Not perfect - More faded Dark Yellow with thicker, darker border
-                    console.log(`Not perfect score in index.js: experience=${quizScore.experience} < 300`);
-                    
-                    // Apply styles directly with setAttribute
+                } else if (scorePercentage >= 50) {
+                    // 50-69% - Yellow with thicker, darker border
                     item.setAttribute('style', 'background-color: #F0D080 !important; border: 2px solid #E0B060 !important; color: #000000 !important; border-radius: 12px !important;');
-                    
                     progressElement.setAttribute('style', 'background-color: #F0D080 !important; color: #000000 !important; display: block !important;');
+                } else {
+                    // <50% - Red with thicker, darker border
+                    item.setAttribute('style', 'background-color: #FFCCCB !important; border: 2px solid #FFB6B6 !important; color: #000000 !important; border-radius: 12px !important;');
+                    progressElement.setAttribute('style', 'background-color: #FFCCCB !important; color: #000000 !important; display: block !important;');
                 }
-                progressElement.textContent = '15/15';
+                progressElement.textContent = `${scorePercentage}%`;
             } else if (quizScore.questionsAnswered > 0) {
                 // In progress - Light Yellow with thicker, darker border
-                console.log(`In progress in index.js: questions=${quizScore.questionsAnswered}`);
-                
-                // Apply styles directly with setAttribute
                 item.setAttribute('style', 'background-color: #FFFFCC !important; border: 2px solid #EEEEAA !important; color: #000000 !important; border-radius: 12px !important;');
-                
                 progressElement.setAttribute('style', 'background-color: #FFFFCC !important; color: #000000 !important; display: block !important;');
                 progressElement.textContent = `${quizScore.questionsAnswered}/15`;
             } else {
                 // Not started - White/cream with thicker, darker border
-                console.log(`Not started in index.js: questions=${quizScore.questionsAnswered}`);
-                
-                // Apply styles directly with setAttribute
                 item.setAttribute('style', 'background-color: #FFF8E7 !important; border: 2px solid #EEE8D7 !important; color: #000000 !important; border-radius: 12px !important;');
-                
                 progressElement.setAttribute('style', 'display: none !important;');
                 progressElement.textContent = '';
             }
