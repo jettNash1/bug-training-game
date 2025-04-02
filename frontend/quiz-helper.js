@@ -5,7 +5,8 @@ export class BaseQuiz {
     constructor(config) {
         this.config = config;
         this.maxXP = config.maxXP;
-        this.levelThresholds = config.levelThresholds;
+        this.totalQuestions = config.totalQuestions || 15;
+        this.passPercentage = config.passPercentage || 70;
         this.performanceThresholds = config.performanceThresholds;
         this.gameScreen = document.getElementById('game-screen');
         this.outcomeScreen = document.getElementById('outcome-screen');
@@ -361,8 +362,8 @@ export class BaseQuiz {
     }
 
     shouldEndGame(totalQuestionsAnswered, currentXP) {
-        // End game if we've answered all questions or reached max XP
-        return totalQuestionsAnswered >= 15 || currentXP >= this.maxXP;
+        // End game if we've answered all questions
+        return totalQuestionsAnswered >= this.totalQuestions;
     }
 
     // Base quiz methods...
@@ -560,10 +561,10 @@ export class BaseQuiz {
         // Determine status based on progress
         let status = 'in-progress';
         
-        // Check for completion (all 15 questions answered)
-        if (this.player.questionHistory.length >= 15) {
-            // Set completed status if all questions are answered
-            status = 'completed';
+        // Check for completion (all questions answered)
+        if (this.player.questionHistory.length >= this.totalQuestions) {
+            const scorePercentage = this.calculateScore();
+            status = scorePercentage >= this.passPercentage ? 'completed' : 'failed';
         }
 
         const progress = {
@@ -574,6 +575,7 @@ export class BaseQuiz {
                 questionHistory: this.player.questionHistory || [],
                 lastUpdated: new Date().toISOString(),
                 questionsAnswered: this.player.questionHistory?.length || 0,
+                scorePercentage: this.calculateScore(),
                 status: status
             }
         };
@@ -916,33 +918,20 @@ export class BaseQuiz {
     }
 
     calculateScore() {
-        const maxPossibleXP = this.maxXP;
-        const currentXP = Math.max(0, this.player.experience);
-        return Math.round((currentXP / maxPossibleXP) * 100);
+        const totalQuestions = this.player.questionHistory.length;
+        const correctAnswers = this.player.questionHistory.filter(record => 
+            record.selectedAnswer.experience > 0
+        ).length;
+        return Math.round((correctAnswers / totalQuestions) * 100);
     }
 
     getCurrentScenario() {
-        const currentScenarios = this.getCurrentScenarios();
-        return currentScenarios[this.player.currentScenario];
-    }
-
-    getCurrentScenarios() {
         const totalAnswered = this.player.questionHistory.length;
-        const currentXP = this.player.experience;
         
-        // Save progress before level transition
-        if ((totalAnswered === 5 && currentXP >= this.levelThresholds.basic.minXP) ||
-            (totalAnswered === 10 && currentXP >= this.levelThresholds.intermediate.minXP)) {
-            this.saveProgress().catch(error => {
-                console.error('Failed to save progress during level transition:', error);
-                this.showError('Failed to save your progress. Please try refreshing the page.');
-            });
-        }
-        
-        // Check for level progression
-        if (totalAnswered >= 10 && currentXP >= this.levelThresholds.intermediate.minXP) {
+        // Check for level progression based on question count
+        if (totalAnswered >= 10) {
             return this.advancedScenarios;
-        } else if (totalAnswered >= 5 && currentXP >= this.levelThresholds.basic.minXP) {
+        } else if (totalAnswered >= 5) {
             return this.intermediateScenarios;
         }
         return this.basicScenarios;
@@ -950,11 +939,10 @@ export class BaseQuiz {
 
     getCurrentLevel() {
         const totalAnswered = this.player.questionHistory.length;
-        const currentXP = this.player.experience;
         
-        if (totalAnswered >= 10 && currentXP >= this.levelThresholds.intermediate.minXP) {
+        if (totalAnswered >= 10) {
             return 'Advanced';
-        } else if (totalAnswered >= 5 && currentXP >= this.levelThresholds.basic.minXP) {
+        } else if (totalAnswered >= 5) {
             return 'Intermediate';
         }
         return 'Basic';

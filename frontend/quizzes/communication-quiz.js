@@ -6,16 +6,13 @@ export class CommunicationQuiz extends BaseQuiz {
     constructor() {
         const config = {
             maxXP: 300,
-            levelThresholds: {
-                basic: { questions: 5, minXP: 35 },
-                intermediate: { questions: 10, minXP: 110 },
-                advanced: { questions: 15, minXP: 235 }
-            },
+            totalQuestions: 15,
+            passPercentage: 70,
             performanceThresholds: [
-                { threshold: 250, message: '🏆 Outstanding! You\'re a communication expert!' },
-                { threshold: 200, message: '👏 Great job! You\'ve shown strong communication skills!' },
-                { threshold: 150, message: '👍 Good work! Keep practicing to improve further.' },
-                { threshold: 0, message: '📚 Consider reviewing communication best practices and try again!' }
+                { threshold: 90, message: '🏆 Outstanding! You\'re a communication expert!' },
+                { threshold: 80, message: '👏 Great job! You\'ve shown strong communication skills!' },
+                { threshold: 70, message: '👍 Good work! You\'ve passed the quiz!' },
+                { threshold: 0, message: '📚 Consider reviewing and try again!' }
             ]
         };
         
@@ -725,31 +722,10 @@ export class CommunicationQuiz extends BaseQuiz {
     displayScenario() {
         const currentScenarios = this.getCurrentScenarios();
         
-        // Check basic level completion
-        if (this.player.questionHistory.length >= 5) {
-            if (this.player.experience < this.levelThresholds.basic.minXP) {
-                this.endGame(true); // End with failure state
-                return;
-            }
-        }
-
-        // Check intermediate level completion
-        if (this.player.questionHistory.length >= 10) {
-            if (this.player.experience < this.levelThresholds.intermediate.minXP) {
-                this.endGame(true); // End with failure state
-                return;
-            }
-        }
-
-        // Check Advanced level completion
+        // Check if all questions are completed
         if (this.player.questionHistory.length >= 15) {
-            if (this.player.experience < this.levelThresholds.advanced.minXP) {
-                this.endGame(true); // End with failure state
-                return;
-            } else {
-                this.endGame(false); // Completed successfully
-                return;
-            }
+            this.endGame();
+            return;
         }
 
         // Get the next scenario based on current progress
@@ -773,7 +749,7 @@ export class CommunicationQuiz extends BaseQuiz {
 
         if (!scenario) {
             console.error('No scenario found for current progress. Question count:', questionCount);
-            this.endGame(true);
+            this.endGame();
             return;
         }
 
@@ -1068,29 +1044,26 @@ export class CommunicationQuiz extends BaseQuiz {
         this.displayScenario();
     }
 
-    getCurrentScenarios() {
-        const totalAnswered = this.player.questionHistory.length;
-        const currentXP = this.player.experience;
-        
-        // Check for level progression
-        if (totalAnswered >= 10 && currentXP >= this.levelThresholds.intermediate.minXP) {
-            return this.advancedScenarios;
-        } else if (totalAnswered >= 5 && currentXP >= this.levelThresholds.basic.minXP) {
-            return this.intermediateScenarios;
-        }
-        return this.basicScenarios;
-    }
-
     getCurrentLevel() {
         const totalAnswered = this.player.questionHistory.length;
-        const currentXP = this.player.experience;
         
-        if (totalAnswered >= 10 && currentXP >= this.levelThresholds.intermediate.minXP) {
+        if (totalAnswered >= 10) {
             return 'Advanced';
-        } else if (totalAnswered >= 5 && currentXP >= this.levelThresholds.basic.minXP) {
+        } else if (totalAnswered >= 5) {
             return 'Intermediate';
         }
         return 'Basic';
+    }
+
+    getCurrentScenarios() {
+        const totalAnswered = this.player.questionHistory.length;
+        
+        if (totalAnswered >= 10) {
+            return this.advancedScenarios;
+        } else if (totalAnswered >= 5) {
+            return this.intermediateScenarios;
+        }
+        return this.basicScenarios;
     }
 
     generateRecommendations() {
@@ -1193,20 +1166,26 @@ export class CommunicationQuiz extends BaseQuiz {
         return recommendations[area] || 'Continue practicing general communication skills.';
     }
 
-    async endGame(failed = false) {
+    async endGame() {
         this.gameScreen.classList.add('hidden');
         this.outcomeScreen.classList.add('hidden');
         this.endScreen.classList.remove('hidden');
 
-        const finalScore = Math.min(this.player.experience, this.maxXP);
-        const scorePercentage = Math.round((finalScore / this.maxXP) * 100);
+        // Calculate score based on correct answers
+        const totalQuestions = this.player.questionHistory.length;
+        const correctAnswers = this.player.questionHistory.filter(record => 
+            record.selectedAnswer.experience > 0
+        ).length;
         
+        const scorePercentage = Math.round((correctAnswers / totalQuestions) * 100);
+        const passed = scorePercentage >= 70; // Using 70% as pass threshold
+
         // Save the final quiz result with pass/fail status
         const username = localStorage.getItem('username');
         if (username) {
             try {
                 const user = new QuizUser(username);
-                const status = failed ? 'failed' : 'completed';
+                const status = passed ? 'completed' : 'failed';
                 console.log('Setting final quiz status:', { status, score: scorePercentage });
                 
                 const result = {
@@ -1246,17 +1225,17 @@ export class CommunicationQuiz extends BaseQuiz {
             }
         }
 
-        document.getElementById('final-score').textContent = `Final Score: ${finalScore}/${this.maxXP}`;
+        document.getElementById('final-score').textContent = `Final Score: ${scorePercentage}%`;
 
         // Update the quiz complete header based on status
         const quizCompleteHeader = document.querySelector('#end-screen h2');
         if (quizCompleteHeader) {
-            quizCompleteHeader.textContent = failed ? 'Quiz Failed!' : 'Quiz Complete!';
+            quizCompleteHeader.textContent = passed ? 'Quiz Complete!' : 'Quiz Failed!';
         }
 
         const performanceSummary = document.getElementById('performance-summary');
-        if (failed) {
-            performanceSummary.textContent = 'Quiz failed. You did not meet the minimum XP requirement to progress. You cannot retry this quiz.';
+        if (!passed) {
+            performanceSummary.textContent = 'Quiz failed. You did not achieve the required 70% pass mark. You cannot retry this quiz.';
             // Hide restart button if failed
             const restartBtn = document.getElementById('restart-btn');
             if (restartBtn) {
@@ -1268,7 +1247,7 @@ export class CommunicationQuiz extends BaseQuiz {
                 quizContainer.classList.add('failed');
             }
         } else {
-            const threshold = this.performanceThresholds.find(t => t.threshold <= finalScore);
+            const threshold = this.performanceThresholds.find(t => t.threshold <= scorePercentage);
             if (threshold) {
                 performanceSummary.textContent = threshold.message;
             } else {
