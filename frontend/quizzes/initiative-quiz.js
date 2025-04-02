@@ -6,11 +6,8 @@ export class InitiativeQuiz extends BaseQuiz {
     constructor() {
         const config = {
             maxXP: 300,
-            levelThresholds: {
-                basic: { questions: 5, minXP: 35 },
-                intermediate: { questions: 10, minXP: 110 },
-                advanced: { questions: 15, minXP: 235 }
-            },
+            totalQuestions: 15,
+            passPercentage: 70,
             performanceThresholds: [
                 { threshold: 250, message: '🏆 Outstanding! You\'re an initiative expert!' },
                 { threshold: 200, message: '👏 Great job! You\'ve shown strong initiative skills!' },
@@ -1296,6 +1293,10 @@ export class InitiativeQuiz extends BaseQuiz {
         }
 
         this.generateRecommendations();
+    }
+
+    displayOutcome(selectedAnswer) {
+        // Implementation of displayOutcome method
     }
 }
 
