@@ -49,7 +49,10 @@ const userSchema = new mongoose.Schema({
             tools: [String],
             currentScenario: Number,
             questionHistory: Array,
-            lastUpdated: Date
+            lastUpdated: Date,
+            status: String,
+            scorePercentage: Number,
+            questionsAnswered: Number
         },
         default: {}
     }

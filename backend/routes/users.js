@@ -277,6 +277,9 @@ router.post('/quiz-progress', auth, async (req, res) => {
         const { quizName, progress } = req.body;
         const user = await User.findById(req.user.id);
         
+        console.log(`[DEBUG] User ${user.username} saving quiz progress for ${quizName}`);
+        console.log(`[DEBUG] Original progress data:`, progress);
+        
         if (!user) {
             return res.status(404).json({ success: false, message: 'User not found' });
         }
@@ -302,9 +305,22 @@ router.post('/quiz-progress', auth, async (req, res) => {
             scorePercentage: typeof progress.scorePercentage === 'number' ? progress.scorePercentage : 0,
             lastUpdated: lastUpdated.toISOString() // Store as ISO string for consistency
         };
+        
+        console.log(`[DEBUG] Processed progress:`, updatedProgress);
+
+        // Check if this is a completed quiz (15 questions) with max experience (300)
+        if (updatedProgress.questionsAnswered >= 15 && updatedProgress.experience >= 300) {
+            console.log(`[DEBUG] Quiz appears to be completed with perfect score`);
+            // Force status to completed and score to 100%
+            updatedProgress.status = 'completed';
+            updatedProgress.scorePercentage = 100;
+            console.log(`[DEBUG] Updated status to ${updatedProgress.status} and scorePercentage to ${updatedProgress.scorePercentage}`);
+        }
 
         // Update quiz progress
         user.quizProgress.set(quizName, updatedProgress);
+        
+        console.log(`[DEBUG] Final quiz progress being saved:`, updatedProgress);
 
         // Also update corresponding quiz result if it exists
         const existingResultIndex = user.quizResults.findIndex(r => r.quizName === quizName);
@@ -312,18 +328,29 @@ router.post('/quiz-progress', auth, async (req, res) => {
             // Create a new quiz result object with only the fields we want
             user.quizResults[existingResultIndex] = {
                 quizName,
-                score: Math.round((updatedProgress.experience / 300) * 100), // Calculate score based on max XP of 300
+                score: updatedProgress.scorePercentage || Math.round((updatedProgress.experience / 300) * 100), // Use scorePercentage if available
                 experience: updatedProgress.experience,
                 tools: updatedProgress.tools,
                 questionHistory: updatedProgress.questionHistory,
                 questionsAnswered: updatedProgress.questionsAnswered,
                 currentScenario: updatedProgress.currentScenario,
+                status: updatedProgress.status,
                 completedAt: lastUpdated.toISOString(),
                 updatedAt: lastUpdated.toISOString()
             };
+            
+            console.log(`[DEBUG] Updated quiz result:`, user.quizResults[existingResultIndex]);
         }
 
         await user.save();
+        
+        console.log(`[DEBUG] User saved successfully`);
+        
+        // Double-check what was actually saved by querying the database again
+        const updatedUser = await User.findById(req.user.id);
+        const savedProgress = updatedUser.quizProgress.get(quizName);
+        console.log(`[DEBUG] Saved progress as verified from database:`, savedProgress);
+
         res.json({ 
             success: true, 
             data: {
@@ -350,7 +377,26 @@ router.get('/quiz-progress/:quizName', auth, async (req, res) => {
             return res.status(404).json({ success: false, message: 'User not found' });
         }
 
+        console.log(`[DEBUG] Getting quiz progress for ${quizName} for user ${user.username}`);
+        console.log(`[DEBUG] User has quizProgress map: ${!!user.quizProgress}`);
+        
         const progress = user.quizProgress ? user.quizProgress.get(quizName) : null;
+        console.log(`[DEBUG] Raw progress from database:`, progress);
+        
+        // Special case: If the quiz has been completed (15 questions) with full experience (300)
+        // but doesn't have the correct status or scorePercentage, fix it
+        if (progress && progress.questionsAnswered >= 15 && progress.experience >= 300 && 
+            (progress.status !== 'completed' || progress.scorePercentage !== 100)) {
+            console.log(`[DEBUG] Found completed quiz with incorrect status/score. Fixing...`);
+            
+            // Update the progress in the database
+            progress.status = 'completed';
+            progress.scorePercentage = 100;
+            user.quizProgress.set(quizName, progress);
+            await user.save();
+            
+            console.log(`[DEBUG] Updated quiz progress with correct status and score`);
+        }
         
         // If no progress exists, return a default structure
         const responseData = progress ? {
@@ -373,6 +419,8 @@ router.get('/quiz-progress/:quizName', auth, async (req, res) => {
             scorePercentage: 0,
             lastUpdated: new Date().toISOString()
         };
+        
+        console.log(`[DEBUG] Returning response data:`, responseData);
 
         res.json({ success: true, data: responseData });
     } catch (error) {
