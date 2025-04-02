@@ -382,17 +382,41 @@ export class APIService {
 
     async getQuizProgress(quizName) {
         try {
-            const response = await this.fetchWithAuth(`${this.getApiBaseUrl()}/quiz-progress/${quizName}`);
-            if (!response.ok) {
-                throw new Error(`Failed to get quiz progress: ${response.statusText}`);
+            const response = await this.fetchWithAuth(`${this.baseUrl}/users/quiz-progress/${quizName}`);
+            console.log(`Raw quiz progress response for ${quizName}:`, response);
+            
+            if (!response || !response.data) {
+                console.log(`No progress data found for quiz ${quizName}`);
+                return {
+                    success: true,
+                    data: {
+                        experience: 0,
+                        questionsAnswered: 0,
+                        status: 'not-started',
+                        scorePercentage: 0
+                    }
+                };
             }
 
-            const data = await response.json();
-            console.log(`Retrieved progress for quiz ${quizName}:`, data);
-            return data;
+            // Ensure the response has the correct structure
+            const progress = response.data;
+            return {
+                success: true,
+                data: {
+                    experience: progress.experience || 0,
+                    questionsAnswered: progress.questionsAnswered || 0,
+                    status: progress.status || 'not-started',
+                    scorePercentage: progress.scorePercentage || 0,
+                    tools: progress.tools || [],
+                    questionHistory: progress.questionHistory || []
+                }
+            };
         } catch (error) {
             console.error('Error getting quiz progress:', error);
-            throw error;
+            return {
+                success: false,
+                error: error.message
+            };
         }
     }
 
@@ -400,7 +424,7 @@ export class APIService {
         try {
             console.log(`Saving progress for quiz ${quizName}:`, progress);
             
-            const response = await this.fetchWithAuth(`${this.getApiBaseUrl()}/quiz-progress/${quizName}`, {
+            const response = await this.fetchWithAuth(`${this.baseUrl}/quiz-progress/${quizName}`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',

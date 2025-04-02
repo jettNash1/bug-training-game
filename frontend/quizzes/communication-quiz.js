@@ -577,33 +577,13 @@ export class CommunicationQuiz extends BaseQuiz {
                 return false;
             }
 
-            // Use user-specific key for localStorage
-            const storageKey = `quiz_progress_${username}_${this.quizName}`;
+            // Get progress from API
             const savedProgress = await this.apiService.getQuizProgress(this.quizName);
             console.log('Raw API Response:', savedProgress);
-            let progress = null;
             
-            if (savedProgress && savedProgress.data) {
-                // Normalize the data structure
-                progress = {
-                    experience: savedProgress.data.experience || 0,
-                    tools: savedProgress.data.tools || [],
-                    questionHistory: savedProgress.data.questionHistory || [],
-                    currentScenario: savedProgress.data.currentScenario || 0,
-                    status: savedProgress.data.status || 'in-progress'
-                };
-                console.log('Normalized progress data:', progress);
-            } else {
-                // Try loading from localStorage as fallback
-                const localData = localStorage.getItem(storageKey);
-                if (localData) {
-                    const parsed = JSON.parse(localData);
-                    progress = parsed;
-                    console.log('Loaded progress from localStorage:', progress);
-                }
-            }
-
-            if (progress) {
+            if (savedProgress?.success && savedProgress?.data) {
+                const progress = savedProgress.data;
+                
                 // Set the player state from progress
                 this.player.experience = progress.experience || 0;
                 this.player.tools = progress.tools || [];
@@ -624,6 +604,7 @@ export class CommunicationQuiz extends BaseQuiz {
 
                 return true;
             }
+            
             return false;
         } catch (error) {
             console.error('Failed to load progress:', error);

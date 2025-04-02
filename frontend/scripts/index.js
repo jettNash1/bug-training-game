@@ -153,14 +153,7 @@ class IndexPage {
                 return;
             }
 
-            const isInterviewAccount = userData.data.userType === 'interview_candidate';
-            const allowedQuizzes = userData.data.allowedQuizzes || [];
-            const hiddenQuizzes = userData.data.hiddenQuizzes || [];
-
-            // Track visible quizzes per category
-            const categoryVisibility = new Map();
-
-            // First pass: Check quiz visibility and track per category
+            // First pass: Load progress for all visible quizzes
             const progressPromises = Array.from(this.quizItems).map(async item => {
                 const quizId = item.dataset.quiz;
                 if (!quizId) return null;
@@ -170,7 +163,7 @@ class IndexPage {
                     const savedProgress = await this.apiService.getQuizProgress(quizId);
                     console.log(`Progress data for ${quizId}:`, savedProgress);
                     
-                    if (!savedProgress?.data) {
+                    if (!savedProgress?.success || !savedProgress?.data) {
                         return { 
                             quizName: quizId, 
                             score: 0, 
@@ -183,9 +176,9 @@ class IndexPage {
                     const progress = savedProgress.data;
                     return {
                         quizName: quizId,
-                        score: progress.score || 0,
+                        score: progress.scorePercentage || 0,
                         questionsAnswered: progress.questionsAnswered || 0,
-                        status: progress.status || 'in-progress',
+                        status: progress.status || 'not-started',
                         scorePercentage: progress.scorePercentage || 0,
                         experience: progress.experience || 0
                     };
