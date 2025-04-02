@@ -531,10 +531,10 @@ export class CommunicationQuiz extends BaseQuiz {
     async saveProgress() {
         // First determine the status based on clear conditions
         let status = 'in-progress';
+        const scorePercentage = this.calculateScore();
         
         // Check for completion (all questions answered)
         if (this.player.questionHistory.length >= this.totalQuestions) {
-            const scorePercentage = this.calculateScore();
             status = scorePercentage >= this.passPercentage ? 'completed' : 'failed';
         }
 
@@ -546,7 +546,7 @@ export class CommunicationQuiz extends BaseQuiz {
                 questionHistory: this.player.questionHistory || [],
                 lastUpdated: new Date().toISOString(),
                 questionsAnswered: this.player.questionHistory.length,
-                scorePercentage: this.calculateScore(),
+                scorePercentage: scorePercentage,
                 status: status
             }
         };
@@ -562,7 +562,7 @@ export class CommunicationQuiz extends BaseQuiz {
             const storageKey = `quiz_progress_${username}_${this.quizName}`;
             localStorage.setItem(storageKey, JSON.stringify(progress));
             
-            console.log('Saving progress with status:', status);
+            console.log('Saving progress with status:', status, 'and score:', scorePercentage);
             await this.apiService.saveQuizProgress(this.quizName, progress.data);
         } catch (error) {
             console.error('Failed to save progress:', error);
