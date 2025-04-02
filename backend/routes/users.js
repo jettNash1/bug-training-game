@@ -298,6 +298,8 @@ router.post('/quiz-progress', auth, async (req, res) => {
             currentScenario: progress.currentScenario !== undefined ? 
                            parseInt(progress.currentScenario, 10) : 
                            (parseInt(progress.questionsAnswered || progress.questionHistory?.length || 0, 10) % 5),
+            status: progress.status || 'in-progress',
+            scorePercentage: typeof progress.scorePercentage === 'number' ? progress.scorePercentage : 0,
             lastUpdated: lastUpdated.toISOString() // Store as ISO string for consistency
         };
 
@@ -358,6 +360,8 @@ router.get('/quiz-progress/:quizName', auth, async (req, res) => {
             questionHistory: Array.isArray(progress.questionHistory) ? progress.questionHistory : [],
             questionsAnswered: parseInt(progress.questionsAnswered || progress.questionHistory?.length || 0, 10),
             currentScenario: parseInt(progress.currentScenario || 0, 10),
+            status: progress.status || 'not-started',
+            scorePercentage: typeof progress.scorePercentage === 'number' ? progress.scorePercentage : 0,
             lastUpdated: progress.lastUpdated || new Date().toISOString()
         } : {
             experience: 0,
@@ -365,6 +369,8 @@ router.get('/quiz-progress/:quizName', auth, async (req, res) => {
             questionHistory: [],
             questionsAnswered: 0,
             currentScenario: 0,
+            status: 'not-started',
+            scorePercentage: 0,
             lastUpdated: new Date().toISOString()
         };
 
