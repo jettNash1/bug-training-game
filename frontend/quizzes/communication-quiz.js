@@ -1176,7 +1176,7 @@ export class CommunicationQuiz extends BaseQuiz {
                     lastUpdated: new Date().toISOString()
                 };
 
-                // Save to QuizUser
+                // Save to QuizUser with all necessary fields
                 await user.updateQuizScore(
                     this.quizName,
                     scorePercentage,
@@ -1187,9 +1187,12 @@ export class CommunicationQuiz extends BaseQuiz {
                     status
                 );
 
-                // Save to API
+                // Save to API with explicit scorePercentage
                 console.log('Saving final progress to API:', result);
-                await this.apiService.saveQuizProgress(this.quizName, result);
+                await this.apiService.saveQuizProgress(this.quizName, {
+                    ...result,
+                    score: scorePercentage  // Include both score and scorePercentage for compatibility
+                });
             } catch (error) {
                 console.error('Error saving final quiz score:', error);
             }

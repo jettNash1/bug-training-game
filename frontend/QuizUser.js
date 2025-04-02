@@ -231,7 +231,7 @@ export class QuizUser {
         }
     }
 
-    async updateQuizScore(quizName, score, experience = 0, tools = [], questionHistory = [], questionsAnswered = null) {
+    async updateQuizScore(quizName, score, experience = 0, tools = [], questionHistory = [], questionsAnswered = null, status = 'in-progress') {
         try {
             if (!this.api) {
                 throw new Error('API service not initialized');
@@ -244,11 +244,13 @@ export class QuizUser {
             const quizData = {
                 quizName,
                 score: Math.round(score),
+                scorePercentage: Math.round(score), // Ensure scorePercentage is included
                 experience: Math.round(experience || score),
                 tools: tools || [],
                 questionHistory: questionHistory || [],
                 questionsAnswered: questionsAnswered !== null ? questionsAnswered : (questionHistory ? questionHistory.length : 0),
-                completedAt: new Date().toISOString()
+                completedAt: new Date().toISOString(),
+                status: status // Include status in quiz data
             };
 
             // Use the apiService to save quiz results
@@ -263,7 +265,7 @@ export class QuizUser {
                 });
                 
                 // Process response (fetchWithAuth now returns parsed JSON directly)
-                const data = response; // No need to call response.json() anymore
+                const data = response;
                 if (data.success) {
                     this.quizResults = data.data;
                     
@@ -273,8 +275,10 @@ export class QuizUser {
                         tools: quizData.tools,
                         questionHistory: quizData.questionHistory,
                         questionsAnswered: quizData.questionsAnswered,
-                        currentScenario: quizData.questionsAnswered % 5, // Keep track of position within current level
-                        lastUpdated: quizData.completedAt
+                        currentScenario: quizData.questionsAnswered % 5,
+                        lastUpdated: quizData.completedAt,
+                        status: status, // Include status in progress data
+                        scorePercentage: Math.round(score) // Ensure scorePercentage is included
                     };
                     
                     // Save progress using the API service
