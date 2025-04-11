@@ -942,7 +942,9 @@ export class InitiativeQuiz extends BaseQuiz {
         // Get current level and question count
         const currentLevel = this.getCurrentLevel();
         const totalAnswered = this.player.questionHistory.length;
-        const questionNumber = totalAnswered + 1;
+        
+        // Ensure question number never exceeds 15
+        const questionNumber = Math.min(totalAnswered + 1, 15);
         
         // Update the existing progress card elements
         const levelInfoElement = document.querySelector('.level-info');
@@ -976,7 +978,8 @@ export class InitiativeQuiz extends BaseQuiz {
         }
         
         if (progressFill) {
-            const progressPercentage = (totalAnswered / (this.totalQuestions || 15)) * 100;
+            // Calculate progress percentage (max 100%)
+            const progressPercentage = Math.min((totalAnswered / (this.totalQuestions || 15)) * 100, 100);
             progressFill.style.width = `${progressPercentage}%`;
         }
     }
@@ -1144,14 +1147,14 @@ export class InitiativeQuiz extends BaseQuiz {
         return recommendations[area] || 'Continue practicing core initiative-taking principles.';
     }
 
-    async endGame(failed = false) {
+    async endGame() {
         // Calculate final score based on correct answers
         const correctAnswers = this.player.questionHistory.filter(q => q.selectedAnswer && q.selectedAnswer.isCorrect).length;
         const scorePercentage = Math.round((correctAnswers / 15) * 100);
         
         // Create the final progress object
         const progress = {
-            questionsAnswered: this.player.questionHistory.length,
+            questionsAnswered: 15, // Always 15 at the end
             questionHistory: this.player.questionHistory,
             currentScenario: this.player.currentScenario,
             status: scorePercentage >= 70 ? 'passed' : 'failed',
@@ -1160,6 +1163,30 @@ export class InitiativeQuiz extends BaseQuiz {
         };
 
         try {
+            // Hide the timer container
+            const timerContainer = document.getElementById('timer-container');
+            if (timerContainer) {
+                timerContainer.style.display = 'none';
+            }
+            
+            // Update progress display to show 15/15
+            const questionInfoElement = document.querySelector('.question-info');
+            if (questionInfoElement) {
+                questionInfoElement.textContent = 'Question: 15/15';
+            }
+            
+            // Update legacy progress elements if they exist
+            const questionProgress = document.getElementById('question-progress');
+            if (questionProgress) {
+                questionProgress.textContent = 'Question: 15/15';
+            }
+            
+            // Clear any existing timer
+            if (this.questionTimer) {
+                clearInterval(this.questionTimer);
+                this.questionTimer = null;
+            }
+            
             // Save progress to API
             const username = localStorage.getItem('username');
             if (!username) {
@@ -1178,16 +1205,9 @@ export class InitiativeQuiz extends BaseQuiz {
                 0, // no experience
                 this.player.tools,
                 this.player.questionHistory,
-                this.player.questionHistory.length,
+                15, // Always 15 questions completed
                 scorePercentage >= 70 ? 'completed' : 'failed'
             );
-            
-            // Show the end screen
-            this.gameScreen.classList.add('hidden');
-            this.outcomeScreen.classList.add('hidden');
-            if (this.endScreen) {
-                this.endScreen.classList.remove('hidden');
-            }
             
             // Update display elements
             const finalScoreElement = document.getElementById('final-score');
@@ -1195,6 +1215,13 @@ export class InitiativeQuiz extends BaseQuiz {
                 finalScoreElement.textContent = `Final Score: ${scorePercentage}%`;
             }
             
+            // Show the end screen
+            this.gameScreen.classList.add('hidden');
+            this.outcomeScreen.classList.add('hidden');
+            if (this.endScreen) {
+                this.endScreen.classList.remove('hidden');
+            }
+
             // Generate question review list
             const reviewList = document.getElementById('question-review');
             if (reviewList) {
