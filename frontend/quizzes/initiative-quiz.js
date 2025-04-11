@@ -923,9 +923,12 @@ export class InitiativeQuiz extends BaseQuiz {
 
     nextScenario() {
         try {
+            console.log('Moving to next scenario');
+            
             // Increment current scenario if not done in handleAnswer
             if (this.player && typeof this.player.currentScenario === 'number') {
                 this.player.currentScenario++;
+                console.log('Incremented to scenario:', this.player.currentScenario);
             }
             
             // Hide outcome screen and show game screen - try both class and style approaches
@@ -936,16 +939,22 @@ export class InitiativeQuiz extends BaseQuiz {
                 // Try both methods
                 outcomeScreen.classList.add('hidden');
                 outcomeScreen.style.display = 'none';
+                console.log('Hidden outcome screen');
             }
             
             if (gameScreen) {
                 // Try both methods
                 gameScreen.classList.remove('hidden');
                 gameScreen.style.display = 'block';
+                console.log('Shown game screen');
             }
             
             // Display next scenario
             this.displayScenario();
+            
+            // Reinitialize event listeners for the new question
+            this.initializeEventListeners();
+            
         } catch (error) {
             console.error('Error in nextScenario:', error);
             this.showError('An error occurred. Please try again.');
@@ -1242,63 +1251,66 @@ export class InitiativeQuiz extends BaseQuiz {
             return;
         }
 
-        const currentScenarios = this.getCurrentScenarios();
-        if (!currentScenarios || !currentScenarios[this.player.currentScenario]) {
-            console.error('No current scenario found');
-            return;
+        try {
+            const currentScenarios = this.getCurrentScenarios();
+            if (!currentScenarios || !currentScenarios[this.player.currentScenario]) {
+                console.error('No current scenario found');
+                return;
+            }
+            
+            const currentScenario = currentScenarios[this.player.currentScenario];
+            const earnedXP = selectedAnswer.experience || 0;
+            
+            // Find the max possible XP for this scenario
+            const maxXP = Math.max(...currentScenario.options.map(o => o.experience || 0));
+            const isCorrect = selectedAnswer.isCorrect || (earnedXP === maxXP);
+            
+            console.log('Displaying outcome:', { 
+                isCorrect, 
+                selectedAnswer,
+                currentScenario: this.player.currentScenario
+            });
+            
+            // Update UI - safely access elements
+            const outcomeScreen = document.getElementById('outcome-screen');
+            const gameScreen = document.getElementById('game-screen');
+            
+            // Show outcome screen if elements exist
+            if (gameScreen) {
+                gameScreen.classList.add('hidden');
+                gameScreen.style.display = 'none';
+            }
+            
+            if (outcomeScreen) {
+                outcomeScreen.classList.remove('hidden');
+                outcomeScreen.style.display = 'block';
+            }
+            
+            // Set content directly in the outcome screen
+            const outcomeContent = outcomeScreen.querySelector('.outcome-content');
+            if (outcomeContent) {
+                outcomeContent.innerHTML = `
+                    <h3>${isCorrect ? 'Correct!' : 'Incorrect'}</h3>
+                    <p>${selectedAnswer.outcome || ''}</p>
+                    <p class="result">${isCorrect ? 'Correct answer!' : 'Try again next time.'}</p>
+                    <button id="continue-btn" class="submit-button">Continue</button>
+                `;
+                
+                // Add event listener to the continue button
+                const continueBtn = outcomeContent.querySelector('#continue-btn');
+                if (continueBtn) {
+                    continueBtn.addEventListener('click', () => this.nextScenario());
+                }
+            } else {
+                console.error('Could not find outcome content element');
+            }
+            
+            // Update progress
+            this.updateProgress();
+        } catch (error) {
+            console.error('Error in displayOutcome:', error);
+            this.showError('An error occurred. Please try again.');
         }
-        
-        const currentScenario = currentScenarios[this.player.currentScenario];
-        const earnedXP = selectedAnswer.experience || 0;
-        
-        // Find the max possible XP for this scenario
-        const maxXP = Math.max(...currentScenario.options.map(o => o.experience || 0));
-        const isCorrect = selectedAnswer.isCorrect || (earnedXP === maxXP);
-        
-        // Update UI - safely access elements
-        const outcomeScreen = document.getElementById('outcome-screen');
-        const gameScreen = document.getElementById('game-screen');
-        const outcomeTitle = document.getElementById('outcome-title');
-        const outcomeText = document.getElementById('outcome-text');
-        const outcomeRewards = document.getElementById('outcome-rewards');
-        const nextButton = document.getElementById('next-button');
-        
-        // Show outcome screen if elements exist
-        if (gameScreen) {
-            gameScreen.style.display = 'none';
-        }
-        
-        if (outcomeScreen) {
-            outcomeScreen.style.display = 'block';
-        }
-        
-        // Set outcome content if elements exist
-        if (outcomeTitle) {
-            outcomeTitle.textContent = isCorrect ? 'Correct!' : 'Incorrect';
-            outcomeTitle.className = isCorrect ? 'correct' : 'incorrect';
-        }
-        
-        if (outcomeText) {
-            outcomeText.innerHTML = `
-                <p>${currentScenario.explanation || ''}</p>
-                ${isCorrect && currentScenario.correctAnswer ? `<p class="correct-answer">${currentScenario.correctAnswer}</p>` : ''}
-            `;
-        }
-        
-        if (outcomeRewards) {
-            outcomeRewards.innerHTML = `
-                <p class="result">${isCorrect ? 'Correct!' : 'Incorrect'}</p>
-            `;
-        }
-        
-        // Update next button if it exists
-        if (nextButton) {
-            nextButton.textContent = 'Next Question';
-            nextButton.onclick = () => this.nextScenario();
-        }
-        
-        // Update progress
-        this.updateProgress();
     }
 }
 
