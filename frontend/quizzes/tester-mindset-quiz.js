@@ -1007,8 +1007,7 @@ export class TesterMindsetQuiz extends BaseQuiz {
             this.displayScenario();
         } catch (error) {
             console.error('Error in nextScenario:', error);
-            console.error('Failed to save final progress:', error);
-            this.showError('Failed to save your results. Please try again.');
+            this.showError('An error occurred while loading the next question.');
         }
     }
 
@@ -1189,6 +1188,214 @@ export class TesterMindsetQuiz extends BaseQuiz {
         } catch (error) {
             console.error('Error handling time up:', error);
         }
+    }
+
+    updateProgress() {
+        // Get current level and question count
+        const currentLevel = this.getCurrentLevel();
+        const totalAnswered = this.player.questionHistory.length;
+        
+        // Ensure question number never exceeds 15
+        const questionNumber = Math.min(totalAnswered + 1, 15);
+        
+        // Update the existing progress card elements
+        const levelInfoElement = document.querySelector('.level-info');
+        const questionInfoElement = document.querySelector('.question-info');
+        
+        if (levelInfoElement) {
+            levelInfoElement.textContent = `Level: ${currentLevel}`;
+        }
+        
+        if (questionInfoElement) {
+            questionInfoElement.textContent = `Question: ${questionNumber}/15`;
+        }
+        
+        // Ensure the card is visible
+        const progressCard = document.querySelector('.quiz-header-progress');
+        if (progressCard) {
+            progressCard.style.display = 'block';
+        }
+        
+        // Update legacy progress elements if they exist
+        const levelIndicator = document.getElementById('level-indicator');
+        const questionProgress = document.getElementById('question-progress');
+        const progressFill = document.getElementById('progress-fill');
+        
+        if (levelIndicator) {
+            levelIndicator.textContent = `Level: ${currentLevel}`;
+        }
+        
+        if (questionProgress) {
+            questionProgress.textContent = `Question: ${questionNumber}/${this.totalQuestions || 15}`;
+        }
+        
+        if (progressFill) {
+            // Calculate progress percentage (max 100%)
+            const progressPercentage = Math.min((totalAnswered / (this.totalQuestions || 15)) * 100, 100);
+            progressFill.style.width = `${progressPercentage}%`;
+        }
+    }
+
+    restartGame() {
+        // Reset player state
+        this.player = {
+            name: localStorage.getItem('username'),
+            experience: 0,
+            tools: [],
+            currentScenario: 0,
+            questionHistory: []
+        };
+
+        // Reset UI
+        this.gameScreen.classList.remove('hidden');
+        this.outcomeScreen.classList.add('hidden');
+        this.endScreen.classList.add('hidden');
+
+        // Clear any existing transition messages
+        const transitionContainer = document.getElementById('level-transition-container');
+        if (transitionContainer) {
+            transitionContainer.innerHTML = '';
+            transitionContainer.classList.remove('active');
+        }
+
+        // Update progress display
+        this.updateProgress();
+
+        // Start from first scenario
+        this.displayScenario();
+    }
+
+    getCurrentScenarios() {
+        try {
+            const totalAnswered = this.player?.questionHistory?.length || 0;
+            
+            // Simple progression logic based solely on question count, no threshold checks
+            if (totalAnswered >= 10) {
+                return this.advancedScenarios;
+            } else if (totalAnswered >= 5) {
+                return this.intermediateScenarios;
+            }
+            return this.basicScenarios;
+        } catch (error) {
+            console.error('Error in getCurrentScenarios:', error);
+            return this.basicScenarios; // Default to basic if there's an error
+        }
+    }
+
+    getCurrentLevel() {
+        try {
+            const totalAnswered = this.player?.questionHistory?.length || 0;
+            
+            // Determine level based solely on question count
+            if (totalAnswered >= 10) {
+                return 'Advanced';
+            } else if (totalAnswered >= 5) {
+                return 'Intermediate';
+            }
+            return 'Basic';
+        } catch (error) {
+            console.error('Error in getCurrentLevel:', error);
+            return 'Basic'; // Default to basic if there's an error
+        }
+    }
+
+    generateRecommendations() {
+        const recommendationsContainer = document.getElementById('recommendations');
+        if (!recommendationsContainer) return;
+
+        const correctAnswers = this.player.questionHistory.filter(q => this.isCorrectAnswer(q.selectedAnswer)).length;
+        const score = Math.round((correctAnswers / this.player.questionHistory.length) * 100);
+        const weakAreas = [];
+        const strongAreas = [];
+
+        // Analyze performance in different areas
+        this.player.questionHistory.forEach(record => {
+            const isCorrect = this.isCorrectAnswer(record.selectedAnswer);
+            const questionType = this.categorizeQuestion(record.scenario);
+            
+            if (isCorrect) {
+                if (!strongAreas.includes(questionType)) {
+                    strongAreas.push(questionType);
+                }
+            } else {
+                if (!weakAreas.includes(questionType)) {
+                    weakAreas.push(questionType);
+                }
+            }
+        });
+
+        // Generate recommendations HTML
+        let recommendationsHTML = '';
+
+        if (score >= 95 && weakAreas.length === 0) {
+            recommendationsHTML = '<p>🌟 Outstanding! You have demonstrated mastery in all aspects of tester mindset. You clearly understand the nuances of tester mindset and are well-equipped to handle any tester mindset challenges!</p>';
+        } else if (score >= 80) {
+            recommendationsHTML = '<p>🌟 Excellent performance! Your tester mindset skills are very strong. To achieve complete mastery, consider focusing on:</p>';
+            recommendationsHTML += '<ul>';
+            if (weakAreas.length > 0) {
+                weakAreas.forEach(area => {
+                    recommendationsHTML += `<li>${this.getRecommendation(area)}</li>`;
+                });
+            }
+            recommendationsHTML += '</ul>';
+        } else if (score >= 60) {
+            recommendationsHTML = '<p>👍 Good effort! Here are some areas to focus on:</p>';
+            recommendationsHTML += '<ul>';
+            weakAreas.forEach(area => {
+                recommendationsHTML += `<li>${this.getRecommendation(area)}</li>`;
+            });
+            recommendationsHTML += '</ul>';
+        } else {
+            recommendationsHTML = '<p>📚 Here are key areas for improvement:</p>';
+            recommendationsHTML += '<ul>';
+            weakAreas.forEach(area => {
+                recommendationsHTML += `<li>${this.getRecommendation(area)}</li>`;
+            });
+            recommendationsHTML += '</ul>';
+        }
+
+        recommendationsContainer.innerHTML = recommendationsHTML;
+    }
+
+    categorizeQuestion(scenario) {
+        // Categorize questions based on their content
+        if (!scenario) return 'General Testing Approach';
+        
+        const title = scenario.title?.toLowerCase() || '';
+        const description = scenario.description?.toLowerCase() || '';
+
+        if (title.includes('context') || description.includes('context')) {
+            return 'Project Context Understanding';
+        } else if (title.includes('environment') || description.includes('environment')) {
+            return 'Test Environment Management';
+        } else if (title.includes('documentation') || description.includes('documentation')) {
+            return 'Test Documentation';
+        } else if (title.includes('planning') || description.includes('planning')) {
+            return 'Test Planning';
+        } else if (title.includes('risk') || description.includes('risk')) {
+            return 'Risk Assessment';
+        } else if (title.includes('coverage') || description.includes('coverage')) {
+            return 'Test Coverage';
+        } else if (title.includes('collaboration') || description.includes('collaboration')) {
+            return 'Team Collaboration';
+        } else {
+            return 'General Testing Approach';
+        }
+    }
+
+    getRecommendation(area) {
+        const recommendations = {
+            'Project Context Understanding': 'Focus on improving requirement analysis and understanding business context before testing.',
+            'Test Environment Management': 'Enhance your ability to identify and document environment differences and their impact on testing.',
+            'Test Documentation': 'Practice creating clear, detailed test documentation that helps track issues and communicate effectively.',
+            'Test Planning': 'Work on developing comprehensive test strategies that consider project scope and risks.',
+            'Risk Assessment': 'Strengthen your ability to identify, prioritize, and communicate potential risks in testing.',
+            'Test Coverage': 'Improve your approach to ensuring adequate test coverage across different testing types and scenarios.',
+            'Team Collaboration': 'Enhance communication with team members and stakeholders during the testing process.',
+            'General Testing Approach': 'Continue developing fundamental testing principles and methodologies.'
+        };
+
+        return recommendations[area] || 'Continue practicing core testing mindset principles.';
     }
 }
 
