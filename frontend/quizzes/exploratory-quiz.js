@@ -650,6 +650,13 @@ export class ExploratoryQuiz extends BaseQuiz {
                 loadingIndicator.classList.remove('hidden');
             }
 
+            // Clear any existing timer
+            if (this.questionTimer) {
+                clearInterval(this.questionTimer);
+                this.questionTimer = null;
+                console.log('Timer cleared in startGame');
+            }
+
             // Set player name from localStorage
             this.player.name = localStorage.getItem('username');
             if (!this.player.name) {
@@ -679,12 +686,11 @@ export class ExploratoryQuiz extends BaseQuiz {
                 transitionContainer.classList.remove('active');
             }
 
-            // Clear any existing timer
-            if (this.questionTimer) {
-                clearInterval(this.questionTimer);
-            }
-            
-            await this.displayScenario();
+            // Update progress display
+            this.updateProgress();
+
+            // Start from first scenario
+            this.displayScenario();
         } catch (error) {
             console.error('Failed to start game:', error);
             this.showError('Failed to start the quiz. Please try refreshing the page.');
@@ -732,6 +738,13 @@ export class ExploratoryQuiz extends BaseQuiz {
                 return;
             }
             
+            // Clear any existing timer
+            if (this.questionTimer) {
+                clearInterval(this.questionTimer);
+                this.questionTimer = null;
+                console.log('Timer cleared in displayScenario');
+            }
+            
             const currentScenarios = this.getCurrentScenarios();
             if (!currentScenarios || !Array.isArray(currentScenarios)) {
                 console.error('Could not get current scenarios', currentScenarios);
@@ -758,10 +771,12 @@ export class ExploratoryQuiz extends BaseQuiz {
                 // Display the first scenario of the next level
                 const nextScenario = updatedScenarios[0];
                 this.displayScenarioContent(nextScenario);
+                console.log('Displaying first scenario of next level');
                 return;
             }
             
             // Display the current scenario
+            console.log('Displaying current scenario:', scenario.title);
             this.displayScenarioContent(scenario);
         } catch (error) {
             console.error('Error displaying scenario:', error);
@@ -771,47 +786,53 @@ export class ExploratoryQuiz extends BaseQuiz {
 
     displayScenarioContent(scenario) {
         try {
+            // Update UI with current scenario
             const titleElement = document.getElementById('scenario-title');
             const descriptionElement = document.getElementById('scenario-description');
             const optionsContainer = document.getElementById('options-container');
-
-            if (!titleElement || !descriptionElement || !optionsContainer) {
-                console.error('Required elements not found');
-                return;
+            
+            if (titleElement && scenario.title) {
+                titleElement.textContent = scenario.title;
             }
-
-            titleElement.textContent = scenario.title;
-            descriptionElement.textContent = scenario.description;
-
-            // Create a copy of options with their original indices
-            const shuffledOptions = scenario.options.map((option, index) => ({
-                ...option,
-                originalIndex: index
-            }));
-
-            // Shuffle the options
-            for (let i = shuffledOptions.length - 1; i > 0; i--) {
-                const j = Math.floor(Math.random() * (i + 1));
-                [shuffledOptions[i], shuffledOptions[j]] = [shuffledOptions[j], shuffledOptions[i]];
+            
+            if (descriptionElement && scenario.description) {
+                descriptionElement.textContent = scenario.description;
             }
-
-            optionsContainer.innerHTML = '';
-
-            shuffledOptions.forEach((option, index) => {
-                const optionElement = document.createElement('div');
-                optionElement.className = 'option';
-                optionElement.innerHTML = `
-                    <input type="radio" 
-                        name="option" 
-                        value="${option.originalIndex}" 
-                        id="option${index}"
-                        tabindex="0"
-                        aria-label="${option.text}"
-                        role="radio">
-                    <label for="option${index}">${option.text}</label>
-                `;
-                optionsContainer.appendChild(optionElement);
-            });
+            
+            if (optionsContainer && scenario.options && Array.isArray(scenario.options)) {
+                optionsContainer.innerHTML = '';
+                
+                scenario.options.forEach((option, index) => {
+                    if (!option || !option.text) {
+                        console.error('Invalid option at index', index, option);
+                        return;
+                    }
+                    
+                    const optionDiv = document.createElement('div');
+                    optionDiv.className = 'option';
+                    optionDiv.innerHTML = `
+                        <input type="radio" 
+                            name="option" 
+                            value="${index}" 
+                            id="option${index}"
+                            tabindex="0"
+                            aria-label="${option.text}">
+                        <label for="option${index}">${option.text}</label>
+                    `;
+                    optionsContainer.appendChild(optionDiv);
+                });
+            }
+            
+            // Record start time for this question
+            this.questionStartTime = Date.now();
+            
+            // Initialize timer for the new question
+            this.initializeTimer();
+            
+            // Update progress display
+            this.updateProgress();
+            
+            console.log('Scenario content displayed, timer initialized');
         } catch (error) {
             console.error('Error displaying scenario content:', error);
         }
@@ -828,6 +849,13 @@ export class ExploratoryQuiz extends BaseQuiz {
         const submitButton = document.querySelector('.submit-button');
         if (submitButton) {
             submitButton.disabled = true;
+        }
+        
+        // Clear the timer when an answer is submitted
+        if (this.questionTimer) {
+            clearInterval(this.questionTimer);
+            this.questionTimer = null;
+            console.log('Timer cleared in handleAnswer');
         }
         
         try {
@@ -1018,6 +1046,13 @@ export class ExploratoryQuiz extends BaseQuiz {
     nextScenario() {
         try {
             console.log('Moving to next scenario');
+            
+            // Clear any existing timer
+            if (this.questionTimer) {
+                clearInterval(this.questionTimer);
+                this.questionTimer = null;
+                console.log('Timer cleared in nextScenario');
+            }
             
             // Increment current scenario if not done in handleAnswer
             if (this.player && typeof this.player.currentScenario === 'number') {
@@ -1374,6 +1409,99 @@ export class ExploratoryQuiz extends BaseQuiz {
         } catch (error) {
             console.error('Failed to save final progress:', error);
             this.showError('Failed to save your results. Please try again.');
+        }
+    }
+
+    initializeTimer() {
+        // Clear any existing timer
+        if (this.questionTimer) {
+            clearInterval(this.questionTimer);
+            this.questionTimer = null;
+        }
+
+        // Set default timer value if not set
+        if (!this.timePerQuestion) {
+            this.timePerQuestion = 30;
+            console.log('[Quiz] Using default timer value:', this.timePerQuestion);
+        }
+
+        // Reset remaining time
+        this.remainingTime = this.timePerQuestion;
+        this.questionStartTime = Date.now();
+
+        // Update timer display
+        const timerContainer = document.getElementById('timer-container');
+        if (timerContainer) {
+            timerContainer.textContent = `Time remaining: ${this.remainingTime}s`;
+        }
+
+        // Start the countdown
+        this.questionTimer = setInterval(() => {
+            this.remainingTime--;
+            
+            // Update timer display
+            if (timerContainer) {
+                timerContainer.textContent = `Time remaining: ${this.remainingTime}s`;
+                
+                // Add warning class when time is running low
+                if (this.remainingTime <= 5) {
+                    timerContainer.classList.add('timer-warning');
+                } else {
+                    timerContainer.classList.remove('timer-warning');
+                }
+            }
+
+            // Check if time is up
+            if (this.remainingTime <= 0) {
+                clearInterval(this.questionTimer);
+                this.questionTimer = null;
+                this.handleTimeUp();
+            }
+        }, 1000);
+        
+        console.log('Timer initialized with', this.remainingTime, 'seconds');
+    }
+
+    handleTimeUp() {
+        console.log('Time is up!');
+        try {
+            // Get current scenario
+            const currentScenarios = this.getCurrentScenarios();
+            const scenario = currentScenarios[this.player.currentScenario];
+            
+            if (!scenario) {
+                console.error('No scenario found for time up handling');
+                return;
+            }
+            
+            // Find the option with the highest score (correct answer)
+            const correctAnswer = scenario.options.reduce((prev, current) => 
+                (prev.experience > current.experience) ? prev : current
+            );
+            
+            // Create a timeout option
+            const timeoutOption = {
+                text: 'Time ran out!',
+                experience: 0,
+                isCorrect: false,
+                outcome: 'You did not answer in time.'
+            };
+            
+            // Add to question history
+            this.player.questionHistory.push({
+                scenario: scenario,
+                selectedAnswer: timeoutOption,
+                isCorrect: false
+            });
+            
+            // Save progress
+            this.saveProgress();
+            
+            // Show timeout outcome
+            this.displayOutcome(timeoutOption);
+        } catch (error) {
+            console.error('Error handling time up:', error);
+            this.showError('An error occurred. Please try again.');
         }
     }
 }
