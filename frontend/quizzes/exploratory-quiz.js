@@ -6,15 +6,12 @@ export class ExploratoryQuiz extends BaseQuiz {
     constructor() {
         const config = {
             maxXP: 300,
-            levelThresholds: {
-                basic: { questions: 5, minXP: 35 },
-                intermediate: { questions: 10, minXP: 110 },
-                advanced: { questions: 15, minXP: 235 }
-            },
+            totalQuestions: 15,
+            passPercentage: 70,
             performanceThresholds: [
-                { threshold: 250, message: '🏆 Outstanding! You\'re a exploratory testing expert!' },
-                { threshold: 200, message: '👏 Great job! You\'ve shown strong exploratory testing skills!' },
-                { threshold: 150, message: '👍 Good work! Keep practicing to improve further.' },
+                { threshold: 90, message: '🏆 Outstanding! You\'re an exploratory testing expert!' },
+                { threshold: 80, message: '👏 Great job! You\'ve shown strong exploratory testing skills!' },
+                { threshold: 70, message: '👍 Good work! You\'ve passed the quiz!' },
                 { threshold: 0, message: '📚 Consider reviewing exploratory testing best practices and try again!' }
             ]
         };
@@ -527,29 +524,23 @@ export class ExploratoryQuiz extends BaseQuiz {
         setTimeout(() => errorDiv.remove(), 5000);
     }
 
-    shouldEndGame(totalQuestionsAnswered, currentXP) {
-        return totalQuestionsAnswered >= 15 || currentXP >= this.maxXP;
+    shouldEndGame() {
+        // End game if we've answered all questions
+        return this.player.questionHistory.length >= 15;
     }
 
     async saveProgress() {
-        // First determine the status based on clear conditions
+        // First determine the status based on completion criteria only
         let status = 'in-progress';
         
         // Check for completion (all 15 questions answered)
         if (this.player.questionHistory.length >= 15) {
-            // Check if they met the advanced XP requirement
-            if (this.player.experience >= this.levelThresholds.advanced.minXP) {
-                status = 'completed';
-            } else {
-                status = 'failed';
-            }
-        } 
-        // Check for early failure conditions
-        else if (
-            (this.player.questionHistory.length >= 10 && this.player.experience < this.levelThresholds.intermediate.minXP) ||
-            (this.player.questionHistory.length >= 5 && this.player.experience < this.levelThresholds.basic.minXP)
-        ) {
-            status = 'failed';
+            // Calculate pass/fail based on correct answers
+            const correctAnswers = this.player.questionHistory.filter(q => 
+                q.selectedAnswer && (q.selectedAnswer.isCorrect || q.selectedAnswer.experience > 0)
+            ).length;
+            const scorePercentage = Math.round((correctAnswers / 15) * 100);
+            status = scorePercentage >= 70 ? 'passed' : 'failed';
         }
 
         const progress = {
@@ -560,7 +551,10 @@ export class ExploratoryQuiz extends BaseQuiz {
                 questionHistory: this.player.questionHistory,
                 lastUpdated: new Date().toISOString(),
                 questionsAnswered: this.player.questionHistory.length,
-                status: status
+                status: status,
+                scorePercentage: Math.round((this.player.questionHistory.filter(q => 
+                    q.selectedAnswer && (q.selectedAnswer.isCorrect || q.selectedAnswer.experience > 0)
+                ).length / 15) * 100)
             }
         };
 
@@ -723,153 +717,142 @@ export class ExploratoryQuiz extends BaseQuiz {
     }
 
     displayScenario() {
-        const currentScenarios = this.getCurrentScenarios();
-        
-        // Check basic level completion
-        if (this.player.questionHistory.length >= 5) {
-            if (this.player.experience < this.levelThresholds.basic.minXP) {
-                this.endGame(true); // End with failure state
-                return;
-            }
-        }
-
-        // Check intermediate level completion
-        if (this.player.questionHistory.length >= 10) {
-            if (this.player.experience < this.levelThresholds.intermediate.minXP) {
-                this.endGame(true); // End with failure state
-                return;
-            }
-        }
-
-        // Check Advanced level completion
-        if (this.player.questionHistory.length >= 15) {
-            if (this.player.experience < this.levelThresholds.advanced.minXP) {
-                this.endGame(true); // End with failure state
-                return;
-            } else {
-                this.endGame(false); // Completed successfully
-                return;
-            }
-        }
-
-        // Get the next scenario based on current progress
-        let scenario;
-        const questionCount = this.player.questionHistory.length;
-        
-        // Reset currentScenario based on the current level
-        if (questionCount < 5) {
-            // Basic questions (0-4)
-            scenario = this.basicScenarios[questionCount];
-            this.player.currentScenario = questionCount;
-        } else if (questionCount < 10) {
-            // Intermediate questions (5-9)
-            scenario = this.intermediateScenarios[questionCount - 5];
-            this.player.currentScenario = questionCount - 5;
-        } else if (questionCount < 15) {
-            // Advanced questions (10-14)
-            scenario = this.advancedScenarios[questionCount - 10];
-            this.player.currentScenario = questionCount - 10;
-        }
-
-        if (!scenario) {
-            console.error('No scenario found for current progress. Question count:', questionCount);
-            this.endGame(true);
-            return;
-        }
-
-        // Store current question number for consistency
-        this.currentQuestionNumber = questionCount + 1;
-        
-        // Show level transition message at the start of each level or when level changes
-        const currentLevel = this.getCurrentLevel();
-        const previousLevel = questionCount > 0 ? 
-            (questionCount <= 5 ? 'Basic' : 
-             questionCount <= 10 ? 'Intermediate' : 'Advanced') : null;
+        try {
+            console.log('Displaying scenario');
+            const currentScenarios = this.getCurrentScenarios();
             
-        if (questionCount === 0 || 
-            (questionCount === 5 && currentLevel === 'Intermediate') || 
-            (questionCount === 10 && currentLevel === 'Advanced')) {
-            const transitionContainer = document.getElementById('level-transition-container');
-            if (transitionContainer) {
-                transitionContainer.innerHTML = ''; // Clear any existing messages
-                
-                const levelMessage = document.createElement('div');
-                levelMessage.className = 'level-transition';
-                levelMessage.setAttribute('role', 'alert');
-                levelMessage.textContent = `Starting ${currentLevel} Questions`;
-                
-                transitionContainer.appendChild(levelMessage);
-                transitionContainer.classList.add('active');
-                
-                // Update the level indicator
-                const levelIndicator = document.getElementById('level-indicator');
-                if (levelIndicator) {
-                    levelIndicator.textContent = `Level: ${currentLevel}`;
-                }
-                
-                // Remove the message and container height after animation
-                setTimeout(() => {
-                    transitionContainer.classList.remove('active');
-                    setTimeout(() => {
-                        transitionContainer.innerHTML = '';
-                    }, 300); // Wait for height transition to complete
-                }, 3000);
+            // Get the next scenario based on current progress
+            let scenario;
+            const questionCount = this.player.questionHistory.length;
+            
+            // Check if we've reached the end of the quiz
+            if (questionCount >= 15) {
+                console.log('End of quiz reached');
+                this.endGame();
+                return;
             }
+            
+            // Reset currentScenario based on the current level
+            if (questionCount < 5) {
+                // Basic questions (0-4)
+                scenario = this.basicScenarios[questionCount];
+                this.player.currentScenario = questionCount;
+            } else if (questionCount < 10) {
+                // Intermediate questions (5-9)
+                scenario = this.intermediateScenarios[questionCount - 5];
+                this.player.currentScenario = questionCount - 5;
+            } else {
+                // Advanced questions (10-14)
+                scenario = this.advancedScenarios[questionCount - 10];
+                this.player.currentScenario = questionCount - 10;
+            }
+
+            if (!scenario) {
+                console.error('No scenario found for current progress. Question count:', questionCount);
+                this.endGame();
+                return;
+            }
+
+            // Store current question number for consistency
+            this.currentQuestionNumber = questionCount + 1;
+            
+            // Show level transition message at the start of each level or when level changes
+            const currentLevel = this.getCurrentLevel();
+            const previousLevel = questionCount > 0 ? 
+                (questionCount <= 5 ? 'Basic' : 
+                questionCount <= 10 ? 'Intermediate' : 'Advanced') : null;
+                
+            if (questionCount === 0 || 
+                (questionCount === 5 && currentLevel === 'Intermediate') || 
+                (questionCount === 10 && currentLevel === 'Advanced')) {
+                const transitionContainer = document.getElementById('level-transition-container');
+                if (transitionContainer) {
+                    transitionContainer.innerHTML = ''; // Clear any existing messages
+                    
+                    const levelMessage = document.createElement('div');
+                    levelMessage.className = 'level-transition';
+                    levelMessage.setAttribute('role', 'alert');
+                    levelMessage.textContent = `Starting ${currentLevel} Questions`;
+                    
+                    transitionContainer.appendChild(levelMessage);
+                    transitionContainer.classList.add('active');
+                    
+                    // Update the level indicator
+                    const levelIndicator = document.getElementById('level-indicator');
+                    if (levelIndicator) {
+                        levelIndicator.textContent = `Level: ${currentLevel}`;
+                    }
+                    
+                    // Remove the message and container height after animation
+                    setTimeout(() => {
+                        transitionContainer.classList.remove('active');
+                        setTimeout(() => {
+                            transitionContainer.innerHTML = '';
+                        }, 300); // Wait for height transition to complete
+                    }, 3000);
+                }
+            }
+
+            // Update scenario display
+            this.displayScenarioContent(scenario);
+            
+            // Update progress display
+            this.updateProgress();
+
+            // Initialize timer for the new question
+            this.initializeTimer();
+        } catch (error) {
+            console.error('Error displaying scenario:', error);
+            this.showError('An error occurred while loading the next question. Please try again.');
         }
+    }
 
-        // Update scenario display
-        const titleElement = document.getElementById('scenario-title');
-        const descriptionElement = document.getElementById('scenario-description');
-        const optionsContainer = document.getElementById('options-container');
+    displayScenarioContent(scenario) {
+        try {
+            const titleElement = document.getElementById('scenario-title');
+            const descriptionElement = document.getElementById('scenario-description');
+            const optionsContainer = document.getElementById('options-container');
 
-        if (!titleElement || !descriptionElement || !optionsContainer) {
-            console.error('Required elements not found');
-            return;
+            if (!titleElement || !descriptionElement || !optionsContainer) {
+                console.error('Required elements not found');
+                return;
+            }
+
+            titleElement.textContent = scenario.title;
+            descriptionElement.textContent = scenario.description;
+
+            // Create a copy of options with their original indices
+            const shuffledOptions = scenario.options.map((option, index) => ({
+                ...option,
+                originalIndex: index
+            }));
+
+            // Shuffle the options
+            for (let i = shuffledOptions.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [shuffledOptions[i], shuffledOptions[j]] = [shuffledOptions[j], shuffledOptions[i]];
+            }
+
+            optionsContainer.innerHTML = '';
+
+            shuffledOptions.forEach((option, index) => {
+                const optionElement = document.createElement('div');
+                optionElement.className = 'option';
+                optionElement.innerHTML = `
+                    <input type="radio" 
+                        name="option" 
+                        value="${option.originalIndex}" 
+                        id="option${index}"
+                        tabindex="0"
+                        aria-label="${option.text}"
+                        role="radio">
+                    <label for="option${index}">${option.text}</label>
+                `;
+                optionsContainer.appendChild(optionElement);
+            });
+        } catch (error) {
+            console.error('Error displaying scenario content:', error);
         }
-
-        titleElement.textContent = scenario.title;
-        descriptionElement.textContent = scenario.description;
-
-        // Update question counter immediately
-        const questionProgress = document.getElementById('question-progress');
-        if (questionProgress) {
-            questionProgress.textContent = `Question: ${this.currentQuestionNumber}/15`;
-        }
-
-        // Create a copy of options with their original indices
-        const shuffledOptions = scenario.options.map((option, index) => ({
-            ...option,
-            originalIndex: index
-        }));
-
-        // Shuffle the options
-        for (let i = shuffledOptions.length - 1; i > 0; i--) {
-            const j = Math.floor(Math.random() * (i + 1));
-            [shuffledOptions[i], shuffledOptions[j]] = [shuffledOptions[j], shuffledOptions[i]];
-        }
-
-        optionsContainer.innerHTML = '';
-
-        shuffledOptions.forEach((option, index) => {
-            const optionElement = document.createElement('div');
-            optionElement.className = 'option';
-            optionElement.innerHTML = `
-                <input type="radio" 
-                    name="option" 
-                    value="${option.originalIndex}" 
-                    id="option${index}"
-                    tabindex="0"
-                    aria-label="${option.text}"
-                    role="radio">
-                <label for="option${index}">${option.text}</label>
-            `;
-            optionsContainer.appendChild(optionElement);
-        });
-
-        this.updateProgress();
-
-        // Initialize timer for the new question
-        this.initializeTimer();
     }
 
     async handleAnswer() {
@@ -896,97 +879,29 @@ export class ExploratoryQuiz extends BaseQuiz {
             
             const selectedAnswer = scenario.options[originalIndex];
 
-            // Calculate new experience with level-based minimum thresholds
-            let newExperience = this.player.experience + selectedAnswer.experience;
-            
-            // Apply minimum thresholds based on current level
-            const questionCount = this.player.questionHistory.length;
-            if (questionCount >= 5) { // Intermediate level
-                newExperience = Math.max(this.levelThresholds.basic.minXP, newExperience);
-            }
-            if (questionCount >= 10) { // Advanced level
-                newExperience = Math.max(this.levelThresholds.intermediate.minXP, newExperience);
-            }
-
             // Update player experience with bounds
-            this.player.experience = Math.max(0, Math.min(this.maxXP, newExperience));
+            this.player.experience = Math.max(0, Math.min(this.maxXP, this.player.experience + selectedAnswer.experience));
             
             // Calculate time spent on this question
             const timeSpent = this.questionStartTime ? Date.now() - this.questionStartTime : null;
 
-            // Add status to question history
+            // Add question to history
             this.player.questionHistory.push({
                 scenario: scenario,
                 selectedAnswer: selectedAnswer,
-                status: selectedAnswer.experience > 0 ? 'passed' : 'failed',
+                isCorrect: selectedAnswer.experience > 0,
                 maxPossibleXP: Math.max(...scenario.options.map(o => o.experience)),
                 timeSpent: timeSpent,
                 timedOut: false
             });
 
-            // Increment current scenario
-            this.player.currentScenario++;
-
             // Save progress
             await this.saveProgress();
 
-            // Calculate the score and experience
-            const totalQuestions = 15;
-            const completedQuestions = this.player.questionHistory.length;
-            const percentComplete = Math.round((completedQuestions / totalQuestions) * 100);
+            // Show outcome screen with results
+            this.displayOutcome(selectedAnswer);
             
-            const score = {
-                quizName: this.quizName,
-                score: percentComplete,
-                experience: this.player.experience,
-                questionHistory: this.player.questionHistory,
-                questionsAnswered: completedQuestions,
-                lastActive: new Date().toISOString()
-            };
-            
-            // Save quiz result
-            const username = localStorage.getItem('username');
-            if (username) {
-                const quizUser = new QuizUser(username);
-                await quizUser.updateQuizScore(
-                    this.quizName,
-                    score.score,
-                    score.experience,
-                    this.player.tools,
-                    score.questionHistory,
-                    score.questionsAnswered,
-                    score.status
-                );
-            }
-
-            // Show outcome screen
-            if (this.gameScreen && this.outcomeScreen) {
-                this.gameScreen.classList.add('hidden');
-                this.outcomeScreen.classList.remove('hidden');
-            }
-            
-            // Update outcome display
-            const correctAnswer = scenario.options.reduce((prev, current) => 
-                (prev.experience > current.experience) ? prev : current
-            );
-
-            let outcomeText = selectedAnswer.outcome;
-            document.getElementById('outcome-text').textContent = outcomeText;
-            
-            const xpText = selectedAnswer.experience >= 0 ? 
-                `Experience gained: +${selectedAnswer.experience}` : 
-                `Experience: ${selectedAnswer.experience}`;
-            document.getElementById('xp-gained').textContent = xpText;
-            
-            if (selectedAnswer.tool) {
-                document.getElementById('tool-gained').textContent = `Tool acquired: ${selectedAnswer.tool}`;
-                if (!this.player.tools.includes(selectedAnswer.tool)) {
-                    this.player.tools.push(selectedAnswer.tool);
-                }
-            } else {
-                document.getElementById('tool-gained').textContent = '';
-            }
-
+            // Update progress display
             this.updateProgress();
         } catch (error) {
             console.error('Failed to handle answer:', error);
@@ -999,22 +914,103 @@ export class ExploratoryQuiz extends BaseQuiz {
         }
     }
 
-    nextScenario() {
-        // Hide outcome screen and show game screen
-        if (this.outcomeScreen && this.gameScreen) {
-            this.outcomeScreen.classList.add('hidden');
-            this.gameScreen.classList.remove('hidden');
+    displayOutcome(selectedAnswer) {
+        try {
+            // Show outcome screen and hide game screen
+            if (this.gameScreen) {
+                this.gameScreen.classList.add('hidden');
+                this.gameScreen.style.display = 'none';
+            }
+            
+            if (this.outcomeScreen) {
+                this.outcomeScreen.classList.remove('hidden');
+                this.outcomeScreen.style.display = 'block';
+            }
+            
+            // Update outcome display
+            const outcomeTextElement = document.getElementById('outcome-text');
+            if (outcomeTextElement) {
+                outcomeTextElement.textContent = selectedAnswer.outcome || '';
+            }
+            
+            // Show if answer was correct
+            const isCorrect = selectedAnswer.isCorrect || selectedAnswer.experience > 0;
+            const resultElement = document.getElementById('result-text');
+            if (resultElement) {
+                resultElement.textContent = isCorrect ? 'Correct!' : 'Incorrect';
+                resultElement.className = isCorrect ? 'correct' : 'incorrect';
+            }
+            
+            // Show XP gained
+            const xpElement = document.getElementById('xp-gained');
+            if (xpElement) {
+                const xpText = selectedAnswer.experience >= 0 ? 
+                    `Experience gained: +${selectedAnswer.experience}` : 
+                    `Experience: ${selectedAnswer.experience}`;
+                xpElement.textContent = xpText;
+            }
+            
+            // Show tool acquired if present
+            const toolElement = document.getElementById('tool-gained');
+            if (toolElement) {
+                if (selectedAnswer.tool) {
+                    toolElement.textContent = `Tool acquired: ${selectedAnswer.tool}`;
+                    if (this.player && !this.player.tools.includes(selectedAnswer.tool)) {
+                        this.player.tools.push(selectedAnswer.tool);
+                    }
+                } else {
+                    toolElement.textContent = '';
+                }
+            }
+        } catch (error) {
+            console.error('Error displaying outcome:', error);
         }
-        
-        // Display next scenario
-        this.displayScenario();
+    }
+
+    nextScenario() {
+        try {
+            console.log('Moving to next scenario');
+            
+            // Increment current scenario if not done in handleAnswer
+            if (this.player && typeof this.player.currentScenario === 'number') {
+                this.player.currentScenario++;
+                console.log('Incremented to scenario:', this.player.currentScenario);
+            }
+            
+            // Hide outcome screen and show game screen - try both class and style approaches
+            const outcomeScreen = document.getElementById('outcome-screen');
+            const gameScreen = document.getElementById('game-screen');
+            
+            if (outcomeScreen) {
+                // Try both methods
+                outcomeScreen.classList.add('hidden');
+                outcomeScreen.style.display = 'none';
+            }
+            
+            if (gameScreen) {
+                // Try both methods
+                gameScreen.classList.remove('hidden');
+                gameScreen.style.display = 'block';
+            }
+            
+            // Display next scenario
+            this.displayScenario();
+            
+            // Re-initialize event listeners for the new scenario
+            this.initializeEventListeners();
+        } catch (error) {
+            console.error('Error in nextScenario:', error);
+            this.showError('An error occurred while loading the next question. Please try again.');
+        }
     }
 
     updateProgress() {
         // Get current level and question count
         const currentLevel = this.getCurrentLevel();
         const totalAnswered = this.player.questionHistory.length;
-        const questionNumber = totalAnswered + 1;
+        
+        // Ensure question number never exceeds 15
+        const questionNumber = Math.min(totalAnswered + 1, 15);
         
         // Update the existing progress card elements
         const levelInfoElement = document.querySelector('.level-info');
@@ -1044,11 +1040,11 @@ export class ExploratoryQuiz extends BaseQuiz {
         }
         
         if (questionProgress) {
-            questionProgress.textContent = `Question: ${questionNumber}/${this.totalQuestions || 15}`;
+            questionProgress.textContent = `Question: ${questionNumber}/15`;
         }
         
         if (progressFill) {
-            const progressPercentage = (totalAnswered / (this.totalQuestions || 15)) * 100;
+            const progressPercentage = Math.min((totalAnswered / 15) * 100, 100);
             progressFill.style.width = `${progressPercentage}%`;
         }
     }
@@ -1083,28 +1079,37 @@ export class ExploratoryQuiz extends BaseQuiz {
     }
 
     getCurrentScenarios() {
-        const totalAnswered = this.player.questionHistory.length;
-        const currentXP = this.player.experience;
-        
-        // Check for level progression
-        if (totalAnswered >= 10 && currentXP >= this.levelThresholds.intermediate.minXP) {
-            return this.advancedScenarios;
-        } else if (totalAnswered >= 5 && currentXP >= this.levelThresholds.basic.minXP) {
-            return this.intermediateScenarios;
+        try {
+            const totalAnswered = this.player?.questionHistory?.length || 0;
+            
+            // Simple progression logic based solely on question count, no threshold checks
+            if (totalAnswered >= 10) {
+                return this.advancedScenarios;
+            } else if (totalAnswered >= 5) {
+                return this.intermediateScenarios;
+            }
+            return this.basicScenarios;
+        } catch (error) {
+            console.error('Error in getCurrentScenarios:', error);
+            return this.basicScenarios; // Default to basic if there's an error
         }
-        return this.basicScenarios;
     }
 
     getCurrentLevel() {
-        const totalAnswered = this.player.questionHistory.length;
-        const currentXP = this.player.experience;
-        
-        if (totalAnswered >= 10 && currentXP >= this.levelThresholds.intermediate.minXP) {
-            return 'Advanced';
-        } else if (totalAnswered >= 5 && currentXP >= this.levelThresholds.basic.minXP) {
-            return 'Intermediate';
+        try {
+            const totalAnswered = this.player?.questionHistory?.length || 0;
+            
+            // Determine level based solely on question count
+            if (totalAnswered >= 10) {
+                return 'Advanced';
+            } else if (totalAnswered >= 5) {
+                return 'Intermediate';
+            }
+            return 'Basic';
+        } catch (error) {
+            console.error('Error in getCurrentLevel:', error);
+            return 'Basic'; // Default to basic if there's an error
         }
-        return 'Basic';
     }
 
     generateRecommendations() {
@@ -1207,122 +1212,87 @@ export class ExploratoryQuiz extends BaseQuiz {
         return recommendations[area] || 'Continue practicing core exploratory testing principles.';
     }
 
-    async endGame(failed = false) {
-        this.gameScreen.classList.add('hidden');
-        this.outcomeScreen.classList.add('hidden');
-        this.endScreen.classList.remove('hidden');
-
-        // Hide the progress card on the end screen
-        const progressCard = document.querySelector('.quiz-header-progress');
-        if (progressCard) {
-            progressCard.style.display = 'none';
-        }
-
-        const finalScore = Math.min(this.player.experience, this.maxXP);
-        const scorePercentage = Math.round((finalScore / this.maxXP) * 100);
+    async endGame() {
+        // Calculate final score based on correct answers
+        const correctAnswers = this.player.questionHistory.filter(q => q.selectedAnswer && q.selectedAnswer.isCorrect).length;
+        const scorePercentage = Math.round((correctAnswers / 15) * 100);
         
-        // Save the final quiz result with pass/fail status
-        const username = localStorage.getItem('username');
-        if (username) {
-            try {
-                const user = new QuizUser(username);
-                const status = failed ? 'failed' : 'completed';
-                console.log('Setting final quiz status:', { status, score: scorePercentage });
-                
-                const result = {
-                    score: scorePercentage,
-                    status: status,
-                    experience: this.player.experience,
-                    questionHistory: this.player.questionHistory,
-                    questionsAnswered: this.player.questionHistory.length,
-                    lastActive: new Date().toISOString()
-                };
+        // Create the final progress object
+        const progress = {
+            questionsAnswered: 15, // Always 15 at the end
+            questionHistory: this.player.questionHistory,
+            currentScenario: this.player.currentScenario,
+            status: scorePercentage >= 70 ? 'passed' : 'failed',
+            scorePercentage: scorePercentage,
+            lastUpdated: new Date().toISOString()
+        };
 
-                // Save to QuizUser
-                user.updateQuizScore(
-                    this.quizName,
-                    result.score,
-                    result.experience,
-                    this.player.tools,
-                    result.questionHistory,
-                    result.questionsAnswered,
-                    status
-                );
-
-                // Save to API with proper structure
-                const apiProgress = {
-                    data: {
-                        ...result,
-                        tools: this.player.tools,
-                        currentScenario: this.player.currentScenario
-                    }
-                };
-
-                // Save directly via API to ensure status is updated
-                console.log('Saving final progress to API:', apiProgress);
-                await this.apiService.saveQuizProgress(this.quizName, apiProgress.data);
-            } catch (error) {
-                console.error('Error saving final quiz score:', error);
+        try {
+            // Hide the timer container
+            const timerContainer = document.getElementById('timer-container');
+            if (timerContainer) {
+                timerContainer.style.display = 'none';
             }
-        }
-
-        document.getElementById('final-score').textContent = `Final Score: ${finalScore}/${this.maxXP}`;
-
-        // Update the quiz complete header based on status
-        const quizCompleteHeader = document.querySelector('#end-screen h2');
-        if (quizCompleteHeader) {
-            quizCompleteHeader.textContent = failed ? 'Quiz Failed!' : 'Quiz Complete!';
-        }
-
-        const performanceSummary = document.getElementById('performance-summary');
-        if (failed) {
-            performanceSummary.textContent = 'Quiz failed. You did not meet the minimum XP requirement to progress. You cannot retry this quiz.';
-            // Hide restart button if failed
-            const restartBtn = document.getElementById('restart-btn');
-            if (restartBtn) {
-                restartBtn.style.display = 'none';
+            
+            // Clear any active timer
+            if (this.questionTimer) {
+                clearInterval(this.questionTimer);
+                this.questionTimer = null;
             }
-            // Add failed class to quiz container for styling
-            const quizContainer = document.getElementById('quiz-container');
-            if (quizContainer) {
-                quizContainer.classList.add('failed');
-            }
-        } else {
-            const threshold = this.performanceThresholds.find(t => t.threshold <= finalScore);
-            if (threshold) {
-                performanceSummary.textContent = threshold.message;
-            } else {
-                performanceSummary.textContent = 'Quiz completed successfully!';
-            }
-        }
+            
+            // Hide the game screen and outcome screen, show the end screen
+            this.gameScreen.classList.add('hidden');
+            this.outcomeScreen.classList.add('hidden');
+            this.endScreen.classList.remove('hidden');
 
-        // Generate question review list
-        const reviewList = document.getElementById('question-review');
-        if (reviewList) {
-            reviewList.innerHTML = ''; // Clear existing content
-            this.player.questionHistory.forEach((record, index) => {
-                const reviewItem = document.createElement('div');
-                reviewItem.className = 'review-item';
-                
-                const maxXP = Math.max(...record.scenario.options.map(o => o.experience));
-                const earnedXP = record.selectedAnswer.experience;
-                const isCorrect = earnedXP === maxXP;
-                
-                reviewItem.classList.add(isCorrect ? 'correct' : 'incorrect');
-                
-                reviewItem.innerHTML = `
-                    <h4>Question ${index + 1}</h4>
-                    <p class="scenario">${record.scenario.description}</p>
-                    <p class="answer"><strong>Your Answer:</strong> ${record.selectedAnswer.text}</p>
-                    <p class="outcome"><strong>Outcome:</strong> ${record.selectedAnswer.outcome}</p>
-                    <p class="xp"><strong>Experience Earned:</strong> ${earnedXP}/${maxXP}</p>
-                `;
-                
-                reviewList.appendChild(reviewItem);
-            });
-        }
+            // Update the quiz complete header
+            const quizCompleteHeader = document.querySelector('#end-screen h2');
+            if (quizCompleteHeader) {
+                quizCompleteHeader.textContent = 'Quiz Complete!';
+            }
 
-        this.generateRecommendations();
+            // Update final score display
+            const finalScoreElement = document.getElementById('final-score');
+            if (finalScoreElement) {
+                finalScoreElement.textContent = `Final Score: ${scorePercentage}%`;
+            }
+
+            // Update the progress indicator to show 15/15
+            const questionInfoElement = document.querySelector('.question-info');
+            if (questionInfoElement) {
+                questionInfoElement.textContent = 'Question: 15/15';
+            }
+
+            // Update performance summary based on score
+            const performanceSummary = document.getElementById('performance-summary');
+            if (performanceSummary) {
+                if (scorePercentage >= 70) {
+                    performanceSummary.textContent = 'Congratulations! You passed the quiz.';
+                    performanceSummary.className = 'passed';
+                } else {
+                    performanceSummary.textContent = 'You did not pass the quiz. Please review the material and try again.';
+                    performanceSummary.className = 'failed';
+                }
+            }
+
+            // Save progress to API
+            const username = localStorage.getItem('username');
+            if (!username) {
+                throw new Error('No username found');
+            }
+
+            // Save to API
+            await this.apiService.saveQuizProgress(this.quizName, progress);
+            console.log('Final progress saved:', progress);
+
+            // Generate recommendations if that function exists
+            if (typeof this.generateRecommendations === 'function') {
+                this.generateRecommendations();
+            }
+        } catch (error) {
+            console.error('Failed to save final progress:', error);
+            this.showError('Failed to save your progress. Please try again.');
+        }
     }
 }
 
