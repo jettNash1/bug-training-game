@@ -448,46 +448,62 @@ export class BaseQuiz {
         
         this.clearTimer();
         
-        // Get current scenario
-        const currentScenario = this.scenarios[this.player.currentScenario];
+        // Check if player and current scenario are properly initialized
+        if (!this.player || !this.scenarios || !this.player.currentScenario) {
+            console.error('Player or scenarios not properly initialized');
+            return;
+        }
         
-        // Find correct answer based on experience
-        const correctAnswer = currentScenario.options.find(opt => 
-            opt.experience === currentScenario.correctExperience
-        );
-        
-        // Create timeout option
-        const timeoutOption = {
-            id: 'timeout',
-            text: 'Time ran out!',
-            experience: 'timeout',
-            isCorrect: false
-        };
-        
-        // Record player's choice
-        this.player.questionHistory.push({
-            scenarioId: currentScenario.id,
-            selectedOption: timeoutOption,
-            correctOption: correctAnswer,
-            wasCorrect: false,
-            timeSpent: this.timeLimit
-        });
-        
-        // Increment current scenario
-        this.player.currentScenario++;
-        
-        // Save progress
-        await this.saveProgress();
-        
-        // Calculate score data for quiz result
-        const scoreData = this.calculateScoreData();
-        
-        // Check if quiz is complete
-        if (this.player.currentScenario >= this.scenarios.length) {
-            await this.completeQuiz(scoreData);
-        } else {
-            // Load next scenario
-            await this.loadScenario(this.player.currentScenario);
+        try {
+            // Get current scenario
+            const currentScenario = this.scenarios[this.player.currentScenario];
+            if (!currentScenario) {
+                console.error('Current scenario not found');
+                return;
+            }
+            
+            // Find correct answer based on isCorrect flag or experience
+            const correctAnswer = currentScenario.options.find(opt => 
+                opt.isCorrect || opt.experience === Math.max(...currentScenario.options.map(o => o.experience || 0))
+            );
+            
+            // Create timeout option
+            const timeoutOption = {
+                id: 'timeout',
+                text: 'Time ran out!',
+                experience: 0,
+                isCorrect: false,
+                isTimeout: true
+            };
+            
+            // Record player's choice
+            if (this.player.questionHistory) {
+                this.player.questionHistory.push({
+                    scenarioId: currentScenario.id,
+                    selectedOption: timeoutOption,
+                    correctOption: correctAnswer,
+                    wasCorrect: false,
+                    timeSpent: this.timeLimit || 30
+                });
+            }
+            
+            // Increment current scenario
+            this.player.currentScenario++;
+            
+            // Save progress
+            await this.saveProgress();
+            
+            // Handle next steps based on quiz completion
+            if (this.player.currentScenario >= (this.scenarios ? this.scenarios.length : 15)) {
+                // End the quiz if all scenarios are completed
+                await this.endGame(false);
+            } else {
+                // Load next scenario
+                this.displayScenario();
+            }
+        } catch (error) {
+            console.error('Error handling time up:', error);
+            this.showError('An error occurred. Please try again.');
         }
     }
 
