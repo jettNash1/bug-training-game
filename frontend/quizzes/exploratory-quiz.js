@@ -719,92 +719,53 @@ export class ExploratoryQuiz extends BaseQuiz {
 
     displayScenario() {
         try {
-            console.log('Displaying scenario');
+            // Check if player and currentScenario are properly initialized
+            if (!this.player || typeof this.player.currentScenario !== 'number') {
+                console.error('Player or currentScenario not properly initialized');
+                return;
+            }
+            
+            // Check if we've answered all 15 questions
+            if (this.player.questionHistory.length >= 15) {
+                console.log('All 15 questions answered, ending game');
+                this.endGame();
+                return;
+            }
+            
             const currentScenarios = this.getCurrentScenarios();
-            
-            // Get the next scenario based on current progress
-            let scenario;
-            const questionCount = this.player.questionHistory.length;
-            
-            // Check if we've reached the end of the quiz
-            if (questionCount >= 15) {
-                console.log('End of quiz reached');
-                this.endGame();
+            if (!currentScenarios || !Array.isArray(currentScenarios)) {
+                console.error('Could not get current scenarios', currentScenarios);
                 return;
             }
             
-            // Reset currentScenario based on the current level
-            if (questionCount < 5) {
-                // Basic questions (0-4)
-                scenario = this.basicScenarios[questionCount];
-                this.player.currentScenario = questionCount;
-            } else if (questionCount < 10) {
-                // Intermediate questions (5-9)
-                scenario = this.intermediateScenarios[questionCount - 5];
-                this.player.currentScenario = questionCount - 5;
-            } else {
-                // Advanced questions (10-14)
-                scenario = this.advancedScenarios[questionCount - 10];
-                this.player.currentScenario = questionCount - 10;
-            }
-
+            const scenario = currentScenarios[this.player.currentScenario];
+            
+            // Check if the current scenario exists
             if (!scenario) {
-                console.error('No scenario found for current progress. Question count:', questionCount);
-                this.endGame();
+                console.log('No more scenarios in this level, transitioning to next level');
+                
+                // Reset currentScenario for the next level
+                this.player.currentScenario = 0;
+                
+                // Get the next level scenarios
+                const updatedScenarios = this.getCurrentScenarios();
+                if (!updatedScenarios || !updatedScenarios[0]) {
+                    console.error('Could not find scenarios for next level');
+                    this.endGame();
+                    return;
+                }
+                
+                // Display the first scenario of the next level
+                const nextScenario = updatedScenarios[0];
+                this.displayScenarioContent(nextScenario);
                 return;
             }
-
-            // Store current question number for consistency
-            this.currentQuestionNumber = questionCount + 1;
             
-            // Show level transition message at the start of each level or when level changes
-            const currentLevel = this.getCurrentLevel();
-            const previousLevel = questionCount > 0 ? 
-                (questionCount <= 5 ? 'Basic' : 
-                questionCount <= 10 ? 'Intermediate' : 'Advanced') : null;
-                
-            if (questionCount === 0 || 
-                (questionCount === 5 && currentLevel === 'Intermediate') || 
-                (questionCount === 10 && currentLevel === 'Advanced')) {
-                const transitionContainer = document.getElementById('level-transition-container');
-                if (transitionContainer) {
-                    transitionContainer.innerHTML = ''; // Clear any existing messages
-                    
-                    const levelMessage = document.createElement('div');
-                    levelMessage.className = 'level-transition';
-                    levelMessage.setAttribute('role', 'alert');
-                    levelMessage.textContent = `Starting ${currentLevel} Questions`;
-                    
-                    transitionContainer.appendChild(levelMessage);
-                    transitionContainer.classList.add('active');
-                    
-                    // Update the level indicator
-                    const levelIndicator = document.getElementById('level-indicator');
-                    if (levelIndicator) {
-                        levelIndicator.textContent = `Level: ${currentLevel}`;
-                    }
-                    
-                    // Remove the message and container height after animation
-                    setTimeout(() => {
-                        transitionContainer.classList.remove('active');
-                        setTimeout(() => {
-                            transitionContainer.innerHTML = '';
-                        }, 300); // Wait for height transition to complete
-                    }, 3000);
-                }
-            }
-
-            // Update scenario display
+            // Display the current scenario
             this.displayScenarioContent(scenario);
-            
-            // Update progress display
-            this.updateProgress();
-
-            // Initialize timer for the new question
-            this.initializeTimer();
         } catch (error) {
             console.error('Error displaying scenario:', error);
-            this.showError('An error occurred while loading the next question. Please try again.');
+            this.showError('An error occurred displaying the scenario. Please try reloading the page.');
         }
     }
 
@@ -868,42 +829,113 @@ export class ExploratoryQuiz extends BaseQuiz {
         if (submitButton) {
             submitButton.disabled = true;
         }
-
-        // Clear the timer when an answer is submitted
-        if (this.questionTimer) {
-            clearInterval(this.questionTimer);
-        }
         
         try {
             this.isLoading = true;
             const selectedOption = document.querySelector('input[name="option"]:checked');
-            if (!selectedOption) return;
+            if (!selectedOption) {
+                console.warn('No option selected');
+                if (submitButton) {
+                    submitButton.disabled = false;
+                }
+                this.isLoading = false;
+                return;
+            }
 
             const currentScenarios = this.getCurrentScenarios();
+            if (!currentScenarios || !this.player || this.player.currentScenario === undefined) {
+                console.error('Invalid scenario or player state');
+                if (submitButton) {
+                    submitButton.disabled = false;
+                }
+                this.isLoading = false;
+                return;
+            }
+            
             const scenario = currentScenarios[this.player.currentScenario];
+            if (!scenario || !scenario.options) {
+                console.error('Invalid scenario structure:', scenario);
+                if (submitButton) {
+                    submitButton.disabled = false;
+                }
+                this.isLoading = false;
+                return;
+            }
+            
             const originalIndex = parseInt(selectedOption.value);
+            if (isNaN(originalIndex) || originalIndex < 0 || originalIndex >= scenario.options.length) {
+                console.error('Invalid option index:', originalIndex);
+                if (submitButton) {
+                    submitButton.disabled = false;
+                }
+                this.isLoading = false;
+                return;
+            }
             
             const selectedAnswer = scenario.options[originalIndex];
+            if (!selectedAnswer) {
+                console.error('Selected answer not found');
+                if (submitButton) {
+                    submitButton.disabled = false;
+                }
+                this.isLoading = false;
+                return;
+            }
 
-            // Update player experience with bounds (still track it for backward compatibility)
-            this.player.experience = Math.max(0, Math.min(this.maxXP, this.player.experience + selectedAnswer.experience));
+            // Find the correct answer (option with highest experience)
+            const correctAnswer = scenario.options.reduce((prev, current) => 
+                (prev.experience > current.experience) ? prev : current
+            );
+
+            // Mark selected answer as correct or incorrect
+            selectedAnswer.isCorrect = selectedAnswer === correctAnswer;
+
+            // Update player state (still track experience for backward compatibility)
+            if (typeof this.player.experience === 'number') {
+                this.player.experience = Math.max(0, Math.min(this.maxXP || 300, this.player.experience + (selectedAnswer.experience || 0)));
+            }
             
-            // Calculate time spent on this question
-            const timeSpent = this.questionStartTime ? Date.now() - this.questionStartTime : null;
-
-            // Add question to history
+            // Add to question history
             this.player.questionHistory.push({
                 scenario: scenario,
                 selectedAnswer: selectedAnswer,
-                isCorrect: this.isCorrectAnswer(selectedAnswer),
-                timeSpent: timeSpent,
-                timedOut: false
+                isCorrect: this.isCorrectAnswer(selectedAnswer)
             });
 
-            // Save progress
-            await this.saveProgress();
+            // Save progress 
+            try {
+                await this.saveProgress();
+            } catch (error) {
+                console.error('Failed to save progress:', error);
+                this.showError('Warning: Progress may not have saved correctly');
+            }
 
-            // Show outcome screen with results
+            // Save quiz result
+            const username = localStorage.getItem('username');
+            if (username) {
+                try {
+                    const quizUser = new QuizUser(username);
+                    const score = {
+                        score: Math.round((this.player.questionHistory.filter(q => this.isCorrectAnswer(q.selectedAnswer)).length / Math.min(this.player.questionHistory.length, 15)) * 100),
+                        experience: this.player.experience || 0,
+                        questionHistory: this.player.questionHistory || [],
+                        questionsAnswered: this.player.questionHistory.length
+                    };
+                    
+                    await quizUser.updateQuizScore(
+                        this.quizName,
+                        score.score,
+                        score.experience,
+                        this.player.tools || [],
+                        score.questionHistory,
+                        score.questionsAnswered
+                    );
+                } catch (error) {
+                    console.error('Failed to save quiz result:', error);
+                }
+            }
+
+            // Show outcome screen and update display with answer outcome
             this.displayOutcome(selectedAnswer);
             
             // Update progress display
@@ -920,53 +952,66 @@ export class ExploratoryQuiz extends BaseQuiz {
     }
 
     displayOutcome(selectedAnswer) {
+        if (!selectedAnswer) {
+            console.error('No answer selected');
+            return;
+        }
+
         try {
-            // Show outcome screen and hide game screen
-            if (this.gameScreen) {
-                this.gameScreen.classList.add('hidden');
-                this.gameScreen.style.display = 'none';
+            const currentScenarios = this.getCurrentScenarios();
+            if (!currentScenarios || !currentScenarios[this.player.currentScenario]) {
+                console.error('No current scenario found');
+                return;
             }
             
-            if (this.outcomeScreen) {
-                this.outcomeScreen.classList.remove('hidden');
-                this.outcomeScreen.style.display = 'block';
-            }
-            
-            // Update outcome display
-            const outcomeTextElement = document.getElementById('outcome-text');
-            if (outcomeTextElement) {
-                outcomeTextElement.textContent = selectedAnswer.outcome || '';
-            }
-            
-            // Show if answer was correct using helper method
+            const currentScenario = currentScenarios[this.player.currentScenario];
             const isCorrect = this.isCorrectAnswer(selectedAnswer);
-            const resultElement = document.getElementById('result-text');
-            if (resultElement) {
-                resultElement.textContent = isCorrect ? 'Correct!' : 'Incorrect';
-                resultElement.className = isCorrect ? 'correct' : 'incorrect';
+            
+            console.log('Displaying outcome:', { 
+                isCorrect, 
+                selectedAnswer,
+                currentScenario: this.player.currentScenario
+            });
+            
+            // Update UI - safely access elements
+            const outcomeScreen = document.getElementById('outcome-screen');
+            const gameScreen = document.getElementById('game-screen');
+            
+            // Show outcome screen if elements exist
+            if (gameScreen) {
+                gameScreen.classList.add('hidden');
+                gameScreen.style.display = 'none';
             }
             
-            // Show tool acquired if present (but don't show XP)
-            const xpElement = document.getElementById('xp-gained');
-            if (xpElement) {
-                // Hide XP display entirely or set to empty
-                xpElement.style.display = 'none';
+            if (outcomeScreen) {
+                outcomeScreen.classList.remove('hidden');
+                outcomeScreen.style.display = 'block';
             }
             
-            // Show tool acquired if present
-            const toolElement = document.getElementById('tool-gained');
-            if (toolElement) {
-                if (selectedAnswer.tool) {
-                    toolElement.textContent = `Tool acquired: ${selectedAnswer.tool}`;
-                    if (this.player && !this.player.tools.includes(selectedAnswer.tool)) {
-                        this.player.tools.push(selectedAnswer.tool);
-                    }
-                } else {
-                    toolElement.textContent = '';
+            // Set content directly in the outcome screen
+            const outcomeContent = outcomeScreen.querySelector('.outcome-content');
+            if (outcomeContent) {
+                outcomeContent.innerHTML = `
+                    <h3>${isCorrect ? 'Correct!' : 'Incorrect'}</h3>
+                    <p>${selectedAnswer.outcome || ''}</p>
+                    <p class="result">${isCorrect ? 'Correct answer!' : 'Try again next time.'}</p>
+                    <button id="continue-btn" class="submit-button">Continue</button>
+                `;
+                
+                // Add event listener to the continue button
+                const continueBtn = outcomeContent.querySelector('#continue-btn');
+                if (continueBtn) {
+                    continueBtn.addEventListener('click', () => this.nextScenario());
                 }
+            } else {
+                console.error('Could not find outcome content element');
             }
+            
+            // Update progress
+            this.updateProgress();
         } catch (error) {
-            console.error('Error displaying outcome:', error);
+            console.error('Error in displayOutcome:', error);
+            this.showError('An error occurred. Please try again.');
         }
     }
 
@@ -1243,47 +1288,24 @@ export class ExploratoryQuiz extends BaseQuiz {
                 timerContainer.style.display = 'none';
             }
             
-            // Clear any active timer
+            // Update progress display to show 15/15
+            const questionInfoElement = document.querySelector('.question-info');
+            if (questionInfoElement) {
+                questionInfoElement.textContent = 'Question: 15/15';
+            }
+            
+            // Update legacy progress elements if they exist
+            const questionProgress = document.getElementById('question-progress');
+            if (questionProgress) {
+                questionProgress.textContent = 'Question: 15/15';
+            }
+            
+            // Clear any existing timer
             if (this.questionTimer) {
                 clearInterval(this.questionTimer);
                 this.questionTimer = null;
             }
             
-            // Hide the game screen and outcome screen, show the end screen
-            this.gameScreen.classList.add('hidden');
-            this.outcomeScreen.classList.add('hidden');
-            this.endScreen.classList.remove('hidden');
-
-            // Update the quiz complete header
-            const quizCompleteHeader = document.querySelector('#end-screen h2');
-            if (quizCompleteHeader) {
-                quizCompleteHeader.textContent = 'Quiz Complete!';
-            }
-
-            // Update final score display
-            const finalScoreElement = document.getElementById('final-score');
-            if (finalScoreElement) {
-                finalScoreElement.textContent = `Final Score: ${scorePercentage}%`;
-            }
-
-            // Update the progress indicator to show 15/15
-            const questionInfoElement = document.querySelector('.question-info');
-            if (questionInfoElement) {
-                questionInfoElement.textContent = 'Question: 15/15';
-            }
-
-            // Update performance summary based on score
-            const performanceSummary = document.getElementById('performance-summary');
-            if (performanceSummary) {
-                if (scorePercentage >= 70) {
-                    performanceSummary.textContent = 'Congratulations! You passed the quiz.';
-                    performanceSummary.className = 'passed';
-                } else {
-                    performanceSummary.textContent = 'You did not pass the quiz. Please review the material and try again.';
-                    performanceSummary.className = 'failed';
-                }
-            }
-
             // Save progress to API
             const username = localStorage.getItem('username');
             if (!username) {
@@ -1294,10 +1316,32 @@ export class ExploratoryQuiz extends BaseQuiz {
             await this.apiService.saveQuizProgress(this.quizName, progress);
             console.log('Final progress saved:', progress);
 
-            // Generate recommendations
-            this.generateRecommendations();
+            // Update quiz score in user's record
+            const quizUser = new QuizUser(username);
+            await quizUser.updateQuizScore(
+                this.quizName, 
+                scorePercentage, 
+                0, // no experience
+                this.player.tools,
+                this.player.questionHistory,
+                15, // Always 15 questions completed
+                scorePercentage >= 70 ? 'completed' : 'failed'
+            );
             
-            // Generate question review list without XP references
+            // Update display elements
+            const finalScoreElement = document.getElementById('final-score');
+            if (finalScoreElement) {
+                finalScoreElement.textContent = `Final Score: ${scorePercentage}%`;
+            }
+            
+            // Show the end screen
+            this.gameScreen.classList.add('hidden');
+            this.outcomeScreen.classList.add('hidden');
+            if (this.endScreen) {
+                this.endScreen.classList.remove('hidden');
+            }
+
+            // Generate question review list
             const reviewList = document.getElementById('question-review');
             if (reviewList) {
                 reviewList.innerHTML = ''; // Clear existing content
@@ -1320,9 +1364,16 @@ export class ExploratoryQuiz extends BaseQuiz {
                     reviewList.appendChild(reviewItem);
                 });
             }
+
+            // Clear local storage for this quiz
+            this.clearQuizLocalStorage(username, this.quizName);
+
+            // Display recommendations
+            this.generateRecommendations();
+
         } catch (error) {
             console.error('Failed to save final progress:', error);
-            this.showError('Failed to save your progress. Please try again.');
+            this.showError('Failed to save your results. Please try again.');
         }
     }
 }
