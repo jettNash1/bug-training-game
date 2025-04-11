@@ -523,29 +523,23 @@ export class InitiativeQuiz extends BaseQuiz {
         setTimeout(() => errorDiv.remove(), 5000);
     }
 
-    shouldEndGame(totalQuestionsAnswered, currentXP) {
-        return totalQuestionsAnswered >= 15 || currentXP >= this.maxXP;
+    shouldEndGame() {
+        // Only end the game when all 15 questions are answered
+        return (this.player?.questionHistory?.length || 0) >= 15;
     }
 
     async saveProgress() {
-        // First determine the status based on clear conditions
+        // First determine the status based on completion criteria only
         let status = 'in-progress';
         
         // Check for completion (all 15 questions answered)
         if (this.player.questionHistory.length >= 15) {
-            // Check if they met the advanced XP requirement
-            if (this.player.experience >= this.levelThresholds.advanced.minXP) {
-                status = 'completed';
-            } else {
-                status = 'failed';
-            }
-        } 
-        // Check for early failure conditions
-        else if (
-            (this.player.questionHistory.length >= 10 && this.player.experience < this.levelThresholds.intermediate.minXP) ||
-            (this.player.questionHistory.length >= 5 && this.player.experience < this.levelThresholds.basic.minXP)
-        ) {
-            status = 'failed';
+            // Calculate pass/fail based on correct answers
+            const correctAnswers = this.player.questionHistory.filter(q => 
+                q.selectedAnswer && (q.selectedAnswer.isCorrect || q.selectedAnswer.experience > 0)
+            ).length;
+            const scorePercentage = Math.round((correctAnswers / 15) * 100);
+            status = scorePercentage >= 70 ? 'passed' : 'failed';
         }
 
         const progress = {
@@ -556,9 +550,14 @@ export class InitiativeQuiz extends BaseQuiz {
                 questionHistory: this.player.questionHistory,
                 lastUpdated: new Date().toISOString(),
                 questionsAnswered: this.player.questionHistory.length,
-                status: status
+                status: status,
+                scorePercentage: Math.round((this.player.questionHistory.filter(q => 
+                    q.selectedAnswer && (q.selectedAnswer.isCorrect || q.selectedAnswer.experience > 0)
+                ).length / 15) * 100)
             }
         };
+
+        console.log('Saving progress:', progress);
 
         try {
             const username = localStorage.getItem('username');
@@ -726,6 +725,13 @@ export class InitiativeQuiz extends BaseQuiz {
                 return;
             }
             
+            // Check if we've answered all 15 questions
+            if (this.player.questionHistory.length >= 15) {
+                console.log('All 15 questions answered, ending game');
+                this.endGame(false);
+                return;
+            }
+            
             const currentScenarios = this.getCurrentScenarios();
             if (!currentScenarios || !Array.isArray(currentScenarios)) {
                 console.error('Could not get current scenarios', currentScenarios);
@@ -734,58 +740,29 @@ export class InitiativeQuiz extends BaseQuiz {
             
             const scenario = currentScenarios[this.player.currentScenario];
             
-            // Check if we've reached the end of the quiz
+            // Check if the current scenario exists
             if (!scenario) {
-                console.log('No more scenarios, ending game');
-                this.endGame(false);
+                console.log('No more scenarios in this level, transitioning to next level');
+                
+                // Reset currentScenario for the next level
+                this.player.currentScenario = 0;
+                
+                // Get the next level scenarios
+                const updatedScenarios = this.getCurrentScenarios();
+                if (!updatedScenarios || !updatedScenarios[0]) {
+                    console.error('Could not find scenarios for next level');
+                    this.endGame(false);
+                    return;
+                }
+                
+                // Display the first scenario of the next level
+                const nextScenario = updatedScenarios[0];
+                this.displayScenarioContent(nextScenario);
                 return;
             }
             
-            // Update UI with current scenario
-            const titleElement = document.getElementById('scenario-title');
-            const descriptionElement = document.getElementById('scenario-description');
-            const optionsContainer = document.getElementById('options-container');
-            
-            if (titleElement && scenario.title) {
-                titleElement.textContent = scenario.title;
-            }
-            
-            if (descriptionElement && scenario.description) {
-                descriptionElement.textContent = scenario.description;
-            }
-            
-            if (optionsContainer && scenario.options && Array.isArray(scenario.options)) {
-                optionsContainer.innerHTML = '';
-                
-                scenario.options.forEach((option, index) => {
-                    if (!option || !option.text) {
-                        console.error('Invalid option at index', index, option);
-                        return;
-                    }
-                    
-                    const optionDiv = document.createElement('div');
-                    optionDiv.className = 'option';
-                    optionDiv.innerHTML = `
-                        <input type="radio" 
-                            name="option" 
-                            value="${index}" 
-                            id="option${index}"
-                            tabindex="0"
-                            aria-label="${option.text}">
-                        <label for="option${index}">${option.text}</label>
-                    `;
-                    optionsContainer.appendChild(optionDiv);
-                });
-            }
-            
-            // Record start time for this question
-            this.questionStartTime = Date.now();
-            
-            // Initialize timer for the new question
-            this.initializeTimer();
-            
-            // Update progress display
-            this.updateProgress();
+            // Display the current scenario
+            this.displayScenarioContent(scenario);
         } catch (error) {
             console.error('Error displaying scenario:', error);
             this.showError('An error occurred displaying the scenario. Please try reloading the page.');
@@ -1034,28 +1011,37 @@ export class InitiativeQuiz extends BaseQuiz {
     }
 
     getCurrentScenarios() {
-        const totalAnswered = this.player.questionHistory.length;
-        const currentXP = this.player.experience;
-        
-        // Check for level progression
-        if (totalAnswered >= 10 && currentXP >= this.levelThresholds.intermediate.minXP) {
-            return this.advancedScenarios;
-        } else if (totalAnswered >= 5 && currentXP >= this.levelThresholds.basic.minXP) {
-            return this.intermediateScenarios;
+        try {
+            const totalAnswered = this.player?.questionHistory?.length || 0;
+            
+            // Simple progression logic based solely on question count, no threshold checks
+            if (totalAnswered >= 10) {
+                return this.advancedScenarios;
+            } else if (totalAnswered >= 5) {
+                return this.intermediateScenarios;
+            }
+            return this.basicScenarios;
+        } catch (error) {
+            console.error('Error in getCurrentScenarios:', error);
+            return this.basicScenarios; // Default to basic if there's an error
         }
-        return this.basicScenarios;
     }
 
     getCurrentLevel() {
-        const totalAnswered = this.player.questionHistory.length;
-        const currentXP = this.player.experience;
-        
-        if (totalAnswered >= 10 && currentXP >= this.levelThresholds.intermediate.minXP) {
-            return 'Advanced';
-        } else if (totalAnswered >= 5 && currentXP >= this.levelThresholds.basic.minXP) {
-            return 'Intermediate';
+        try {
+            const totalAnswered = this.player?.questionHistory?.length || 0;
+            
+            // Simple level determination based solely on question count, no threshold checks
+            if (totalAnswered >= 10) {
+                return 'Advanced';
+            } else if (totalAnswered >= 5) {
+                return 'Intermediate';
+            }
+            return 'Basic';
+        } catch (error) {
+            console.error('Error in getCurrentLevel:', error);
+            return 'Basic'; // Default to basic if there's an error
         }
-        return 'Basic';
     }
 
     generateRecommendations() {
@@ -1311,6 +1297,55 @@ export class InitiativeQuiz extends BaseQuiz {
             console.error('Error in displayOutcome:', error);
             this.showError('An error occurred. Please try again.');
         }
+    }
+
+    // Helper method to display scenario content
+    displayScenarioContent(scenario) {
+        // Update UI with current scenario
+        const titleElement = document.getElementById('scenario-title');
+        const descriptionElement = document.getElementById('scenario-description');
+        const optionsContainer = document.getElementById('options-container');
+        
+        if (titleElement && scenario.title) {
+            titleElement.textContent = scenario.title;
+        }
+        
+        if (descriptionElement && scenario.description) {
+            descriptionElement.textContent = scenario.description;
+        }
+        
+        if (optionsContainer && scenario.options && Array.isArray(scenario.options)) {
+            optionsContainer.innerHTML = '';
+            
+            scenario.options.forEach((option, index) => {
+                if (!option || !option.text) {
+                    console.error('Invalid option at index', index, option);
+                    return;
+                }
+                
+                const optionDiv = document.createElement('div');
+                optionDiv.className = 'option';
+                optionDiv.innerHTML = `
+                    <input type="radio" 
+                        name="option" 
+                        value="${index}" 
+                        id="option${index}"
+                        tabindex="0"
+                        aria-label="${option.text}">
+                    <label for="option${index}">${option.text}</label>
+                `;
+                optionsContainer.appendChild(optionDiv);
+            });
+        }
+        
+        // Record start time for this question
+        this.questionStartTime = Date.now();
+        
+        // Initialize timer for the new question
+        this.initializeTimer();
+        
+        // Update progress display
+        this.updateProgress();
     }
 }
 
