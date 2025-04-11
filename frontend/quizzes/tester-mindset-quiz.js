@@ -1030,7 +1030,11 @@ export class TesterMindsetQuiz extends BaseQuiz {
                 return;
             }
             
-            const isCorrect = this.isCorrectAnswer(selectedAnswer);
+            const earnedXP = selectedAnswer.experience || 0;
+            
+            // Find the max possible XP for this scenario
+            const maxXP = Math.max(...scenario.options.map(o => o.experience || 0));
+            const isCorrect = selectedAnswer.isCorrect || (earnedXP === maxXP);
             
             console.log('Displaying outcome:', { 
                 isCorrect, 
@@ -1038,60 +1042,83 @@ export class TesterMindsetQuiz extends BaseQuiz {
                 scenario: scenario.title 
             });
             
-            // Show outcome screen
-            if (this.gameScreen) {
-                this.gameScreen.classList.add('hidden');
-            }
-            if (this.outcomeScreen) {
-                this.outcomeScreen.classList.remove('hidden');
+            // Update UI - safely access elements
+            const outcomeScreen = document.getElementById('outcome-screen');
+            const gameScreen = document.getElementById('game-screen');
+            
+            // Show outcome screen if elements exist
+            if (gameScreen) {
+                gameScreen.classList.add('hidden');
+                gameScreen.style.display = 'none';
             }
             
-            // Update outcome text
-            const outcomeText = document.getElementById('outcome-text');
-            if (outcomeText) {
-                if (selectedAnswer.isTimeout) {
-                    outcomeText.textContent = 'You did not answer in time.';
-                } else {
-                    outcomeText.textContent = selectedAnswer.outcome || 'No outcome specified.';
+            if (outcomeScreen) {
+                outcomeScreen.classList.remove('hidden');
+                outcomeScreen.style.display = 'block';
+            }
+            
+            // Set content directly in the outcome screen
+            const outcomeContent = outcomeScreen.querySelector('.outcome-content');
+            if (outcomeContent) {
+                outcomeContent.innerHTML = `
+                    <h3>${isCorrect ? 'Correct!' : 'Incorrect'}</h3>
+                    <p>${selectedAnswer.outcome || ''}</p>
+                    <p class="result">${isCorrect ? 'Correct answer!' : 'Try again next time.'}</p>
+                    <button id="continue-btn" class="submit-button">Continue</button>
+                `;
+                
+                // Add event listener to the continue button
+                const continueBtn = outcomeContent.querySelector('#continue-btn');
+                if (continueBtn) {
+                    continueBtn.addEventListener('click', () => this.nextScenario());
                 }
-            }
-            
-            // Show result (correct/incorrect)
-            const resultElement = document.getElementById('result-text');
-            if (resultElement) {
-                resultElement.textContent = isCorrect ? 'Correct!' : 'Incorrect';
-                resultElement.className = isCorrect ? 'correct' : 'incorrect';
-            }
-            
-            // Show tool acquired if present
-            const toolElement = document.getElementById('tool-gained');
-            if (toolElement) {
-                if (selectedAnswer.tool) {
-                    toolElement.textContent = `Tool acquired: ${selectedAnswer.tool}`;
-                    if (this.player && !this.player.tools.includes(selectedAnswer.tool)) {
-                        this.player.tools.push(selectedAnswer.tool);
+            } else {
+                console.error('Could not find outcome content element');
+                
+                // Fallback to updating individual elements if outcome content container not found
+                const outcomeText = document.getElementById('outcome-text');
+                const resultText = document.getElementById('result-text');
+                const continueBtn = document.getElementById('continue-btn');
+                
+                if (outcomeText) {
+                    outcomeText.textContent = selectedAnswer.outcome || '';
+                }
+                
+                if (resultText) {
+                    resultText.textContent = isCorrect ? 'Correct!' : 'Incorrect';
+                    resultText.className = isCorrect ? 'correct' : 'incorrect';
+                }
+                
+                // Ensure tool display is updated if present
+                const toolElement = document.getElementById('tool-gained');
+                if (toolElement) {
+                    if (selectedAnswer.tool) {
+                        toolElement.textContent = `Tool acquired: ${selectedAnswer.tool}`;
+                        if (this.player && !this.player.tools.includes(selectedAnswer.tool)) {
+                            this.player.tools.push(selectedAnswer.tool);
+                        }
+                    } else {
+                        toolElement.textContent = '';
                     }
-                } else {
-                    toolElement.textContent = '';
+                }
+                
+                // Hide XP information
+                const xpGained = document.getElementById('xp-gained');
+                if (xpGained) {
+                    xpGained.style.display = 'none';
+                }
+                
+                // Add event listener to continue button if it exists
+                if (continueBtn) {
+                    continueBtn.addEventListener('click', () => this.nextScenario());
                 }
             }
             
-            // Hide XP information
-            const xpGained = document.getElementById('xp-gained');
-            if (xpGained) {
-                xpGained.style.display = 'none';
-            }
-            
-            // Make sure the next button is visible
-            const nextButton = document.getElementById('next-button');
-            if (nextButton) {
-                nextButton.style.display = 'inline-block';
-            }
-            
-            // Update progress display
+            // Update progress
             this.updateProgress();
         } catch (error) {
-            console.error('Error displaying outcome:', error);
+            console.error('Error in displayOutcome:', error);
+            this.showError('An error occurred. Please try again.');
         }
     }
 
