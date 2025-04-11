@@ -9,9 +9,9 @@ export class InitiativeQuiz extends BaseQuiz {
             totalQuestions: 15,
             passPercentage: 70,
             performanceThresholds: [
-                { threshold: 250, message: '🏆 Outstanding! You\'re an initiative expert!' },
-                { threshold: 200, message: '👏 Great job! You\'ve shown strong initiative skills!' },
-                { threshold: 150, message: '👍 Good work! Keep practicing to improve further.' },
+                { threshold: 90, message: '🏆 Outstanding! You\'re an initiative expert!' },
+                { threshold: 80, message: '👏 Great job! You\'ve shown strong initiative skills!' },
+                { threshold: 70, message: '👍 Good work! You\'ve passed the quiz!' },
                 { threshold: 0, message: '📚 Consider reviewing initiative best practices and try again!' }
             ]
         };
@@ -955,7 +955,7 @@ export class InitiativeQuiz extends BaseQuiz {
             }
 
             // Show outcome screen and update display with answer outcome
-            BaseQuiz.prototype.displayOutcome.call(this, selectedAnswer);
+            this.displayOutcome(selectedAnswer);
 
             this.updateProgress();
         } catch (error) {
@@ -1296,7 +1296,48 @@ export class InitiativeQuiz extends BaseQuiz {
     }
 
     displayOutcome(selectedAnswer) {
-        // Implementation of displayOutcome method
+        const currentScenario = this.getCurrentScenario();
+        const isCorrect = selectedAnswer === currentScenario.correctAnswer;
+        const earnedXP = isCorrect ? currentScenario.xp : 0;
+        
+        // Update player state
+        this.player.questionHistory.push({
+            scenarioId: currentScenario.id,
+            selectedAnswer,
+            isCorrect,
+            earnedXP
+        });
+        
+        // Update UI
+        const outcomeScreen = document.getElementById('outcome-screen');
+        const outcomeTitle = document.getElementById('outcome-title');
+        const outcomeText = document.getElementById('outcome-text');
+        const outcomeRewards = document.getElementById('outcome-rewards');
+        const nextButton = document.getElementById('next-button');
+        
+        // Show outcome screen
+        document.getElementById('game-screen').style.display = 'none';
+        outcomeScreen.style.display = 'block';
+        
+        // Set outcome content
+        outcomeTitle.textContent = isCorrect ? 'Correct!' : 'Incorrect';
+        outcomeTitle.className = isCorrect ? 'correct' : 'incorrect';
+        
+        outcomeText.innerHTML = `
+            <p>${currentScenario.explanation}</p>
+            ${isCorrect ? `<p class="correct-answer">${currentScenario.correctAnswer}</p>` : ''}
+        `;
+        
+        outcomeRewards.innerHTML = `
+            <p class="xp">Experience Earned: ${earnedXP}</p>
+        `;
+        
+        // Update next button
+        nextButton.textContent = 'Next Question';
+        nextButton.onclick = () => this.nextScenario();
+        
+        // Update progress
+        this.updateProgress();
     }
 }
 

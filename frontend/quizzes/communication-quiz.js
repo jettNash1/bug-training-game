@@ -531,22 +531,34 @@ export class CommunicationQuiz extends BaseQuiz {
     async saveProgress() {
         // First determine the status based on clear conditions
         let status = 'in-progress';
-        const scorePercentage = this.calculateScore();
         
-        // Check for completion (all questions answered)
-        if (this.player.questionHistory.length >= this.totalQuestions) {
-            status = scorePercentage >= this.passPercentage ? 'completed' : 'failed';
+        // Check for completion (all 15 questions answered)
+        if (this.player.questionHistory.length >= 15) {
+            // Check if they met the advanced XP requirement
+            if (this.player.experience >= this.levelThresholds.advanced.minXP) {
+                status = 'completed';
+            } else {
+                status = 'failed';
+            }
+        } 
+        // Check for early failure conditions
+        else if (
+            (this.player.questionHistory.length >= 10 && this.player.experience < this.levelThresholds.intermediate.minXP) ||
+            (this.player.questionHistory.length >= 5 && this.player.experience < this.levelThresholds.basic.minXP)
+        ) {
+            status = 'failed';
         }
 
         const progress = {
-            experience: this.player.experience || 0,
-            tools: this.player.tools || [],
-            currentScenario: this.player.currentScenario || 0,
-            questionHistory: this.player.questionHistory || [],
-            lastUpdated: new Date().toISOString(),
-            questionsAnswered: this.player.questionHistory.length,
-            scorePercentage: scorePercentage,
-            status: status
+            data: {
+                experience: this.player.experience,
+                tools: this.player.tools,
+                currentScenario: this.player.currentScenario,
+                questionHistory: this.player.questionHistory,
+                lastUpdated: new Date().toISOString(),
+                questionsAnswered: this.player.questionHistory.length,
+                status: status
+            }
         };
 
         try {
@@ -560,8 +572,8 @@ export class CommunicationQuiz extends BaseQuiz {
             const storageKey = `quiz_progress_${username}_${this.quizName}`;
             localStorage.setItem(storageKey, JSON.stringify(progress));
             
-            console.log('Saving progress with status:', status, 'and score:', scorePercentage);
-            await this.apiService.saveQuizProgress(this.quizName, progress);
+            console.log('Saving progress with status:', status);
+            await this.apiService.saveQuizProgress(this.quizName, progress.data);
         } catch (error) {
             console.error('Failed to save progress:', error);
         }
@@ -945,7 +957,7 @@ export class CommunicationQuiz extends BaseQuiz {
             }
 
             // Show outcome screen and update display with answer outcome
-            BaseQuiz.prototype.displayOutcome.call(this, selectedAnswer);
+            this.displayOutcome(selectedAnswer);
 
             this.updateProgress();
         } catch (error) {
@@ -1286,7 +1298,48 @@ export class CommunicationQuiz extends BaseQuiz {
     }
 
     displayOutcome(selectedAnswer) {
-        // Implementation of displayOutcome method
+        const currentScenario = this.getCurrentScenario();
+        const isCorrect = selectedAnswer === currentScenario.correctAnswer;
+        const earnedXP = isCorrect ? currentScenario.xp : 0;
+        
+        // Update player state
+        this.player.questionHistory.push({
+            scenarioId: currentScenario.id,
+            selectedAnswer,
+            isCorrect,
+            earnedXP
+        });
+        
+        // Update UI
+        const outcomeScreen = document.getElementById('outcome-screen');
+        const outcomeTitle = document.getElementById('outcome-title');
+        const outcomeText = document.getElementById('outcome-text');
+        const outcomeRewards = document.getElementById('outcome-rewards');
+        const nextButton = document.getElementById('next-button');
+        
+        // Show outcome screen
+        document.getElementById('game-screen').style.display = 'none';
+        outcomeScreen.style.display = 'block';
+        
+        // Set outcome content
+        outcomeTitle.textContent = isCorrect ? 'Correct!' : 'Incorrect';
+        outcomeTitle.className = isCorrect ? 'correct' : 'incorrect';
+        
+        outcomeText.innerHTML = `
+            <p>${currentScenario.explanation}</p>
+            ${isCorrect ? `<p class="correct-answer">${currentScenario.correctAnswer}</p>` : ''}
+        `;
+        
+        outcomeRewards.innerHTML = `
+            <p class="xp">Experience Earned: ${earnedXP}</p>
+        `;
+        
+        // Update next button
+        nextButton.textContent = 'Next Question';
+        nextButton.onclick = () => this.nextScenario();
+        
+        // Update progress
+        this.updateProgress();
     }
 }
 
