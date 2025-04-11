@@ -1180,121 +1180,90 @@ export class CommunicationQuiz extends BaseQuiz {
     }
 
     async endGame() {
-        this.gameScreen.classList.add('hidden');
-        this.outcomeScreen.classList.add('hidden');
-        this.endScreen.classList.remove('hidden');
+        // Calculate final score based on correct answers
+        const correctAnswers = this.player.questionHistory.filter(q => q.selectedAnswer && q.selectedAnswer.isCorrect).length;
+        const scorePercentage = Math.round((correctAnswers / 15) * 100);
+        
+        // Create the final progress object
+        const progress = {
+            questionsAnswered: this.player.questionHistory.length,
+            questionHistory: this.player.questionHistory,
+            currentScenario: this.player.currentScenario,
+            status: scorePercentage >= 70 ? 'passed' : 'failed',
+            scorePercentage: scorePercentage,
+            lastUpdated: new Date().toISOString()
+        };
 
-        // Hide the progress card on the end screen
-        const progressCard = document.querySelector('.quiz-header-progress');
-        if (progressCard) {
-            progressCard.style.display = 'none';
-        }
-
-        const finalScore = Math.min(this.player.experience, this.maxXP);
-        const scorePercentage = Math.round((finalScore / this.maxXP) * 100);
-
-        // Save the final quiz result with pass/fail status
-        const username = localStorage.getItem('username');
-        if (username) {
-            try {
-                const user = new QuizUser(username);
-                const status = failed ? 'failed' : 'completed';
-                console.log('Setting final quiz status:', { status, score: scorePercentage });
-                
-                const result = {
-                    score: scorePercentage,
-                    status: status,
-                    experience: this.player.experience,
-                    questionHistory: this.player.questionHistory,
-                    questionsAnswered: this.player.questionHistory.length,
-                    lastActive: new Date().toISOString()
-                };
-
-                // Save to QuizUser
-                user.updateQuizScore(
-                    this.quizName,
-                    result.score,
-                    result.experience,
-                    this.player.tools,
-                    result.questionHistory,
-                    result.questionsAnswered,
-                    status
-                );
-
-                // Save to API with proper structure
-                const apiProgress = {
-                    data: {
-                        ...result,
-                        tools: this.player.tools,
-                        currentScenario: this.player.currentScenario
-                    }
-                };
-
-                // Save directly via API to ensure status is updated
-                console.log('Saving final progress to API:', apiProgress);
-                await this.apiService.saveQuizProgress(this.quizName, apiProgress.data);
-            } catch (error) {
-                console.error('Error saving final quiz score:', error);
+        try {
+            // Save progress to API
+            const username = localStorage.getItem('username');
+            if (!username) {
+                throw new Error('No username found');
             }
-        }
 
-        document.getElementById('final-score').textContent = `Final Score: ${finalScore}/${this.maxXP}`;
+            // Save to API
+            await this.apiService.saveQuizProgress(this.quizName, progress);
+            console.log('Final progress saved:', progress);
 
-        // Update the quiz complete header based on status
-        const quizCompleteHeader = document.querySelector('#end-screen h2');
-        if (quizCompleteHeader) {
-            quizCompleteHeader.textContent = failed ? 'Quiz Failed!' : 'Quiz Complete!';
-        }
-
-        const performanceSummary = document.getElementById('performance-summary');
-        if (failed) {
-            performanceSummary.textContent = 'Quiz failed. You did not achieve the required 70% pass mark. You cannot retry this quiz.';
-            // Hide restart button if failed
-            const restartBtn = document.getElementById('restart-btn');
-            if (restartBtn) {
-                restartBtn.style.display = 'none';
+            // Update quiz score in user's record
+            const quizUser = new QuizUser(username);
+            await quizUser.updateQuizScore(
+                this.quizName, 
+                scorePercentage, 
+                0, // no experience
+                this.player.tools,
+                this.player.questionHistory,
+                this.player.questionHistory.length,
+                scorePercentage >= 70 ? 'completed' : 'failed'
+            );
+            
+            // Update display elements
+            const finalScoreElement = document.getElementById('final-score');
+            if (finalScoreElement) {
+                finalScoreElement.textContent = `Final Score: ${scorePercentage}%`;
             }
-            // Add failed class to quiz container for styling
-            const quizContainer = document.getElementById('quiz-container');
-            if (quizContainer) {
-                quizContainer.classList.add('failed');
+            
+            // Show the end screen
+            this.gameScreen.classList.add('hidden');
+            this.outcomeScreen.classList.add('hidden');
+            if (this.endScreen) {
+                this.endScreen.classList.remove('hidden');
             }
-        } else {
-            const threshold = this.performanceThresholds.find(t => t.threshold <= scorePercentage);
-            if (threshold) {
-                performanceSummary.textContent = threshold.message;
-            } else {
-                performanceSummary.textContent = 'Quiz completed successfully!';
+            
+            // Generate question review list
+            const reviewList = document.getElementById('question-review');
+            if (reviewList) {
+                reviewList.innerHTML = ''; // Clear existing content
+                
+                this.player.questionHistory.forEach((record, index) => {
+                    const reviewItem = document.createElement('div');
+                    reviewItem.className = 'review-item';
+                    
+                    const isCorrect = record.selectedAnswer && record.selectedAnswer.isCorrect;
+                    reviewItem.classList.add(isCorrect ? 'correct' : 'incorrect');
+                    
+                    reviewItem.innerHTML = `
+                        <h4>Question ${index + 1}</h4>
+                        <p class="scenario">${record.scenario ? record.scenario.description : 'No description available'}</p>
+                        <p class="answer"><strong>Your Answer:</strong> ${record.selectedAnswer ? record.selectedAnswer.text : 'No answer selected'}</p>
+                        <p class="outcome"><strong>Outcome:</strong> ${record.selectedAnswer ? record.selectedAnswer.outcome : 'No outcome'}</p>
+                        <p class="result"><strong>Result:</strong> ${isCorrect ? 'Correct' : 'Incorrect'}</p>
+                    `;
+                    
+                    reviewList.appendChild(reviewItem);
+                });
             }
-        }
 
-        // Generate question review list
-        const reviewList = document.getElementById('question-review');
-        if (reviewList) {
-            reviewList.innerHTML = ''; // Clear existing content
-            this.player.questionHistory.forEach((record, index) => {
-                const reviewItem = document.createElement('div');
-                reviewItem.className = 'review-item';
-                
-                const maxXP = Math.max(...record.scenario.options.map(o => o.experience));
-                const earnedXP = record.selectedAnswer.experience;
-                const isCorrect = earnedXP === maxXP;
-                
-                reviewItem.classList.add(isCorrect ? 'correct' : 'incorrect');
-                
-                reviewItem.innerHTML = `
-                    <h4>Question ${index + 1}</h4>
-                    <p class="scenario">${record.scenario.description}</p>
-                    <p class="answer"><strong>Your Answer:</strong> ${record.selectedAnswer.text}</p>
-                    <p class="outcome"><strong>Outcome:</strong> ${record.selectedAnswer.outcome}</p>
-                    <p class="xp"><strong>Experience Earned:</strong> ${earnedXP}/${maxXP}</p>
-                `;
-                
-                reviewList.appendChild(reviewItem);
-            });
-        }
+            // Clear local storage for this quiz
+            this.clearQuizLocalStorage(username, this.quizName);
 
-        this.generateRecommendations();
+            // Display recommendations if we're not redirecting
+            this.generateRecommendations();
+
+        } catch (error) {
+            console.error('Failed to save final progress:', error);
+            this.showError('Failed to save your results. Please try again.');
+        }
     }
 
     displayOutcome(selectedAnswer) {
