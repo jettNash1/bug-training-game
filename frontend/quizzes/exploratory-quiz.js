@@ -537,7 +537,7 @@ export class ExploratoryQuiz extends BaseQuiz {
         if (this.player.questionHistory.length >= 15) {
             // Calculate pass/fail based on correct answers
             const correctAnswers = this.player.questionHistory.filter(q => 
-                q.selectedAnswer && (q.selectedAnswer.isCorrect || q.selectedAnswer.experience > 0)
+                q.selectedAnswer && this.isCorrectAnswer(q.selectedAnswer)
             ).length;
             const scorePercentage = Math.round((correctAnswers / 15) * 100);
             status = scorePercentage >= 70 ? 'passed' : 'failed';
@@ -552,9 +552,10 @@ export class ExploratoryQuiz extends BaseQuiz {
                 lastUpdated: new Date().toISOString(),
                 questionsAnswered: this.player.questionHistory.length,
                 status: status,
-                scorePercentage: Math.round((this.player.questionHistory.filter(q => 
-                    q.selectedAnswer && (q.selectedAnswer.isCorrect || q.selectedAnswer.experience > 0)
-                ).length / 15) * 100)
+                scorePercentage: this.player.questionHistory.length > 0 ? 
+                    Math.round((this.player.questionHistory.filter(q => 
+                        q.selectedAnswer && this.isCorrectAnswer(q.selectedAnswer)
+                    ).length / Math.min(this.player.questionHistory.length, 15)) * 100) : 0
             }
         };
 
@@ -855,6 +856,11 @@ export class ExploratoryQuiz extends BaseQuiz {
         }
     }
 
+    isCorrectAnswer(answer) {
+        // Helper method to consistently determine if an answer is correct
+        return answer && (answer.isCorrect || answer.experience > 0);
+    }
+
     async handleAnswer() {
         if (this.isLoading) return;
         
@@ -879,7 +885,7 @@ export class ExploratoryQuiz extends BaseQuiz {
             
             const selectedAnswer = scenario.options[originalIndex];
 
-            // Update player experience with bounds
+            // Update player experience with bounds (still track it for backward compatibility)
             this.player.experience = Math.max(0, Math.min(this.maxXP, this.player.experience + selectedAnswer.experience));
             
             // Calculate time spent on this question
@@ -889,8 +895,7 @@ export class ExploratoryQuiz extends BaseQuiz {
             this.player.questionHistory.push({
                 scenario: scenario,
                 selectedAnswer: selectedAnswer,
-                isCorrect: selectedAnswer.experience > 0,
-                maxPossibleXP: Math.max(...scenario.options.map(o => o.experience)),
+                isCorrect: this.isCorrectAnswer(selectedAnswer),
                 timeSpent: timeSpent,
                 timedOut: false
             });
@@ -933,21 +938,19 @@ export class ExploratoryQuiz extends BaseQuiz {
                 outcomeTextElement.textContent = selectedAnswer.outcome || '';
             }
             
-            // Show if answer was correct
-            const isCorrect = selectedAnswer.isCorrect || selectedAnswer.experience > 0;
+            // Show if answer was correct using helper method
+            const isCorrect = this.isCorrectAnswer(selectedAnswer);
             const resultElement = document.getElementById('result-text');
             if (resultElement) {
                 resultElement.textContent = isCorrect ? 'Correct!' : 'Incorrect';
                 resultElement.className = isCorrect ? 'correct' : 'incorrect';
             }
             
-            // Show XP gained
+            // Show tool acquired if present (but don't show XP)
             const xpElement = document.getElementById('xp-gained');
             if (xpElement) {
-                const xpText = selectedAnswer.experience >= 0 ? 
-                    `Experience gained: +${selectedAnswer.experience}` : 
-                    `Experience: ${selectedAnswer.experience}`;
-                xpElement.textContent = xpText;
+                // Hide XP display entirely or set to empty
+                xpElement.style.display = 'none';
             }
             
             // Show tool acquired if present
@@ -1116,15 +1119,19 @@ export class ExploratoryQuiz extends BaseQuiz {
         const recommendationsContainer = document.getElementById('recommendations');
         if (!recommendationsContainer) return;
 
-        const score = Math.round((this.player.experience / this.maxXP) * 100);
+        // Calculate score based on correct answers, not XP
+        const correctAnswers = this.player.questionHistory.filter(q => 
+            q.selectedAnswer && this.isCorrectAnswer(q.selectedAnswer)
+        ).length;
+        const score = Math.round((correctAnswers / 15) * 100);
+        
         const weakAreas = [];
         const strongAreas = [];
 
         // Analyze performance in different areas
         this.player.questionHistory.forEach(record => {
-            const maxXP = record.maxPossibleXP;
-            const earnedXP = record.selectedAnswer.experience;
-            const isCorrect = earnedXP === maxXP;
+            // Determine if answer was correct based on positive experience value
+            const isCorrect = record.selectedAnswer && this.isCorrectAnswer(record.selectedAnswer);
 
             // Categorize the question based on its content
             const questionType = this.categorizeQuestion(record.scenario);
@@ -1214,7 +1221,9 @@ export class ExploratoryQuiz extends BaseQuiz {
 
     async endGame() {
         // Calculate final score based on correct answers
-        const correctAnswers = this.player.questionHistory.filter(q => q.selectedAnswer && q.selectedAnswer.isCorrect).length;
+        const correctAnswers = this.player.questionHistory.filter(q => 
+            q.selectedAnswer && this.isCorrectAnswer(q.selectedAnswer)
+        ).length;
         const scorePercentage = Math.round((correctAnswers / 15) * 100);
         
         // Create the final progress object
@@ -1285,9 +1294,31 @@ export class ExploratoryQuiz extends BaseQuiz {
             await this.apiService.saveQuizProgress(this.quizName, progress);
             console.log('Final progress saved:', progress);
 
-            // Generate recommendations if that function exists
-            if (typeof this.generateRecommendations === 'function') {
-                this.generateRecommendations();
+            // Generate recommendations
+            this.generateRecommendations();
+            
+            // Generate question review list without XP references
+            const reviewList = document.getElementById('question-review');
+            if (reviewList) {
+                reviewList.innerHTML = ''; // Clear existing content
+                
+                this.player.questionHistory.forEach((record, index) => {
+                    const reviewItem = document.createElement('div');
+                    reviewItem.className = 'review-item';
+                    
+                    const isCorrect = record.selectedAnswer && this.isCorrectAnswer(record.selectedAnswer);
+                    reviewItem.classList.add(isCorrect ? 'correct' : 'incorrect');
+                    
+                    reviewItem.innerHTML = `
+                        <h4>Question ${index + 1}</h4>
+                        <p class="scenario">${record.scenario ? record.scenario.description : 'No description available'}</p>
+                        <p class="answer"><strong>Your Answer:</strong> ${record.selectedAnswer ? record.selectedAnswer.text : 'No answer selected'}</p>
+                        <p class="outcome"><strong>Outcome:</strong> ${record.selectedAnswer ? record.selectedAnswer.outcome : 'No outcome'}</p>
+                        <p class="result"><strong>Result:</strong> ${isCorrect ? 'Correct' : 'Incorrect'}</p>
+                    `;
+                    
+                    reviewList.appendChild(reviewItem);
+                });
             }
         } catch (error) {
             console.error('Failed to save final progress:', error);
