@@ -741,7 +741,7 @@ export class InitiativeQuiz extends BaseQuiz {
             const scenario = currentScenarios[this.player.currentScenario];
             
             // Check if the current scenario exists
-            if (!scenario) {
+        if (!scenario) {
                 console.log('No more scenarios in this level, transitioning to next level');
                 
                 // Reset currentScenario for the next level
@@ -758,9 +758,9 @@ export class InitiativeQuiz extends BaseQuiz {
                 // Display the first scenario of the next level
                 const nextScenario = updatedScenarios[0];
                 this.displayScenarioContent(nextScenario);
-                return;
-            }
-            
+            return;
+        }
+
             // Display the current scenario
             this.displayScenarioContent(scenario);
         } catch (error) {
@@ -849,19 +849,19 @@ export class InitiativeQuiz extends BaseQuiz {
                 maxPossibleXP: Math.max(...scenario.options.map(o => o.experience || 0))
             });
 
-            // Save progress 
+            // Save progress
             try {
-                await this.saveProgress();
+            await this.saveProgress();
             } catch (error) {
                 console.error('Failed to save progress:', error);
                 this.showError('Warning: Progress may not have saved correctly');
             }
-
+            
             // Save quiz result
             const username = localStorage.getItem('username');
             if (username) {
                 try {
-                    const quizUser = new QuizUser(username);
+                const quizUser = new QuizUser(username);
                     const score = {
                         score: Math.round((this.player.experience / (this.maxXP || 300)) * 100),
                         experience: this.player.experience || 0,
@@ -869,14 +869,14 @@ export class InitiativeQuiz extends BaseQuiz {
                         questionsAnswered: this.player.questionHistory.length
                     };
                     
-                    await quizUser.updateQuizScore(
-                        this.quizName,
-                        score.score,
-                        score.experience,
+                await quizUser.updateQuizScore(
+                    this.quizName,
+                    score.score,
+                    score.experience,
                         this.player.tools || [],
-                        score.questionHistory,
-                        score.questionsAnswered
-                    );
+                    score.questionHistory,
+                    score.questionsAnswered
+                );
                 } catch (error) {
                     console.error('Failed to save quiz result:', error);
                 }
@@ -884,7 +884,7 @@ export class InitiativeQuiz extends BaseQuiz {
 
             // Show outcome screen and update display with answer outcome
             this.displayOutcome(selectedAnswer);
-            
+
             // Update progress display
             this.updateProgress();
         } catch (error) {
@@ -924,10 +924,10 @@ export class InitiativeQuiz extends BaseQuiz {
                 gameScreen.classList.remove('hidden');
                 gameScreen.style.display = 'block';
                 console.log('Shown game screen');
-            }
-            
-            // Display next scenario
-            this.displayScenario();
+        }
+        
+        // Display next scenario
+        this.displayScenario();
             
             // Reinitialize event listeners for the new question
             this.initializeEventListeners();
@@ -1016,14 +1016,14 @@ export class InitiativeQuiz extends BaseQuiz {
     getCurrentScenarios() {
         try {
             const totalAnswered = this.player?.questionHistory?.length || 0;
-            
+        
             // Simple progression logic based solely on question count, no threshold checks
             if (totalAnswered >= 10) {
-                return this.advancedScenarios;
+            return this.advancedScenarios;
             } else if (totalAnswered >= 5) {
-                return this.intermediateScenarios;
-            }
-            return this.basicScenarios;
+            return this.intermediateScenarios;
+        }
+        return this.basicScenarios;
         } catch (error) {
             console.error('Error in getCurrentScenarios:', error);
             return this.basicScenarios; // Default to basic if there's an error
@@ -1033,14 +1033,14 @@ export class InitiativeQuiz extends BaseQuiz {
     getCurrentLevel() {
         try {
             const totalAnswered = this.player?.questionHistory?.length || 0;
-            
+        
             // Simple level determination based solely on question count, no threshold checks
             if (totalAnswered >= 10) {
-                return 'Advanced';
+            return 'Advanced';
             } else if (totalAnswered >= 5) {
-                return 'Intermediate';
-            }
-            return 'Basic';
+            return 'Intermediate';
+        }
+        return 'Basic';
         } catch (error) {
             console.error('Error in getCurrentLevel:', error);
             return 'Basic'; // Default to basic if there's an error
@@ -1188,7 +1188,7 @@ export class InitiativeQuiz extends BaseQuiz {
             }
             
             // Save progress to API
-            const username = localStorage.getItem('username');
+        const username = localStorage.getItem('username');
             if (!username) {
                 throw new Error('No username found');
             }
@@ -1200,10 +1200,10 @@ export class InitiativeQuiz extends BaseQuiz {
             // Update quiz score in user's record
             const quizUser = new QuizUser(username);
             await quizUser.updateQuizScore(
-                this.quizName, 
+                    this.quizName,
                 scorePercentage, 
                 0, // no experience
-                this.player.tools,
+                    this.player.tools,
                 this.player.questionHistory,
                 15, // Always 15 questions completed
                 scorePercentage >= 70 ? 'completed' : 'failed'
@@ -1220,37 +1220,37 @@ export class InitiativeQuiz extends BaseQuiz {
             this.outcomeScreen.classList.add('hidden');
             if (this.endScreen) {
                 this.endScreen.classList.remove('hidden');
-            }
+        }
 
-            // Generate question review list
-            const reviewList = document.getElementById('question-review');
-            if (reviewList) {
-                reviewList.innerHTML = ''; // Clear existing content
+        // Generate question review list
+        const reviewList = document.getElementById('question-review');
+        if (reviewList) {
+            reviewList.innerHTML = ''; // Clear existing content
                 
-                this.player.questionHistory.forEach((record, index) => {
-                    const reviewItem = document.createElement('div');
-                    reviewItem.className = 'review-item';
-                    
+            this.player.questionHistory.forEach((record, index) => {
+                const reviewItem = document.createElement('div');
+                reviewItem.className = 'review-item';
+                
                     const isCorrect = record.selectedAnswer && record.selectedAnswer.isCorrect;
-                    reviewItem.classList.add(isCorrect ? 'correct' : 'incorrect');
-                    
-                    reviewItem.innerHTML = `
-                        <h4>Question ${index + 1}</h4>
+                reviewItem.classList.add(isCorrect ? 'correct' : 'incorrect');
+                
+                reviewItem.innerHTML = `
+                    <h4>Question ${index + 1}</h4>
                         <p class="scenario">${record.scenario ? record.scenario.description : 'No description available'}</p>
                         <p class="answer"><strong>Your Answer:</strong> ${record.selectedAnswer ? record.selectedAnswer.text : 'No answer selected'}</p>
                         <p class="outcome"><strong>Outcome:</strong> ${record.selectedAnswer ? record.selectedAnswer.outcome : 'No outcome'}</p>
                         <p class="result"><strong>Result:</strong> ${isCorrect ? 'Correct' : 'Incorrect'}</p>
-                    `;
-                    
-                    reviewList.appendChild(reviewItem);
-                });
-            }
+                `;
+                
+                reviewList.appendChild(reviewItem);
+            });
+        }
 
             // Clear local storage for this quiz
             this.clearQuizLocalStorage(username, this.quizName);
 
             // Display recommendations if we're not redirecting
-            this.generateRecommendations();
+        this.generateRecommendations();
 
         } catch (error) {
             console.error('Failed to save final progress:', error);
@@ -1279,13 +1279,13 @@ export class InitiativeQuiz extends BaseQuiz {
             const isCorrect = selectedAnswer.isCorrect || (earnedXP === maxXP);
             
             console.log('Displaying outcome:', { 
-                isCorrect, 
+            isCorrect,
                 selectedAnswer,
                 currentScenario: this.player.currentScenario
-            });
-            
+        });
+        
             // Update UI - safely access elements
-            const outcomeScreen = document.getElementById('outcome-screen');
+        const outcomeScreen = document.getElementById('outcome-screen');
             const gameScreen = document.getElementById('game-screen');
             
             // Show outcome screen if elements exist
@@ -1296,7 +1296,7 @@ export class InitiativeQuiz extends BaseQuiz {
             
             if (outcomeScreen) {
                 outcomeScreen.classList.remove('hidden');
-                outcomeScreen.style.display = 'block';
+        outcomeScreen.style.display = 'block';
             }
             
             // Set content directly in the outcome screen

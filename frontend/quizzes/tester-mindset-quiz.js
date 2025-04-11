@@ -707,7 +707,7 @@ export class TesterMindsetQuiz extends BaseQuiz {
         try {
             console.log('Initializing event listeners');
             
-            // Add event listeners for the continue and restart buttons
+        // Add event listeners for the continue and restart buttons
             const continueBtn = document.getElementById('continue-btn');
             if (continueBtn) {
                 // Remove any existing listeners by cloning and replacing
@@ -727,14 +727,14 @@ export class TesterMindsetQuiz extends BaseQuiz {
                 restartBtn.addEventListener('click', () => this.restartGame());
                 console.log('Added event listener to restart button');
             }
-            
-            // Add form submission handler
+
+        // Add form submission handler
             const optionsForm = document.getElementById('options-form');
             if (optionsForm) {
                 optionsForm.addEventListener('submit', (e) => {
-                    e.preventDefault();
-                    this.handleAnswer();
-                });
+            e.preventDefault();
+            this.handleAnswer();
+        });
                 console.log('Added event listener to options form');
             }
             
@@ -747,13 +747,13 @@ export class TesterMindsetQuiz extends BaseQuiz {
                 });
                 console.log('Added event listener to submit button');
             }
-            
-            // Add keyboard navigation
-            document.addEventListener('keydown', (e) => {
-                if (e.key === 'Enter' && e.target.type === 'radio') {
-                    this.handleAnswer();
-                }
-            });
+
+        // Add keyboard navigation
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' && e.target.type === 'radio') {
+                this.handleAnswer();
+            }
+        });
             console.log('Added keyboard navigation event listeners');
             
         } catch (error) {
@@ -772,7 +772,7 @@ export class TesterMindsetQuiz extends BaseQuiz {
             }
             
             // Check if we've answered all 15 questions
-            if (this.player.questionHistory.length >= 15) {
+        if (this.player.questionHistory.length >= 15) {
                 console.log('All 15 questions answered, ending game');
                 this.endGame();
                 return;
@@ -791,9 +791,9 @@ export class TesterMindsetQuiz extends BaseQuiz {
             
             if (!currentScenarios || !Array.isArray(currentScenarios)) {
                 console.error('Could not get current scenarios', currentScenarios);
-                return;
-            }
-            
+            return;
+        }
+
             const scenario = currentScenarios[this.player.currentScenario];
             console.log('Current scenario index:', this.player.currentScenario);
             console.log('Retrieved scenario:', scenario);
@@ -833,16 +833,16 @@ export class TesterMindsetQuiz extends BaseQuiz {
     displayScenarioContent(scenario) {
         try {
             // Update UI with current scenario
-            const titleElement = document.getElementById('scenario-title');
-            const descriptionElement = document.getElementById('scenario-description');
-            const optionsContainer = document.getElementById('options-container');
-            
+        const titleElement = document.getElementById('scenario-title');
+        const descriptionElement = document.getElementById('scenario-description');
+        const optionsContainer = document.getElementById('options-container');
+
             if (titleElement && scenario.title) {
                 titleElement.textContent = scenario.title;
-            }
-            
+        }
+
             if (descriptionElement && scenario.description) {
-                descriptionElement.textContent = scenario.description;
+        descriptionElement.textContent = scenario.description;
             }
             
             if (optionsContainer && scenario.options && Array.isArray(scenario.options)) {
@@ -857,23 +857,23 @@ export class TesterMindsetQuiz extends BaseQuiz {
                     const optionDiv = document.createElement('div');
                     optionDiv.className = 'option';
                     optionDiv.innerHTML = `
-                        <input type="radio" 
-                            name="option" 
+                <input type="radio" 
+                    name="option" 
                             value="${index}" 
-                            id="option${index}"
-                            tabindex="0"
+                    id="option${index}"
+                    tabindex="0"
                             aria-label="${option.text}">
-                        <label for="option${index}">${option.text}</label>
-                    `;
+                <label for="option${index}">${option.text}</label>
+            `;
                     optionsContainer.appendChild(optionDiv);
-                });
+        });
             }
-            
+
             // Record start time for this question
             this.questionStartTime = Date.now();
-            
-            // Initialize timer for the new question
-            this.initializeTimer();
+
+        // Initialize timer for the new question
+        this.initializeTimer();
             
             // Update progress display
             this.updateProgress();
@@ -896,7 +896,7 @@ export class TesterMindsetQuiz extends BaseQuiz {
         if (submitButton) {
             submitButton.disabled = true;
         }
-        
+
         // Clear the timer when an answer is submitted
         if (this.questionTimer) {
             clearInterval(this.questionTimer);
@@ -976,19 +976,19 @@ export class TesterMindsetQuiz extends BaseQuiz {
                 isCorrect: this.isCorrectAnswer(selectedAnswer)
             });
 
-            // Save progress 
+            // Save progress
             try {
-                await this.saveProgress();
+            await this.saveProgress();
             } catch (error) {
                 console.error('Failed to save progress:', error);
                 this.showError('Warning: Progress may not have saved correctly');
             }
-
+            
             // Save quiz result
             const username = localStorage.getItem('username');
             if (username) {
                 try {
-                    const quizUser = new QuizUser(username);
+                const quizUser = new QuizUser(username);
                     const score = {
                         score: Math.round((this.player.questionHistory.filter(q => this.isCorrectAnswer(q.selectedAnswer)).length / Math.min(this.player.questionHistory.length, 15)) * 100),
                         experience: this.player.experience || 0,
@@ -996,14 +996,14 @@ export class TesterMindsetQuiz extends BaseQuiz {
                         questionsAnswered: this.player.questionHistory.length
                     };
                     
-                    await quizUser.updateQuizScore(
-                        this.quizName,
-                        score.score,
-                        score.experience,
+                await quizUser.updateQuizScore(
+                    this.quizName,
+                    score.score,
+                    score.experience,
                         this.player.tools || [],
-                        score.questionHistory,
-                        score.questionsAnswered
-                    );
+                    score.questionHistory,
+                    score.questionsAnswered
+                );
                 } catch (error) {
                     console.error('Failed to save quiz result:', error);
                 }
@@ -1011,7 +1011,7 @@ export class TesterMindsetQuiz extends BaseQuiz {
 
             // Show outcome screen and update display with answer outcome
             this.displayOutcome(selectedAnswer);
-            
+
             // Update progress display
             this.updateProgress();
         } catch (error) {
@@ -1064,7 +1064,7 @@ export class TesterMindsetQuiz extends BaseQuiz {
             }
             
             // Display the next scenario
-            this.displayScenario();
+        this.displayScenario();
             
             // Re-initialize event listeners for the new question
             this.initializeEventListeners();
@@ -1376,14 +1376,14 @@ export class TesterMindsetQuiz extends BaseQuiz {
     getCurrentScenarios() {
         try {
             const totalAnswered = this.player?.questionHistory?.length || 0;
-            
+        
             // Simple progression logic based solely on question count, no threshold checks
             if (totalAnswered >= 10) {
-                return this.advancedScenarios;
+            return this.advancedScenarios;
             } else if (totalAnswered >= 5) {
-                return this.intermediateScenarios;
-            }
-            return this.basicScenarios;
+            return this.intermediateScenarios;
+        }
+        return this.basicScenarios;
         } catch (error) {
             console.error('Error in getCurrentScenarios:', error);
             return this.basicScenarios; // Default to basic if there's an error
@@ -1393,14 +1393,14 @@ export class TesterMindsetQuiz extends BaseQuiz {
     getCurrentLevel() {
         try {
             const totalAnswered = this.player?.questionHistory?.length || 0;
-            
+        
             // Determine level based solely on question count
             if (totalAnswered >= 10) {
-                return 'Advanced';
+            return 'Advanced';
             } else if (totalAnswered >= 5) {
-                return 'Intermediate';
-            }
-            return 'Basic';
+            return 'Intermediate';
+        }
+        return 'Basic';
         } catch (error) {
             console.error('Error in getCurrentLevel:', error);
             return 'Basic'; // Default to basic if there's an error

@@ -700,7 +700,7 @@ export class CMS_Testing_Quiz extends BaseQuiz {
         try {
             console.log('Initializing event listeners');
             
-            // Add event listeners for the continue and restart buttons
+        // Add event listeners for the continue and restart buttons
             const continueBtn = document.getElementById('continue-btn');
             if (continueBtn) {
                 // Remove any existing listeners by cloning and replacing
@@ -720,14 +720,14 @@ export class CMS_Testing_Quiz extends BaseQuiz {
                 restartBtn.addEventListener('click', () => this.restartGame());
                 console.log('Added event listener to restart button');
             }
-            
-            // Add form submission handler
+
+        // Add form submission handler
             const optionsForm = document.getElementById('options-form');
             if (optionsForm) {
                 optionsForm.addEventListener('submit', (e) => {
-                    e.preventDefault();
-                    this.handleAnswer();
-                });
+            e.preventDefault();
+            this.handleAnswer();
+        });
                 console.log('Added event listener to options form');
             }
             
@@ -740,13 +740,13 @@ export class CMS_Testing_Quiz extends BaseQuiz {
                 });
                 console.log('Added event listener to submit button');
             }
-            
-            // Add keyboard navigation
-            document.addEventListener('keydown', (e) => {
-                if (e.key === 'Enter' && e.target.type === 'radio') {
-                    this.handleAnswer();
-                }
-            });
+
+        // Add keyboard navigation
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' && e.target.type === 'radio') {
+                this.handleAnswer();
+            }
+        });
             console.log('Added keyboard navigation event listeners');
             
         } catch (error) {
@@ -763,9 +763,9 @@ export class CMS_Testing_Quiz extends BaseQuiz {
                 console.error('Player or currentScenario not properly initialized');
                 return;
             }
-            
+
             // Check if we've answered all 15 questions
-            if (this.player.questionHistory.length >= 15) {
+        if (this.player.questionHistory.length >= 15) {
                 console.log('All 15 questions answered, ending game');
                 this.endGame();
                 return;
@@ -784,9 +784,9 @@ export class CMS_Testing_Quiz extends BaseQuiz {
             
             if (!currentScenarios || !Array.isArray(currentScenarios)) {
                 console.error('Could not get current scenarios', currentScenarios);
-                return;
-            }
-            
+            return;
+        }
+
             const scenario = currentScenarios[this.player.currentScenario];
             console.log('Current scenario index:', this.player.currentScenario);
             console.log('Retrieved scenario:', scenario);
@@ -826,16 +826,16 @@ export class CMS_Testing_Quiz extends BaseQuiz {
     displayScenarioContent(scenario) {
         try {
             // Update UI with current scenario
-            const titleElement = document.getElementById('scenario-title');
-            const descriptionElement = document.getElementById('scenario-description');
-            const optionsContainer = document.getElementById('options-container');
-            
+        const titleElement = document.getElementById('scenario-title');
+        const descriptionElement = document.getElementById('scenario-description');
+        const optionsContainer = document.getElementById('options-container');
+
             if (titleElement && scenario.title) {
                 titleElement.textContent = scenario.title;
-            }
-            
+        }
+
             if (descriptionElement && scenario.description) {
-                descriptionElement.textContent = scenario.description;
+        descriptionElement.textContent = scenario.description;
             }
             
             if (optionsContainer && scenario.options && Array.isArray(scenario.options)) {
@@ -850,23 +850,23 @@ export class CMS_Testing_Quiz extends BaseQuiz {
                     const optionDiv = document.createElement('div');
                     optionDiv.className = 'option';
                     optionDiv.innerHTML = `
-                        <input type="radio" 
-                            name="option" 
+                <input type="radio" 
+                    name="option" 
                             value="${index}" 
-                            id="option${index}"
-                            tabindex="0"
+                    id="option${index}"
+                    tabindex="0"
                             aria-label="${option.text}">
-                        <label for="option${index}">${option.text}</label>
-                    `;
+                <label for="option${index}">${option.text}</label>
+            `;
                     optionsContainer.appendChild(optionDiv);
-                });
+        });
             }
-            
+
             // Record start time for this question
             this.questionStartTime = Date.now();
-            
-            // Initialize timer for the new question
-            this.initializeTimer();
+
+        // Initialize timer for the new question
+        this.initializeTimer();
             
             // Update progress display
             this.updateProgress();
@@ -883,7 +883,7 @@ export class CMS_Testing_Quiz extends BaseQuiz {
         const submitButton = document.querySelector('.submit-button');
         if (submitButton) {
             submitButton.disabled = true;
-        }
+        }  
 
         // Clear any existing timer
         if (this.questionTimer) {
@@ -959,7 +959,7 @@ export class CMS_Testing_Quiz extends BaseQuiz {
             
             // Calculate time spent on this question
             const timeSpent = this.questionStartTime ? Date.now() - this.questionStartTime : null;
-            
+
             // Add to question history
             this.player.questionHistory.push({
                 scenario: scenario,
@@ -971,19 +971,19 @@ export class CMS_Testing_Quiz extends BaseQuiz {
             // Increment current scenario
             this.player.currentScenario++;
 
-            // Save progress 
+            // Save progress
             try {
-                await this.saveProgress();
+            await this.saveProgress();
             } catch (error) {
                 console.error('Failed to save progress:', error);
                 this.showError('Warning: Progress may not have saved correctly');
             }
-
+            
             // Save quiz result
             const username = localStorage.getItem('username');
             if (username) {
                 try {
-                    const quizUser = new QuizUser(username);
+                const quizUser = new QuizUser(username);
                     const score = {
                         score: Math.round((this.player.questionHistory.filter(q => this.isCorrectAnswer(q.selectedAnswer)).length / Math.min(this.player.questionHistory.length, 15)) * 100),
                         experience: this.player.experience || 0,
@@ -991,14 +991,14 @@ export class CMS_Testing_Quiz extends BaseQuiz {
                         questionsAnswered: this.player.questionHistory.length
                     };
                     
-                    await quizUser.updateQuizScore(
-                        this.quizName,
-                        score.score,
-                        score.experience,
+                await quizUser.updateQuizScore(
+                    this.quizName,
+                    score.score,
+                    score.experience,
                         this.player.tools || [],
-                        score.questionHistory,
-                        score.questionsAnswered
-                    );
+                    score.questionHistory,
+                    score.questionsAnswered
+                );
                 } catch (error) {
                     console.error('Failed to save quiz result:', error);
                 }
@@ -1048,10 +1048,10 @@ export class CMS_Testing_Quiz extends BaseQuiz {
                 gameScreen.classList.remove('hidden');
                 gameScreen.style.display = 'block';
                 console.log('Shown game screen');
-            }
-            
+        }
+        
             // Display the next scenario
-            this.displayScenario();
+        this.displayScenario();
             
             // Re-initialize event listeners for the new question
             this.initializeEventListeners();
@@ -1147,14 +1147,14 @@ export class CMS_Testing_Quiz extends BaseQuiz {
     getCurrentScenarios() {
         try {
             const totalAnswered = this.player?.questionHistory?.length || 0;
-            
+        
             // Simple progression logic based solely on question count, no threshold checks
             if (totalAnswered >= 10) {
-                return this.advancedScenarios;
+            return this.advancedScenarios;
             } else if (totalAnswered >= 5) {
-                return this.intermediateScenarios;
-            }
-            return this.basicScenarios;
+            return this.intermediateScenarios;
+        }
+        return this.basicScenarios;
         } catch (error) {
             console.error('Error in getCurrentScenarios:', error);
             return this.basicScenarios; // Default to basic if there's an error
@@ -1164,14 +1164,14 @@ export class CMS_Testing_Quiz extends BaseQuiz {
     getCurrentLevel() {
         try {
             const totalAnswered = this.player?.questionHistory?.length || 0;
-            
+        
             // Determine level based solely on question count
             if (totalAnswered >= 10) {
-                return 'Advanced';
+            return 'Advanced';
             } else if (totalAnswered >= 5) {
-                return 'Intermediate';
-            }
-            return 'Basic';
+            return 'Intermediate';
+        }
+        return 'Basic';
         } catch (error) {
             console.error('Error in getCurrentLevel:', error);
             return 'Basic'; // Default to basic if there's an error
@@ -1309,26 +1309,26 @@ export class CMS_Testing_Quiz extends BaseQuiz {
             
             // Hide game and outcome screens, show end screen
             if (this.gameScreen) {
-                this.gameScreen.classList.add('hidden');
+        this.gameScreen.classList.add('hidden');
                 this.gameScreen.style.display = 'none';
             }
             
             if (this.outcomeScreen) {
-                this.outcomeScreen.classList.add('hidden');
+        this.outcomeScreen.classList.add('hidden');
                 this.outcomeScreen.style.display = 'none';
             }
             
             if (this.endScreen) {
-                this.endScreen.classList.remove('hidden');
+        this.endScreen.classList.remove('hidden');
                 this.endScreen.style.display = 'block';
             }
-            
+
             // Update progress display to show 15/15
             const questionInfoElement = document.querySelector('.question-info');
             if (questionInfoElement) {
                 questionInfoElement.textContent = 'Question: 15/15';
-            }
-            
+        }
+
             // Update legacy progress elements if they exist
             const questionProgress = document.getElementById('question-progress');
             if (questionProgress) {
@@ -1342,7 +1342,7 @@ export class CMS_Testing_Quiz extends BaseQuiz {
             }
             
             // Save progress to API
-            const username = localStorage.getItem('username');
+        const username = localStorage.getItem('username');
             if (!username) {
                 throw new Error('No username found');
             }
@@ -1354,28 +1354,28 @@ export class CMS_Testing_Quiz extends BaseQuiz {
             // Update quiz score in user's record
             const quizUser = new QuizUser(username);
             await quizUser.updateQuizScore(
-                this.quizName, 
+                    this.quizName,
                 scorePercentage, 
                 this.player.experience, // Keep experience for backward compatibility
-                this.player.tools,
+                    this.player.tools,
                 this.player.questionHistory,
                 15, // Always 15 questions completed
                 scorePercentage >= 70 ? 'passed' : 'failed'
             );
-            
+
             // Update display elements
             const finalScoreElement = document.getElementById('final-score');
             if (finalScoreElement) {
                 finalScoreElement.textContent = `Final Score: ${scorePercentage}%`;
             }
-            
+
             // Show the end screen
-            const quizCompleteHeader = document.querySelector('#end-screen h2');
-            if (quizCompleteHeader) {
+        const quizCompleteHeader = document.querySelector('#end-screen h2');
+        if (quizCompleteHeader) {
                 quizCompleteHeader.textContent = scorePercentage >= 70 ? 'Quiz Complete!' : 'Quiz Failed!';
-            }
-            
-            const performanceSummary = document.getElementById('performance-summary');
+        }
+
+        const performanceSummary = document.getElementById('performance-summary');
             if (performanceSummary) {
                 if (scorePercentage >= 70) {
                     // Find the appropriate threshold message
@@ -1388,40 +1388,40 @@ export class CMS_Testing_Quiz extends BaseQuiz {
                 } else {
                     performanceSummary.textContent = 'Quiz failed. You did not meet the minimum required score. You can try this quiz again.';
                     
-                    // Hide restart button if failed
-                    const restartBtn = document.getElementById('restart-btn');
-                    if (restartBtn) {
-                        restartBtn.style.display = 'none';
-                    }
+            // Hide restart button if failed
+            const restartBtn = document.getElementById('restart-btn');
+            if (restartBtn) {
+                restartBtn.style.display = 'none';
+            }
                 }
             }
 
             // Generate question review list without XP references
-            const reviewList = document.getElementById('question-review');
-            if (reviewList) {
-                reviewList.innerHTML = ''; // Clear existing content
+        const reviewList = document.getElementById('question-review');
+        if (reviewList) {
+            reviewList.innerHTML = ''; // Clear existing content
                 
-                this.player.questionHistory.forEach((record, index) => {
-                    const reviewItem = document.createElement('div');
-                    reviewItem.className = 'review-item';
-                    
+            this.player.questionHistory.forEach((record, index) => {
+                const reviewItem = document.createElement('div');
+                reviewItem.className = 'review-item';
+                
                     const isCorrect = this.isCorrectAnswer(record.selectedAnswer);
-                    reviewItem.classList.add(isCorrect ? 'correct' : 'incorrect');
-                    
-                    reviewItem.innerHTML = `
-                        <h4>Question ${index + 1}</h4>
+                reviewItem.classList.add(isCorrect ? 'correct' : 'incorrect');
+                
+                reviewItem.innerHTML = `
+                    <h4>Question ${index + 1}</h4>
                         <p class="scenario">${record.scenario ? record.scenario.description : 'No description available'}</p>
                         <p class="answer"><strong>Your Answer:</strong> ${record.selectedAnswer ? record.selectedAnswer.text : 'No answer selected'}</p>
                         <p class="outcome"><strong>Outcome:</strong> ${record.selectedAnswer ? record.selectedAnswer.outcome : 'No outcome'}</p>
                         <p class="result"><strong>Result:</strong> ${isCorrect ? 'Correct' : 'Incorrect'}</p>
-                    `;
-                    
-                    reviewList.appendChild(reviewItem);
-                });
-            }
+                `;
+                
+                reviewList.appendChild(reviewItem);
+            });
+        }
 
             // Generate recommendations
-            this.generateRecommendations();
+        this.generateRecommendations();
         } catch (error) {
             console.error('Failed to save final progress:', error);
             this.showError('Failed to save your results. Please try again.');

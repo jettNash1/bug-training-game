@@ -732,7 +732,7 @@ export class ExploratoryQuiz extends BaseQuiz {
             }
             
             // Check if we've answered all 15 questions
-            if (this.player.questionHistory.length >= 15) {
+        if (this.player.questionHistory.length >= 15) {
                 console.log('All 15 questions answered, ending game');
                 this.endGame();
                 return;
@@ -748,9 +748,9 @@ export class ExploratoryQuiz extends BaseQuiz {
             const currentScenarios = this.getCurrentScenarios();
             if (!currentScenarios || !Array.isArray(currentScenarios)) {
                 console.error('Could not get current scenarios', currentScenarios);
-                return;
-            }
-            
+            return;
+        }
+
             const scenario = currentScenarios[this.player.currentScenario];
             
             // Check if the current scenario exists
@@ -787,16 +787,16 @@ export class ExploratoryQuiz extends BaseQuiz {
     displayScenarioContent(scenario) {
         try {
             // Update UI with current scenario
-            const titleElement = document.getElementById('scenario-title');
-            const descriptionElement = document.getElementById('scenario-description');
-            const optionsContainer = document.getElementById('options-container');
-            
+        const titleElement = document.getElementById('scenario-title');
+        const descriptionElement = document.getElementById('scenario-description');
+        const optionsContainer = document.getElementById('options-container');
+
             if (titleElement && scenario.title) {
                 titleElement.textContent = scenario.title;
-            }
-            
+        }
+
             if (descriptionElement && scenario.description) {
-                descriptionElement.textContent = scenario.description;
+        descriptionElement.textContent = scenario.description;
             }
             
             if (optionsContainer && scenario.options && Array.isArray(scenario.options)) {
@@ -811,23 +811,23 @@ export class ExploratoryQuiz extends BaseQuiz {
                     const optionDiv = document.createElement('div');
                     optionDiv.className = 'option';
                     optionDiv.innerHTML = `
-                        <input type="radio" 
-                            name="option" 
+                <input type="radio" 
+                    name="option" 
                             value="${index}" 
-                            id="option${index}"
-                            tabindex="0"
+                    id="option${index}"
+                    tabindex="0"
                             aria-label="${option.text}">
-                        <label for="option${index}">${option.text}</label>
-                    `;
+                <label for="option${index}">${option.text}</label>
+            `;
                     optionsContainer.appendChild(optionDiv);
-                });
+        });
             }
-            
+
             // Record start time for this question
             this.questionStartTime = Date.now();
-            
-            // Initialize timer for the new question
-            this.initializeTimer();
+
+        // Initialize timer for the new question
+        this.initializeTimer();
             
             // Update progress display
             this.updateProgress();
@@ -850,7 +850,7 @@ export class ExploratoryQuiz extends BaseQuiz {
         if (submitButton) {
             submitButton.disabled = true;
         }
-        
+
         // Clear the timer when an answer is submitted
         if (this.questionTimer) {
             clearInterval(this.questionTimer);
@@ -930,19 +930,19 @@ export class ExploratoryQuiz extends BaseQuiz {
                 isCorrect: this.isCorrectAnswer(selectedAnswer)
             });
 
-            // Save progress 
+            // Save progress
             try {
-                await this.saveProgress();
+            await this.saveProgress();
             } catch (error) {
                 console.error('Failed to save progress:', error);
                 this.showError('Warning: Progress may not have saved correctly');
             }
-
+            
             // Save quiz result
             const username = localStorage.getItem('username');
             if (username) {
                 try {
-                    const quizUser = new QuizUser(username);
+                const quizUser = new QuizUser(username);
                     const score = {
                         score: Math.round((this.player.questionHistory.filter(q => this.isCorrectAnswer(q.selectedAnswer)).length / Math.min(this.player.questionHistory.length, 15)) * 100),
                         experience: this.player.experience || 0,
@@ -950,12 +950,12 @@ export class ExploratoryQuiz extends BaseQuiz {
                         questionsAnswered: this.player.questionHistory.length
                     };
                     
-                    await quizUser.updateQuizScore(
-                        this.quizName,
-                        score.score,
-                        score.experience,
+                await quizUser.updateQuizScore(
+                    this.quizName,
+                    score.score,
+                    score.experience,
                         this.player.tools || [],
-                        score.questionHistory,
+                    score.questionHistory,
                         score.questionsAnswered
                     );
                 } catch (error) {
@@ -1074,10 +1074,10 @@ export class ExploratoryQuiz extends BaseQuiz {
                 // Try both methods
                 gameScreen.classList.remove('hidden');
                 gameScreen.style.display = 'block';
-            }
-            
-            // Display next scenario
-            this.displayScenario();
+        }
+        
+        // Display next scenario
+        this.displayScenario();
             
             // Re-initialize event listeners for the new scenario
             this.initializeEventListeners();
@@ -1164,14 +1164,14 @@ export class ExploratoryQuiz extends BaseQuiz {
     getCurrentScenarios() {
         try {
             const totalAnswered = this.player?.questionHistory?.length || 0;
-            
+        
             // Simple progression logic based solely on question count, no threshold checks
             if (totalAnswered >= 10) {
-                return this.advancedScenarios;
+            return this.advancedScenarios;
             } else if (totalAnswered >= 5) {
-                return this.intermediateScenarios;
-            }
-            return this.basicScenarios;
+            return this.intermediateScenarios;
+        }
+        return this.basicScenarios;
         } catch (error) {
             console.error('Error in getCurrentScenarios:', error);
             return this.basicScenarios; // Default to basic if there's an error
@@ -1181,14 +1181,14 @@ export class ExploratoryQuiz extends BaseQuiz {
     getCurrentLevel() {
         try {
             const totalAnswered = this.player?.questionHistory?.length || 0;
-            
+        
             // Determine level based solely on question count
             if (totalAnswered >= 10) {
-                return 'Advanced';
+            return 'Advanced';
             } else if (totalAnswered >= 5) {
-                return 'Intermediate';
-            }
-            return 'Basic';
+            return 'Intermediate';
+        }
+        return 'Basic';
         } catch (error) {
             console.error('Error in getCurrentLevel:', error);
             return 'Basic'; // Default to basic if there's an error
@@ -1342,7 +1342,7 @@ export class ExploratoryQuiz extends BaseQuiz {
             }
             
             // Save progress to API
-            const username = localStorage.getItem('username');
+        const username = localStorage.getItem('username');
             if (!username) {
                 throw new Error('No username found');
             }
@@ -1354,10 +1354,10 @@ export class ExploratoryQuiz extends BaseQuiz {
             // Update quiz score in user's record
             const quizUser = new QuizUser(username);
             await quizUser.updateQuizScore(
-                this.quizName, 
+                    this.quizName,
                 scorePercentage, 
                 0, // no experience
-                this.player.tools,
+                    this.player.tools,
                 this.player.questionHistory,
                 15, // Always 15 questions completed
                 scorePercentage >= 70 ? 'completed' : 'failed'
@@ -1374,37 +1374,37 @@ export class ExploratoryQuiz extends BaseQuiz {
             this.outcomeScreen.classList.add('hidden');
             if (this.endScreen) {
                 this.endScreen.classList.remove('hidden');
-            }
+        }
 
-            // Generate question review list
-            const reviewList = document.getElementById('question-review');
-            if (reviewList) {
-                reviewList.innerHTML = ''; // Clear existing content
+        // Generate question review list
+        const reviewList = document.getElementById('question-review');
+        if (reviewList) {
+            reviewList.innerHTML = ''; // Clear existing content
                 
-                this.player.questionHistory.forEach((record, index) => {
-                    const reviewItem = document.createElement('div');
-                    reviewItem.className = 'review-item';
-                    
+            this.player.questionHistory.forEach((record, index) => {
+                const reviewItem = document.createElement('div');
+                reviewItem.className = 'review-item';
+                
                     const isCorrect = record.selectedAnswer && this.isCorrectAnswer(record.selectedAnswer);
-                    reviewItem.classList.add(isCorrect ? 'correct' : 'incorrect');
-                    
-                    reviewItem.innerHTML = `
-                        <h4>Question ${index + 1}</h4>
+                reviewItem.classList.add(isCorrect ? 'correct' : 'incorrect');
+                
+                reviewItem.innerHTML = `
+                    <h4>Question ${index + 1}</h4>
                         <p class="scenario">${record.scenario ? record.scenario.description : 'No description available'}</p>
                         <p class="answer"><strong>Your Answer:</strong> ${record.selectedAnswer ? record.selectedAnswer.text : 'No answer selected'}</p>
                         <p class="outcome"><strong>Outcome:</strong> ${record.selectedAnswer ? record.selectedAnswer.outcome : 'No outcome'}</p>
                         <p class="result"><strong>Result:</strong> ${isCorrect ? 'Correct' : 'Incorrect'}</p>
-                    `;
-                    
-                    reviewList.appendChild(reviewItem);
-                });
-            }
+                `;
+                
+                reviewList.appendChild(reviewItem);
+            });
+        }
 
             // Clear local storage for this quiz
             this.clearQuizLocalStorage(username, this.quizName);
 
             // Display recommendations
-            this.generateRecommendations();
+        this.generateRecommendations();
 
         } catch (error) {
             console.error('Failed to save final progress:', error);
