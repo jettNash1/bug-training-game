@@ -4,10 +4,8 @@ import { APIService } from './api-service.js';
 export class BaseQuiz {
     constructor(config) {
         this.config = config;
-        this.maxXP = config.maxXP;
         this.totalQuestions = config.totalQuestions || 15;
         this.passPercentage = config.passPercentage || 70;
-        this.performanceThresholds = config.performanceThresholds;
         this.gameScreen = document.getElementById('game-screen');
         this.outcomeScreen = document.getElementById('outcome-screen');
         this.isLoading = false;
@@ -15,6 +13,13 @@ export class BaseQuiz {
         this.apiService = new APIService();
         this.guideUrl = null;
         this.showGuideButton = false;
+        
+        // Remove level thresholds since we're not using them anymore
+        this.levelThresholds = {
+            basic: { minXP: 0 },
+            intermediate: { minXP: 0 },
+            advanced: { minXP: 0 }
+        };
         
         // Attempt to get quiz name from config, URL, or data attributes
         this.quizName = config.quizName || this.detectQuizNameFromPage();
@@ -438,124 +443,94 @@ export class BaseQuiz {
         }
     }
 
-    handleTimeUp() {
-        // If timer is disabled, don't handle time up
-        if (this.timePerQuestion === 0) {
-            return;
-        }
+    async handleTimeUp() {
+        if (this.timerDisabled) return;
         
-        clearInterval(this.questionTimer);
+        this.clearTimer();
         
         // Get current scenario
-        const currentScenario = this.getCurrentScenario();
+        const currentScenario = this.scenarios[this.player.currentScenario];
         
-        // Find the correct answer (option with highest experience)
-        const correctOption = currentScenario.options.reduce((prev, current) => 
-            (prev.experience > current.experience) ? prev : current
+        // Find correct answer based on experience
+        const correctAnswer = currentScenario.options.find(opt => 
+            opt.experience === currentScenario.correctExperience
         );
         
-        // Create a time-up option with 0 experience and include correct answer
-        const timeUpOption = {
-            text: "Time's up - No answer selected",
-            outcome: "You did not answer in time.",
-            experience: 0,
-            isTimeout: true  // Add a flag to identify this as a timeout option
+        // Create timeout option
+        const timeoutOption = {
+            id: 'timeout',
+            text: 'Time ran out!',
+            experience: 'timeout',
+            isCorrect: false
         };
-
-        // Record the choice with timing information
-        const timeSpent = this.questionStartTime ? Date.now() - this.questionStartTime : this.timePerQuestion;
+        
+        // Record player's choice
         this.player.questionHistory.push({
-            scenario: currentScenario,
-            selectedAnswer: timeUpOption,
-            status: 'failed',
-            timeSpent: timeSpent,
-            timedOut: true
+            scenarioId: currentScenario.id,
+            selectedOption: timeoutOption,
+            correctOption: correctAnswer,
+            wasCorrect: false,
+            timeSpent: this.timeLimit
         });
-
+        
         // Increment current scenario
         this.player.currentScenario++;
         
-        // Save progress to ensure timeout is recorded
-        this.saveProgress().catch(error => {
-            console.error('Failed to save progress after timeout:', error);
-        });
+        // Save progress
+        await this.saveProgress();
         
         // Calculate score data for quiz result
-        const totalQuestions = 15;
-        const completedQuestions = this.player.questionHistory.length;
-        const percentComplete = Math.round((completedQuestions / totalQuestions) * 100);
+        const scoreData = this.calculateScoreData();
         
-        const score = {
-            quizName: this.quizName,
-            score: percentComplete,
-            experience: this.player.experience,
-            questionHistory: this.player.questionHistory,
-            questionsAnswered: completedQuestions,
-            lastActive: new Date().toISOString()
-        };
-        
-        // Save quiz result
-        const username = localStorage.getItem('username');
-        if (username) {
-            const quizUser = new QuizUser(username);
-            quizUser.updateQuizScore(
-                this.quizName,
-                score.score, 
-                score.experience,
-                this.player.tools,
-                score.questionHistory,
-                score.questionsAnswered
-            ).catch(error => {
-                console.error('Failed to update quiz score after timeout:', error);
-            });
+        // Check if quiz is complete
+        if (this.player.currentScenario >= this.scenarios.length) {
+            await this.completeQuiz(scoreData);
+        } else {
+            // Load next scenario
+            await this.loadScenario(this.player.currentScenario);
         }
-
-        // Show outcome
-        this.showOutcome(timeUpOption);
     }
 
     // Default saveProgress method that will be called by handleTimeUp
     // if the quiz implementation doesn't override it
     async saveProgress() {
+        // First determine the status based on clear conditions
         let status = 'in-progress';
-        const totalAnswered = this.player.questionHistory.length;
         
-        // Calculate score percentage
-        const correctAnswers = this.player.questionHistory.filter(q => q.wasCorrect).length;
-        const scorePercentage = totalAnswered > 0 ? Math.round((correctAnswers / totalAnswered) * 100) : 0;
-        
-        // Determine status based on completion and score percentage
-        if (totalAnswered >= this.totalQuestions) {
-            status = scorePercentage >= 70 ? 'completed' : 'failed';
+        // Check for completion (all 15 questions answered)
+        if (this.player.questionHistory.length >= 15) {
+            // Calculate pass/fail based on correct answers
+            const correctAnswers = this.player.questionHistory.filter(q => q.isCorrect).length;
+            const scorePercentage = Math.round((correctAnswers / 15) * 100);
+            status = scorePercentage >= 70 ? 'passed' : 'failed';
         }
 
-        // Create progress object with all necessary data
         const progress = {
-            experience: this.player.experience,
-            questionsAnswered: totalAnswered,
-            questionHistory: this.player.questionHistory,
-            currentScenario: this.currentScenario,
-            tools: this.player.tools,
-            lastUpdated: new Date().toISOString(),
-            status: status,
-            scorePercentage: scorePercentage
+            data: {
+                questionsAnswered: this.player.questionHistory.length,
+                questionHistory: this.player.questionHistory,
+                lastUpdated: new Date().toISOString(),
+                status: status,
+                scorePercentage: Math.round((this.player.questionHistory.filter(q => q.isCorrect).length / 15) * 100)
+            }
         };
 
-        // Save progress to localStorage
-        localStorage.setItem('quizProgress', JSON.stringify(progress));
-
-        // Save to API if username exists
-        const username = localStorage.getItem('username');
-        if (username) {
-            try {
-                await this.apiService.saveQuizProgress(this.quizName, progress);
-                console.log('Progress saved successfully:', progress);
-            } catch (error) {
-                console.error('Failed to save progress:', error);
+        try {
+            const username = localStorage.getItem('username');
+            if (!username) {
+                console.error('No user found, cannot save progress');
+                return;
             }
+            
+            // Use user-specific key for localStorage
+            const storageKey = `quiz_progress_${username}_${this.quizName}`;
+            localStorage.setItem(storageKey, JSON.stringify(progress));
+            
+            console.log('Saving progress with status:', status);
+            await this.apiService.saveQuizProgress(this.quizName, progress.data);
+        } catch (error) {
+            console.error('Failed to save progress:', error);
         }
-
-        return progress;
     }
 
     showQuestion() {
@@ -877,7 +852,7 @@ export class BaseQuiz {
     getCurrentScenario() {
         const totalAnswered = this.player.questionHistory.length;
         
-        // Check for level progression based on question count
+        // Progress through levels based only on question count
         if (totalAnswered >= 10) {
             return this.advancedScenarios;
         } else if (totalAnswered >= 5) {
@@ -889,6 +864,7 @@ export class BaseQuiz {
     getCurrentLevel() {
         const totalAnswered = this.player.questionHistory.length;
         
+        // Progress through levels based only on question count
         if (totalAnswered >= 10) {
             return 'Advanced';
         } else if (totalAnswered >= 5) {
@@ -1091,16 +1067,16 @@ export class BaseQuiz {
     }
 
     async endGame() {
-        // Calculate final score percentage using experience points instead of correct answers count
-        const scorePercentage = Math.round((this.player.experience / this.maxXP) * 100);
+        // Calculate final score based on correct answers
+        const correctAnswers = this.player.questionHistory.filter(q => q.isCorrect).length;
+        const scorePercentage = Math.round((correctAnswers / 15) * 100);
         
-        // Determine status based on score percentage
-        const status = scorePercentage >= this.passPercentage ? 'completed' : 'failed';
+        // Determine status based on pass threshold
+        const status = scorePercentage >= 70 ? 'passed' : 'failed';
         
         // Create the final progress object
         const progress = {
-            experience: this.player.experience,
-            questionsAnswered: this.totalQuestions || 15, // Default to 15 if totalQuestions is not defined
+            questionsAnswered: this.totalQuestions || 15,
             questionHistory: this.player.questionHistory,
             status: status,
             scorePercentage: scorePercentage,
@@ -1151,10 +1127,12 @@ export class BaseQuiz {
             outcomeElement.textContent = outcomeText;
         }
         
-        // Clear XP gained element (no longer showing experience points)
-        const xpElement = document.getElementById('xp-gained');
-        if (xpElement) {
-            xpElement.textContent = '';
+        // Show if answer was correct
+        const isCorrect = selectedAnswer.isCorrect;
+        const resultElement = document.getElementById('result-text');
+        if (resultElement) {
+            resultElement.textContent = isCorrect ? 'Correct!' : 'Incorrect';
+            resultElement.className = isCorrect ? 'correct' : 'incorrect';
         }
         
         // Show tool acquired if present
@@ -1190,4 +1168,34 @@ export class BaseQuiz {
     setTimeout(function() {
         console.log('[Guide] Guide buttons have been moved to index page cards and disabled in quiz pages');
     }, 3000);
-})(); 
+})();
+
+export class QuizPlayer {
+    constructor(username) {
+        this.username = username;
+        this.questionHistory = [];
+        this.tools = [];
+        this.currentScenario = null;
+    }
+
+    addQuestionToHistory(question, selectedAnswer) {
+        this.questionHistory.push({
+            questionId: question.id,
+            selectedAnswer: selectedAnswer.text,
+            isCorrect: selectedAnswer.isCorrect,
+            timestamp: new Date().toISOString()
+        });
+    }
+
+    getCorrectAnswerCount() {
+        return this.questionHistory.filter(q => q.isCorrect).length;
+    }
+
+    getScorePercentage() {
+        return Math.round((this.getCorrectAnswerCount() / 15) * 100);
+    }
+
+    hasPassed() {
+        return this.getScorePercentage() >= 70;
+    }
+} 
