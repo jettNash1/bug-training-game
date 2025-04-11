@@ -43,6 +43,11 @@ export class TesterMindsetQuiz extends BaseQuiz {
         this.outcomeScreen = document.getElementById('outcome-screen');
         this.endScreen = document.getElementById('end-screen');
         
+        // Log screen elements for debugging
+        console.log('Game screen element:', this.gameScreen);
+        console.log('Outcome screen element:', this.outcomeScreen);
+        console.log('End screen element:', this.endScreen);
+        
         // Verify all required elements exist
         if (!this.gameScreen) {
             console.error('Game screen element not found');
@@ -699,26 +704,67 @@ export class TesterMindsetQuiz extends BaseQuiz {
     }
 
     initializeEventListeners() {
-        // Add event listeners for the continue and restart buttons
-        document.getElementById('continue-btn')?.addEventListener('click', () => this.nextScenario());
-        document.getElementById('restart-btn')?.addEventListener('click', () => this.restartGame());
-
-        // Add form submission handler
-        document.getElementById('options-form')?.addEventListener('submit', (e) => {
-            e.preventDefault();
-            this.handleAnswer();
-        });
-
-        // Add keyboard navigation
-        document.addEventListener('keydown', (e) => {
-            if (e.key === 'Enter' && e.target.type === 'radio') {
-                this.handleAnswer();
+        try {
+            console.log('Initializing event listeners');
+            
+            // Add event listeners for the continue and restart buttons
+            const continueBtn = document.getElementById('continue-btn');
+            if (continueBtn) {
+                // Remove any existing listeners by cloning and replacing
+                const newBtn = continueBtn.cloneNode(true);
+                continueBtn.parentNode.replaceChild(newBtn, continueBtn);
+                
+                // Add fresh event listener
+                newBtn.addEventListener('click', () => {
+                    console.log('Continue button clicked from event listener');
+                    this.nextScenario();
+                });
+                console.log('Added event listener to continue button');
             }
-        });
+            
+            const restartBtn = document.getElementById('restart-btn');
+            if (restartBtn) {
+                restartBtn.addEventListener('click', () => this.restartGame());
+                console.log('Added event listener to restart button');
+            }
+            
+            // Add form submission handler
+            const optionsForm = document.getElementById('options-form');
+            if (optionsForm) {
+                optionsForm.addEventListener('submit', (e) => {
+                    e.preventDefault();
+                    this.handleAnswer();
+                });
+                console.log('Added event listener to options form');
+            }
+            
+            // Add submit button click handler
+            const submitButton = document.querySelector('.submit-button');
+            if (submitButton) {
+                submitButton.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    this.handleAnswer();
+                });
+                console.log('Added event listener to submit button');
+            }
+            
+            // Add keyboard navigation
+            document.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter' && e.target.type === 'radio') {
+                    this.handleAnswer();
+                }
+            });
+            console.log('Added keyboard navigation event listeners');
+            
+        } catch (error) {
+            console.error('Error initializing event listeners:', error);
+        }
     }
 
     displayScenario() {
         try {
+            console.log('displayScenario called');
+            
             // Check if player and currentScenario are properly initialized
             if (!this.player || typeof this.player.currentScenario !== 'number') {
                 console.error('Player or currentScenario not properly initialized');
@@ -739,13 +785,18 @@ export class TesterMindsetQuiz extends BaseQuiz {
                 console.log('Timer cleared in displayScenario');
             }
             
+            console.log('Getting current scenarios...');
             const currentScenarios = this.getCurrentScenarios();
+            console.log('Current scenarios:', currentScenarios);
+            
             if (!currentScenarios || !Array.isArray(currentScenarios)) {
                 console.error('Could not get current scenarios', currentScenarios);
                 return;
             }
             
             const scenario = currentScenarios[this.player.currentScenario];
+            console.log('Current scenario index:', this.player.currentScenario);
+            console.log('Retrieved scenario:', scenario);
             
             // Check if the current scenario exists
             if (!scenario) {
@@ -991,20 +1042,43 @@ export class TesterMindsetQuiz extends BaseQuiz {
                 console.log('Incremented to scenario:', this.player.currentScenario);
             }
             
-            // Hide outcome screen and show game screen
+            // IMPORTANT: Get actual DOM elements directly
             const outcomeScreen = document.getElementById('outcome-screen');
             const gameScreen = document.getElementById('game-screen');
             
+            console.log('Game screen element:', gameScreen);
+            console.log('Outcome screen element:', outcomeScreen);
+            
+            // Hide outcome screen using multiple approaches to ensure it works
             if (outcomeScreen) {
                 outcomeScreen.classList.add('hidden');
+                outcomeScreen.style.display = 'none';
+                console.log('Hidden outcome screen');
             }
             
+            // Show game screen using multiple approaches to ensure it works
             if (gameScreen) {
                 gameScreen.classList.remove('hidden');
+                gameScreen.style.display = 'block';
+                console.log('Shown game screen');
             }
             
             // Display the next scenario
             this.displayScenario();
+            
+            // Re-initialize event listeners for the new question
+            this.initializeEventListeners();
+            
+            // Force a layout refresh
+            window.setTimeout(() => {
+                if (gameScreen) {
+                    gameScreen.style.display = 'none';
+                    window.setTimeout(() => {
+                        gameScreen.style.display = 'block';
+                        console.log('Forced layout refresh');
+                    }, 10);
+                }
+            }, 10);
         } catch (error) {
             console.error('Error in nextScenario:', error);
             this.showError('An error occurred while loading the next question.');
@@ -1057,9 +1131,10 @@ export class TesterMindsetQuiz extends BaseQuiz {
                 outcomeScreen.style.display = 'block';
             }
             
-            // Set content directly in the outcome screen
+            // Clear any existing button event listeners by recreating the content
             const outcomeContent = outcomeScreen.querySelector('.outcome-content');
             if (outcomeContent) {
+                // Create fresh HTML content
                 outcomeContent.innerHTML = `
                     <h3>${isCorrect ? 'Correct!' : 'Incorrect'}</h3>
                     <p>${selectedAnswer.outcome || ''}</p>
@@ -1067,18 +1142,22 @@ export class TesterMindsetQuiz extends BaseQuiz {
                     <button id="continue-btn" class="submit-button">Continue</button>
                 `;
                 
-                // Add event listener to the continue button
+                // Immediately add event listener to the new button
                 const continueBtn = outcomeContent.querySelector('#continue-btn');
                 if (continueBtn) {
-                    continueBtn.addEventListener('click', () => this.nextScenario());
+                    console.log('Adding event listener to continue button');
+                    continueBtn.addEventListener('click', () => {
+                        console.log('Continue button clicked');
+                        this.nextScenario();
+                    });
                 }
             } else {
-                console.error('Could not find outcome content element');
+                // If no outcomeContent found, try individual elements as fallback
+                console.error('Could not find outcome content element, trying individual elements');
                 
-                // Fallback to updating individual elements if outcome content container not found
+                // Update individual elements
                 const outcomeText = document.getElementById('outcome-text');
                 const resultText = document.getElementById('result-text');
-                const continueBtn = document.getElementById('continue-btn');
                 
                 if (outcomeText) {
                     outcomeText.textContent = selectedAnswer.outcome || '';
@@ -1089,28 +1168,30 @@ export class TesterMindsetQuiz extends BaseQuiz {
                     resultText.className = isCorrect ? 'correct' : 'incorrect';
                 }
                 
-                // Ensure tool display is updated if present
-                const toolElement = document.getElementById('tool-gained');
-                if (toolElement) {
-                    if (selectedAnswer.tool) {
-                        toolElement.textContent = `Tool acquired: ${selectedAnswer.tool}`;
-                        if (this.player && !this.player.tools.includes(selectedAnswer.tool)) {
-                            this.player.tools.push(selectedAnswer.tool);
-                        }
-                    } else {
-                        toolElement.textContent = '';
+                // Ensure we have a continue button and it has the right event listener
+                const continueBtn = document.getElementById('continue-btn');
+                if (!continueBtn) {
+                    // Try to create a continue button if it doesn't exist
+                    const outcomeActions = document.querySelector('.outcome-actions');
+                    if (outcomeActions) {
+                        outcomeActions.innerHTML = '<button id="continue-btn" class="submit-button">Continue</button>';
                     }
                 }
                 
-                // Hide XP information
-                const xpGained = document.getElementById('xp-gained');
-                if (xpGained) {
-                    xpGained.style.display = 'none';
-                }
-                
-                // Add event listener to continue button if it exists
-                if (continueBtn) {
-                    continueBtn.addEventListener('click', () => this.nextScenario());
+                // Add event listener to the continue button (whether it existed or we created it)
+                const newContinueBtn = document.getElementById('continue-btn');
+                if (newContinueBtn) {
+                    // Remove any existing event listeners by cloning and replacing
+                    const newBtn = newContinueBtn.cloneNode(true);
+                    if (newContinueBtn.parentNode) {
+                        newContinueBtn.parentNode.replaceChild(newBtn, newContinueBtn);
+                    }
+                    
+                    // Add fresh event listener
+                    newBtn.addEventListener('click', () => {
+                        console.log('Continue button clicked');
+                        this.nextScenario();
+                    });
                 }
             }
             
