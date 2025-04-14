@@ -1926,10 +1926,6 @@ export class Admin2Dashboard extends AdminDashboard {
                                 <span>${questionsAnswered}/15</span>
                         </div>
                         <div>
-                                <strong>XP:</strong> 
-                                <span>${experience}/300</span>
-                            </div>
-                            <div>
                                 <strong>Last Active:</strong> 
                                 <span>${this.formatDate(lastActive)}</span>
                             </div>
