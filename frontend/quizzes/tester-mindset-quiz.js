@@ -786,22 +786,51 @@ export class TesterMindsetQuiz extends BaseQuiz {
         try {
             console.log('Displaying scenario');
             
+            // Ensure required UI elements exist first
+            if (!this.ensureRequiredElementsExist()) {
+                throw new Error('Required UI elements could not be created');
+            }
+            
             // Get total answered questions
             const totalAnswered = this.player?.questionHistory?.length || 0;
+            console.log(`Total answered questions: ${totalAnswered}`);
+            
+            // Force initialization of randomized scenarios if needed
+            if (!this.randomizedScenarios || 
+                !this.randomizedScenarios.basic || 
+                this.randomizedScenarios.basic.length === 0) {
+                console.log('Scenarios not initialized, initializing now');
+                this.getCurrentScenarios();
+            }
             
             // Get the appropriate scenarios based on progress
             const scenarios = this.getCurrentScenarios();
+            console.log(`Scenarios for current level: ${scenarios?.length || 0}`);
+            
             if (!scenarios || scenarios.length === 0) {
                 throw new Error('No scenarios available for the current level');
             }
             
             // Calculate current scenario index within the level
             const scenarioIndex = totalAnswered % 5;
+            console.log(`Current scenario index: ${scenarioIndex}`);
+            
+            // Get current scenario
             this.currentScenario = scenarios[scenarioIndex];
             
             if (!this.currentScenario) {
-                throw new Error(`Scenario not found at index ${scenarioIndex}`);
+                console.error(`Scenario not found at index ${scenarioIndex}. Available indexes: 0-${scenarios.length - 1}`);
+                
+                // Fall back to first scenario if available
+                if (scenarios.length > 0) {
+                    console.log('Falling back to first scenario in the level');
+                    this.currentScenario = scenarios[0];
+                } else {
+                    throw new Error(`No scenarios available to display`);
+                }
             }
+            
+            console.log(`Selected scenario: ${this.currentScenario.id}, title: ${this.currentScenario.title}`);
             
             // Update UI with current scenario
             this.updateScenarioUI(this.currentScenario);
@@ -809,14 +838,11 @@ export class TesterMindsetQuiz extends BaseQuiz {
             // Update progress display
             this.updateProgressDisplay();
             
-            // Initialize timer for the new question
-            this.initializeTimer();
-            
             console.log(`Displaying scenario: ${this.currentScenario.id} (${totalAnswered + 1}/15)`);
             return true;
         } catch (error) {
             console.error('Error in displayScenario:', error);
-            this.showError('An error occurred while loading the scenario.');
+            this.showError('An error occurred while loading the scenario. Please refresh and try again.');
             return false;
         }
     }
@@ -883,6 +909,12 @@ export class TesterMindsetQuiz extends BaseQuiz {
                 noOptionsMessage.classList.add('no-options-message');
                 optionsContainer.appendChild(noOptionsMessage);
             }
+            
+            // Record start time for this question
+            this.questionStartTime = Date.now();
+
+            // Initialize timer for the new question
+            this.initializeTimer();
             
             console.log('Scenario UI updated successfully');
         } catch (error) {
@@ -1629,6 +1661,91 @@ export class TesterMindsetQuiz extends BaseQuiz {
         });
         
         reviewList.innerHTML = reviewHTML;
+    }
+
+    ensureRequiredElementsExist() {
+        try {
+            console.log('Ensuring required elements exist');
+            
+            // First make sure we have access to gameScreen
+            if (!this.gameScreen) {
+                console.error('Cannot create elements without gameScreen');
+                return false;
+            }
+            
+            // Check for question section and create if missing
+            let questionSection = this.gameScreen.querySelector('.question-section');
+            if (!questionSection) {
+                console.log('Creating missing question section');
+                questionSection = document.createElement('div');
+                questionSection.className = 'question-section';
+                
+                // Find a good place to insert it (before options-section if possible)
+                const optionsSection = this.gameScreen.querySelector('.options-section');
+                if (optionsSection) {
+                    this.gameScreen.insertBefore(questionSection, optionsSection);
+                } else {
+                    this.gameScreen.appendChild(questionSection);
+                }
+            }
+            
+            // Check for scenario title and create if missing
+            let titleElement = document.getElementById('scenario-title');
+            if (!titleElement) {
+                console.log('Creating missing scenario title element');
+                titleElement = document.createElement('h2');
+                titleElement.id = 'scenario-title';
+                titleElement.setAttribute('tabindex', '0');
+                questionSection.appendChild(titleElement);
+            }
+            
+            // Check for scenario description and create if missing
+            let descriptionElement = document.getElementById('scenario-description');
+            if (!descriptionElement) {
+                console.log('Creating missing scenario description element');
+                descriptionElement = document.createElement('p');
+                descriptionElement.id = 'scenario-description';
+                descriptionElement.setAttribute('tabindex', '0');
+                questionSection.appendChild(descriptionElement);
+            }
+            
+            // Check for options form and create if missing
+            let optionsForm = document.getElementById('options-form');
+            if (!optionsForm) {
+                console.log('Creating missing options form');
+                optionsForm = document.createElement('form');
+                optionsForm.id = 'options-form';
+                optionsForm.className = 'options-section';
+                this.gameScreen.appendChild(optionsForm);
+            }
+            
+            // Check for options container and create if missing
+            let optionsContainer = document.getElementById('options-container');
+            if (!optionsContainer) {
+                console.log('Creating missing options container');
+                optionsContainer = document.createElement('div');
+                optionsContainer.id = 'options-container';
+                optionsForm.appendChild(optionsContainer);
+            }
+            
+            // Check for submit button and create if missing
+            let submitButton = document.getElementById('submit-btn');
+            if (!submitButton) {
+                console.log('Creating missing submit button');
+                submitButton = document.createElement('button');
+                submitButton.type = 'submit';
+                submitButton.id = 'submit-btn';
+                submitButton.className = 'submit-button';
+                submitButton.textContent = 'Submit Answer';
+                optionsForm.appendChild(submitButton);
+            }
+            
+            console.log('All required elements checked and created if needed');
+            return true;
+        } catch (error) {
+            console.error('Error in ensureRequiredElementsExist:', error);
+            return false;
+        }
     }
 }
 
