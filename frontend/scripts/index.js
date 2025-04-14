@@ -220,9 +220,7 @@ class IndexPage {
 
     async updateQuizProgress() {
         if (!this.quizScores) return;
-        
-        console.log("All quiz scores:", JSON.stringify(this.quizScores, null, 2));
-        
+                
         this.quizItems.forEach(item => {
             const quizId = item.dataset.quiz;
             if (!quizId) return;
