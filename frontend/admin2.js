@@ -3844,7 +3844,7 @@ export class Admin2Dashboard extends AdminDashboard {
     // Helper method to generate HTML for the list of guide settings
     generateGuideSettingsList(guideSettings) {
         if (!guideSettings || Object.keys(guideSettings).length === 0) {
-            return '<p>No guide settings configured yet.</p>';
+            return '<div class="no-settings-message">No guide settings configured yet.</div>';
         }
 
         console.log('Generating guide settings list for:', guideSettings);
@@ -3867,37 +3867,44 @@ export class Admin2Dashboard extends AdminDashboard {
             console.log(`Guide setting for ${quizName}:`, setting);
             
             html += `
-                <div class="settings-item">
-                    <div class="setting-info">
-                        <input type="checkbox" 
-                            class="guide-selector" 
-                            data-quiz="${quizName}" 
-                            id="guide-select-${quizName}"
-                            aria-label="Select ${this.formatQuizName(quizName)} guide">
-                        <label for="guide-select-${quizName}" class="setting-name">
-                            ${this.formatQuizName(quizName)}
-                        </label>
-                        <div class="setting-details">
-                            <span class="guide-url" title="${guideUrl}">${guideUrl || 'No URL set'}</span>
-                            <span class="guide-status ${isEnabled ? 'enabled' : 'disabled'}">
+                <div class="guide-settings-item">
+                    <div class="guide-settings-info">
+                        <div class="guide-settings-header">
+                            <div class="guide-checkbox-name">
+                                <input type="checkbox" 
+                                    class="guide-selector" 
+                                    data-quiz="${quizName}" 
+                                    id="guide-select-${quizName}"
+                                    aria-label="Select ${this.formatQuizName(quizName)} guide">
+                                <label for="guide-select-${quizName}" class="guide-name">
+                                    ${this.formatQuizName(quizName)}
+                                </label>
+                            </div>
+                            <div class="guide-status-badge ${isEnabled ? 'enabled' : 'disabled'}">
                                 ${isEnabled ? 'Enabled' : 'Disabled'}
-                            </span>
+                            </div>
+                        </div>
+                        <div class="guide-url-container">
+                            <span class="guide-url-label">URL:</span>
+                            <span class="guide-url-value" title="${guideUrl}">${guideUrl || 'No URL set'}</span>
                         </div>
                     </div>
-                    <div class="setting-actions">
-                        <button class="edit-guide-btn" data-quiz="${quizName}">
-                            Edit
+                    <div class="guide-settings-actions">
+                        <button class="edit-guide-btn action-button secondary" data-quiz="${quizName}">
+                            <i class="fas fa-edit"></i> Edit
                         </button>
-                        <button class="test-guide-btn" data-quiz="${quizName}" data-url="${guideUrl}" 
+                        <button class="test-guide-btn action-button" 
+                            data-quiz="${quizName}" 
+                            data-url="${guideUrl}" 
                             ${guideUrl ? '' : 'disabled'}>
-                            Test
+                            <i class="fas fa-external-link-alt"></i> Test
                         </button>
                     </div>
                 </div>
             `;
         }
         
-        return html || '<p>No guide settings configured yet.</p>';
+        return html || '<div class="no-settings-message">No guide settings configured yet.</div>';
     }
 
     // Helper function to format quiz names from kebab-case to Title Case
