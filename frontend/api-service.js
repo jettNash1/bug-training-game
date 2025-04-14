@@ -395,71 +395,111 @@ export class APIService {
             // due to larger data structures
             if (quizName === 'tester-mindset') {
                 console.log(`[API] Using optimized fetch for tester-mindset quiz`);
-                try {
-                    // Create a specific AbortController with longer timeout just for this quiz
-                    const controller = new AbortController();
-                    const signal = controller.signal;
-                    const longTimeoutId = setTimeout(() => controller.abort(), 20000); // 20 seconds
-                    
-                    // Custom fetch with longer timeout
-                    const token = getAuthToken();
-                    const fullUrl = `${this.baseUrl}/users/quiz-progress/tester-mindset`;
-                    
-                    console.log(`[API] Using direct optimized fetch: ${fullUrl}`);
-                    
-                    const fetchOptions = {
-                        credentials: 'include',
-                        headers: {
-                            'Authorization': `Bearer ${token}`,
-                            'Accept': 'application/json',
-                            'Content-Type': 'application/json'
-                        },
-                        mode: 'cors',
-                        signal: signal
-                    };
-                    
-                    const response = await fetch(fullUrl, fetchOptions);
-                    clearTimeout(longTimeoutId);
-                    
-                    if (!response.ok) {
-                        throw new Error(`Failed to fetch progress: ${response.status} ${response.statusText}`);
-                    }
-                    
-                    const responseData = await response.json();
-                    console.log(`[API] Got optimized tester-mindset progress:`, responseData);
-                    
-                    if (!responseData || !responseData.data) {
+                
+                // Maximum retry attempts
+                const MAX_RETRIES = 3;
+                
+                for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
+                    try {
+                        // Increase timeout for each retry attempt
+                        const timeoutDuration = 20000 + (attempt * 10000); // 20s, 30s, 40s
+                        console.log(`[API] tester-mindset attempt ${attempt+1}/${MAX_RETRIES} with ${timeoutDuration/1000}s timeout`);
+                        
+                        // Create a specific AbortController with longer timeout just for this quiz
+                        const controller = new AbortController();
+                        const signal = controller.signal;
+                        const longTimeoutId = setTimeout(() => controller.abort(), timeoutDuration);
+                        
+                        // Custom fetch with longer timeout
+                        const token = getAuthToken();
+                        
+                        // Add cache-busting parameter to avoid any potential caching issues
+                        const cacheBuster = new Date().getTime();
+                        const fullUrl = `${this.baseUrl}/users/quiz-progress/tester-mindset?_cb=${cacheBuster}`;
+                        
+                        console.log(`[API] Using direct optimized fetch: ${fullUrl}`);
+                        
+                        const fetchOptions = {
+                            credentials: 'include',
+                            headers: {
+                                'Authorization': `Bearer ${token}`,
+                                'Accept': 'application/json',
+                                'Content-Type': 'application/json',
+                                'X-Quiz-Optimization': 'true' // Signal to backend that we want optimized response
+                            },
+                            mode: 'cors',
+                            signal: signal
+                        };
+                        
+                        const response = await fetch(fullUrl, fetchOptions);
+                        clearTimeout(longTimeoutId);
+                        
+                        if (!response.ok) {
+                            throw new Error(`Failed to fetch progress: ${response.status} ${response.statusText}`);
+                        }
+                        
+                        // First try to get response as text to avoid JSON parsing errors
+                        const responseText = await response.text();
+                        
+                        // Check for empty response
+                        if (!responseText || responseText.trim() === '') {
+                            console.warn('[API] Empty response received from server');
+                            throw new Error('Empty response from server');
+                        }
+                        
+                        // Try parsing the JSON response
+                        let responseData;
+                        try {
+                            responseData = JSON.parse(responseText);
+                        } catch (parseError) {
+                            console.error('[API] JSON parse error:', parseError, 'Raw response:', responseText.substring(0, 500) + '...');
+                            throw new Error('Invalid JSON response from server');
+                        }
+                        
+                        console.log(`[API] Got optimized tester-mindset progress:`, responseData);
+                        
+                        if (!responseData || !responseData.data) {
+                            return {
+                                success: true,
+                                data: {
+                                    experience: 0,
+                                    questionsAnswered: 0,
+                                    status: 'not-started',
+                                    scorePercentage: 0,
+                                    tools: [],
+                                    questionHistory: []
+                                }
+                            };
+                        }
+                        
+                        // Ensure all required fields are present
+                        const progress = {
+                            ...responseData.data,
+                            experience: responseData.data.experience || 0,
+                            questionsAnswered: responseData.data.questionsAnswered || 0,
+                            status: responseData.data.status || 'not-started',
+                            scorePercentage: typeof responseData.data.scorePercentage === 'number' ? responseData.data.scorePercentage : 0,
+                            tools: responseData.data.tools || [],
+                            questionHistory: responseData.data.questionHistory || []
+                        };
+                        
                         return {
                             success: true,
-                            data: {
-                                experience: 0,
-                                questionsAnswered: 0,
-                                status: 'not-started',
-                                scorePercentage: 0,
-                                tools: [],
-                                questionHistory: []
-                            }
+                            data: progress
                         };
+                    } catch (retryError) {
+                        console.warn(`[API] Attempt ${attempt+1}/${MAX_RETRIES} failed:`, retryError);
+                        
+                        // If this was the last attempt, throw the error to be caught by the outer catch
+                        if (attempt === MAX_RETRIES - 1) {
+                            throw retryError;
+                        }
+                        
+                        // Wait before retrying with exponential backoff
+                        const waitTime = 1000 * Math.pow(2, attempt); // 1s, 2s, 4s
+                        console.log(`[API] Waiting ${waitTime}ms before retry...`);
+                        await new Promise(resolve => setTimeout(resolve, waitTime));
                     }
-                    
-                    // Ensure all required fields are present
-                    const progress = {
-                        ...responseData.data,
-                        experience: responseData.data.experience || 0,
-                        questionsAnswered: responseData.data.questionsAnswered || 0,
-                        status: responseData.data.status || 'not-started',
-                        scorePercentage: typeof responseData.data.scorePercentage === 'number' ? responseData.data.scorePercentage : 0,
-                        tools: responseData.data.tools || [],
-                        questionHistory: responseData.data.questionHistory || []
-                    };
-                    
-                    return {
-                        success: true,
-                        data: progress
-                    };
-                } catch (specialError) {
-                    console.warn(`[API] Optimized fetch failed for tester-mindset, falling back to standard method:`, specialError);
-                    // Continue with regular fetch method below
                 }
             }
             
@@ -536,51 +576,90 @@ export class APIService {
 
             // Special case for tester-mindset quiz which may have timeout issues
             if (quizName === 'tester-mindset') {
-                try {
-                    console.log(`[API] Using optimized save for tester-mindset quiz`);
-                    
-                    // Create a specific AbortController with longer timeout just for this quiz
-                    const controller = new AbortController();
-                    const signal = controller.signal;
-                    const longTimeoutId = setTimeout(() => controller.abort(), 25000); // 25 seconds
-                    
-                    // Custom fetch with longer timeout
-                    const token = getAuthToken();
-                    const fullUrl = `${this.baseUrl}/users/quiz-progress`;
-                    
-                    const fetchOptions = {
-                        method: 'POST',
-                        credentials: 'include',
-                        headers: {
-                            'Authorization': `Bearer ${token}`,
-                            'Accept': 'application/json',
-                            'Content-Type': 'application/json'
-                        },
-                        body: JSON.stringify({
-                            quizName: quizName,
-                            progress: progressData
-                        }),
-                        mode: 'cors',
-                        signal: signal
-                    };
-                    
-                    const response = await fetch(fullUrl, fetchOptions);
-                    clearTimeout(longTimeoutId);
-                    
-                    if (!response.ok) {
-                        throw new Error(`Failed to save progress: ${response.status} ${response.statusText}`);
+                // Maximum retry attempts
+                const MAX_RETRIES = 3;
+                
+                for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
+                    try {
+                        console.log(`[API] Using optimized save for tester-mindset quiz - attempt ${attempt+1}/${MAX_RETRIES}`);
+                        
+                        // Increase timeout for each retry attempt
+                        const timeoutDuration = 25000 + (attempt * 10000); // 25s, 35s, 45s
+                        
+                        // Create a specific AbortController with longer timeout just for this quiz
+                        const controller = new AbortController();
+                        const signal = controller.signal;
+                        const longTimeoutId = setTimeout(() => controller.abort(), timeoutDuration);
+                        
+                        // Custom fetch with longer timeout
+                        const token = getAuthToken();
+                        const fullUrl = `${this.baseUrl}/users/quiz-progress`;
+                        
+                        // Add cache-busting parameter
+                        const cacheBuster = new Date().getTime();
+                        const urlWithCache = `${fullUrl}?_cb=${cacheBuster}`;
+                        
+                        const fetchOptions = {
+                            method: 'POST',
+                            credentials: 'include',
+                            headers: {
+                                'Authorization': `Bearer ${token}`,
+                                'Accept': 'application/json',
+                                'Content-Type': 'application/json',
+                                'X-Quiz-Optimization': 'true' // Signal to backend that we want optimized handling
+                            },
+                            body: JSON.stringify({
+                                quizName: quizName,
+                                progress: progressData
+                            }),
+                            mode: 'cors',
+                            signal: signal
+                        };
+                        
+                        const response = await fetch(urlWithCache, fetchOptions);
+                        clearTimeout(longTimeoutId);
+                        
+                        if (!response.ok) {
+                            throw new Error(`Failed to save progress: ${response.status} ${response.statusText}`);
+                        }
+                        
+                        // First try to get response as text to avoid JSON parsing errors
+                        const responseText = await response.text();
+                        
+                        // Check for empty response
+                        if (!responseText || responseText.trim() === '') {
+                            console.warn('[API] Empty response received from server');
+                            throw new Error('Empty response from server');
+                        }
+                        
+                        // Only try to parse if there's content
+                        let responseData;
+                        try {
+                            responseData = JSON.parse(responseText);
+                        } catch (parseError) {
+                            console.warn('[API] JSON parse error:', parseError, 'Raw response:', responseText.substring(0, 100));
+                            // Continue anyway since we don't need the response data
+                        }
+                        
+                        console.log(`[API] Successfully saved tester-mindset progress with optimized method`);
+                        
+                        return {
+                            success: true,
+                            data: progressData
+                        };
+                    } catch (retryError) {
+                        console.warn(`[API] Save attempt ${attempt+1}/${MAX_RETRIES} failed:`, retryError);
+                        
+                        // If this was the last attempt, throw the error to be caught by the outer catch
+                        if (attempt === MAX_RETRIES - 1) {
+                            throw retryError;
+                        }
+                        
+                        // Wait before retrying with exponential backoff
+                        const waitTime = 1000 * Math.pow(2, attempt); // 1s, 2s, 4s
+                        console.log(`[API] Waiting ${waitTime}ms before retry...`);
+                        await new Promise(resolve => setTimeout(resolve, waitTime));
                     }
-                    
-                    const responseData = await response.json();
-                    console.log(`[API] Successfully saved tester-mindset progress with optimized method`);
-                    
-                    return {
-                        success: true,
-                        data: progressData
-                    };
-                } catch (specialError) {
-                    console.warn(`[API] Optimized save failed for tester-mindset:`, specialError);
-                    // Continue with regular save method below
                 }
             }
 

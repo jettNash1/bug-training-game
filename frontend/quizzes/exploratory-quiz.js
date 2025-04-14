@@ -886,7 +886,7 @@ export class ExploratoryQuiz extends BaseQuiz {
             if (e.key === 'Enter' && e.target.type === 'radio') {
                 this.handleAnswer();
             }
-        });            
+        });
         } catch (error) {
             console.error('Error initializing event listeners:', error);
         }
@@ -959,7 +959,7 @@ export class ExploratoryQuiz extends BaseQuiz {
             this.showError('An error occurred displaying the scenario. Please try reloading the page.');
         }
     }
-    
+
     // Helper method to display scenario content
     displayScenarioContent(scenario) {
         try {
@@ -1024,138 +1024,79 @@ export class ExploratoryQuiz extends BaseQuiz {
     }
 
     async handleAnswer() {
-        if (this.isLoading) return;
-        
-        const submitButton = document.querySelector('.submit-button');
-        if (submitButton) {
-            submitButton.disabled = true;
-        }
-
-        // Clear the timer when an answer is submitted
-        if (this.questionTimer) {
-            clearInterval(this.questionTimer);
-            this.questionTimer = null;
-            console.log('Timer cleared in handleAnswer');
-        }
-        
         try {
-            this.isLoading = true;
+            // Clear any existing timers
+            if (this.questionTimer) {
+                clearInterval(this.questionTimer);
+                this.questionTimer = null;
+            }
+            
+            // Check if an option was selected
             const selectedOption = document.querySelector('input[name="option"]:checked');
             if (!selectedOption) {
                 console.warn('No option selected');
-                if (submitButton) {
-                    submitButton.disabled = false;
-                }
-                this.isLoading = false;
                 return;
             }
-
+            
+            // Get current scenarios
             const currentScenarios = this.getCurrentScenarios();
-            if (!currentScenarios || !this.player || this.player.currentScenario === undefined) {
-                console.error('Invalid scenario or player state');
-                if (submitButton) {
-                    submitButton.disabled = false;
-                }
-                this.isLoading = false;
+            if (!currentScenarios || !Array.isArray(currentScenarios)) {
+                console.error('Invalid scenarios returned in handleAnswer', currentScenarios);
                 return;
             }
             
+            // Use this.player.currentScenario to get the correct scenario
             const scenario = currentScenarios[this.player.currentScenario];
-            if (!scenario || !scenario.options) {
-                console.error('Invalid scenario structure:', scenario);
-                if (submitButton) {
-                    submitButton.disabled = false;
-                }
-                this.isLoading = false;
+            
+            if (!scenario) {
+                console.error('No current scenario found in handleAnswer', { 
+                    currentScenario: this.player.currentScenario,
+                    currentScenariosLength: currentScenarios.length
+                });
                 return;
             }
             
-            const originalIndex = parseInt(selectedOption.value);
-            if (isNaN(originalIndex) || originalIndex < 0 || originalIndex >= scenario.options.length) {
-                console.error('Invalid option index:', originalIndex);
-                if (submitButton) {
-                    submitButton.disabled = false;
-                }
-                this.isLoading = false;
+            // Get selected option
+            const optionIndex = parseInt(selectedOption.value);
+            if (isNaN(optionIndex) || optionIndex < 0 || optionIndex >= scenario.options.length) {
+                console.error('Invalid option index:', optionIndex);
                 return;
             }
             
-            const selectedAnswer = scenario.options[originalIndex];
+            const selectedAnswer = scenario.options[optionIndex];
             if (!selectedAnswer) {
                 console.error('Selected answer not found');
-                if (submitButton) {
-                    submitButton.disabled = false;
-                }
-                this.isLoading = false;
                 return;
             }
 
-            // Find the correct answer (option with highest experience)
-            const correctAnswer = scenario.options.reduce((prev, current) => 
-                (prev.experience > current.experience) ? prev : current
-            );
-
-            // Mark selected answer as correct or incorrect
-            selectedAnswer.isCorrect = selectedAnswer === correctAnswer;
-
-            // Update player state (still track experience for backward compatibility)
-            if (typeof this.player.experience === 'number') {
-                this.player.experience = Math.max(0, Math.min(this.maxXP || 300, this.player.experience + (selectedAnswer.experience || 0)));
-            }
-            
-            // Add to question history
+            // Record this answer in player history
             this.player.questionHistory.push({
                 scenario: scenario,
                 selectedAnswer: selectedAnswer,
                 isCorrect: this.isCorrectAnswer(selectedAnswer)
             });
-
-            // Save progress
-            try {
-            await this.saveProgress();
-            } catch (error) {
-                console.error('Failed to save progress:', error);
-                this.showError('Warning: Progress may not have saved correctly');
+            
+            // Update player experience
+            this.player.experience += selectedAnswer.experience || 0;
+            
+            // If this answer granted a new tool, add it
+            if (selectedAnswer.tool && !this.player.tools.includes(selectedAnswer.tool)) {
+                this.player.tools.push(selectedAnswer.tool);
+                console.log(`Added new tool: ${selectedAnswer.tool}`);
             }
             
-            // Save quiz result
-            const username = localStorage.getItem('username');
-            if (username) {
-                try {
-                const quizUser = new QuizUser(username);
-                    const score = {
-                        score: Math.round((this.player.questionHistory.filter(q => this.isCorrectAnswer(q.selectedAnswer)).length / Math.min(this.player.questionHistory.length, 15)) * 100),
-                        experience: this.player.experience || 0,
-                        questionHistory: this.player.questionHistory || [],
-                        questionsAnswered: this.player.questionHistory.length
-                    };
-                    
-                await quizUser.updateQuizScore(
-                    this.quizName,
-                    score.score,
-                    score.experience,
-                        this.player.tools || [],
-                    score.questionHistory,
-                    score.questionsAnswered
-                );
-                } catch (error) {
-                    console.error('Failed to save quiz result:', error);
-                }
-            }
-
-            // Show outcome screen and update display with answer outcome
+            // Save progress
+            this.saveProgress().catch(error => {
+                console.error('Failed to save answer progress:', error);
+            });
+            
+            // Display the outcome
             this.displayOutcome(selectedAnswer);
-
-            // Update progress display
-            this.updateProgress();
+            
+            // Check if we should transition to the next level
+            this.checkLevelTransition();
         } catch (error) {
-            console.error('Failed to handle answer:', error);
-            this.showError('Failed to save your answer. Please try again.');
-        } finally {
-            this.isLoading = false;
-            if (submitButton) {
-                submitButton.disabled = false;
-            }
+            console.error('Error handling answer:', error);
         }
     }
 
@@ -1170,11 +1111,20 @@ export class ExploratoryQuiz extends BaseQuiz {
                 console.log('Timer cleared in nextScenario');
             }
             
-            // Increment current scenario if not done in handleAnswer
-            if (this.player && typeof this.player.currentScenario === 'number') {
-                this.player.currentScenario++;
-                console.log('Incremented to scenario:', this.player.currentScenario);
+            // Check if we've already answered 15 questions
+            if (this.player.questionHistory.length >= 15) {
+                console.log('All 15 questions answered, ending game');
+                this.endGame();
+                return;
             }
+            
+            // Get current level based on question count
+            const totalAnswered = this.player.questionHistory.length;
+            const currentLevel = this.getCurrentLevel();
+            
+            // Increment currentScenario
+            this.player.currentScenario = (this.player.currentScenario + 1) % 5;
+            console.log(`Incremented to scenario: ${this.player.currentScenario} (${currentLevel} level)`);
             
             // IMPORTANT: Get actual DOM elements directly
             const outcomeScreen = document.getElementById('outcome-screen');
@@ -1198,10 +1148,15 @@ export class ExploratoryQuiz extends BaseQuiz {
             }
             
             // Display the next scenario
-        this.displayScenario();
+            this.displayScenario();
             
             // Re-initialize event listeners for the new question
             this.initializeEventListeners();
+            
+            // Save progress
+            this.saveProgress().catch(error => {
+                console.error('Failed to save progress in nextScenario:', error);
+            });
             
             // Force a layout refresh
             window.setTimeout(() => {
@@ -1246,7 +1201,7 @@ export class ExploratoryQuiz extends BaseQuiz {
             
             console.log('Displaying outcome:', { 
                 isCorrect, 
-                selectedAnswer, 
+                selectedAnswer,
                 scenario: scenario.title 
             });
             
@@ -1286,62 +1241,18 @@ export class ExploratoryQuiz extends BaseQuiz {
                     });
                 }
             } else {
-                // If no outcomeContent found, try individual elements as fallback
-                console.error('Could not find outcome content element, trying individual elements');
-                
-                // Update individual elements
-                const outcomeText = document.getElementById('outcome-text');
-                const resultText = document.getElementById('result-text');
-                
-                if (outcomeText) {
-                    outcomeText.textContent = selectedAnswer.outcome || '';
-                }
-                
-                if (resultText) {
-                    resultText.textContent = isCorrect ? 'Correct!' : 'Incorrect';
-                    resultText.className = isCorrect ? 'correct' : 'incorrect';
-                }
-                
-                // Ensure we have a continue button and it has the right event listener
-                const continueBtn = document.getElementById('continue-btn');
-                if (!continueBtn) {
-                    // Try to create a continue button if it doesn't exist
-                    const outcomeActions = document.querySelector('.outcome-actions');
-                    if (outcomeActions) {
-                        outcomeActions.innerHTML = '<button id="continue-btn" class="submit-button">Continue</button>';
-                    }
-                }
-                
-                // Add event listener to the continue button (whether it existed or we created it)
-                const newContinueBtn = document.getElementById('continue-btn');
-                if (newContinueBtn) {
-                    // Remove any existing event listeners by cloning and replacing
-                    const newBtn = newContinueBtn.cloneNode(true);
-                    if (newContinueBtn.parentNode) {
-                        newContinueBtn.parentNode.replaceChild(newBtn, newContinueBtn);
-                    }
-                    
-                    // Add fresh event listener
-                    newBtn.addEventListener('click', () => {
-                        console.log('Continue button clicked');
-                        this.nextScenario();
-                    });
-                }
+                console.error('No outcome content element found');
             }
-            
-            // Update progress
-            this.updateProgress();
         } catch (error) {
-            console.error('Error in displayOutcome:', error);
-            this.showError('An error occurred. Please try again.');
+            console.error('Error displaying outcome:', error);
         }
     }
 
     initializeTimer() {
-        // Clear any existing timer
-        if (this.questionTimer) {
-            clearInterval(this.questionTimer);
-            this.questionTimer = null;
+            // Clear any existing timer
+            if (this.questionTimer) {
+                clearInterval(this.questionTimer);
+                this.questionTimer = null;
         }
 
         // Set default timer value if not set
@@ -1526,7 +1437,7 @@ export class ExploratoryQuiz extends BaseQuiz {
                 return this.randomizedScenarios.advanced;
             } else if (totalAnswered >= 5) {
                 return this.randomizedScenarios.intermediate;
-            }
+        }
             return this.randomizedScenarios.basic;
         } catch (error) {
             console.error('Error in getCurrentScenarios:', error);
@@ -1718,8 +1629,8 @@ export class ExploratoryQuiz extends BaseQuiz {
             this.displayQuestionReview();
             
             // Generate personalized recommendations
-            this.generateRecommendations();
-            
+        this.generateRecommendations();
+
             // Save final progress
             try {
                 const username = localStorage.getItem('username');
@@ -1736,7 +1647,7 @@ export class ExploratoryQuiz extends BaseQuiz {
                     );
                     console.log('Final quiz score saved:', scorePercentage, 'status:', finalStatus);
                 }
-            } catch (error) {
+        } catch (error) {
                 console.error('Failed to save final quiz score:', error);
             }
         } catch (error) {
@@ -1772,6 +1683,85 @@ export class ExploratoryQuiz extends BaseQuiz {
         });
         
         reviewList.innerHTML = reviewHTML;
+    }
+
+    checkLevelTransition() {
+        try {
+            // Get total number of answered questions
+            const totalAnswered = this.player?.questionHistory?.length || 0;
+            
+            // Check if we need to transition to the next level
+            if (totalAnswered === 5) {
+                console.log('Transitioning to intermediate level');
+                this.displayScenario(); // This will load intermediate scenarios
+            } else if (totalAnswered === 10) {
+                console.log('Transitioning to advanced level');
+                this.displayScenario(); // This will load advanced scenarios
+            } else if (totalAnswered === 15) {
+                console.log('Quiz completed');
+                this.endGame();
+            } else if (totalAnswered < 15) {
+                // Continue with next question in current level
+                this.displayScenario();
+            }
+        } catch (error) {
+            console.error('Error in checkLevelTransition:', error);
+        }
+    }
+
+    endGame() {
+        try {
+            // Clear any existing timers
+            if (this.timer) {
+                clearTimeout(this.timer);
+                this.timer = null;
+            }
+            
+            // Update UI to show completion
+            const quizContainer = document.getElementById('quiz-container');
+            if (quizContainer) {
+                quizContainer.innerHTML = `
+                    <div class="quiz-complete">
+                        <h2>Congratulations!</h2>
+                        <p>You have completed all scenarios in the exploratory testing quiz.</p>
+                        <p>Total experience gained: ${this.player?.experience || 0}</p>
+                        <button id="restart-quiz" class="quiz-button">Restart Quiz</button>
+                    </div>
+                `;
+                
+                // Add event listener for restart button
+                const restartButton = document.getElementById('restart-quiz');
+                if (restartButton) {
+                    restartButton.addEventListener('click', () => this.resetQuiz());
+                }
+            }
+            
+            // Save final progress
+            this.saveProgress();
+            console.log('Quiz completed successfully');
+        } catch (error) {
+            console.error('Error ending game:', error);
+        }
+    }
+    
+    resetQuiz() {
+        try {
+            // Reset player progress
+            this.player = {
+                experience: 0,
+                level: 'basic',
+                questionHistory: []
+            };
+            
+            // Save reset progress
+            this.saveProgress();
+            
+            // Start quiz again
+            this.init();
+            console.log('Quiz has been reset');
+        } catch (error) {
+            console.error('Error resetting quiz:', error);
+        }
     }
 }
 
