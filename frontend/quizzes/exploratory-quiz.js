@@ -43,7 +43,6 @@ export class ExploratoryQuiz extends BaseQuiz {
                 experience: 0,
                 tools: [],
                 questionHistory: [],
-                currentScenario: 0,
                 level: 'basic'
             };
             
@@ -848,18 +847,28 @@ export class ExploratoryQuiz extends BaseQuiz {
         console.log('Time up! Auto-submitting answer');
         
         try {
-            // Get current scenario
-            const currentScenarios = this.getCurrentScenarios();
-            if (!currentScenarios || !this.player) {
-                console.error('Invalid state in handleTimeUp');
+            // Get total answered questions
+            const totalAnswered = this.player?.questionHistory?.length || 0;
+            
+            // Get the appropriate scenarios based on progress
+            const scenarios = this.getCurrentScenarios();
+            if (!scenarios || !Array.isArray(scenarios) || scenarios.length === 0) {
+                console.error('Invalid state in handleTimeUp: No scenarios available');
                 return;
             }
             
-            const scenario = currentScenarios[this.player.currentScenario];
+            // Calculate current scenario index within the level (same as in displayScenario)
+            const scenarioIndex = totalAnswered % 5;
+            console.log(`Current scenario index in handleTimeUp: ${scenarioIndex}`);
+            
+            // Get current scenario
+            const scenario = scenarios[scenarioIndex];
             if (!scenario) {
-                console.error('No current scenario found in handleTimeUp');
+                console.error(`No current scenario found in handleTimeUp at index ${scenarioIndex}`);
                 return;
             }
+            
+            console.log(`Handling timeout for scenario: ${scenario.id}, title: ${scenario.title}`);
             
             // Create a timeout answer
             const timeoutAnswer = {
@@ -873,9 +882,11 @@ export class ExploratoryQuiz extends BaseQuiz {
             // Update player state
             this.player.questionHistory.push({
                 scenario: scenario,
+                scenarioId: scenario.id,
                 selectedAnswer: timeoutAnswer,
                 isCorrect: false,
-                isTimeout: true
+                isTimeout: true,
+                timestamp: new Date().toISOString()
             });
             
             // Save progress
@@ -896,7 +907,6 @@ export class ExploratoryQuiz extends BaseQuiz {
             name: localStorage.getItem('username'),
             experience: 0,
             tools: [],
-            currentScenario: 0,
             questionHistory: [],
             level: 'basic',
             // Store randomized scenarios for each level to maintain consistent question order
@@ -1343,6 +1353,40 @@ export class ExploratoryQuiz extends BaseQuiz {
             console.log('Quiz has been reset');
         } catch (error) {
             console.error('Error resetting quiz:', error);
+        }
+    }
+
+    // Add the missing nextScenario method
+    nextScenario() {
+        try {
+            console.log('Moving to next scenario');
+            
+            // Check if we should end the game first
+            if (this.player.questionHistory.length >= 15) {
+                console.log('All questions answered, ending game');
+                this.endGame();
+                return;
+            }
+            
+            // Make sure outcome screen is hidden
+            const outcomeScreen = document.getElementById('outcome-screen');
+            if (outcomeScreen) {
+                outcomeScreen.classList.add('hidden');
+            }
+            
+            // Make sure game screen is visible
+            const gameScreen = document.getElementById('game-screen');
+            if (gameScreen) {
+                gameScreen.classList.remove('hidden');
+            }
+            
+            // Display the next scenario
+            this.displayScenario();
+            
+            console.log('Next scenario displayed');
+        } catch (error) {
+            console.error('Error in nextScenario:', error);
+            this.showError('An error occurred while loading the next scenario. Please try again.');
         }
     }
 }
