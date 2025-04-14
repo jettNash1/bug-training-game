@@ -561,34 +561,23 @@ export class CommunicationQuiz extends BaseQuiz {
 
         try {
             const username = localStorage.getItem('username');
-            if (!username) {
-                console.error('No user found, cannot save progress');
-                return;
-            }
             
             // Use user-specific key for localStorage
             const storageKey = `quiz_progress_${username}_${this.quizName}`;
             localStorage.setItem(storageKey, JSON.stringify(progress));
             
-            console.log('Saving progress with status:', status);
             await this.apiService.saveQuizProgress(this.quizName, progress.data);
         } catch (error) {
-            console.error('Failed to save progress:', error);
         }
     }
 
     async loadProgress() {
         try {
             const username = localStorage.getItem('username');
-            if (!username) {
-                console.error('No user found, cannot load progress');
-                return false;
-            }
 
             // Use user-specific key for localStorage
             const storageKey = `quiz_progress_${username}_${this.quizName}`;
             const savedProgress = await this.apiService.getQuizProgress(this.quizName);
-            console.log('Raw API Response:', savedProgress);
             let progress = null;
             
             if (savedProgress && savedProgress.data) {
@@ -620,7 +609,6 @@ export class CommunicationQuiz extends BaseQuiz {
                 // Restore randomized scenarios if they exist
                 if (progress.randomizedScenarios) {
                     this.randomizedScenarios = progress.randomizedScenarios;
-                    console.log('Restored randomized scenarios:', this.randomizedScenarios);
                 }
 
                 // Ensure we're updating the UI correctly
@@ -636,7 +624,6 @@ export class CommunicationQuiz extends BaseQuiz {
             }
             return false;
         } catch (error) {
-            console.error('Failed to load progress:', error);
             return false;
         }
     }
@@ -665,7 +652,6 @@ export class CommunicationQuiz extends BaseQuiz {
             
             // Load previous progress
             const hasProgress = await this.loadProgress();
-            console.log('Previous progress loaded:', hasProgress);
             
             if (!hasProgress) {
                 // Reset player state if no valid progress exists
@@ -688,9 +674,6 @@ export class CommunicationQuiz extends BaseQuiz {
             }
             
             await this.displayScenario();
-        } catch (error) {
-            console.error('Failed to start game:', error);
-            this.showError('Failed to start the quiz. Please try refreshing the page.');
         } finally {
             this.isLoading = false;
             // Hide loading state
@@ -746,23 +729,19 @@ export class CommunicationQuiz extends BaseQuiz {
             }
         });            
         } catch (error) {
-            console.error('Error initializing event listeners:', error);
         }
     }
 
     displayScenario() {
         try {
-            console.log('displayScenario called');
             
             // Check if player and currentScenario are properly initialized
             if (!this.player || typeof this.player.currentScenario !== 'number') {
-                console.error('Player or currentScenario not properly initialized');
                 return;
             }
             
             // Check if we've answered all 15 questions
         if (this.player.questionHistory.length >= 15) {
-                console.log('All 15 questions answered, ending game');
                 this.endGame();
                 return;
             }
@@ -771,25 +750,19 @@ export class CommunicationQuiz extends BaseQuiz {
             if (this.questionTimer) {
                 clearInterval(this.questionTimer);
                 this.questionTimer = null;
-                console.log('Timer cleared in displayScenario');
             }
             
-            console.log('Getting current scenarios...');
             const currentScenarios = this.getCurrentScenarios();
-            console.log('Current scenarios:', currentScenarios);
             
             if (!currentScenarios || !Array.isArray(currentScenarios)) {
-                console.error('Could not get current scenarios', currentScenarios);
             return;
         }
 
             const scenario = currentScenarios[this.player.currentScenario];
-            console.log('Current scenario index:', this.player.currentScenario);
-            console.log('Retrieved scenario:', scenario);
+
             
             // Check if the current scenario exists
             if (!scenario) {
-                console.log('No more scenarios in this level, transitioning to next level');
                 
                 // Reset currentScenario for the next level
                 this.player.currentScenario = 0;
@@ -797,7 +770,6 @@ export class CommunicationQuiz extends BaseQuiz {
                 // Get the next level scenarios
                 const updatedScenarios = this.getCurrentScenarios();
                 if (!updatedScenarios || !updatedScenarios[0]) {
-                    console.error('Could not find scenarios for next level');
                     this.endGame();
                     return;
                 }
@@ -805,15 +777,12 @@ export class CommunicationQuiz extends BaseQuiz {
                 // Display the first scenario of the next level
                 const nextScenario = updatedScenarios[0];
                 this.displayScenarioContent(nextScenario);
-                console.log('Displaying first scenario of next level');
                 return;
             }
             
             // Display the current scenario
-            console.log('Displaying current scenario:', scenario.title);
             this.displayScenarioContent(scenario);
         } catch (error) {
-            console.error('Error displaying scenario:', error);
             this.showError('An error occurred displaying the scenario. Please try reloading the page.');
         }
     }
@@ -841,7 +810,6 @@ export class CommunicationQuiz extends BaseQuiz {
                 
                 shuffledOptions.forEach((option, index) => {
                     if (!option || !option.text) {
-                        console.error('Invalid option at index', index, option);
                         return;
                     }
                     
@@ -869,9 +837,7 @@ export class CommunicationQuiz extends BaseQuiz {
             // Update progress display
             this.updateProgress();
             
-            console.log('Scenario content displayed, timer initialized');
         } catch (error) {
-            console.error('Error displaying scenario content:', error);
         }
     }
 
@@ -892,14 +858,12 @@ export class CommunicationQuiz extends BaseQuiz {
         if (this.questionTimer) {
             clearInterval(this.questionTimer);
             this.questionTimer = null;
-            console.log('Timer cleared in handleAnswer');
         }
         
         try {
             this.isLoading = true;
             const selectedOption = document.querySelector('input[name="option"]:checked');
             if (!selectedOption) {
-                console.warn('No option selected');
                 if (submitButton) {
                     submitButton.disabled = false;
                 }
@@ -909,7 +873,6 @@ export class CommunicationQuiz extends BaseQuiz {
 
             const currentScenarios = this.getCurrentScenarios();
             if (!currentScenarios || !this.player || this.player.currentScenario === undefined) {
-                console.error('Invalid scenario or player state');
                 if (submitButton) {
                     submitButton.disabled = false;
                 }
@@ -919,7 +882,6 @@ export class CommunicationQuiz extends BaseQuiz {
             
             const scenario = currentScenarios[this.player.currentScenario];
             if (!scenario || !scenario.options) {
-                console.error('Invalid scenario structure:', scenario);
                 if (submitButton) {
                     submitButton.disabled = false;
                 }
@@ -929,7 +891,6 @@ export class CommunicationQuiz extends BaseQuiz {
             
             const originalIndex = parseInt(selectedOption.value);
             if (isNaN(originalIndex) || originalIndex < 0 || originalIndex >= scenario.options.length) {
-                console.error('Invalid option index:', originalIndex);
                 if (submitButton) {
                     submitButton.disabled = false;
                 }
@@ -939,7 +900,6 @@ export class CommunicationQuiz extends BaseQuiz {
             
             const selectedAnswer = scenario.options[originalIndex];
             if (!selectedAnswer) {
-                console.error('Selected answer not found');
                 if (submitButton) {
                     submitButton.disabled = false;
                 }
@@ -971,7 +931,6 @@ export class CommunicationQuiz extends BaseQuiz {
             try {
             await this.saveProgress();
             } catch (error) {
-                console.error('Failed to save progress:', error);
                 this.showError('Warning: Progress may not have saved correctly');
             }
             
@@ -996,7 +955,6 @@ export class CommunicationQuiz extends BaseQuiz {
                     score.questionsAnswered
                 );
                 } catch (error) {
-                    console.error('Failed to save quiz result:', error);
                 }
             }
 
@@ -1006,7 +964,6 @@ export class CommunicationQuiz extends BaseQuiz {
             // Update progress display
             this.updateProgress();
         } catch (error) {
-            console.error('Failed to handle answer:', error);
             this.showError('Failed to save your answer. Please try again.');
         } finally {
             this.isLoading = false;
@@ -1018,40 +975,32 @@ export class CommunicationQuiz extends BaseQuiz {
 
     nextScenario() {
         try {
-            console.log('Moving to next scenario');
             
             // Clear any existing timer
             if (this.questionTimer) {
                 clearInterval(this.questionTimer);
                 this.questionTimer = null;
-                console.log('Timer cleared in nextScenario');
             }
             
             // Increment current scenario if not done in handleAnswer
             if (this.player && typeof this.player.currentScenario === 'number') {
                 this.player.currentScenario++;
-                console.log('Incremented to scenario:', this.player.currentScenario);
             }
             
             // IMPORTANT: Get actual DOM elements directly
             const outcomeScreen = document.getElementById('outcome-screen');
             const gameScreen = document.getElementById('game-screen');
             
-            console.log('Game screen element:', gameScreen);
-            console.log('Outcome screen element:', outcomeScreen);
-            
             // Hide outcome screen using multiple approaches to ensure it works
             if (outcomeScreen) {
                 outcomeScreen.classList.add('hidden');
                 outcomeScreen.style.display = 'none';
-                console.log('Hidden outcome screen');
             }
             
             // Show game screen using multiple approaches to ensure it works
             if (gameScreen) {
                 gameScreen.classList.remove('hidden');
                 gameScreen.style.display = 'block';
-                console.log('Shown game screen');
             }
             
             // Display the next scenario
@@ -1066,32 +1015,27 @@ export class CommunicationQuiz extends BaseQuiz {
                     gameScreen.style.display = 'none';
                     window.setTimeout(() => {
                         gameScreen.style.display = 'block';
-                        console.log('Forced layout refresh');
                     }, 10);
                 }
             }, 10);
         } catch (error) {
-            console.error('Error in nextScenario:', error);
             this.showError('An error occurred while loading the next question.');
         }
     }
 
     displayOutcome(selectedAnswer) {
         if (!selectedAnswer) {
-            console.error('No answer selected');
             return;
         }
 
         try {
             const currentScenarios = this.getCurrentScenarios();
             if (!currentScenarios || !this.player || this.player.currentScenario === undefined) {
-                console.error('No current scenario found');
                 return;
             }
             
             const scenario = currentScenarios[this.player.currentScenario];
             if (!scenario) {
-                console.error('Current scenario not found');
                 return;
             }
             
@@ -1100,12 +1044,6 @@ export class CommunicationQuiz extends BaseQuiz {
             // Find the max possible XP for this scenario
             const maxXP = Math.max(...scenario.options.map(o => o.experience || 0));
             const isCorrect = selectedAnswer.isCorrect || (earnedXP === maxXP);
-            
-            console.log('Displaying outcome:', { 
-                isCorrect, 
-                selectedAnswer, 
-                scenario: scenario.title 
-            });
             
             // Update UI - safely access elements
             const outcomeScreen = document.getElementById('outcome-screen');
@@ -1136,15 +1074,12 @@ export class CommunicationQuiz extends BaseQuiz {
                 // Immediately add event listener to the new button
                 const continueBtn = outcomeContent.querySelector('#continue-btn');
                 if (continueBtn) {
-                    console.log('Adding event listener to continue button');
                     continueBtn.addEventListener('click', () => {
-                        console.log('Continue button clicked');
                         this.nextScenario();
                     });
                 }
             } else {
                 // If no outcomeContent found, try individual elements as fallback
-                console.error('Could not find outcome content element, trying individual elements');
                 
                 // Update individual elements
                 const outcomeText = document.getElementById('outcome-text');
@@ -1180,7 +1115,6 @@ export class CommunicationQuiz extends BaseQuiz {
                     
                     // Add fresh event listener
                     newBtn.addEventListener('click', () => {
-                        console.log('Continue button clicked');
                         this.nextScenario();
                     });
                 }
@@ -1189,7 +1123,6 @@ export class CommunicationQuiz extends BaseQuiz {
             // Update progress
             this.updateProgress();
         } catch (error) {
-            console.error('Error in displayOutcome:', error);
             this.showError('An error occurred. Please try again.');
         }
     }
@@ -1204,7 +1137,6 @@ export class CommunicationQuiz extends BaseQuiz {
         // Set default timer value if not set
         if (!this.timePerQuestion) {
             this.timePerQuestion = 30;
-            console.log('[Quiz] Using default timer value:', this.timePerQuestion);
         }
 
         // Reset remaining time
@@ -1244,19 +1176,16 @@ export class CommunicationQuiz extends BaseQuiz {
 
     // Handle time up situation
     handleTimeUp() {
-        console.log('Time up! Auto-submitting answer');
         
         try {
             // Get current scenario
             const currentScenarios = this.getCurrentScenarios();
             if (!currentScenarios || !this.player) {
-                console.error('Invalid state in handleTimeUp');
                 return;
             }
             
             const scenario = currentScenarios[this.player.currentScenario];
             if (!scenario) {
-                console.error('No current scenario found in handleTimeUp');
                 return;
             }
             
@@ -1279,13 +1208,11 @@ export class CommunicationQuiz extends BaseQuiz {
             
             // Save progress
             this.saveProgress().catch(error => {
-                console.error('Failed to save timeout progress:', error);
             });
             
             // Display the timeout outcome
             this.displayOutcome(timeoutAnswer);
         } catch (error) {
-            console.error('Error handling time up:', error);
         }
     }
 
@@ -1375,7 +1302,6 @@ export class CommunicationQuiz extends BaseQuiz {
                     intermediate: this.shuffleArray([...this.intermediateScenarios]).slice(0, 5),
                     advanced: this.shuffleArray([...this.advancedScenarios]).slice(0, 5)
                 };
-                console.log('Created randomized scenarios:', this.randomizedScenarios);
             }
         
             // Simple progression logic based solely on question count, no threshold checks
@@ -1386,7 +1312,6 @@ export class CommunicationQuiz extends BaseQuiz {
             }
             return this.randomizedScenarios.basic;
         } catch (error) {
-            console.error('Error in getCurrentScenarios:', error);
             return this.basicScenarios; // Default to basic if there's an error
         }
     }
@@ -1403,7 +1328,6 @@ export class CommunicationQuiz extends BaseQuiz {
         }
         return 'Basic';
         } catch (error) {
-            console.error('Error in getCurrentLevel:', error);
             return 'Basic'; // Default to basic if there's an error
         }
     }
@@ -1520,8 +1444,6 @@ export class CommunicationQuiz extends BaseQuiz {
 
     // Implement the endGame method that was missing
     async endGame(failed = false) {
-        console.log('End game called with failed =', failed);
-        
         try {
             // Clear any timers
             if (this.questionTimer) {
@@ -1534,9 +1456,7 @@ export class CommunicationQuiz extends BaseQuiz {
             if (this.outcomeScreen) this.outcomeScreen.classList.add('hidden');
             if (this.endScreen) {
                 this.endScreen.classList.remove('hidden');
-                console.log('End screen shown');
             } else {
-                console.error('End screen element not found');
             }
             
             // Calculate score percentage
@@ -1587,13 +1507,10 @@ export class CommunicationQuiz extends BaseQuiz {
                         15, // Always 15 questions completed
                         finalStatus
                     );
-                    console.log('Final quiz score saved:', scorePercentage, 'status:', finalStatus);
                 }
             } catch (error) {
-                console.error('Failed to save final quiz score:', error);
             }
         } catch (error) {
-            console.error('Error in endGame:', error);
             this.showError('An error occurred showing the results. Please try again.');
         }
     }
