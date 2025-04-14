@@ -7,66 +7,6 @@
     <link rel="icon" type="image/x-icon" href="../assets/favicon.ico">
     <link rel="stylesheet" href="../styles.css">
     <link rel="stylesheet" href="../styles/quiz.css">
-    <style>
-        /* Progress card styling */
-        .quiz-header-progress {
-            position: absolute;
-            top: 15px;
-            right: 15px;
-            z-index: 100;
-        }
-        .quiz-progress-card {
-            background-color: white;
-            border-radius: 8px;
-            padding: 10px 15px;
-            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.08);
-            display: flex;
-            flex-direction: column;
-            text-align: right;
-            min-width: 150px;
-        }
-        .level-info {
-            font-weight: 500;
-            color: #333;
-            font-size: 14px;
-            margin-bottom: 4px;
-        }
-        .question-info {
-            color: #666;
-            font-size: 14px;
-        }
-        
-        /* Ensure proper positioning context */
-        .quiz-container {
-            position: relative;
-            padding-top: 20px;
-        }
-        
-        /* Override timer container position */
-        #timer-container {
-            position: absolute !important;
-            top: 15px !important;
-            right: 200px !important; /* Position to the left of the progress card */
-            background-color: #f8f9fa;
-            padding: 10px 15px;
-            border-radius: 8px;
-            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.08);
-            font-weight: 500;
-            color: #333;
-            font-size: 14px;
-        }
-        
-        /* Adjust game screen to make room for the UI elements at the top */
-        #game-screen {
-            margin-top: 80px !important; /* Increase margin to make room for timer and progress card */
-        }
-        
-        /* Back button adjustment */
-        .back-link {
-            position: relative;
-            z-index: 101; /* Ensure back button is above other elements */
-        }
-    </style>
     <script type="module" src="../config.js"></script>
     <script type="module" src="../QuizUser.js"></script>
     <script type="module" src="../api-service.js"></script>
@@ -96,32 +36,24 @@
     <div class="quiz-container">
         <div class="quiz-header">
             <a href="../index.html" class="back-link">← Back to Hub</a>
-            <!-- Hidden for now as we'll use the styled version -->
-            <div class="progress-container" style="display: none;">
-                <div id="level-indicator">Level: Basic</div>
-                <div id="question-progress">Question: 1/15</div>
-                <div id="progress-bar">
+            <div class="quiz-progress">
+                <div class="level-info">
+                    <span id="level-indicator">Level: Basic</span>
+                </div>
+                <div class="progress-bar">
                     <div id="progress-fill"></div>
                 </div>
+                <div id="question-progress" class="question-counter">Question: 1/15</div>
             </div>
         </div>
         
-        <!-- Timer moved outside of game-screen -->
-        <div id="timer-container" class="timer-container" aria-live="polite">
-            <span id="timer-display">Time remaining: 24s</span>
-        </div>
-        
-        <!-- New styled progress card - moved outside quiz-header -->
-        <div class="quiz-header-progress">
-            <div class="quiz-progress-card">
-                <div class="level-info">Level: Basic</div>
-                <div class="question-info">Question: 5/15</div>
-            </div>
-        </div>
-
         <!-- Game Screen -->
         <div id="game-screen" class="quiz-card" role="main" aria-live="polite">
             <div id="level-transition-container"></div>
+            
+            <div id="timer-container" class="timer-container" aria-live="polite">
+                <span id="timer-display">30</span>
+            </div>
             
             <div class="question-section">
                 <h2 id="scenario-title" tabindex="0"></h2>

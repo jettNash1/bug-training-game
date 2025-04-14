@@ -525,8 +525,8 @@ export class CommunicationQuiz extends BaseQuiz {
     }
 
     shouldEndGame() {
-        // Only end the game when all 15 questions are answered
-        return (this.player?.questionHistory?.length || 0) >= 15;
+        // End game if we've answered all questions
+        return this.player.questionHistory.length >= 15;
     }
 
     async saveProgress() {
@@ -551,14 +551,13 @@ export class CommunicationQuiz extends BaseQuiz {
                 questionHistory: this.player.questionHistory,
                 lastUpdated: new Date().toISOString(),
                 questionsAnswered: this.player.questionHistory.length,
+                randomizedScenarios: this.randomizedScenarios, // Save randomized scenarios for consistent experience
                 status: status,
                 scorePercentage: Math.round((this.player.questionHistory.filter(q => 
                     q.selectedAnswer && (q.selectedAnswer.isCorrect || q.selectedAnswer.experience > 0)
                 ).length / 15) * 100)
             }
         };
-
-        console.log('Saving progress:', progress);
 
         try {
             const username = localStorage.getItem('username');
@@ -599,16 +598,15 @@ export class CommunicationQuiz extends BaseQuiz {
                     tools: savedProgress.data.tools || [],
                     questionHistory: savedProgress.data.questionHistory || [],
                     currentScenario: savedProgress.data.currentScenario || 0,
+                    randomizedScenarios: savedProgress.data.randomizedScenarios,
                     status: savedProgress.data.status || 'in-progress'
                 };
-                console.log('Normalized progress data:', progress);
             } else {
                 // Try loading from localStorage as fallback
                 const localData = localStorage.getItem(storageKey);
                 if (localData) {
                     const parsed = JSON.parse(localData);
                     progress = parsed;
-                    console.log('Loaded progress from localStorage:', progress);
                 }
             }
 
@@ -619,15 +617,18 @@ export class CommunicationQuiz extends BaseQuiz {
                 this.player.questionHistory = progress.questionHistory || [];
                 this.player.currentScenario = progress.currentScenario || 0;
 
+                // Restore randomized scenarios if they exist
+                if (progress.randomizedScenarios) {
+                    this.randomizedScenarios = progress.randomizedScenarios;
+                    console.log('Restored randomized scenarios:', this.randomizedScenarios);
+                }
+
                 // Ensure we're updating the UI correctly
                 this.updateProgress();
                 
                 // Check quiz status and show appropriate screen
-                if (progress.status === 'failed') {
-                    this.endGame(true);
-                    return true;
-                } else if (progress.status === 'completed') {
-                    this.endGame(false);
+                if (progress.status === 'failed' || progress.status === 'passed') {
+                    this.endGame(progress.status === 'failed');
                     return true;
                 }
 
@@ -661,7 +662,7 @@ export class CommunicationQuiz extends BaseQuiz {
 
             // Initialize event listeners
             this.initializeEventListeners();
-
+            
             // Load previous progress
             const hasProgress = await this.loadProgress();
             console.log('Previous progress loaded:', hasProgress);
@@ -701,26 +702,58 @@ export class CommunicationQuiz extends BaseQuiz {
     }
 
     initializeEventListeners() {
+        try {            
         // Add event listeners for the continue and restart buttons
-        document.getElementById('continue-btn')?.addEventListener('click', () => this.nextScenario());
-        document.getElementById('restart-btn')?.addEventListener('click', () => this.restartGame());
+            const continueBtn = document.getElementById('continue-btn');
+            if (continueBtn) {
+                // Remove any existing listeners by cloning and replacing
+                const newBtn = continueBtn.cloneNode(true);
+                continueBtn.parentNode.replaceChild(newBtn, continueBtn);
+                
+                // Add fresh event listener
+                newBtn.addEventListener('click', () => {
+                    this.nextScenario();
+                });
+            }
+            
+            const restartBtn = document.getElementById('restart-btn');
+            if (restartBtn) {
+                restartBtn.addEventListener('click', () => this.restartGame());
+            }
 
         // Add form submission handler
-        document.getElementById('options-form')?.addEventListener('submit', (e) => {
+            const optionsForm = document.getElementById('options-form');
+            if (optionsForm) {
+                optionsForm.addEventListener('submit', (e) => {
             e.preventDefault();
             this.handleAnswer();
         });
+            }
+            
+            // Add submit button click handler
+            const submitButton = document.querySelector('.submit-button');
+            if (submitButton) {
+                submitButton.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    this.handleAnswer();
+                });
+            }
 
         // Add keyboard navigation
         document.addEventListener('keydown', (e) => {
             if (e.key === 'Enter' && e.target.type === 'radio') {
                 this.handleAnswer();
             }
-        });
+        });            
+        } catch (error) {
+            console.error('Error initializing event listeners:', error);
+        }
     }
 
     displayScenario() {
         try {
+            console.log('displayScenario called');
+            
             // Check if player and currentScenario are properly initialized
             if (!this.player || typeof this.player.currentScenario !== 'number') {
                 console.error('Player or currentScenario not properly initialized');
@@ -728,22 +761,34 @@ export class CommunicationQuiz extends BaseQuiz {
             }
             
             // Check if we've answered all 15 questions
-            if (this.player.questionHistory.length >= 15) {
+        if (this.player.questionHistory.length >= 15) {
                 console.log('All 15 questions answered, ending game');
-                this.endGame(false);
+                this.endGame();
                 return;
             }
             
+            // Clear any existing timer
+            if (this.questionTimer) {
+                clearInterval(this.questionTimer);
+                this.questionTimer = null;
+                console.log('Timer cleared in displayScenario');
+            }
+            
+            console.log('Getting current scenarios...');
             const currentScenarios = this.getCurrentScenarios();
+            console.log('Current scenarios:', currentScenarios);
+            
             if (!currentScenarios || !Array.isArray(currentScenarios)) {
                 console.error('Could not get current scenarios', currentScenarios);
-                return;
-            }
-            
+            return;
+        }
+
             const scenario = currentScenarios[this.player.currentScenario];
+            console.log('Current scenario index:', this.player.currentScenario);
+            console.log('Retrieved scenario:', scenario);
             
             // Check if the current scenario exists
-        if (!scenario) {
+            if (!scenario) {
                 console.log('No more scenarios in this level, transitioning to next level');
                 
                 // Reset currentScenario for the next level
@@ -753,22 +798,86 @@ export class CommunicationQuiz extends BaseQuiz {
                 const updatedScenarios = this.getCurrentScenarios();
                 if (!updatedScenarios || !updatedScenarios[0]) {
                     console.error('Could not find scenarios for next level');
-                    this.endGame(false);
+                    this.endGame();
                     return;
                 }
                 
                 // Display the first scenario of the next level
                 const nextScenario = updatedScenarios[0];
                 this.displayScenarioContent(nextScenario);
-            return;
-        }
-
+                console.log('Displaying first scenario of next level');
+                return;
+            }
+            
             // Display the current scenario
+            console.log('Displaying current scenario:', scenario.title);
             this.displayScenarioContent(scenario);
         } catch (error) {
             console.error('Error displaying scenario:', error);
             this.showError('An error occurred displaying the scenario. Please try reloading the page.');
         }
+    }
+    // Helper method to display scenario content
+    displayScenarioContent(scenario) {
+        try {
+            // Update UI with current scenario
+        const titleElement = document.getElementById('scenario-title');
+        const descriptionElement = document.getElementById('scenario-description');
+        const optionsContainer = document.getElementById('options-container');
+
+            if (titleElement && scenario.title) {
+                titleElement.textContent = scenario.title;
+        }
+
+            if (descriptionElement && scenario.description) {
+        descriptionElement.textContent = scenario.description;
+            }
+            
+            if (optionsContainer && scenario.options && Array.isArray(scenario.options)) {
+                optionsContainer.innerHTML = '';
+                
+                // Shuffle options to randomize their order
+                const shuffledOptions = this.shuffleArray(scenario.options);
+                
+                shuffledOptions.forEach((option, index) => {
+                    if (!option || !option.text) {
+                        console.error('Invalid option at index', index, option);
+                        return;
+                    }
+                    
+                    const optionDiv = document.createElement('div');
+                    optionDiv.className = 'option';
+                    optionDiv.innerHTML = `
+                <input type="radio" 
+                    name="option" 
+                            value="${scenario.options.indexOf(option)}" 
+                    id="option${index}"
+                    tabindex="0"
+                            aria-label="${option.text}">
+                <label for="option${index}">${option.text}</label>
+            `;
+                    optionsContainer.appendChild(optionDiv);
+        });
+            }
+
+            // Record start time for this question
+            this.questionStartTime = Date.now();
+
+        // Initialize timer for the new question
+        this.initializeTimer();
+            
+            // Update progress display
+            this.updateProgress();
+            
+            console.log('Scenario content displayed, timer initialized');
+        } catch (error) {
+            console.error('Error displaying scenario content:', error);
+        }
+    }
+
+    isCorrectAnswer(answer) {
+        // Helper method to consistently determine if an answer is correct
+        return answer && (answer.isCorrect || answer.experience > 0);
     }
 
     async handleAnswer() {
@@ -777,6 +886,13 @@ export class CommunicationQuiz extends BaseQuiz {
         const submitButton = document.querySelector('.submit-button');
         if (submitButton) {
             submitButton.disabled = true;
+        }
+
+        // Clear the timer when an answer is submitted
+        if (this.questionTimer) {
+            clearInterval(this.questionTimer);
+            this.questionTimer = null;
+            console.log('Timer cleared in handleAnswer');
         }
         
         try {
@@ -839,7 +955,7 @@ export class CommunicationQuiz extends BaseQuiz {
             // Mark selected answer as correct or incorrect
             selectedAnswer.isCorrect = selectedAnswer === correctAnswer;
 
-            // Update player state
+            // Update player state (still track experience for backward compatibility)
             if (typeof this.player.experience === 'number') {
                 this.player.experience = Math.max(0, Math.min(this.maxXP || 300, this.player.experience + (selectedAnswer.experience || 0)));
             }
@@ -848,7 +964,7 @@ export class CommunicationQuiz extends BaseQuiz {
             this.player.questionHistory.push({
                 scenario: scenario,
                 selectedAnswer: selectedAnswer,
-                maxPossibleXP: Math.max(...scenario.options.map(o => o.experience || 0))
+                isCorrect: this.isCorrectAnswer(selectedAnswer)
             });
 
             // Save progress
@@ -865,7 +981,7 @@ export class CommunicationQuiz extends BaseQuiz {
                 try {
                 const quizUser = new QuizUser(username);
                     const score = {
-                        score: Math.round((this.player.experience / (this.maxXP || 300)) * 100),
+                        score: Math.round((this.player.questionHistory.filter(q => this.isCorrectAnswer(q.selectedAnswer)).length / Math.min(this.player.questionHistory.length, 15)) * 100),
                         experience: this.player.experience || 0,
                         questionHistory: this.player.questionHistory || [],
                         questionsAnswered: this.player.questionHistory.length
@@ -904,39 +1020,272 @@ export class CommunicationQuiz extends BaseQuiz {
         try {
             console.log('Moving to next scenario');
             
+            // Clear any existing timer
+            if (this.questionTimer) {
+                clearInterval(this.questionTimer);
+                this.questionTimer = null;
+                console.log('Timer cleared in nextScenario');
+            }
+            
             // Increment current scenario if not done in handleAnswer
             if (this.player && typeof this.player.currentScenario === 'number') {
                 this.player.currentScenario++;
                 console.log('Incremented to scenario:', this.player.currentScenario);
             }
             
-            // Hide outcome screen and show game screen - try both class and style approaches
+            // IMPORTANT: Get actual DOM elements directly
             const outcomeScreen = document.getElementById('outcome-screen');
             const gameScreen = document.getElementById('game-screen');
             
+            console.log('Game screen element:', gameScreen);
+            console.log('Outcome screen element:', outcomeScreen);
+            
+            // Hide outcome screen using multiple approaches to ensure it works
             if (outcomeScreen) {
-                // Try both methods
                 outcomeScreen.classList.add('hidden');
                 outcomeScreen.style.display = 'none';
                 console.log('Hidden outcome screen');
             }
             
+            // Show game screen using multiple approaches to ensure it works
             if (gameScreen) {
-                // Try both methods
                 gameScreen.classList.remove('hidden');
                 gameScreen.style.display = 'block';
                 console.log('Shown game screen');
-        }
-        
-        // Display next scenario
+            }
+            
+            // Display the next scenario
         this.displayScenario();
             
-            // Reinitialize event listeners for the new question
+            // Re-initialize event listeners for the new question
             this.initializeEventListeners();
             
+            // Force a layout refresh
+            window.setTimeout(() => {
+                if (gameScreen) {
+                    gameScreen.style.display = 'none';
+                    window.setTimeout(() => {
+                        gameScreen.style.display = 'block';
+                        console.log('Forced layout refresh');
+                    }, 10);
+                }
+            }, 10);
         } catch (error) {
             console.error('Error in nextScenario:', error);
+            this.showError('An error occurred while loading the next question.');
+        }
+    }
+
+    displayOutcome(selectedAnswer) {
+        if (!selectedAnswer) {
+            console.error('No answer selected');
+            return;
+        }
+
+        try {
+            const currentScenarios = this.getCurrentScenarios();
+            if (!currentScenarios || !this.player || this.player.currentScenario === undefined) {
+                console.error('No current scenario found');
+                return;
+            }
+            
+            const scenario = currentScenarios[this.player.currentScenario];
+            if (!scenario) {
+                console.error('Current scenario not found');
+                return;
+            }
+            
+            const earnedXP = selectedAnswer.experience || 0;
+            
+            // Find the max possible XP for this scenario
+            const maxXP = Math.max(...scenario.options.map(o => o.experience || 0));
+            const isCorrect = selectedAnswer.isCorrect || (earnedXP === maxXP);
+            
+            console.log('Displaying outcome:', { 
+                isCorrect, 
+                selectedAnswer, 
+                scenario: scenario.title 
+            });
+            
+            // Update UI - safely access elements
+            const outcomeScreen = document.getElementById('outcome-screen');
+            const gameScreen = document.getElementById('game-screen');
+            
+            // Show outcome screen if elements exist
+            if (gameScreen) {
+                gameScreen.classList.add('hidden');
+                gameScreen.style.display = 'none';
+            }
+            
+            if (outcomeScreen) {
+                outcomeScreen.classList.remove('hidden');
+                outcomeScreen.style.display = 'block';
+            }
+            
+            // Clear any existing button event listeners by recreating the content
+            const outcomeContent = outcomeScreen.querySelector('.outcome-content');
+            if (outcomeContent) {
+                // Create fresh HTML content
+                outcomeContent.innerHTML = `
+                    <h3>${isCorrect ? 'Correct!' : 'Incorrect'}</h3>
+                    <p>${selectedAnswer.outcome || ''}</p>
+                    <p class="result">${isCorrect ? 'Correct answer!' : 'Try again next time.'}</p>
+                    <button id="continue-btn" class="submit-button">Continue</button>
+                `;
+                
+                // Immediately add event listener to the new button
+                const continueBtn = outcomeContent.querySelector('#continue-btn');
+                if (continueBtn) {
+                    console.log('Adding event listener to continue button');
+                    continueBtn.addEventListener('click', () => {
+                        console.log('Continue button clicked');
+                        this.nextScenario();
+                    });
+                }
+            } else {
+                // If no outcomeContent found, try individual elements as fallback
+                console.error('Could not find outcome content element, trying individual elements');
+                
+                // Update individual elements
+                const outcomeText = document.getElementById('outcome-text');
+                const resultText = document.getElementById('result-text');
+                
+                if (outcomeText) {
+                    outcomeText.textContent = selectedAnswer.outcome || '';
+                }
+                
+                if (resultText) {
+                    resultText.textContent = isCorrect ? 'Correct!' : 'Incorrect';
+                    resultText.className = isCorrect ? 'correct' : 'incorrect';
+                }
+                
+                // Ensure we have a continue button and it has the right event listener
+                const continueBtn = document.getElementById('continue-btn');
+                if (!continueBtn) {
+                    // Try to create a continue button if it doesn't exist
+                    const outcomeActions = document.querySelector('.outcome-actions');
+                    if (outcomeActions) {
+                        outcomeActions.innerHTML = '<button id="continue-btn" class="submit-button">Continue</button>';
+                    }
+                }
+                
+                // Add event listener to the continue button (whether it existed or we created it)
+                const newContinueBtn = document.getElementById('continue-btn');
+                if (newContinueBtn) {
+                    // Remove any existing event listeners by cloning and replacing
+                    const newBtn = newContinueBtn.cloneNode(true);
+                    if (newContinueBtn.parentNode) {
+                        newContinueBtn.parentNode.replaceChild(newBtn, newContinueBtn);
+                    }
+                    
+                    // Add fresh event listener
+                    newBtn.addEventListener('click', () => {
+                        console.log('Continue button clicked');
+                        this.nextScenario();
+                    });
+                }
+            }
+            
+            // Update progress
+            this.updateProgress();
+        } catch (error) {
+            console.error('Error in displayOutcome:', error);
             this.showError('An error occurred. Please try again.');
+        }
+    }
+
+    initializeTimer() {
+        // Clear any existing timer
+        if (this.questionTimer) {
+            clearInterval(this.questionTimer);
+            this.questionTimer = null;
+        }
+
+        // Set default timer value if not set
+        if (!this.timePerQuestion) {
+            this.timePerQuestion = 30;
+            console.log('[Quiz] Using default timer value:', this.timePerQuestion);
+        }
+
+        // Reset remaining time
+        this.remainingTime = this.timePerQuestion;
+        this.questionStartTime = Date.now();
+
+        // Update timer display
+        const timerContainer = document.getElementById('timer-container');
+        if (timerContainer) {
+            timerContainer.textContent = `Time remaining: ${this.remainingTime}s`;
+        }
+
+        // Start the countdown
+        this.questionTimer = setInterval(() => {
+            this.remainingTime--;
+            
+            // Update timer display
+            if (timerContainer) {
+                timerContainer.textContent = `Time remaining: ${this.remainingTime}s`;
+                
+                // Add warning class when time is running low
+                if (this.remainingTime <= 5) {
+                    timerContainer.classList.add('timer-warning');
+                } else {
+                    timerContainer.classList.remove('timer-warning');
+                }
+            }
+
+            // Check if time is up
+            if (this.remainingTime <= 0) {
+                clearInterval(this.questionTimer);
+                this.questionTimer = null;
+                this.handleTimeUp();
+            }
+        }, 1000);
+    }
+
+    // Handle time up situation
+    handleTimeUp() {
+        console.log('Time up! Auto-submitting answer');
+        
+        try {
+            // Get current scenario
+            const currentScenarios = this.getCurrentScenarios();
+            if (!currentScenarios || !this.player) {
+                console.error('Invalid state in handleTimeUp');
+                return;
+            }
+            
+            const scenario = currentScenarios[this.player.currentScenario];
+            if (!scenario) {
+                console.error('No current scenario found in handleTimeUp');
+                return;
+            }
+            
+            // Create a timeout answer
+            const timeoutAnswer = {
+                text: 'Time ran out!',
+                experience: 0,
+                isCorrect: false,
+                isTimeout: true,
+                outcome: 'You did not answer in time.'
+            };
+            
+            // Update player state
+            this.player.questionHistory.push({
+                scenario: scenario,
+                selectedAnswer: timeoutAnswer,
+                isCorrect: false,
+                isTimeout: true
+            });
+            
+            // Save progress
+            this.saveProgress().catch(error => {
+                console.error('Failed to save timeout progress:', error);
+            });
+            
+            // Display the timeout outcome
+            this.displayOutcome(timeoutAnswer);
+        } catch (error) {
+            console.error('Error handling time up:', error);
         }
     }
 
@@ -1018,14 +1367,24 @@ export class CommunicationQuiz extends BaseQuiz {
     getCurrentScenarios() {
         try {
             const totalAnswered = this.player?.questionHistory?.length || 0;
+            
+            // If we don't have the randomized sets yet, create them
+            if (!this.randomizedScenarios) {
+                this.randomizedScenarios = {
+                    basic: this.shuffleArray([...this.basicScenarios]).slice(0, 5),
+                    intermediate: this.shuffleArray([...this.intermediateScenarios]).slice(0, 5),
+                    advanced: this.shuffleArray([...this.advancedScenarios]).slice(0, 5)
+                };
+                console.log('Created randomized scenarios:', this.randomizedScenarios);
+            }
         
             // Simple progression logic based solely on question count, no threshold checks
             if (totalAnswered >= 10) {
-            return this.advancedScenarios;
+                return this.randomizedScenarios.advanced;
             } else if (totalAnswered >= 5) {
-            return this.intermediateScenarios;
-        }
-        return this.basicScenarios;
+                return this.randomizedScenarios.intermediate;
+            }
+            return this.randomizedScenarios.basic;
         } catch (error) {
             console.error('Error in getCurrentScenarios:', error);
             return this.basicScenarios; // Default to basic if there's an error
@@ -1036,7 +1395,7 @@ export class CommunicationQuiz extends BaseQuiz {
         try {
             const totalAnswered = this.player?.questionHistory?.length || 0;
         
-            // Simple level determination based solely on question count, no threshold checks
+            // Determine level based solely on question count
             if (totalAnswered >= 10) {
             return 'Advanced';
             } else if (totalAnswered >= 5) {
@@ -1149,232 +1508,123 @@ export class CommunicationQuiz extends BaseQuiz {
         return recommendations[area] || 'Continue practicing general communication skills.';
     }
 
-    async endGame() {
-        // Calculate final score based on correct answers
-        const correctAnswers = this.player.questionHistory.filter(q => q.selectedAnswer && q.selectedAnswer.isCorrect).length;
-        const scorePercentage = Math.round((correctAnswers / 15) * 100);
-        
-        // Create the final progress object
-        const progress = {
-            questionsAnswered: 15, // Always 15 at the end
-            questionHistory: this.player.questionHistory,
-            currentScenario: this.player.currentScenario,
-            status: scorePercentage >= 70 ? 'passed' : 'failed',
-            scorePercentage: scorePercentage,
-            lastUpdated: new Date().toISOString()
-        };
+    // Helper method to shuffle an array using Fisher-Yates algorithm
+    shuffleArray(array) {
+        const shuffled = [...array];
+        for (let i = shuffled.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+        }
+        return shuffled;
+    }
 
+    // Implement the endGame method that was missing
+    async endGame(failed = false) {
+        console.log('End game called with failed =', failed);
+        
         try {
-            // Hide the timer container
-            const timerContainer = document.getElementById('timer-container');
-            if (timerContainer) {
-                timerContainer.style.display = 'none';
-            }
-            
-            // Update progress display to show 15/15
-            const questionInfoElement = document.querySelector('.question-info');
-            if (questionInfoElement) {
-                questionInfoElement.textContent = 'Question: 15/15';
-            }
-            
-            // Update legacy progress elements if they exist
-            const questionProgress = document.getElementById('question-progress');
-            if (questionProgress) {
-                questionProgress.textContent = 'Question: 15/15';
-            }
-            
-            // Clear any existing timer
+            // Clear any timers
             if (this.questionTimer) {
                 clearInterval(this.questionTimer);
                 this.questionTimer = null;
             }
             
-            // Save progress to API
-        const username = localStorage.getItem('username');
-            if (!username) {
-                throw new Error('No username found');
+            // Show the end screen and hide others
+            if (this.gameScreen) this.gameScreen.classList.add('hidden');
+            if (this.outcomeScreen) this.outcomeScreen.classList.add('hidden');
+            if (this.endScreen) {
+                this.endScreen.classList.remove('hidden');
+                console.log('End screen shown');
+            } else {
+                console.error('End screen element not found');
             }
-
-            // Save to API
-            await this.apiService.saveQuizProgress(this.quizName, progress);
-            console.log('Final progress saved:', progress);
-
-            // Update quiz score in user's record
-            const quizUser = new QuizUser(username);
-            await quizUser.updateQuizScore(
-                    this.quizName,
-                scorePercentage, 
-                0, // no experience
-                    this.player.tools,
-                this.player.questionHistory,
-                15, // Always 15 questions completed
-                scorePercentage >= 70 ? 'completed' : 'failed'
-            );
             
-            // Update display elements
+            // Calculate score percentage
+            const correctAnswers = this.player.questionHistory.filter(q => this.isCorrectAnswer(q.selectedAnswer)).length;
+            const scorePercentage = Math.round((correctAnswers / 15) * 100);
+            const isPassed = scorePercentage >= (this.passPercentage || 70);
+            
+            // Determine final status
+            const finalStatus = failed ? 'failed' : (isPassed ? 'passed' : 'failed');
+            
+            // Update final score display
             const finalScoreElement = document.getElementById('final-score');
             if (finalScoreElement) {
                 finalScoreElement.textContent = `Final Score: ${scorePercentage}%`;
             }
             
-            // Show the end screen
-            this.gameScreen.classList.add('hidden');
-            this.outcomeScreen.classList.add('hidden');
-            if (this.endScreen) {
-                this.endScreen.classList.remove('hidden');
-        }
-
-        // Generate question review list
-        const reviewList = document.getElementById('question-review');
-        if (reviewList) {
-            reviewList.innerHTML = ''; // Clear existing content
+            // Update performance summary based on thresholds
+            const performanceSummary = document.getElementById('performance-summary');
+            if (performanceSummary) {
+                const thresholds = this.performanceThresholds || [
+                    { threshold: 90, message: '🏆 Outstanding! You\'re a testing mindset expert!' },
+                    { threshold: 80, message: '👏 Great job! You\'ve shown strong testing instincts!' },
+                    { threshold: 70, message: '👍 Good work! You\'ve passed the quiz!' },
+                    { threshold: 0, message: '📚 Consider reviewing testing mindset best practices and try again!' }
+                ];
                 
-            this.player.questionHistory.forEach((record, index) => {
-                const reviewItem = document.createElement('div');
-                reviewItem.className = 'review-item';
-                
-                    const isCorrect = record.selectedAnswer && record.selectedAnswer.isCorrect;
-                reviewItem.classList.add(isCorrect ? 'correct' : 'incorrect');
-                
-                reviewItem.innerHTML = `
-                    <h4>Question ${index + 1}</h4>
-                        <p class="scenario">${record.scenario ? record.scenario.description : 'No description available'}</p>
-                        <p class="answer"><strong>Your Answer:</strong> ${record.selectedAnswer ? record.selectedAnswer.text : 'No answer selected'}</p>
-                        <p class="outcome"><strong>Outcome:</strong> ${record.selectedAnswer ? record.selectedAnswer.outcome : 'No outcome'}</p>
-                        <p class="result"><strong>Result:</strong> ${isCorrect ? 'Correct' : 'Incorrect'}</p>
-                `;
-                
-                reviewList.appendChild(reviewItem);
-            });
-        }
-
-            // Clear local storage for this quiz
-            this.clearQuizLocalStorage(username, this.quizName);
-
-            // Display recommendations if we're not redirecting
-        this.generateRecommendations();
-
-        } catch (error) {
-            console.error('Failed to save final progress:', error);
-            this.showError('Failed to save your results. Please try again.');
-        }
-    }
-
-    displayOutcome(selectedAnswer) {
-        if (!selectedAnswer) {
-            console.error('No answer selected');
-            return;
-        }
-
-        try {
-            const currentScenarios = this.getCurrentScenarios();
-            if (!currentScenarios || !currentScenarios[this.player.currentScenario]) {
-                console.error('No current scenario found');
-                return;
+                const threshold = thresholds.find(t => scorePercentage >= t.threshold) || thresholds[thresholds.length - 1];
+                performanceSummary.textContent = threshold.message;
             }
             
-            const currentScenario = currentScenarios[this.player.currentScenario];
-            const earnedXP = selectedAnswer.experience || 0;
+            // Generate question review
+            this.displayQuestionReview();
             
-            // Find the max possible XP for this scenario
-            const maxXP = Math.max(...currentScenario.options.map(o => o.experience || 0));
-            const isCorrect = selectedAnswer.isCorrect || (earnedXP === maxXP);
+            // Generate personalized recommendations
+            this.generateRecommendations();
             
-            console.log('Displaying outcome:', { 
-            isCorrect,
-                selectedAnswer,
-                currentScenario: this.player.currentScenario
+            // Save final progress
+            try {
+                const username = localStorage.getItem('username');
+                if (username) {
+                    const quizUser = new QuizUser(username);
+                    await quizUser.updateQuizScore(
+                        this.quizName,
+                        scorePercentage,
+                        this.player.experience,
+                        this.player.tools,
+                        this.player.questionHistory,
+                        15, // Always 15 questions completed
+                        finalStatus
+                    );
+                    console.log('Final quiz score saved:', scorePercentage, 'status:', finalStatus);
+                }
+            } catch (error) {
+                console.error('Failed to save final quiz score:', error);
+            }
+        } catch (error) {
+            console.error('Error in endGame:', error);
+            this.showError('An error occurred showing the results. Please try again.');
+        }
+    }
+    
+    // Helper method to display question review in the end screen
+    displayQuestionReview() {
+        const reviewList = document.getElementById('question-review');
+        if (!reviewList) return;
+        
+        let reviewHTML = '';
+        this.player.questionHistory.forEach((record, index) => {
+            const isCorrect = this.isCorrectAnswer(record.selectedAnswer);
+            const scenario = record.scenario;
+            
+            reviewHTML += `
+                <div class="review-item ${isCorrect ? 'correct' : 'incorrect'}">
+                    <div class="review-header">
+                        <span class="review-number">${index + 1}</span>
+                        <span class="review-title">${scenario.title || 'Question'}</span>
+                        <span class="review-result">${isCorrect ? '✓' : '✗'}</span>
+                    </div>
+                    <div class="review-detail">
+                        <p><strong>Scenario:</strong> ${scenario.description || ''}</p>
+                        <p><strong>Your Answer:</strong> ${record.selectedAnswer.text || ''}</p>
+                        <p><strong>Outcome:</strong> ${record.selectedAnswer.outcome || ''}</p>
+                    </div>
+                </div>
+            `;
         });
         
-            // Update UI - safely access elements
-        const outcomeScreen = document.getElementById('outcome-screen');
-            const gameScreen = document.getElementById('game-screen');
-            
-            // Show outcome screen if elements exist
-            if (gameScreen) {
-                gameScreen.classList.add('hidden');
-                gameScreen.style.display = 'none';
-            }
-            
-            if (outcomeScreen) {
-                outcomeScreen.classList.remove('hidden');
-        outcomeScreen.style.display = 'block';
-            }
-            
-            // Set content directly in the outcome screen
-            const outcomeContent = outcomeScreen.querySelector('.outcome-content');
-            if (outcomeContent) {
-                outcomeContent.innerHTML = `
-                    <h3>${isCorrect ? 'Correct!' : 'Incorrect'}</h3>
-                    <p>${selectedAnswer.outcome || ''}</p>
-                    <p class="result">${isCorrect ? 'Correct answer!' : 'Try again next time.'}</p>
-                    <button id="continue-btn" class="submit-button">Continue</button>
-                `;
-                
-                // Add event listener to the continue button
-                const continueBtn = outcomeContent.querySelector('#continue-btn');
-                if (continueBtn) {
-                    continueBtn.addEventListener('click', () => this.nextScenario());
-                }
-            } else {
-                console.error('Could not find outcome content element');
-            }
-            
-            // Update progress
-            this.updateProgress();
-        } catch (error) {
-            console.error('Error in displayOutcome:', error);
-            this.showError('An error occurred. Please try again.');
-        }
-    }
-
-    // Helper method to display scenario content
-    displayScenarioContent(scenario) {
-        // Update UI with current scenario
-        const titleElement = document.getElementById('scenario-title');
-        const descriptionElement = document.getElementById('scenario-description');
-        const optionsContainer = document.getElementById('options-container');
-        
-        if (titleElement && scenario.title) {
-            titleElement.textContent = scenario.title;
-        }
-        
-        if (descriptionElement && scenario.description) {
-            descriptionElement.textContent = scenario.description;
-        }
-        
-        if (optionsContainer && scenario.options && Array.isArray(scenario.options)) {
-            optionsContainer.innerHTML = '';
-            
-            scenario.options.forEach((option, index) => {
-                if (!option || !option.text) {
-                    console.error('Invalid option at index', index, option);
-                    return;
-                }
-                
-                const optionDiv = document.createElement('div');
-                optionDiv.className = 'option';
-                optionDiv.innerHTML = `
-                    <input type="radio" 
-                        name="option" 
-                        value="${index}" 
-                        id="option${index}"
-                        tabindex="0"
-                        aria-label="${option.text}">
-                    <label for="option${index}">${option.text}</label>
-                `;
-                optionsContainer.appendChild(optionDiv);
-            });
-        }
-        
-        // Record start time for this question
-        this.questionStartTime = Date.now();
-        
-        // Initialize timer for the new question
-        this.initializeTimer();
-        
-        // Update progress display
-        this.updateProgress();
+        reviewList.innerHTML = reviewHTML;
     }
 }
 

@@ -43,11 +43,6 @@ export class TesterMindsetQuiz extends BaseQuiz {
         this.outcomeScreen = document.getElementById('outcome-screen');
         this.endScreen = document.getElementById('end-screen');
         
-        // Log screen elements for debugging
-        console.log('Game screen element:', this.gameScreen);
-        console.log('Outcome screen element:', this.outcomeScreen);
-        console.log('End screen element:', this.endScreen);
-        
         // Verify all required elements exist
         if (!this.gameScreen) {
             console.error('Game screen element not found');
@@ -606,14 +601,12 @@ export class TesterMindsetQuiz extends BaseQuiz {
                     randomizedScenarios: savedProgress.data.randomizedScenarios,
                     status: savedProgress.data.status || 'in-progress'
                 };
-                console.log('Normalized progress data:', progress);
             } else {
                 // Try loading from localStorage as fallback
                 const localData = localStorage.getItem(storageKey);
                 if (localData) {
                     const parsed = JSON.parse(localData);
                     progress = parsed.data || parsed;
-                    console.log('Loaded progress from localStorage:', progress);
                 }
             }
 
@@ -709,9 +702,7 @@ export class TesterMindsetQuiz extends BaseQuiz {
     }
 
     initializeEventListeners() {
-        try {
-            console.log('Initializing event listeners');
-            
+        try {            
         // Add event listeners for the continue and restart buttons
             const continueBtn = document.getElementById('continue-btn');
             if (continueBtn) {
@@ -721,16 +712,13 @@ export class TesterMindsetQuiz extends BaseQuiz {
                 
                 // Add fresh event listener
                 newBtn.addEventListener('click', () => {
-                    console.log('Continue button clicked from event listener');
                     this.nextScenario();
                 });
-                console.log('Added event listener to continue button');
             }
             
             const restartBtn = document.getElementById('restart-btn');
             if (restartBtn) {
                 restartBtn.addEventListener('click', () => this.restartGame());
-                console.log('Added event listener to restart button');
             }
 
         // Add form submission handler
@@ -740,7 +728,6 @@ export class TesterMindsetQuiz extends BaseQuiz {
             e.preventDefault();
             this.handleAnswer();
         });
-                console.log('Added event listener to options form');
             }
             
             // Add submit button click handler
@@ -750,7 +737,6 @@ export class TesterMindsetQuiz extends BaseQuiz {
                     e.preventDefault();
                     this.handleAnswer();
                 });
-                console.log('Added event listener to submit button');
             }
 
         // Add keyboard navigation
@@ -758,9 +744,7 @@ export class TesterMindsetQuiz extends BaseQuiz {
             if (e.key === 'Enter' && e.target.type === 'radio') {
                 this.handleAnswer();
             }
-        });
-            console.log('Added keyboard navigation event listeners');
-            
+        });            
         } catch (error) {
             console.error('Error initializing event listeners:', error);
         }
