@@ -4,201 +4,370 @@ import { QuizUser } from '../QuizUser.js';
 
 export class ExploratoryQuiz extends BaseQuiz {
     constructor() {
-        try {
-            console.log('Initializing Exploratory Quiz');
-            
-            const config = {
-                maxXP: 300,
-                totalQuestions: 15,
-                passPercentage: 70,
-                performanceThresholds: [
-                    { threshold: 90, message: '🏆 Outstanding! You\'re an exploratory testing expert!' },
-                    { threshold: 80, message: '👏 Great job! You\'ve shown strong exploratory testing skills!' },
-                    { threshold: 70, message: '👍 Good work! You\'ve passed the quiz!' },
-                    { threshold: 0, message: '�� Consider reviewing exploratory testing best practices and try again!' }
-                ]
-            };
-            
-            super(config);
-            
-            console.log('Base quiz initialized');
-            
-            // Set the quiz name
-            Object.defineProperty(this, 'quizName', {
-                value: 'exploratory',
-                writable: false,
-                configurable: false,
-                enumerable: true
+        super();
+        console.log('Initializing ExploratoryQuiz');
+        
+        // Initialize base properties
+        this.quizName = 'exploratory';
+        this.passPercentage = 70;
+        this.questionTimer = null;
+        this.questionTimeLimit = 60; // 60 seconds per question
+        this.timerEnabled = true;
+        this.isLoading = false;
+        
+        // Initialize scenario data structure placeholders
+        this.basicScenarios = [];
+        this.intermediateScenarios = [];
+        this.advancedScenarios = [];
+        
+        // Initialize player
+        this.player = {
+            name: '',
+            experience: 0,
+            tools: [],
+            currentScenario: 0,
+            questionHistory: [],
+            level: 'basic'
+        };
+        
+        // Initialize UI
+        this.initializeUI();
+        
+        // Load scenarios
+        this.loadScenarios()
+            .then(() => {
+                console.log('Scenarios loaded successfully');
+                // Start the game once scenarios are loaded
+                this.startGame();
+            })
+            .catch(error => {
+                console.error('Failed to load scenarios:', error);
+                // Display error to user but still try to start the game
+                // The startGame method has fallbacks for missing scenarios
+                this.showError('There was an issue loading quiz content. Some questions may be unavailable.');
+                this.startGame();
             });
+    }
+    
+    async loadScenarios() {
+        try {
+            // First try to load from window object (may be pre-loaded)
+            if (window.allScenarios) {
+                this.basicScenarios = window.allScenarios.basic || [];
+                this.intermediateScenarios = window.allScenarios.intermediate || [];
+                this.advancedScenarios = window.allScenarios.advanced || [];
+                console.log('Loaded scenarios from window object');
+                return;
+            }
             
-            // Initialize randomized scenarios at the class level
-            this.randomizedScenarios = {
-                basic: null,
-                intermediate: null,
-                advanced: null
-            };
-            
-            // Initialize player state
-            this.player = {
-                experience: 0,
-                tools: [],
-                questionHistory: [],
-                level: 'basic'
-            };
-            
-            // Store current state
-            this.scenarioStartTime = null;
-            this.questionTimer = null;
-            this.currentOutcome = null;
-            this.isGameEnded = false;
-            this.currentScenario = null; // Add a reference to the current scenario at the class level
-            
-            console.log('Player state initialized');
-            
-            // Store UI elements - will be populated in initializeUI
-            this.gameContainer = null;
-            this.gameScreen = null;
-            this.outcomeScreen = null;
-            this.endScreen = null;
-            
-            // Store scenario data
-            // First ensure these arrays exist and are initialized
-            console.log('Setting up basic scenarios array');
-            this.basicScenarios = this.basicScenarios || [
-                // ... existing code for basic scenarios ...
-            ];
-            
-            console.log('Setting up intermediate scenarios array');
-            this.intermediateScenarios = this.intermediateScenarios || [
-                // ... existing code for intermediate scenarios ...
-            ];
-            
-            console.log('Setting up advanced scenarios array');
-            this.advancedScenarios = this.advancedScenarios || [
-                // ... existing code for advanced scenarios ...
-            ];
-            
-            console.log('Scenario arrays initialized');
-            console.log(`Basic scenarios: ${this.basicScenarios.length}, Intermediate: ${this.intermediateScenarios.length}, Advanced: ${this.advancedScenarios.length}`);
-            
-            // Initialize UI and add event listeners
-            this.initializeUI();
-
-            this.isLoading = false;
+            // If not in window object, try loading from JSON (example path, adjust as needed)
+            try {
+                const response = await fetch('/data/exploratory-scenarios.json');
+                
+                if (!response.ok) {
+                    throw new Error(`Failed to fetch scenarios: ${response.status}`);
+                }
+                
+                const data = await response.json();
+                
+                this.basicScenarios = data.basic || [];
+                this.intermediateScenarios = data.intermediate || [];
+                this.advancedScenarios = data.advanced || [];
+                
+                console.log('Loaded scenarios from JSON file');
+                
+                // Store in window for future use
+                window.allScenarios = data;
+                
+            } catch (fetchError) {
+                console.error('Failed to fetch scenarios JSON:', fetchError);
+                
+                // Use fallback hardcoded scenarios
+                this.useFallbackScenarios();
+            }
         } catch (error) {
-            console.error('Error in constructor:', error);
-            this.showError('An error occurred while initializing the quiz.');
+            console.error('Error in loadScenarios:', error);
+            // Use fallback hardcoded scenarios
+            this.useFallbackScenarios();
+        }
+    }
+    
+    useFallbackScenarios() {
+        console.log('Using fallback scenarios');
+        
+        // Create basic fallback scenarios
+        this.basicScenarios = [];
+        for (let i = 0; i < 5; i++) {
+            this.basicScenarios.push({
+                id: `basic-fallback-${i}`,
+                title: `Basic Exploratory Testing Scenario ${i+1}`,
+                description: 'Practice basic exploratory testing techniques.',
+                options: [
+                    { text: 'Document your findings thoroughly', outcome: 'Good documentation is essential.', experience: 10 },
+                    { text: 'Focus on finding as many bugs as possible', outcome: 'Quality over quantity is important.', experience: 5 },
+                    { text: 'Skip documentation to save time', outcome: 'Documentation is crucial for exploratory testing.', experience: 0 }
+                ]
+            });
+        }
+        
+        // Create intermediate fallback scenarios
+        this.intermediateScenarios = [];
+        for (let i = 0; i < 5; i++) {
+            this.intermediateScenarios.push({
+                id: `intermediate-fallback-${i}`,
+                title: `Intermediate Exploratory Testing Scenario ${i+1}`,
+                description: 'Apply more advanced exploratory testing concepts.',
+                options: [
+                    { text: 'Use a structured approach with time-boxes', outcome: 'Structured exploratory testing is effective.', experience: 10 },
+                    { text: 'Test completely free-form without constraints', outcome: 'Some structure helps focus testing efforts.', experience: 5 },
+                    { text: 'Focus only on high-risk areas', outcome: 'Balanced coverage is important.', experience: 0 }
+                ]
+            });
+        }
+        
+        // Create advanced fallback scenarios
+        this.advancedScenarios = [];
+        for (let i = 0; i < 5; i++) {
+            this.advancedScenarios.push({
+                id: `advanced-fallback-${i}`,
+                title: `Advanced Exploratory Testing Scenario ${i+1}`,
+                description: 'Master complex exploratory testing strategies.',
+                options: [
+                    { text: 'Combine multiple testing techniques', outcome: 'A varied approach works best for complex scenarios.', experience: 10 },
+                    { text: 'Focus on edge cases and boundary testing', outcome: 'This is good but a combined approach is better.', experience: 5 },
+                    { text: 'Rely on past experience only', outcome: 'Be open to new approaches for each testing context.', experience: 0 }
+                ]
+            });
         }
     }
 
     initializeUI() {
         try {
-            console.log('Initializing UI');
+            console.log('Initializing UI for exploratory quiz');
             
-            // Get main container elements
-            this.gameContainer = document.querySelector('.quiz-container');
-            this.gameScreen = document.getElementById('game-screen');
-            this.outcomeScreen = document.getElementById('outcome-screen');
-            this.endScreen = document.getElementById('end-screen');
-            
-            // Create a less strict check - allow the quiz to continue if at least gameScreen exists
-            if (!this.gameScreen) {
-                console.warn('Game screen element not found - quiz may not function correctly');
-            }
-            
-            // Create scenario elements if they don't exist
+            // Ensure all required elements exist
             this.ensureRequiredElementsExist();
             
-            // Get progress elements - don't fail if they're missing
-            this.progressBar = document.getElementById('progress-fill');
-            this.levelIndicator = document.getElementById('level-indicator');
-            this.questionCounter = document.getElementById('question-progress');
+            // Initialize API service
+            this.apiService = new APIService();
+
+            // Create timer display if it doesn't exist
+            const timerDisplay = document.getElementById('timer-display');
+            if (!timerDisplay) {
+                const quizCard = document.querySelector('.quiz-card');
+                if (quizCard) {
+                    const timerDiv = document.createElement('div');
+                    timerDiv.id = 'timer-display';
+                    timerDiv.className = 'timer';
+                    timerDiv.innerHTML = '<span id="timer-value">60</span>';
+                    quizCard.prepend(timerDiv);
+                }
+            }
             
-            // Update initial progress display
-            this.updateProgressDisplay();
+            // Create loading indicator if it doesn't exist
+            const loadingIndicator = document.getElementById('loading-indicator');
+            if (!loadingIndicator) {
+                const loadingDiv = document.createElement('div');
+                loadingDiv.id = 'loading-indicator';
+                loadingDiv.className = 'loading-indicator hidden';
+                loadingDiv.innerHTML = '<span>Loading...</span>';
+                document.body.appendChild(loadingDiv);
+            }
+            
+            // Create level transition container if it doesn't exist
+            const transitionContainer = document.getElementById('level-transition-container');
+            if (!transitionContainer) {
+                const transitionDiv = document.createElement('div');
+                transitionDiv.id = 'level-transition-container';
+                transitionDiv.className = 'level-transition-container';
+                document.body.appendChild(transitionDiv);
+            }
+            
+            // Set up quiz progress indicator
+            const progressIndicator = document.getElementById('progress-indicator');
+            if (!progressIndicator) {
+                const quizCard = document.querySelector('.quiz-card');
+                if (quizCard) {
+                    const progressDiv = document.createElement('div');
+                    progressDiv.id = 'progress-indicator';
+                    progressDiv.className = 'progress-indicator';
+                    progressDiv.innerHTML = '<span>Question 1/15</span>';
+                    quizCard.prepend(progressDiv);
+                }
+            }
+            
+            // Add CSS styles for level transition if needed
+            const styleExists = document.querySelector('style#exploratory-quiz-styles');
+            if (!styleExists) {
+                const style = document.createElement('style');
+                style.id = 'exploratory-quiz-styles';
+                style.innerHTML = `
+                    .level-transition-container {
+                        position: fixed;
+                        top: 0;
+                        left: 0;
+                        width: 100%;
+                        height: 100%;
+                        background-color: rgba(0, 0, 0, 0.8);
+                        display: flex;
+                        justify-content: center;
+                        align-items: center;
+                        z-index: 1000;
+                        opacity: 0;
+                        visibility: hidden;
+                        transition: opacity 0.3s ease;
+                    }
+                    
+                    .level-transition-container.active {
+                        opacity: 1;
+                        visibility: visible;
+                    }
+                    
+                    .level-transition {
+                        background-color: white;
+                        padding: 30px;
+                        border-radius: 10px;
+                        text-align: center;
+                        max-width: 90%;
+                    }
+                    
+                    .transition-progress {
+                        height: 6px;
+                        background-color: #eee;
+                        margin-top: 20px;
+                        position: relative;
+                        overflow: hidden;
+                        border-radius: 3px;
+                    }
+                    
+                    .transition-progress:after {
+                        content: '';
+                        position: absolute;
+                        left: 0;
+                        top: 0;
+                        height: 100%;
+                        width: 30%;
+                        background-color: #4CAF50;
+                        animation: progress 3s linear forwards;
+                    }
+                    
+                    @keyframes progress {
+                        0% { width: 0; }
+                        100% { width: 100%; }
+                    }
+                    
+                    .loading-indicator {
+                        position: fixed;
+                        top: 0;
+                        left: 0;
+                        width: 100%;
+                        height: 100%;
+                        background-color: rgba(255, 255, 255, 0.8);
+                        display: flex;
+                        justify-content: center;
+                        align-items: center;
+                        z-index: 2000;
+                    }
+                    
+                    .loading-indicator.hidden {
+                        display: none;
+                    }
+                `;
+                document.head.appendChild(style);
+            }
             
             console.log('UI initialization complete');
         } catch (error) {
-            console.error('Error in initializeUI:', error);
-            this.showError('An error occurred while initializing the UI.');
+            console.error('Error initializing UI:', error);
         }
     }
-    
+
     ensureRequiredElementsExist() {
         try {
             console.log('Ensuring required elements exist');
             
-            // First make sure we have access to gameScreen
-            if (!this.gameScreen) {
-                console.error('Cannot create elements without gameScreen');
-                return false;
+            // Check for the main container
+            let quizContainer = document.querySelector('.quiz-container');
+            if (!quizContainer) {
+                console.log('Creating quiz container');
+                quizContainer = document.createElement('div');
+                quizContainer.className = 'quiz-container';
+                document.body.appendChild(quizContainer);
             }
             
-            // Check for question section and create if missing
-            let questionSection = this.gameScreen.querySelector('.question-section');
-            if (!questionSection) {
-                console.log('Creating missing question section');
-                questionSection = document.createElement('div');
-                questionSection.className = 'question-section';
+            // Check for game screen
+            let gameScreen = document.getElementById('game-screen');
+            if (!gameScreen) {
+                console.log('Creating game screen');
+                gameScreen = document.createElement('div');
+                gameScreen.id = 'game-screen';
+                gameScreen.className = 'quiz-card';
+                gameScreen.setAttribute('role', 'main');
+                gameScreen.setAttribute('aria-live', 'polite');
+                quizContainer.appendChild(gameScreen);
+            }
+            
+            // Check for scenario container
+            let scenarioContainer = document.getElementById('scenario-container');
+            if (!scenarioContainer) {
+                console.log('Creating scenario container');
+                scenarioContainer = document.createElement('div');
+                scenarioContainer.id = 'scenario-container';
+                scenarioContainer.className = 'scenario-container';
+                gameScreen.appendChild(scenarioContainer);
                 
-                // Find a good place to insert it (before options-section if possible)
-                const optionsSection = this.gameScreen.querySelector('.options-section');
-                if (optionsSection) {
-                    this.gameScreen.insertBefore(questionSection, optionsSection);
-                } else {
-                    this.gameScreen.appendChild(questionSection);
-                }
+                // Add basic structure to scenario container
+                scenarioContainer.innerHTML = `
+                    <h2 id="scenario-title" class="scenario-title">Loading Scenario...</h2>
+                    <p id="scenario-description" class="scenario-description">Please wait while we load your scenario.</p>
+                    <div id="options-container" class="options-container"></div>
+                `;
             }
             
-            // Check for scenario title and create if missing
-            let titleElement = document.getElementById('scenario-title');
-            if (!titleElement) {
-                console.log('Creating missing scenario title element');
-                titleElement = document.createElement('h2');
-                titleElement.id = 'scenario-title';
-                titleElement.setAttribute('tabindex', '0');
-                questionSection.appendChild(titleElement);
+            // Check for outcome screen
+            let outcomeScreen = document.getElementById('outcome-screen');
+            if (!outcomeScreen) {
+                console.log('Creating outcome screen');
+                outcomeScreen = document.createElement('div');
+                outcomeScreen.id = 'outcome-screen';
+                outcomeScreen.className = 'quiz-card hidden';
+                outcomeScreen.style.display = 'none';
+                quizContainer.appendChild(outcomeScreen);
+                
+                // Add basic structure to outcome screen
+                outcomeScreen.innerHTML = `
+                    <h2 id="outcome-title">Result</h2>
+                    <p id="outcome-message"></p>
+                    <div id="xp-container" class="xp-container">
+                        <span id="xp-amount">+0</span> XP
+                    </div>
+                    <button id="continue-btn" class="quiz-btn">Continue</button>
+                `;
             }
             
-            // Check for scenario description and create if missing
-            let descriptionElement = document.getElementById('scenario-description');
-            if (!descriptionElement) {
-                console.log('Creating missing scenario description element');
-                descriptionElement = document.createElement('p');
-                descriptionElement.id = 'scenario-description';
-                descriptionElement.setAttribute('tabindex', '0');
-                questionSection.appendChild(descriptionElement);
-            }
-            
-            // Check for options form and create if missing
-            let optionsForm = document.getElementById('options-form');
-            if (!optionsForm) {
-                console.log('Creating missing options form');
-                optionsForm = document.createElement('form');
-                optionsForm.id = 'options-form';
-                optionsForm.className = 'options-section';
-                this.gameScreen.appendChild(optionsForm);
-            }
-            
-            // Check for options container and create if missing
-            let optionsContainer = document.getElementById('options-container');
-            if (!optionsContainer) {
-                console.log('Creating missing options container');
-                optionsContainer = document.createElement('div');
-                optionsContainer.id = 'options-container';
-                optionsForm.appendChild(optionsContainer);
-            }
-            
-            // Check for submit button and create if missing
-            let submitButton = document.getElementById('submit-btn');
-            if (!submitButton) {
-                console.log('Creating missing submit button');
-                submitButton = document.createElement('button');
-                submitButton.type = 'submit';
-                submitButton.id = 'submit-btn';
-                submitButton.className = 'submit-button';
-                submitButton.textContent = 'Submit Answer';
-                optionsForm.appendChild(submitButton);
+            // Check for end screen
+            let endScreen = document.getElementById('end-screen');
+            if (!endScreen) {
+                console.log('Creating end screen');
+                endScreen = document.createElement('div');
+                endScreen.id = 'end-screen';
+                endScreen.className = 'quiz-card hidden';
+                endScreen.style.display = 'none';
+                quizContainer.appendChild(endScreen);
+                
+                // Add basic structure to end screen
+                endScreen.innerHTML = `
+                    <h2>Quiz Complete!</h2>
+                    <div class="score-container">
+                        <div class="score-circle">
+                            <span id="final-score">0%</span>
+                        </div>
+                    </div>
+                    <p id="performance-message"></p>
+                    <div id="recommendations"></div>
+                    <button id="restart-btn" class="quiz-btn">Restart Quiz</button>
+                    <a href="/index.html" class="quiz-btn secondary-btn">Back to Home</a>
+                `;
             }
             
             console.log('All required elements checked and created if needed');
@@ -212,28 +381,32 @@ export class ExploratoryQuiz extends BaseQuiz {
     updateProgressDisplay() {
         try {
             const totalAnswered = this.player?.questionHistory?.length || 0;
-            const totalQuestions = 15; // Total questions for the entire quiz
             
-            // Update progress bar if it exists
-            if (this.progressBar) {
-                const progressPercentage = Math.min((totalAnswered / totalQuestions) * 100, 100);
-                this.progressBar.style.width = `${progressPercentage}%`;
+            // Update question counter
+            const progressIndicator = document.getElementById('progress-indicator');
+            if (progressIndicator) {
+                progressIndicator.innerHTML = `<span>Question ${totalAnswered + 1}/15</span>`;
             }
+            
+            // Get level based on questions answered
+            const level = this.getCurrentLevel();
             
             // Update level indicator if it exists
-            if (this.levelIndicator) {
-                const level = this.player?.level || 'basic';
-                this.levelIndicator.textContent = level.charAt(0).toUpperCase() + level.slice(1);
+            const levelIndicator = document.getElementById('level-indicator');
+            if (levelIndicator) {
+                levelIndicator.textContent = level;
             }
             
-            // Update question counter if it exists
-            if (this.questionCounter) {
-                this.questionCounter.textContent = `${totalAnswered} of ${totalQuestions}`;
+            // Update progress bar if it exists
+            const progressBar = document.getElementById('progress-fill');
+            if (progressBar) {
+                const progressPercentage = (totalAnswered / 15) * 100;
+                progressBar.style.width = `${progressPercentage}%`;
             }
             
-            console.log(`Progress updated: ${totalAnswered}/${totalQuestions} questions answered`);
+            console.log(`Progress updated: ${totalAnswered}/15 questions, Level: ${level}`);
         } catch (error) {
-            console.error('Error in updateProgressDisplay:', error);
+            console.error('Error updating progress display:', error);
         }
     }
 
@@ -281,13 +454,24 @@ export class ExploratoryQuiz extends BaseQuiz {
                 randomizedScenarios: this.randomizedScenarios,
                 status: status,
                 scorePercentage: score,
-                questionsAnswered: this.player.questionHistory.length
+                questionsAnswered: this.player.questionHistory.length,
+                lastUpdated: new Date().toISOString()
             };
 
-            // Save progress
-            const quizUser = new QuizUser(username);
-            await quizUser.saveQuizProgress(this.quizName, progress);
-            console.log('Progress saved successfully');
+            // Save to localStorage first as a backup
+            const storageKey = `quiz_progress_${username}_${this.quizName}`;
+            localStorage.setItem(storageKey, JSON.stringify(progress));
+            console.log('Progress saved to localStorage as backup');
+
+            // Try saving to server
+            try {
+                const quizUser = new QuizUser(username);
+                await quizUser.saveQuizProgress(this.quizName, progress);
+                console.log('Progress saved successfully to server');
+            } catch (apiError) {
+                console.error('Error saving progress to server, using localStorage fallback:', apiError);
+                // Already saved to localStorage above, so just log the error
+            }
         } catch (error) {
             console.error('Error saving progress:', error);
         }
@@ -301,8 +485,36 @@ export class ExploratoryQuiz extends BaseQuiz {
                 return false;
             }
 
-            const quizUser = new QuizUser(username);
-            const progress = await quizUser.getQuizProgress(this.quizName);
+            // Try to get progress from API first
+            let progress = null;
+            let loadedFromAPI = false;
+            
+            try {
+                const quizUser = new QuizUser(username);
+                progress = await quizUser.getQuizProgress(this.quizName);
+                
+                if (progress) {
+                    console.log('Progress loaded from API successfully');
+                    loadedFromAPI = true;
+                }
+            } catch (apiError) {
+                console.warn('Failed to load progress from API, trying localStorage:', apiError);
+            }
+            
+            // If API failed, try localStorage
+            if (!loadedFromAPI) {
+                const storageKey = `quiz_progress_${username}_${this.quizName}`;
+                const savedData = localStorage.getItem(storageKey);
+                
+                if (savedData) {
+                    try {
+                        progress = JSON.parse(savedData);
+                        console.log('Progress loaded from localStorage successfully');
+                    } catch (parseError) {
+                        console.error('Failed to parse localStorage data:', parseError);
+                    }
+                }
+            }
 
             if (!progress) {
                 console.log('No saved progress found. Starting new game.');
@@ -383,12 +595,25 @@ export class ExploratoryQuiz extends BaseQuiz {
             this.initializeEventListeners();
             console.log('Event listeners initialized');
 
+            // Initialize UI
+            this.initializeUI();
+            console.log('UI initialized');
+
             // Load previous progress
-            const hasProgress = await this.loadProgress();
-            console.log('Progress loaded:', hasProgress);
-            
-            if (!hasProgress) {
-                // Reset player state if no valid progress exists
+            try {
+                const hasProgress = await this.loadProgress();
+                console.log('Progress loaded:', hasProgress);
+                
+                if (!hasProgress) {
+                    // Reset player state if no valid progress exists
+                    this.player.experience = 0;
+                    this.player.tools = [];
+                    this.player.currentScenario = 0;
+                    this.player.questionHistory = [];
+                }
+            } catch (progressError) {
+                console.error('Error loading progress:', progressError);
+                // Continue with a fresh state if loading progress fails
                 this.player.experience = 0;
                 this.player.tools = [];
                 this.player.currentScenario = 0;
@@ -425,6 +650,9 @@ export class ExploratoryQuiz extends BaseQuiz {
                 }
                 return;
             }
+            
+            // Update progress display
+            this.updateProgressDisplay();
             
             // Display the first scenario and start the timer
             const scenarioDisplayed = await this.displayScenario();
@@ -494,410 +722,397 @@ export class ExploratoryQuiz extends BaseQuiz {
         }
     }
 
-    displayScenario() {
+    async displayScenario() {
         try {
-            console.log('Displaying scenario');
-            
-            // Ensure required UI elements exist first
-            if (!this.ensureRequiredElementsExist()) {
-                throw new Error('Required UI elements could not be created');
+            // Ensure we have the scenario container
+            const scenarioContainer = document.getElementById('scenario-container');
+            if (!scenarioContainer) {
+                console.error('Scenario container not found');
+                return false;
             }
+
+            // Get the current level scenarios
+            console.log('About to get current scenarios');
+            let currentScenarios;
             
-            // Get total answered questions
-            const totalAnswered = this.player?.questionHistory?.length || 0;
-            console.log(`Total answered questions: ${totalAnswered}`);
-            
-            // Force initialization of randomized scenarios if needed
-            if (!this.randomizedScenarios || 
-                !this.randomizedScenarios.basic || 
-                this.randomizedScenarios.basic.length === 0) {
-                console.log('Scenarios not initialized, initializing now');
-                this.getCurrentScenarios();
-            }
-            
-            // Get the appropriate scenarios based on progress
-            const scenarios = this.getCurrentScenarios();
-            console.log(`Scenarios for current level: ${scenarios?.length || 0}`);
-            
-            if (!scenarios || scenarios.length === 0) {
-                throw new Error('No scenarios available for the current level');
-            }
-            
-            // Calculate current scenario index within the level
-            const scenarioIndex = totalAnswered % 5;
-            console.log(`Current scenario index: ${scenarioIndex}`);
-            
-            // Get current scenario
-            this.currentScenario = scenarios[scenarioIndex];
-            
-            if (!this.currentScenario) {
-                console.error(`Scenario not found at index ${scenarioIndex}. Available indexes: 0-${scenarios.length - 1}`);
+            try {
+                currentScenarios = this.getCurrentScenarios();
+            } catch (scenarioError) {
+                console.error('Failed to get current scenarios:', scenarioError);
                 
-                // Fall back to first scenario if available
-                if (scenarios.length > 0) {
-                    console.log('Falling back to first scenario in the level');
-                    this.currentScenario = scenarios[0];
+                // Emergency fallback if getCurrentScenarios fails
+                if (this.randomizedScenarios && 
+                    this.randomizedScenarios.basic && 
+                    this.randomizedScenarios.basic.length > 0) {
+                    currentScenarios = this.randomizedScenarios.basic;
+                } else if (this.basicScenarios && this.basicScenarios.length > 0) {
+                    currentScenarios = this.basicScenarios.slice(0, 5);
                 } else {
-                    throw new Error(`No scenarios available to display`);
+                    // Last resort fallback
+                    currentScenarios = [{
+                        id: 'fallback',
+                        title: 'Emergency Fallback Scenario',
+                        description: 'There was an error loading the scenarios. Please refresh the page.',
+                        options: [
+                            {
+                                text: 'Continue',
+                                outcome: 'Please refresh the page.',
+                                experience: 0
+                            }
+                        ]
+                    }];
                 }
             }
             
-            console.log(`Selected scenario: ${this.currentScenario.id}, title: ${this.currentScenario.title}`);
+            console.log(`Current level scenarios: ${currentScenarios.length}`);
             
-            // Update UI with current scenario
-            this.updateScenarioUI(this.currentScenario);
+            if (!currentScenarios || currentScenarios.length === 0) {
+                console.error('No scenarios available for the current level');
+                this.showError('No scenarios available. Please refresh the page.');
+                return false;
+            }
+
+            // Get current scenario index
+            const scenarioIndex = this.player.currentScenario || 0;
+            console.log(`Current scenario index: ${scenarioIndex}`);
             
-            // Update progress display
-            this.updateProgressDisplay();
+            if (scenarioIndex >= currentScenarios.length) {
+                console.error(`Invalid scenario index: ${scenarioIndex} (max: ${currentScenarios.length - 1})`);
+                this.player.currentScenario = 0; // Reset to first scenario if out of bounds
+            }
+
+            // Get the scenario for the current index
+            const currentScenario = currentScenarios[this.player.currentScenario];
+            console.log(`Selected scenario: ${currentScenario.id}, title: ${currentScenario.title}`);
             
-            console.log(`Displaying scenario: ${this.currentScenario.id} (${totalAnswered + 1}/15)`);
+            if (!currentScenario) {
+                console.error('Current scenario is undefined');
+                return false;
+            }
+
+            // Update the UI with the current scenario
+            this.updateScenarioUI(currentScenario);
+            
+            // Start the timer
+            this.initializeTimer();
+            
+            const totalAnswered = this.player.questionHistory.length;
+            console.log(`Displaying scenario: ${currentScenario.id} (${totalAnswered + 1}/15)`);
+            
             return true;
         } catch (error) {
-            console.error('Error in displayScenario:', error);
-            this.showError('An error occurred while loading the scenario. Please refresh and try again.');
+            console.error('Error displaying scenario:', error);
+            this.showError('An error occurred while displaying the scenario. Please try refreshing the page.');
             return false;
         }
     }
     
     updateScenarioUI(scenario) {
         try {
-            if (!scenario) {
-                throw new Error('Cannot update UI: No scenario provided');
-            }
+            console.log(`Updating UI with scenario: ${scenario.id}`);
             
-            // Update scenario title
+            // Get UI elements
             const titleElement = document.getElementById('scenario-title');
-            if (!titleElement) {
-                throw new Error('Scenario title element not found in the DOM');
-            }
-            titleElement.textContent = scenario.title || 'Untitled Scenario';
-            
-            // Update scenario description
             const descriptionElement = document.getElementById('scenario-description');
-            if (!descriptionElement) {
-                throw new Error('Scenario description element not found in the DOM');
-            }
-            descriptionElement.textContent = scenario.description || 'No description available.';
-            
-            // Update options
             const optionsContainer = document.getElementById('options-container');
-            if (!optionsContainer) {
-                throw new Error('Options container not found in the DOM');
+            
+            // Make sure elements exist
+            if (!titleElement || !descriptionElement || !optionsContainer) {
+                console.error('Required UI elements not found');
+                this.ensureRequiredElementsExist();
+                
+                // Try again with newly created elements
+                const retryTitle = document.getElementById('scenario-title');
+                const retryDescription = document.getElementById('scenario-description');
+                const retryOptions = document.getElementById('options-container');
+                
+                if (!retryTitle || !retryDescription || !retryOptions) {
+                    throw new Error('Failed to create required UI elements');
+                }
+                
+                // Continue with retry elements
+                titleElement = retryTitle;
+                descriptionElement = retryDescription;
+                optionsContainer = retryOptions;
             }
+            
+            // Update scenario title and description
+            titleElement.textContent = scenario.title || 'Untitled Scenario';
+            descriptionElement.textContent = scenario.description || 'No description available';
+            
+            // Clear existing options
             optionsContainer.innerHTML = '';
             
-            // Add options
-            if (scenario.options && scenario.options.length > 0) {
+            // Add scenario options
+            if (scenario.options && Array.isArray(scenario.options)) {
                 scenario.options.forEach((option, index) => {
-                    const optionDiv = document.createElement('div');
-                    optionDiv.className = 'option';
+                    const optionButton = document.createElement('button');
+                    optionButton.className = 'option-btn';
+                    optionButton.textContent = option.text || `Option ${index + 1}`;
+                    optionButton.setAttribute('data-index', index);
+                    optionButton.setAttribute('data-experience', option.experience || 0);
                     
-                    const radioInput = document.createElement('input');
-                    radioInput.type = 'radio';
-                    radioInput.name = 'option';
-                    radioInput.value = index;
-                    radioInput.id = `option${index}`;
-                    radioInput.setAttribute('tabindex', '0');
-                    radioInput.setAttribute('aria-label', option.text || `Option ${index + 1}`);
+                    // Add event listener
+                    optionButton.addEventListener('click', () => {
+                        this.handleAnswer(index);
+                    });
                     
-                    const label = document.createElement('label');
-                    label.setAttribute('for', `option${index}`);
-                    label.textContent = option.text || `Option ${index + 1}`;
-                    
-                    optionDiv.appendChild(radioInput);
-                    optionDiv.appendChild(label);
-                    optionsContainer.appendChild(optionDiv);
+                    optionsContainer.appendChild(optionButton);
                 });
             } else {
-                const noOptionsMessage = document.createElement('p');
-                noOptionsMessage.textContent = 'No options available for this scenario.';
-                noOptionsMessage.classList.add('no-options-message');
-                optionsContainer.appendChild(noOptionsMessage);
+                console.warn('No options available for scenario');
+                // Add a default option
+                const defaultButton = document.createElement('button');
+                defaultButton.className = 'option-btn';
+                defaultButton.textContent = 'Continue to next question';
+                defaultButton.setAttribute('data-index', 0);
+                defaultButton.setAttribute('data-experience', 0);
+                
+                defaultButton.addEventListener('click', () => {
+                    this.nextScenario();
+                });
+                
+                optionsContainer.appendChild(defaultButton);
             }
             
+            // Update progress display
+            this.updateProgressDisplay();
+            
+            // Initialize timer
+            this.initializeTimer();
+            
             console.log('Scenario UI updated successfully');
+            return true;
         } catch (error) {
-            console.error('Error in updateScenarioUI:', error);
-            this.showError('An error occurred while updating the scenario display.');
+            console.error('Error updating scenario UI:', error);
+            this.showError('An error occurred while updating the scenario. Please refresh the page.');
+            return false;
         }
     }
 
     isCorrectAnswer(answer) {
-        // Helper method to consistently determine if an answer is correct
+        // In exploratory quiz, answers with positive experience are considered correct
         if (!answer) return false;
         
-        // Handle different structures of answer data
+        // If answer is an object (from question history)
         if (typeof answer === 'object') {
-            // If it's an option object with isCorrect property
-            if (answer.isCorrect !== undefined) {
-                return answer.isCorrect === true;
-            }
+            return answer.experience > 0;
+        }
+        
+        // If answer is an option index (from current scenario)
+        if (typeof answer === 'number') {
+            const currentScenarios = this.getCurrentScenarios();
+            const currentScenario = currentScenarios[this.player.currentScenario];
             
-            // If it has experience property (positive exp = correct)
-            if (answer.experience !== undefined) {
-                return answer.experience > 0;
-            }
-            
-            // If it's a history record with selectedOption
-            if (answer.selectedOption !== undefined && answer.scenario && answer.scenario.options) {
-                const option = answer.scenario.options[answer.selectedOption];
-                return option && (option.isCorrect === true || option.experience > 0);
+            if (currentScenario && currentScenario.options && currentScenario.options[answer]) {
+                return currentScenario.options[answer].experience > 0;
             }
         }
         
-        // Default to false if we can't determine
         return false;
     }
 
     handleAnswer(optionIndex) {
         try {
-            console.log(`Handle answer called with option index: ${optionIndex}`);
+            console.log(`Answer selected: option ${optionIndex}`);
             
-            // If optionIndex is not provided, try to get it from the selected radio button
-            if (optionIndex === undefined || optionIndex === null) {
-                const selectedOption = document.querySelector('input[name="option"]:checked');
-                if (!selectedOption) {
-                    throw new Error('No option selected');
-                }
-                optionIndex = parseInt(selectedOption.value);
+            // Disable all option buttons to prevent multiple selections
+            const optionButtons = document.querySelectorAll('.option-btn');
+            optionButtons.forEach(button => {
+                button.disabled = true;
+                button.classList.add('disabled');
+            });
+            
+            // Stop the timer
+            if (this.questionTimer) {
+                clearInterval(this.questionTimer);
+                this.questionTimer = null;
             }
             
-            // Validate current scenario
-            if (!this.currentScenario) {
-                console.error('Current scenario not found. This might indicate an issue with scenario loading.');
-                
-                // Try to recover by attempting to load the current scenario again
-                const totalAnswered = this.player?.questionHistory?.length || 0;
-                const scenarios = this.getCurrentScenarios();
-                if (!scenarios || scenarios.length === 0) {
-                    throw new Error('No scenarios available for the current level');
-                }
-                
-                const scenarioIndex = totalAnswered % 5;
-                this.currentScenario = scenarios[scenarioIndex];
-                
-                if (!this.currentScenario) {
-                    throw new Error(`Failed to recover. Scenario not found at index ${scenarioIndex}`);
-                }
-                
-                console.log('Successfully recovered current scenario:', this.currentScenario);
+            // Get current scenario
+            const currentScenarios = this.getCurrentScenarios();
+            const currentScenario = currentScenarios[this.player.currentScenario];
+            
+            if (!currentScenario) {
+                console.error('Current scenario is undefined');
+                this.showError('An error occurred processing your answer. Please try refreshing the page.');
+                return;
             }
             
-            // Get selected option
-            const selectedOption = this.currentScenario.options[optionIndex];
+            // Get the selected option
+            const selectedOption = currentScenario.options[optionIndex];
+            
             if (!selectedOption) {
-                throw new Error(`Invalid option index: ${optionIndex}`);
+                console.error(`Option ${optionIndex} not found in current scenario`);
+                this.showError('An error occurred processing your answer. Please try refreshing the page.');
+                return;
             }
             
             // Record the answer
-            const answer = {
-                scenario: this.currentScenario, // Store the entire scenario for later review
-                scenarioId: this.currentScenario.id,
-                selectedAnswer: selectedOption, // Store the entire selected option
-                selectedOption: optionIndex,
-                timestamp: new Date().toISOString(),
-                experienceGained: selectedOption.experience || 0
+            const questionRecord = {
+                scenario: currentScenario,
+                selectedAnswer: selectedOption,
+                timestamp: new Date().toISOString()
             };
             
             // Add to question history
-            if (!this.player.questionHistory) {
-                this.player.questionHistory = [];
-            }
-            this.player.questionHistory.push(answer);
+            this.player.questionHistory.push(questionRecord);
             
             // Update player experience
-            this.player.experience += answer.experienceGained;
+            this.player.experience += selectedOption.experience;
             
             // Save progress
             this.saveProgress();
             
-            // Show outcome of the selected answer
-            this.displayOutcome(selectedOption);
-            
-            // Check if we should move to the next level or end the game
-            const totalAnswered = this.player.questionHistory.length;
-            
-            if (totalAnswered >= 15) {
-                // All questions answered, end the game
-                console.log('All 15 questions answered, ending game');
-                setTimeout(() => this.endGame(), 2000);
-                return;
-            }
-            
-            // Prepare for next question
-            console.log(`Total questions answered: ${totalAnswered}`);
-            setTimeout(() => this.displayScenario(), 2000);
+            // Display outcome
+            this.displayOutcome(selectedOption, currentScenario);
             
         } catch (error) {
-            console.error('Error in handleAnswer:', error);
-            this.showError('An error occurred while processing your answer. Please try selecting an option again.');
+            console.error('Error handling answer:', error);
+            this.showError('An error occurred processing your answer. Please try refreshing the page.');
         }
     }
     
-    displayOutcome(option) {
+    displayOutcome(selectedOption, scenario) {
         try {
-            if (!option) {
-                throw new Error('Cannot display outcome: No option provided');
-            }
+            console.log('Displaying outcome');
             
+            // Hide game screen and show outcome screen
+            const gameScreen = document.getElementById('game-screen');
             const outcomeScreen = document.getElementById('outcome-screen');
-            const outcomeMessage = document.getElementById('outcome-text');
-            const experienceGained = document.getElementById('xp-gained');
-            const toolGained = document.getElementById('tool-gained');
-            const continueButton = document.getElementById('continue-btn');
             
-            if (!outcomeScreen || !outcomeMessage || !experienceGained || !toolGained || !continueButton) {
-                throw new Error('Outcome screen elements not found in the DOM');
+            if (gameScreen) gameScreen.classList.add('hidden');
+            if (outcomeScreen) {
+                outcomeScreen.classList.remove('hidden');
+                outcomeScreen.style.display = 'block';
             }
             
-            // Set outcome message
-            outcomeMessage.textContent = option.outcome || 'You selected an option.';
+            // Get outcome elements
+            const outcomeTitle = document.getElementById('outcome-title');
+            const outcomeMessage = document.getElementById('outcome-message');
+            const xpAmount = document.getElementById('xp-amount');
+            const continueBtn = document.getElementById('continue-btn');
             
-            // Set experience gained
-            const expGained = option.experience || 0;
-            experienceGained.textContent = `Experience gained: ${expGained}`;
-            
-            // Highlight gained experience based on amount
-            if (expGained > 10) {
-                experienceGained.classList.add('high-experience');
-            } else if (expGained > 5) {
-                experienceGained.classList.add('medium-experience');
-            } else {
-                experienceGained.classList.add('low-experience');
+            // Check if elements exist
+            if (!outcomeTitle || !outcomeMessage || !xpAmount || !continueBtn) {
+                console.error('Outcome screen elements not found');
+                this.showError('An error occurred displaying the outcome. Please try refreshing the page.');
+                this.nextScenario(); // Force continue to next scenario
+                return;
             }
             
-            // Set tool gained
-            toolGained.textContent = `Tool gained: ${option.tool || 'None'}`;
+            // Set outcome content
+            const isCorrect = this.isCorrectAnswer(selectedOption);
+            outcomeTitle.textContent = isCorrect ? 'Good Choice!' : 'Consider This...';
+            outcomeMessage.textContent = selectedOption.outcome || 'No feedback available for this choice.';
             
-            // Show outcome screen
-            outcomeScreen.classList.remove('hidden');
-            document.getElementById('game-screen').classList.add('hidden');
+            // Set XP amount with color based on whether it's positive or negative
+            const xp = selectedOption.experience || 0;
+            xpAmount.textContent = xp >= 0 ? `+${xp}` : `${xp}`;
+            xpAmount.className = xp > 0 ? 'positive-xp' : (xp < 0 ? 'negative-xp' : '');
             
-            // Set continue button action
-            continueButton.onclick = () => {
-                outcomeScreen.classList.add('hidden');
-                document.getElementById('game-screen').classList.remove('hidden');
-                
-                // Remove experience highlight classes
-                experienceGained.classList.remove('high-experience', 'medium-experience', 'low-experience');
-                
-                // Display next scenario (this will be called by handleAnswer after timeout)
-            };
+            // Add event listener to continue button
+            continueBtn.addEventListener('click', () => {
+                this.nextScenario();
+            }, { once: true }); // Use once:true to prevent multiple event bindings
             
             console.log('Outcome displayed successfully');
         } catch (error) {
-            console.error('Error in displayOutcome:', error);
-            this.showError('An error occurred while displaying the outcome.');
-            
-            // Try to recover by showing the next scenario
-            setTimeout(() => this.displayScenario(), 2000);
+            console.error('Error displaying outcome:', error);
+            this.showError('An error occurred displaying the outcome. Please try refreshing the page.');
+            setTimeout(() => this.nextScenario(), 2000); // Force continue after error
         }
     }
 
     initializeTimer() {
+        try {
             // Clear any existing timer
             if (this.questionTimer) {
                 clearInterval(this.questionTimer);
                 this.questionTimer = null;
-        }
-
-        // Set default timer value if not set
-        if (!this.timePerQuestion) {
-            this.timePerQuestion = 30;
-            console.log('[Quiz] Using default timer value:', this.timePerQuestion);
-        }
-
-        // Reset remaining time
-        this.remainingTime = this.timePerQuestion;
-        this.questionStartTime = Date.now();
-
-        // Update timer display
-        const timerContainer = document.getElementById('timer-container');
-        if (timerContainer) {
-            timerContainer.textContent = `Time remaining: ${this.remainingTime}s`;
-        }
-
-        // Start the countdown
-        this.questionTimer = setInterval(() => {
-            this.remainingTime--;
-            
-            // Update timer display
-            if (timerContainer) {
-                timerContainer.textContent = `Time remaining: ${this.remainingTime}s`;
-                
-                // Add warning class when time is running low
-                if (this.remainingTime <= 5) {
-                    timerContainer.classList.add('timer-warning');
-                } else {
-                    timerContainer.classList.remove('timer-warning');
-                }
             }
-
-            // Check if time is up
-            if (this.remainingTime <= 0) {
+            
+            // Skip if timer is disabled
+            if (!this.timerEnabled) {
+                console.log('Timer is disabled, skipping initialization');
+                return;
+            }
+            
+            // Get timer element
+            const timerElement = document.getElementById('timer-value');
+            if (!timerElement) {
+                console.warn('Timer element not found, skipping timer initialization');
+                return;
+            }
+            
+            // Set initial time
+            let timeLeft = this.questionTimeLimit;
+            timerElement.textContent = timeLeft;
+            
+            // Start timer
+            this.questionTimer = setInterval(() => {
+                timeLeft--;
+                
+                // Update timer display
+                if (timerElement) {
+                    timerElement.textContent = timeLeft;
+                    
+                    // Change color when time is low
+                    if (timeLeft <= 10) {
+                        timerElement.classList.add('timer-warning');
+                    }
+                }
+                
+                // Handle time up
+                if (timeLeft <= 0) {
+                    clearInterval(this.questionTimer);
+                    this.handleTimeUp();
+                }
+            }, 1000);
+            
+            console.log(`Timer initialized with ${this.questionTimeLimit} seconds`);
+        } catch (error) {
+            console.error('Error initializing timer:', error);
+            // Continue without timer if there's an error
+        }
+    }
+    
+    handleTimeUp() {
+        try {
+            console.log('Time up - automatically selecting an answer');
+            
+            // Clear timer
+            if (this.questionTimer) {
                 clearInterval(this.questionTimer);
                 this.questionTimer = null;
-                this.handleTimeUp();
             }
-        }, 1000);
-    }
-
-    // Handle time up situation
-    handleTimeUp() {
-        console.log('Time up! Auto-submitting answer');
-        
-        try {
-            // Get total answered questions
-            const totalAnswered = this.player?.questionHistory?.length || 0;
-            
-            // Get the appropriate scenarios based on progress
-            const scenarios = this.getCurrentScenarios();
-            if (!scenarios || !Array.isArray(scenarios) || scenarios.length === 0) {
-                console.error('Invalid state in handleTimeUp: No scenarios available');
-                return;
-            }
-            
-            // Calculate current scenario index within the level (same as in displayScenario)
-            const scenarioIndex = totalAnswered % 5;
-            console.log(`Current scenario index in handleTimeUp: ${scenarioIndex}`);
             
             // Get current scenario
-            const scenario = scenarios[scenarioIndex];
-            if (!scenario) {
-                console.error(`No current scenario found in handleTimeUp at index ${scenarioIndex}`);
+            const currentScenarios = this.getCurrentScenarios();
+            const currentScenario = currentScenarios[this.player.currentScenario];
+            
+            if (!currentScenario || !currentScenario.options || currentScenario.options.length === 0) {
+                console.error('Cannot handle time up - invalid scenario or options');
+                this.nextScenario(); // Move to next scenario
                 return;
             }
             
-            console.log(`Handling timeout for scenario: ${scenario.id}, title: ${scenario.title}`);
+            // Find a neutral option (experience = 0) if available
+            let neutralOptionIndex = currentScenario.options.findIndex(opt => opt.experience === 0);
             
-            // Create a timeout answer
-            const timeoutAnswer = {
-                text: 'Time ran out!',
-                experience: 0,
-                isCorrect: false,
-                isTimeout: true,
-                outcome: 'You did not answer in time.'
-            };
+            // If no neutral option, select the first option
+            if (neutralOptionIndex === -1) {
+                neutralOptionIndex = 0;
+            }
             
-            // Update player state
-            this.player.questionHistory.push({
-                scenario: scenario,
-                scenarioId: scenario.id,
-                selectedAnswer: timeoutAnswer,
-                isCorrect: false,
-                isTimeout: true,
-                timestamp: new Date().toISOString()
-            });
+            // Handle the selected answer
+            this.handleAnswer(neutralOptionIndex);
             
-            // Save progress
-            this.saveProgress().catch(error => {
-                console.error('Failed to save timeout progress:', error);
-            });
-            
-            // Display the timeout outcome
-            this.displayOutcome(timeoutAnswer);
+            // Show the time-up message
+            this.showError('Time is up! An answer has been automatically selected.');
         } catch (error) {
             console.error('Error handling time up:', error);
+            this.nextScenario(); // Move to next scenario to avoid getting stuck
         }
     }
 
@@ -941,25 +1156,69 @@ export class ExploratoryQuiz extends BaseQuiz {
             const totalAnswered = this.player?.questionHistory?.length || 0;
             
             console.log(`Getting scenarios for total answered: ${totalAnswered}`);
-            console.log(`Basic scenarios count: ${this.basicScenarios?.length}`);
-            console.log(`Intermediate scenarios count: ${this.intermediateScenarios?.length}`);
-            console.log(`Advanced scenarios count: ${this.advancedScenarios?.length}`);
             
-            // Ensure scenario arrays exist and have content
-            if (!Array.isArray(this.basicScenarios) || this.basicScenarios.length === 0) {
-                console.error('Basic scenarios array is empty or undefined');
-                throw new Error('Basic scenarios not properly initialized');
+            // Safety check and initialization for scenario arrays
+            if (!this.basicScenarios || !Array.isArray(this.basicScenarios) || this.basicScenarios.length === 0) {
+                console.warn('Basic scenarios not properly initialized, checking if they exist in the window object');
+                // Try to get scenarios from the window object (might be initialized elsewhere)
+                if (window.allScenarios && window.allScenarios.basic) {
+                    this.basicScenarios = window.allScenarios.basic;
+                } else {
+                    // Create a minimal fallback
+                    console.error('Basic scenarios not available - creating fallback');
+                    this.basicScenarios = [{
+                        id: 'basic-fallback',
+                        title: 'Basic Exploratory Testing',
+                        description: 'Fallback scenario for basic level testing.',
+                        options: [
+                            { text: 'Plan your exploratory testing session', outcome: 'This is a good approach.', experience: 5 },
+                            { text: 'Start testing without planning', outcome: 'Planning first is usually better.', experience: 0 }
+                        ]
+                    }];
+                }
             }
             
-            if (!Array.isArray(this.intermediateScenarios) || this.intermediateScenarios.length === 0) {
-                console.error('Intermediate scenarios array is empty or undefined');
-                throw new Error('Intermediate scenarios not properly initialized');
+            if (!this.intermediateScenarios || !Array.isArray(this.intermediateScenarios) || this.intermediateScenarios.length === 0) {
+                console.warn('Intermediate scenarios not properly initialized, checking if they exist in the window object');
+                // Try to get scenarios from the window object
+                if (window.allScenarios && window.allScenarios.intermediate) {
+                    this.intermediateScenarios = window.allScenarios.intermediate;
+                } else {
+                    // Create a minimal fallback
+                    console.error('Intermediate scenarios not available - creating fallback');
+                    this.intermediateScenarios = [{
+                        id: 'intermediate-fallback',
+                        title: 'Intermediate Exploratory Testing',
+                        description: 'Fallback scenario for intermediate level testing.',
+                        options: [
+                            { text: 'Document your test findings thoroughly', outcome: 'Good documentation is important.', experience: 5 },
+                            { text: 'Only document major issues', outcome: 'Thorough documentation is better.', experience: 0 }
+                        ]
+                    }];
+                }
             }
             
-            if (!Array.isArray(this.advancedScenarios) || this.advancedScenarios.length === 0) {
-                console.error('Advanced scenarios array is empty or undefined');
-                throw new Error('Advanced scenarios not properly initialized');
+            if (!this.advancedScenarios || !Array.isArray(this.advancedScenarios) || this.advancedScenarios.length === 0) {
+                console.warn('Advanced scenarios not properly initialized, checking if they exist in the window object');
+                // Try to get scenarios from the window object
+                if (window.allScenarios && window.allScenarios.advanced) {
+                    this.advancedScenarios = window.allScenarios.advanced;
+                } else {
+                    // Create a minimal fallback
+                    console.error('Advanced scenarios not available - creating fallback');
+                    this.advancedScenarios = [{
+                        id: 'advanced-fallback',
+                        title: 'Advanced Exploratory Testing',
+                        description: 'Fallback scenario for advanced level testing.',
+                        options: [
+                            { text: 'Combine exploratory and scripted testing', outcome: 'This balanced approach is effective.', experience: 5 },
+                            { text: 'Focus only on exploratory testing', outcome: 'A combined approach is usually better.', experience: 0 }
+                        ]
+                    }];
+                }
             }
+            
+            console.log(`Scenario counts - Basic: ${this.basicScenarios.length}, Intermediate: ${this.intermediateScenarios.length}, Advanced: ${this.advancedScenarios.length}`);
             
             // If we don't have the randomized sets yet, create them
             if (!this.randomizedScenarios || 
@@ -970,6 +1229,11 @@ export class ExploratoryQuiz extends BaseQuiz {
                 
                 // Function to safely get randomized scenarios
                 const getRandomScenarios = (scenarios, count) => {
+                    if (!scenarios || scenarios.length === 0) {
+                        console.error('Cannot randomize empty scenario array');
+                        return [];
+                    }
+                    
                     // Make a copy of the scenarios array
                     const copy = [...scenarios];
                     
@@ -980,7 +1244,18 @@ export class ExploratoryQuiz extends BaseQuiz {
                     }
                     
                     // Return the first 'count' elements or all if fewer
-                    return copy.slice(0, Math.min(count, copy.length));
+                    const selected = copy.slice(0, Math.min(count, copy.length));
+                    
+                    // If we don't have enough, pad with duplicates
+                    if (selected.length < count) {
+                        console.warn(`Not enough scenarios available (${selected.length}/${count}), padding with duplicates`);
+                        const needed = count - selected.length;
+                        for (let i = 0; i < needed; i++) {
+                            selected.push(selected[i % selected.length]); // Repeat from beginning
+                        }
+                    }
+                    
+                    return selected;
                 };
                 
                 // Create randomized scenario sets
@@ -990,8 +1265,7 @@ export class ExploratoryQuiz extends BaseQuiz {
                     advanced: getRandomScenarios(this.advancedScenarios, 5)
                 };
                 
-                console.log('Randomized scenarios created successfully');
-                console.log(`Basic: ${this.randomizedScenarios.basic.length}, Intermediate: ${this.randomizedScenarios.intermediate.length}, Advanced: ${this.randomizedScenarios.advanced.length}`);
+                console.log('Created randomized scenarios:', this.randomizedScenarios);
             }
             
             // Return the appropriate scenario set based on progress
@@ -1007,26 +1281,30 @@ export class ExploratoryQuiz extends BaseQuiz {
             }
         } catch (error) {
             console.error('Error in getCurrentScenarios:', error);
+            
             // Emergency fallback - return at least something
-            return this.basicScenarios && this.basicScenarios.length > 0 ? 
-                   this.basicScenarios.slice(0, 5) : 
-                   [{
-                       id: 'fallback',
-                       title: 'Emergency Fallback Scenario',
-                       description: 'There was an error loading the proper scenarios. Please refresh the page and try again.',
-                       options: [
-                           {
-                               text: 'Continue',
-                               outcome: 'This is a fallback option.',
-                               experience: 5
-                           },
-                           {
-                               text: 'Try again',
-                               outcome: 'Please refresh the page.',
-                               experience: 5
-                           }
-                       ]
-                   }];
+            const fallbackScenarios = [];
+            for (let i = 0; i < 5; i++) {
+                fallbackScenarios.push({
+                    id: `fallback-${i}`,
+                    title: `Exploratory Testing Scenario ${i + 1}`,
+                    description: 'This is a fallback scenario. The original scenarios could not be loaded.',
+                    options: [
+                        {
+                            text: 'Choose the most thorough approach',
+                            outcome: 'This is generally the best option.',
+                            experience: 5
+                        },
+                        {
+                            text: 'Choose a quicker approach',
+                            outcome: 'Sometimes thoroughness is more important than speed.',
+                            experience: 0
+                        }
+                    ]
+                });
+            }
+            
+            return fallbackScenarios;
         }
     }
 
@@ -1164,111 +1442,122 @@ export class ExploratoryQuiz extends BaseQuiz {
 
     // Implement the endGame method that was missing
     async endGame(failed = false) {
-        console.log('End game called with failed =', failed);
-        
         try {
-            // Clear any timers
+            console.log(`Ending game. Failed: ${failed}`);
+            
+            // Clear any running timer
             if (this.questionTimer) {
                 clearInterval(this.questionTimer);
                 this.questionTimer = null;
             }
             
-            // Show the end screen and hide others
-            if (this.gameScreen) this.gameScreen.classList.add('hidden');
-            if (this.outcomeScreen) this.outcomeScreen.classList.add('hidden');
-            if (this.endScreen) {
-                this.endScreen.classList.remove('hidden');
-                console.log('End screen shown');
-            } else {
-                console.error('End screen element not found');
+            // Hide game and outcome screens
+            const gameScreen = document.getElementById('game-screen');
+            const outcomeScreen = document.getElementById('outcome-screen');
+            const endScreen = document.getElementById('end-screen');
+            
+            if (gameScreen) gameScreen.classList.add('hidden');
+            if (outcomeScreen) outcomeScreen.classList.add('hidden');
+            if (endScreen) {
+                endScreen.classList.remove('hidden');
+                endScreen.style.display = 'block';
             }
             
-            // Calculate score percentage
-            const correctAnswers = this.player.questionHistory.filter(q => this.isCorrectAnswer(q.selectedAnswer)).length;
-            const scorePercentage = Math.round((correctAnswers / 15) * 100);
-            const isPassed = scorePercentage >= (this.passPercentage || 70);
-            
-            // Determine final status
-            const finalStatus = failed ? 'failed' : (isPassed ? 'passed' : 'failed');
+            // Calculate score
+            const answeredCount = this.player.questionHistory.length; 
+            const correctCount = this.player.questionHistory.filter(q => this.isCorrectAnswer(q.selectedAnswer)).length;
+            const scorePercentage = Math.round((correctCount / Math.max(answeredCount, 1)) * 100);
             
             // Update final score display
             const finalScoreElement = document.getElementById('final-score');
             if (finalScoreElement) {
-                finalScoreElement.textContent = `Final Score: ${scorePercentage}%`;
+                finalScoreElement.textContent = `${scorePercentage}%`;
             }
             
-            // Update performance summary based on thresholds
-            const performanceSummary = document.getElementById('performance-summary');
-            if (performanceSummary) {
-                const thresholds = this.performanceThresholds || [
-                    { threshold: 90, message: '🏆 Outstanding! You\'re a testing mindset expert!' },
-                    { threshold: 80, message: '👏 Great job! You\'ve shown strong testing instincts!' },
-                    { threshold: 70, message: '👍 Good work! You\'ve passed the quiz!' },
-                    { threshold: 0, message: '📚 Consider reviewing testing mindset best practices and try again!' }
-                ];
-                
-                const threshold = thresholds.find(t => scorePercentage >= t.threshold) || thresholds[thresholds.length - 1];
-                performanceSummary.textContent = threshold.message;
+            // Update performance message
+            const performanceMessage = document.getElementById('performance-message');
+            if (performanceMessage) {
+                if (scorePercentage >= 90) {
+                    performanceMessage.textContent = '🏆 Outstanding! You\'re an exploratory testing expert!';
+                } else if (scorePercentage >= 80) {
+                    performanceMessage.textContent = '👏 Great job! You\'ve shown strong exploratory testing skills!';
+                } else if (scorePercentage >= 70) {
+                    performanceMessage.textContent = '👍 Good work! You\'ve passed the quiz!';
+                } else {
+                    performanceMessage.textContent = '📚 Consider reviewing exploratory testing best practices and try again!';
+                }
             }
             
-            // Generate question review
-            this.displayQuestionReview();
+            // Generate recommendations
+            this.generateRecommendations();
             
-            // Generate personalized recommendations
-        this.generateRecommendations();
-
-            // Save final progress
+            // Add event listener to restart button
+            const restartButton = document.getElementById('restart-btn');
+            if (restartButton) {
+                restartButton.addEventListener('click', () => {
+                    this.restartQuiz();
+                });
+            }
+            
+            // Final save with completed status
             try {
+                const status = scorePercentage >= this.passPercentage ? 'passed' : 'failed';
                 const username = localStorage.getItem('username');
+                
                 if (username) {
                     const quizUser = new QuizUser(username);
-                    await quizUser.updateQuizScore(
-                        this.quizName,
-                        scorePercentage,
-                        this.player.experience,
-                        this.player.tools,
-                        this.player.questionHistory,
-                        15, // Always 15 questions completed
-                        finalStatus
-                    );
-                    console.log('Final quiz score saved:', scorePercentage, 'status:', finalStatus);
+                    await quizUser.updateQuizScore(this.quizName, scorePercentage, this.player.experience, this.player.tools, this.player.questionHistory, answeredCount, status);
                 }
-        } catch (error) {
-                console.error('Failed to save final quiz score:', error);
+            } catch (saveError) {
+                console.error('Error saving final quiz result:', saveError);
             }
+            
+            console.log('Game ended successfully');
         } catch (error) {
-            console.error('Error in endGame:', error);
-            this.showError('An error occurred showing the results. Please try again.');
+            console.error('Error ending game:', error);
+            this.showError('An error occurred while finishing the quiz. Your progress has been saved, but the results may not be displayed correctly.');
         }
     }
     
-    // Helper method to display question review in the end screen
-    displayQuestionReview() {
-        const reviewList = document.getElementById('question-review');
-        if (!reviewList) return;
-        
-        let reviewHTML = '';
-        this.player.questionHistory.forEach((record, index) => {
-            const isCorrect = this.isCorrectAnswer(record.selectedAnswer);
-            const scenario = record.scenario;
+    restartQuiz() {
+        try {
+            console.log('Restarting quiz');
             
-            reviewHTML += `
-                <div class="review-item ${isCorrect ? 'correct' : 'incorrect'}">
-                    <div class="review-header">
-                        <span class="review-number">${index + 1}</span>
-                        <span class="review-title">${scenario.title || 'Question'}</span>
-                        <span class="review-result">${isCorrect ? '✓' : '✗'}</span>
-                    </div>
-                    <div class="review-detail">
-                        <p><strong>Scenario:</strong> ${scenario.description || ''}</p>
-                        <p><strong>Your Answer:</strong> ${record.selectedAnswer.text || ''}</p>
-                        <p><strong>Outcome:</strong> ${record.selectedAnswer.outcome || ''}</p>
-                    </div>
-                </div>
-            `;
-        });
-        
-        reviewList.innerHTML = reviewHTML;
+            // Clear player data
+            this.player = {
+                name: localStorage.getItem('username') || '',
+                experience: 0,
+                tools: [],
+                currentScenario: 0,
+                questionHistory: [],
+                level: 'basic'
+            };
+            
+            // Clear randomized scenarios to generate new ones
+            this.randomizedScenarios = null;
+            
+            // Reset UI
+            const gameScreen = document.getElementById('game-screen');
+            const outcomeScreen = document.getElementById('outcome-screen');
+            const endScreen = document.getElementById('end-screen');
+            
+            if (endScreen) endScreen.classList.add('hidden');
+            if (outcomeScreen) outcomeScreen.classList.add('hidden');
+            if (gameScreen) gameScreen.classList.remove('hidden');
+            
+            // Start the game again
+            this.startGame();
+            
+            console.log('Quiz restarted successfully');
+        } catch (error) {
+            console.error('Error restarting quiz:', error);
+            this.showError('An error occurred while restarting the quiz. Please refresh the page.');
+            
+            // Force reload as last resort
+            setTimeout(() => {
+                window.location.reload();
+            }, 3000);
+        }
     }
 
     checkLevelTransition() {
@@ -1357,27 +1646,120 @@ export class ExploratoryQuiz extends BaseQuiz {
     }
 
     // Add the missing nextScenario method
-    nextScenario() {
+    async nextScenario() {
         try {
             console.log('Moving to next scenario');
             
-            // Check if we should end the game first
-            if (this.player.questionHistory.length >= 15) {
-                console.log('All questions answered, ending game');
+            // Clear the timer if it exists
+            if (this.questionTimer) {
+                clearInterval(this.questionTimer);
+                this.questionTimer = null;
+                console.log('Timer cleared in nextScenario');
+            }
+            
+            const totalAnswered = this.player.questionHistory.length;
+            
+            // Check if we should end the game (15 questions answered)
+            if (totalAnswered >= 15) {
+                console.log('All 15 questions answered, ending game');
                 this.endGame();
                 return;
             }
             
-            // Make sure outcome screen is hidden
-            const outcomeScreen = document.getElementById('outcome-screen');
-            if (outcomeScreen) {
-                outcomeScreen.classList.add('hidden');
+            // Check if we need to transition to a new level
+            const currentLevel = Math.floor((totalAnswered - 1) / 5); // 0-based (0, 1, 2)
+            const nextLevel = Math.floor(totalAnswered / 5);  // 0-based (0, 1, 2)
+            
+            // If we're transitioning to a new level, show transition screen
+            if (currentLevel !== nextLevel && totalAnswered > 0) {
+                console.log(`Transitioning from level ${currentLevel} to ${nextLevel}`);
+                
+                // Get level names
+                const levelNames = ['Basic', 'Intermediate', 'Advanced'];
+                const nextLevelName = levelNames[nextLevel] || 'Advanced';
+                
+                // Display transition message
+                this.showLevelTransition(nextLevelName);
+                
+                // Set a delay before continuing to the next question
+                setTimeout(() => {
+                    this.hideLevelTransition();
+                    this.continueToNextScenario();
+                }, 3000); // 3 second delay
+                
+                return;
             }
             
-            // Make sure game screen is visible
+            // If no transition needed, continue directly
+            this.continueToNextScenario();
+        } catch (error) {
+            console.error('Error in nextScenario:', error);
+            this.showError('An error occurred while loading the next scenario. Please try again.');
+        }
+    }
+    
+    showLevelTransition(levelName) {
+        try {
+            const transitionContainer = document.getElementById('level-transition-container');
+            if (!transitionContainer) {
+                console.warn('Level transition container not found');
+                return;
+            }
+            
+            transitionContainer.innerHTML = `
+                <div class="level-transition">
+                    <h2>Level Up!</h2>
+                    <p>Moving to ${levelName} Level</p>
+                    <div class="transition-progress"></div>
+                </div>
+            `;
+            
+            transitionContainer.classList.add('active');
+            
+            // Hide other screens
             const gameScreen = document.getElementById('game-screen');
+            const outcomeScreen = document.getElementById('outcome-screen');
+            if (gameScreen) gameScreen.classList.add('hidden');
+            if (outcomeScreen) outcomeScreen.classList.add('hidden');
+        } catch (error) {
+            console.error('Error showing level transition:', error);
+        }
+    }
+    
+    hideLevelTransition() {
+        try {
+            const transitionContainer = document.getElementById('level-transition-container');
+            if (transitionContainer) {
+                transitionContainer.classList.remove('active');
+            }
+        } catch (error) {
+            console.error('Error hiding level transition:', error);
+        }
+    }
+    
+    continueToNextScenario() {
+        try {
+            // Increment current scenario index
+            // This needs to wrap around to 0 when we reach the end of a level (5 scenarios)
+            const currentTotal = this.player.questionHistory.length;
+            this.player.currentScenario = currentTotal % 5;
+            
+            console.log(`Incremented to scenario: ${this.player.currentScenario}`);
+            
+            // Hide outcome screen and show game screen
+            const outcomeScreen = document.getElementById('outcome-screen');
+            const gameScreen = document.getElementById('game-screen');
+            
+            if (outcomeScreen) {
+                outcomeScreen.classList.add('hidden');
+                outcomeScreen.style.display = 'none';
+                console.log('Hidden outcome screen');
+            }
+            
             if (gameScreen) {
                 gameScreen.classList.remove('hidden');
+                gameScreen.style.display = 'block';
+                console.log('Shown game screen');
             }
             
             // Display the next scenario
@@ -1385,14 +1767,8 @@ export class ExploratoryQuiz extends BaseQuiz {
             
             console.log('Next scenario displayed');
         } catch (error) {
-            console.error('Error in nextScenario:', error);
+            console.error('Error in continueToNextScenario:', error);
             this.showError('An error occurred while loading the next scenario. Please try again.');
         }
     }
-}
-
-// Initialize quiz when the page loads
-document.addEventListener('DOMContentLoaded', () => {
-    const quiz = new ExploratoryQuiz();
-    quiz.startGame();
-}); 
+} 
