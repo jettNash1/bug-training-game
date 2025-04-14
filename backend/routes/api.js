@@ -42,4 +42,36 @@ router.get('/guide-settings/:quizName', async (req, res) => {
             message: 'Failed to fetch guide settings'
         });
     }
+});
+
+// Get all guide settings at once for frontend
+router.get('/guide-settings', async (req, res) => {
+    try {
+        console.log(`[API] Fetching all guide settings`);
+        
+        // Get guide settings from database
+        const settings = await Setting.findOne({ key: 'guideSettings' });
+        
+        if (!settings || !settings.value) {
+            console.log(`[API] No guide settings found in database`);
+            return res.json({
+                success: true,
+                data: {}
+            });
+        }
+        
+        console.log(`[API] Found guide settings for ${Object.keys(settings.value).length} quizzes`);
+        
+        // Return all guide settings
+        res.json({
+            success: true,
+            data: settings.value
+        });
+    } catch (error) {
+        console.error(`[API] Error fetching all guide settings`, error);
+        res.status(500).json({
+            success: false,
+            message: 'Failed to fetch guide settings'
+        });
+    }
 }); 

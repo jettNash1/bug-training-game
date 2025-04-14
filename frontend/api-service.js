@@ -1163,9 +1163,9 @@ export class APIService {
 
     async getUserData() {
         try {
-            console.log('Fetching user data from:', `${this.baseUrl}/users/data`);
+            console.log('Fetching user data from:', `${this.baseUrl}/users/data?includeQuizDetails=true`);
             
-            const data = await this.fetchWithAuth(`${this.baseUrl}/users/data`);
+            const data = await this.fetchWithAuth(`${this.baseUrl}/users/data?includeQuizDetails=true`);
             console.log('User data response:', data);
             
             if (!data || !data.success || !data.data) {
@@ -2108,55 +2108,72 @@ export class APIService {
     // Guide settings methods
     async getGuideSettings() {
         try {
-            const response = await this.fetchWithAdminAuth(`${this.baseUrl}/admin/guide-settings`);
+            console.log('[API] Fetching all guide settings');
             
-            if (response.success && response.data) {
-                // Save to localStorage as a backup - ensure all guide settings are saved
+            const response = await fetch(`${this.baseUrl}/guide-settings`, {
+                method: 'GET',
+                headers: {
+                    'Accept': 'application/json'
+                },
+                credentials: 'include'
+            });
+            
+            if (!response.ok) {
+                console.warn(`[API] Error response from guide settings API: ${response.status}`);
+                
+                // Try localStorage as fallback
                 try {
-                    localStorage.setItem('guideSettings', JSON.stringify(response.data));
-                    console.log('[API] Saved complete guide settings to localStorage:', response.data);
-                    
-                    // Log all available quiz guides for debugging
-                    this.debugLogGuideSettings();
-                } catch (storageError) {
-                    console.warn('[API] Failed to save guide settings to localStorage:', storageError);
+                    const settingsJson = localStorage.getItem('guideSettings');
+                    if (settingsJson) {
+                        const settings = JSON.parse(settingsJson);
+                        console.log(`[API] Using localStorage fallback for guide settings`);
+                        return {
+                            success: true,
+                            data: settings,
+                            source: 'localStorage-fallback'
+                        };
+                    }
+                } catch (e) {
+                    console.warn(`[API] Error checking localStorage fallback for guide settings:`, e);
                 }
                 
-                return {
-                    success: true,
-                    data: response.data,
-                    source: 'api'
-                };
-            } else {
-                throw new Error(response.message || 'Failed to get guide settings');
+                throw new Error(`Failed to fetch guide settings: ${response.status}`);
             }
-        } catch (error) {
-            console.error('Error fetching guide settings:', error);
             
-            // Try to get from localStorage as fallback
+            const data = await response.json();
+            
+            // Save to localStorage for backup
             try {
-                const localSettings = localStorage.getItem('guideSettings');
-                if (localSettings) {
-                    const settings = JSON.parse(localSettings);
-                    
-                    // Log all available quiz guides for debugging
-                    this.debugLogGuideSettings();
-                    
+                localStorage.setItem('guideSettings', JSON.stringify(data.data || {}));
+            } catch (e) {
+                console.warn('[API] Error saving guide settings to localStorage:', e);
+            }
+            
+            return data;
+        } catch (error) {
+            console.error('[API] Error fetching guide settings:', error);
+            
+            // Try localStorage as fallback
+            try {
+                const settingsJson = localStorage.getItem('guideSettings');
+                if (settingsJson) {
+                    const settings = JSON.parse(settingsJson);
+                    console.log('[API] Using localStorage fallback after error');
                     return {
                         success: true,
                         data: settings,
-                        source: 'localStorage'
+                        source: 'localStorage-error-fallback'
                     };
                 }
-            } catch (localError) {
-                console.warn('Error reading from localStorage:', localError);
+            } catch (e) {
+                console.warn('[API] Error reading from localStorage:', e);
             }
             
-            // Return empty object if all else fails
+            // Return empty settings if all else fails
             return {
-                success: true,
-                data: {},
-                source: 'default'
+                success: false,
+                message: error.message,
+                data: {}
             };
         }
     }

@@ -139,7 +139,7 @@ class IndexPage {
             const username = localStorage.getItem('username');
             if (!username) return;
 
-            // Get user data including hidden quizzes
+            // Get user data including quiz progress and results in a single call
             const userData = await this.apiService.getUserData();
             if (!userData.success) {
                 throw new Error('Failed to load user data');
@@ -153,55 +153,63 @@ class IndexPage {
                 return;
             }
 
-            // First pass: Load progress for all visible quizzes
-            const progressPromises = Array.from(this.quizItems).map(async item => {
-                const quizId = item.dataset.quiz;
-                if (!quizId) return null;
-
-                try {
-                    // Get the saved progress
-                    const savedProgress = await this.apiService.getQuizProgress(quizId);
-                    console.log(`Progress data for ${quizId}:`, savedProgress);
+            // Extract quiz progress from user data
+            const quizProgress = userData.data.quizProgress || {};
+            const quizResults = userData.data.quizResults || [];
+            
+            console.log('Quiz progress from user data:', quizProgress);
+            console.log('Quiz results from user data:', quizResults);
+            
+            // Process all visible quizzes using the already fetched data
+            this.quizScores = Array.from(this.quizItems)
+                .map(item => {
+                    const quizId = item.dataset.quiz;
+                    if (!quizId) return null;
                     
-                    if (!savedProgress?.success || !savedProgress?.data) {
-                        return { 
-                            quizName: quizId, 
-                            score: 0, 
-                            questionsAnswered: 0, 
-                            status: 'not-started',
-                            scorePercentage: 0
-                        };
-                    }
-
-                    const progress = savedProgress.data;
+                    // First check for quiz progress
+                    const progress = quizProgress[quizId];
                     
-                    // Ensure we have all required fields with proper defaults
-                    return {
+                    // Then check for quiz results
+                    const result = quizResults.find(r => r.quizName === quizId);
+                    
+                    // Combine data from both sources, with progress taking precedence
+                    const combinedData = {
                         quizName: quizId,
-                        score: progress.scorePercentage || 0,
-                        questionsAnswered: progress.questionsAnswered || 0,
-                        status: progress.status || 'not-started',
-                        scorePercentage: typeof progress.scorePercentage === 'number' ? progress.scorePercentage : 0,
-                        experience: progress.experience || 0,
-                        tools: progress.tools || [],
-                        questionHistory: progress.questionHistory || []
-                    };
-                } catch (error) {
-                    console.error(`Error loading progress for quiz ${quizId}:`, error);
-                    return { 
-                        quizName: quizId, 
-                        score: 0, 
-                        questionsAnswered: 0, 
+                        score: 0,
+                        questionsAnswered: 0,
                         status: 'not-started',
                         scorePercentage: 0
                     };
-                }
-            });
+                    
+                    // Apply result data if available
+                    if (result) {
+                        combinedData.score = result.score || 0;
+                        combinedData.scorePercentage = result.scorePercentage || result.score || 0;
+                        combinedData.experience = result.experience || 0;
+                    }
+                    
+                    // Apply progress data if available (overrides result data)
+                    if (progress) {
+                        combinedData.questionsAnswered = progress.questionsAnswered || 0;
+                        combinedData.status = progress.status || 'not-started';
+                        combinedData.tools = progress.tools || [];
+                        combinedData.questionHistory = progress.questionHistory || [];
+                        
+                        // If progress has scorePercentage or experience, use it
+                        if (progress.scorePercentage !== undefined) {
+                            combinedData.scorePercentage = progress.scorePercentage;
+                        }
+                        if (progress.experience !== undefined) {
+                            combinedData.experience = progress.experience;
+                        }
+                    }
+                    
+                    console.log(`Processed data for quiz ${quizId}:`, combinedData);
+                    return combinedData;
+                })
+                .filter(Boolean);
 
-            // Wait for all progress data to load
-            this.quizScores = (await Promise.all(progressPromises)).filter(Boolean);
-            console.log('Loaded quiz scores:', this.quizScores);
-
+            console.log('Processed quiz scores:', this.quizScores);
             return true;
         } catch (error) {
             console.error('Error loading user progress:', error);
@@ -611,40 +619,36 @@ class IndexPage {
                 document.head.appendChild(styles);
             }
             
-            // Use Promise.allSettled instead of awaiting each request to prevent one failure from blocking everything
-            const guidePromises = visibleQuizItems.map(item => {
-                const quizId = item.dataset.quiz;
-                if (!quizId) return Promise.resolve();
-                
-                // Add a timeout to prevent hanging if the API call takes too long
-                const timeoutPromise = new Promise((_, reject) => 
-                    setTimeout(() => reject(new Error('Timeout fetching guide settings')), 5000)
-                );
-                
-                // Race the API call against the timeout
-                return Promise.race([
-                    this.apiService.fetchGuideSettings(quizId)
-                        .then(response => {
-                            if (response && response.success && response.data && response.data.enabled && response.data.url) {
-                                console.log(`[Index] Guide button enabled for quiz ${quizId} with URL: ${response.data.url}`);
-                                this.addGuideButtonToQuizItem(item, quizId, response.data.url);
-                            } else {
-                                console.log(`[Index] Guide button not enabled for quiz ${quizId}`);
-                                const existingButton = item.querySelector(`.quiz-guide-button[data-quiz-id="${quizId}"]`);
-                                if (existingButton) {
-                                    existingButton.remove();
-                                }
+            // Fetch all guide settings in a single call
+            try {
+                const response = await this.apiService.getGuideSettings();
+                if (response && response.success && response.data) {
+                    console.log('[Index] Fetched all guide settings:', response.data);
+                    
+                    // Process each visible quiz item
+                    visibleQuizItems.forEach(item => {
+                        const quizId = item.dataset.quiz;
+                        if (!quizId) return;
+                        
+                        // Check if guide is enabled for this quiz
+                        const guideSettings = response.data[quizId];
+                        if (guideSettings && guideSettings.enabled && guideSettings.url) {
+                            console.log(`[Index] Guide button enabled for quiz ${quizId} with URL: ${guideSettings.url}`);
+                            this.addGuideButtonToQuizItem(item, quizId, guideSettings.url);
+                        } else {
+                            console.log(`[Index] Guide button not enabled for quiz ${quizId}`);
+                            const existingButton = item.querySelector(`.quiz-guide-button[data-quiz-id="${quizId}"]`);
+                            if (existingButton) {
+                                existingButton.remove();
                             }
-                        }),
-                    timeoutPromise
-                ]).catch(error => {
-                    console.error(`[Index] Error fetching guide settings for quiz ${quizId}:`, error);
-                    // Continue with other quizzes even if this one fails
-                });
-            });
-            
-            // Wait for all guide settings to be processed, but don't let failures block the UI
-            await Promise.allSettled(guidePromises);
+                        }
+                    });
+                } else {
+                    console.warn('[Index] Failed to fetch guide settings:', response);
+                }
+            } catch (error) {
+                console.error('[Index] Error fetching all guide settings:', error);
+            }
             
             console.log('[Index] Finished setting up guide buttons');
         } catch (error) {

@@ -586,46 +586,53 @@ router.post('/quiz-scores', auth, async (req, res) => {
     }
 });
 
-// Get user data (protected route)
+// User data for authenticated user
 router.get('/data', auth, async (req, res) => {
     try {
-        const user = await User.findById(req.user.id);
+        const includeQuizDetails = req.query.includeQuizDetails === 'true';
+        console.log(`Fetching user data with includeQuizDetails=${includeQuizDetails}`);
+        
+        // Use select to control which fields are returned
+        const selectFields = includeQuizDetails 
+            ? 'username userType allowedQuizzes hiddenQuizzes quizResults quizProgress'
+            : 'username userType allowedQuizzes hiddenQuizzes';
+            
+        const user = await User.findById(req.user.id).select(selectFields);
+        
         if (!user) {
             return res.status(404).json({ 
                 success: false, 
                 message: 'User not found' 
             });
         }
-
-        // Ensure quiz arrays are lowercase for consistent comparison
-        const allowedQuizzes = (user.allowedQuizzes || []).map(quiz => quiz.toLowerCase());
-        const hiddenQuizzes = (user.hiddenQuizzes || []).map(quiz => quiz.toLowerCase());
-
-        console.log('User data being sent:', {
+        
+        // Create the response object
+        const responseData = {
             username: user.username,
-            userType: user.userType,
-            allowedQuizzes,
-            hiddenQuizzes
-        });
-
-        res.json({
-            success: true,
-            data: {
-                username: user.username,
-                userType: user.userType,
-                allowedQuizzes: allowedQuizzes,
-                hiddenQuizzes: hiddenQuizzes,
-                quizResults: user.quizResults || [],
-                quizProgress: user.quizProgress || {},
-                lastLogin: user.lastLogin || null
-            }
+            userType: user.userType || 'regular',
+            allowedQuizzes: user.allowedQuizzes || [],
+            hiddenQuizzes: user.hiddenQuizzes || []
+        };
+        
+        // Only include detailed quiz data when requested
+        if (includeQuizDetails) {
+            responseData.quizResults = user.quizResults || [];
+            responseData.quizProgress = user.quizProgress || {};
+            console.log(`Returning complete quiz data for user ${user.username}`);
+        } else {
+            console.log(`Returning basic user data for user ${user.username}`);
+        }
+        
+        res.json({ 
+            success: true, 
+            data: responseData
         });
     } catch (error) {
         console.error('Error getting user data:', error);
         res.status(500).json({ 
             success: false, 
-            message: 'Failed to get user data',
-            error: process.env.NODE_ENV === 'production' ? null : error.message
+            message: 'Error retrieving user data',
+            error: error.message 
         });
     }
 });
