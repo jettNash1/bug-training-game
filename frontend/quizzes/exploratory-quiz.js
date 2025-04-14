@@ -62,7 +62,7 @@ export class ExploratoryQuiz extends BaseQuiz {
             return;
         }
 
-        // Basic Scenarios (IDs 1-5, 75 XP total)
+        // Basic Scenarios (IDs 1-10, 150 XP total)
         this.basicScenarios = [
             {
                 id: 1,
@@ -205,6 +205,151 @@ export class ExploratoryQuiz extends BaseQuiz {
                     {
                         text: 'Bug severity ratings should be included in the test details section of the exploratory script',
                         outcome: 'Bug severity ratings are not part of the test details section but would be documented separately in the issues tab.',
+                        experience: 0
+                    }
+                ]
+            },
+            {
+                id: 6,
+                level: 'Basic',
+                title: 'Focus Area Structure',
+                description: 'When setting up an exploratory script, how should focus areas be structured?',
+                options: [
+                    {
+                        text: 'Focus areas should be kept broad with sub-focus areas that serve as prompts for core testing areas',
+                        outcome: 'Correct! It is important not to break the focus areas up too much and keep them broad. Helping to prevent exploratory testing from becoming too rigid in its approach.',
+                        experience: 15,
+                        tool: 'Focus Area Structure'
+                    },
+                    {
+                        text: 'Focus areas should be limited to only critical functionality, without scope for rendering aspects',
+                        outcome: 'Focus areas should encompass both functionality and rendering aspects, not just critical functionality.',
+                        experience: -5
+                    },
+                    {
+                        text: 'Focus areas should be extremely detailed and specific, breaking down every possible user action',
+                        outcome: 'This would make test execution more like scripted testing in being more specific.',
+                        experience: -10
+                    },
+                    {
+                        text: 'Focus areas should follow a strict priority list with predefined test cases for each component',
+                        outcome: 'Exploratory testing specifically avoids a strict priority list with predefined test cases.',
+                        experience: 0
+                    }
+                ]
+            },
+            {
+                id: 7,
+                level: 'Basic',
+                title: 'Exploratory Test Time Management',
+                description: 'What should testers do when they believe there are more defects in an area but have run out of allotted time?',
+                options: [
+                    {
+                        text: 'Proactively extend the testing time to ensure all defects are discovered',
+                        outcome: 'Testers should follow the allocated time as closely as possible and communicate openly when more time might be needed.',
+                        experience: -5
+                    },
+                    {
+                        text: 'Mark all remaining potential issues as low priority and continue with testing activities',
+                        outcome: 'Testers should document their observations about remaining defects and communicate these with the project manager as soon as possible.',
+                        experience: -10
+                    },
+                    {
+                        text: 'Inform the project manager at the earliest opportunity and make notes in the test script of potential additional issues',
+                        outcome: 'Correct! Documenting the areas of concern helps the client make a decision moving forward and informing the project manager of the issues may result in negotiation for additional testing.',
+                        experience: 15,
+                        tool: 'Exploratory Test Time Management'
+                    },
+                    {
+                        text: 'Automatically allocate time from other focus areas to complete the current area',
+                        outcome: 'Testers shouldn\'t automatically reallocate time without discussion as this could compromise coverage.',
+                        experience: 0
+                    }
+                ]
+            },
+            {
+                id: 8,
+                level: 'Basic',
+                title: 'Exploratory Test Script Review',
+                description: 'What should be done during the final cleanup of an exploratory script after testing has concluded?',
+                options: [
+                    {
+                        text: 'Delete all notes and observations to maintain confidentiality',
+                        outcome: 'Deleting notes and observations would eliminate the valuable testing information that needs to be preserved.',
+                        experience: -5
+                    },
+                    {
+                        text: 'Convert all exploratory notes into formal test cases for future use',
+                        outcome: 'Converting exploratory notes into formal test cases contradicts the purpose of exploratory testing.',
+                        experience: -10
+                    },
+                    {
+                        text: 'Run a spell check across all sheets and ensure all unused tabs are hidden',
+                        outcome: 'Correct! This ensures professionalism and standards required if test scripts are requested by the client.',
+                        experience: 15,
+                        tool: 'Exploratory Test Review'
+                    },
+                    {
+                        text: 'Revise time allocations for each focus area based on actual time spent',
+                        outcome: 'Revising time allocations after testing is complete would serve no purpose for the current project.',
+                        experience: 0
+                    }
+                ]
+            },
+            {
+                id: 9,
+                level: 'Basic',
+                title: 'Exploratory Smoke Tests',
+                description: 'How should smoke tests be defined in the Environment Checks tab?',
+                options: [
+                    {
+                        text: 'As high-level user journeys without restricting testers to specific steps',
+                        outcome: 'Correct! This allows the tester to take a fresh approach per environment and doesn\'t restrict them to following the same set of steps.',
+                        experience: 15,
+                        tool: 'Exploratory Smoke Tests'
+                    },
+                    {
+                        text: 'As detailed step-by-step instructions with expected results for each action',
+                        outcome: 'Detailed step-by-step instructions would restrict testers and contradict the exploratory approach',
+                        experience: -10
+                    },
+                    {
+                        text: 'As automated test scripts that can be run across multiple environments',
+                        outcome: 'Automation is not part of exploratory testing.',
+                        experience: -5
+                    },
+                    {
+                        text: 'As exact duplicates of the focus areas from the primary environment',
+                        outcome: 'Smoke tests should be concise high-level journeys focused on key functionality.',
+                        experience: 0
+                    }
+                ]
+            },
+            {
+                id: 10,
+                level: 'Basic',
+                title: 'Exploratory Test Time Allocation',
+                description: 'How should time be allocated in an exploratory script?',
+                options: [
+                    {
+                        text: 'More time should be allocated to areas with important functionality, with less time for simpler elements',
+                        outcome: 'Correct! More time should be allocated to areas with important functionality, with less time for simpler elements.',
+                        experience: 15,
+                        tool: 'Test Time Allocation'
+                    },
+                    {
+                        text: 'Equal time should be allocated to all focus areas to ensure balanced coverage',
+                        outcome: 'Time allocation should be proportional to the importance and complexity of the specific functionality under test.',
+                        experience: -10
+                    },
+                    {
+                        text: 'Time should only be allocated to functional testing, with rendering issues addressed separately',
+                        outcome: 'Both aspects should be covered within the allocated time for each focus area.',
+                        experience: -5
+                    },
+                    {
+                        text: 'Time allocation should be done dynamically during testing based on defects found',
+                        outcome: 'Time allocation should be done during the script setup phase before testing begins.',
                         experience: 0
                     }
                 ]
@@ -723,80 +868,61 @@ export class ExploratoryQuiz extends BaseQuiz {
         });
     }
 
-    displayScenario() {
+    async displayScenario() {
         try {
-            // Check if player and currentScenario are properly initialized
-            if (!this.player || typeof this.player.currentScenario !== 'number') {
-                console.error('Player or currentScenario not properly initialized');
+            // Check if player has answered all 15 questions
+            const totalAnswered = this.player?.questionHistory?.length || 0;
+            if (totalAnswered >= 15) {
+                await this.transitionToNextLevel();
                 return;
             }
-            
-            // Check if we've answered all 15 questions
-        if (this.player.questionHistory.length >= 15) {
-                console.log('All 15 questions answered, ending game');
-                this.endGame();
-                return;
-            }
-            
-            // Clear any existing timer
-            if (this.questionTimer) {
-                clearInterval(this.questionTimer);
-                this.questionTimer = null;
-                console.log('Timer cleared in displayScenario');
-            }
-            
-            const currentScenarios = this.getCurrentScenarios();
-            if (!currentScenarios || !Array.isArray(currentScenarios)) {
-                console.error('Could not get current scenarios', currentScenarios);
-            return;
-        }
 
-            const scenario = currentScenarios[this.player.currentScenario];
-            
-            // Check if the current scenario exists
-            if (!scenario) {
-                console.log('No more scenarios in this level, transitioning to next level');
-                
-                // Reset currentScenario for the next level
-                this.player.currentScenario = 0;
-                
-                // Get the next level scenarios
-                const updatedScenarios = this.getCurrentScenarios();
-                if (!updatedScenarios || !updatedScenarios[0]) {
-                    console.error('Could not find scenarios for next level');
-                    this.endGame();
-                    return;
-                }
-                
-                // Display the first scenario of the next level
-                const nextScenario = updatedScenarios[0];
-                this.displayScenarioContent(nextScenario);
-                console.log('Displaying first scenario of next level');
+            const currentScenarios = this.getCurrentScenarios();
+            if (!currentScenarios || currentScenarios.length === 0) {
+                console.error('No scenarios available');
                 return;
             }
-            
-            // Display the current scenario
-            console.log('Displaying current scenario:', scenario.title);
-            this.displayScenarioContent(scenario);
+
+            // Get the current scenario based on answered questions
+            const currentScenarioIndex = totalAnswered % 5;
+            const currentScenario = currentScenarios[currentScenarioIndex];
+
+            if (!currentScenario) {
+                console.error('Current scenario not found');
+                return;
+            }
+
+            // Update UI with current scenario
+            this.updateScenarioUI(currentScenario);
+
+            // Update progress display
+            this.updateProgressDisplay(totalAnswered);
+
         } catch (error) {
-            console.error('Error displaying scenario:', error);
-            this.showError('An error occurred displaying the scenario. Please try reloading the page.');
+            console.error('Error in displayScenario:', error);
         }
     }
 
-    displayScenarioContent(scenario) {
+    updateProgressDisplay(totalAnswered) {
+        const progressElement = document.getElementById('progress');
+        if (progressElement) {
+            progressElement.textContent = `Questions Answered: ${totalAnswered}/15`;
+        }
+    }
+
+    updateScenarioUI(scenario) {
         try {
             // Update UI with current scenario
-        const titleElement = document.getElementById('scenario-title');
-        const descriptionElement = document.getElementById('scenario-description');
-        const optionsContainer = document.getElementById('options-container');
+            const titleElement = document.getElementById('scenario-title');
+            const descriptionElement = document.getElementById('scenario-description');
+            const optionsContainer = document.getElementById('options-container');
 
             if (titleElement && scenario.title) {
                 titleElement.textContent = scenario.title;
-        }
+            }
 
             if (descriptionElement && scenario.description) {
-        descriptionElement.textContent = scenario.description;
+                descriptionElement.textContent = scenario.description;
             }
             
             if (optionsContainer && scenario.options && Array.isArray(scenario.options)) {
@@ -811,23 +937,23 @@ export class ExploratoryQuiz extends BaseQuiz {
                     const optionDiv = document.createElement('div');
                     optionDiv.className = 'option';
                     optionDiv.innerHTML = `
-                <input type="radio" 
-                    name="option" 
+                        <input type="radio" 
+                            name="option" 
                             value="${index}" 
-                    id="option${index}"
-                    tabindex="0"
+                            id="option${index}"
+                            tabindex="0"
                             aria-label="${option.text}">
-                <label for="option${index}">${option.text}</label>
-            `;
+                        <label for="option${index}">${option.text}</label>
+                    `;
                     optionsContainer.appendChild(optionDiv);
-        });
+                });
             }
 
             // Record start time for this question
             this.questionStartTime = Date.now();
 
-        // Initialize timer for the new question
-        this.initializeTimer();
+            // Initialize timer for the new question
+            this.initializeTimer();
             
             // Update progress display
             this.updateProgress();
@@ -932,7 +1058,7 @@ export class ExploratoryQuiz extends BaseQuiz {
 
             // Save progress
             try {
-            await this.saveProgress();
+                await this.saveProgress();
             } catch (error) {
                 console.error('Failed to save progress:', error);
                 this.showError('Warning: Progress may not have saved correctly');
@@ -942,7 +1068,7 @@ export class ExploratoryQuiz extends BaseQuiz {
             const username = localStorage.getItem('username');
             if (username) {
                 try {
-                const quizUser = new QuizUser(username);
+                    const quizUser = new QuizUser(username);
                     const score = {
                         score: Math.round((this.player.questionHistory.filter(q => this.isCorrectAnswer(q.selectedAnswer)).length / Math.min(this.player.questionHistory.length, 15)) * 100),
                         experience: this.player.experience || 0,
@@ -950,12 +1076,12 @@ export class ExploratoryQuiz extends BaseQuiz {
                         questionsAnswered: this.player.questionHistory.length
                     };
                     
-                await quizUser.updateQuizScore(
-                    this.quizName,
-                    score.score,
-                    score.experience,
+                    await quizUser.updateQuizScore(
+                        this.quizName,
+                        score.score,
+                        score.experience,
                         this.player.tools || [],
-                    score.questionHistory,
+                        score.questionHistory,
                         score.questionsAnswered
                     );
                 } catch (error) {
@@ -987,7 +1113,7 @@ export class ExploratoryQuiz extends BaseQuiz {
 
         try {
             const currentScenarios = this.getCurrentScenarios();
-            if (!currentScenarios || !currentScenarios[this.player.currentScenario]) {
+            if (!currentScenarios || currentScenarios[this.player.currentScenario]) {
                 console.error('No current scenario found');
                 return;
             }
@@ -1074,10 +1200,10 @@ export class ExploratoryQuiz extends BaseQuiz {
                 // Try both methods
                 gameScreen.classList.remove('hidden');
                 gameScreen.style.display = 'block';
-        }
-        
-        // Display next scenario
-        this.displayScenario();
+            }
+            
+            // Display next scenario
+            this.displayScenario();
             
             // Re-initialize event listeners for the new scenario
             this.initializeEventListeners();
@@ -1161,17 +1287,45 @@ export class ExploratoryQuiz extends BaseQuiz {
         this.displayScenario();
     }
 
+    // Helper method to randomly select scenarios from a level
+    getRandomScenarios(scenarios, count) {
+        if (!scenarios || scenarios.length <= count) {
+            return scenarios;
+        }
+        
+        // Create a copy of the array to avoid modifying the original
+        const shuffled = [...scenarios];
+        
+        // Fisher-Yates shuffle algorithm
+        for (let i = shuffled.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+        }
+        
+        // Return the first 'count' scenarios
+        return shuffled.slice(0, count);
+    }
+
     getCurrentScenarios() {
         try {
             const totalAnswered = this.player?.questionHistory?.length || 0;
-        
-            // Simple progression logic based solely on question count, no threshold checks
+            
+            // If this is the first time getting scenarios, initialize the random selection
+            if (!this.selectedScenarios) {
+                this.selectedScenarios = {
+                    basic: this.getRandomScenarios(this.basicScenarios, 5),
+                    intermediate: this.getRandomScenarios(this.intermediateScenarios, 5),
+                    advanced: this.getRandomScenarios(this.advancedScenarios, 5)
+                };
+            }
+            
+            // Return the appropriate level's scenarios based on progress
             if (totalAnswered >= 10) {
-            return this.advancedScenarios;
+                return this.selectedScenarios.advanced;
             } else if (totalAnswered >= 5) {
-            return this.intermediateScenarios;
-        }
-        return this.basicScenarios;
+                return this.selectedScenarios.intermediate;
+            }
+            return this.selectedScenarios.basic;
         } catch (error) {
             console.error('Error in getCurrentScenarios:', error);
             return this.basicScenarios; // Default to basic if there's an error

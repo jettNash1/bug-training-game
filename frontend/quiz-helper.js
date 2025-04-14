@@ -137,12 +137,43 @@ export class BaseQuiz {
 
     async initializeTimerSettings() {
         try {
-            // Set a default timer value (30 seconds)
-            this.timePerQuestion = 30;
+            // Try to get settings from API first
+            const apiService = new APIService();
+            const response = await apiService.getQuizTimerSettings();
+            
+            if (response.success && response.data) {
+                const { defaultSeconds, quizTimers } = response.data;
+                
+                // Check if this quiz has a specific timer setting
+                if (quizTimers && this.quizName && quizTimers[this.quizName] !== undefined) {
+                    this.timePerQuestion = quizTimers[this.quizName];
+                } else {
+                    this.timePerQuestion = defaultSeconds;
+                }
+                
+                // Store the value in localStorage for future use
+                localStorage.setItem('quizTimerValue', this.timePerQuestion.toString());
+                console.log('[Quiz] Using timer value from API:', this.timePerQuestion);
+                return;
+            }
+
+            // If API call fails, try localStorage
+            const storedTimerValue = localStorage.getItem('quizTimerValue');
+            if (storedTimerValue !== null) {
+                const timerValue = parseInt(storedTimerValue, 10);
+                if (!isNaN(timerValue) && timerValue >= 0 && timerValue <= 300) {
+                    this.timePerQuestion = timerValue;
+                    console.log('[Quiz] Using timer value from localStorage:', this.timePerQuestion);
+                    return;
+                }
+            }
+
+            // If all else fails, use default value
+            this.timePerQuestion = 60; // Use admin panel default of 60 seconds
             console.log('[Quiz] Using default timer value:', this.timePerQuestion);
         } catch (error) {
             console.warn('Failed to load timer settings, using default value:', error);
-            this.timePerQuestion = 30;
+            this.timePerQuestion = 60; // Use admin panel default of 60 seconds
         }
     }
 
