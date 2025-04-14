@@ -541,12 +541,11 @@ class AdminDashboard {
 
         // Create and append user cards
         filteredUsers.forEach(user => {
-            const progress = this.calculateUserProgress(user);
-            const lastActive = this.getLastActiveDate(user);
-            
             // Calculate total questions answered and XP across all quizzes
             let totalQuestionsAnswered = 0;
             let totalXP = 0;
+            let totalScore = 0;
+            let quizCount = 0;
             
             this.quizTypes.forEach(quizType => {
                 const progress = user.quizProgress?.[quizType.toLowerCase()];
@@ -564,7 +563,19 @@ class AdminDashboard {
                 let xp = progress?.experience || result?.experience || 0;
                 xp = Math.round(xp / 5) * 5;
                 totalXP += xp;
+
+                // Calculate score for this quiz
+                if (result?.scorePercentage) {
+                    totalScore += result.scorePercentage;
+                    quizCount++;
+                } else if (progress?.scorePercentage) {
+                    totalScore += progress.scorePercentage;
+                    quizCount++;
+                }
             });
+
+            // Calculate average score
+            const averageScore = quizCount > 0 ? Math.round(totalScore / quizCount) : 0;
 
             const card = document.createElement('div');
             card.className = 'user-card';
@@ -596,7 +607,7 @@ class AdminDashboard {
                             </div>
                             <div class="stat">
                                 <span class="stat-label">Last Active:</span>
-                                <span class="stat-value">${this.formatDate(lastActive)}</span>
+                                <span class="stat-value">${this.formatDate(this.getLastActiveDate(user))}</span>
                             </div>
                         </div>
                     </div>
