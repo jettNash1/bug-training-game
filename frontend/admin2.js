@@ -483,10 +483,6 @@ export class Admin2Dashboard extends AdminDashboard {
                                 <span class="stat-value">${totalQuestionsAnswered}</span>
                             </div>
                             <div class="stat">
-                                <span class="stat-label">XP:</span>
-                                <span class="stat-value">${totalXP}</span>
-                            </div>
-                            <div class="stat">
                                 <span class="stat-label">Last Active:</span>
                                 <span class="stat-value">${this.formatDate(lastActive)}</span>
                             </div>
@@ -524,10 +520,6 @@ export class Admin2Dashboard extends AdminDashboard {
                             <div class="stat">
                                 <span class="stat-label">Questions:</span>
                                 <span class="stat-value">${totalQuestionsAnswered}</span>
-                            </div>
-                            <div class="stat">
-                                <span class="stat-label">Total XP:</span>
-                                <span class="stat-value">${totalXP}</span>
                             </div>
                             <div class="stat">
                                 <span class="stat-label">Last Active:</span>

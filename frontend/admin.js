@@ -587,16 +587,12 @@ class AdminDashboard {
                         </div>
                         <div class="user-stats">
                             <div class="stat">
-                                <span class="stat-label">Overall Progress:</span>
-                                <span class="stat-value">${progress.toFixed(1)}%</span>
-                            </div>
-                            <div class="stat">
                                 <span class="stat-label">Questions Answered:</span>
                                 <span class="stat-value">${totalQuestionsAnswered}</span>
                             </div>
                             <div class="stat">
-                                <span class="stat-label">Total XP:</span>
-                                <span class="stat-value">${totalXP}</span>
+                                <span class="stat-label">Average Score:</span>
+                                <span class="stat-value">${averageScore}%</span>
                             </div>
                             <div class="stat">
                                 <span class="stat-label">Last Active:</span>
