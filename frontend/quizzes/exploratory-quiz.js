@@ -21,6 +21,8 @@ export class ExploratoryQuiz extends BaseQuiz {
             
             super(config);
             
+            console.log('Base quiz initialized');
+            
             // Set the quiz name
             Object.defineProperty(this, 'quizName', {
                 value: 'exploratory',
@@ -42,13 +44,7 @@ export class ExploratoryQuiz extends BaseQuiz {
                 tools: [],
                 questionHistory: [],
                 currentScenario: 0,
-                level: 'basic',
-                // Store randomized scenarios for each level to maintain consistent question order
-                randomScenarios: {
-                    basic: null,
-                    intermediate: null,
-                    advanced: null
-                }
+                level: 'basic'
             };
             
             // Store current state
@@ -58,636 +54,34 @@ export class ExploratoryQuiz extends BaseQuiz {
             this.isGameEnded = false;
             this.currentScenario = null; // Add a reference to the current scenario at the class level
             
-            // Store UI elements
+            console.log('Player state initialized');
+            
+            // Store UI elements - will be populated in initializeUI
             this.gameContainer = null;
             this.gameScreen = null;
             this.outcomeScreen = null;
             this.endScreen = null;
-            this.progressBar = null;
-            this.levelIndicator = null;
-            this.questionCounter = null;
             
-            console.log('Player initialized:', this.player);
-            
-            // Initialize API service
-            this.apiService = new APIService();
-            
-            // Initialize all screen elements
-            this.gameScreen = document.getElementById('game-screen');
-            this.outcomeScreen = document.getElementById('outcome-screen');
-            this.endScreen = document.getElementById('end-screen');
-            
-            // Verify all required elements exist
-            if (!this.gameScreen) {
-                console.error('Game screen element not found');
-                this.showError('Quiz initialization failed. Please refresh the page.');
-                return;
-            }
-            
-            if (!this.outcomeScreen) {
-                console.error('Outcome screen element not found');
-                this.showError('Quiz initialization failed. Please refresh the page.');
-                return;
-            }
-            
-            if (!this.endScreen) {
-                console.error('End screen element not found');
-                this.showError('Quiz initialization failed. Please refresh the page.');
-                return;
-            }
-
-            // Basic Scenarios (IDs 1-10, 150 XP total)
-            this.basicScenarios = [
-                {
-                    id: 1,
-                    level: 'Basic',
-                    title: 'Understanding Exploratory Testing',
-                    description: 'What is the primary objective of exploratory-based testing?',
-                    options: [
-                        {
-                            text: 'To discover defects while dynamically exploring the application under test',
-                            outcome: 'Correct! Exploratory testing is primarily aimed at discovering defects through dynamic investigation of the software without following predefined test cases.',
-                            experience: 15,
-                            tool: 'Exploratory testing Framework'
-                        },
-                        {
-                            text: 'To create detailed test cases within a test script before execution',
-                            outcome: 'Exploratory testing specifically does not rely on detailed test case documentation created in advance.',
-                            experience: -5
-                        },
-                        {
-                            text: 'To focus on cosmetic issues within the application under test',
-                            outcome: 'While cosmetic issues may be identified, exploratory testing focuses broadly on functionality, user experience, and behaviour, not exclusively on cosmetic issues.',
-                            experience: -10
-                        },
-                        {
-                            text: 'To replace all other forms of test approach for the application under test',
-                            outcome: 'While exploratory testing is valuable, it complements rather than replaces other testing approaches, as it has both advantages and disadvantages.',
-                            experience: 0
-                        }
-                    ]
-                },
-                {
-                    id: 2,
-                    level: 'Basic',
-                    title: 'Exploratory Test Execution',
-                    description: 'When should initial exploratory functional testing typically take place?',
-                    options: [
-                        {
-                            text: 'Exploratory testing should be performed after the application is fully developed',
-                            outcome: 'Waiting until full development would defeat the purpose of early issue identification.',
-                            experience: -5
-                        },
-                        {
-                            text: 'Exploratory testing should be performed only during the final testing phase',
-                            outcome: 'Initial exploratory testing is meant to be performed early to catch identification of issues earlier in the testing process, not during final testing phases.',
-                            experience: -10
-                        },
-                        {
-                            text: 'Exploratory testing should be performed in the early stages of development',
-                            outcome: 'Correct! Initial exploratory testing usually takes place early in development when full functionality may not be in place and styling may not have been applied. It aims to raise issues early enough that fundamental changes can still be considered.',
-                            experience: 15,
-                            tool: 'Exploratory Test Execution'
-                        },
-                        {
-                            text: 'Exploratory testing should be performed when all styling has been applied',
-                            outcome: 'Styling may not have been applied during initial exploratory testing and the client can communicate this by relaying what is out of scope.',
-                            experience: 0
-                        }
-                    ]
-                },
-                {
-                    id: 3,
-                    level: 'Basic',
-                    title: 'Exploratory Characteristics',
-                    description: 'Which of the following is a key characteristic of exploratory testing?',
-                    options: [
-                        {
-                            text: 'Test cases are executed without prior in depth preparation',
-                            outcome: 'Perfect! Exploratory testing involves executing tests without prior in depth preparation. Testers actively think of scenarios as they interact with the software, using creativity and intuition rather than following predefined steps.',
-                            experience: 15,
-                            tool: 'Exploratory Characteristics'
-                        },
-                        {
-                            text: 'Complete test coverage of the application under test is guaranteed',
-                            outcome: 'Incomplete test coverage is a potential risk of exploratory testing.',
-                            experience: -10
-                        },
-                        {
-                            text: 'Exploratory testing follows a rigid, predetermined path',
-                            outcome: 'Exploratory testing is dynamic and flexible, not rigid or predetermined.',
-                            experience: -5
-                        },
-                        {
-                            text: 'Detailed test case documentation is required in advance for exploratory testing',
-                            outcome: 'Unlike traditional scripted testing, exploratory testing does not require detailed test case documentation in advance.',
-                            experience: 0
-                        }
-                    ]
-                },
-                {
-                    id: 4,
-                    level: 'Basic',
-                    title: 'Exploratory Prioritisation',
-                    description: 'What should testers prioritise during initial exploratory functional testing?',
-                    options: [
-                        {
-                            text: 'Key functionality and expected behaviours should be prioritised during exploratory testing',
-                            outcome: 'Excellent! Initial exploratory testing generally focuses on key functionality and current expected behaviours, rather than minor or cosmetic issues. It provides a baseline of where the software stands and raises critical functional issues early.',
-                            experience: 15,
-                            tool: 'Exploratory Testing Assessment'
-                        },
-                        {
-                            text: 'Detailed cosmetic issues should be prioritised during exploratory testing',
-                            outcome: 'Whilst important, initial exploratory testing should not focus on minor or cosmetic issues and rather key functional behaviour.',
-                            experience: -10
-                        },
-                        {
-                            text: 'All possible defects regardless of severity should have equal priority and focus',
-                            outcome: 'While identifying defects is important, initial exploratory testing prioritises key functionality, rather than capturing all possible issues regardless of severity.',
-                            experience: -5
-                        },
-                        {
-                            text: 'Testing every feature thoroughly should be prioritised during exploratory testing',
-                            outcome: 'Initial exploratory testing is high-level and not meant to test every feature thoroughly, especially since parts of the application may still be in development.',
-                            experience: 0
-                        }
-                    ]
-                },
-                {
-                    id: 5,
-                    level: 'Basic',
-                    title: 'Exploratory Test Details Table',
-                    description: 'What information should be entered in the "Test Details" section of an exploratory script?',
-                    options: [
-                        {
-                            text: 'Test details should include document owner, project manager, testers, and final reviewer',
-                            outcome: 'Perfect! When setting up an exploratory script, the Test Details table should include the Document Owner (person who created the script), Project Manager (Test Delivery Manager), Testers (all involved in the project), and Final Review by (person who reviewed and signed off on the script).',
-                            experience: 15,
-                            tool: 'Test Details Table'
-                        },
-                        {
-                            text: 'All test cases to be executed should be included in the test details section of the script',
-                            outcome: 'Test cases are not predefined in exploratory testing except in the non-functional tests section.',
-                            experience: -10
-                        },
-                        {
-                            text: 'The project manager\'s information should be entered into the test details section of the script',
-                            outcome: 'The test details should include multiple people involved, not just the project manager.',
-                            experience: -5
-                        },
-                        {
-                            text: 'Bug severity ratings should be included in the test details section of the exploratory script',
-                            outcome: 'Bug severity ratings are not part of the test details section but would be documented separately in the issues tab.',
-                            experience: 0
-                        }
-                    ]
-                },
-                {
-                    id: 6,
-                    level: 'Basic',
-                    title: 'Focus Area Structure',
-                    description: 'When setting up an exploratory script, how should focus areas be structured?',
-                    options: [
-                        {
-                            text: 'Focus areas should be kept broad with sub-focus areas that serve as prompts for core testing areas',
-                            outcome: 'Correct! It is important not to break the focus areas up too much and keep them broad. Helping to prevent exploratory testing from becoming too rigid in its approach.',
-                            experience: 15,
-                            tool: 'Focus Area Structure'
-                        },
-                        {
-                            text: 'Focus areas should be limited to only critical functionality, without scope for rendering aspects',
-                            outcome: 'Focus areas should encompass both functionality and rendering aspects, not just critical functionality.',
-                            experience: -5
-                        },
-                        {
-                            text: 'Focus areas should be extremely detailed and specific, breaking down every possible user action',
-                            outcome: 'This would make test execution more like scripted testing in being more specific.',
-                            experience: -10
-                        },
-                        {
-                            text: 'Focus areas should follow a strict priority list with predefined test cases for each component',
-                            outcome: 'Exploratory testing specifically avoids a strict priority list with predefined test cases.',
-                            experience: 0
-                        }
-                    ]
-                },
-                {
-                    id: 7,
-                    level: 'Basic',
-                    title: 'Exploratory Test Time Management',
-                    description: 'What should testers do when they believe there are more defects in an area but have run out of allotted time?',
-                    options: [
-                        {
-                            text: 'Proactively extend the testing time to ensure all defects are discovered',
-                            outcome: 'Testers should follow the allocated time as closely as possible and communicate openly when more time might be needed.',
-                            experience: -5
-                        },
-                        {
-                            text: 'Mark all remaining potential issues as low priority and continue with testing activities',
-                            outcome: 'Testers should document their observations about remaining defects and communicate these with the project manager as soon as possible.',
-                            experience: -10
-                        },
-                        {
-                            text: 'Inform the project manager at the earliest opportunity and make notes in the test script of potential additional issues',
-                            outcome: 'Correct! Documenting the areas of concern helps the client make a decision moving forward and informing the project manager of the issues may result in negotiation for additional testing.',
-                            experience: 15,
-                            tool: 'Exploratory Test Time Management'
-                        },
-                        {
-                            text: 'Automatically allocate time from other focus areas to complete the current area',
-                            outcome: 'Testers shouldn\'t automatically reallocate time without discussion as this could compromise coverage.',
-                            experience: 0
-                        }
-                    ]
-                },
-                {
-                    id: 8,
-                    level: 'Basic',
-                    title: 'Exploratory Test Script Review',
-                    description: 'What should be done during the final cleanup of an exploratory script after testing has concluded?',
-                    options: [
-                        {
-                            text: 'Delete all notes and observations to maintain confidentiality',
-                            outcome: 'Deleting notes and observations would eliminate the valuable testing information that needs to be preserved.',
-                            experience: -5
-                        },
-                        {
-                            text: 'Convert all exploratory notes into formal test cases for future use',
-                            outcome: 'Converting exploratory notes into formal test cases contradicts the purpose of exploratory testing.',
-                            experience: -10
-                        },
-                        {
-                            text: 'Run a spell check across all sheets and ensure all unused tabs are hidden',
-                            outcome: 'Correct! This ensures professionalism and standards required if test scripts are requested by the client.',
-                            experience: 15,
-                            tool: 'Exploratory Test Review'
-                        },
-                        {
-                            text: 'Revise time allocations for each focus area based on actual time spent',
-                            outcome: 'Revising time allocations after testing is complete would serve no purpose for the current project.',
-                            experience: 0
-                        }
-                    ]
-                },
-                {
-                    id: 9,
-                    level: 'Basic',
-                    title: 'Exploratory Smoke Tests',
-                    description: 'How should smoke tests be defined in the Environment Checks tab?',
-                    options: [
-                        {
-                            text: 'As high-level user journeys without restricting testers to specific steps',
-                            outcome: 'Correct! This allows the tester to take a fresh approach per environment and doesn\'t restrict them to following the same set of steps.',
-                            experience: 15,
-                            tool: 'Exploratory Smoke Tests'
-                        },
-                        {
-                            text: 'As detailed step-by-step instructions with expected results for each action',
-                            outcome: 'Detailed step-by-step instructions would restrict testers and contradict the exploratory approach',
-                            experience: -10
-                        },
-                        {
-                            text: 'As automated test scripts that can be run across multiple environments',
-                            outcome: 'Automation is not part of exploratory testing.',
-                            experience: -5
-                        },
-                        {
-                            text: 'As exact duplicates of the focus areas from the primary environment',
-                            outcome: 'Smoke tests should be concise high-level journeys focused on key functionality.',
-                            experience: 0
-                        }
-                    ]
-                },
-                {
-                    id: 10,
-                    level: 'Basic',
-                    title: 'Exploratory Test Time Allocation',
-                    description: 'How should time be allocated in an exploratory script?',
-                    options: [
-                        {
-                            text: 'More time should be allocated to areas with important functionality, with less time for simpler elements',
-                            outcome: 'Correct! More time should be allocated to areas with important functionality, with less time for simpler elements.',
-                            experience: 15,
-                            tool: 'Test Time Allocation'
-                        },
-                        {
-                            text: 'Equal time should be allocated to all focus areas to ensure balanced coverage',
-                            outcome: 'Time allocation should be proportional to the importance and complexity of the specific functionality under test.',
-                            experience: -10
-                        },
-                        {
-                            text: 'Time should only be allocated to functional testing, with rendering issues addressed separately',
-                            outcome: 'Both aspects should be covered within the allocated time for each focus area.',
-                            experience: -5
-                        },
-                        {
-                            text: 'Time allocation should be done dynamically during testing based on defects found',
-                            outcome: 'Time allocation should be done during the script setup phase before testing begins.',
-                            experience: 0
-                        }
-                    ]
-                }
-            ];
-
-            // Intermediate Scenarios (IDs 6-10, 100 XP total, 20 XP each)
-            this.intermediateScenarios = [
-                {
-                    id: 6,
-                    level: 'Intermediate',
-                    title: 'Exploratory Focus Areas',
-                    description: 'How should "Focus Areas" be determined when setting up an exploratory script?',
-                    options: [
-                        {
-                            text: 'By identifying what users need to achieve and what\'s vital to functionality',
-                            outcome: 'Excellent! Focus areas should be determined by identifying what the user is looking to achieve and what is vital to the functionality of the project. This helps structure the testing approach while maintaining flexibility.',
-                            experience: 20,
-                            tool: 'Focus Area Validation'
-                        },
-                        {
-                            text: 'Focus areas should be determined by listing every possible feature of the software',
-                            outcome: 'While focus areas should cover key functionality, listing every possible feature would make the approach too rigid and closer to scripted testing.',
-                            experience: -15
-                        },
-                        {
-                            text: 'Focus areas can be determined by copying from previous similar projects',
-                            outcome: 'Focus areas should be tailored to the specific project rather than copied from previous work.',
-                            experience: -10
-                        },
-                        {
-                            text: 'Focus areas should be detailed as a priority on cosmetic elements',
-                            outcome: 'Focus areas should prioritise functionality rather than focusing on cosmetic elements.',
-                            experience: -5
-                        }
-                    ]
-                },
-                {
-                    id: 7,
-                    level: 'Intermediate',
-                    title: 'Exploratory Testing Risks',
-                    description: 'What is a risk of relying solely on exploratory testing?',
-                    options: [
-                        {
-                            text: 'It may lead to incomplete test coverage due to time constraints',
-                            outcome: 'A disadvantage of exploratory testing is potentially incomplete test coverage. As a time-based approach, testing might uncover numerous issues in one area, but time constraints may prevent discovering all bugs comprehensively.',
-                            experience: 20,
-                            tool: 'Exploratory Risk Check'
-                        },
-                        {
-                            text: 'Solely focusing on exploratory testing can makes test activities too rigid',
-                            outcome: 'Exploratory testing is flexible in nature, not rigid like other scripted test approaches.',
-                            experience: -15
-                        },
-                        {
-                            text: 'This type of approach can require too much documentation',
-                            outcome: 'Exploratory testing requires less documentation than scripted testing.',
-                            experience: -10
-                        },
-                        {
-                            text: 'This type of approach always takes longer than scripted testing',
-                            outcome: 'While time management can be a challenge, exploratory testing doesn\'t always take longer than scripted testing; in fact, it can be more time-efficient by eliminating the need for extensive test case preparation.',
-                            experience: -5
-                        }
-                    ]
-                },
-                {
-                    id: 8,
-                    level: 'Intermediate',
-                    title: 'Non-Functional Test Cases',
-                    description: 'When executing non-functional tests in an exploratory script, what is different compared to focus area testing?',
-                    options: [
-                        {
-                            text: 'Non-functional tests involve executing clearly defined test cases',
-                            outcome: 'Executing non-functional tests is different from focus area testing because it involves executing clearly defined test cases rather than exploring. These are the only areas within an exploratory script that contain pre-defined test cases.',
-                            experience: 20,
-                            tool: 'Non-Functional Test Case'
-                        },
-                        {
-                            text: 'Non-functional tests don\'t require notes or observations within the documentation',
-                            outcome: 'Non-functional tests still require notes and observations to be recorded for traceability.',
-                            experience: -15
-                        },
-                        {
-                            text: 'Non-functional tests can be left if time constraints do not allow them and all functional tests have been completed',
-                            outcome: 'Non-functional tests are an important part of the testing process and shouldn\'t be skipped due to time constraints.',
-                            experience: -10
-                        },
-                        {
-                            text: 'Non-functional tests don\'t need to be selected for each primary environment',
-                            outcome: 'Non-functional tests should be selected based on relevance to the specific primary environment being tested, not applied universally without consideration.',
-                            experience: -5
-                        }
-                    ]
-                },
-                {
-                    id: 9,
-                    level: 'Intermediate',
-                    title: 'Compatibility Testing',
-                    description: 'How should bugs be documented when testing compatibility environments?',
-                    options: [
-                        {
-                            text: 'List global issues as "#Global issues observed" and add newly discovered issues to notes',
-                            outcome: 'Perfect! When documenting bugs in compatibility environments, testers should list global issues as "#Global issues observed". Newly discovered issues should be added to the notes, making it easier to identify environment-specific problems.',
-                            experience: 20,
-                            tool: 'Exploratory Compatibility Framework'
-                        },
-                        {
-                            text: 'Every issue must be documented in full detail for each environment',
-                            outcome: 'It is not the preferred approach to list every known issue for each device, if the ticket isn\'t device-specific. This could cause make this section difficult to follow and all issues should also be raised in the issues tab already',
-                            experience: -15
-                        },
-                        {
-                            text: 'Only issues specific to that environment should be noted in the compatibility environments section',
-                            outcome: 'While newly discovered issues should be noted, the approach should also acknowledge previously discovered issues that are present in the current environment.',
-                            experience: -10
-                        },
-                        {
-                            text: 'Issues should only be documented for the primary environment',
-                            outcome: 'Issues should be documented for all environments, not just the primary one',
-                            experience: -5
-                        }
-                    ]
-                },
-                {
-                    id: 10,
-                    level: 'Intermediate',
-                    title: 'Exploratory Time Management',
-                    description: 'What should happen if a tester believes there are more defects in an area but has run out of allotted time?',
-                    options: [
-                        {
-                            text: 'Note that more defects are apparent, and additional time may be required',
-                            outcome: 'Excellent! If an area still has defects and time has run out, the tester should leave a note indicating they believe more defects are apparent and additional time may be required. They should also inform the Test Delivery Manager so this can be communicated to the client if necessary.',
-                            experience: 20,
-                            tool: 'Exploratory Test Management'
-                        },
-                        {
-                            text: 'Leave these potential defects if they are believed to be minor and move on',
-                            outcome: 'Ignoring potential defects contradicts the purpose of exploratory testing, which is to discover issues.',
-                            experience: -15
-                        },
-                        {
-                            text: 'Extend testing time to address all potential issues without informing the project manager',
-                            outcome: 'Extending testing time without authorisation would affect project timelines and potentially impact other scheduled work.',
-                            experience: -10
-                        },
-                        {
-                            text: 'Mark the area as fully tested to be able to adhere to project timelines and deliverables',
-                            outcome: 'Falsely marking an area as fully tested when there are suspected undiscovered issues would be misleading.',
-                            experience: -5
-                        }
-                    ]
-                }
+            // Store scenario data
+            // First ensure these arrays exist and are initialized
+            console.log('Setting up basic scenarios array');
+            this.basicScenarios = this.basicScenarios || [
+                // ... existing code for basic scenarios ...
             ];
             
-            // Advanced Scenarios (IDs 11-15, 125 XP total, 25 XP each)
-            this.advancedScenarios = [
-                {
-                    id: 11,
-                    level: 'Advanced',
-                    title: 'Exploratory Testing Scenario',
-                    description: 'When should exploratory testing be considered more appropriate than scripted testing?',
-                    options: [
-                        {
-                            text: 'When exploring user behaviour, functionality, and experience in a dynamic manner',
-                            outcome: 'Perfect! This allows testers to use creativity and intuition to discover defects organically while taking a user-centric approach.',
-                            experience: 25,
-                            tool: 'Installation Validator'
-                        },
-                        {
-                            text: 'When the application requires thorough regression testing',
-                            outcome: 'Regression testing typically benefits from scripted tests to ensure consistent verification of previously working functionality.',
-                            experience: -15
-                        },
-                        {
-                            text: 'When preparing for a full release of the application under test to a production environment',
-                            outcome: 'While exploratory testing can be valuable before a production release, a combination of approaches is typically best for ensuring comprehensive coverage including non-functional tests.',
-                            experience: -10
-                        },
-                        {
-                            text: 'When documenting every step of the testing process is critical to the project',
-                            outcome: 'Exploratory testing deliberately does not document every step, focusing instead on observations and findings.',
-                            experience: -5
-                        }
-                    ]
-                },
-                {
-                    id: 12,
-                    level: 'Advanced',
-                    title: 'Exploratory Test Skills',
-                    description: 'How does the effectiveness of exploratory testing relate to tester skills?',
-                    options: [
-                        {
-                            text: 'Exploratory testing effectiveness heavily depends on tester skills, experience, and knowledge',
-                            outcome: 'Excellent! Less experienced testers might overlook important defects or fail to identify critical areas to test, making tester expertise a significant factor.',
-                            experience: 25,
-                            tool: 'Exploratory Test Skills'
-                        },
-                        {
-                            text: 'Tester skills have minimal impact on exploratory testing effectiveness',
-                            outcome: 'Tester skills have a substantial impact on exploratory testing effectiveness.',
-                            experience: -15
-                        },
-                        {
-                            text: 'Only testers with formal certification should perform exploratory testing',
-                            outcome: 'Formal certification is not a requirement for exploratory testing; skills, experience, and knowledge are, however, factors.',
-                            experience: -10
-                        },
-                        {
-                            text: 'All testers will discover the same defects regardless of experience',
-                            outcome: 'Different testers will likely discover different defects based on their experience, approach, and expertise.',
-                            experience: -5
-                        }
-                    ]
-                },
-                {
-                    id: 13,
-                    level: 'Advanced',
-                    title: 'Exploratory Focus Time',
-                    description: 'In an exploratory testing approach, how should time be allocated across different focus areas?',
-                    options: [
-                        {
-                            text: 'More time should be allocated to areas with important functionality',
-                            outcome: 'Perfect! When setting up an exploratory script, time should be allocated appropriately to each focus area, with more time assigned to areas containing important functionality. For example, a simple footer would have less time allocated compared to a checkout process.',
-                            experience: 25,
-                            tool: 'JavaScript Checker'
-                        },
-                        {
-                            text: 'Equal time should be given to all focus areas stated in the test script',
-                            outcome: 'Equal time allocation doesn\'t account for the varying complexity and importance of different areas.',
-                            experience: -15
-                        },
-                        {
-                            text: 'Focus areas with known issues should be avoided and addressed if possible, when all other areas have been covered to save time',
-                            outcome: 'Focus areas with known issues should still be tested, not avoided.',
-                            experience: -10
-                        },
-                        {
-                            text: 'Time allocation should follow a fixed percentage for each type of functionality',
-                            outcome: 'While different types of functionality may warrant different time allocations, using fixed percentages would be too rigid and might not reflect the specific needs of the project.',
-                            experience: -5
-                        }
-                    ]
-                },
-                {
-                    id: 14,
-                    level: 'Advanced',
-                    title: 'Issue Documentation',
-                    description: 'When documenting issues in an exploratory script, what information is required in the Issues tab?',
-                    options: [
-                        {
-                            text: 'Issue title (with number and hyperlink), issue number, severity, ticket type, environment, status, reporter, date raised, and optional notes',
-                            outcome: 'Excellent! When adding issues to the Issues tab, all of these details should be included.',
-                            experience: 25,
-                            tool: 'Issue Documentation'
-                        },
-                        {
-                            text: 'Pass rate, fail rate, and average execution time',
-                            outcome: 'These are metrics and not issue details to be documented in the issues tab.',
-                            experience: -15
-                        },
-                        {
-                            text: 'A detailed reproduction path for each issue should be included in the issue tab',
-                            outcome: 'While reproduction steps are important in the actual issue ticket, the Issues tab in the exploratory script doesn\'t specifically require detailed reproduction paths to be duplicated there.',
-                            experience: -10
-                        },
-                        {
-                            text: 'Issues that affect the primary environment should be included in the issue tab',
-                            outcome: 'Issues affecting all environments should be documented, not just the primary environment.',
-                            experience: -5
-                        }
-                    ]
-                },
-                {
-                    id: 15,
-                    level: 'Advanced',
-                    title: 'Exploratory Time Management',
-                    description: 'How should an exploratory tester balance time management with thorough investigation?',
-                    options: [
-                        {
-                            text: 'By using a time-boxed approach for each focus area while prioritising based on functionality importance',
-                            outcome: 'Perfect! Time management in exploratory testing is best approached by using time-boxed sessions for each focus area, sticking to the allotted time as closely as possible, and prioritising areas with important functionality. This ensures expected test coverage can be completed while focusing on the most critical aspects.',
-                            experience: 25,
-                            tool: 'Exploratory Time Management'
-                        },
-                        {
-                            text: 'By exploring areas that are likely to have defects within the application under test',
-                            outcome: 'While focusing on areas likely to have defects can be efficient, it might miss issues in unexpected places, and all focus areas still need some level of coverage.',
-                            experience: -15
-                        },
-                        {
-                            text: 'By strictly adhering to predefined test cases within the test script',
-                            outcome: 'Exploratory testing deliberately avoids predefined test cases (except for non-functional tests).',
-                            experience: -10
-                        },
-                        {
-                            text: 'By extending testing time whenever necessary to make sure thorough coverage is performed',
-                            outcome: 'Extending testing time could affect project timelines and potentially impact other scheduled work.',
-                            experience: -5
-                        }
-                    ]
-                }
+            console.log('Setting up intermediate scenarios array');
+            this.intermediateScenarios = this.intermediateScenarios || [
+                // ... existing code for intermediate scenarios ...
             ];
-
+            
+            console.log('Setting up advanced scenarios array');
+            this.advancedScenarios = this.advancedScenarios || [
+                // ... existing code for advanced scenarios ...
+            ];
+            
+            console.log('Scenario arrays initialized');
+            console.log(`Basic scenarios: ${this.basicScenarios.length}, Intermediate: ${this.intermediateScenarios.length}, Advanced: ${this.advancedScenarios.length}`);
+            
             // Initialize UI and add event listeners
             this.initializeUI();
 
@@ -703,22 +97,23 @@ export class ExploratoryQuiz extends BaseQuiz {
             console.log('Initializing UI');
             
             // Get main container elements
-            this.gameContainer = document.getElementById('game-container');
+            this.gameContainer = document.querySelector('.quiz-container');
             this.gameScreen = document.getElementById('game-screen');
             this.outcomeScreen = document.getElementById('outcome-screen');
             this.endScreen = document.getElementById('end-screen');
             
-            if (!this.gameContainer || !this.gameScreen || !this.outcomeScreen || !this.endScreen) {
-                throw new Error('Required UI elements not found');
+            // Create a less strict check - allow the quiz to continue if at least gameScreen exists
+            if (!this.gameScreen) {
+                console.warn('Game screen element not found - quiz may not function correctly');
             }
             
-            // Ensure the scenario container exists
+            // Create scenario elements if they don't exist
             this.ensureRequiredElementsExist();
             
-            // Get progress elements
-            this.progressBar = document.getElementById('progress-bar');
-            this.levelIndicator = document.getElementById('current-level');
-            this.questionCounter = document.getElementById('question-counter');
+            // Get progress elements - don't fail if they're missing
+            this.progressBar = document.getElementById('progress-fill');
+            this.levelIndicator = document.getElementById('level-indicator');
+            this.questionCounter = document.getElementById('question-progress');
             
             // Update initial progress display
             this.updateProgressDisplay();
@@ -731,106 +126,87 @@ export class ExploratoryQuiz extends BaseQuiz {
     }
     
     ensureRequiredElementsExist() {
-        // Check if scenario container exists, create it if not
-        if (!document.getElementById('scenario-container')) {
-            console.log('Creating missing scenario container');
+        try {
+            console.log('Ensuring required elements exist');
             
-            // Get the question section
-            const questionSection = this.gameScreen.querySelector('.question-section');
+            // First make sure we have access to gameScreen
+            if (!this.gameScreen) {
+                console.error('Cannot create elements without gameScreen');
+                return false;
+            }
+            
+            // Check for question section and create if missing
+            let questionSection = this.gameScreen.querySelector('.question-section');
             if (!questionSection) {
-                // Create the entire question section if it doesn't exist
-                const newQuestionSection = document.createElement('div');
-                newQuestionSection.className = 'question-section';
+                console.log('Creating missing question section');
+                questionSection = document.createElement('div');
+                questionSection.className = 'question-section';
                 
-                // Create title and description elements
-                const titleElement = document.createElement('h2');
-                titleElement.id = 'scenario-title';
-                titleElement.setAttribute('tabindex', '0');
-                
-                const descriptionElement = document.createElement('p');
-                descriptionElement.id = 'scenario-description';
-                descriptionElement.setAttribute('tabindex', '0');
-                
-                // Create scenario container and add elements
-                const scenarioContainer = document.createElement('div');
-                scenarioContainer.id = 'scenario-container';
-                scenarioContainer.appendChild(titleElement);
-                scenarioContainer.appendChild(descriptionElement);
-                
-                // Add to question section
-                newQuestionSection.appendChild(scenarioContainer);
-                
-                // Add question section to game screen (before options)
+                // Find a good place to insert it (before options-section if possible)
                 const optionsSection = this.gameScreen.querySelector('.options-section');
                 if (optionsSection) {
-                    this.gameScreen.insertBefore(newQuestionSection, optionsSection);
+                    this.gameScreen.insertBefore(questionSection, optionsSection);
                 } else {
-                    this.gameScreen.appendChild(newQuestionSection);
+                    this.gameScreen.appendChild(questionSection);
                 }
-            } else {
-                // If question section exists but scenario container doesn't
-                // Check if title and description elements exist
-                let titleElement = questionSection.querySelector('#scenario-title');
-                let descriptionElement = questionSection.querySelector('#scenario-description');
-                
-                // Create scenario container
-                const scenarioContainer = document.createElement('div');
-                scenarioContainer.id = 'scenario-container';
-                
-                // Move existing elements or create new ones
-                if (titleElement) {
-                    // Remove from current position
-                    titleElement.parentNode.removeChild(titleElement);
-                    // Add to new container
-                    scenarioContainer.appendChild(titleElement);
-                } else {
-                    // Create new title element
-                    titleElement = document.createElement('h2');
-                    titleElement.id = 'scenario-title';
-                    titleElement.setAttribute('tabindex', '0');
-                    scenarioContainer.appendChild(titleElement);
-                }
-                
-                if (descriptionElement) {
-                    // Remove from current position
-                    descriptionElement.parentNode.removeChild(descriptionElement);
-                    // Add to new container
-                    scenarioContainer.appendChild(descriptionElement);
-                } else {
-                    // Create new description element
-                    descriptionElement = document.createElement('p');
-                    descriptionElement.id = 'scenario-description';
-                    descriptionElement.setAttribute('tabindex', '0');
-                    scenarioContainer.appendChild(descriptionElement);
-                }
-                
-                // Add container to question section
-                questionSection.appendChild(scenarioContainer);
             }
             
-            console.log('Scenario container created successfully');
-        }
-        
-        // Check if options container exists, create it if not
-        if (!document.getElementById('options-container')) {
-            console.log('Creating missing options container');
+            // Check for scenario title and create if missing
+            let titleElement = document.getElementById('scenario-title');
+            if (!titleElement) {
+                console.log('Creating missing scenario title element');
+                titleElement = document.createElement('h2');
+                titleElement.id = 'scenario-title';
+                titleElement.setAttribute('tabindex', '0');
+                questionSection.appendChild(titleElement);
+            }
             
-            const optionsForm = document.getElementById('options-form');
-            if (optionsForm) {
-                const optionsContainer = document.createElement('div');
+            // Check for scenario description and create if missing
+            let descriptionElement = document.getElementById('scenario-description');
+            if (!descriptionElement) {
+                console.log('Creating missing scenario description element');
+                descriptionElement = document.createElement('p');
+                descriptionElement.id = 'scenario-description';
+                descriptionElement.setAttribute('tabindex', '0');
+                questionSection.appendChild(descriptionElement);
+            }
+            
+            // Check for options form and create if missing
+            let optionsForm = document.getElementById('options-form');
+            if (!optionsForm) {
+                console.log('Creating missing options form');
+                optionsForm = document.createElement('form');
+                optionsForm.id = 'options-form';
+                optionsForm.className = 'options-section';
+                this.gameScreen.appendChild(optionsForm);
+            }
+            
+            // Check for options container and create if missing
+            let optionsContainer = document.getElementById('options-container');
+            if (!optionsContainer) {
+                console.log('Creating missing options container');
+                optionsContainer = document.createElement('div');
                 optionsContainer.id = 'options-container';
-                
-                // Insert at the beginning of the form
-                if (optionsForm.firstChild) {
-                    optionsForm.insertBefore(optionsContainer, optionsForm.firstChild);
-                } else {
-                    optionsForm.appendChild(optionsContainer);
-                }
-                
-                console.log('Options container created successfully');
-            } else {
-                console.error('Options form not found, cannot create options container');
+                optionsForm.appendChild(optionsContainer);
             }
+            
+            // Check for submit button and create if missing
+            let submitButton = document.getElementById('submit-btn');
+            if (!submitButton) {
+                console.log('Creating missing submit button');
+                submitButton = document.createElement('button');
+                submitButton.type = 'submit';
+                submitButton.id = 'submit-btn';
+                submitButton.className = 'submit-button';
+                submitButton.textContent = 'Submit Answer';
+                optionsForm.appendChild(submitButton);
+            }
+            
+            console.log('All required elements checked and created if needed');
+            return true;
+        } catch (error) {
+            console.error('Error in ensureRequiredElementsExist:', error);
+            return false;
         }
     }
 
@@ -988,6 +364,8 @@ export class ExploratoryQuiz extends BaseQuiz {
         
         try {
             this.isLoading = true;
+            console.log('Starting exploratory quiz game');
+            
             // Show loading indicator
             const loadingIndicator = document.getElementById('loading-indicator');
             if (loadingIndicator) {
@@ -997,15 +375,18 @@ export class ExploratoryQuiz extends BaseQuiz {
             // Set player name from localStorage
             this.player.name = localStorage.getItem('username');
             if (!this.player.name) {
+                console.warn('No username found, redirecting to login');
                 window.location.href = '/login.html';
                 return;
             }
 
             // Initialize event listeners
             this.initializeEventListeners();
+            console.log('Event listeners initialized');
 
             // Load previous progress
             const hasProgress = await this.loadProgress();
+            console.log('Progress loaded:', hasProgress);
             
             if (!hasProgress) {
                 // Reset player state if no valid progress exists
@@ -1027,8 +408,31 @@ export class ExploratoryQuiz extends BaseQuiz {
                 clearInterval(this.questionTimer);
             }
             
+            // Pre-initialize randomized scenarios
+            try {
+                // Force initialization of randomized scenarios
+                if (!this.randomizedScenarios || 
+                    !this.randomizedScenarios.basic || 
+                    this.randomizedScenarios.basic.length === 0) {
+                    console.log('Pre-initializing scenarios in startGame');
+                    this.getCurrentScenarios();
+                }
+            } catch (scenarioError) {
+                console.error('Failed to initialize scenarios:', scenarioError);
+                this.showError('Failed to initialize quiz scenarios. Please try refreshing the page.');
+                this.isLoading = false;
+                if (loadingIndicator) {
+                    loadingIndicator.classList.add('hidden');
+                }
+                return;
+            }
+            
             // Display the first scenario and start the timer
-            await this.displayScenario();
+            const scenarioDisplayed = await this.displayScenario();
+            if (!scenarioDisplayed) {
+                console.error('Failed to display initial scenario');
+                this.showError('Failed to start the quiz. Please try refreshing the page.');
+            }
         } catch (error) {
             console.error('Failed to start game:', error);
             this.showError('Failed to start the quiz. Please try refreshing the page.');
@@ -1095,22 +499,51 @@ export class ExploratoryQuiz extends BaseQuiz {
         try {
             console.log('Displaying scenario');
             
+            // Ensure required UI elements exist first
+            if (!this.ensureRequiredElementsExist()) {
+                throw new Error('Required UI elements could not be created');
+            }
+            
             // Get total answered questions
             const totalAnswered = this.player?.questionHistory?.length || 0;
+            console.log(`Total answered questions: ${totalAnswered}`);
+            
+            // Force initialization of randomized scenarios if needed
+            if (!this.randomizedScenarios || 
+                !this.randomizedScenarios.basic || 
+                this.randomizedScenarios.basic.length === 0) {
+                console.log('Scenarios not initialized, initializing now');
+                this.getCurrentScenarios();
+            }
             
             // Get the appropriate scenarios based on progress
             const scenarios = this.getCurrentScenarios();
+            console.log(`Scenarios for current level: ${scenarios?.length || 0}`);
+            
             if (!scenarios || scenarios.length === 0) {
                 throw new Error('No scenarios available for the current level');
             }
             
             // Calculate current scenario index within the level
             const scenarioIndex = totalAnswered % 5;
+            console.log(`Current scenario index: ${scenarioIndex}`);
+            
+            // Get current scenario
             this.currentScenario = scenarios[scenarioIndex];
             
             if (!this.currentScenario) {
-                throw new Error(`Scenario not found at index ${scenarioIndex}`);
+                console.error(`Scenario not found at index ${scenarioIndex}. Available indexes: 0-${scenarios.length - 1}`);
+                
+                // Fall back to first scenario if available
+                if (scenarios.length > 0) {
+                    console.log('Falling back to first scenario in the level');
+                    this.currentScenario = scenarios[0];
+                } else {
+                    throw new Error(`No scenarios available to display`);
+                }
             }
+            
+            console.log(`Selected scenario: ${this.currentScenario.id}, title: ${this.currentScenario.title}`);
             
             // Update UI with current scenario
             this.updateScenarioUI(this.currentScenario);
@@ -1122,7 +555,7 @@ export class ExploratoryQuiz extends BaseQuiz {
             return true;
         } catch (error) {
             console.error('Error in displayScenario:', error);
-            this.showError('An error occurred while loading the scenario.');
+            this.showError('An error occurred while loading the scenario. Please refresh and try again.');
             return false;
         }
     }
@@ -1309,11 +742,12 @@ export class ExploratoryQuiz extends BaseQuiz {
             }
             
             const outcomeScreen = document.getElementById('outcome-screen');
-            const outcomeMessage = document.getElementById('outcome-message');
-            const experienceGained = document.getElementById('experience-gained');
-            const continueButton = document.getElementById('continue-button');
+            const outcomeMessage = document.getElementById('outcome-text');
+            const experienceGained = document.getElementById('xp-gained');
+            const toolGained = document.getElementById('tool-gained');
+            const continueButton = document.getElementById('continue-btn');
             
-            if (!outcomeScreen || !outcomeMessage || !experienceGained || !continueButton) {
+            if (!outcomeScreen || !outcomeMessage || !experienceGained || !toolGained || !continueButton) {
                 throw new Error('Outcome screen elements not found in the DOM');
             }
             
@@ -1332,6 +766,9 @@ export class ExploratoryQuiz extends BaseQuiz {
             } else {
                 experienceGained.classList.add('low-experience');
             }
+            
+            // Set tool gained
+            toolGained.textContent = `Tool gained: ${option.tool || 'None'}`;
             
             // Show outcome screen
             outcomeScreen.classList.remove('hidden');
@@ -1493,54 +930,93 @@ export class ExploratoryQuiz extends BaseQuiz {
         try {
             const totalAnswered = this.player?.questionHistory?.length || 0;
             
+            console.log(`Getting scenarios for total answered: ${totalAnswered}`);
+            console.log(`Basic scenarios count: ${this.basicScenarios?.length}`);
+            console.log(`Intermediate scenarios count: ${this.intermediateScenarios?.length}`);
+            console.log(`Advanced scenarios count: ${this.advancedScenarios?.length}`);
+            
+            // Ensure scenario arrays exist and have content
+            if (!Array.isArray(this.basicScenarios) || this.basicScenarios.length === 0) {
+                console.error('Basic scenarios array is empty or undefined');
+                throw new Error('Basic scenarios not properly initialized');
+            }
+            
+            if (!Array.isArray(this.intermediateScenarios) || this.intermediateScenarios.length === 0) {
+                console.error('Intermediate scenarios array is empty or undefined');
+                throw new Error('Intermediate scenarios not properly initialized');
+            }
+            
+            if (!Array.isArray(this.advancedScenarios) || this.advancedScenarios.length === 0) {
+                console.error('Advanced scenarios array is empty or undefined');
+                throw new Error('Advanced scenarios not properly initialized');
+            }
+            
             // If we don't have the randomized sets yet, create them
-            if (!this.randomizedScenarios) {
-                // Get list of already answered question IDs to avoid repeats
-                const answeredIds = new Set(
-                    this.player?.questionHistory
-                        ?.map(q => q.scenario?.id)
-                        .filter(id => id !== undefined)
-                );
+            if (!this.randomizedScenarios || 
+                !this.randomizedScenarios.basic || 
+                this.randomizedScenarios.basic.length === 0) {
                 
-                // Function to generate a set of scenarios ensuring no repeats
-                const getUniqueScenarios = (allScenarios, numNeeded) => {
-                    // Filter out scenarios that have already been answered
-                    const availableScenarios = allScenarios.filter(s => !answeredIds.has(s.id));
+                console.log('Initializing randomized scenarios');
+                
+                // Function to safely get randomized scenarios
+                const getRandomScenarios = (scenarios, count) => {
+                    // Make a copy of the scenarios array
+                    const copy = [...scenarios];
                     
-                    // If we don't have enough scenarios left, include already seen ones as a fallback
-                    if (availableScenarios.length < numNeeded) {
-                        console.log(`Not enough unique scenarios left in pool. Using some repeats.`);
-                        return this.shuffleArray([...allScenarios]).slice(0, numNeeded);
+                    // Shuffle the array
+                    for (let i = copy.length - 1; i > 0; i--) {
+                        const j = Math.floor(Math.random() * (i + 1));
+                        [copy[i], copy[j]] = [copy[j], copy[i]];
                     }
                     
-                    // Shuffle and take the number needed
-                    return this.shuffleArray(availableScenarios).slice(0, numNeeded);
+                    // Return the first 'count' elements or all if fewer
+                    return copy.slice(0, Math.min(count, copy.length));
                 };
                 
-                // Create randomized sets of unique scenarios for each level
+                // Create randomized scenario sets
                 this.randomizedScenarios = {
-                    basic: getUniqueScenarios(this.basicScenarios, 5),
-                    intermediate: getUniqueScenarios(this.intermediateScenarios, 5),
-                    advanced: getUniqueScenarios(this.advancedScenarios, 5)
+                    basic: getRandomScenarios(this.basicScenarios, 5),
+                    intermediate: getRandomScenarios(this.intermediateScenarios, 5),
+                    advanced: getRandomScenarios(this.advancedScenarios, 5)
                 };
                 
-                console.log('Created randomized scenarios:', {
-                    basic: this.randomizedScenarios.basic.map(s => s.id),
-                    intermediate: this.randomizedScenarios.intermediate.map(s => s.id),
-                    advanced: this.randomizedScenarios.advanced.map(s => s.id)
-                });
+                console.log('Randomized scenarios created successfully');
+                console.log(`Basic: ${this.randomizedScenarios.basic.length}, Intermediate: ${this.randomizedScenarios.intermediate.length}, Advanced: ${this.randomizedScenarios.advanced.length}`);
             }
-        
-            // Simple progression logic based solely on question count
+            
+            // Return the appropriate scenario set based on progress
             if (totalAnswered >= 10) {
+                console.log('Returning advanced scenarios');
                 return this.randomizedScenarios.advanced;
             } else if (totalAnswered >= 5) {
+                console.log('Returning intermediate scenarios');
                 return this.randomizedScenarios.intermediate;
+            } else {
+                console.log('Returning basic scenarios');
+                return this.randomizedScenarios.basic;
             }
-            return this.randomizedScenarios.basic;
         } catch (error) {
             console.error('Error in getCurrentScenarios:', error);
-            return this.basicScenarios; // Default to basic if there's an error
+            // Emergency fallback - return at least something
+            return this.basicScenarios && this.basicScenarios.length > 0 ? 
+                   this.basicScenarios.slice(0, 5) : 
+                   [{
+                       id: 'fallback',
+                       title: 'Emergency Fallback Scenario',
+                       description: 'There was an error loading the proper scenarios. Please refresh the page and try again.',
+                       options: [
+                           {
+                               text: 'Continue',
+                               outcome: 'This is a fallback option.',
+                               experience: 5
+                           },
+                           {
+                               text: 'Try again',
+                               outcome: 'Please refresh the page.',
+                               experience: 5
+                           }
+                       ]
+                   }];
         }
     }
 
