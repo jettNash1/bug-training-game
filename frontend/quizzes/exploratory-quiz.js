@@ -4,141 +4,515 @@ import { QuizUser } from '../QuizUser.js';
 
 export class ExploratoryQuiz extends BaseQuiz {
     constructor() {
-        super();
-        console.log('Initializing ExploratoryQuiz');
+        const config = {
+            maxXP: 300,
+            totalQuestions: 15,
+            passPercentage: 70,
+            performanceThresholds: [
+                { threshold: 90, message: '🏆 Outstanding! You\'re an exploratory testing expert!' },
+                { threshold: 80, message: '👏 Great job! You\'ve shown strong exploratory testing skills!' },
+                { threshold: 70, message: '👍 Good work! You\'ve passed the quiz!' },
+                { threshold: 0, message: '📚 Consider reviewing exploratory testing best practices and try again!' }
+            ]
+        };
         
-        // Initialize base properties
-        this.quizName = 'exploratory';
-        this.passPercentage = 70;
-        this.questionTimer = null;
-        this.questionTimeLimit = 60; // 60 seconds per question
-        this.timerEnabled = true;
-        this.isLoading = false;
+        super(config);
         
-        // Initialize scenario data structure placeholders
-        this.basicScenarios = [];
-        this.intermediateScenarios = [];
-        this.advancedScenarios = [];
+        // Set the quiz name
+        Object.defineProperty(this, 'quizName', {
+            value: 'exploratory',
+            writable: false,
+            configurable: false,
+            enumerable: true
+        });
         
-        // Initialize player
+        // Initialize player state
         this.player = {
             name: '',
             experience: 0,
             tools: [],
             currentScenario: 0,
-            questionHistory: [],
-            level: 'basic'
+            questionHistory: []
         };
+
+        // Initialize API service
+        this.apiService = new APIService();
+
+        // Initialize all screen elements
+        this.gameScreen = document.getElementById('game-screen');
+        this.outcomeScreen = document.getElementById('outcome-screen');
+        this.endScreen = document.getElementById('end-screen');
         
-        // Initialize UI
-        this.initializeUI();
+        // Verify all required elements exist
+        if (!this.gameScreen) {
+            console.error('Game screen element not found');
+            this.showError('Quiz initialization failed. Please refresh the page.');
+            return;
+        }
         
-        // Load scenarios
-        this.loadScenarios()
-            .then(() => {
-                console.log('Scenarios loaded successfully');
-                // Start the game once scenarios are loaded
-                this.startGame();
-            })
-            .catch(error => {
-                console.error('Failed to load scenarios:', error);
-                // Display error to user but still try to start the game
-                // The startGame method has fallbacks for missing scenarios
-                this.showError('There was an issue loading quiz content. Some questions may be unavailable.');
-                this.startGame();
-            });
-    }
-    
-    async loadScenarios() {
-        try {
-            // First try to load from window object (may be pre-loaded)
-            if (window.allScenarios) {
-                this.basicScenarios = window.allScenarios.basic || [];
-                this.intermediateScenarios = window.allScenarios.intermediate || [];
-                this.advancedScenarios = window.allScenarios.advanced || [];
-                console.log('Loaded scenarios from window object');
-                return;
+        if (!this.outcomeScreen) {
+            console.error('Outcome screen element not found');
+            this.showError('Quiz initialization failed. Please refresh the page.');
+            return;
+        }
+        
+        if (!this.endScreen) {
+            console.error('End screen element not found');
+            this.showError('Quiz initialization failed. Please refresh the page.');
+            return;
+        }
+
+        // Basic Scenarios
+        this.basicScenarios = [
+            {
+                id: 1,
+                level: 'Basic',
+                title: 'Test Planning',
+                description: 'You are starting an exploratory testing session for a new website. What should you do first?',
+                options: [
+                    {
+                        text: 'Create a basic test plan with goals and areas to explore',
+                        outcome: 'Perfect! Having a plan with clear objectives guides effective exploratory testing.',
+                        experience: 15,
+                        tool: 'Test Planning'
+                    },
+                    {
+                        text: 'Start clicking around immediately to find issues',
+                        outcome: 'Exploratory testing is most effective when it has some structure and goals.',
+                        experience: 0
+                    },
+                    {
+                        text: 'Write detailed test cases first',
+                        outcome: 'Detailed test cases are contrary to the spirit of exploratory testing, which balances freedom with structure.',
+                        experience: -10
+                    },
+                    {
+                        text: 'Ask the developer what to test',
+                        outcome: 'While developer input is valuable, exploratory testing requires you to think independently and explore based on your expertise.',
+                        experience: -5
+                    }
+                ]
+            },
+            {
+                id: 2,
+                level: 'Basic',
+                title: 'Time Management',
+                description: 'You have a limited time for exploratory testing. How would you structure your session?',
+                options: [
+                    {
+                        text: 'Use timeboxed sessions with clear focus areas for each',
+                        outcome: 'Excellent! Timeboxing helps maintain focus and ensures coverage of important areas.',
+                        experience: 15,
+                        tool: 'Session-Based Testing'
+                    },
+                    {
+                        text: 'Test continuously until time runs out',
+                        outcome: 'Without structure, testing can become unfocused and miss important areas.',
+                        experience: -10
+                    },
+                    {
+                        text: 'Focus only on the main user path',
+                        outcome: 'While the main path is important, exploratory testing should cover various aspects of the system.',
+                        experience: 0
+                    },
+                    {
+                        text: 'Spend most time documenting test cases',
+                        outcome: 'Exploratory testing focuses on exploration rather than detailed documentation.',
+                        experience: -5
+                    }
+                ]
+            },
+            {
+                id: 3,
+                level: 'Basic',
+                title: 'Documentation',
+                description: 'How should you document your findings during exploratory testing?',
+                options: [
+                    {
+                        text: 'Take notes of your actions, observations, and issues during and after testing',
+                        outcome: 'Perfect! Lightweight but effective documentation captures valuable information without hindering exploration.',
+                        experience: 15,
+                        tool: 'Test Notes'
+                    },
+                    {
+                        text: 'Don\'t document anything during testing to maintain flow',
+                        outcome: 'Without documentation, valuable observations may be lost.',
+                        experience: -10
+                    },
+                    {
+                        text: 'Create detailed test cases for everything you test',
+                        outcome: 'Detailed test cases aren\'t typically part of exploratory testing.',
+                        experience: -5
+                    },
+                    {
+                        text: 'Record brief notes and expand them after the session',
+                        outcome: 'This is a good approach, but could be more comprehensive during testing.',
+                        experience: 5
+                    }
+                ]
+            },
+            {
+                id: 4,
+                level: 'Basic',
+                title: 'Bug Reporting',
+                description: 'You found a bug during exploratory testing. What information should you include in your report?',
+                options: [
+                    {
+                        text: 'Detailed steps to reproduce, expected vs. actual results, and context of discovery',
+                        outcome: 'Excellent! Comprehensive bug reports help developers understand and fix issues.',
+                        experience: 15,
+                        tool: 'Bug Reporting'
+                    },
+                    {
+                        text: 'Just a screenshot of the error',
+                        outcome: 'Screenshots alone don\'t provide enough context for effective troubleshooting.',
+                        experience: -5
+                    },
+                    {
+                        text: 'General description of the area with the problem',
+                        outcome: 'Without specific steps, bugs may be difficult to reproduce and fix.',
+                        experience: 0
+                    },
+                    {
+                        text: 'Mark it as "found during exploration" and let developers investigate',
+                        outcome: 'Developers need clear information to address bugs efficiently.',
+                        experience: -10
+                    }
+                ]
+            },
+            {
+                id: 5,
+                level: 'Basic',
+                title: 'Test Techniques',
+                description: 'Which technique is most valuable during basic exploratory testing?',
+                options: [
+                    {
+                        text: 'Boundary testing - checking edge cases and limits',
+                        outcome: 'Perfect! Boundary testing is highly effective at finding issues during exploration.',
+                        experience: 15,
+                        tool: 'Boundary Testing'
+                    },
+                    {
+                        text: 'Following the same path each time',
+                        outcome: 'Repetitive testing limits discovery of new issues.',
+                        experience: -10
+                    },
+                    {
+                        text: 'Testing only happy paths',
+                        outcome: 'Many issues are found in edge cases and error conditions.',
+                        experience: -5
+                    },
+                    {
+                        text: 'Using different inputs and workflows',
+                        outcome: 'This is valuable but not as focused as boundary testing for finding specific issues.',
+                        experience: 5
+                    }
+                ]
             }
-            
-            // If not in window object, try loading from JSON (example path, adjust as needed)
-            try {
-                const response = await fetch('/data/exploratory-scenarios.json');
-                
-                if (!response.ok) {
-                    throw new Error(`Failed to fetch scenarios: ${response.status}`);
-                }
-                
-                const data = await response.json();
-                
-                this.basicScenarios = data.basic || [];
-                this.intermediateScenarios = data.intermediate || [];
-                this.advancedScenarios = data.advanced || [];
-                
-                console.log('Loaded scenarios from JSON file');
-                
-                // Store in window for future use
-                window.allScenarios = data;
-                
-            } catch (fetchError) {
-                console.error('Failed to fetch scenarios JSON:', fetchError);
-                
-                // Use fallback hardcoded scenarios
-                this.useFallbackScenarios();
+        ];
+
+        // Intermediate Scenarios
+        this.intermediateScenarios = [
+            {
+                id: 6,
+                level: 'Intermediate',
+                title: 'Heuristic Approach',
+                description: 'Which heuristic would be most useful when testing a new e-commerce checkout process?',
+                options: [
+                    {
+                        text: 'CRUD operations - test all Create, Read, Update, Delete operations with customer data',
+                        outcome: 'Excellent! CRUD testing ensures all data operations in the checkout work correctly.',
+                        experience: 20,
+                        tool: 'Testing Heuristics'
+                    },
+                    {
+                        text: 'Consistency checks only',
+                        outcome: 'While consistency is important, a broader approach is needed for checkout processes.',
+                        experience: -10
+                    },
+                    {
+                        text: 'Focus only on performance testing',
+                        outcome: 'Performance is just one aspect of checkout functionality.',
+                        experience: -5
+                    },
+                    {
+                        text: 'Test only with valid credit cards',
+                        outcome: 'Error handling for invalid payments is crucial for checkout functionality.',
+                        experience: -15
+                    }
+                ]
+            },
+            {
+                id: 7,
+                level: 'Intermediate',
+                title: 'Charter-Based Testing',
+                description: 'You\'re creating a test charter for exploratory testing. What should it include?',
+                options: [
+                    {
+                        text: 'Clear mission, scope, targeted areas, time allocation, and reporting method',
+                        outcome: 'Perfect! A well-structured charter guides effective exploration.',
+                        experience: 20,
+                        tool: 'Test Charter'
+                    },
+                    {
+                        text: 'Just the general area to test',
+                        outcome: 'A vague charter provides insufficient guidance for focused testing.',
+                        experience: -5
+                    },
+                    {
+                        text: 'Detailed test cases to follow',
+                        outcome: 'Test cases contradict the exploratory nature of the testing.',
+                        experience: -10
+                    },
+                    {
+                        text: 'Only defects to look for',
+                        outcome: 'Predefined defects limit discovery of unexpected issues.',
+                        experience: -15
+                    }
+                ]
+            },
+            {
+                id: 8,
+                level: 'Intermediate',
+                title: 'Test Note-Taking',
+                description: 'What\'s the most effective way to take notes during exploratory testing?',
+                options: [
+                    {
+                        text: 'Use a structured template capturing actions, observations, questions, and ideas',
+                        outcome: 'Excellent! Structured notes enhance the value of exploratory sessions.',
+                        experience: 20,
+                        tool: 'Session Notes'
+                    },
+                    {
+                        text: 'Random jottings of interesting observations',
+                        outcome: 'Unstructured notes may miss important details and context.',
+                        experience: -5
+                    },
+                    {
+                        text: 'Record everything as formal test cases',
+                        outcome: 'Formal test cases are too rigid and time-consuming for exploratory testing.',
+                        experience: -10
+                    },
+                    {
+                        text: 'Only document bugs found',
+                        outcome: 'Exploratory testing produces valuable insights beyond just bugs.',
+                        experience: -15
+                    }
+                ]
+            },
+            {
+                id: 9,
+                level: 'Intermediate',
+                title: 'Risk-Based Exploration',
+                description: 'How should you prioritize areas during exploratory testing?',
+                options: [
+                    {
+                        text: 'Focus on high-risk areas first based on business impact and technical complexity',
+                        outcome: 'Perfect! Risk-based prioritization maximizes the value of testing time.',
+                        experience: 20,
+                        tool: 'Risk Assessment'
+                    },
+                    {
+                        text: 'Test everything equally',
+                        outcome: 'Equal attention doesn\'t account for varying risks and importance.',
+                        experience: -15
+                    },
+                    {
+                        text: 'Focus only on new features',
+                        outcome: 'Regression issues in existing features can be equally important.',
+                        experience: -10
+                    },
+                    {
+                        text: 'Test whatever seems interesting',
+                        outcome: 'While intuition is valuable, a more structured approach to risk is needed.',
+                        experience: -5
+                    }
+                ]
+            },
+            {
+                id: 10,
+                level: 'Intermediate',
+                title: 'Test Data Management',
+                description: 'What\'s the best approach to test data during exploratory testing?',
+                options: [
+                    {
+                        text: 'Prepare diverse test data sets in advance but remain flexible to create new data during testing',
+                        outcome: 'Excellent! This balances preparation with adaptability.',
+                        experience: 20,
+                        tool: 'Test Data Management'
+                    },
+                    {
+                        text: 'Only use production data',
+                        outcome: 'Production data may not cover edge cases and could raise privacy concerns.',
+                        experience: -5
+                    },
+                    {
+                        text: 'Create all test data on the fly',
+                        outcome: 'This may slow down testing and miss important data scenarios.',
+                        experience: -10
+                    },
+                    {
+                        text: 'Use the same test data for all tests',
+                        outcome: 'Varied data is essential to uncover different types of issues.',
+                        experience: -15
+                    }
+                ]
             }
-        } catch (error) {
-            console.error('Error in loadScenarios:', error);
-            // Use fallback hardcoded scenarios
-            this.useFallbackScenarios();
-        }
-    }
-    
-    useFallbackScenarios() {
-        console.log('Using fallback scenarios');
-        
-        // Create basic fallback scenarios
-        this.basicScenarios = [];
-        for (let i = 0; i < 5; i++) {
-            this.basicScenarios.push({
-                id: `basic-fallback-${i}`,
-                title: `Basic Exploratory Testing Scenario ${i+1}`,
-                description: 'Practice basic exploratory testing techniques.',
+        ];
+
+        // Advanced Scenarios
+        this.advancedScenarios = [
+            {
+                id: 11,
+                level: 'Advanced',
+                title: 'Test Touring',
+                description: 'You\'re using the "tour" approach to exploratory testing. Which type of tour would best test API integration points?',
                 options: [
-                    { text: 'Document your findings thoroughly', outcome: 'Good documentation is essential.', experience: 10 },
-                    { text: 'Focus on finding as many bugs as possible', outcome: 'Quality over quantity is important.', experience: 5 },
-                    { text: 'Skip documentation to save time', outcome: 'Documentation is crucial for exploratory testing.', experience: 0 }
+                    {
+                        text: 'Connection tour - focusing on how different components communicate',
+                        outcome: 'Perfect! Connection tours specifically target integration points and data flow.',
+                        experience: 25,
+                        tool: 'Test Touring'
+                    },
+                    {
+                        text: 'Feature tour - testing all features',
+                        outcome: 'Feature tours don\'t specifically target integration concerns.',
+                        experience: -10
+                    },
+                    {
+                        text: 'Landmark tour - focusing on main functionality',
+                        outcome: 'Landmark tours miss the specific integration aspects of APIs.',
+                        experience: -15
+                    },
+                    {
+                        text: 'Garbage collector tour - focusing on cleanup processes',
+                        outcome: 'While important, this doesn\'t focus on API communication.',
+                        experience: -20
+                    }
                 ]
-            });
-        }
-        
-        // Create intermediate fallback scenarios
-        this.intermediateScenarios = [];
-        for (let i = 0; i < 5; i++) {
-            this.intermediateScenarios.push({
-                id: `intermediate-fallback-${i}`,
-                title: `Intermediate Exploratory Testing Scenario ${i+1}`,
-                description: 'Apply more advanced exploratory testing concepts.',
+            },
+            {
+                id: 12,
+                level: 'Advanced',
+                title: 'Session-Based Testing',
+                description: 'In session-based exploratory testing, what should happen in the debriefing?',
                 options: [
-                    { text: 'Use a structured approach with time-boxes', outcome: 'Structured exploratory testing is effective.', experience: 10 },
-                    { text: 'Test completely free-form without constraints', outcome: 'Some structure helps focus testing efforts.', experience: 5 },
-                    { text: 'Focus only on high-risk areas', outcome: 'Balanced coverage is important.', experience: 0 }
+                    {
+                        text: 'Review findings, identify blockers, refine strategies, and plan next sessions',
+                        outcome: 'Excellent! Effective debriefing maximizes learning and improves future sessions.',
+                        experience: 25,
+                        tool: 'Session Debriefing'
+                    },
+                    {
+                        text: 'Just list bugs found',
+                        outcome: 'Debriefing should cover broader insights beyond just bugs.',
+                        experience: -20
+                    },
+                    {
+                        text: 'Assign blame for missed issues',
+                        outcome: 'Blame is counterproductive to continuous improvement.',
+                        experience: -15
+                    },
+                    {
+                        text: 'Focus only on test coverage metrics',
+                        outcome: 'Quantitative metrics alone miss valuable qualitative insights.',
+                        experience: -10
+                    }
                 ]
-            });
-        }
-        
-        // Create advanced fallback scenarios
-        this.advancedScenarios = [];
-        for (let i = 0; i < 5; i++) {
-            this.advancedScenarios.push({
-                id: `advanced-fallback-${i}`,
-                title: `Advanced Exploratory Testing Scenario ${i+1}`,
-                description: 'Master complex exploratory testing strategies.',
+            },
+            {
+                id: 13,
+                level: 'Advanced',
+                title: 'Team Collaboration',
+                description: 'How can you best integrate exploratory testing with an Agile development team?',
                 options: [
-                    { text: 'Combine multiple testing techniques', outcome: 'A varied approach works best for complex scenarios.', experience: 10 },
-                    { text: 'Focus on edge cases and boundary testing', outcome: 'This is good but a combined approach is better.', experience: 5 },
-                    { text: 'Rely on past experience only', outcome: 'Be open to new approaches for each testing context.', experience: 0 }
+                    {
+                        text: 'Conduct paired exploratory testing sessions with developers and share insights in sprint reviews',
+                        outcome: 'Perfect! Collaboration enhances knowledge sharing and test effectiveness.',
+                        experience: 25,
+                        tool: 'Paired Testing'
+                    },
+                    {
+                        text: 'Test independently and report bugs',
+                        outcome: 'This misses opportunities for collaboration and knowledge sharing.',
+                        experience: -15
+                    },
+                    {
+                        text: 'Wait until features are complete before testing',
+                        outcome: 'Delayed testing contradicts Agile principles of early feedback.',
+                        experience: -10
+                    },
+                    {
+                        text: 'Only participate in formal test phases',
+                        outcome: 'Agile teams benefit from continuous testing throughout development.',
+                        experience: -20
+                    }
                 ]
-            });
-        }
+            },
+            {
+                id: 14,
+                level: 'Advanced',
+                title: 'Automation Integration',
+                description: 'How should exploratory testing relate to test automation?',
+                options: [
+                    {
+                        text: 'Use exploratory testing to identify areas for automation and automate repetitive checks to free up exploration time',
+                        outcome: 'Excellent! This creates a virtuous cycle where each approach strengthens the other.',
+                        experience: 25,
+                        tool: 'Automation Strategy'
+                    },
+                    {
+                        text: 'Keep them completely separate',
+                        outcome: 'Integration between manual and automated testing creates efficiencies.',
+                        experience: -10
+                    },
+                    {
+                        text: 'Replace exploratory testing with automation',
+                        outcome: 'Automation cannot replace the cognitive aspects of exploratory testing.',
+                        experience: -15
+                    },
+                    {
+                        text: 'Only automate what was found during exploration',
+                        outcome: 'This is too reactive; strategic automation planning is needed.',
+                        experience: -20
+                    }
+                ]
+            },
+            {
+                id: 15,
+                level: 'Advanced',
+                title: 'Advanced Techniques',
+                description: 'Which advanced technique would be most effective for exploring potential security vulnerabilities?',
+                options: [
+                    {
+                        text: 'Thinking like an attacker and using threat modeling to guide exploration',
+                        outcome: 'Perfect! This mindset is critical for effective security testing.',
+                        experience: 25,
+                        tool: 'Security Testing'
+                    },
+                    {
+                        text: 'Running standard functional tests',
+                        outcome: 'Functional tests rarely uncover security issues.',
+                        experience: -15
+                    },
+                    {
+                        text: 'Using only automated security scanners',
+                        outcome: 'Tools alone miss many vulnerabilities that creative exploration can find.',
+                        experience: -10
+                    },
+                    {
+                        text: 'Testing only with valid inputs',
+                        outcome: 'Security testing requires invalid, unexpected, and malicious inputs.',
+                        experience: -20
+                    }
+                ]
+            }
+        ];
+
+        // Initialize UI and add event listeners
+        this.initializeEventListeners();
+
+        this.isLoading = false;
     }
 
     initializeUI() {
@@ -425,147 +799,102 @@ export class ExploratoryQuiz extends BaseQuiz {
     }
 
     async saveProgress() {
-        try {
-            if (!this.player) {
-                console.error('No player data to save');
-                return;
-            }
+        // First determine the status based on completion criteria only
+        let status = 'in-progress';
+        
+        // Check for completion (all 15 questions answered)
+        if (this.player.questionHistory.length >= 15) {
+            // Calculate pass/fail based on correct answers
+            const correctAnswers = this.player.questionHistory.filter(q => 
+                q.selectedAnswer && (q.selectedAnswer.isCorrect || q.selectedAnswer.experience > 0)
+            ).length;
+            const scorePercentage = Math.round((correctAnswers / 15) * 100);
+            status = scorePercentage >= 70 ? 'passed' : 'failed';
+        }
 
-            const username = localStorage.getItem('username');
-            if (!username) {
-                console.error('No username found. Please login first.');
-                return;
-            }
-
-            // Calculate score
-            const correctAnswers = this.player.questionHistory.filter(q => this.isCorrectAnswer(q.selectedAnswer)).length;
-            const score = Math.round((correctAnswers / Math.max(this.player.questionHistory.length, 1)) * 100);
-
-            // Determine if quiz is complete
-            const isComplete = this.player.questionHistory.length >= 15;
-            const status = isComplete ? (score >= this.passPercentage ? 'passed' : 'failed') : 'in-progress';
-
-            // Create progress object
-            const progress = {
+        const progress = {
+            data: {
                 experience: this.player.experience,
                 tools: this.player.tools,
                 currentScenario: this.player.currentScenario,
                 questionHistory: this.player.questionHistory,
-                randomizedScenarios: this.randomizedScenarios,
-                status: status,
-                scorePercentage: score,
+                lastUpdated: new Date().toISOString(),
                 questionsAnswered: this.player.questionHistory.length,
-                lastUpdated: new Date().toISOString()
-            };
+                randomizedScenarios: this.randomizedScenarios, // Save randomized scenarios for consistent experience
+                status: status,
+                scorePercentage: Math.round((this.player.questionHistory.filter(q => 
+                    q.selectedAnswer && (q.selectedAnswer.isCorrect || q.selectedAnswer.experience > 0)
+                ).length / 15) * 100)
+            }
+        };
 
-            // Save to localStorage first as a backup
+        try {
+            const username = localStorage.getItem('username');
+            
+            // Use user-specific key for localStorage
             const storageKey = `quiz_progress_${username}_${this.quizName}`;
             localStorage.setItem(storageKey, JSON.stringify(progress));
-            console.log('Progress saved to localStorage as backup');
-
-            // Try saving to server
-            try {
-                const quizUser = new QuizUser(username);
-                await quizUser.saveQuizProgress(this.quizName, progress);
-                console.log('Progress saved successfully to server');
-            } catch (apiError) {
-                console.error('Error saving progress to server, using localStorage fallback:', apiError);
-                // Already saved to localStorage above, so just log the error
-            }
+            
+            await this.apiService.saveQuizProgress(this.quizName, progress.data);
         } catch (error) {
-            console.error('Error saving progress:', error);
+            console.error('Failed to save progress:', error);
         }
     }
 
     async loadProgress() {
         try {
             const username = localStorage.getItem('username');
-            if (!username) {
-                console.error('No username found. Please login first.');
-                return false;
-            }
 
-            // Try to get progress from API first
+            // Use user-specific key for localStorage
+            const storageKey = `quiz_progress_${username}_${this.quizName}`;
+            const savedProgress = await this.apiService.getQuizProgress(this.quizName);
             let progress = null;
-            let loadedFromAPI = false;
             
-            try {
-                const quizUser = new QuizUser(username);
-                progress = await quizUser.getQuizProgress(this.quizName);
+            if (savedProgress && savedProgress.data) {
+                // Normalize the data structure
+                progress = {
+                    experience: savedProgress.data.experience || 0,
+                    tools: savedProgress.data.tools || [],
+                    questionHistory: savedProgress.data.questionHistory || [],
+                    currentScenario: savedProgress.data.currentScenario || 0,
+                    randomizedScenarios: savedProgress.data.randomizedScenarios,
+                    status: savedProgress.data.status || 'in-progress'
+                };
+            } else {
+                // Try loading from localStorage as fallback
+                const localData = localStorage.getItem(storageKey);
+                if (localData) {
+                    const parsed = JSON.parse(localData);
+                    progress = parsed;
+                }
+            }
+
+            if (progress) {
+                // Set the player state from progress
+                this.player.experience = progress.experience || 0;
+                this.player.tools = progress.tools || [];
+                this.player.questionHistory = progress.questionHistory || [];
+                this.player.currentScenario = progress.currentScenario || 0;
+
+                // Restore randomized scenarios if they exist
+                if (progress.randomizedScenarios) {
+                    this.randomizedScenarios = progress.randomizedScenarios;
+                }
+
+                // Ensure we're updating the UI correctly
+                this.updateProgress();
                 
-                if (progress) {
-                    console.log('Progress loaded from API successfully');
-                    loadedFromAPI = true;
+                // Check quiz status and show appropriate screen
+                if (progress.status === 'failed' || progress.status === 'passed') {
+                    this.endGame(progress.status === 'failed');
+                    return true;
                 }
-            } catch (apiError) {
-                console.warn('Failed to load progress from API, trying localStorage:', apiError);
-            }
-            
-            // If API failed, try localStorage
-            if (!loadedFromAPI) {
-                const storageKey = `quiz_progress_${username}_${this.quizName}`;
-                const savedData = localStorage.getItem(storageKey);
-                
-                if (savedData) {
-                    try {
-                        progress = JSON.parse(savedData);
-                        console.log('Progress loaded from localStorage successfully');
-                    } catch (parseError) {
-                        console.error('Failed to parse localStorage data:', parseError);
-                    }
-                }
-            }
 
-            if (!progress) {
-                console.log('No saved progress found. Starting new game.');
-                return false;
-            }
-
-            // Restore player state
-            this.player = {
-                name: username,
-                experience: progress.experience || 0,
-                tools: progress.tools || [],
-                currentScenario: progress.currentScenario || 0,
-                questionHistory: progress.questionHistory || [],
-                level: 'basic',
-                // Store randomized scenarios for each level to maintain consistent question order
-                randomScenarios: {
-                    basic: progress.randomizedScenarios?.basic || null,
-                    intermediate: progress.randomizedScenarios?.intermediate || null,
-                    advanced: progress.randomizedScenarios?.advanced || null
-                }
-            };
-
-            // Restore randomized scenarios if available
-            if (progress.randomizedScenarios) {
-                this.randomizedScenarios = progress.randomizedScenarios;
-                console.log('Restored randomized scenarios:', this.randomizedScenarios);
-            }
-
-            // Check if all questions have been answered
-            if (this.player.questionHistory.length >= 15) {
-                console.log('All questions have been answered. Ending game.');
-                this.endGame();
                 return true;
             }
-
-            // Calculate which level we're on and the scenario index within that level
-            const totalAnswered = this.player.questionHistory.length;
-            const levelIndex = Math.floor(totalAnswered / 5); // 0, 1, or 2
-            const scenarioIndex = totalAnswered % 5; // 0 to 4
-            
-            // Update current scenario based on progress
-            this.player.currentScenario = scenarioIndex;
-            
-            console.log(`Restored progress: ${totalAnswered} questions answered, level ${levelIndex}, scenario ${scenarioIndex}`);
-            
-            // Update UI
-            this.updateProgressDisplay();
-            
-            return true;
+            return false;
         } catch (error) {
-            console.error('Error loading progress:', error);
+            console.error('Failed to load progress:', error);
             return false;
         }
     }
@@ -575,8 +904,6 @@ export class ExploratoryQuiz extends BaseQuiz {
         
         try {
             this.isLoading = true;
-            console.log('Starting exploratory quiz game');
-            
             // Show loading indicator
             const loadingIndicator = document.getElementById('loading-indicator');
             if (loadingIndicator) {
@@ -586,34 +913,18 @@ export class ExploratoryQuiz extends BaseQuiz {
             // Set player name from localStorage
             this.player.name = localStorage.getItem('username');
             if (!this.player.name) {
-                console.warn('No username found, redirecting to login');
                 window.location.href = '/login.html';
                 return;
             }
 
             // Initialize event listeners
             this.initializeEventListeners();
-            console.log('Event listeners initialized');
-
-            // Initialize UI
-            this.initializeUI();
-            console.log('UI initialized');
-
+            
             // Load previous progress
-            try {
-                const hasProgress = await this.loadProgress();
-                console.log('Progress loaded:', hasProgress);
-                
-                if (!hasProgress) {
-                    // Reset player state if no valid progress exists
-                    this.player.experience = 0;
-                    this.player.tools = [];
-                    this.player.currentScenario = 0;
-                    this.player.questionHistory = [];
-                }
-            } catch (progressError) {
-                console.error('Error loading progress:', progressError);
-                // Continue with a fresh state if loading progress fails
+            const hasProgress = await this.loadProgress();
+            
+            if (!hasProgress) {
+                // Reset player state if no valid progress exists
                 this.player.experience = 0;
                 this.player.tools = [];
                 this.player.currentScenario = 0;
@@ -632,37 +943,7 @@ export class ExploratoryQuiz extends BaseQuiz {
                 clearInterval(this.questionTimer);
             }
             
-            // Pre-initialize randomized scenarios
-            try {
-                // Force initialization of randomized scenarios
-                if (!this.randomizedScenarios || 
-                    !this.randomizedScenarios.basic || 
-                    this.randomizedScenarios.basic.length === 0) {
-                    console.log('Pre-initializing scenarios in startGame');
-                    this.getCurrentScenarios();
-                }
-            } catch (scenarioError) {
-                console.error('Failed to initialize scenarios:', scenarioError);
-                this.showError('Failed to initialize quiz scenarios. Please try refreshing the page.');
-                this.isLoading = false;
-                if (loadingIndicator) {
-                    loadingIndicator.classList.add('hidden');
-                }
-                return;
-            }
-            
-            // Update progress display
-            this.updateProgressDisplay();
-            
-            // Display the first scenario and start the timer
-            const scenarioDisplayed = await this.displayScenario();
-            if (!scenarioDisplayed) {
-                console.error('Failed to display initial scenario');
-                this.showError('Failed to start the quiz. Please try refreshing the page.');
-            }
-        } catch (error) {
-            console.error('Failed to start game:', error);
-            this.showError('Failed to start the quiz. Please try refreshing the page.');
+            await this.displayScenario();
         } finally {
             this.isLoading = false;
             // Hide loading state
@@ -675,7 +956,7 @@ export class ExploratoryQuiz extends BaseQuiz {
 
     initializeEventListeners() {
         try {            
-        // Add event listeners for the continue and restart buttons
+            // Add event listeners for the continue and restart buttons
             const continueBtn = document.getElementById('continue-btn');
             if (continueBtn) {
                 // Remove any existing listeners by cloning and replacing
@@ -693,13 +974,13 @@ export class ExploratoryQuiz extends BaseQuiz {
                 restartBtn.addEventListener('click', () => this.restartGame());
             }
 
-        // Add form submission handler
+            // Add form submission handler
             const optionsForm = document.getElementById('options-form');
             if (optionsForm) {
                 optionsForm.addEventListener('submit', (e) => {
-            e.preventDefault();
-            this.handleAnswer();
-        });
+                    e.preventDefault();
+                    this.handleAnswer();
+                });
             }
             
             // Add submit button click handler
@@ -711,408 +992,394 @@ export class ExploratoryQuiz extends BaseQuiz {
                 });
             }
 
-        // Add keyboard navigation
-        document.addEventListener('keydown', (e) => {
-            if (e.key === 'Enter' && e.target.type === 'radio') {
-                this.handleAnswer();
-            }
-        });
+            // Add keyboard navigation
+            document.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter' && e.target.type === 'radio') {
+                    this.handleAnswer();
+                }
+            });            
         } catch (error) {
             console.error('Error initializing event listeners:', error);
         }
     }
 
-    async displayScenario() {
+    displayScenario() {
         try {
-            // Ensure we have the scenario container
-            const scenarioContainer = document.getElementById('scenario-container');
-            if (!scenarioContainer) {
-                console.error('Scenario container not found');
-                return false;
-            }
-
-            // Get the current level scenarios
-            console.log('About to get current scenarios');
-            let currentScenarios;
-            
-            try {
-                currentScenarios = this.getCurrentScenarios();
-            } catch (scenarioError) {
-                console.error('Failed to get current scenarios:', scenarioError);
-                
-                // Emergency fallback if getCurrentScenarios fails
-                if (this.randomizedScenarios && 
-                    this.randomizedScenarios.basic && 
-                    this.randomizedScenarios.basic.length > 0) {
-                    currentScenarios = this.randomizedScenarios.basic;
-                } else if (this.basicScenarios && this.basicScenarios.length > 0) {
-                    currentScenarios = this.basicScenarios.slice(0, 5);
-                } else {
-                    // Last resort fallback
-                    currentScenarios = [{
-                        id: 'fallback',
-                        title: 'Emergency Fallback Scenario',
-                        description: 'There was an error loading the scenarios. Please refresh the page.',
-                        options: [
-                            {
-                                text: 'Continue',
-                                outcome: 'Please refresh the page.',
-                                experience: 0
-                            }
-                        ]
-                    }];
-                }
-            }
-            
-            console.log(`Current level scenarios: ${currentScenarios.length}`);
-            
-            if (!currentScenarios || currentScenarios.length === 0) {
-                console.error('No scenarios available for the current level');
-                this.showError('No scenarios available. Please refresh the page.');
-                return false;
-            }
-
-            // Get current scenario index
-            const scenarioIndex = this.player.currentScenario || 0;
-            console.log(`Current scenario index: ${scenarioIndex}`);
-            
-            if (scenarioIndex >= currentScenarios.length) {
-                console.error(`Invalid scenario index: ${scenarioIndex} (max: ${currentScenarios.length - 1})`);
-                this.player.currentScenario = 0; // Reset to first scenario if out of bounds
-            }
-
-            // Get the scenario for the current index
-            const currentScenario = currentScenarios[this.player.currentScenario];
-            console.log(`Selected scenario: ${currentScenario.id}, title: ${currentScenario.title}`);
-            
-            if (!currentScenario) {
-                console.error('Current scenario is undefined');
-                return false;
-            }
-
-            // Update the UI with the current scenario
-            this.updateScenarioUI(currentScenario);
-            
-            // Start the timer
-            this.initializeTimer();
-            
-            const totalAnswered = this.player.questionHistory.length;
-            console.log(`Displaying scenario: ${currentScenario.id} (${totalAnswered + 1}/15)`);
-            
-            return true;
-        } catch (error) {
-            console.error('Error displaying scenario:', error);
-            this.showError('An error occurred while displaying the scenario. Please try refreshing the page.');
-            return false;
-        }
-    }
-    
-    updateScenarioUI(scenario) {
-        try {
-            console.log(`Updating UI with scenario: ${scenario.id}`);
-            
-            // Get UI elements
-            const titleElement = document.getElementById('scenario-title');
-            const descriptionElement = document.getElementById('scenario-description');
-            const optionsContainer = document.getElementById('options-container');
-            
-            // Make sure elements exist
-            if (!titleElement || !descriptionElement || !optionsContainer) {
-                console.error('Required UI elements not found');
-                this.ensureRequiredElementsExist();
-                
-                // Try again with newly created elements
-                const retryTitle = document.getElementById('scenario-title');
-                const retryDescription = document.getElementById('scenario-description');
-                const retryOptions = document.getElementById('options-container');
-                
-                if (!retryTitle || !retryDescription || !retryOptions) {
-                    throw new Error('Failed to create required UI elements');
-                }
-                
-                // Continue with retry elements
-                titleElement = retryTitle;
-                descriptionElement = retryDescription;
-                optionsContainer = retryOptions;
-            }
-            
-            // Update scenario title and description
-            titleElement.textContent = scenario.title || 'Untitled Scenario';
-            descriptionElement.textContent = scenario.description || 'No description available';
-            
-            // Clear existing options
-            optionsContainer.innerHTML = '';
-            
-            // Add scenario options
-            if (scenario.options && Array.isArray(scenario.options)) {
-                scenario.options.forEach((option, index) => {
-                    const optionButton = document.createElement('button');
-                    optionButton.className = 'option-btn';
-                    optionButton.textContent = option.text || `Option ${index + 1}`;
-                    optionButton.setAttribute('data-index', index);
-                    optionButton.setAttribute('data-experience', option.experience || 0);
-                    
-                    // Add event listener
-                    optionButton.addEventListener('click', () => {
-                        this.handleAnswer(index);
-                    });
-                    
-                    optionsContainer.appendChild(optionButton);
-                });
-            } else {
-                console.warn('No options available for scenario');
-                // Add a default option
-                const defaultButton = document.createElement('button');
-                defaultButton.className = 'option-btn';
-                defaultButton.textContent = 'Continue to next question';
-                defaultButton.setAttribute('data-index', 0);
-                defaultButton.setAttribute('data-experience', 0);
-                
-                defaultButton.addEventListener('click', () => {
-                    this.nextScenario();
-                });
-                
-                optionsContainer.appendChild(defaultButton);
-            }
-            
-            // Update progress display
-            this.updateProgressDisplay();
-            
-            // Initialize timer
-            this.initializeTimer();
-            
-            console.log('Scenario UI updated successfully');
-            return true;
-        } catch (error) {
-            console.error('Error updating scenario UI:', error);
-            this.showError('An error occurred while updating the scenario. Please refresh the page.');
-            return false;
-        }
-    }
-
-    isCorrectAnswer(answer) {
-        // In exploratory quiz, answers with positive experience are considered correct
-        if (!answer) return false;
-        
-        // If answer is an object (from question history)
-        if (typeof answer === 'object') {
-            return answer.experience > 0;
-        }
-        
-        // If answer is an option index (from current scenario)
-        if (typeof answer === 'number') {
-            const currentScenarios = this.getCurrentScenarios();
-            const currentScenario = currentScenarios[this.player.currentScenario];
-            
-            if (currentScenario && currentScenario.options && currentScenario.options[answer]) {
-                return currentScenario.options[answer].experience > 0;
-            }
-        }
-        
-        return false;
-    }
-
-    handleAnswer(optionIndex) {
-        try {
-            console.log(`Answer selected: option ${optionIndex}`);
-            
-            // Disable all option buttons to prevent multiple selections
-            const optionButtons = document.querySelectorAll('.option-btn');
-            optionButtons.forEach(button => {
-                button.disabled = true;
-                button.classList.add('disabled');
-            });
-            
-            // Stop the timer
-            if (this.questionTimer) {
-                clearInterval(this.questionTimer);
-                this.questionTimer = null;
-            }
-            
-            // Get current scenario
-            const currentScenarios = this.getCurrentScenarios();
-            const currentScenario = currentScenarios[this.player.currentScenario];
-            
-            if (!currentScenario) {
-                console.error('Current scenario is undefined');
-                this.showError('An error occurred processing your answer. Please try refreshing the page.');
+            // Check if player and currentScenario are properly initialized
+            if (!this.player || typeof this.player.currentScenario !== 'number') {
                 return;
             }
             
-            // Get the selected option
-            const selectedOption = currentScenario.options[optionIndex];
-            
-            if (!selectedOption) {
-                console.error(`Option ${optionIndex} not found in current scenario`);
-                this.showError('An error occurred processing your answer. Please try refreshing the page.');
+            // Check if we've answered all 15 questions
+            if (this.player.questionHistory.length >= 15) {
+                this.endGame();
                 return;
             }
             
-            // Record the answer
-            const questionRecord = {
-                scenario: currentScenario,
-                selectedAnswer: selectedOption,
-                timestamp: new Date().toISOString()
-            };
-            
-            // Add to question history
-            this.player.questionHistory.push(questionRecord);
-            
-            // Update player experience
-            this.player.experience += selectedOption.experience;
-            
-            // Save progress
-            this.saveProgress();
-            
-            // Display outcome
-            this.displayOutcome(selectedOption, currentScenario);
-            
-        } catch (error) {
-            console.error('Error handling answer:', error);
-            this.showError('An error occurred processing your answer. Please try refreshing the page.');
-        }
-    }
-    
-    displayOutcome(selectedOption, scenario) {
-        try {
-            console.log('Displaying outcome');
-            
-            // Hide game screen and show outcome screen
-            const gameScreen = document.getElementById('game-screen');
-            const outcomeScreen = document.getElementById('outcome-screen');
-            
-            if (gameScreen) gameScreen.classList.add('hidden');
-            if (outcomeScreen) {
-                outcomeScreen.classList.remove('hidden');
-                outcomeScreen.style.display = 'block';
-            }
-            
-            // Get outcome elements
-            const outcomeTitle = document.getElementById('outcome-title');
-            const outcomeMessage = document.getElementById('outcome-message');
-            const xpAmount = document.getElementById('xp-amount');
-            const continueBtn = document.getElementById('continue-btn');
-            
-            // Check if elements exist
-            if (!outcomeTitle || !outcomeMessage || !xpAmount || !continueBtn) {
-                console.error('Outcome screen elements not found');
-                this.showError('An error occurred displaying the outcome. Please try refreshing the page.');
-                this.nextScenario(); // Force continue to next scenario
-                return;
-            }
-            
-            // Set outcome content
-            const isCorrect = this.isCorrectAnswer(selectedOption);
-            outcomeTitle.textContent = isCorrect ? 'Good Choice!' : 'Consider This...';
-            outcomeMessage.textContent = selectedOption.outcome || 'No feedback available for this choice.';
-            
-            // Set XP amount with color based on whether it's positive or negative
-            const xp = selectedOption.experience || 0;
-            xpAmount.textContent = xp >= 0 ? `+${xp}` : `${xp}`;
-            xpAmount.className = xp > 0 ? 'positive-xp' : (xp < 0 ? 'negative-xp' : '');
-            
-            // Add event listener to continue button
-            continueBtn.addEventListener('click', () => {
-                this.nextScenario();
-            }, { once: true }); // Use once:true to prevent multiple event bindings
-            
-            console.log('Outcome displayed successfully');
-        } catch (error) {
-            console.error('Error displaying outcome:', error);
-            this.showError('An error occurred displaying the outcome. Please try refreshing the page.');
-            setTimeout(() => this.nextScenario(), 2000); // Force continue after error
-        }
-    }
-
-    initializeTimer() {
-        try {
             // Clear any existing timer
             if (this.questionTimer) {
                 clearInterval(this.questionTimer);
                 this.questionTimer = null;
             }
             
-            // Skip if timer is disabled
-            if (!this.timerEnabled) {
-                console.log('Timer is disabled, skipping initialization');
+            const currentScenarios = this.getCurrentScenarios();
+            
+            if (!currentScenarios || !Array.isArray(currentScenarios)) {
+                return;
+            }
+
+            const scenario = currentScenarios[this.player.currentScenario];
+            
+            // Check if the current scenario exists
+            if (!scenario) {
+                // Reset currentScenario for the next level
+                this.player.currentScenario = 0;
+                
+                // Get the next level scenarios
+                const updatedScenarios = this.getCurrentScenarios();
+                if (!updatedScenarios || !updatedScenarios[0]) {
+                    this.endGame();
+                    return;
+                }
+                
+                // Display the first scenario of the next level
+                const nextScenario = updatedScenarios[0];
+                this.displayScenarioContent(nextScenario);
                 return;
             }
             
-            // Get timer element
-            const timerElement = document.getElementById('timer-value');
-            if (!timerElement) {
-                console.warn('Timer element not found, skipping timer initialization');
-                return;
-            }
-            
-            // Set initial time
-            let timeLeft = this.questionTimeLimit;
-            timerElement.textContent = timeLeft;
-            
-            // Start timer
-            this.questionTimer = setInterval(() => {
-                timeLeft--;
-                
-                // Update timer display
-                if (timerElement) {
-                    timerElement.textContent = timeLeft;
-                    
-                    // Change color when time is low
-                    if (timeLeft <= 10) {
-                        timerElement.classList.add('timer-warning');
-                    }
-                }
-                
-                // Handle time up
-                if (timeLeft <= 0) {
-                    clearInterval(this.questionTimer);
-                    this.handleTimeUp();
-                }
-            }, 1000);
-            
-            console.log(`Timer initialized with ${this.questionTimeLimit} seconds`);
+            // Display the current scenario
+            this.displayScenarioContent(scenario);
         } catch (error) {
-            console.error('Error initializing timer:', error);
-            // Continue without timer if there's an error
+            console.error('Error displaying scenario:', error);
+            this.showError('An error occurred displaying the scenario. Please try reloading the page.');
         }
     }
     
-    handleTimeUp() {
+    // Helper method to display scenario content
+    displayScenarioContent(scenario) {
         try {
-            console.log('Time up - automatically selecting an answer');
-            
-            // Clear timer
-            if (this.questionTimer) {
-                clearInterval(this.questionTimer);
-                this.questionTimer = null;
+            // Update UI with current scenario
+            const titleElement = document.getElementById('scenario-title');
+            const descriptionElement = document.getElementById('scenario-description');
+            const optionsContainer = document.getElementById('options-container');
+
+            if (titleElement && scenario.title) {
+                titleElement.textContent = scenario.title;
+            }
+
+            if (descriptionElement && scenario.description) {
+                descriptionElement.textContent = scenario.description;
             }
             
-            // Get current scenario
-            const currentScenarios = this.getCurrentScenarios();
-            const currentScenario = currentScenarios[this.player.currentScenario];
+            if (optionsContainer && scenario.options && Array.isArray(scenario.options)) {
+                optionsContainer.innerHTML = '';
+                
+                // Shuffle options to randomize their order
+                const shuffledOptions = this.shuffleArray(scenario.options);
+                
+                shuffledOptions.forEach((option, index) => {
+                    if (!option || !option.text) {
+                        return;
+                    }
+                    
+                    const optionDiv = document.createElement('div');
+                    optionDiv.className = 'option';
+                    optionDiv.innerHTML = `
+                        <input type="radio" 
+                            name="option" 
+                            value="${scenario.options.indexOf(option)}" 
+                            id="option${index}"
+                            tabindex="0"
+                            aria-label="${option.text}">
+                        <label for="option${index}">${option.text}</label>
+                    `;
+                    optionsContainer.appendChild(optionDiv);
+                });
+            }
+
+            // Record start time for this question
+            this.questionStartTime = Date.now();
+
+            // Initialize timer for the new question
+            this.initializeTimer();
             
-            if (!currentScenario || !currentScenario.options || currentScenario.options.length === 0) {
-                console.error('Cannot handle time up - invalid scenario or options');
-                this.nextScenario(); // Move to next scenario
+            // Update progress display
+            this.updateProgress();
+            
+        } catch (error) {
+            console.error('Error displaying scenario content:', error);
+        }
+    }
+
+    isCorrectAnswer(answer) {
+        // Helper method to consistently determine if an answer is correct
+        return answer && (answer.isCorrect || answer.experience > 0);
+    }
+
+    async handleAnswer() {
+        if (this.isLoading) return;
+        
+        const submitButton = document.querySelector('.submit-button');
+        if (submitButton) {
+            submitButton.disabled = true;
+        }
+
+        // Clear the timer when an answer is submitted
+        if (this.questionTimer) {
+            clearInterval(this.questionTimer);
+            this.questionTimer = null;
+        }
+        
+        try {
+            this.isLoading = true;
+            const selectedOption = document.querySelector('input[name="option"]:checked');
+            if (!selectedOption) {
+                if (submitButton) {
+                    submitButton.disabled = false;
+                }
+                this.isLoading = false;
+                return;
+            }
+
+            const currentScenarios = this.getCurrentScenarios();
+            if (!currentScenarios || !this.player || this.player.currentScenario === undefined) {
+                if (submitButton) {
+                    submitButton.disabled = false;
+                }
+                this.isLoading = false;
                 return;
             }
             
-            // Find a neutral option (experience = 0) if available
-            let neutralOptionIndex = currentScenario.options.findIndex(opt => opt.experience === 0);
-            
-            // If no neutral option, select the first option
-            if (neutralOptionIndex === -1) {
-                neutralOptionIndex = 0;
+            const scenario = currentScenarios[this.player.currentScenario];
+            if (!scenario || !scenario.options) {
+                if (submitButton) {
+                    submitButton.disabled = false;
+                }
+                this.isLoading = false;
+                return;
             }
             
-            // Handle the selected answer
-            this.handleAnswer(neutralOptionIndex);
+            const originalIndex = parseInt(selectedOption.value);
+            if (isNaN(originalIndex) || originalIndex < 0 || originalIndex >= scenario.options.length) {
+                if (submitButton) {
+                    submitButton.disabled = false;
+                }
+                this.isLoading = false;
+                return;
+            }
             
-            // Show the time-up message
-            this.showError('Time is up! An answer has been automatically selected.');
+            const selectedAnswer = scenario.options[originalIndex];
+            if (!selectedAnswer) {
+                if (submitButton) {
+                    submitButton.disabled = false;
+                }
+                this.isLoading = false;
+                return;
+            }
+
+            // Find the correct answer (option with highest experience)
+            const correctAnswer = scenario.options.reduce((prev, current) => 
+                (prev.experience > current.experience) ? prev : current
+            );
+
+            // Mark selected answer as correct or incorrect
+            selectedAnswer.isCorrect = selectedAnswer === correctAnswer;
+
+            // Update player state (still track experience for backward compatibility)
+            if (typeof this.player.experience === 'number') {
+                this.player.experience = Math.max(0, Math.min(this.maxXP || 300, this.player.experience + (selectedAnswer.experience || 0)));
+            }
+            
+            // Add to question history
+            this.player.questionHistory.push({
+                scenario: scenario,
+                selectedAnswer: selectedAnswer,
+                isCorrect: this.isCorrectAnswer(selectedAnswer)
+            });
+
+            // Save progress
+            try {
+                await this.saveProgress();
+            } catch (error) {
+                console.error('Failed to save progress:', error);
+                this.showError('Warning: Progress may not have saved correctly');
+            }
+            
+            // Save quiz result
+            const username = localStorage.getItem('username');
+            if (username) {
+                try {
+                    const quizUser = new QuizUser(username);
+                    const score = {
+                        score: Math.round((this.player.questionHistory.filter(q => this.isCorrectAnswer(q.selectedAnswer)).length / Math.min(this.player.questionHistory.length, 15)) * 100),
+                        experience: this.player.experience || 0,
+                        questionHistory: this.player.questionHistory || [],
+                        questionsAnswered: this.player.questionHistory.length
+                    };
+                    
+                    await quizUser.updateQuizScore(
+                        this.quizName,
+                        score.score,
+                        score.experience,
+                        this.player.tools || [],
+                        score.questionHistory,
+                        score.questionsAnswered
+                    );
+                } catch (error) {
+                    console.error('Failed to update quiz score:', error);
+                }
+            }
+
+            // Show outcome screen and update display with answer outcome
+            this.displayOutcome(selectedAnswer);
+
+            // Update progress display
+            this.updateProgress();
+        } catch (error) {
+            console.error('Failed to process answer:', error);
+            this.showError('Failed to save your answer. Please try again.');
+        } finally {
+            this.isLoading = false;
+            if (submitButton) {
+                submitButton.disabled = false;
+            }
+        }
+    }
+
+    initializeTimer() {
+        // Clear any existing timer
+        if (this.questionTimer) {
+            clearInterval(this.questionTimer);
+            this.questionTimer = null;
+        }
+
+        // Set default timer value if not set
+        if (!this.timePerQuestion) {
+            this.timePerQuestion = 30;
+        }
+
+        // Reset remaining time
+        this.remainingTime = this.timePerQuestion;
+        this.questionStartTime = Date.now();
+
+        // Update timer display
+        const timerContainer = document.getElementById('timer-container');
+        if (timerContainer) {
+            timerContainer.textContent = `Time remaining: ${this.remainingTime}s`;
+        }
+
+        // Start the countdown
+        this.questionTimer = setInterval(() => {
+            this.remainingTime--;
+            
+            // Update timer display
+            if (timerContainer) {
+                timerContainer.textContent = `Time remaining: ${this.remainingTime}s`;
+                
+                // Add warning class when time is running low
+                if (this.remainingTime <= 5) {
+                    timerContainer.classList.add('timer-warning');
+                } else {
+                    timerContainer.classList.remove('timer-warning');
+                }
+            }
+
+            // Check if time is up
+            if (this.remainingTime <= 0) {
+                clearInterval(this.questionTimer);
+                this.questionTimer = null;
+                this.handleTimeUp();
+            }
+        }, 1000);
+    }
+
+    // Handle time up situation
+    handleTimeUp() {
+        try {
+            // Get current scenario
+            const currentScenarios = this.getCurrentScenarios();
+            if (!currentScenarios || !this.player) {
+                return;
+            }
+            
+            const scenario = currentScenarios[this.player.currentScenario];
+            if (!scenario) {
+                return;
+            }
+            
+            // Create a timeout answer
+            const timeoutAnswer = {
+                text: 'Time ran out!',
+                experience: 0,
+                isCorrect: false,
+                isTimeout: true,
+                outcome: 'You did not answer in time.'
+            };
+            
+            // Update player state
+            this.player.questionHistory.push({
+                scenario: scenario,
+                selectedAnswer: timeoutAnswer,
+                isCorrect: false,
+                isTimeout: true
+            });
+            
+            // Save progress
+            this.saveProgress().catch(error => {
+                console.error('Failed to save timeout progress:', error);
+            });
+            
+            // Display the timeout outcome
+            this.displayOutcome(timeoutAnswer);
         } catch (error) {
             console.error('Error handling time up:', error);
-            this.nextScenario(); // Move to next scenario to avoid getting stuck
+        }
+    }
+
+    updateProgress() {
+        // Get current level and question count
+        const currentLevel = this.getCurrentLevel();
+        const totalAnswered = this.player.questionHistory.length;
+        
+        // Ensure question number never exceeds 15
+        const questionNumber = Math.min(totalAnswered + 1, 15);
+        
+        // Update the existing progress card elements
+        const levelInfoElement = document.querySelector('.level-info');
+        const questionInfoElement = document.querySelector('.question-info');
+        
+        if (levelInfoElement) {
+            levelInfoElement.textContent = `Level: ${currentLevel}`;
+        }
+        
+        if (questionInfoElement) {
+            questionInfoElement.textContent = `Question: ${questionNumber}/15`;
+        }
+        
+        // Ensure the card is visible
+        const progressCard = document.querySelector('.quiz-header-progress');
+        if (progressCard) {
+            progressCard.style.display = 'block';
+        }
+        
+        // Update legacy progress elements if they exist
+        const levelIndicator = document.getElementById('level-indicator');
+        const questionProgress = document.getElementById('question-progress');
+        const progressFill = document.getElementById('progress-fill');
+        
+        if (levelIndicator) {
+            levelIndicator.textContent = `Level: ${currentLevel}`;
+        }
+        
+        if (questionProgress) {
+            questionProgress.textContent = `Question: ${questionNumber}/${this.totalQuestions || 15}`;
+        }
+        
+        if (progressFill) {
+            // Calculate progress percentage (max 100%)
+            const progressPercentage = Math.min((totalAnswered / (this.totalQuestions || 15)) * 100, 100);
+            progressFill.style.width = `${progressPercentage}%`;
         }
     }
 
@@ -1122,14 +1389,8 @@ export class ExploratoryQuiz extends BaseQuiz {
             name: localStorage.getItem('username'),
             experience: 0,
             tools: [],
-            questionHistory: [],
-            level: 'basic',
-            // Store randomized scenarios for each level to maintain consistent question order
-            randomScenarios: {
-                basic: null,
-                intermediate: null,
-                advanced: null
-            }
+            currentScenario: 0,
+            questionHistory: []
         };
 
         // Reset UI
@@ -1145,7 +1406,7 @@ export class ExploratoryQuiz extends BaseQuiz {
         }
 
         // Update progress display
-        this.updateProgressDisplay();
+        this.updateProgress();
 
         // Start from first scenario
         this.displayScenario();
@@ -1155,156 +1416,25 @@ export class ExploratoryQuiz extends BaseQuiz {
         try {
             const totalAnswered = this.player?.questionHistory?.length || 0;
             
-            console.log(`Getting scenarios for total answered: ${totalAnswered}`);
-            
-            // Safety check and initialization for scenario arrays
-            if (!this.basicScenarios || !Array.isArray(this.basicScenarios) || this.basicScenarios.length === 0) {
-                console.warn('Basic scenarios not properly initialized, checking if they exist in the window object');
-                // Try to get scenarios from the window object (might be initialized elsewhere)
-                if (window.allScenarios && window.allScenarios.basic) {
-                    this.basicScenarios = window.allScenarios.basic;
-                } else {
-                    // Create a minimal fallback
-                    console.error('Basic scenarios not available - creating fallback');
-                    this.basicScenarios = [{
-                        id: 'basic-fallback',
-                        title: 'Basic Exploratory Testing',
-                        description: 'Fallback scenario for basic level testing.',
-                        options: [
-                            { text: 'Plan your exploratory testing session', outcome: 'This is a good approach.', experience: 5 },
-                            { text: 'Start testing without planning', outcome: 'Planning first is usually better.', experience: 0 }
-                        ]
-                    }];
-                }
-            }
-            
-            if (!this.intermediateScenarios || !Array.isArray(this.intermediateScenarios) || this.intermediateScenarios.length === 0) {
-                console.warn('Intermediate scenarios not properly initialized, checking if they exist in the window object');
-                // Try to get scenarios from the window object
-                if (window.allScenarios && window.allScenarios.intermediate) {
-                    this.intermediateScenarios = window.allScenarios.intermediate;
-                } else {
-                    // Create a minimal fallback
-                    console.error('Intermediate scenarios not available - creating fallback');
-                    this.intermediateScenarios = [{
-                        id: 'intermediate-fallback',
-                        title: 'Intermediate Exploratory Testing',
-                        description: 'Fallback scenario for intermediate level testing.',
-                        options: [
-                            { text: 'Document your test findings thoroughly', outcome: 'Good documentation is important.', experience: 5 },
-                            { text: 'Only document major issues', outcome: 'Thorough documentation is better.', experience: 0 }
-                        ]
-                    }];
-                }
-            }
-            
-            if (!this.advancedScenarios || !Array.isArray(this.advancedScenarios) || this.advancedScenarios.length === 0) {
-                console.warn('Advanced scenarios not properly initialized, checking if they exist in the window object');
-                // Try to get scenarios from the window object
-                if (window.allScenarios && window.allScenarios.advanced) {
-                    this.advancedScenarios = window.allScenarios.advanced;
-                } else {
-                    // Create a minimal fallback
-                    console.error('Advanced scenarios not available - creating fallback');
-                    this.advancedScenarios = [{
-                        id: 'advanced-fallback',
-                        title: 'Advanced Exploratory Testing',
-                        description: 'Fallback scenario for advanced level testing.',
-                        options: [
-                            { text: 'Combine exploratory and scripted testing', outcome: 'This balanced approach is effective.', experience: 5 },
-                            { text: 'Focus only on exploratory testing', outcome: 'A combined approach is usually better.', experience: 0 }
-                        ]
-                    }];
-                }
-            }
-            
-            console.log(`Scenario counts - Basic: ${this.basicScenarios.length}, Intermediate: ${this.intermediateScenarios.length}, Advanced: ${this.advancedScenarios.length}`);
-            
             // If we don't have the randomized sets yet, create them
-            if (!this.randomizedScenarios || 
-                !this.randomizedScenarios.basic || 
-                this.randomizedScenarios.basic.length === 0) {
-                
-                console.log('Initializing randomized scenarios');
-                
-                // Function to safely get randomized scenarios
-                const getRandomScenarios = (scenarios, count) => {
-                    if (!scenarios || scenarios.length === 0) {
-                        console.error('Cannot randomize empty scenario array');
-                        return [];
-                    }
-                    
-                    // Make a copy of the scenarios array
-                    const copy = [...scenarios];
-                    
-                    // Shuffle the array
-                    for (let i = copy.length - 1; i > 0; i--) {
-                        const j = Math.floor(Math.random() * (i + 1));
-                        [copy[i], copy[j]] = [copy[j], copy[i]];
-                    }
-                    
-                    // Return the first 'count' elements or all if fewer
-                    const selected = copy.slice(0, Math.min(count, copy.length));
-                    
-                    // If we don't have enough, pad with duplicates
-                    if (selected.length < count) {
-                        console.warn(`Not enough scenarios available (${selected.length}/${count}), padding with duplicates`);
-                        const needed = count - selected.length;
-                        for (let i = 0; i < needed; i++) {
-                            selected.push(selected[i % selected.length]); // Repeat from beginning
-                        }
-                    }
-                    
-                    return selected;
-                };
-                
-                // Create randomized scenario sets
+            if (!this.randomizedScenarios) {
                 this.randomizedScenarios = {
-                    basic: getRandomScenarios(this.basicScenarios, 5),
-                    intermediate: getRandomScenarios(this.intermediateScenarios, 5),
-                    advanced: getRandomScenarios(this.advancedScenarios, 5)
+                    basic: this.shuffleArray([...this.basicScenarios]).slice(0, 5),
+                    intermediate: this.shuffleArray([...this.intermediateScenarios]).slice(0, 5),
+                    advanced: this.shuffleArray([...this.advancedScenarios]).slice(0, 5)
                 };
-                
-                console.log('Created randomized scenarios:', this.randomizedScenarios);
             }
-            
-            // Return the appropriate scenario set based on progress
+        
+            // Simple progression logic based solely on question count, no threshold checks
             if (totalAnswered >= 10) {
-                console.log('Returning advanced scenarios');
                 return this.randomizedScenarios.advanced;
             } else if (totalAnswered >= 5) {
-                console.log('Returning intermediate scenarios');
                 return this.randomizedScenarios.intermediate;
-            } else {
-                console.log('Returning basic scenarios');
-                return this.randomizedScenarios.basic;
             }
+            return this.randomizedScenarios.basic;
         } catch (error) {
-            console.error('Error in getCurrentScenarios:', error);
-            
-            // Emergency fallback - return at least something
-            const fallbackScenarios = [];
-            for (let i = 0; i < 5; i++) {
-                fallbackScenarios.push({
-                    id: `fallback-${i}`,
-                    title: `Exploratory Testing Scenario ${i + 1}`,
-                    description: 'This is a fallback scenario. The original scenarios could not be loaded.',
-                    options: [
-                        {
-                            text: 'Choose the most thorough approach',
-                            outcome: 'This is generally the best option.',
-                            experience: 5
-                        },
-                        {
-                            text: 'Choose a quicker approach',
-                            outcome: 'Sometimes thoroughness is more important than speed.',
-                            experience: 0
-                        }
-                    ]
-                });
-            }
-            
-            return fallbackScenarios;
+            console.error('Error getting current scenarios:', error);
+            return this.basicScenarios; // Default to basic if there's an error
         }
     }
 
@@ -1314,13 +1444,13 @@ export class ExploratoryQuiz extends BaseQuiz {
         
             // Determine level based solely on question count
             if (totalAnswered >= 10) {
-            return 'Advanced';
+                return 'Advanced';
             } else if (totalAnswered >= 5) {
-            return 'Intermediate';
-        }
-        return 'Basic';
+                return 'Intermediate';
+            }
+            return 'Basic';
         } catch (error) {
-            console.error('Error in getCurrentLevel:', error);
+            console.error('Error getting current level:', error);
             return 'Basic'; // Default to basic if there's an error
         }
     }
@@ -1329,19 +1459,15 @@ export class ExploratoryQuiz extends BaseQuiz {
         const recommendationsContainer = document.getElementById('recommendations');
         if (!recommendationsContainer) return;
 
-        // Calculate score based on correct answers, not XP
-        const correctAnswers = this.player.questionHistory.filter(q => 
-            q.selectedAnswer && this.isCorrectAnswer(q.selectedAnswer)
-        ).length;
-        const score = Math.round((correctAnswers / 15) * 100);
-        
+        const score = Math.round((this.player.experience / this.maxXP) * 100);
         const weakAreas = [];
         const strongAreas = [];
 
         // Analyze performance in different areas
         this.player.questionHistory.forEach(record => {
-            // Determine if answer was correct based on positive experience value
-            const isCorrect = record.selectedAnswer && this.isCorrectAnswer(record.selectedAnswer);
+            const maxXP = record.maxPossibleXP;
+            const earnedXP = record.selectedAnswer.experience;
+            const isCorrect = earnedXP === maxXP;
 
             // Categorize the question based on its content
             const questionType = this.categorizeQuestion(record.scenario);
@@ -1392,23 +1518,27 @@ export class ExploratoryQuiz extends BaseQuiz {
 
     categorizeQuestion(scenario) {
         // Categorize questions based on their content
-        const title = scenario.title.toLowerCase();
-        const description = scenario.description.toLowerCase();
+        const title = scenario.title?.toLowerCase() || '';
+        const description = scenario.description?.toLowerCase() || '';
 
-        if (title.includes('focus') || description.includes('focus area')) {
-            return 'Focus Area Management';
+        if (title.includes('planning') || description.includes('planning')) {
+            return 'Test Planning';
         } else if (title.includes('time') || description.includes('time')) {
             return 'Time Management';
-        } else if (title.includes('documentation') || description.includes('document')) {
+        } else if (title.includes('documentation') || description.includes('documentation')) {
             return 'Documentation';
-        } else if (title.includes('test skills') || description.includes('skills')) {
-            return 'Testing Skills';
-        } else if (title.includes('compatibility') || description.includes('environment')) {
-            return 'Environment Testing';
-        } else if (title.includes('non-functional') || description.includes('non-functional')) {
-            return 'Non-Functional Testing';
+        } else if (title.includes('bug') || description.includes('bug')) {
+            return 'Bug Reporting';
+        } else if (title.includes('technique') || description.includes('technique')) {
+            return 'Test Techniques';
+        } else if (title.includes('heuristic') || description.includes('heuristic')) {
+            return 'Testing Heuristics';
         } else if (title.includes('risk') || description.includes('risk')) {
-            return 'Risk Management';
+            return 'Risk-Based Testing';
+        } else if (title.includes('team') || description.includes('team')) {
+            return 'Team Collaboration';
+        } else if (title.includes('automation') || description.includes('automation')) {
+            return 'Automation Integration';
         } else {
             return 'General Exploratory Testing';
         }
@@ -1416,26 +1546,27 @@ export class ExploratoryQuiz extends BaseQuiz {
 
     getRecommendation(area) {
         const recommendations = {
-            'Focus Area Management': 'Improve understanding of how to identify and prioritize focus areas based on user needs and functionality importance.',
+            'Test Planning': 'Practice creating structured plans for exploratory sessions that balance freedom with focus.',
             'Time Management': 'Strengthen time-boxed testing approach and prioritization of testing activities based on functionality importance.',
-            'Documentation': 'Enhance documentation practices for issues, test details, and observations while maintaining exploratory testing flexibility.',
-            'Testing Skills': 'Develop expertise in dynamic testing approaches and improve ability to discover defects through creative exploration.',
-            'Environment Testing': 'Improve cross-environment testing strategies and documentation of global versus environment-specific issues.',
-            'Non-Functional Testing': 'Strengthen understanding of executing predefined non-functional test cases within exploratory scripts.',
-            'Risk Management': 'Better understand and manage the risks associated with exploratory testing, particularly regarding test coverage.',
-            'General Exploratory Testing': 'Continue developing fundamental exploratory testing principles and methodologies.'
+            'Documentation': 'Focus on lightweight but effective documentation that captures valuable insights without hindering exploration.',
+            'Bug Reporting': 'Enhance your bug reports with clear reproduction steps, expected vs. actual results, and contextual information.',
+            'Test Techniques': 'Study and apply diverse testing techniques like boundary testing, state transitions, and domain testing.',
+            'Testing Heuristics': 'Learn and apply testing heuristics like CRUD, FEW HICCUPPS, and SFDPOT to guide your exploration.',
+            'Risk-Based Testing': 'Practice identifying and prioritizing high-risk areas for more focused exploratory testing.',
+            'Team Collaboration': 'Develop skills for collaborative exploratory testing and sharing insights with team members.',
+            'Automation Integration': 'Learn how to effectively combine exploratory testing with automation for a comprehensive test strategy.',
+            'General Exploratory Testing': 'Study the fundamental principles and practices of structured exploratory testing.'
         };
 
-        return recommendations[area] || 'Continue practicing core exploratory testing principles.';
+        return recommendations[area] || 'Continue practicing general exploratory testing skills.';
     }
 
     // Helper method to shuffle an array using Fisher-Yates algorithm
     shuffleArray(array) {
-        // Fisher-Yates shuffle algorithm for randomizing scenario order
-        const shuffled = [...array]; // Create a copy to avoid modifying the original array
+        const shuffled = [...array];
         for (let i = shuffled.length - 1; i > 0; i--) {
             const j = Math.floor(Math.random() * (i + 1));
-            [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]]; // Swap elements
+            [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
         }
         return shuffled;
     }
@@ -1443,332 +1574,112 @@ export class ExploratoryQuiz extends BaseQuiz {
     // Implement the endGame method that was missing
     async endGame(failed = false) {
         try {
-            console.log(`Ending game. Failed: ${failed}`);
-            
-            // Clear any running timer
+            // Clear any timers
             if (this.questionTimer) {
                 clearInterval(this.questionTimer);
                 this.questionTimer = null;
             }
             
-            // Hide game and outcome screens
-            const gameScreen = document.getElementById('game-screen');
-            const outcomeScreen = document.getElementById('outcome-screen');
-            const endScreen = document.getElementById('end-screen');
-            
-            if (gameScreen) gameScreen.classList.add('hidden');
-            if (outcomeScreen) outcomeScreen.classList.add('hidden');
-            if (endScreen) {
-                endScreen.classList.remove('hidden');
-                endScreen.style.display = 'block';
+            // Show the end screen and hide others
+            if (this.gameScreen) this.gameScreen.classList.add('hidden');
+            if (this.outcomeScreen) this.outcomeScreen.classList.add('hidden');
+            if (this.endScreen) {
+                this.endScreen.classList.remove('hidden');
+            } else {
+                console.error('End screen element not found');
             }
             
-            // Calculate score
-            const answeredCount = this.player.questionHistory.length; 
-            const correctCount = this.player.questionHistory.filter(q => this.isCorrectAnswer(q.selectedAnswer)).length;
-            const scorePercentage = Math.round((correctCount / Math.max(answeredCount, 1)) * 100);
+            // Calculate score percentage
+            const correctAnswers = this.player.questionHistory.filter(q => this.isCorrectAnswer(q.selectedAnswer)).length;
+            const scorePercentage = Math.round((correctAnswers / 15) * 100);
+            const isPassed = scorePercentage >= (this.passPercentage || 70);
+            
+            // Determine final status
+            const finalStatus = failed ? 'failed' : (isPassed ? 'passed' : 'failed');
             
             // Update final score display
             const finalScoreElement = document.getElementById('final-score');
             if (finalScoreElement) {
-                finalScoreElement.textContent = `${scorePercentage}%`;
+                finalScoreElement.textContent = `Final Score: ${scorePercentage}%`;
             }
             
-            // Update performance message
-            const performanceMessage = document.getElementById('performance-message');
-            if (performanceMessage) {
-                if (scorePercentage >= 90) {
-                    performanceMessage.textContent = '🏆 Outstanding! You\'re an exploratory testing expert!';
-                } else if (scorePercentage >= 80) {
-                    performanceMessage.textContent = '👏 Great job! You\'ve shown strong exploratory testing skills!';
-                } else if (scorePercentage >= 70) {
-                    performanceMessage.textContent = '👍 Good work! You\'ve passed the quiz!';
-                } else {
-                    performanceMessage.textContent = '📚 Consider reviewing exploratory testing best practices and try again!';
-                }
+            // Update performance summary based on thresholds
+            const performanceSummary = document.getElementById('performance-summary');
+            if (performanceSummary) {
+                const thresholds = this.performanceThresholds || [
+                    { threshold: 90, message: '🏆 Outstanding! You\'re an exploratory testing expert!' },
+                    { threshold: 80, message: '👏 Great job! You\'ve shown strong exploratory testing skills!' },
+                    { threshold: 70, message: '👍 Good work! You\'ve passed the quiz!' },
+                    { threshold: 0, message: '📚 Consider reviewing exploratory testing best practices and try again!' }
+                ];
+                
+                const threshold = thresholds.find(t => scorePercentage >= t.threshold) || thresholds[thresholds.length - 1];
+                performanceSummary.textContent = threshold.message;
             }
             
-            // Generate recommendations
+            // Generate question review
+            this.displayQuestionReview();
+            
+            // Generate personalized recommendations
             this.generateRecommendations();
             
-            // Add event listener to restart button
-            const restartButton = document.getElementById('restart-btn');
-            if (restartButton) {
-                restartButton.addEventListener('click', () => {
-                    this.restartQuiz();
-                });
-            }
-            
-            // Final save with completed status
+            // Save final progress
             try {
-                const status = scorePercentage >= this.passPercentage ? 'passed' : 'failed';
                 const username = localStorage.getItem('username');
-                
                 if (username) {
                     const quizUser = new QuizUser(username);
-                    await quizUser.updateQuizScore(this.quizName, scorePercentage, this.player.experience, this.player.tools, this.player.questionHistory, answeredCount, status);
+                    await quizUser.updateQuizScore(
+                        this.quizName,
+                        scorePercentage,
+                        this.player.experience,
+                        this.player.tools,
+                        this.player.questionHistory,
+                        15, // Always 15 questions completed
+                        finalStatus
+                    );
+                    console.log('Final quiz score saved:', scorePercentage, 'status:', finalStatus);
                 }
-            } catch (saveError) {
-                console.error('Error saving final quiz result:', saveError);
+            } catch (error) {
+                console.error('Failed to save final quiz score:', error);
             }
-            
-            console.log('Game ended successfully');
         } catch (error) {
-            console.error('Error ending game:', error);
-            this.showError('An error occurred while finishing the quiz. Your progress has been saved, but the results may not be displayed correctly.');
+            console.error('Error in endGame:', error);
+            this.showError('An error occurred showing the results. Please try again.');
         }
     }
     
-    restartQuiz() {
-        try {
-            console.log('Restarting quiz');
+    // Helper method to display question review in the end screen
+    displayQuestionReview() {
+        const reviewList = document.getElementById('question-review');
+        if (!reviewList) return;
+        
+        let reviewHTML = '';
+        this.player.questionHistory.forEach((record, index) => {
+            const isCorrect = this.isCorrectAnswer(record.selectedAnswer);
+            const scenario = record.scenario;
             
-            // Clear player data
-            this.player = {
-                name: localStorage.getItem('username') || '',
-                experience: 0,
-                tools: [],
-                currentScenario: 0,
-                questionHistory: [],
-                level: 'basic'
-            };
-            
-            // Clear randomized scenarios to generate new ones
-            this.randomizedScenarios = null;
-            
-            // Reset UI
-            const gameScreen = document.getElementById('game-screen');
-            const outcomeScreen = document.getElementById('outcome-screen');
-            const endScreen = document.getElementById('end-screen');
-            
-            if (endScreen) endScreen.classList.add('hidden');
-            if (outcomeScreen) outcomeScreen.classList.add('hidden');
-            if (gameScreen) gameScreen.classList.remove('hidden');
-            
-            // Start the game again
-            this.startGame();
-            
-            console.log('Quiz restarted successfully');
-        } catch (error) {
-            console.error('Error restarting quiz:', error);
-            this.showError('An error occurred while restarting the quiz. Please refresh the page.');
-            
-            // Force reload as last resort
-            setTimeout(() => {
-                window.location.reload();
-            }, 3000);
-        }
-    }
-
-    checkLevelTransition() {
-        try {
-            // Get total number of answered questions
-            const totalAnswered = this.player?.questionHistory?.length || 0;
-            
-            // Check if we need to transition to the next level
-            if (totalAnswered === 5) {
-                console.log('Transitioning to intermediate level');
-                this.displayScenario(); // This will load intermediate scenarios
-            } else if (totalAnswered === 10) {
-                console.log('Transitioning to advanced level');
-                this.displayScenario(); // This will load advanced scenarios
-            } else if (totalAnswered === 15) {
-                console.log('Quiz completed');
-                this.endGame();
-            } else if (totalAnswered < 15) {
-                // Continue with next question in current level
-                this.displayScenario();
-            }
-        } catch (error) {
-            console.error('Error in checkLevelTransition:', error);
-        }
-    }
-
-    endGame() {
-        try {
-            // Clear any existing timers
-            if (this.timer) {
-                clearTimeout(this.timer);
-                this.timer = null;
-            }
-            
-            // Update UI to show completion
-            const quizContainer = document.getElementById('quiz-container');
-            if (quizContainer) {
-                quizContainer.innerHTML = `
-                    <div class="quiz-complete">
-                        <h2>Congratulations!</h2>
-                        <p>You have completed all scenarios in the exploratory testing quiz.</p>
-                        <p>Total experience gained: ${this.player?.experience || 0}</p>
-                        <button id="restart-quiz" class="quiz-button">Restart Quiz</button>
+            reviewHTML += `
+                <div class="review-item ${isCorrect ? 'correct' : 'incorrect'}">
+                    <div class="review-header">
+                        <span class="review-number">${index + 1}</span>
+                        <span class="review-title">${scenario.title || 'Question'}</span>
+                        <span class="review-result">${isCorrect ? '✓' : '✗'}</span>
                     </div>
-                `;
-                
-                // Add event listener for restart button
-                const restartButton = document.getElementById('restart-quiz');
-                if (restartButton) {
-                    restartButton.addEventListener('click', () => this.resetQuiz());
-                }
-            }
-            
-            // Save final progress
-            this.saveProgress();
-            console.log('Quiz completed successfully');
-        } catch (error) {
-            console.error('Error ending game:', error);
-        }
-    }
-    
-    resetQuiz() {
-        try {
-            // Reset player progress
-            this.player = {
-                experience: 0,
-                level: 'basic',
-                questionHistory: [],
-                // Store randomized scenarios for each level to maintain consistent question order
-                randomScenarios: {
-                    basic: null,
-                    intermediate: null,
-                    advanced: null
-                }
-            };
-            
-            // Save reset progress
-            this.saveProgress();
-            
-            // Start quiz again
-            this.init();
-            console.log('Quiz has been reset');
-        } catch (error) {
-            console.error('Error resetting quiz:', error);
-        }
-    }
-
-    // Add the missing nextScenario method
-    async nextScenario() {
-        try {
-            console.log('Moving to next scenario');
-            
-            // Clear the timer if it exists
-            if (this.questionTimer) {
-                clearInterval(this.questionTimer);
-                this.questionTimer = null;
-                console.log('Timer cleared in nextScenario');
-            }
-            
-            const totalAnswered = this.player.questionHistory.length;
-            
-            // Check if we should end the game (15 questions answered)
-            if (totalAnswered >= 15) {
-                console.log('All 15 questions answered, ending game');
-                this.endGame();
-                return;
-            }
-            
-            // Check if we need to transition to a new level
-            const currentLevel = Math.floor((totalAnswered - 1) / 5); // 0-based (0, 1, 2)
-            const nextLevel = Math.floor(totalAnswered / 5);  // 0-based (0, 1, 2)
-            
-            // If we're transitioning to a new level, show transition screen
-            if (currentLevel !== nextLevel && totalAnswered > 0) {
-                console.log(`Transitioning from level ${currentLevel} to ${nextLevel}`);
-                
-                // Get level names
-                const levelNames = ['Basic', 'Intermediate', 'Advanced'];
-                const nextLevelName = levelNames[nextLevel] || 'Advanced';
-                
-                // Display transition message
-                this.showLevelTransition(nextLevelName);
-                
-                // Set a delay before continuing to the next question
-                setTimeout(() => {
-                    this.hideLevelTransition();
-                    this.continueToNextScenario();
-                }, 3000); // 3 second delay
-                
-                return;
-            }
-            
-            // If no transition needed, continue directly
-            this.continueToNextScenario();
-        } catch (error) {
-            console.error('Error in nextScenario:', error);
-            this.showError('An error occurred while loading the next scenario. Please try again.');
-        }
-    }
-    
-    showLevelTransition(levelName) {
-        try {
-            const transitionContainer = document.getElementById('level-transition-container');
-            if (!transitionContainer) {
-                console.warn('Level transition container not found');
-                return;
-            }
-            
-            transitionContainer.innerHTML = `
-                <div class="level-transition">
-                    <h2>Level Up!</h2>
-                    <p>Moving to ${levelName} Level</p>
-                    <div class="transition-progress"></div>
+                    <div class="review-detail">
+                        <p><strong>Scenario:</strong> ${scenario.description || ''}</p>
+                        <p><strong>Your Answer:</strong> ${record.selectedAnswer.text || ''}</p>
+                        <p><strong>Outcome:</strong> ${record.selectedAnswer.outcome || ''}</p>
+                    </div>
                 </div>
             `;
-            
-            transitionContainer.classList.add('active');
-            
-            // Hide other screens
-            const gameScreen = document.getElementById('game-screen');
-            const outcomeScreen = document.getElementById('outcome-screen');
-            if (gameScreen) gameScreen.classList.add('hidden');
-            if (outcomeScreen) outcomeScreen.classList.add('hidden');
-        } catch (error) {
-            console.error('Error showing level transition:', error);
-        }
+        });
+        
+        reviewList.innerHTML = reviewHTML;
     }
-    
-    hideLevelTransition() {
-        try {
-            const transitionContainer = document.getElementById('level-transition-container');
-            if (transitionContainer) {
-                transitionContainer.classList.remove('active');
-            }
-        } catch (error) {
-            console.error('Error hiding level transition:', error);
-        }
-    }
-    
-    continueToNextScenario() {
-        try {
-            // Increment current scenario index
-            // This needs to wrap around to 0 when we reach the end of a level (5 scenarios)
-            const currentTotal = this.player.questionHistory.length;
-            this.player.currentScenario = currentTotal % 5;
-            
-            console.log(`Incremented to scenario: ${this.player.currentScenario}`);
-            
-            // Hide outcome screen and show game screen
-            const outcomeScreen = document.getElementById('outcome-screen');
-            const gameScreen = document.getElementById('game-screen');
-            
-            if (outcomeScreen) {
-                outcomeScreen.classList.add('hidden');
-                outcomeScreen.style.display = 'none';
-                console.log('Hidden outcome screen');
-            }
-            
-            if (gameScreen) {
-                gameScreen.classList.remove('hidden');
-                gameScreen.style.display = 'block';
-                console.log('Shown game screen');
-            }
-            
-            // Display the next scenario
-            this.displayScenario();
-            
-            console.log('Next scenario displayed');
-        } catch (error) {
-            console.error('Error in continueToNextScenario:', error);
-            this.showError('An error occurred while loading the next scenario. Please try again.');
-        }
-    }
-} 
+}
+
+// Start the quiz when the page loads
+document.addEventListener('DOMContentLoaded', () => {
+    const quiz = new ExploratoryQuiz();
+    quiz.startGame();
+}); 
