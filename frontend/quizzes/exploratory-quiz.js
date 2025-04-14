@@ -849,21 +849,21 @@ export class ExploratoryQuiz extends BaseQuiz {
                 await this.transitionToNextLevel();
                 return;
             }
-
+            
             const currentScenarios = this.getCurrentScenarios();
             if (!currentScenarios || currentScenarios.length === 0) {
                 console.error('No scenarios available');
                 return;
             }
-
+            
             // Get the current scenario based on answered questions
             const currentScenarioIndex = totalAnswered % 5;
             const currentScenario = currentScenarios[currentScenarioIndex];
 
             if (!currentScenario) {
                 console.error('Current scenario not found');
-                return;
-            }
+            return;
+        }
 
             // Update UI with current scenario
             this.updateScenarioUI(currentScenario);
@@ -886,16 +886,16 @@ export class ExploratoryQuiz extends BaseQuiz {
     updateScenarioUI(scenario) {
         try {
             // Update UI with current scenario
-            const titleElement = document.getElementById('scenario-title');
-            const descriptionElement = document.getElementById('scenario-description');
-            const optionsContainer = document.getElementById('options-container');
+        const titleElement = document.getElementById('scenario-title');
+        const descriptionElement = document.getElementById('scenario-description');
+        const optionsContainer = document.getElementById('options-container');
 
             if (titleElement && scenario.title) {
                 titleElement.textContent = scenario.title;
-            }
+        }
 
             if (descriptionElement && scenario.description) {
-                descriptionElement.textContent = scenario.description;
+        descriptionElement.textContent = scenario.description;
             }
             
             if (optionsContainer && scenario.options && Array.isArray(scenario.options)) {
@@ -910,23 +910,23 @@ export class ExploratoryQuiz extends BaseQuiz {
                     const optionDiv = document.createElement('div');
                     optionDiv.className = 'option';
                     optionDiv.innerHTML = `
-                        <input type="radio" 
-                            name="option" 
+                <input type="radio" 
+                    name="option" 
                             value="${index}" 
-                            id="option${index}"
-                            tabindex="0"
+                    id="option${index}"
+                    tabindex="0"
                             aria-label="${option.text}">
-                        <label for="option${index}">${option.text}</label>
-                    `;
+                <label for="option${index}">${option.text}</label>
+            `;
                     optionsContainer.appendChild(optionDiv);
-                });
+        });
             }
 
             // Record start time for this question
             this.questionStartTime = Date.now();
 
-            // Initialize timer for the new question
-            this.initializeTimer();
+        // Initialize timer for the new question
+        this.initializeTimer();
             
             // Update progress display
             this.updateProgress();
@@ -960,7 +960,7 @@ export class ExploratoryQuiz extends BaseQuiz {
                 this.showError('An error occurred. Please try again.');
                 return;
             }
-
+            
             const selectedAnswer = currentScenario.options[parseInt(selectedOption.value)];
             
             // Record the answer
@@ -980,7 +980,7 @@ export class ExploratoryQuiz extends BaseQuiz {
 
             // Display outcome
             this.displayOutcome(selectedAnswer);
-
+            
             // Update progress display
             this.updateProgressDisplay(totalAnswered + 1);
 
@@ -1090,10 +1090,10 @@ export class ExploratoryQuiz extends BaseQuiz {
                 // Try both methods
                 gameScreen.classList.remove('hidden');
                 gameScreen.style.display = 'block';
-            }
-            
-            // Display next scenario
-            this.displayScenario();
+        }
+        
+        // Display next scenario
+        this.displayScenario();
             
             // Re-initialize event listeners for the new scenario
             this.initializeEventListeners();
@@ -1199,7 +1199,7 @@ export class ExploratoryQuiz extends BaseQuiz {
     getCurrentScenarios() {
         try {
             const totalAnswered = this.player?.questionHistory?.length || 0;
-            
+        
             // If this is the first time getting scenarios, initialize the random selection
             if (!this.selectedScenarios) {
                 this.selectedScenarios = {
@@ -1214,7 +1214,7 @@ export class ExploratoryQuiz extends BaseQuiz {
                 return this.selectedScenarios.advanced;
             } else if (totalAnswered >= 5) {
                 return this.selectedScenarios.intermediate;
-            }
+        }
             return this.selectedScenarios.basic;
         } catch (error) {
             console.error('Error in getCurrentScenarios:', error);

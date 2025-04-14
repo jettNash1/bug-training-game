@@ -556,6 +556,7 @@ export class TesterMindsetQuiz extends BaseQuiz {
                 questionHistory: this.player.questionHistory,
                 lastUpdated: new Date().toISOString(),
                 questionsAnswered: this.player.questionHistory.length,
+                randomizedScenarios: this.randomizedScenarios, // Save randomized scenarios for consistent experience
                 status: status,
                 scorePercentage: Math.round((this.player.questionHistory.filter(q => 
                     q.selectedAnswer && (q.selectedAnswer.isCorrect || q.selectedAnswer.experience > 0)
@@ -602,6 +603,7 @@ export class TesterMindsetQuiz extends BaseQuiz {
                     tools: savedProgress.data.tools || [],
                     questionHistory: savedProgress.data.questionHistory || [],
                     currentScenario: savedProgress.data.currentScenario || 0,
+                    randomizedScenarios: savedProgress.data.randomizedScenarios,
                     status: savedProgress.data.status || 'in-progress'
                 };
                 console.log('Normalized progress data:', progress);
@@ -610,7 +612,7 @@ export class TesterMindsetQuiz extends BaseQuiz {
                 const localData = localStorage.getItem(storageKey);
                 if (localData) {
                     const parsed = JSON.parse(localData);
-                    progress = parsed;
+                    progress = parsed.data || parsed;
                     console.log('Loaded progress from localStorage:', progress);
                 }
             }
@@ -621,16 +623,19 @@ export class TesterMindsetQuiz extends BaseQuiz {
                 this.player.tools = progress.tools || [];
                 this.player.questionHistory = progress.questionHistory || [];
                 this.player.currentScenario = progress.currentScenario || 0;
+                
+                // Restore randomized scenarios if they exist
+                if (progress.randomizedScenarios) {
+                    this.randomizedScenarios = progress.randomizedScenarios;
+                    console.log('Restored randomized scenarios:', this.randomizedScenarios);
+                }
 
                 // Ensure we're updating the UI correctly
                 this.updateProgress();
                 
                 // Check quiz status and show appropriate screen
-                if (progress.status === 'failed') {
-                    this.endGame(true);
-                    return true;
-                } else if (progress.status === 'completed') {
-                    this.endGame(false);
+                if (progress.status === 'failed' || progress.status === 'passed') {
+                    this.endGame(progress.status === 'failed');
                     return true;
                 }
 
@@ -848,7 +853,10 @@ export class TesterMindsetQuiz extends BaseQuiz {
             if (optionsContainer && scenario.options && Array.isArray(scenario.options)) {
                 optionsContainer.innerHTML = '';
                 
-                scenario.options.forEach((option, index) => {
+                // Shuffle options to randomize their order
+                const shuffledOptions = this.shuffleArray(scenario.options);
+                
+                shuffledOptions.forEach((option, index) => {
                     if (!option || !option.text) {
                         console.error('Invalid option at index', index, option);
                         return;
@@ -859,7 +867,7 @@ export class TesterMindsetQuiz extends BaseQuiz {
                     optionDiv.innerHTML = `
                 <input type="radio" 
                     name="option" 
-                            value="${index}" 
+                            value="${scenario.options.indexOf(option)}" 
                     id="option${index}"
                     tabindex="0"
                             aria-label="${option.text}">
@@ -1376,14 +1384,24 @@ export class TesterMindsetQuiz extends BaseQuiz {
     getCurrentScenarios() {
         try {
             const totalAnswered = this.player?.questionHistory?.length || 0;
+            
+            // If we don't have the randomized sets yet, create them
+            if (!this.randomizedScenarios) {
+                this.randomizedScenarios = {
+                    basic: this.shuffleArray([...this.basicScenarios]).slice(0, 5),
+                    intermediate: this.shuffleArray([...this.intermediateScenarios]).slice(0, 5),
+                    advanced: this.shuffleArray([...this.advancedScenarios]).slice(0, 5)
+                };
+                console.log('Created randomized scenarios:', this.randomizedScenarios);
+            }
         
             // Simple progression logic based solely on question count, no threshold checks
             if (totalAnswered >= 10) {
-            return this.advancedScenarios;
+                return this.randomizedScenarios.advanced;
             } else if (totalAnswered >= 5) {
-            return this.intermediateScenarios;
-        }
-        return this.basicScenarios;
+                return this.randomizedScenarios.intermediate;
+            }
+            return this.randomizedScenarios.basic;
         } catch (error) {
             console.error('Error in getCurrentScenarios:', error);
             return this.basicScenarios; // Default to basic if there's an error
@@ -1504,6 +1522,125 @@ export class TesterMindsetQuiz extends BaseQuiz {
         };
 
         return recommendations[area] || 'Continue practicing core testing mindset principles.';
+    }
+
+    // Helper method to shuffle an array using Fisher-Yates algorithm
+    shuffleArray(array) {
+        const shuffled = [...array];
+        for (let i = shuffled.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+        }
+        return shuffled;
+    }
+
+    // Implement the endGame method that was missing
+    async endGame(failed = false) {
+        console.log('End game called with failed =', failed);
+        
+        try {
+            // Clear any timers
+            if (this.questionTimer) {
+                clearInterval(this.questionTimer);
+                this.questionTimer = null;
+            }
+            
+            // Show the end screen and hide others
+            if (this.gameScreen) this.gameScreen.classList.add('hidden');
+            if (this.outcomeScreen) this.outcomeScreen.classList.add('hidden');
+            if (this.endScreen) {
+                this.endScreen.classList.remove('hidden');
+                console.log('End screen shown');
+            } else {
+                console.error('End screen element not found');
+            }
+            
+            // Calculate score percentage
+            const correctAnswers = this.player.questionHistory.filter(q => this.isCorrectAnswer(q.selectedAnswer)).length;
+            const scorePercentage = Math.round((correctAnswers / 15) * 100);
+            const isPassed = scorePercentage >= (this.passPercentage || 70);
+            
+            // Determine final status
+            const finalStatus = failed ? 'failed' : (isPassed ? 'passed' : 'failed');
+            
+            // Update final score display
+            const finalScoreElement = document.getElementById('final-score');
+            if (finalScoreElement) {
+                finalScoreElement.textContent = `Final Score: ${scorePercentage}%`;
+            }
+            
+            // Update performance summary based on thresholds
+            const performanceSummary = document.getElementById('performance-summary');
+            if (performanceSummary) {
+                const thresholds = this.performanceThresholds || [
+                    { threshold: 90, message: '🏆 Outstanding! You\'re a testing mindset expert!' },
+                    { threshold: 80, message: '👏 Great job! You\'ve shown strong testing instincts!' },
+                    { threshold: 70, message: '👍 Good work! You\'ve passed the quiz!' },
+                    { threshold: 0, message: '📚 Consider reviewing testing mindset best practices and try again!' }
+                ];
+                
+                const threshold = thresholds.find(t => scorePercentage >= t.threshold) || thresholds[thresholds.length - 1];
+                performanceSummary.textContent = threshold.message;
+            }
+            
+            // Generate question review
+            this.displayQuestionReview();
+            
+            // Generate personalized recommendations
+            this.generateRecommendations();
+            
+            // Save final progress
+            try {
+                const username = localStorage.getItem('username');
+                if (username) {
+                    const quizUser = new QuizUser(username);
+                    await quizUser.updateQuizScore(
+                        this.quizName,
+                        scorePercentage,
+                        this.player.experience,
+                        this.player.tools,
+                        this.player.questionHistory,
+                        15, // Always 15 questions completed
+                        finalStatus
+                    );
+                    console.log('Final quiz score saved:', scorePercentage, 'status:', finalStatus);
+                }
+            } catch (error) {
+                console.error('Failed to save final quiz score:', error);
+            }
+        } catch (error) {
+            console.error('Error in endGame:', error);
+            this.showError('An error occurred showing the results. Please try again.');
+        }
+    }
+    
+    // Helper method to display question review in the end screen
+    displayQuestionReview() {
+        const reviewList = document.getElementById('question-review');
+        if (!reviewList) return;
+        
+        let reviewHTML = '';
+        this.player.questionHistory.forEach((record, index) => {
+            const isCorrect = this.isCorrectAnswer(record.selectedAnswer);
+            const scenario = record.scenario;
+            
+            reviewHTML += `
+                <div class="review-item ${isCorrect ? 'correct' : 'incorrect'}">
+                    <div class="review-header">
+                        <span class="review-number">${index + 1}</span>
+                        <span class="review-title">${scenario.title || 'Question'}</span>
+                        <span class="review-result">${isCorrect ? '✓' : '✗'}</span>
+                    </div>
+                    <div class="review-detail">
+                        <p><strong>Scenario:</strong> ${scenario.description || ''}</p>
+                        <p><strong>Your Answer:</strong> ${record.selectedAnswer.text || ''}</p>
+                        <p><strong>Outcome:</strong> ${record.selectedAnswer.outcome || ''}</p>
+                    </div>
+                </div>
+            `;
+        });
+        
+        reviewList.innerHTML = reviewHTML;
     }
 }
 
