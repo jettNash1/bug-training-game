@@ -6,15 +6,17 @@ export class NonFunctionalQuiz extends BaseQuiz {
     constructor() {
         const config = {
             maxXP: 300,
+            totalQuestions: 15,
+            passPercentage: 70,
             levelThresholds: {
                 basic: { questions: 5, minXP: 35 },
                 intermediate: { questions: 10, minXP: 110 },
                 advanced: { questions: 15, minXP: 235 }
             },
             performanceThresholds: [
-                { threshold: 250, message: '🏆 Outstanding! You\'re a non-functional testing expert!' },
-                { threshold: 200, message: '👏 Great job! You\'ve shown strong non-functional testing skills!' },
-                { threshold: 150, message: '👍 Good work! Keep practicing to improve further.' },
+                { threshold: 90, message: '🏆 Outstanding! You\'re a non-functional testing expert!' },
+                { threshold: 80, message: '👏 Great job! You\'ve shown strong non-functional testing skills!' },
+                { threshold: 70, message: '👍 Good work! You\'ve passed the quiz!' },
                 { threshold: 0, message: '📚 Consider reviewing non-functional testing best practices and try again!' }
             ]
         };
@@ -77,22 +79,26 @@ export class NonFunctionalQuiz extends BaseQuiz {
                         text: 'Testing how the system performs and operates, rather than what specific functions it does',
                         outcome: 'Perfect! Non-functional testing focuses on system characteristics and performance.',
                         experience: 15,
-                        tool: 'Testing Framework'
+                        tool: 'Testing Framework',
+                        isCorrect: true
                     },
                     {
                         text: 'Testing if specific user actions meet requirements criteria',
                         outcome: 'This type testing is related to functional testing. Non-functional testing examines system characteristics.',
-                        experience: -5
+                        experience: -5,
+                        isCorrect: false
                     },
                     {
                         text: 'To test if the application features meet requirements criteria',
                         outcome: 'Non-functional testing goes beyond feature testing and focus include performance and security testing.',
-                        experience: -10
+                        experience: -10,
+                        isCorrect: false
                     },
                     {
                         text: 'To test for defects in the code structure of the system under test',
                         outcome: 'Non-functional testing focuses on system behaviour and performance rather than actual code structure.',
-                        experience: 0
+                        experience: 0,
+                        isCorrect: false
                     }
                 ]
             },
@@ -526,41 +532,43 @@ export class NonFunctionalQuiz extends BaseQuiz {
         setTimeout(() => errorDiv.remove(), 5000);
     }
 
-    shouldEndGame(totalQuestionsAnswered, currentXP) {
-        return totalQuestionsAnswered >= 15 || currentXP >= this.maxXP;
+    shouldEndGame() {
+        // End game if we've answered all questions
+        return this.player.questionHistory.length >= this.totalQuestions;
+    }
+
+    calculateScorePercentage() {
+        // Calculate percentage based on correct answers
+        const correctAnswers = this.player.questionHistory.filter(q => 
+            q.selectedAnswer && (q.selectedAnswer.isCorrect || q.selectedAnswer.experience > 0)
+        ).length;
+        
+        // Cap the questions answered at total questions
+        const questionsAnswered = Math.min(this.player.questionHistory.length, this.totalQuestions);
+        
+        return questionsAnswered > 0 ? Math.round((correctAnswers / questionsAnswered) * 100) : 0;
     }
 
     async saveProgress() {
-        // First determine the status based on clear conditions
+        // Determine the status based on clear conditions
         let status = 'in-progress';
         
-        // Check for completion (all 15 questions answered)
-        if (this.player.questionHistory.length >= 15) {
-            // Check if they met the advanced XP requirement
-            if (this.player.experience >= this.levelThresholds.advanced.minXP) {
-                status = 'completed';
-            } else {
-                status = 'failed';
-            }
-        } 
-        // Check for early failure conditions
-        else if (
-            (this.player.questionHistory.length >= 10 && this.player.experience < this.levelThresholds.intermediate.minXP) ||
-            (this.player.questionHistory.length >= 5 && this.player.experience < this.levelThresholds.basic.minXP)
-        ) {
-            status = 'failed';
+        // Check for completion (all questions answered)
+        if (this.player.questionHistory.length >= this.totalQuestions) {
+            // Calculate percentage score
+            const scorePercentage = this.calculateScorePercentage();
+            status = scorePercentage >= this.passPercentage ? 'passed' : 'failed';
         }
 
         const progress = {
-            data: {
-                experience: this.player.experience,
-                tools: this.player.tools,
-                currentScenario: this.player.currentScenario,
-                questionHistory: this.player.questionHistory,
-                lastUpdated: new Date().toISOString(),
-                questionsAnswered: this.player.questionHistory.length,
-                status: status
-            }
+            experience: this.player.experience,
+            tools: this.player.tools,
+            currentScenario: this.player.currentScenario,
+            questionHistory: this.player.questionHistory,
+            lastUpdated: new Date().toISOString(),
+            questionsAnswered: this.player.questionHistory.length,
+            status: status,
+            scorePercentage: this.calculateScorePercentage()
         };
 
         try {
@@ -572,10 +580,10 @@ export class NonFunctionalQuiz extends BaseQuiz {
             
             // Use user-specific key for localStorage
             const storageKey = `quiz_progress_${username}_${this.quizName}`;
-            localStorage.setItem(storageKey, JSON.stringify(progress));
+            localStorage.setItem(storageKey, JSON.stringify({ data: progress }));
             
-            console.log('Saving progress with status:', status);
-            await this.apiService.saveQuizProgress(this.quizName, progress.data);
+            console.log('Saving progress with status:', status, 'scorePercentage:', progress.scorePercentage);
+            await this.apiService.saveQuizProgress(this.quizName, progress);
         } catch (error) {
             console.error('Failed to save progress:', error);
         }
@@ -602,7 +610,8 @@ export class NonFunctionalQuiz extends BaseQuiz {
                     tools: savedProgress.data.tools || [],
                     questionHistory: savedProgress.data.questionHistory || [],
                     currentScenario: savedProgress.data.currentScenario || 0,
-                    status: savedProgress.data.status || 'in-progress'
+                    status: savedProgress.data.status || 'in-progress',
+                    scorePercentage: savedProgress.data.scorePercentage || 0
                 };
                 console.log('Normalized progress data:', progress);
             } else {
@@ -610,7 +619,7 @@ export class NonFunctionalQuiz extends BaseQuiz {
                 const localData = localStorage.getItem(storageKey);
                 if (localData) {
                     const parsed = JSON.parse(localData);
-                    progress = parsed;
+                    progress = parsed.data || parsed;
                     console.log('Loaded progress from localStorage:', progress);
                 }
             }
@@ -626,11 +635,8 @@ export class NonFunctionalQuiz extends BaseQuiz {
                 this.updateProgress();
                 
                 // Check quiz status and show appropriate screen
-                if (progress.status === 'failed') {
-                    this.endGame(true);
-                    return true;
-                } else if (progress.status === 'completed') {
-                    this.endGame(false);
+                if (progress.status === 'failed' || progress.status === 'passed') {
+                    this.endGame(progress.status === 'failed');
                     return true;
                 }
 
@@ -724,31 +730,11 @@ export class NonFunctionalQuiz extends BaseQuiz {
     displayScenario() {
         const currentScenarios = this.getCurrentScenarios();
         
-        // Check basic level completion
-        if (this.player.questionHistory.length >= 5) {
-            if (this.player.experience < this.levelThresholds.basic.minXP) {
-                this.endGame(true); // End with failure state
-                return;
-            }
-        }
-
-        // Check intermediate level completion
-        if (this.player.questionHistory.length >= 10) {
-            if (this.player.experience < this.levelThresholds.intermediate.minXP) {
-                this.endGame(true); // End with failure state
-                return;
-            }
-        }
-
-        // Check Advanced level completion
-        if (this.player.questionHistory.length >= 15) {
-            if (this.player.experience < this.levelThresholds.advanced.minXP) {
-                this.endGame(true); // End with failure state
-                return;
-            } else {
-                this.endGame(false); // Completed successfully
-                return;
-            }
+        // Check if we've answered all questions
+        if (this.shouldEndGame()) {
+            const scorePercentage = this.calculateScorePercentage();
+            this.endGame(scorePercentage < this.passPercentage);
+            return;
         }
 
         // Get the next scenario based on current progress
@@ -832,7 +818,7 @@ export class NonFunctionalQuiz extends BaseQuiz {
         // Update question counter immediately
         const questionProgress = document.getElementById('question-progress');
         if (questionProgress) {
-            questionProgress.textContent = `Question: ${this.currentQuestionNumber}/15`;
+            questionProgress.textContent = `Question: ${this.currentQuestionNumber}/${this.totalQuestions}`;
         }
 
         // Create a copy of options with their original indices
@@ -895,30 +881,17 @@ export class NonFunctionalQuiz extends BaseQuiz {
             
             const selectedAnswer = scenario.options[originalIndex];
 
-            // Calculate new experience with level-based minimum thresholds
-            let newExperience = this.player.experience + selectedAnswer.experience;
+            // Keep track of experience for backward compatibility
+            this.player.experience = Math.max(0, Math.min(this.maxXP, this.player.experience + selectedAnswer.experience));
             
-            // Apply minimum thresholds based on current level
-            const questionCount = this.player.questionHistory.length;
-            if (questionCount >= 5) { // Intermediate level
-                newExperience = Math.max(this.levelThresholds.basic.minXP, newExperience);
-            }
-            if (questionCount >= 10) { // Advanced level
-                newExperience = Math.max(this.levelThresholds.intermediate.minXP, newExperience);
-            }
-
-            // Update player experience with bounds
-            this.player.experience = Math.max(0, Math.min(this.maxXP, newExperience));
-
             // Calculate time spent on this question
             const timeSpent = this.questionStartTime ? Date.now() - this.questionStartTime : null;
             
-            // Add status to question history
+            // Add to question history with isCorrect property
             this.player.questionHistory.push({
                 scenario: scenario,
                 selectedAnswer: selectedAnswer,
-                status: selectedAnswer.experience > 0 ? 'passed' : 'failed',
-                maxPossibleXP: Math.max(...scenario.options.map(o => o.experience)),
+                isCorrect: selectedAnswer.isCorrect || selectedAnswer.experience > 0,
                 timeSpent: timeSpent,
                 timedOut: false
             });
@@ -929,19 +902,8 @@ export class NonFunctionalQuiz extends BaseQuiz {
             // Save progress
             await this.saveProgress();
 
-            // Calculate the score and experience
-            const totalQuestions = 15;
-            const completedQuestions = this.player.questionHistory.length;
-            const percentComplete = Math.round((completedQuestions / totalQuestions) * 100);
-            
-            const score = {
-                quizName: this.quizName,
-                score: percentComplete,
-                experience: this.player.experience,
-                questionHistory: this.player.questionHistory,
-                questionsAnswered: completedQuestions,
-                lastActive: new Date().toISOString()
-            };
+            // Calculate the score percentage
+            const scorePercentage = this.calculateScorePercentage();
             
             // Save quiz result
             const username = localStorage.getItem('username');
@@ -949,11 +911,11 @@ export class NonFunctionalQuiz extends BaseQuiz {
                 const quizUser = new QuizUser(username);
                 await quizUser.updateQuizScore(
                     this.quizName,
-                    score.score,
-                    score.experience,
+                    scorePercentage,
+                    this.player.experience,
                     this.player.tools,
-                    score.questionHistory,
-                    score.questionsAnswered
+                    this.player.questionHistory,
+                    this.player.questionHistory.length
                 );
             }
 
@@ -964,17 +926,12 @@ export class NonFunctionalQuiz extends BaseQuiz {
             }
             
             // Update outcome display
-            const correctAnswer = scenario.options.reduce((prev, current) => 
-                (prev.experience > current.experience) ? prev : current
-            );
-
             let outcomeText = selectedAnswer.outcome;
             document.getElementById('outcome-text').textContent = outcomeText;
             
-            const xpText = selectedAnswer.experience >= 0 ? 
-                `Experience gained: +${selectedAnswer.experience}` : 
-                `Experience: ${selectedAnswer.experience}`;
-            document.getElementById('xp-gained').textContent = xpText;
+            // Display result instead of XP
+            const resultText = selectedAnswer.isCorrect || selectedAnswer.experience > 0 ? 'Correct!' : 'Incorrect';
+            document.getElementById('xp-gained').textContent = resultText;
             
             if (selectedAnswer.tool) {
                 document.getElementById('tool-gained').textContent = `Tool acquired: ${selectedAnswer.tool}`;
@@ -986,6 +943,11 @@ export class NonFunctionalQuiz extends BaseQuiz {
             }
 
             this.updateProgress();
+            
+            // Check if we should end the game
+            if (this.shouldEndGame()) {
+                await this.endGame(scorePercentage < this.passPercentage);
+            }
         } catch (error) {
             console.error('Failed to handle answer:', error);
             this.showError('Failed to save your answer. Please try again.');
@@ -1023,7 +985,7 @@ export class NonFunctionalQuiz extends BaseQuiz {
         }
         
         if (questionInfoElement) {
-            questionInfoElement.textContent = `Question: ${questionNumber}/15`;
+            questionInfoElement.textContent = `Question: ${questionNumber}/${this.totalQuestions}`;
         }
         
         // Ensure the card is visible
@@ -1042,11 +1004,11 @@ export class NonFunctionalQuiz extends BaseQuiz {
         }
         
         if (questionProgress) {
-            questionProgress.textContent = `Question: ${questionNumber}/${this.totalQuestions || 15}`;
+            questionProgress.textContent = `Question: ${questionNumber}/${this.totalQuestions}`;
         }
         
         if (progressFill) {
-            const progressPercentage = (totalAnswered / (this.totalQuestions || 15)) * 100;
+            const progressPercentage = (totalAnswered / this.totalQuestions) * 100;
             progressFill.style.width = `${progressPercentage}%`;
         }
     }
@@ -1109,17 +1071,13 @@ export class NonFunctionalQuiz extends BaseQuiz {
         const recommendationsContainer = document.getElementById('recommendations');
         if (!recommendationsContainer) return;
 
-        const score = Math.round((this.player.experience / this.maxXP) * 100);
+        const scorePercentage = this.calculateScorePercentage();
         const weakAreas = [];
         const strongAreas = [];
 
         // Analyze performance in different areas
         this.player.questionHistory.forEach(record => {
-            const maxXP = record.maxPossibleXP;
-            const earnedXP = record.selectedAnswer.experience;
-            const isCorrect = earnedXP === maxXP;
-
-            // Categorize the question based on its content
+            const isCorrect = record.isCorrect;
             const questionType = this.categorizeQuestion(record.scenario);
             
             if (isCorrect) {
@@ -1136,9 +1094,9 @@ export class NonFunctionalQuiz extends BaseQuiz {
         // Generate recommendations HTML
         let recommendationsHTML = '';
 
-        if (score >= 95 && weakAreas.length === 0) {
+        if (scorePercentage >= 90 && weakAreas.length === 0) {
             recommendationsHTML = '<p>🌟 Outstanding! You have demonstrated mastery in all aspects of non-functional testing. You clearly understand the nuances of non-functional testing and are well-equipped to handle any non-functional testing challenges!</p>';
-        } else if (score >= 80) {
+        } else if (scorePercentage >= 80) {
             recommendationsHTML = '<p>🌟 Excellent performance! Your non-functional testing skills are very strong. To achieve complete mastery, consider focusing on:</p>';
             recommendationsHTML += '<ul>';
             if (weakAreas.length > 0) {
@@ -1147,7 +1105,7 @@ export class NonFunctionalQuiz extends BaseQuiz {
                 });
             }
             recommendationsHTML += '</ul>';
-        } else if (score >= 60) {
+        } else if (scorePercentage >= 70) {
             recommendationsHTML = '<p>👍 Good effort! Here are some areas to focus on:</p>';
             recommendationsHTML += '<ul>';
             weakAreas.forEach(area => {
@@ -1216,55 +1174,55 @@ export class NonFunctionalQuiz extends BaseQuiz {
             progressCard.style.display = 'none';
         }
 
-        const finalScore = Math.min(this.player.experience, this.maxXP);
-        const scorePercentage = Math.round((finalScore / this.maxXP) * 100);
+        // Calculate score percentage
+        const scorePercentage = this.calculateScorePercentage();
+        const isPassed = scorePercentage >= this.passPercentage;
+        
+        // Determine final status
+        const finalStatus = failed ? 'failed' : (isPassed ? 'passed' : 'failed');
         
         // Save the final quiz result with pass/fail status
         const username = localStorage.getItem('username');
         if (username) {
             try {
                 const user = new QuizUser(username);
-                const status = failed ? 'failed' : 'completed';
-                console.log('Setting final quiz status:', { status, score: scorePercentage });
+                console.log('Setting final quiz status:', { status: finalStatus, score: scorePercentage });
                 
-                const result = {
-                    score: scorePercentage,
-                    status: status,
-                    experience: this.player.experience,
-                    questionHistory: this.player.questionHistory,
-                    questionsAnswered: this.player.questionHistory.length,
-                    lastActive: new Date().toISOString()
-                };
-
                 // Save to QuizUser
-                user.updateQuizScore(
+                await user.updateQuizScore(
                     this.quizName,
-                    result.score,
-                    result.experience,
+                    scorePercentage,
+                    this.player.experience,
                     this.player.tools,
-                    result.questionHistory,
-                    result.questionsAnswered,
-                    status
+                    this.player.questionHistory,
+                    this.player.questionHistory.length,
+                    finalStatus
                 );
 
+                // Clear localStorage data for this quiz
+                this.clearQuizLocalStorage(username, this.quizName);
+
                 // Save to API with proper structure
-                const apiProgress = {
-                    data: {
-                        ...result,
-                        tools: this.player.tools,
-                        currentScenario: this.player.currentScenario
-                    }
+                const progress = {
+                    experience: this.player.experience,
+                    tools: this.player.tools,
+                    currentScenario: this.player.currentScenario,
+                    questionHistory: this.player.questionHistory,
+                    lastUpdated: new Date().toISOString(),
+                    questionsAnswered: this.player.questionHistory.length,
+                    status: finalStatus,
+                    scorePercentage: scorePercentage
                 };
 
                 // Save directly via API to ensure status is updated
-                console.log('Saving final progress to API:', apiProgress);
-                await this.apiService.saveQuizProgress(this.quizName, apiProgress.data);
+                console.log('Saving final progress to API:', progress);
+                await this.apiService.saveQuizProgress(this.quizName, progress);
             } catch (error) {
                 console.error('Error saving final quiz score:', error);
             }
         }
 
-        document.getElementById('final-score').textContent = `Final Score: ${finalScore}/${this.maxXP}`;
+        document.getElementById('final-score').textContent = `Final Score: ${scorePercentage}%`;
 
         // Update the quiz complete header based on status
         const quizCompleteHeader = document.querySelector('#end-screen h2');
@@ -1274,7 +1232,7 @@ export class NonFunctionalQuiz extends BaseQuiz {
 
         const performanceSummary = document.getElementById('performance-summary');
         if (failed) {
-            performanceSummary.textContent = 'Quiz failed. You did not meet the minimum XP requirement to progress. You cannot retry this quiz.';
+            performanceSummary.textContent = `Quiz failed. You scored ${scorePercentage}% but needed at least ${this.passPercentage}% to pass.`;
             // Hide restart button if failed
             const restartBtn = document.getElementById('restart-btn');
             if (restartBtn) {
@@ -1286,7 +1244,8 @@ export class NonFunctionalQuiz extends BaseQuiz {
                 quizContainer.classList.add('failed');
             }
         } else {
-            const threshold = this.performanceThresholds.find(t => t.threshold <= finalScore);
+            // Find the appropriate threshold message
+            const threshold = this.config.performanceThresholds.find(t => t.threshold <= scorePercentage);
             if (threshold) {
                 performanceSummary.textContent = threshold.message;
             } else {
@@ -1302,10 +1261,7 @@ export class NonFunctionalQuiz extends BaseQuiz {
                 const reviewItem = document.createElement('div');
                 reviewItem.className = 'review-item';
                 
-                const maxXP = Math.max(...record.scenario.options.map(o => o.experience));
-                const earnedXP = record.selectedAnswer.experience;
-                const isCorrect = earnedXP === maxXP;
-                
+                const isCorrect = record.isCorrect;
                 reviewItem.classList.add(isCorrect ? 'correct' : 'incorrect');
                 
                 reviewItem.innerHTML = `
@@ -1313,7 +1269,7 @@ export class NonFunctionalQuiz extends BaseQuiz {
                     <p class="scenario">${record.scenario.description}</p>
                     <p class="answer"><strong>Your Answer:</strong> ${record.selectedAnswer.text}</p>
                     <p class="outcome"><strong>Outcome:</strong> ${record.selectedAnswer.outcome}</p>
-                    <p class="xp"><strong>Experience Earned:</strong> ${earnedXP}/${maxXP}</p>
+                    <p class="result"><strong>Result:</strong> ${isCorrect ? 'Correct' : 'Incorrect'}</p>
                 `;
                 
                 reviewList.appendChild(reviewItem);
@@ -1321,6 +1277,24 @@ export class NonFunctionalQuiz extends BaseQuiz {
         }
 
         this.generateRecommendations();
+    }
+
+    // Utility method to clean up localStorage
+    clearQuizLocalStorage(username, quizName) {
+        const variations = [
+            quizName,
+            quizName.toLowerCase(),
+            quizName.toUpperCase(),
+            quizName.replace(/-/g, ''),
+            quizName.replace(/([A-Z])/g, '-$1').toLowerCase(),
+            quizName.replace(/-([a-z])/g, (_, c) => c.toUpperCase()),
+            quizName.replace(/-/g, '_')
+        ];
+
+        variations.forEach(variant => {
+            localStorage.removeItem(`quiz_progress_${username}_${variant}`);
+            localStorage.removeItem(`quizResults_${username}_${variant}`);
+        });
     }
 }
 

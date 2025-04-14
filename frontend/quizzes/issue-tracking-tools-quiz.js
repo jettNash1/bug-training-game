@@ -6,15 +6,17 @@ export class IssueTrackingToolsQuiz extends BaseQuiz {
     constructor() {
         const config = {
             maxXP: 300,
+            totalQuestions: 15,
+            passPercentage: 70,
             levelThresholds: {
                 basic: { questions: 5, minXP: 35 },
                 intermediate: { questions: 10, minXP: 110 },
                 advanced: { questions: 15, minXP: 235 }
             },
             performanceThresholds: [
-                { threshold: 250, message: '🏆 Outstanding! You\'re an issue tracking expert!' },
-                { threshold: 200, message: '👏 Great job! You\'ve shown strong tool management skills!' },
-                { threshold: 150, message: '👍 Good work! Keep practicing to improve further.' },
+                { threshold: 90, message: '🏆 Outstanding! You\'re an issue tracking expert!' },
+                { threshold: 80, message: '👏 Great job! You\'ve shown strong tool management skills!' },
+                { threshold: 70, message: '👍 Good work! You\'ve passed the quiz!' },
                 { threshold: 0, message: '📚 Consider reviewing issue tracking best practices and try again!' }
             ]
         };
@@ -77,22 +79,26 @@ export class IssueTrackingToolsQuiz extends BaseQuiz {
                         text: 'Select the "+" icon, fill in details, and submit the issue',
                         outcome: 'Perfect! This is the correct process for creating an issue.',
                         experience: 15,
+                        isCorrect: true,
                         tool: 'Issue Creation'
                     },
                     {
                         text: 'Email the issue details to the developer so they can start debugging straight away',
                         outcome: 'Issues should be logged in a tracking tool for traceability.',
-                        experience: -10
+                        experience: -10,
+                        isCorrect: false
                     },
                     {
                         text: 'Write the issue in a document for bulk upload at a later date',
                         outcome: 'Issues need to be logged in the tracking tool straight away for visibility and traceability.',
-                        experience: -5
+                        experience: -5,
+                        isCorrect: false
                     },
                     {
                         text: 'Send the issue to a colleague for environment reproduction rates and ask them to log it to the tracker',
                         outcome: 'Whilst reproduction rates are important, proactive issue logging is essential and relates to coverage and good time management.',
-                        experience: 0
+                        experience: 0,
+                        isCorrect: false
                     }
                 ]
             },
@@ -526,41 +532,43 @@ export class IssueTrackingToolsQuiz extends BaseQuiz {
         setTimeout(() => errorDiv.remove(), 5000);
     }
 
-    shouldEndGame(totalQuestionsAnswered, currentXP) {
-        return totalQuestionsAnswered >= 15 || currentXP >= this.maxXP;
+    shouldEndGame() {
+        // End game if we've answered all questions
+        return this.player.questionHistory.length >= this.totalQuestions;
+    }
+
+    calculateScorePercentage() {
+        // Calculate percentage based on correct answers
+        const correctAnswers = this.player.questionHistory.filter(q => {
+            return q.selectedAnswer && q.selectedAnswer.isCorrect === true;
+        }).length;
+        
+        // Cap the questions answered at total questions
+        const questionsAnswered = Math.min(this.player.questionHistory.length, this.totalQuestions);
+        
+        return questionsAnswered > 0 ? Math.round((correctAnswers / questionsAnswered) * 100) : 0;
     }
 
     async saveProgress() {
         // First determine the status based on clear conditions
         let status = 'in-progress';
         
-        // Check for completion (all 15 questions answered)
-        if (this.player.questionHistory.length >= 15) {
-            // Check if they met the advanced XP requirement
-            if (this.player.experience >= this.levelThresholds.advanced.minXP) {
-                status = 'completed';
-            } else {
-                status = 'failed';
-            }
-        } 
-        // Check for early failure conditions
-        else if (
-            (this.player.questionHistory.length >= 10 && this.player.experience < this.levelThresholds.intermediate.minXP) ||
-            (this.player.questionHistory.length >= 5 && this.player.experience < this.levelThresholds.basic.minXP)
-        ) {
-            status = 'failed';
+        // Check for completion (all questions answered)
+        if (this.player.questionHistory.length >= this.totalQuestions) {
+            // Calculate percentage score based on correct answers
+            const scorePercentage = this.calculateScorePercentage();
+            status = scorePercentage >= this.passPercentage ? 'passed' : 'failed';
         }
 
         const progress = {
-            data: {
-                experience: this.player.experience,
-                tools: this.player.tools,
-                currentScenario: this.player.currentScenario,
-                questionHistory: this.player.questionHistory,
-                lastUpdated: new Date().toISOString(),
-                questionsAnswered: this.player.questionHistory.length,
-                status: status
-            }
+            experience: this.player.experience,
+            tools: this.player.tools,
+            currentScenario: this.player.currentScenario,
+            questionHistory: this.player.questionHistory,
+            lastUpdated: new Date().toISOString(),
+            questionsAnswered: this.player.questionHistory.length,
+            scorePercentage: this.calculateScorePercentage(),
+            status: status
         };
 
         try {
@@ -574,8 +582,8 @@ export class IssueTrackingToolsQuiz extends BaseQuiz {
             const storageKey = `quiz_progress_${username}_${this.quizName}`;
             localStorage.setItem(storageKey, JSON.stringify(progress));
             
-            console.log('Saving progress with status:', status);
-            await this.apiService.saveQuizProgress(this.quizName, progress.data);
+            console.log('Saving progress with status:', status, 'scorePercentage:', progress.scorePercentage);
+            await this.apiService.saveQuizProgress(this.quizName, progress);
         } catch (error) {
             console.error('Failed to save progress:', error);
         }
@@ -602,7 +610,8 @@ export class IssueTrackingToolsQuiz extends BaseQuiz {
                     tools: savedProgress.data.tools || [],
                     questionHistory: savedProgress.data.questionHistory || [],
                     currentScenario: savedProgress.data.currentScenario || 0,
-                    status: savedProgress.data.status || 'in-progress'
+                    status: savedProgress.data.status || 'in-progress',
+                    scorePercentage: savedProgress.data.scorePercentage || 0
                 };
                 console.log('Normalized progress data:', progress);
             } else {
@@ -626,11 +635,8 @@ export class IssueTrackingToolsQuiz extends BaseQuiz {
                 this.updateProgress();
                 
                 // Check quiz status and show appropriate screen
-                if (progress.status === 'failed') {
-                    this.endGame(true);
-                    return true;
-                } else if (progress.status === 'completed') {
-                    this.endGame(false);
+                if (progress.status === 'failed' || progress.status === 'passed') {
+                    this.endGame(progress.status === 'failed');
                     return true;
                 }
 
@@ -723,37 +729,16 @@ export class IssueTrackingToolsQuiz extends BaseQuiz {
 
     displayScenario() {
         const currentScenarios = this.getCurrentScenarios();
+        const questionCount = this.player.questionHistory.length;
         
-        // Check basic level completion
-        if (this.player.questionHistory.length >= 5) {
-            if (this.player.experience < this.levelThresholds.basic.minXP) {
-                this.endGame(true); // End with failure state
-                return;
-            }
-        }
-
-        // Check intermediate level completion
-        if (this.player.questionHistory.length >= 10) {
-            if (this.player.experience < this.levelThresholds.intermediate.minXP) {
-                this.endGame(true); // End with failure state
-                return;
-            }
-        }
-
-        // Check Advanced level completion
-        if (this.player.questionHistory.length >= 15) {
-            if (this.player.experience < this.levelThresholds.advanced.minXP) {
-                this.endGame(true); // End with failure state
-                return;
-            } else {
-                this.endGame(false); // Completed successfully
-                return;
-            }
+        // Check if we've answered all questions
+        if (this.shouldEndGame()) {
+            this.endGame(false);
+            return;
         }
 
         // Get the next scenario based on current progress
         let scenario;
-        const questionCount = this.player.questionHistory.length;
         
         // Reset currentScenario based on the current level
         if (questionCount < 5) {
@@ -832,7 +817,7 @@ export class IssueTrackingToolsQuiz extends BaseQuiz {
         // Update question counter immediately
         const questionProgress = document.getElementById('question-progress');
         if (questionProgress) {
-            questionProgress.textContent = `Question: ${this.currentQuestionNumber}/15`;
+            questionProgress.textContent = `Question: ${this.currentQuestionNumber}/${this.totalQuestions}`;
         }
 
         // Create a copy of options with their original indices
@@ -895,30 +880,17 @@ export class IssueTrackingToolsQuiz extends BaseQuiz {
             
             const selectedAnswer = scenario.options[originalIndex];
 
-            // Calculate new experience with level-based minimum thresholds
-            let newExperience = this.player.experience + selectedAnswer.experience;
-            
-            // Apply minimum thresholds based on current level
-            const questionCount = this.player.questionHistory.length;
-            if (questionCount >= 5) { // Intermediate level
-                newExperience = Math.max(this.levelThresholds.basic.minXP, newExperience);
-            }
-            if (questionCount >= 10) { // Advanced level
-                newExperience = Math.max(this.levelThresholds.intermediate.minXP, newExperience);
-            }
-
             // Update player experience with bounds
-            this.player.experience = Math.max(0, Math.min(this.maxXP, newExperience));
-            
+            this.player.experience = Math.max(0, Math.min(this.config.maxXP, this.player.experience + selectedAnswer.experience));
+
             // Calculate time spent on this question
             const timeSpent = this.questionStartTime ? Date.now() - this.questionStartTime : null;
 
-            // Add status to question history
+            // Add to question history
             this.player.questionHistory.push({
                 scenario: scenario,
                 selectedAnswer: selectedAnswer,
-                status: selectedAnswer.experience > 0 ? 'passed' : 'failed',
-                maxPossibleXP: Math.max(...scenario.options.map(o => o.experience)),
+                isCorrect: selectedAnswer.isCorrect === true,
                 timeSpent: timeSpent,
                 timedOut: false
             });
@@ -929,31 +901,19 @@ export class IssueTrackingToolsQuiz extends BaseQuiz {
             // Save progress
             await this.saveProgress();
 
-            // Calculate the score and experience
-            const totalQuestions = 15;
-            const completedQuestions = this.player.questionHistory.length;
-            const percentComplete = Math.round((completedQuestions / totalQuestions) * 100);
-            
-            const score = {
-                quizName: this.quizName,
-                score: percentComplete,
-                experience: this.player.experience,
-                questionHistory: this.player.questionHistory,
-                questionsAnswered: completedQuestions,
-                lastActive: new Date().toISOString()
-            };
-            
-            // Save quiz result
+            // Also save quiz result and update display
             const username = localStorage.getItem('username');
             if (username) {
                 const quizUser = new QuizUser(username);
+                const scorePercentage = this.calculateScorePercentage();
+                
                 await quizUser.updateQuizScore(
                     this.quizName,
-                    score.score,
-                    score.experience,
+                    scorePercentage,
+                    this.player.experience,
                     this.player.tools,
-                    score.questionHistory,
-                    score.questionsAnswered
+                    this.player.questionHistory,
+                    this.player.questionHistory.length
                 );
             }
 
@@ -964,17 +924,15 @@ export class IssueTrackingToolsQuiz extends BaseQuiz {
             }
             
             // Update outcome display
-            const correctAnswer = scenario.options.reduce((prev, current) => 
-                (prev.experience > current.experience) ? prev : current
-            );
-
             let outcomeText = selectedAnswer.outcome;
             document.getElementById('outcome-text').textContent = outcomeText;
             
-            const xpText = selectedAnswer.experience >= 0 ? 
-                `Experience gained: +${selectedAnswer.experience}` : 
-                `Experience: ${selectedAnswer.experience}`;
-            document.getElementById('xp-gained').textContent = xpText;
+            // Update result display
+            const resultElement = document.getElementById('result-text');
+            if (resultElement) {
+                resultElement.textContent = selectedAnswer.isCorrect ? 'Correct!' : 'Incorrect';
+                resultElement.className = selectedAnswer.isCorrect ? 'correct' : 'incorrect';
+            }
             
             if (selectedAnswer.tool) {
                 document.getElementById('tool-gained').textContent = `Tool acquired: ${selectedAnswer.tool}`;
@@ -986,6 +944,12 @@ export class IssueTrackingToolsQuiz extends BaseQuiz {
             }
 
             this.updateProgress();
+            
+            // Check if game should end after this answer
+            if (this.shouldEndGame()) {
+                // If we've answered all questions, end the game
+                await this.endGame(false);
+            }
         } catch (error) {
             console.error('Failed to handle answer:', error);
             this.showError('Failed to save your answer. Please try again.');
@@ -1023,7 +987,7 @@ export class IssueTrackingToolsQuiz extends BaseQuiz {
         }
         
         if (questionInfoElement) {
-            questionInfoElement.textContent = `Question: ${questionNumber}/15`;
+            questionInfoElement.textContent = `Question: ${questionNumber}/${this.totalQuestions}`;
         }
         
         // Ensure the card is visible
@@ -1042,11 +1006,11 @@ export class IssueTrackingToolsQuiz extends BaseQuiz {
         }
         
         if (questionProgress) {
-            questionProgress.textContent = `Question: ${questionNumber}/${this.totalQuestions || 15}`;
+            questionProgress.textContent = `Question: ${questionNumber}/${this.totalQuestions}`;
         }
         
         if (progressFill) {
-            const progressPercentage = (totalAnswered / (this.totalQuestions || 15)) * 100;
+            const progressPercentage = (totalAnswered / this.totalQuestions) * 100;
             progressFill.style.width = `${progressPercentage}%`;
         }
     }
@@ -1082,12 +1046,11 @@ export class IssueTrackingToolsQuiz extends BaseQuiz {
 
     getCurrentScenarios() {
         const totalAnswered = this.player.questionHistory.length;
-        const currentXP = this.player.experience;
         
-        // Check for level progression
-        if (totalAnswered >= 10 && currentXP >= this.levelThresholds.intermediate.minXP) {
+        // Progress through levels based only on question count
+        if (totalAnswered >= 10) {
             return this.advancedScenarios;
-        } else if (totalAnswered >= 5 && currentXP >= this.levelThresholds.basic.minXP) {
+        } else if (totalAnswered >= 5) {
             return this.intermediateScenarios;
         }
         return this.basicScenarios;
@@ -1095,11 +1058,11 @@ export class IssueTrackingToolsQuiz extends BaseQuiz {
 
     getCurrentLevel() {
         const totalAnswered = this.player.questionHistory.length;
-        const currentXP = this.player.experience;
         
-        if (totalAnswered >= 10 && currentXP >= this.levelThresholds.intermediate.minXP) {
+        // Progress through levels based only on question count
+        if (totalAnswered >= 10) {
             return 'Advanced';
-        } else if (totalAnswered >= 5 && currentXP >= this.levelThresholds.basic.minXP) {
+        } else if (totalAnswered >= 5) {
             return 'Intermediate';
         }
         return 'Basic';
@@ -1109,15 +1072,13 @@ export class IssueTrackingToolsQuiz extends BaseQuiz {
         const recommendationsContainer = document.getElementById('recommendations');
         if (!recommendationsContainer) return;
 
-        const score = Math.round((this.player.experience / this.maxXP) * 100);
+        const scorePercentage = this.calculateScorePercentage();
         const weakAreas = [];
         const strongAreas = [];
 
         // Analyze performance in different areas
         this.player.questionHistory.forEach(record => {
-            const maxXP = record.maxPossibleXP;
-            const earnedXP = record.selectedAnswer.experience;
-            const isCorrect = earnedXP === maxXP;
+            const isCorrect = record.isCorrect;
 
             // Categorize the question based on its content
             const questionType = this.categorizeQuestion(record.scenario);
@@ -1136,9 +1097,9 @@ export class IssueTrackingToolsQuiz extends BaseQuiz {
         // Generate recommendations HTML
         let recommendationsHTML = '';
 
-        if (score >= 95 && weakAreas.length === 0) {
+        if (scorePercentage >= 90 && weakAreas.length === 0) {
             recommendationsHTML = '<p>🌟 Outstanding! You have demonstrated mastery in all aspects of issue tracking tools. You clearly understand the nuances of issue tracking tools and are well-equipped to handle any issue tracking tools challenges!</p>';
-        } else if (score >= 80) {
+        } else if (scorePercentage >= 80) {
             recommendationsHTML = '<p>🌟 Excellent performance! Your issue tracking tools skills are very strong. To achieve complete mastery, consider focusing on:</p>';
             recommendationsHTML += '<ul>';
             if (weakAreas.length > 0) {
@@ -1147,7 +1108,7 @@ export class IssueTrackingToolsQuiz extends BaseQuiz {
                 });
             }
             recommendationsHTML += '</ul>';
-        } else if (score >= 60) {
+        } else if (scorePercentage >= 70) {
             recommendationsHTML = '<p>👍 Good effort! Here are some areas to focus on:</p>';
             recommendationsHTML += '<ul>';
             weakAreas.forEach(area => {
@@ -1216,65 +1177,63 @@ export class IssueTrackingToolsQuiz extends BaseQuiz {
             progressCard.style.display = 'none';
         }
 
-        const finalScore = Math.min(this.player.experience, this.maxXP);
-        const scorePercentage = Math.round((finalScore / this.maxXP) * 100);
+        // Calculate score based on correct answers
+        const scorePercentage = this.calculateScorePercentage();
+        const isPassed = scorePercentage >= this.passPercentage;
+        
+        // Determine final status
+        const finalStatus = failed ? 'failed' : (isPassed ? 'passed' : 'failed');
         
         // Save the final quiz result with pass/fail status
         const username = localStorage.getItem('username');
         if (username) {
             try {
                 const user = new QuizUser(username);
-                const status = failed ? 'failed' : 'completed';
-                console.log('Setting final quiz status:', { status, score: scorePercentage });
+                console.log('Setting final quiz status:', { status: finalStatus, score: scorePercentage });
                 
                 const result = {
                     score: scorePercentage,
-                    status: status,
+                    scorePercentage: scorePercentage,
+                    status: finalStatus,
                     experience: this.player.experience,
                     questionHistory: this.player.questionHistory,
                     questionsAnswered: this.player.questionHistory.length,
-                    lastActive: new Date().toISOString()
+                    lastUpdated: new Date().toISOString()
                 };
 
                 // Save to QuizUser
-                user.updateQuizScore(
+                await user.updateQuizScore(
                     this.quizName,
-                    result.score,
+                    result.scorePercentage,
                     result.experience,
                     this.player.tools,
                     result.questionHistory,
                     result.questionsAnswered,
-                    status
+                    finalStatus
                 );
 
-                // Save to API with proper structure
-                const apiProgress = {
-                    data: {
-                        ...result,
-                        tools: this.player.tools,
-                        currentScenario: this.player.currentScenario
-                    }
-                };
-
-                // Save directly via API to ensure status is updated
-                console.log('Saving final progress to API:', apiProgress);
-                await this.apiService.saveQuizProgress(this.quizName, apiProgress.data);
+                // Save directly via API
+                console.log('Saving final progress to API:', result);
+                await this.apiService.saveQuizProgress(this.quizName, result);
+                
+                // Clear quiz local storage
+                this.clearQuizLocalStorage(username, this.quizName);
             } catch (error) {
                 console.error('Error saving final quiz score:', error);
             }
         }
 
-        document.getElementById('final-score').textContent = `Final Score: ${finalScore}/${this.maxXP}`;
-
+        document.getElementById('final-score').textContent = `Final Score: ${scorePercentage}%`;
+       
         // Update the quiz complete header based on status
         const quizCompleteHeader = document.querySelector('#end-screen h2');
         if (quizCompleteHeader) {
-            quizCompleteHeader.textContent = failed ? 'Quiz Failed!' : 'Quiz Complete!';
+            quizCompleteHeader.textContent = isPassed ? 'Quiz Complete!' : 'Quiz Failed!';
         }
 
         const performanceSummary = document.getElementById('performance-summary');
-        if (failed) {
-            performanceSummary.textContent = 'Quiz failed. You did not meet the minimum XP requirement to progress. You cannot retry this quiz.';
+        if (!isPassed) {
+            performanceSummary.textContent = `Quiz failed. You scored ${scorePercentage}% but needed at least ${this.passPercentage}% to pass.`;
             // Hide restart button if failed
             const restartBtn = document.getElementById('restart-btn');
             if (restartBtn) {
@@ -1286,7 +1245,7 @@ export class IssueTrackingToolsQuiz extends BaseQuiz {
                 quizContainer.classList.add('failed');
             }
         } else {
-            const threshold = this.performanceThresholds.find(t => t.threshold <= finalScore);
+            const threshold = this.config.performanceThresholds.find(t => t.threshold <= scorePercentage);
             if (threshold) {
                 performanceSummary.textContent = threshold.message;
             } else {
@@ -1302,10 +1261,7 @@ export class IssueTrackingToolsQuiz extends BaseQuiz {
                 const reviewItem = document.createElement('div');
                 reviewItem.className = 'review-item';
                 
-                const maxXP = Math.max(...record.scenario.options.map(o => o.experience));
-                const earnedXP = record.selectedAnswer.experience;
-                const isCorrect = earnedXP === maxXP;
-                
+                const isCorrect = record.isCorrect;
                 reviewItem.classList.add(isCorrect ? 'correct' : 'incorrect');
                 
                 reviewItem.innerHTML = `
@@ -1313,7 +1269,7 @@ export class IssueTrackingToolsQuiz extends BaseQuiz {
                     <p class="scenario">${record.scenario.description}</p>
                     <p class="answer"><strong>Your Answer:</strong> ${record.selectedAnswer.text}</p>
                     <p class="outcome"><strong>Outcome:</strong> ${record.selectedAnswer.outcome}</p>
-                    <p class="xp"><strong>Experience Earned:</strong> ${earnedXP}/${maxXP}</p>
+                    <p class="result"><strong>Result:</strong> ${isCorrect ? 'Correct' : 'Incorrect'}</p>
                 `;
                 
                 reviewList.appendChild(reviewItem);
@@ -1321,6 +1277,23 @@ export class IssueTrackingToolsQuiz extends BaseQuiz {
         }
 
         this.generateRecommendations();
+    }
+    
+    clearQuizLocalStorage(username, quizName) {
+        const variations = [
+            quizName,                                              // original
+            quizName.toLowerCase(),                               // lowercase
+            quizName.toUpperCase(),                               // uppercase
+            quizName.replace(/-/g, ''),                           // no hyphens
+            quizName.replace(/([A-Z])/g, '-$1').toLowerCase(),    // kebab-case
+            quizName.replace(/-([a-z])/g, (_, c) => c.toUpperCase()), // camelCase
+            quizName.replace(/-/g, '_'),                          // snake_case
+        ];
+
+        variations.forEach(variant => {
+            localStorage.removeItem(`quiz_progress_${username}_${variant}`);
+            localStorage.removeItem(`quizResults_${username}_${variant}`);
+        });
     }
 }
 

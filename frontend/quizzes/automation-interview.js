@@ -6,15 +6,17 @@ export class AutomationInterviewQuiz extends BaseQuiz {
     constructor() {
         const config = {
             maxXP: 300,
+            totalQuestions: 15,
+            passPercentage: 70,
             levelThresholds: {
                 basic: { questions: 5, minXP: 0 }, //35
                 intermediate: { questions: 10, minXP: 0 }, //110
                 advanced: { questions: 15, minXP: 0 } //235
             },
             performanceThresholds: [
-                { threshold: 250, message: '🏆 Outstanding! You\'re an automation expert!' },
-                { threshold: 200, message: '👏 Great job! You\'ve shown strong automation skills!' },
-                { threshold: 150, message: '👍 Good work! Keep practicing to improve further.' },
+                { threshold: 90, message: '🏆 Outstanding! You\'re an automation expert!' },
+                { threshold: 80, message: '👏 Great job! You\'ve shown strong automation skills!' },
+                { threshold: 70, message: '👍 Good work! Keep practicing to improve further.' },
                 { threshold: 0, message: '📚 Consider reviewing automation best practices and try again!' }
             ]
         };
@@ -77,22 +79,26 @@ export class AutomationInterviewQuiz extends BaseQuiz {
                         text: 'Introduce standard practices, encourage collaboration, and provide workshops on different automation topics',
                         outcome: 'Perfect! This provides a comprehensive approach to team development.',
                         experience: 15,
-                        tool: 'Team Development'
+                        tool: 'Team Development',
+                        isCorrect: true
                     },
                     {
                         text: 'Take an unguided approach and allow them to do their own research',
                         outcome: 'Teams need structured guidance and support for effective learning.',
-                        experience: -10
+                        experience: -10,
+                        isCorrect: false
                     },
                     {
                         text: 'Ensure team members only learn a specific framework/set of technologies',
                         outcome: 'Teams benefit from broader knowledge across different automation tools and approaches.',
-                        experience: -5
+                        experience: -5,
+                        isCorrect: false
                     },
                     {
                         text: 'Prioritise team members that show a greater understanding of automation',
                         outcome: 'All team members should receive equal opportunity for growth and development.',
-                        experience: -10
+                        experience: -10,
+                        isCorrect: false
                     }
                 ]
             },
@@ -528,28 +534,27 @@ export class AutomationInterviewQuiz extends BaseQuiz {
     }
 
     shouldEndGame(totalQuestionsAnswered, currentXP) {
-        return totalQuestionsAnswered >= 15 || currentXP >= this.maxXP;
+        return totalQuestionsAnswered >= this.totalQuestions;
+    }
+
+    calculateScorePercentage() {
+        const answered = this.player.questionHistory.length;
+        if (answered === 0) return 0;
+        
+        const correctAnswers = this.player.questionHistory.filter(q => q.selectedAnswer.isCorrect).length;
+        return Math.round((correctAnswers / answered) * 100);
     }
 
     async saveProgress() {
+        // Calculate score percentage
+        const scorePercentage = this.calculateScorePercentage();
+        
         // First determine the status based on clear conditions
         let status = 'in-progress';
         
-        // Check for completion (all 15 questions answered)
-        if (this.player.questionHistory.length >= 15) {
-            // Check if they met the advanced XP requirement
-            if (this.player.experience >= this.levelThresholds.advanced.minXP) {
-                status = 'completed';
-            } else {
-                status = 'failed';
-            }
-        } 
-        // Check for early failure conditions
-        else if (
-            (this.player.questionHistory.length >= 10 && this.player.experience < this.levelThresholds.intermediate.minXP) ||
-            (this.player.questionHistory.length >= 5 && this.player.experience < this.levelThresholds.basic.minXP)
-        ) {
-            status = 'failed';
+        // Check for completion (all questions answered)
+        if (this.player.questionHistory.length >= this.totalQuestions) {
+            status = scorePercentage >= this.passPercentage ? 'completed' : 'failed';
         }
 
         const progress = {
@@ -560,6 +565,7 @@ export class AutomationInterviewQuiz extends BaseQuiz {
                 questionHistory: this.player.questionHistory,
                 lastUpdated: new Date().toISOString(),
                 questionsAnswered: this.player.questionHistory.length,
+                scorePercentage: scorePercentage,
                 status: status
             }
         };
@@ -603,6 +609,7 @@ export class AutomationInterviewQuiz extends BaseQuiz {
                     tools: savedProgress.data.tools || [],
                     questionHistory: savedProgress.data.questionHistory || [],
                     currentScenario: savedProgress.data.currentScenario || 0,
+                    scorePercentage: savedProgress.data.scorePercentage || 0,
                     status: savedProgress.data.status || 'in-progress'
                 };
                 console.log('Normalized progress data:', progress);
@@ -611,7 +618,7 @@ export class AutomationInterviewQuiz extends BaseQuiz {
                 const localData = localStorage.getItem(storageKey);
                 if (localData) {
                     const parsed = JSON.parse(localData);
-                    progress = parsed;
+                    progress = parsed.data || parsed;
                     console.log('Loaded progress from localStorage:', progress);
                 }
             }
@@ -725,31 +732,11 @@ export class AutomationInterviewQuiz extends BaseQuiz {
     displayScenario() {
         const currentScenarios = this.getCurrentScenarios();
         
-        // Check basic level completion
-        if (this.player.questionHistory.length >= 5) {
-            if (this.player.experience < this.levelThresholds.basic.minXP) {
-                this.endGame(true); // End with failure state
-                return;
-            }
-        }
-
-        // Check intermediate level completion
-        if (this.player.questionHistory.length >= 10) {
-            if (this.player.experience < this.levelThresholds.intermediate.minXP) {
-                this.endGame(true); // End with failure state
-                return;
-            }
-        }
-
-        // Check Advanced level completion
-        if (this.player.questionHistory.length >= 15) {
-            if (this.player.experience < this.levelThresholds.advanced.minXP) {
-                this.endGame(true); // End with failure state
-                return;
-            } else {
-                this.endGame(false); // Completed successfully
-                return;
-            }
+        // Check if we should end the game
+        if (this.shouldEndGame(this.player.questionHistory.length, this.player.experience)) {
+            const scorePercentage = this.calculateScorePercentage();
+            this.endGame(scorePercentage < this.passPercentage);
+            return;
         }
 
         // Get the next scenario based on current progress
@@ -918,7 +905,7 @@ export class AutomationInterviewQuiz extends BaseQuiz {
             this.player.questionHistory.push({
                 scenario: scenario,
                 selectedAnswer: selectedAnswer,
-                status: selectedAnswer.experience > 0 ? 'passed' : 'failed',
+                status: selectedAnswer.isCorrect ? 'correct' : 'incorrect',
                 maxPossibleXP: Math.max(...scenario.options.map(o => o.experience)),
                 timeSpent: timeSpent,
                 timedOut: false
@@ -930,17 +917,15 @@ export class AutomationInterviewQuiz extends BaseQuiz {
             // Save progress
             await this.saveProgress();
 
-            // Calculate the score and experience
-            const totalQuestions = 15;
-            const completedQuestions = this.player.questionHistory.length;
-            const percentComplete = Math.round((completedQuestions / totalQuestions) * 100);
+            // Calculate the score percentage
+            const scorePercentage = this.calculateScorePercentage();
             
             const score = {
                 quizName: this.quizName,
-                score: percentComplete,
+                score: scorePercentage,
                 experience: this.player.experience,
                 questionHistory: this.player.questionHistory,
-                questionsAnswered: completedQuestions,
+                questionsAnswered: this.player.questionHistory.length,
                 lastActive: new Date().toISOString()
             };
             
@@ -965,17 +950,11 @@ export class AutomationInterviewQuiz extends BaseQuiz {
             }
             
             // Update outcome display
-            const correctAnswer = scenario.options.reduce((prev, current) => 
-                (prev.experience > current.experience) ? prev : current
-            );
-
             let outcomeText = selectedAnswer.outcome;
             document.getElementById('outcome-text').textContent = outcomeText;
             
-            const xpText = selectedAnswer.experience >= 0 ? 
-                `Experience gained: +${selectedAnswer.experience}` : 
-                `Experience: ${selectedAnswer.experience}`;
-            document.getElementById('xp-gained').textContent = xpText;
+            const resultText = selectedAnswer.isCorrect ? 'Correct!' : 'Incorrect!';
+            document.getElementById('xp-gained').textContent = resultText;
             
             if (selectedAnswer.tool) {
                 document.getElementById('tool-gained').textContent = `Tool acquired: ${selectedAnswer.tool}`;
@@ -987,6 +966,11 @@ export class AutomationInterviewQuiz extends BaseQuiz {
             }
 
             this.updateProgress();
+
+            // Check if we should end the game after answering
+            if (this.shouldEndGame(this.player.questionHistory.length, this.player.experience)) {
+                setTimeout(() => this.endGame(scorePercentage < this.passPercentage), 2000);
+            }
         } catch (error) {
             console.error('Failed to handle answer:', error);
             this.showError('Failed to save your answer. Please try again.');
@@ -1024,7 +1008,7 @@ export class AutomationInterviewQuiz extends BaseQuiz {
         }
         
         if (questionInfoElement) {
-            questionInfoElement.textContent = `Question: ${questionNumber}/15`;
+            questionInfoElement.textContent = `Question: ${questionNumber}/${this.totalQuestions}`;
         }
         
         // Ensure the card is visible
@@ -1043,11 +1027,11 @@ export class AutomationInterviewQuiz extends BaseQuiz {
         }
         
         if (questionProgress) {
-            questionProgress.textContent = `Question: ${questionNumber}/${this.totalQuestions || 15}`;
+            questionProgress.textContent = `Question: ${questionNumber}/${this.totalQuestions}`;
         }
         
         if (progressFill) {
-            const progressPercentage = (totalAnswered / (this.totalQuestions || 15)) * 100;
+            const progressPercentage = (totalAnswered / this.totalQuestions) * 100;
             progressFill.style.width = `${progressPercentage}%`;
         }
     }
@@ -1110,15 +1094,13 @@ export class AutomationInterviewQuiz extends BaseQuiz {
         const recommendationsContainer = document.getElementById('recommendations');
         if (!recommendationsContainer) return;
 
-        const score = Math.round((this.player.experience / this.maxXP) * 100);
+        const score = this.calculateScorePercentage();
         const weakAreas = [];
         const strongAreas = [];
 
         // Analyze performance in different areas
         this.player.questionHistory.forEach(record => {
-            const maxXP = record.maxPossibleXP;
-            const earnedXP = record.selectedAnswer.experience;
-            const isCorrect = earnedXP === maxXP;
+            const isCorrect = record.selectedAnswer.isCorrect;
 
             // Categorize the question based on its content
             const questionType = this.categorizeQuestion(record.scenario);
@@ -1217,8 +1199,7 @@ export class AutomationInterviewQuiz extends BaseQuiz {
             progressCard.style.display = 'none';
         }
 
-        const finalScore = Math.min(this.player.experience, this.maxXP);
-        const scorePercentage = Math.round((finalScore / this.maxXP) * 100);
+        const scorePercentage = this.calculateScorePercentage();
         
         // Save the final quiz result with pass/fail status
         const username = localStorage.getItem('username');
@@ -1234,7 +1215,8 @@ export class AutomationInterviewQuiz extends BaseQuiz {
                     experience: this.player.experience,
                     questionHistory: this.player.questionHistory,
                     questionsAnswered: this.player.questionHistory.length,
-                    lastActive: new Date().toISOString()
+                    lastActive: new Date().toISOString(),
+                    scorePercentage: scorePercentage
                 };
 
                 // Save to QuizUser
@@ -1260,12 +1242,15 @@ export class AutomationInterviewQuiz extends BaseQuiz {
                 // Save directly via API to ensure status is updated
                 console.log('Saving final progress to API:', apiProgress);
                 await this.apiService.saveQuizProgress(this.quizName, apiProgress.data);
+                
+                // Clear local storage once final score is saved
+                this.clearQuizLocalStorage();
             } catch (error) {
                 console.error('Error saving final quiz score:', error);
             }
         }
 
-        document.getElementById('final-score').textContent = `Final Score: ${finalScore}/${this.maxXP}`;
+        document.getElementById('final-score').textContent = `Final Score: ${scorePercentage}%`;
 
         // Update the quiz complete header based on status
         const quizCompleteHeader = document.querySelector('#end-screen h2');
@@ -1275,7 +1260,7 @@ export class AutomationInterviewQuiz extends BaseQuiz {
 
         const performanceSummary = document.getElementById('performance-summary');
         if (failed) {
-            performanceSummary.textContent = 'Quiz failed. You did not meet the minimum XP requirement to progress. You cannot retry this quiz.';
+            performanceSummary.textContent = `Quiz failed. You scored ${scorePercentage}%, but needed at least ${this.passPercentage}% to pass. You cannot retry this quiz.`;
             // Hide restart button if failed
             const restartBtn = document.getElementById('restart-btn');
             if (restartBtn) {
@@ -1287,7 +1272,7 @@ export class AutomationInterviewQuiz extends BaseQuiz {
                 quizContainer.classList.add('failed');
             }
         } else {
-            const threshold = this.performanceThresholds.find(t => t.threshold <= finalScore);
+            const threshold = this.performanceThresholds.find(t => t.threshold <= scorePercentage);
             if (threshold) {
                 performanceSummary.textContent = threshold.message;
             } else {
@@ -1303,9 +1288,7 @@ export class AutomationInterviewQuiz extends BaseQuiz {
                 const reviewItem = document.createElement('div');
                 reviewItem.className = 'review-item';
                 
-                const maxXP = Math.max(...record.scenario.options.map(o => o.experience));
-                const earnedXP = record.selectedAnswer.experience;
-                const isCorrect = earnedXP === maxXP;
+                const isCorrect = record.selectedAnswer.isCorrect;
                 
                 reviewItem.classList.add(isCorrect ? 'correct' : 'incorrect');
                 
@@ -1314,7 +1297,7 @@ export class AutomationInterviewQuiz extends BaseQuiz {
                     <p class="scenario">${record.scenario.description}</p>
                     <p class="answer"><strong>Your Answer:</strong> ${record.selectedAnswer.text}</p>
                     <p class="outcome"><strong>Outcome:</strong> ${record.selectedAnswer.outcome}</p>
-                    <p class="xp"><strong>Experience Earned:</strong> ${earnedXP}/${maxXP}</p>
+                    <p class="result"><strong>Result:</strong> ${isCorrect ? 'Correct' : 'Incorrect'}</p>
                 `;
                 
                 reviewList.appendChild(reviewItem);
@@ -1322,6 +1305,19 @@ export class AutomationInterviewQuiz extends BaseQuiz {
         }
 
         this.generateRecommendations();
+    }
+
+    clearQuizLocalStorage() {
+        try {
+            const username = localStorage.getItem('username');
+            if (username) {
+                const storageKey = `quiz_progress_${username}_${this.quizName}`;
+                localStorage.removeItem(storageKey);
+                console.log('Cleared quiz local storage');
+            }
+        } catch (error) {
+            console.error('Failed to clear quiz local storage:', error);
+        }
     }
 }
 

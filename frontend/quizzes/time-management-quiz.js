@@ -6,15 +6,17 @@ export class TimeManagementQuiz extends BaseQuiz {
     constructor() {
         const config = {
             maxXP: 300,
+            totalQuestions: 15,
+            passPercentage: 70,
             levelThresholds: {
                 basic: { questions: 5, minXP: 35 },
                 intermediate: { questions: 10, minXP: 110 },
                 advanced: { questions: 15, minXP: 235 }
             },
             performanceThresholds: [
-                { threshold: 250, message: '🏆 Outstanding! You\'re a time management expert!' },
-                { threshold: 200, message: '👏 Great job! You\'ve shown strong time management skills!' },
-                { threshold: 150, message: '👍 Good work! Keep practicing to improve further.' },
+                { threshold: 90, message: '🏆 Outstanding! You\'re a time management expert!' },
+                { threshold: 80, message: '👏 Great job! You\'ve shown strong time management skills!' },
+                { threshold: 70, message: '👍 Good work! You\'ve passed the quiz!' },
                 { threshold: 0, message: '📚 Consider reviewing time management best practices and try again!' }
             ]
         };
@@ -528,28 +530,23 @@ export class TimeManagementQuiz extends BaseQuiz {
     }
 
     shouldEndGame(totalQuestionsAnswered, currentXP) {
-        return totalQuestionsAnswered >= 15 || currentXP >= this.maxXP;
+        // End game when all questions are answered
+        return totalQuestionsAnswered >= this.totalQuestions;
     }
 
     async saveProgress() {
-        // First determine the status based on clear conditions
+        // First determine the status based on quiz completion and score
         let status = 'in-progress';
+        let scorePercentage = 0;
         
-        // Check for completion (all 15 questions answered)
-        if (this.player.questionHistory.length >= 15) {
-            // Check if they met the advanced XP requirement
-            if (this.player.experience >= this.levelThresholds.advanced.minXP) {
-                status = 'completed';
-            } else {
-                status = 'failed';
-            }
-        } 
-        // Check for early failure conditions
-        else if (
-            (this.player.questionHistory.length >= 10 && this.player.experience < this.levelThresholds.intermediate.minXP) ||
-            (this.player.questionHistory.length >= 5 && this.player.experience < this.levelThresholds.basic.minXP)
-        ) {
-            status = 'failed';
+        // Calculate score percentage based on correct answers
+        if (this.player.questionHistory.length > 0) {
+            scorePercentage = this.calculateScorePercentage();
+        }
+        
+        // Check for completion (all questions answered)
+        if (this.player.questionHistory.length >= this.totalQuestions) {
+            status = scorePercentage >= this.passPercentage ? 'passed' : 'failed';
         }
 
         const progress = {
@@ -560,7 +557,8 @@ export class TimeManagementQuiz extends BaseQuiz {
                 questionHistory: this.player.questionHistory,
                 lastUpdated: new Date().toISOString(),
                 questionsAnswered: this.player.questionHistory.length,
-                status: status
+                status: status,
+                scorePercentage: scorePercentage
             }
         };
 
@@ -575,7 +573,7 @@ export class TimeManagementQuiz extends BaseQuiz {
             const storageKey = `quiz_progress_${username}_${this.quizName}`;
             localStorage.setItem(storageKey, JSON.stringify(progress));
             
-            console.log('Saving progress with status:', status);
+            console.log('Saving progress with status:', status, 'and score:', scorePercentage);
             await this.apiService.saveQuizProgress(this.quizName, progress.data);
         } catch (error) {
             console.error('Failed to save progress:', error);
@@ -603,7 +601,8 @@ export class TimeManagementQuiz extends BaseQuiz {
                     tools: savedProgress.data.tools || [],
                     questionHistory: savedProgress.data.questionHistory || [],
                     currentScenario: savedProgress.data.currentScenario || 0,
-                    status: savedProgress.data.status || 'in-progress'
+                    status: savedProgress.data.status || 'in-progress',
+                    scorePercentage: savedProgress.data.scorePercentage || 0
                 };
                 console.log('Normalized progress data:', progress);
             } else {
@@ -611,7 +610,7 @@ export class TimeManagementQuiz extends BaseQuiz {
                 const localData = localStorage.getItem(storageKey);
                 if (localData) {
                     const parsed = JSON.parse(localData);
-                    progress = parsed;
+                    progress = parsed.data || parsed;
                     console.log('Loaded progress from localStorage:', progress);
                 }
             }
@@ -630,7 +629,7 @@ export class TimeManagementQuiz extends BaseQuiz {
                 if (progress.status === 'failed') {
                     this.endGame(true);
                     return true;
-                } else if (progress.status === 'completed') {
+                } else if (progress.status === 'passed' || progress.status === 'completed') {
                     this.endGame(false);
                     return true;
                 }
@@ -725,38 +724,17 @@ export class TimeManagementQuiz extends BaseQuiz {
     displayScenario() {
         const currentScenarios = this.getCurrentScenarios();
         
-        // Check basic level completion
-        if (this.player.questionHistory.length >= 5) {
-            if (this.player.experience < this.levelThresholds.basic.minXP) {
-                this.endGame(true); // End with failure state
-                return;
-            }
+        // Check if we've answered all questions
+        if (this.player.questionHistory.length >= this.totalQuestions) {
+            console.log('All questions answered, ending game');
+            this.endGame(false);
+            return;
         }
-
-        // Check intermediate level completion
-        if (this.player.questionHistory.length >= 10) {
-            if (this.player.experience < this.levelThresholds.intermediate.minXP) {
-                this.endGame(true); // End with failure state
-                return;
-            }
-        }
-
-        // Check Advanced level completion
-        if (this.player.questionHistory.length >= 15) {
-            if (this.player.experience < this.levelThresholds.advanced.minXP) {
-                this.endGame(true); // End with failure state
-                return;
-            } else {
-                this.endGame(false); // Completed successfully
-                return;
-            }
-        }
-
+        
         // Get the next scenario based on current progress
         let scenario;
         const questionCount = this.player.questionHistory.length;
         
-        // Reset currentScenario based on the current level
         if (questionCount < 5) {
             // Basic questions (0-4)
             scenario = this.basicScenarios[questionCount];
@@ -833,7 +811,7 @@ export class TimeManagementQuiz extends BaseQuiz {
         // Update question counter immediately
         const questionProgress = document.getElementById('question-progress');
         if (questionProgress) {
-            questionProgress.textContent = `Question: ${this.currentQuestionNumber}/15`;
+            questionProgress.textContent = `Question: ${this.currentQuestionNumber}/${this.totalQuestions}`;
         }
 
         // Create a copy of options with their original indices
@@ -896,29 +874,25 @@ export class TimeManagementQuiz extends BaseQuiz {
             
             const selectedAnswer = scenario.options[originalIndex];
 
-            // Calculate new experience with level-based minimum thresholds
-            let newExperience = this.player.experience + selectedAnswer.experience;
-            
-            // Apply minimum thresholds based on current level
-            const questionCount = this.player.questionHistory.length;
-            if (questionCount >= 5) { // Intermediate level
-                newExperience = Math.max(this.levelThresholds.basic.minXP, newExperience);
-            }
-            if (questionCount >= 10) { // Advanced level
-                newExperience = Math.max(this.levelThresholds.intermediate.minXP, newExperience);
-            }
+            // Find the correct answer (option with highest experience)
+            const correctAnswer = scenario.options.reduce((prev, current) => 
+                (prev.experience > current.experience) ? prev : current
+            );
+
+            // Mark selected answer as correct or incorrect
+            selectedAnswer.isCorrect = selectedAnswer === correctAnswer;
 
             // Update player experience with bounds
-            this.player.experience = Math.max(0, Math.min(this.maxXP, newExperience));
+            this.player.experience = Math.max(0, Math.min(this.maxXP, this.player.experience + selectedAnswer.experience));
             
             // Calculate time spent on this question
             const timeSpent = this.questionStartTime ? Date.now() - this.questionStartTime : null;
 
-            // Add status to question history
+            // Add to question history
             this.player.questionHistory.push({
                 scenario: scenario,
                 selectedAnswer: selectedAnswer,
-                status: selectedAnswer.experience > 0 ? 'passed' : 'failed',
+                isCorrect: selectedAnswer.isCorrect,
                 maxPossibleXP: Math.max(...scenario.options.map(o => o.experience)),
                 timeSpent: timeSpent,
                 timedOut: false
@@ -930,18 +904,16 @@ export class TimeManagementQuiz extends BaseQuiz {
             // Save progress
             await this.saveProgress();
 
-            // Calculate the score and experience
-            const totalQuestions = 15;
-            const completedQuestions = this.player.questionHistory.length;
-            const percentComplete = Math.round((completedQuestions / totalQuestions) * 100);
+            // Calculate the score percentage
+            const scorePercentage = this.calculateScorePercentage();
             
             const score = {
                 quizName: this.quizName,
-                score: percentComplete,
+                score: scorePercentage,
                 experience: this.player.experience,
                 questionHistory: this.player.questionHistory,
-                questionsAnswered: completedQuestions,
-                lastActive: new Date().toISOString()
+                questionsAnswered: this.player.questionHistory.length,
+                lastUpdated: new Date().toISOString()
             };
             
             // Save quiz result
@@ -983,6 +955,11 @@ export class TimeManagementQuiz extends BaseQuiz {
             }
 
             this.updateProgress();
+
+            // Check if all questions have been answered
+            if (this.shouldEndGame(this.player.questionHistory.length, this.player.experience)) {
+                await this.endGame(false);
+            }
         } catch (error) {
             console.error('Failed to handle answer:', error);
             this.showError('Failed to save your answer. Please try again.');
@@ -1020,7 +997,7 @@ export class TimeManagementQuiz extends BaseQuiz {
         }
         
         if (questionInfoElement) {
-            questionInfoElement.textContent = `Question: ${questionNumber}/15`;
+            questionInfoElement.textContent = `Question: ${questionNumber}/${this.totalQuestions}`;
         }
         
         // Ensure the card is visible
@@ -1039,11 +1016,11 @@ export class TimeManagementQuiz extends BaseQuiz {
         }
         
         if (questionProgress) {
-            questionProgress.textContent = `Question: ${questionNumber}/${this.totalQuestions || 15}`;
+            questionProgress.textContent = `Question: ${questionNumber}/${this.totalQuestions}`;
         }
         
         if (progressFill) {
-            const progressPercentage = (totalAnswered / (this.totalQuestions || 15)) * 100;
+            const progressPercentage = (totalAnswered / this.totalQuestions) * 100;
             progressFill.style.width = `${progressPercentage}%`;
         }
     }
@@ -1079,12 +1056,11 @@ export class TimeManagementQuiz extends BaseQuiz {
 
     getCurrentScenarios() {
         const totalAnswered = this.player.questionHistory.length;
-        const currentXP = this.player.experience;
         
-        // Check for level progression
-        if (totalAnswered >= 10 && currentXP >= this.levelThresholds.intermediate.minXP) {
+        // Progress through levels based only on question count
+        if (totalAnswered >= 10) {
             return this.advancedScenarios;
-        } else if (totalAnswered >= 5 && currentXP >= this.levelThresholds.basic.minXP) {
+        } else if (totalAnswered >= 5) {
             return this.intermediateScenarios;
         }
         return this.basicScenarios;
@@ -1092,11 +1068,11 @@ export class TimeManagementQuiz extends BaseQuiz {
 
     getCurrentLevel() {
         const totalAnswered = this.player.questionHistory.length;
-        const currentXP = this.player.experience;
         
-        if (totalAnswered >= 10 && currentXP >= this.levelThresholds.intermediate.minXP) {
+        // Progress through levels based only on question count
+        if (totalAnswered >= 10) {
             return 'Advanced';
-        } else if (totalAnswered >= 5 && currentXP >= this.levelThresholds.basic.minXP) {
+        } else if (totalAnswered >= 5) {
             return 'Intermediate';
         }
         return 'Basic';
@@ -1213,15 +1189,16 @@ export class TimeManagementQuiz extends BaseQuiz {
             progressCard.style.display = 'none';
         }
 
-        const finalScore = Math.min(this.player.experience, this.maxXP);
-        const scorePercentage = Math.round((finalScore / this.maxXP) * 100);
+        // Calculate final score percentage based on correct answers
+        const scorePercentage = this.calculateScorePercentage();
+        const hasPassed = !failed && scorePercentage >= this.passPercentage;
         
         // Save the final quiz result with pass/fail status
         const username = localStorage.getItem('username');
         if (username) {
             try {
                 const user = new QuizUser(username);
-                const status = failed ? 'failed' : 'completed';
+                const status = hasPassed ? 'passed' : 'failed';
                 console.log('Setting final quiz status:', { status, score: scorePercentage });
                 
                 const result = {
@@ -1230,11 +1207,12 @@ export class TimeManagementQuiz extends BaseQuiz {
                     experience: this.player.experience,
                     questionHistory: this.player.questionHistory,
                     questionsAnswered: this.player.questionHistory.length,
-                    lastActive: new Date().toISOString()
+                    lastUpdated: new Date().toISOString(),
+                    scorePercentage: scorePercentage
                 };
 
                 // Save to QuizUser
-                user.updateQuizScore(
+                await user.updateQuizScore(
                     this.quizName,
                     result.score,
                     result.experience,
@@ -1256,22 +1234,25 @@ export class TimeManagementQuiz extends BaseQuiz {
                 // Save directly via API to ensure status is updated
                 console.log('Saving final progress to API:', apiProgress);
                 await this.apiService.saveQuizProgress(this.quizName, apiProgress.data);
+                
+                // Clear any local storage for this quiz
+                this.clearQuizLocalStorage(username, this.quizName);
             } catch (error) {
                 console.error('Error saving final quiz score:', error);
             }
         }
 
-        document.getElementById('final-score').textContent = `Final Score: ${finalScore}/${this.maxXP}`;
+        document.getElementById('final-score').textContent = `Final Score: ${scorePercentage}%`;
 
         // Update the quiz complete header based on status
         const quizCompleteHeader = document.querySelector('#end-screen h2');
         if (quizCompleteHeader) {
-            quizCompleteHeader.textContent = failed ? 'Quiz Failed!' : 'Quiz Complete!';
+            quizCompleteHeader.textContent = hasPassed ? 'Quiz Complete!' : 'Quiz Failed!';
         }
 
         const performanceSummary = document.getElementById('performance-summary');
-        if (failed) {
-            performanceSummary.textContent = 'Quiz failed. You did not meet the minimum XP requirement to progress. You cannot retry this quiz.';
+        if (!hasPassed) {
+            performanceSummary.textContent = 'Quiz failed. You did not earn enough points to pass. You can retry this quiz later.';
             // Hide restart button if failed
             const restartBtn = document.getElementById('restart-btn');
             if (restartBtn) {
@@ -1283,7 +1264,8 @@ export class TimeManagementQuiz extends BaseQuiz {
                 quizContainer.classList.add('failed');
             }
         } else {
-            const threshold = this.performanceThresholds.find(t => t.threshold <= finalScore);
+            // Find the appropriate performance message
+            const threshold = this.config.performanceThresholds.find(t => scorePercentage >= t.threshold);
             if (threshold) {
                 performanceSummary.textContent = threshold.message;
             } else {
@@ -1299,10 +1281,8 @@ export class TimeManagementQuiz extends BaseQuiz {
                 const reviewItem = document.createElement('div');
                 reviewItem.className = 'review-item';
                 
-                const maxXP = Math.max(...record.scenario.options.map(o => o.experience));
-                const earnedXP = record.selectedAnswer.experience;
-                const isCorrect = earnedXP === maxXP;
-                
+                const isCorrect = record.selectedAnswer && (record.selectedAnswer.isCorrect || 
+                    record.selectedAnswer.experience === Math.max(...record.scenario.options.map(o => o.experience || 0)));
                 reviewItem.classList.add(isCorrect ? 'correct' : 'incorrect');
                 
                 reviewItem.innerHTML = `
@@ -1310,7 +1290,7 @@ export class TimeManagementQuiz extends BaseQuiz {
                     <p class="scenario">${record.scenario.description}</p>
                     <p class="answer"><strong>Your Answer:</strong> ${record.selectedAnswer.text}</p>
                     <p class="outcome"><strong>Outcome:</strong> ${record.selectedAnswer.outcome}</p>
-                    <p class="xp"><strong>Experience Earned:</strong> ${earnedXP}/${maxXP}</p>
+                    <p class="result"><strong>Result:</strong> ${isCorrect ? 'Correct' : 'Incorrect'}</p>
                 `;
                 
                 reviewList.appendChild(reviewItem);
@@ -1318,6 +1298,46 @@ export class TimeManagementQuiz extends BaseQuiz {
         }
 
         this.generateRecommendations();
+    }
+
+    // Helper method to calculate the score percentage based on correct answers
+    calculateScorePercentage() {
+        const correctAnswers = this.player.questionHistory.filter(q => 
+            q.selectedAnswer && (q.selectedAnswer.isCorrect || 
+            q.selectedAnswer.experience === Math.max(...q.scenario.options.map(o => o.experience || 0)))
+        ).length;
+        
+        // Calculate percentage based on completed questions (cap at max questions)
+        const totalAnswered = Math.min(this.player.questionHistory.length, this.totalQuestions);
+        return totalAnswered > 0 ? Math.round((correctAnswers / totalAnswered) * 100) : 0;
+    }
+
+    clearQuizLocalStorage(username, quizName) {
+        const variations = [
+            quizName,                                              // original
+            quizName.toLowerCase(),                               // lowercase
+            quizName.toUpperCase(),                               // uppercase
+            quizName.replace(/-/g, ''),                           // no hyphens
+            quizName.replace(/([A-Z])/g, '-$1').toLowerCase(),    // kebab-case
+            quizName.replace(/-([a-z])/g, (_, c) => c.toUpperCase()), // camelCase
+            quizName.replace(/-/g, '_'),                          // snake_case
+        ];
+
+        // Add time-management specific variations
+        if (quizName.toLowerCase().includes('time-management')) {
+            variations.push(
+                'Time-Management',
+                'time-management',
+                'timeManagement',
+                'Time_Management',
+                'time_management'
+            );
+        }
+
+        variations.forEach(variant => {
+            localStorage.removeItem(`quiz_progress_${username}_${variant}`);
+            localStorage.removeItem(`quizResults_${username}_${variant}`);
+        });
     }
 }
 
