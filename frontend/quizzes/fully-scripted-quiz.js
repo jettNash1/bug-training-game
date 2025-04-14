@@ -926,21 +926,21 @@ export class FullyScriptedQuiz extends BaseQuiz {
                 this.outcomeScreen.classList.remove('hidden');
             }
             
-            // Update outcome display
-            document.getElementById('outcome-text').textContent = selectedAnswer.outcome;
-            
-            const xpText = selectedAnswer.experience >= 0 ? 
-                `Experience gained: +${selectedAnswer.experience}` : 
-                `Experience: ${selectedAnswer.experience}`;
-            document.getElementById('xp-gained').textContent = xpText;
-            
-            if (selectedAnswer.tool) {
-                document.getElementById('tool-gained').textContent = `Tool acquired: ${selectedAnswer.tool}`;
-                if (!this.player.tools.includes(selectedAnswer.tool)) {
-                    this.player.tools.push(selectedAnswer.tool);
+            // Set content directly in the outcome screen
+            const outcomeContent = this.outcomeScreen.querySelector('.outcome-content');
+            if (outcomeContent) {
+                outcomeContent.innerHTML = `
+                    <h3>${selectedAnswer.isCorrect ? 'Correct!' : 'Incorrect'}</h3>
+                    <p>${selectedAnswer.outcome || ''}</p>
+                    <p class="result">${selectedAnswer.isCorrect ? 'Correct answer!' : 'Try again next time.'}</p>
+                    <button id="continue-btn" class="submit-button">Continue</button>
+                `;
+                
+                // Add event listener to the continue button
+                const continueBtn = outcomeContent.querySelector('#continue-btn');
+                if (continueBtn) {
+                    continueBtn.addEventListener('click', () => this.nextScenario());
                 }
-            } else {
-                document.getElementById('tool-gained').textContent = '';
             }
 
             this.updateProgress();
