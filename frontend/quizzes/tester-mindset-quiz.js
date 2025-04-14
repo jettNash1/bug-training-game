@@ -25,6 +25,16 @@ export class TesterMindsetQuiz extends BaseQuiz {
             configurable: false,
             enumerable: true
         });
+        
+        // Initialize randomized scenarios at the class level
+        this.randomizedScenarios = {
+            basic: null,
+            intermediate: null,
+            advanced: null
+        };
+        
+        // Store current scenario
+        this.currentScenario = null;
 
         // Initialize player state
         this.player = {
@@ -774,49 +784,40 @@ export class TesterMindsetQuiz extends BaseQuiz {
      */
     displayScenario() {
         try {
-            // Calculate total questions answered
+            console.log('Displaying scenario');
+            
+            // Get total answered questions
             const totalAnswered = this.player?.questionHistory?.length || 0;
             
-            // Safety check - if all questions are answered, end the game
-            if (totalAnswered >= 15) {
-                console.log('[Quiz] All 15 questions answered, ending game');
-                this.endGame();
-                return;
-            }
-            
-            // Determine which set of scenarios to use
+            // Get the appropriate scenarios based on progress
             const scenarios = this.getCurrentScenarios();
             if (!scenarios || scenarios.length === 0) {
-                throw new Error('No scenarios available');
+                throw new Error('No scenarios available for the current level');
             }
             
-            // Calculate current scenario index within the level (0-4)
-            const levelProgress = totalAnswered % 5;
+            // Calculate current scenario index within the level
+            const scenarioIndex = totalAnswered % 5;
+            this.currentScenario = scenarios[scenarioIndex];
             
-            // Get the current scenario
-            const currentScenario = scenarios[levelProgress];
-            if (!currentScenario) {
-                throw new Error(`No scenario found at position ${levelProgress}`);
+            if (!this.currentScenario) {
+                throw new Error(`Scenario not found at index ${scenarioIndex}`);
             }
             
-            // Store current scenario in player object
-            this.player.currentScenario = levelProgress;
-            
-            // Display the scenario
-            this.updateScenarioUI(currentScenario);
+            // Update UI with current scenario
+            this.updateScenarioUI(this.currentScenario);
             
             // Update progress display
             this.updateProgressDisplay();
             
-            console.log(`[Quiz] Displaying scenario at position ${levelProgress}, total answered: ${totalAnswered}`);
+            // Initialize timer for the new question
+            this.initializeTimer();
+            
+            console.log(`Displaying scenario: ${this.currentScenario.id} (${totalAnswered + 1}/15)`);
+            return true;
         } catch (error) {
-            console.error('[Quiz] Error displaying scenario:', error);
-            // Display error message to user
-            const errorElement = document.getElementById('scenario-error');
-            if (errorElement) {
-                errorElement.textContent = 'Error loading scenario. Please try refreshing the page.';
-                errorElement.style.display = 'block';
-            }
+            console.error('Error in displayScenario:', error);
+            this.showError('An error occurred while loading the scenario.');
+            return false;
         }
     }
     
@@ -826,59 +827,67 @@ export class TesterMindsetQuiz extends BaseQuiz {
      */
     updateScenarioUI(scenario) {
         try {
-            // Update UI with current scenario
-            const titleElement = document.getElementById('scenario-title');
-            const descriptionElement = document.getElementById('scenario-description');
-            const optionsContainer = document.getElementById('options-container');
-
-            if (titleElement && scenario.title) {
-                titleElement.textContent = scenario.title;
-            }
-
-            if (descriptionElement && scenario.description) {
-                descriptionElement.textContent = scenario.description;
+            if (!scenario) {
+                throw new Error('Cannot update UI: No scenario provided');
             }
             
-            if (optionsContainer && scenario.options && Array.isArray(scenario.options)) {
-                optionsContainer.innerHTML = '';
-                
-                // Shuffle options to randomize their order
-                const shuffledOptions = this.shuffleArray(scenario.options);
-                
-                shuffledOptions.forEach((option, index) => {
-                    if (!option || !option.text) {
-                        console.error('[Quiz] Invalid option at index', index, option);
-                        return;
-                    }
-                    
+            // Ensure required elements exist
+            this.ensureRequiredElementsExist();
+            
+            // Update scenario title
+            const titleElement = document.getElementById('scenario-title');
+            if (!titleElement) {
+                throw new Error('Scenario title element not found in the DOM');
+            }
+            titleElement.textContent = scenario.title || 'Untitled Scenario';
+            
+            // Update scenario description
+            const descriptionElement = document.getElementById('scenario-description');
+            if (!descriptionElement) {
+                throw new Error('Scenario description element not found in the DOM');
+            }
+            descriptionElement.textContent = scenario.description || 'No description available.';
+            
+            // Update options
+            const optionsContainer = document.getElementById('options-container');
+            if (!optionsContainer) {
+                throw new Error('Options container not found in the DOM');
+            }
+            optionsContainer.innerHTML = '';
+            
+            // Add options
+            if (scenario.options && scenario.options.length > 0) {
+                scenario.options.forEach((option, index) => {
                     const optionDiv = document.createElement('div');
                     optionDiv.className = 'option';
-                    optionDiv.innerHTML = `
-                        <input type="radio" 
-                            name="option" 
-                            value="${scenario.options.indexOf(option)}" 
-                            id="option${index}"
-                            tabindex="0"
-                            aria-label="${option.text}">
-                        <label for="option${index}">${option.text}</label>
-                    `;
+                    
+                    const radioInput = document.createElement('input');
+                    radioInput.type = 'radio';
+                    radioInput.name = 'option';
+                    radioInput.value = index;
+                    radioInput.id = `option${index}`;
+                    radioInput.setAttribute('tabindex', '0');
+                    radioInput.setAttribute('aria-label', option.text || `Option ${index + 1}`);
+                    
+                    const label = document.createElement('label');
+                    label.setAttribute('for', `option${index}`);
+                    label.textContent = option.text || `Option ${index + 1}`;
+                    
+                    optionDiv.appendChild(radioInput);
+                    optionDiv.appendChild(label);
                     optionsContainer.appendChild(optionDiv);
                 });
+            } else {
+                const noOptionsMessage = document.createElement('p');
+                noOptionsMessage.textContent = 'No options available for this scenario.';
+                noOptionsMessage.classList.add('no-options-message');
+                optionsContainer.appendChild(noOptionsMessage);
             }
-
-            // Record start time for this question
-            this.questionStartTime = Date.now();
-
-            // Initialize timer for the new question
-            this.initializeTimer();
             
-            // Hide any previous error messages
-            const errorElement = document.getElementById('scenario-error');
-            if (errorElement) {
-                errorElement.style.display = 'none';
-            }
+            console.log('Scenario UI updated successfully');
         } catch (error) {
-            console.error('[Quiz] Error updating scenario UI:', error);
+            console.error('Error in updateScenarioUI:', error);
+            this.showError('An error occurred while updating the scenario display.');
         }
     }
     
@@ -965,98 +974,85 @@ export class TesterMindsetQuiz extends BaseQuiz {
      */
     handleAnswer(event) {
         try {
-            console.log('[Quiz] handleAnswer called');
+            if (event) {
+                event.preventDefault();
+            }
             
-            // Get the selected option
+            console.log('Handle answer called');
+            
+            // Get selected option
             const selectedOption = document.querySelector('input[name="option"]:checked');
             if (!selectedOption) {
-                console.log('[Quiz] No option selected');
-                // Show a message to the user
-                const errorElement = document.getElementById('scenario-error');
-                if (errorElement) {
-                    errorElement.textContent = 'Please select an answer before continuing';
-                    errorElement.style.display = 'block';
+                this.showError('Please select an option');
+                return;
+            }
+            
+            const optionIndex = parseInt(selectedOption.value);
+            
+            // Validate current scenario
+            if (!this.currentScenario) {
+                console.error('Current scenario not found. This might indicate an issue with scenario loading.');
+                
+                // Try to recover by attempting to load the current scenario again
+                const totalAnswered = this.player?.questionHistory?.length || 0;
+                const scenarios = this.getCurrentScenarios();
+                if (!scenarios || scenarios.length === 0) {
+                    throw new Error('No scenarios available for the current level');
                 }
-                return;
+                
+                const scenarioIndex = totalAnswered % 5;
+                this.currentScenario = scenarios[scenarioIndex];
+                
+                if (!this.currentScenario) {
+                    throw new Error(`Failed to recover. Scenario not found at index ${scenarioIndex}`);
+                }
+                
+                console.log('Successfully recovered current scenario:', this.currentScenario);
             }
             
-            // Calculate total questions answered
-            const totalAnswered = this.player?.questionHistory?.length || 0;
-            
-            // Get current scenarios and scenario index
-            const scenarios = this.getCurrentScenarios();
-            const scenarioIndex = totalAnswered % 5;
-            
-            // Verify we have valid scenarios
-            if (!scenarios || !Array.isArray(scenarios) || scenarios.length === 0) {
-                console.error('[Quiz] Cannot handle answer: No scenarios available');
-                return;
+            // Get selected answer from the scenario
+            const selectedAnswer = this.currentScenario.options[optionIndex];
+            if (!selectedAnswer) {
+                throw new Error('Selected answer not found in current scenario');
             }
             
-            // Get the current scenario
-            const currentScenario = scenarios[scenarioIndex];
-            if (!currentScenario) {
-                console.error(`[Quiz] Cannot handle answer: No scenario found at index ${scenarioIndex}`);
-                return;
+            // Record the answer in player history
+            const historyRecord = {
+                scenario: this.currentScenario,
+                scenarioId: this.currentScenario.id,
+                selectedAnswer: selectedAnswer,
+                timestamp: new Date().toISOString()
+            };
+            this.player.questionHistory.push(historyRecord);
+            
+            // Update player experience
+            this.player.experience += selectedAnswer.experience || 0;
+            
+            // Check if player got a new tool
+            if (selectedAnswer.tool && !this.player.tools.includes(selectedAnswer.tool)) {
+                this.player.tools.push(selectedAnswer.tool);
             }
-            
-            // Get the selected answer index
-            const answerIndex = parseInt(selectedOption.value, 10);
-            if (isNaN(answerIndex) || answerIndex < 0 || answerIndex >= currentScenario.options.length) {
-                console.error('[Quiz] Invalid answer index:', answerIndex);
-                return;
-            }
-            
-            // Record the answer
-            const selectedAnswer = currentScenario.options[answerIndex];
-            
-            // Save the question details to history
-            this.player.questionHistory.push({
-                scenarioTitle: currentScenario.title,
-                selectedAnswer: answerIndex,
-                timestamp: Date.now(),
-                timeSpent: Date.now() - this.questionStartTime,
-                correctAnswer: this.getCorrectAnswerIndex(currentScenario)
-            });
-            
-            // Update player's experience based on answer
-            this.updateExperience(selectedAnswer);
-            
-            // Calculate our score
-            const score = this.calculateScore();
-            this.player.scorePercentage = score;
             
             // Save progress
             this.saveProgress();
             
-            // Show answer outcome and explanation
-            this.showAnswerOutcome(currentScenario, answerIndex);
+            // Display the outcome
+            this.displayOutcome(selectedAnswer);
             
-            // Advance to next scenario on continue
-            document.querySelector('.continue-btn').addEventListener('click', () => {
-                // Hide outcome panel
-                document.getElementById('outcome-panel').style.display = 'none';
+            // Disable submit button while showing outcome
+            const submitButton = document.querySelector('.submit-button');
+            if (submitButton) {
+                submitButton.disabled = true;
                 
-                // Check if we've answered all 15 questions
-                if (this.player.questionHistory.length >= 15) {
-                    console.log('[Quiz] All questions answered, ending game');
-                    this.endGame();
-                    return;
-                }
-                
-                // Determine if we need to move to the next level
-                if ((this.player.questionHistory.length % 5) === 0) {
-                    console.log('[Quiz] Completed current level, moving to next level');
-                }
-                
-                // Display the next scenario
-                this.displayScenario();
-            });
+                // Re-enable after the outcome is shown
+                setTimeout(() => {
+                    submitButton.disabled = false;
+                }, 2000);
+            }
             
-            console.log('[Quiz] Answer processed successfully');
         } catch (error) {
-            console.error('[Quiz] Error handling answer:', error);
-            this.showError('An error occurred processing your answer. Please try again.');
+            console.error('Error in handleAnswer:', error);
+            this.showError('An error occurred while processing your answer. Please try again.');
         }
     }
 
@@ -1364,63 +1360,53 @@ export class TesterMindsetQuiz extends BaseQuiz {
 
     getCurrentScenarios() {
         try {
-            // If we already have randomized scenarios, use those
-            if (this.randomizedScenarios) {
-                return this.randomizedScenarios;
-            }
-            
-            // Otherwise, create new randomized sets
-            console.log('[Quiz] Creating new randomized scenario sets');
-            
-            // Function to shuffle an array using Fisher-Yates algorithm
-            const shuffleArray = (array) => {
-                const shuffled = [...array];
-                for (let i = shuffled.length - 1; i > 0; i--) {
-                    const j = Math.floor(Math.random() * (i + 1));
-                    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
-                }
-                return shuffled;
-            };
-            
-            // Create randomized scenario sets for each level
-            this.randomizedScenarios = {
-                basic: shuffleArray(this.basicScenarios || []),
-                intermediate: shuffleArray(this.intermediateScenarios || []),
-                advanced: shuffleArray(this.advancedScenarios || [])
-            };
-            
-            // Log the size of the randomized scenarios object
-            console.log('[Quiz] Randomized scenarios created, size:', 
-                JSON.stringify(this.randomizedScenarios).length, 'bytes');
-            
-            // Calculate which set to return based on questions answered
             const totalAnswered = this.player?.questionHistory?.length || 0;
             
-            if (totalAnswered < 5) {
-                return this.randomizedScenarios.basic || [];
-            } else if (totalAnswered < 10) {
-                return this.randomizedScenarios.intermediate || [];
-            } else {
-                return this.randomizedScenarios.advanced || [];
+            // If we don't have the randomized sets yet, create them
+            if (!this.randomizedScenarios || !this.randomizedScenarios.basic) {
+                // Get list of already answered question IDs to avoid repeats
+                const answeredIds = new Set(
+                    this.player?.questionHistory
+                        ?.map(q => q.scenario?.id)
+                        .filter(id => id !== undefined)
+                );
+                
+                // Function to generate a set of scenarios ensuring no repeats
+                const getUniqueScenarios = (allScenarios, numNeeded) => {
+                    // Filter out scenarios that have already been answered
+                    const availableScenarios = allScenarios.filter(s => !answeredIds.has(s.id));
+                    
+                    // If we don't have enough scenarios left, include already seen ones as a fallback
+                    if (availableScenarios.length < numNeeded) {
+                        console.log(`Not enough unique scenarios left in pool. Using some repeats.`);
+                        return this.shuffleArray([...allScenarios]).slice(0, numNeeded);
+                    }
+                    
+                    // Shuffle and take the number needed
+                    return this.shuffleArray(availableScenarios).slice(0, numNeeded);
+                };
+                
+                // Create randomized sets of unique scenarios for each level
+                this.randomizedScenarios = {
+                    basic: getUniqueScenarios(this.basicScenarios, 5),
+                    intermediate: getUniqueScenarios(this.intermediateScenarios, 5),
+                    advanced: getUniqueScenarios(this.advancedScenarios, 5)
+                };
+                
+                console.log('Created randomized scenarios:', {
+                    basic: this.randomizedScenarios.basic.map(s => s.id),
+                    intermediate: this.randomizedScenarios.intermediate.map(s => s.id),
+                    advanced: this.randomizedScenarios.advanced.map(s => s.id)
+                });
             }
-        } catch (error) {
-            console.error('[Quiz] Error getting scenarios:', error);
-            // Fallback to basic scenarios if error
-            return this.basicScenarios || [];
-        }
-    }
-
-    getCurrentLevel() {
-        try {
-            const totalAnswered = this.player?.questionHistory?.length || 0;
         
-            // Determine level based solely on question count
+            // Simple progression logic based solely on question count
             if (totalAnswered >= 10) {
-            return 'Advanced';
+                return this.randomizedScenarios.advanced;
             } else if (totalAnswered >= 5) {
-            return 'Intermediate';
-        }
-        return 'Basic';
+                return this.randomizedScenarios.intermediate;
+            }
+            return this.randomizedScenarios.basic;
         } catch (error) {
             console.error('Error in getCurrentLevel:', error);
             return 'Basic'; // Default to basic if there's an error

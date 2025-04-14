@@ -29,6 +29,13 @@ export class ExploratoryQuiz extends BaseQuiz {
                 enumerable: true
             });
             
+            // Initialize randomized scenarios at the class level
+            this.randomizedScenarios = {
+                basic: null,
+                intermediate: null,
+                advanced: null
+            };
+            
             // Initialize player state
             this.player = {
                 experience: 0,
@@ -49,6 +56,7 @@ export class ExploratoryQuiz extends BaseQuiz {
             this.questionTimer = null;
             this.currentOutcome = null;
             this.isGameEnded = false;
+            this.currentScenario = null; // Add a reference to the current scenario at the class level
             
             // Store UI elements
             this.gameContainer = null;
@@ -704,6 +712,9 @@ export class ExploratoryQuiz extends BaseQuiz {
                 throw new Error('Required UI elements not found');
             }
             
+            // Ensure the scenario container exists
+            this.ensureRequiredElementsExist();
+            
             // Get progress elements
             this.progressBar = document.getElementById('progress-bar');
             this.levelIndicator = document.getElementById('current-level');
@@ -719,6 +730,110 @@ export class ExploratoryQuiz extends BaseQuiz {
         }
     }
     
+    ensureRequiredElementsExist() {
+        // Check if scenario container exists, create it if not
+        if (!document.getElementById('scenario-container')) {
+            console.log('Creating missing scenario container');
+            
+            // Get the question section
+            const questionSection = this.gameScreen.querySelector('.question-section');
+            if (!questionSection) {
+                // Create the entire question section if it doesn't exist
+                const newQuestionSection = document.createElement('div');
+                newQuestionSection.className = 'question-section';
+                
+                // Create title and description elements
+                const titleElement = document.createElement('h2');
+                titleElement.id = 'scenario-title';
+                titleElement.setAttribute('tabindex', '0');
+                
+                const descriptionElement = document.createElement('p');
+                descriptionElement.id = 'scenario-description';
+                descriptionElement.setAttribute('tabindex', '0');
+                
+                // Create scenario container and add elements
+                const scenarioContainer = document.createElement('div');
+                scenarioContainer.id = 'scenario-container';
+                scenarioContainer.appendChild(titleElement);
+                scenarioContainer.appendChild(descriptionElement);
+                
+                // Add to question section
+                newQuestionSection.appendChild(scenarioContainer);
+                
+                // Add question section to game screen (before options)
+                const optionsSection = this.gameScreen.querySelector('.options-section');
+                if (optionsSection) {
+                    this.gameScreen.insertBefore(newQuestionSection, optionsSection);
+                } else {
+                    this.gameScreen.appendChild(newQuestionSection);
+                }
+            } else {
+                // If question section exists but scenario container doesn't
+                // Check if title and description elements exist
+                let titleElement = questionSection.querySelector('#scenario-title');
+                let descriptionElement = questionSection.querySelector('#scenario-description');
+                
+                // Create scenario container
+                const scenarioContainer = document.createElement('div');
+                scenarioContainer.id = 'scenario-container';
+                
+                // Move existing elements or create new ones
+                if (titleElement) {
+                    // Remove from current position
+                    titleElement.parentNode.removeChild(titleElement);
+                    // Add to new container
+                    scenarioContainer.appendChild(titleElement);
+                } else {
+                    // Create new title element
+                    titleElement = document.createElement('h2');
+                    titleElement.id = 'scenario-title';
+                    titleElement.setAttribute('tabindex', '0');
+                    scenarioContainer.appendChild(titleElement);
+                }
+                
+                if (descriptionElement) {
+                    // Remove from current position
+                    descriptionElement.parentNode.removeChild(descriptionElement);
+                    // Add to new container
+                    scenarioContainer.appendChild(descriptionElement);
+                } else {
+                    // Create new description element
+                    descriptionElement = document.createElement('p');
+                    descriptionElement.id = 'scenario-description';
+                    descriptionElement.setAttribute('tabindex', '0');
+                    scenarioContainer.appendChild(descriptionElement);
+                }
+                
+                // Add container to question section
+                questionSection.appendChild(scenarioContainer);
+            }
+            
+            console.log('Scenario container created successfully');
+        }
+        
+        // Check if options container exists, create it if not
+        if (!document.getElementById('options-container')) {
+            console.log('Creating missing options container');
+            
+            const optionsForm = document.getElementById('options-form');
+            if (optionsForm) {
+                const optionsContainer = document.createElement('div');
+                optionsContainer.id = 'options-container';
+                
+                // Insert at the beginning of the form
+                if (optionsForm.firstChild) {
+                    optionsForm.insertBefore(optionsContainer, optionsForm.firstChild);
+                } else {
+                    optionsForm.appendChild(optionsContainer);
+                }
+                
+                console.log('Options container created successfully');
+            } else {
+                console.error('Options form not found, cannot create options container');
+            }
+        }
+    }
+
     updateProgressDisplay() {
         try {
             const totalAnswered = this.player?.questionHistory?.length || 0;
@@ -1018,51 +1133,48 @@ export class ExploratoryQuiz extends BaseQuiz {
                 throw new Error('Cannot update UI: No scenario provided');
             }
             
-            // Clear previous content
-            const scenarioContainer = document.getElementById('scenario-container');
-            if (!scenarioContainer) {
-                throw new Error('Scenario container not found in the DOM');
+            // Update scenario title
+            const titleElement = document.getElementById('scenario-title');
+            if (!titleElement) {
+                throw new Error('Scenario title element not found in the DOM');
             }
-            scenarioContainer.innerHTML = '';
-            
-            // Create and add scenario title
-            const titleElement = document.createElement('h2');
             titleElement.textContent = scenario.title || 'Untitled Scenario';
-            titleElement.classList.add('scenario-title');
-            scenarioContainer.appendChild(titleElement);
             
-            // Create and add scenario description
-            const descriptionElement = document.createElement('p');
+            // Update scenario description
+            const descriptionElement = document.getElementById('scenario-description');
+            if (!descriptionElement) {
+                throw new Error('Scenario description element not found in the DOM');
+            }
             descriptionElement.textContent = scenario.description || 'No description available.';
-            descriptionElement.classList.add('scenario-description');
-            scenarioContainer.appendChild(descriptionElement);
             
-            // Create options container
-            const optionsContainer = document.createElement('div');
-            optionsContainer.classList.add('options-container');
+            // Update options
+            const optionsContainer = document.getElementById('options-container');
+            if (!optionsContainer) {
+                throw new Error('Options container not found in the DOM');
+            }
+            optionsContainer.innerHTML = '';
             
             // Add options
             if (scenario.options && scenario.options.length > 0) {
                 scenario.options.forEach((option, index) => {
-                    const optionButton = document.createElement('button');
-                    optionButton.textContent = option.text || `Option ${index + 1}`;
-                    optionButton.classList.add('option-button');
-                    optionButton.dataset.optionIndex = index;
-                    optionButton.addEventListener('click', () => this.handleAnswer(index));
+                    const optionDiv = document.createElement('div');
+                    optionDiv.className = 'option';
                     
-                    // Add accessibility attributes
-                    optionButton.setAttribute('tabindex', '0');
-                    optionButton.setAttribute('aria-label', `Select option: ${option.text || `Option ${index + 1}`}`);
+                    const radioInput = document.createElement('input');
+                    radioInput.type = 'radio';
+                    radioInput.name = 'option';
+                    radioInput.value = index;
+                    radioInput.id = `option${index}`;
+                    radioInput.setAttribute('tabindex', '0');
+                    radioInput.setAttribute('aria-label', option.text || `Option ${index + 1}`);
                     
-                    // Add keyboard navigation
-                    optionButton.addEventListener('keydown', (event) => {
-                        if (event.key === 'Enter' || event.key === ' ') {
-                            event.preventDefault();
-                            this.handleAnswer(index);
-                        }
-                    });
+                    const label = document.createElement('label');
+                    label.setAttribute('for', `option${index}`);
+                    label.textContent = option.text || `Option ${index + 1}`;
                     
-                    optionsContainer.appendChild(optionButton);
+                    optionDiv.appendChild(radioInput);
+                    optionDiv.appendChild(label);
+                    optionsContainer.appendChild(optionDiv);
                 });
             } else {
                 const noOptionsMessage = document.createElement('p');
@@ -1070,8 +1182,6 @@ export class ExploratoryQuiz extends BaseQuiz {
                 noOptionsMessage.classList.add('no-options-message');
                 optionsContainer.appendChild(noOptionsMessage);
             }
-            
-            scenarioContainer.appendChild(optionsContainer);
             
             console.log('Scenario UI updated successfully');
         } catch (error) {
@@ -1082,21 +1192,63 @@ export class ExploratoryQuiz extends BaseQuiz {
 
     isCorrectAnswer(answer) {
         // Helper method to consistently determine if an answer is correct
-        return answer && (answer.isCorrect || answer.experience > 0);
+        if (!answer) return false;
+        
+        // Handle different structures of answer data
+        if (typeof answer === 'object') {
+            // If it's an option object with isCorrect property
+            if (answer.isCorrect !== undefined) {
+                return answer.isCorrect === true;
+            }
+            
+            // If it has experience property (positive exp = correct)
+            if (answer.experience !== undefined) {
+                return answer.experience > 0;
+            }
+            
+            // If it's a history record with selectedOption
+            if (answer.selectedOption !== undefined && answer.scenario && answer.scenario.options) {
+                const option = answer.scenario.options[answer.selectedOption];
+                return option && (option.isCorrect === true || option.experience > 0);
+            }
+        }
+        
+        // Default to false if we can't determine
+        return false;
     }
 
     handleAnswer(optionIndex) {
         try {
             console.log(`Handle answer called with option index: ${optionIndex}`);
             
-            // Validate current scenario
-            if (!this.currentScenario) {
-                throw new Error('No current scenario found');
+            // If optionIndex is not provided, try to get it from the selected radio button
+            if (optionIndex === undefined || optionIndex === null) {
+                const selectedOption = document.querySelector('input[name="option"]:checked');
+                if (!selectedOption) {
+                    throw new Error('No option selected');
+                }
+                optionIndex = parseInt(selectedOption.value);
             }
             
-            // Validate option selection
-            if (optionIndex === undefined || optionIndex === null) {
-                throw new Error('No option selected');
+            // Validate current scenario
+            if (!this.currentScenario) {
+                console.error('Current scenario not found. This might indicate an issue with scenario loading.');
+                
+                // Try to recover by attempting to load the current scenario again
+                const totalAnswered = this.player?.questionHistory?.length || 0;
+                const scenarios = this.getCurrentScenarios();
+                if (!scenarios || scenarios.length === 0) {
+                    throw new Error('No scenarios available for the current level');
+                }
+                
+                const scenarioIndex = totalAnswered % 5;
+                this.currentScenario = scenarios[scenarioIndex];
+                
+                if (!this.currentScenario) {
+                    throw new Error(`Failed to recover. Scenario not found at index ${scenarioIndex}`);
+                }
+                
+                console.log('Successfully recovered current scenario:', this.currentScenario);
             }
             
             // Get selected option
@@ -1107,7 +1259,9 @@ export class ExploratoryQuiz extends BaseQuiz {
             
             // Record the answer
             const answer = {
+                scenario: this.currentScenario, // Store the entire scenario for later review
                 scenarioId: this.currentScenario.id,
+                selectedAnswer: selectedOption, // Store the entire selected option
                 selectedOption: optionIndex,
                 timestamp: new Date().toISOString(),
                 experienceGained: selectedOption.experience || 0
@@ -1144,7 +1298,7 @@ export class ExploratoryQuiz extends BaseQuiz {
             
         } catch (error) {
             console.error('Error in handleAnswer:', error);
-            this.showError('An error occurred while processing your answer.');
+            this.showError('An error occurred while processing your answer. Please try selecting an option again.');
         }
     }
     
@@ -1513,10 +1667,11 @@ export class ExploratoryQuiz extends BaseQuiz {
 
     // Helper method to shuffle an array using Fisher-Yates algorithm
     shuffleArray(array) {
-        const shuffled = [...array];
+        // Fisher-Yates shuffle algorithm for randomizing scenario order
+        const shuffled = [...array]; // Create a copy to avoid modifying the original array
         for (let i = shuffled.length - 1; i > 0; i--) {
             const j = Math.floor(Math.random() * (i + 1));
-            [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+            [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]]; // Swap elements
         }
         return shuffled;
     }
