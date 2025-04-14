@@ -570,7 +570,6 @@ export class TesterMindsetQuiz extends BaseQuiz {
             const storageKey = `quiz_progress_${username}_${this.quizName}`;
             localStorage.setItem(storageKey, JSON.stringify(progress));
             
-            console.log('Saving progress with status:', status);
             await this.apiService.saveQuizProgress(this.quizName, progress.data);
         } catch (error) {
             console.error('Failed to save progress:', error);
@@ -588,7 +587,6 @@ export class TesterMindsetQuiz extends BaseQuiz {
             // Use user-specific key for localStorage
             const storageKey = `quiz_progress_${username}_${this.quizName}`;
             const savedProgress = await this.apiService.getQuizProgress(this.quizName);
-            console.log('Raw API Response:', savedProgress);
             let progress = null;
             
             if (savedProgress && savedProgress.data) {
@@ -664,7 +662,6 @@ export class TesterMindsetQuiz extends BaseQuiz {
 
             // Load previous progress
             const hasProgress = await this.loadProgress();
-            console.log('Previous progress loaded:', hasProgress);
             
             if (!hasProgress) {
                 // Reset player state if no valid progress exists
