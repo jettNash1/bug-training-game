@@ -284,7 +284,8 @@ export class APIService {
 
         // Create AbortController for timeout
         const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 second timeout
+        // Increase timeout to 15 seconds (was 5 seconds) to handle large quiz data
+        const timeoutId = setTimeout(() => controller.abort(), 15000); 
         
         try {
             // Ensure we have the correct URL (handle both absolute and relative URLs)
@@ -390,6 +391,79 @@ export class APIService {
         try {
             console.log(`[API] Getting progress for quiz: ${quizName}`);
             
+            // Special case for tester-mindset-quiz which has potential timeout issues
+            // due to larger data structures
+            if (quizName === 'tester-mindset') {
+                console.log(`[API] Using optimized fetch for tester-mindset quiz`);
+                try {
+                    // Create a specific AbortController with longer timeout just for this quiz
+                    const controller = new AbortController();
+                    const signal = controller.signal;
+                    const longTimeoutId = setTimeout(() => controller.abort(), 20000); // 20 seconds
+                    
+                    // Custom fetch with longer timeout
+                    const token = getAuthToken();
+                    const fullUrl = `${this.baseUrl}/users/quiz-progress/tester-mindset`;
+                    
+                    console.log(`[API] Using direct optimized fetch: ${fullUrl}`);
+                    
+                    const fetchOptions = {
+                        credentials: 'include',
+                        headers: {
+                            'Authorization': `Bearer ${token}`,
+                            'Accept': 'application/json',
+                            'Content-Type': 'application/json'
+                        },
+                        mode: 'cors',
+                        signal: signal
+                    };
+                    
+                    const response = await fetch(fullUrl, fetchOptions);
+                    clearTimeout(longTimeoutId);
+                    
+                    if (!response.ok) {
+                        throw new Error(`Failed to fetch progress: ${response.status} ${response.statusText}`);
+                    }
+                    
+                    const responseData = await response.json();
+                    console.log(`[API] Got optimized tester-mindset progress:`, responseData);
+                    
+                    if (!responseData || !responseData.data) {
+                        return {
+                            success: true,
+                            data: {
+                                experience: 0,
+                                questionsAnswered: 0,
+                                status: 'not-started',
+                                scorePercentage: 0,
+                                tools: [],
+                                questionHistory: []
+                            }
+                        };
+                    }
+                    
+                    // Ensure all required fields are present
+                    const progress = {
+                        ...responseData.data,
+                        experience: responseData.data.experience || 0,
+                        questionsAnswered: responseData.data.questionsAnswered || 0,
+                        status: responseData.data.status || 'not-started',
+                        scorePercentage: typeof responseData.data.scorePercentage === 'number' ? responseData.data.scorePercentage : 0,
+                        tools: responseData.data.tools || [],
+                        questionHistory: responseData.data.questionHistory || []
+                    };
+                    
+                    return {
+                        success: true,
+                        data: progress
+                    };
+                } catch (specialError) {
+                    console.warn(`[API] Optimized fetch failed for tester-mindset, falling back to standard method:`, specialError);
+                    // Continue with regular fetch method below
+                }
+            }
+            
+            // Standard fetch process for all other quizzes
             const response = await this.fetchWithAuth(`${this.baseUrl}/users/quiz-progress/${quizName}`);
             console.log(`[API] Raw quiz progress response:`, response);
             
@@ -459,6 +533,56 @@ export class APIService {
             };
 
             console.log(`[API] Processed progress data:`, progressData);
+
+            // Special case for tester-mindset quiz which may have timeout issues
+            if (quizName === 'tester-mindset') {
+                try {
+                    console.log(`[API] Using optimized save for tester-mindset quiz`);
+                    
+                    // Create a specific AbortController with longer timeout just for this quiz
+                    const controller = new AbortController();
+                    const signal = controller.signal;
+                    const longTimeoutId = setTimeout(() => controller.abort(), 25000); // 25 seconds
+                    
+                    // Custom fetch with longer timeout
+                    const token = getAuthToken();
+                    const fullUrl = `${this.baseUrl}/users/quiz-progress`;
+                    
+                    const fetchOptions = {
+                        method: 'POST',
+                        credentials: 'include',
+                        headers: {
+                            'Authorization': `Bearer ${token}`,
+                            'Accept': 'application/json',
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            quizName: quizName,
+                            progress: progressData
+                        }),
+                        mode: 'cors',
+                        signal: signal
+                    };
+                    
+                    const response = await fetch(fullUrl, fetchOptions);
+                    clearTimeout(longTimeoutId);
+                    
+                    if (!response.ok) {
+                        throw new Error(`Failed to save progress: ${response.status} ${response.statusText}`);
+                    }
+                    
+                    const responseData = await response.json();
+                    console.log(`[API] Successfully saved tester-mindset progress with optimized method`);
+                    
+                    return {
+                        success: true,
+                        data: progressData
+                    };
+                } catch (specialError) {
+                    console.warn(`[API] Optimized save failed for tester-mindset:`, specialError);
+                    // Continue with regular save method below
+                }
+            }
 
             const response = await this.fetchWithAuth(
                 `${this.baseUrl}/users/quiz-progress`,
