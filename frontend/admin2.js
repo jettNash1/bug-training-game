@@ -1871,65 +1871,45 @@ export class Admin2Dashboard extends AdminDashboard {
                                 questionsAnswered > 0 ? 'In Progress' : 
                                 'Not Started';
                     
-                    // Determine background color based on XP and status
+                    // Determine background color based on status and score
                     let backgroundColor = '#f5f5f5'; // Default gray for not started
                     if (questionsAnswered > 0) {
                         if (questionsAnswered === 15) {
                             // All questions completed
-                            if (experience >= 300 || score >= 100) {
-                                backgroundColor = '#e8f5e9'; // Light green for perfect score (300/300 or 100%)
+                            if (score >= 100) {
+                                backgroundColor = '#e8f5e9'; // Light green for perfect score
                             } else {
                                 backgroundColor = '#fff3e0'; // Light yellow for completed but not perfect score
                             }
                         } else {
-                            // Not all questions completed
-                            if (experience >= 235) {
-                                backgroundColor = '#fff3e0'; // Light yellow for pass (≥235/300)
-                            } else {
-                                backgroundColor = '#ffebee'; // Light red for fail (<235/300)
-                            }
+                            backgroundColor = '#ffebee'; // Light red for in progress
                         }
                     }
                     
                     // Determine quiz status class
                     let statusClass = 'not-started';
                     if (questionsAnswered === 15) {
-                        if (experience >= 300 || score >= 100) {
+                        if (score >= 100) {
                             statusClass = 'completed-perfect'; // Perfect score
-                } else {
+                        } else {
                             statusClass = 'completed-partial'; // Completed but not perfect
                         }
                     } else if (questionsAnswered > 0) {
                         statusClass = 'in-progress';
-                }
+                    }
                     
                     // Create quiz card
                     const quizCard = document.createElement('div');
-                    quizCard.className = `quiz-progress-item ${statusClass}`;
+                    quizCard.className = `quiz-card ${statusClass}`;
                     quizCard.style.backgroundColor = backgroundColor;
-                
-                quizCard.innerHTML = `
-                    <h4>${this.formatQuizName(quizType)}</h4>
-                    <div class="progress-details">
-                        <div>
-                            <strong>Progress:</strong>
-                                <span class="${status === 'Completed' ? 'text-success' : 
-                                            status === 'In Progress' ? 'text-warning' : 
-                                            'text-muted'}">${status}</span>
-                        </div>
-                        <div>
-                                <strong>Score:</strong> 
-                                <span>${score}%</span>
-                        </div>
-                        <div>
-                            <strong>Questions:</strong>
-                                <span>${questionsAnswered}/15</span>
-                        </div>
-                        <div>
-                                <strong>Last Active:</strong> 
-                                <span>${this.formatDate(lastActive)}</span>
-                            </div>
-                            <div>
+                    quizCard.innerHTML = `
+                        <h3>${this.formatQuizName(quizType)}</h3>
+                        <div class="quiz-stats">
+                            <p><strong>Status:</strong> ${status}</p>
+                            <p><strong>Score:</strong> ${score}%</p>
+                            <p><strong>Questions Answered:</strong> ${questionsAnswered}/15</p>
+                            <p><strong>Last Active:</strong> ${this.formatDate(lastActive)}</p>
+                            <div class="visibility-control">
                                 <strong>Visibility:</strong>
                                 <label class="visibility-toggle">
                                     <input type="checkbox" 
@@ -1940,28 +1920,28 @@ export class Admin2Dashboard extends AdminDashboard {
                                         tabindex="0">
                                     <span>Make visible to user</span>
                                 </label>
+                            </div>
                         </div>
-                    </div>
-                    <div class="quiz-actions">
+                        <div class="quiz-actions">
                             <button class="reset-quiz-btn"
                                 data-quiz-name="${quizType}"
                                 data-username="${username}"
                                 aria-label="Reset progress for ${this.formatQuizName(quizType)}"
                                 tabindex="0">
-                            Reset Progress
-                        </button>
+                                Reset Progress
+                            </button>
                             <button class="view-questions-btn"
                                 data-quiz-name="${quizType}"
                                 data-username="${username}"
                                 aria-label="View questions for ${this.formatQuizName(quizType)}"
                                 tabindex="0">
                                 View Questions
-                        </button>
-                    </div>
-                `;
-                
-                quizProgressList.appendChild(quizCard);
-            });
+                            </button>
+                        </div>
+                    `;
+                    
+                    quizProgressList.appendChild(quizCard);
+                });
             
             // User actions
             const userActions = document.createElement('div');
