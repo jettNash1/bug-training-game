@@ -208,6 +208,152 @@ export class ExploratoryQuiz extends BaseQuiz {
                         experience: 5
                     }
                 ]
+            },
+            // Additional Basic Scenarios
+            {
+                id: 16,
+                level: 'Basic',
+                title: 'Focus Area Structure',
+                description: 'When setting up an exploratory script, how should focus areas be structured?',
+                options: [
+                    {
+                        text: 'Focus areas should be kept broad with sub-focus areas that serve as prompts for core testing areas',
+                        outcome: 'Correct! It is important not to break the focus areas up too much and keep them broad. Helping to prevent exploratory testing from becoming too rigid in its approach.',
+                        experience: 15,
+                        tool: 'Focus Area Structure'
+                    },
+                    {
+                        text: 'Focus areas should be limited to only critical functionality, without scope for rendering aspects',
+                        outcome: 'Focus areas should encompass both functionality and rendering aspects, not just critical functionality.',
+                        experience: -5
+                    },
+                    {
+                        text: 'Focus areas should be extremely detailed and specific, breaking down every possible user action',
+                        outcome: 'This would make test execution more like scripted testing in being more specific.',
+                        experience: -10
+                    },
+                    {
+                        text: 'Focus areas should follow a strict priority list with predefined test cases for each component',
+                        outcome: 'Exploratory testing specifically avoids a strict priority list with predefined test cases.',
+                        experience: 0
+                    }
+                ]
+            },
+            {
+                id: 17,
+                level: 'Basic',
+                title: 'Exploratory Test Time Management',
+                description: 'What should testers do when they believe there are more defects in an area but have run out of allotted time?',
+                options: [
+                    {
+                        text: 'Proactively extend the testing time to ensure all defects are discovered',
+                        outcome: 'Testers should follow the allocated time as closely as possible and communicate openly when more time might be needed.',
+                        experience: -5
+                    },
+                    {
+                        text: 'Mark all remaining potential issues as low priority and continue with testing activities',
+                        outcome: 'Testers should document their observations about remaining defects and communicate these with the project manager as soon as possible.',
+                        experience: -10
+                    },
+                    {
+                        text: 'Inform the project manager at the earliest opportunity and make notes in the test script of potential additional issues',
+                        outcome: 'Correct! Documenting the areas of concern helps the client make a decision moving forward and informing the project manager of the issues may result in negotiation for additional testing.',
+                        experience: 15,
+                        tool: 'Exploratory Test Time Management'
+                    },
+                    {
+                        text: 'Automatically allocate time from other focus areas to complete the current area',
+                        outcome: 'Testers shouldn\'t automatically reallocate time without discussion as this could compromise coverage.',
+                        experience: 0
+                    }
+                ]
+            },
+            {
+                id: 18,
+                level: 'Basic',
+                title: 'Exploratory Test Script Review',
+                description: 'What should be done during the final cleanup of an exploratory script after testing has concluded?',
+                options: [
+                    {
+                        text: 'Delete all notes and observations to maintain confidentiality',
+                        outcome: 'Deleting notes and observations would eliminate the valuable testing information that needs to be preserved.',
+                        experience: -5
+                    },
+                    {
+                        text: 'Convert all exploratory notes into formal test cases for future use',
+                        outcome: 'Converting exploratory notes into formal test cases contradicts the purpose of exploratory testing.', 
+                        experience: -10
+                    },
+                    {
+                        text: 'Run a spell check across all sheets and ensure all unused tabs are hidden',
+                        outcome: 'Correct! This ensures professionalism and standards required if test scripts are requested by the client.',
+                        experience: 15,
+                        tool: 'Exploratory Test Review'
+                    },
+                    {
+                        text: 'Revise time allocations for each focus area based on actual time spent',
+                        outcome: 'Revising time allocations after testing is complete would serve no purpose for the current project.',
+                        experience: 0
+                    }
+                ]
+            },
+            {
+                id: 19,
+                level: 'Basic',
+                title: 'Exploratory Smoke Tests',
+                description: 'How should smoke tests be defined in the Environment Checks tab?',
+                options: [
+                    {
+                        text: 'As high-level user journeys without restricting testers to specific steps',
+                        outcome: 'Correct! This allows the tester to take a fresh approach per environment and doesn\'t restrict them to following the same set of steps.',
+                        experience: 15,
+                        tool: 'Exploratory Smoke Tests'
+                    },
+                    {
+                        text: 'As detailed step-by-step instructions with expected results for each action',
+                        outcome: 'Detailed step-by-step instructions would restrict testers and contradict the exploratory approach',
+                        experience: -10
+                    },
+                    {
+                        text: 'As automated test scripts that can be run across multiple environments.',
+                        outcome: 'Automation is not part of exploratory testing.',
+                        experience: -5
+                    },
+                    {
+                        text: 'As exact duplicates of the focus areas from the primary environment.',
+                        outcome: 'Smoke tests should be concise high-level journeys focused on key functionality.',
+                        experience: 0
+                    }
+                ]
+            },
+            {
+                id: 20,
+                level: 'Basic',
+                title: 'Exploratory Test Time Allocation',
+                description: 'How should time be allocated in an exploratory script?',
+                options: [
+                    {
+                        text: 'More time should be allocated to areas with important functionality, with less time for simpler elements',
+                        outcome: 'Correct! More time should be allocated to areas with important functionality, with less time for simpler elements.',
+                        experience: 15,
+                        tool: 'Test Time Allocation'
+                    },
+                    {
+                        text: 'Equal time should be allocated to all focus areas to ensure balanced coverage',
+                        outcome: 'Time allocation should be proportional to the importance and complexity of the specific functionality under test.',
+                        experience: -10
+                    },
+                    {
+                        text: 'Time should only be allocated to functional testing, with rendering issues addressed separately',
+                        outcome: 'Both aspects should be covered within the allocated time for each focus area.',
+                        experience: -5
+                    },
+                    {
+                        text: 'Time allocation should be done dynamically during testing based on defects found',
+                        outcome: 'Time allocation should be done during the script setup phase before testing begins.',
+                        experience: 0
+                    }
+                ]
             }
         ];
 
@@ -357,6 +503,152 @@ export class ExploratoryQuiz extends BaseQuiz {
                         experience: -15
                     }
                 ]
+            },
+            // Additional Intermediate Scenarios
+            {
+                id: 21,
+                level: 'Intermediate',
+                title: 'Exploratory Test Planning',
+                description: 'How should a tester approach a complex site with numerous distinct functionalities during exploratory testing?',
+                options: [
+                    {
+                        text: 'Create a detailed step-by-step test script for each functionality',
+                        outcome: 'This approach contradicts the exploratory testing methodology, which emphasizes flexibility over rigid scripts.',
+                        experience: -15
+                    },
+                    {
+                        text: 'Test the entire site in a single session, cycling through each function quickly',
+                        outcome: 'This approach lacks focus and may result in superficial testing of complex functionality.',
+                        experience: -10
+                    },
+                    {
+                        text: 'Focus only on the highest risk areas and ignore minor functionalities',
+                        outcome: 'While prioritization is important, completely ignoring areas can leave critical gaps in testing coverage.',
+                        experience: -5
+                    },
+                    {
+                        text: 'Divide testing into time-boxed sessions with specific focus areas, moving from critical to secondary functionality',
+                        outcome: 'Excellent! This structured approach maintains the exploratory nature while ensuring comprehensive coverage of a complex system.',
+                        experience: 20,
+                        tool: 'Exploratory Session Planning'
+                    }
+                ]
+            },
+            {
+                id: 22,
+                level: 'Intermediate',
+                title: 'Exploratory Test Reporting',
+                description: 'What should be included in a test report following exploratory testing?',
+                options: [
+                    {
+                        text: 'Detailed steps to reproduce each test, including timestamps and exact inputs',
+                        outcome: 'This level of detail is more appropriate for scripted testing rather than exploratory testing reports.',
+                        experience: -10
+                    },
+                    {
+                        text: 'A high-level summary of what was tested and any issues found, with detailed exploration paths and observations',
+                        outcome: 'Perfect! This balances the needed detail with the exploratory nature of the testing.',
+                        experience: 20,
+                        tool: 'Exploratory Reporting'
+                    },
+                    {
+                        text: 'Only defects found, with no information about areas tested',
+                        outcome: 'This would not provide sufficient context about testing coverage or the exploration process.',
+                        experience: -15
+                    },
+                    {
+                        text: 'Just mark areas as "pass" or "fail" without additional details',
+                        outcome: 'This binary approach doesn\'t capture the rich insights generated during exploratory testing.',
+                        experience: -5
+                    }
+                ]
+            },
+            {
+                id: 23,
+                level: 'Intermediate',
+                title: 'Defect Analysis During Exploration',
+                description: 'During exploratory testing, you discover a behavior that seems unusual but you\'re not sure if it\'s a defect. What should you do?',
+                options: [
+                    {
+                        text: 'Ignore it if you\'re not certain it\'s a defect and continue testing other areas',
+                        outcome: 'Ignoring potential issues goes against the investigative nature of exploratory testing.',
+                        experience: -15
+                    },
+                    {
+                        text: 'Immediately report it as a defect without further investigation',
+                        outcome: 'Reporting without investigation may lead to false positives and waste development time.',
+                        experience: -10
+                    },
+                    {
+                        text: 'Investigate further to understand the behavior, documenting your observations and determining if it represents a genuine issue',
+                        outcome: 'Excellent! This demonstrates the exploratory mindset of investigation and discovery.',
+                        experience: 20,
+                        tool: 'Defect Investigation'
+                    },
+                    {
+                        text: 'Ask a developer if this is expected behavior before proceeding with testing',
+                        outcome: 'While developer input can be valuable, immediate external validation may disrupt your exploration flow and limit independent discovery.',
+                        experience: -5
+                    }
+                ]
+            },
+            {
+                id: 24,
+                level: 'Intermediate',
+                title: 'Regression Testing in Exploratory Approach',
+                description: 'How should regression testing be approached within an exploratory testing framework?',
+                options: [
+                    {
+                        text: 'Regression testing cannot be done in an exploratory context as it requires predefined test cases',
+                        outcome: 'This incorrectly limits exploratory testing\'s versatility; regression can be performed exploratively.',
+                        experience: -15
+                    },
+                    {
+                        text: 'Design time-boxed sessions focused on previously defective areas, with freedom to explore related functionality',
+                        outcome: 'Perfect! This combines regression goals with exploratory methods effectively.',
+                        experience: 20,
+                        tool: 'Exploratory Regression'
+                    },
+                    {
+                        text: 'Conduct standard scripted regression tests separately from exploratory testing',
+                        outcome: 'While this can work as part of a hybrid approach, it doesn\'t integrate regression within the exploratory framework.',
+                        experience: -5
+                    },
+                    {
+                        text: 'Only check for regression issues when they\'re encountered by chance during exploration',
+                        outcome: 'This reactive approach may miss critical regression issues that should be proactively investigated.',
+                        experience: -10
+                    }
+                ]
+            },
+            {
+                id: 25,
+                level: 'Intermediate',
+                title: 'Team Collaboration in Exploratory Testing',
+                description: 'What\'s the most effective way for multiple testers to collaborate during exploratory testing?',
+                options: [
+                    {
+                        text: 'Each tester should work independently to cover more ground',
+                        outcome: 'While coverage is important, this misses valuable collaboration opportunities.',
+                        experience: -10
+                    },
+                    {
+                        text: 'Conduct paired testing sessions, followed by debriefings where insights are shared across the team',
+                        outcome: 'Excellent! This combines the benefits of collaborative and independent exploration.',
+                        experience: 20,
+                        tool: 'Collaborative Exploration'
+                    },
+                    {
+                        text: 'Assign specific test cases to each tester to prevent overlap',
+                        outcome: 'Assigning specific test cases contradicts the exploratory approach.',
+                        experience: -15
+                    },
+                    {
+                        text: 'All testers should test the same area simultaneously to find more defects',
+                        outcome: 'While this may find issues in one area, it limits overall coverage and efficiency.',
+                        experience: -5
+                    }
+                ]
             }
         ];
 
@@ -504,6 +796,152 @@ export class ExploratoryQuiz extends BaseQuiz {
                         text: 'Testing only with valid inputs',
                         outcome: 'Security testing requires invalid, unexpected, and malicious inputs.',
                         experience: -20
+                    }
+                ]
+            },
+            // Additional Advanced Scenarios
+            {
+                id: 26,
+                level: 'Advanced',
+                title: 'Stakeholder Communication',
+                description: 'What\'s the most effective way to communicate exploratory testing results to senior stakeholders?',
+                options: [
+                    {
+                        text: 'Provide detailed testing logs of every action taken during exploration',
+                        outcome: 'This level of detail would overwhelm senior stakeholders who need higher-level insights.',
+                        experience: -15
+                    },
+                    {
+                        text: 'Only report critical defects found, omitting other observations',
+                        outcome: 'This misses valuable insights about quality and risk that exploratory testing generates.',
+                        experience: -20
+                    },
+                    {
+                        text: 'Present a concise summary with key findings, risk assessment, coverage highlights, and strategic recommendations',
+                        outcome: 'Excellent! This provides stakeholders with actionable information at the right level of detail.',
+                        experience: 25,
+                        tool: 'Stakeholder Reporting'
+                    },
+                    {
+                        text: 'Explain your testing approach and methodology in detail',
+                        outcome: 'While methodology is important, stakeholders are typically more interested in outcomes and business impact than testing processes.',
+                        experience: -10
+                    }
+                ]
+            },
+            {
+                id: 27,
+                level: 'Advanced',
+                title: 'Metrics for Exploratory Testing',
+                description: 'Which metrics are most valuable for evaluating the effectiveness of exploratory testing?',
+                options: [
+                    {
+                        text: 'Number of test cases executed and passed/failed rate',
+                        outcome: 'These scripted testing metrics don\'t align with exploratory testing\'s flexible nature.',
+                        experience: -20
+                    },
+                    {
+                        text: 'Coverage against predefined requirements',
+                        outcome: 'This doesn\'t capture exploratory testing\'s ability to discover unforeseen issues.',
+                        experience: -15
+                    },
+                    {
+                        text: 'Balance of session time spent on different activities and value of issues discovered',
+                        outcome: 'Perfect! These metrics provide insight into exploration efficiency and effectiveness without constraining the process.',
+                        experience: 25,
+                        tool: 'Exploratory Metrics'
+                    },
+                    {
+                        text: 'Total number of defects found compared to scripted testing',
+                        outcome: 'While informative, this metric alone doesn\'t capture the qualitative insights from exploratory testing.',
+                        experience: -10
+                    }
+                ]
+            },
+            {
+                id: 28,
+                level: 'Advanced',
+                title: 'Complex System Exploration',
+                description: 'What\'s the most effective approach for exploratory testing of a complex integrated system with multiple interfaces?',
+                options: [
+                    {
+                        text: 'Focus exclusively on testing individual components separately',
+                        outcome: 'This misses critical integration issues that often occur between components.',
+                        experience: -20
+                    },
+                    {
+                        text: 'Develop a model of the system architecture and design targeted tours that focus on intercomponent communication and data flow',
+                        outcome: 'Excellent! This structured exploration approach helps navigate complex systems effectively.',
+                        experience: 25,
+                        tool: 'System Modeling'
+                    },
+                    {
+                        text: 'Conduct random testing across the system without a specific focus',
+                        outcome: 'Unfocused testing is inefficient for complex systems and may miss critical areas.',
+                        experience: -15
+                    },
+                    {
+                        text: 'Only test the system through its primary user interface',
+                        outcome: 'This misses important backend interactions and alternative interfaces.',
+                        experience: -10
+                    }
+                ]
+            },
+            {
+                id: 29,
+                level: 'Advanced',
+                title: 'Continuous Exploration',
+                description: 'How should exploratory testing be integrated into a continuous delivery pipeline?',
+                options: [
+                    {
+                        text: 'Schedule periodic exploratory testing sprints separate from the development cycle',
+                        outcome: 'This creates a disconnection from the rapid delivery cycle.',
+                        experience: -10
+                    },
+                    {
+                        text: 'Wait until features are complete before conducting exploratory testing',
+                        outcome: 'This introduces delays that contradict continuous delivery principles.',
+                        experience: -15
+                    },
+                    {
+                        text: 'Replace exploratory testing with automated checks in the pipeline',
+                        outcome: 'Automation cannot replace the creative, adaptive aspects of exploratory testing.',
+                        experience: -20
+                    },
+                    {
+                        text: 'Implement continuous exploration with time-boxed sessions aligned to development iterations and focused on newly delivered features',
+                        outcome: 'Perfect! This aligns exploratory testing with the continuous delivery rhythm.',
+                        experience: 25,
+                        tool: 'Continuous Exploration'
+                    }
+                ]
+            },
+            {
+                id: 30,
+                level: 'Advanced',
+                title: 'Exploratory Testing Strategy',
+                description: 'What should be the cornerstone of an enterprise-level exploratory testing strategy?',
+                options: [
+                    {
+                        text: 'Converting all exploratory insights into scripted test cases',
+                        outcome: 'This undermines the flexibility and discovery nature of exploratory testing.',
+                        experience: -20
+                    },
+                    {
+                        text: 'Trained testers with strong domain knowledge, supported by charters, debriefing processes, and knowledge sharing mechanisms',
+                        outcome: 'Excellent! This combines skilled personnel with appropriate processes for maximum effectiveness.',
+                        experience: 25,
+                        tool: 'Enterprise Exploration Strategy'
+                    },
+                    {
+                        text: 'Detailed documentation of all exploratory processes',
+                        outcome: 'Over-documentation can hinder the flexibility of exploratory testing.',
+                        experience: -10
+                    },
+                    {
+                        text: 'Specialized tools for recording exploratory sessions',
+                        outcome: 'While tools can be helpful, they\'re secondary to tester skills and effective processes.',
+                        experience: -15
                     }
                 ]
             }

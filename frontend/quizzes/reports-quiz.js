@@ -217,6 +217,171 @@ export class ReportsQuiz extends BaseQuiz {
                         experience: 0
                     }
                 ]
+            },
+            {
+                id: 16,
+                level: 'Basic',
+                title: 'Summary Numbering Reference',
+                description: 'How should numbers be represented in the report summary?',
+                options: [
+                    {
+                        text: 'All numbers should be written in words (e.g., seven)',
+                        outcome: 'Correct! All references to numbers within the summary should be spelled out.',
+                        experience: 15,
+                        isCorrect: true,
+                        tool: 'Summary Numbering Reference'
+                    },
+                    {
+                        text: 'Numbers one through nine should be spelled out, numbers 10 and above should be written as numerals',
+                        outcome: 'All references to numbers within the summary should be spelled out.',
+                        experience: -5,
+                        isCorrect: false
+                    },
+                    {
+                        text: 'All numbers should be written as numerals (e.g., 7)',
+                        outcome: 'All references to numbers within the summary should be spelled out.',
+                        experience: -10,
+                        isCorrect: false
+                    },
+                    {
+                        text: 'Only important metrics should be written as numerals, all other numbers should be spelled out',
+                        outcome: 'All references to numbers within the summary should be spelled out.',
+                        experience: 0,
+                        isCorrect: false
+                    }
+                ]
+            },
+            {
+                id: 17,
+                level: 'Basic',
+                title: 'Report Communication',
+                description: 'What tense should be consistently used throughout a report?',
+                options: [
+                    {
+                        text: 'Past tense should be used for the summary section within the report',
+                        outcome: 'This is incorrect as past tense may imply defects are no longer present',
+                        experience: -5,
+                        isCorrect: false
+                    },
+                    {
+                        text: 'Future tense should be used throughout the report',
+                        outcome: 'Present tense should be used throughout the report as it clearly defines where the project is up to progress wise.',
+                        experience: -10,
+                        isCorrect: false
+                    },
+                    {
+                        text: 'Present tense should be used throughout the report',
+                        outcome: 'Correct! Present tense should be used throughout the report as it clearly defines where the project is up to progress wise.',
+                        experience: 15,
+                        isCorrect: true,
+                        tool: 'Report Communication'
+                    },
+                    {
+                        text: 'A mix of past and present tense depending on the section should be used',
+                        outcome: 'Present tense should be used consistently throughout the report as it clearly defines where the project is up to progress wise',
+                        experience: 0,
+                        isCorrect: false
+                    }
+                ]
+            },
+            {
+                id: 18,
+                level: 'Basic',
+                title: 'Report Blocking Issues',
+                description: 'What should happen with blocking issues in the report?',
+                options: [
+                    {
+                        text: 'They should be included in the Top 5 issues section',
+                        outcome: 'Blocking issues should be reported in their own section.',
+                        experience: -5,
+                        isCorrect: false
+                    },
+                    {
+                        text: 'These should only be stated in the summary section',
+                        outcome: 'While blocking issues may be mentioned in the summary, they should be listed in their own section as well.', 
+                        experience: -10,
+                        isCorrect: false
+                    },
+                    {
+                        text: 'They should be listed separately from the Top 5 issues',
+                        outcome: 'Correct! Blocking issues should be separate from the top 5 issues and should be listed directly above in the Blocking issue(s) found section.',
+                        experience: 15,
+                        isCorrect: true,
+                        tool: 'Report Blocking Issues'
+                    },
+                    {
+                        text: 'They should only be listed if they cannot be resolved quickly',
+                        outcome: 'All blocking issues should be listed regardless of resolution time.',
+                        experience: 0,
+                        isCorrect: false
+                    }
+                ]
+            },
+            {
+                id: 19,
+                level: 'Basic',
+                title: 'Top 5 Issues of Concern',
+                description: 'What should be done if there are fewer than 5 open issues remaining?',
+                options: [
+                    {
+                        text: 'Remove the excess rows and rename the table to top issues of concern',
+                        outcome: 'Correct! If there are less than 5 issues remaining open, we can remove the excess rows in the Top 5 table and amend the table\'s title to, top issues of concern.',
+                        experience: 15,
+                        isCorrect: true,
+                        tool: 'Top 5 Issues of Concern'
+                    },
+                    {
+                        text: 'Make up additional issues to complete the list',
+                        outcome: 'Creating fictional issues would be unethical and misleading.',
+                        experience: -10,
+                        isCorrect: false
+                    },
+                    {
+                        text: 'Leave the remaining rows blank in the table.',
+                        outcome: 'Leaving blank rows would make the report look incomplete',
+                        experience: -5,
+                        isCorrect: false
+                    },
+                    {
+                        text: 'Include previously fixed issues to reach 5 total issues.',
+                        outcome: 'Including fixed issues in the current open issues list would be misleading and inaccurate',
+                        experience: 0,
+                        isCorrect: false
+                    }
+                ]
+            },
+            {
+                id: 20,
+                level: 'Basic',
+                title: 'Test Environment Matrix',
+                description: 'What is the appropriate formatting for the Test Environment Matrix in the report?',
+                options: [
+                    {
+                        text: 'Keep all text for each row contained within one line where possible',
+                        outcome: 'Correct! It\'s ideal to see if you can get all text for each row contained within one line and to select the AutoFit to Window option to extend the table to the full width of the page.',
+                        experience: 15,
+                        isCorrect: true,
+                        tool: 'Test Environment Matrix'
+                    },
+                    {
+                        text: 'Allow text to overflow to multiple lines to ensure readability',
+                        outcome: 'Text overflow should be avoided where possible as it can become unreadable and display an unprofessional approach.',
+                        experience: -10,
+                        isCorrect: false
+                    },
+                    {
+                        text: 'Use a smaller font size to fit all text on one line',
+                        outcome: 'Whilst this could potentially correct any overflow issues. Font size should be kept consistent where possible.',
+                        experience: -5,
+                        isCorrect: false
+                    },
+                    {
+                        text: 'Split the environment matrix across multiple pages',
+                        outcome: 'Whilst this could potentially solve any issues with size. It could reduce readability.',
+                        experience: 0,
+                        isCorrect: false
+                    }
+                ]
             }
         ];
 
@@ -543,10 +708,8 @@ export class ReportsQuiz extends BaseQuiz {
             return q.selectedAnswer && q.selectedAnswer.isCorrect === true;
         }).length;
         
-        // Cap the questions answered at total questions
-        const questionsAnswered = Math.min(this.player.questionHistory.length, this.totalQuestions);
-        
-        return questionsAnswered > 0 ? Math.round((correctAnswers / questionsAnswered) * 100) : 0;
+        // Always use total questions as denominator to get accurate percentage
+        return Math.round((correctAnswers / this.totalQuestions) * 100);
     }
 
     async saveProgress() {
@@ -650,27 +813,29 @@ export class ReportsQuiz extends BaseQuiz {
     }
 
     getCurrentScenarios() {
-        const totalAnswered = this.player.questionHistory.length;
+        // Determine the current scenarios based on how many questions have been answered
+        const questionCount = this.player.questionsAnswered;
         
-        // Progress through levels based only on question count
-        if (totalAnswered >= 10) {
-            return this.advancedScenarios;
-        } else if (totalAnswered >= 5) {
+        if (questionCount < 5) {
+            return this.basicScenarios;
+        } else if (questionCount < 10) {
             return this.intermediateScenarios;
+        } else {
+            return this.advancedScenarios;
         }
-        return this.basicScenarios;
     }
 
     getCurrentLevel() {
-        const totalAnswered = this.player.questionHistory.length;
+        // Determine current level based on questions answered
+        const questionCount = this.player.questionsAnswered;
         
-        // Progress through levels based only on question count
-        if (totalAnswered >= 10) {
-            return 'Advanced';
-        } else if (totalAnswered >= 5) {
-            return 'Intermediate';
+        if (questionCount < 5) {
+            return 'basic';
+        } else if (questionCount < 10) {
+            return 'intermediate';
+        } else {
+            return 'advanced';
         }
-        return 'Basic';
     }
 
     displayScenario() {
@@ -695,7 +860,7 @@ export class ReportsQuiz extends BaseQuiz {
             // Intermediate questions (5-9)
             scenario = this.intermediateScenarios[questionCount - 5];
             this.player.currentScenario = questionCount - 5;
-        } else if (questionCount < 15) {
+        } else {
             // Advanced questions (10-14)
             scenario = this.advancedScenarios[questionCount - 10];
             this.player.currentScenario = questionCount - 10;
@@ -717,8 +882,8 @@ export class ReportsQuiz extends BaseQuiz {
              questionCount <= 10 ? 'Intermediate' : 'Advanced') : null;
             
         if (questionCount === 0 || 
-            (questionCount === 5 && currentLevel === 'Intermediate') || 
-            (questionCount === 10 && currentLevel === 'Advanced')) {
+            (questionCount === 5 && currentLevel === 'intermediate') || 
+            (questionCount === 10 && currentLevel === 'advanced')) {
             const transitionContainer = document.getElementById('level-transition-container');
             if (transitionContainer) {
                 transitionContainer.innerHTML = ''; // Clear any existing messages
@@ -726,7 +891,7 @@ export class ReportsQuiz extends BaseQuiz {
                 const levelMessage = document.createElement('div');
                 levelMessage.className = 'level-transition';
                 levelMessage.setAttribute('role', 'alert');
-                levelMessage.textContent = `Starting ${currentLevel} Questions`;
+                levelMessage.textContent = `Starting ${currentLevel.charAt(0).toUpperCase() + currentLevel.slice(1)} Questions`;
                 
                 transitionContainer.appendChild(levelMessage);
                 transitionContainer.classList.add('active');
@@ -734,7 +899,7 @@ export class ReportsQuiz extends BaseQuiz {
                 // Update the level indicator
                 const levelIndicator = document.getElementById('level-indicator');
                 if (levelIndicator) {
-                    levelIndicator.textContent = `Level: ${currentLevel}`;
+                    levelIndicator.textContent = `Level: ${currentLevel.charAt(0).toUpperCase() + currentLevel.slice(1)}`;
                 }
                 
                 // Remove the message and container height after animation
@@ -1067,7 +1232,7 @@ export class ReportsQuiz extends BaseQuiz {
         }
 
         document.getElementById('final-score').textContent = `Final Score: ${scorePercentage}%`;
-       
+        
         // Update the quiz complete header based on status
         const quizCompleteHeader = document.querySelector('#end-screen h2');
         if (quizCompleteHeader) {
@@ -1075,73 +1240,8 @@ export class ReportsQuiz extends BaseQuiz {
         }
 
         const performanceSummary = document.getElementById('performance-summary');
-        if (!isPassed) {
-            performanceSummary.textContent = `Quiz failed. You scored ${scorePercentage}% but needed at least ${this.passPercentage}% to pass.`;
-            // Hide restart button if failed
-            const restartBtn = document.getElementById('restart-btn');
-            if (restartBtn) {
-                restartBtn.style.display = 'none';
-            }
-            // Add failed class to quiz container for styling
-            const quizContainer = document.getElementById('quiz-container');
-            if (quizContainer) {
-                quizContainer.classList.add('failed');
-            }
-        } else {
-            const threshold = this.config.performanceThresholds.find(t => t.threshold <= scorePercentage);
-            if (threshold) {
-                performanceSummary.textContent = threshold.message;
-            } else {
-                performanceSummary.textContent = 'Quiz completed successfully!';
-            }
+        if (performanceSummary) {
+            performanceSummary.textContent = isPassed ? 'Congratulations! You passed the quiz.' : 'Sorry, you did not pass the quiz. Please review the recommendations and try again.';
         }
-
-        // Generate question review list
-        const reviewList = document.getElementById('question-review');
-        if (reviewList) {
-            reviewList.innerHTML = ''; // Clear existing content
-            this.player.questionHistory.forEach((record, index) => {
-                const reviewItem = document.createElement('div');
-                reviewItem.className = 'review-item';
-                
-                const isCorrect = record.isCorrect;
-                reviewItem.classList.add(isCorrect ? 'correct' : 'incorrect');
-                
-                reviewItem.innerHTML = `
-                    <h4>Question ${index + 1}</h4>
-                    <p class="scenario">${record.scenario.description}</p>
-                    <p class="answer"><strong>Your Answer:</strong> ${record.selectedAnswer.text}</p>
-                    <p class="outcome"><strong>Outcome:</strong> ${record.selectedAnswer.outcome}</p>
-                    <p class="result"><strong>Result:</strong> ${isCorrect ? 'Correct' : 'Incorrect'}</p>
-                `;
-                
-                reviewList.appendChild(reviewItem);
-            });
-        }
-
-        this.generateRecommendations();
-    }
-    
-    clearQuizLocalStorage(username, quizName) {
-        const variations = [
-            quizName,                                              // original
-            quizName.toLowerCase(),                               // lowercase
-            quizName.toUpperCase(),                               // uppercase
-            quizName.replace(/-/g, ''),                           // no hyphens
-            quizName.replace(/([A-Z])/g, '-$1').toLowerCase(),    // kebab-case
-            quizName.replace(/-([a-z])/g, (_, c) => c.toUpperCase()), // camelCase
-            quizName.replace(/-/g, '_'),                          // snake_case
-        ];
-
-        variations.forEach(variant => {
-            localStorage.removeItem(`quiz_progress_${username}_${variant}`);
-            localStorage.removeItem(`quizResults_${username}_${variant}`);
-        });
     }
 }
-
-// Start the quiz when the page loads
-document.addEventListener('DOMContentLoaded', () => {
-    const quiz = new ReportsQuiz();
-    quiz.startGame();
-}); 

@@ -62,7 +62,7 @@ export class LocaleTestingQuiz extends BaseQuiz {
             return;
         }
 
-        // Basic Scenarios (IDs 1-5)
+        // Basic Scenarios (IDs 1-5, 16-20)
         this.basicScenarios = [
             {
                 id: 1,
@@ -206,6 +206,151 @@ export class LocaleTestingQuiz extends BaseQuiz {
                         outcome: 'Correct! This is the recommended organisation method and makes for easy tracking and traceability.',
                         experience: 15,
                         tool: 'Script Organization'
+                    }
+                ]
+            },
+            {
+                id: 16,
+                level: 'Basic',
+                title: 'Locale Testing Risks',
+                description: 'What is a potential risk of locale testing mentioned in the guide?',
+                options: [
+                    {
+                        text: 'Testing could be affected by inaccuracies in client-provided translation documentation',
+                        outcome: 'Correct! Testing can be affected by the accuracy of client-provided documentation, especially translations where the tester is not a native speaker of the language under test.',
+                        experience: 15,
+                        tool: 'Locale Testing Risks'
+                    },
+                    {
+                        text: 'Locale testing might expose security vulnerabilities',
+                        outcome: 'Security vulnerabilities are not a risk associated with locale testing and this type of testing is out of scope for locale test activities.',
+                        experience: -5
+                    },
+                    {
+                        text: 'Testing multiple locales typically requires more resources than is available',
+                        outcome: 'While time constraints need to be managed, staffing shortages are not identified as a specific risk.',
+                        experience: -10
+                    },
+                    {
+                        text: 'Locale testing often causes software to crash during language switches',
+                        outcome: 'Locale testing should ensure that content loads properly when changing languages but crashes as a result of switching languages is generally not common risk.',
+                        experience: 0
+                    }
+                ]
+            },
+            {
+                id: 17,
+                level: 'Basic',
+                title: 'Locale Documentation',
+                description: 'What document should testers consult to determine which locales are in scope for testing?',
+                options: [
+                    {
+                        text: 'The locale test script template should be referred to for scoping',
+                        outcome: 'Test scripts don\'t define which locales are in scope, they\'re used to create the test scripts after scope is determined.',
+                        experience: -5
+                    },
+                    {
+                        text: 'The tester\'s previous notes from similar projects should be referred to for scope',
+                        outcome: 'Previous notes might be helpful but should not be referred to as an authoritative source for determining which locales are in scope.',
+                        experience: -10
+                    },
+                    {
+                        text: 'The client\'s Statement of Work and Operational Details documentation should be referred to',
+                        outcome: 'Correct! This documentation defines locales that are in scope and if there are any sub-areas within locale testing that are out of scope.',
+                        experience: 15,
+                        tool: 'Change Impact'
+                    },
+                    {
+                        text: 'The global market trends report should be referred to for locale scope',
+                        outcome: 'Market trend reports should not be referred to as resources for determining testing scope as all clients have different requirements.',
+                        experience: 0
+                    }
+                ]
+            },
+            {
+                id: 18,
+                level: 'Basic',
+                title: 'Language Switch Testing',
+                description: 'What issue might occur when changing locales that testers need to specifically check for?',
+                options: [
+                    {
+                        text: 'System crashes when switching languages',
+                        outcome: 'System crashes are not generally a common defect caused by locale switching.',
+                        experience: -5
+                    },
+                    {
+                        text: 'Slow page load times need to be monitored when switching languages',
+                        outcome: 'Page load speed differences are generally part of performance testing.', 
+                        experience: -10
+                    },
+                    {
+                        text: 'Text truncation or overlapping content need to be monitored when switching languages',
+                        outcome: 'Correct! Identifying any rendering issues caused by word length when changing locales, such as overlapping content or lack of padding between page elements should be monitored.',
+                        experience: 15,
+                        tool: 'Language Switch Testing'
+                    },
+                    {
+                        text: 'Font colour changes should be monitored when switching languages',
+                        outcome: 'Font colour changes should not be a specific concern, although can be raised as a query unless stated as correct by the client documentation.',
+                        experience: 0
+                    }
+                ]
+            },
+            {
+                id: 19,
+                level: 'Basic',
+                title: 'Locale Test Consistency',
+                description: 'What important element should testers check consistently across locale changes?',
+                options: [
+                    {
+                        text: 'Global elements such as header, navigation and footer should be checked',
+                        outcome: 'Correct! These elements should remain consistent when navigating the site on a selected locale.',
+                        experience: 15,
+                        tool: 'Locale Test Consistency'
+                    },
+                    {
+                        text: 'Loading speed for each locale should be checked for consistency',
+                        outcome: 'While checking for any major issues in this area are recommended, loading speed is more aligned with performance testing.',
+                        experience: -10
+                    },
+                    {
+                        text: 'The number of images displayed on each page',
+                        outcome: 'Whilst any major issues here should be reported. The amount of images would generally come under content and copy proofing.',
+                        experience: -5
+                    },
+                    {
+                        text: 'Font size consistency across locales should be checked',
+                        outcome: 'While visual presentation is important, font size consistency isn\'t a specific check for locale testing. However, any major issues should be flagged.',
+                        experience: 0
+                    }
+                ]
+            },
+            {
+                id: 20,
+                level: 'Basic',
+                title: 'Locale Testing Advantages',
+                description: 'Which of the following is an advantage of locale testing?',
+                options: [
+                    {
+                        text: 'It improves the user experience and customer satisfaction',
+                        outcome: 'Correct! Locale testing can identify issues with the presented language and therefore build confidence in the product from the user.',
+                        experience: 15,
+                        tool: 'Locale Testing Advantages'
+                    },
+                    {
+                        text: 'It ensures a universal experience across all regions',
+                        outcome: 'Locale testing is specifically designed to adapt software or content to different regions, not to make everything uniform.',
+                        experience: -10
+                    },
+                    {
+                        text: 'It eliminates the need for native language testers',
+                        outcome: 'This would actually be considered as a limitation as not all testers will know multiple native languages.',
+                        experience: -5
+                    },
+                    {
+                        text: 'It speeds up the loading time of the website in different regions',
+                        outcome: 'System performance is generally not associated with locale testing.',
+                        experience: 0
                     }
                 ]
             }
@@ -537,8 +682,7 @@ export class LocaleTestingQuiz extends BaseQuiz {
         if (this.player.questionHistory.length >= 15) {
             // Calculate pass/fail based on correct answers
             const correctAnswers = this.player.questionHistory.filter(q => 
-                q.selectedAnswer && (q.selectedAnswer.isCorrect || 
-                q.selectedAnswer.experience === Math.max(...q.scenario.options.map(o => o.experience || 0)))
+                q.selectedAnswer && (q.selectedAnswer.experience === Math.max(...q.scenario.options.map(o => o.experience || 0)))
             ).length;
             const scorePercentage = Math.round((correctAnswers / 15) * 100);
             status = scorePercentage >= 70 ? 'passed' : 'failed';
@@ -1184,8 +1328,7 @@ export class LocaleTestingQuiz extends BaseQuiz {
 
         // Calculate final score based on correct answers
         const correctAnswers = this.player.questionHistory.filter(q => 
-            q.selectedAnswer && (q.selectedAnswer.isCorrect || 
-            q.selectedAnswer.experience === Math.max(...q.scenario.options.map(o => o.experience || 0)))
+            q.selectedAnswer && (q.selectedAnswer.experience === Math.max(...q.scenario.options.map(o => o.experience || 0)))
         ).length;
         const scorePercentage = Math.round((correctAnswers / 15) * 100);
         const hasPassed = !failed && scorePercentage >= this.passPercentage;
@@ -1278,8 +1421,7 @@ export class LocaleTestingQuiz extends BaseQuiz {
                 const reviewItem = document.createElement('div');
                 reviewItem.className = 'review-item';
                 
-                const isCorrect = record.selectedAnswer && (record.selectedAnswer.isCorrect || 
-                    record.selectedAnswer.experience === Math.max(...record.scenario.options.map(o => o.experience || 0)));
+                const isCorrect = record.selectedAnswer && (record.selectedAnswer.experience === Math.max(...record.scenario.options.map(o => o.experience || 0)));
                 reviewItem.classList.add(isCorrect ? 'correct' : 'incorrect');
                 
                 reviewItem.innerHTML = `
@@ -1300,8 +1442,7 @@ export class LocaleTestingQuiz extends BaseQuiz {
     // Helper method to calculate the score percentage based on correct answers
     calculateScorePercentage() {
         const correctAnswers = this.player.questionHistory.filter(q => 
-            q.selectedAnswer && (q.selectedAnswer.isCorrect || 
-            q.selectedAnswer.experience === Math.max(...q.scenario.options.map(o => o.experience || 0)))
+            q.selectedAnswer && (q.selectedAnswer.experience === Math.max(...q.scenario.options.map(o => o.experience || 0)))
         ).length;
         return Math.round((correctAnswers / Math.max(1, Math.min(this.player.questionHistory.length, 15))) * 100);
     }

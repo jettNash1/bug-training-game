@@ -67,7 +67,7 @@ export class NonFunctionalQuiz extends BaseQuiz {
             return;
         }
 
-        // Basic Scenarios (IDs 1-5, 75 XP total)
+        // Basic Scenarios (IDs 1-5, 16-20, 75 XP total)
         this.basicScenarios = [
             {
                 id: 1,
@@ -79,26 +79,22 @@ export class NonFunctionalQuiz extends BaseQuiz {
                         text: 'Testing how the system performs and operates, rather than what specific functions it does',
                         outcome: 'Perfect! Non-functional testing focuses on system characteristics and performance.',
                         experience: 15,
-                        tool: 'Testing Framework',
-                        isCorrect: true
+                        tool: 'Testing Framework'
                     },
                     {
                         text: 'Testing if specific user actions meet requirements criteria',
                         outcome: 'This type testing is related to functional testing. Non-functional testing examines system characteristics.',
-                        experience: -5,
-                        isCorrect: false
+                        experience: -5
                     },
                     {
                         text: 'To test if the application features meet requirements criteria',
                         outcome: 'Non-functional testing goes beyond feature testing and focus include performance and security testing.',
-                        experience: -10,
-                        isCorrect: false
+                        experience: -10
                     },
                     {
                         text: 'To test for defects in the code structure of the system under test',
                         outcome: 'Non-functional testing focuses on system behaviour and performance rather than actual code structure.',
-                        experience: 0,
-                        isCorrect: false
+                        experience: 0
                     }
                 ]
             },
@@ -217,10 +213,175 @@ export class NonFunctionalQuiz extends BaseQuiz {
                         experience: 0
                     }
                 ]
+            },
+            {
+                id: 16,
+                level: 'Basic',
+                title: 'Performance Testing Overview',
+                description: 'Which of the following is a key type of performance testing?',
+                options: [
+                    {
+                        text: 'Load testing - examining system behavior under expected load conditions',
+                        outcome: 'Correct! Load testing is a fundamental type of performance testing that validates system behavior under normal conditions.',
+                        experience: 15,
+                        isCorrect: true,
+                        tool: 'Performance Testing Suite'
+                    },
+                    {
+                        text: 'Visual testing - ensuring the UI appears correctly',
+                        outcome: 'Visual testing is more related to functional and UI testing than non-functional testing.',
+                        experience: -5,
+                        isCorrect: false
+                    },
+                    {
+                        text: 'State testing - checking different application states',
+                        outcome: 'State testing is more related to functional testing rather than non-functional testing.',
+                        experience: -10,
+                        isCorrect: false
+                    },
+                    {
+                        text: 'Dependency testing - testing third-party integrations',
+                        outcome: 'While important, dependency testing is not specifically a performance testing type.',
+                        experience: 0,
+                        isCorrect: false
+                    }
+                ]
+            },
+            {
+                id: 17,
+                level: 'Basic',
+                title: 'Security Testing Basics',
+                description: 'What is a primary goal of security testing?',
+                options: [
+                    {
+                        text: 'To identify vulnerabilities and protect user data and system integrity',
+                        outcome: 'Correct! Security testing aims to identify vulnerabilities before they can be exploited.',
+                        experience: 15,
+                        isCorrect: true,
+                        tool: 'Security Testing Toolkit'
+                    },
+                    {
+                        text: 'To ensure the system has advanced security features',
+                        outcome: 'While security features are important, testing is about finding vulnerabilities, not just verifying features.',
+                        experience: -5,
+                        isCorrect: false
+                    },
+                    {
+                        text: 'To implement encryption for all data',
+                        outcome: 'Implementation is not part of testing; security testing identifies where protections are needed.',
+                        experience: -10,
+                        isCorrect: false
+                    },
+                    {
+                        text: 'To document all possible security scenarios',
+                        outcome: 'Documentation is important but not the primary goal of security testing.',
+                        experience: 0,
+                        isCorrect: false
+                    }
+                ]
+            },
+            {
+                id: 18,
+                level: 'Basic',
+                title: 'Usability Testing Fundamentals',
+                description: 'What is the main focus of usability testing?',
+                options: [
+                    {
+                        text: 'To evaluate how easy a system is to use from the end user\'s perspective',
+                        outcome: 'Correct! Usability testing focuses on the user experience and ease of use.',
+                        experience: 15,
+                        isCorrect: true,
+                        tool: 'Usability Testing Framework'
+                    },
+                    {
+                        text: 'To ensure all UI elements are visually appealing',
+                        outcome: 'Visual appeal is just one aspect of usability testing, not its main focus.',
+                        experience: -5,
+                        isCorrect: false
+                    },
+                    {
+                        text: 'To verify that all functional requirements are met',
+                        outcome: 'This is functional testing, not usability testing.',
+                        experience: -10,
+                        isCorrect: false
+                    },
+                    {
+                        text: 'To check that the system works on all devices',
+                        outcome: 'This is more related to compatibility testing than usability testing.',
+                        experience: 0,
+                        isCorrect: false
+                    }
+                ]
+            },
+            {
+                id: 19,
+                level: 'Basic',
+                title: 'Compatibility Testing Basics',
+                description: 'What is compatibility testing primarily concerned with?',
+                options: [
+                    {
+                        text: 'Ensuring the application works correctly across different browsers, devices, and operating systems',
+                        outcome: 'Correct! Compatibility testing verifies functionality across various environments.',
+                        experience: 15,
+                        isCorrect: true,
+                        tool: 'Cross-platform Testing Tool'
+                    },
+                    {
+                        text: 'Making sure the application integrates with third-party services',
+                        outcome: 'This is more related to integration testing than compatibility testing.',
+                        experience: -5,
+                        isCorrect: false
+                    },
+                    {
+                        text: 'Verifying the application meets all business requirements',
+                        outcome: 'This is more aligned with acceptance testing than compatibility testing.',
+                        experience: -10,
+                        isCorrect: false
+                    },
+                    {
+                        text: 'Testing how the application handles user interactions',
+                        outcome: 'This is more related to usability or functional testing.',
+                        experience: 0,
+                        isCorrect: false
+                    }
+                ]
+            },
+            {
+                id: 20,
+                level: 'Basic',
+                title: 'Scalability Testing Basics',
+                description: 'What is the purpose of scalability testing?',
+                options: [
+                    {
+                        text: 'To determine if the system can effectively handle increasing workloads by adding resources',
+                        outcome: 'Correct! Scalability testing evaluates how well a system can grow to meet increasing demands.',
+                        experience: 15,
+                        isCorrect: true,
+                        tool: 'Scalability Analysis Tool'
+                    },
+                    {
+                        text: 'To test how many users can access the system simultaneously',
+                        outcome: 'This is more specifically related to load testing, which is one aspect of performance testing.',
+                        experience: -5,
+                        isCorrect: false
+                    },
+                    {
+                        text: 'To verify the system works on larger screen sizes',
+                        outcome: 'This is related to responsive design testing, not scalability testing.',
+                        experience: -10,
+                        isCorrect: false
+                    },
+                    {
+                        text: 'To ensure the database can store large amounts of data',
+                        outcome: 'This is just one aspect of scalability, not its complete purpose.',
+                        experience: 0,
+                        isCorrect: false
+                    }
+                ]
             }
         ];
 
-        // Intermediate Scenarios (IDs 6-10, 125 XP total)
+        // Intermediate Scenarios (IDs 6-10)
         this.intermediateScenarios = [
             {
                 id: 6,

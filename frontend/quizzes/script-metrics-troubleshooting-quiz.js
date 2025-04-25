@@ -208,6 +208,151 @@ export class ScriptMetricsTroubleshootingQuiz extends BaseQuiz {
                         experience: 5
                     }
                 ]
+            },
+            {
+                id: 16,
+                level: 'Basic',
+                title: 'Environment Metrics',
+                description: 'If environment metrics do not reflect the actual number of environments, what should you check first?',
+                options: [
+                    {
+                        text: 'Check that new rows were added within the existing table and have the correct formulas',
+                        outcome: 'Correct! first ensure that new rows in the table are always added within the existing table and copy formulas from existing rows.',
+                        experience: 15,
+                        tool: 'Environment Metrics'
+                    },
+                    {
+                        text: 'Verify that Microsoft Excel is updated to the latest version',
+                        outcome: 'First you must ensure that new rows in the table are always added within the existing table and that formulas are copied from existing rows.',
+                        experience: -5
+                    },
+                    {
+                        text: 'Delete and recreate the entire environment checks tab',
+                        outcome: 'Deleting and recreating the tab is not advised as it would be time consuming.',
+                        experience: -10
+                    },
+                    {
+                        text: 'Restart Excel to refresh all formulas automatically',
+                        outcome: 'First you should double click the cell in the data table with the incorrect figure and ensure that the dotted lines displayed over the environment table encompass all rows containing environments.',
+                        experience: -5
+                    }
+                ]
+            },
+            {
+                id: 17,
+                level: 'Basic',
+                title: 'Compatibility Environments Completed',
+                description: 'What influences the Compatibility Environments Complete figure in the Environment Checks tab?',
+                options: [
+                    {
+                        text: 'The number of environments with \'Complete\' in the status column',
+                        outcome: 'There is no status column within the Compatibility Environments tab.',
+                        experience: -5
+                    },
+                    {
+                        text: 'The total number of browsers tested across all environments',
+                        outcome: 'The figure calculated based on browsers tested.',
+                        experience: -10
+                    },
+                    {
+                        text: 'The count of compatibility environments that have Yes in the Checked? column',
+                        outcome: 'Correct! The Compatibility Environments Complete figure counts how many compatibility environments have Yes in the Checked? column.',
+                        experience: 15,
+                        tool: 'Compatibility Environments Completed'
+                    },
+                    {
+                        text: 'Environments marked as Complete and verified by a second tester',
+                        outcome: 'There is no column for complete and a second tester is not required to verify the tests.',
+                        experience: 0
+                    }
+                ]
+            },
+            {
+                id: 18,
+                level: 'Basic',
+                title: 'New Metrics Table Rows',
+                description: 'When a formula in the metrics table doesn\'t count a newly added environment row, what troubleshooting step should you take?',
+                options: [
+                    {
+                        text: 'Restart Excel to refresh all formulas automatically',
+                        outcome: 'First you should double click the cell in the data table with the incorrect figure and ensure that the dotted lines displayed over the environment table encompass all rows containing environments.',
+                        experience: -5
+                    },
+                    {
+                        text: 'Add a new row to the metrics table to account for the additional environment',
+                        outcome: 'Adding new rows wont address the issue as new rows already aren\'t being calculated.', 
+                        experience: -10
+                    },
+                    {
+                        text: 'Double click the cell with the incorrect figure to check if the formula encompasses all rows',
+                        outcome: 'Correct! The first port of call should be to double click the cell in the data table with the incorrect figure and ensure that the dotted lines displayed over the environment table encompass all rows containing environments.',
+                        experience: 15,
+                        tool: 'New Metrics Table Rows'
+                    },
+                    {
+                        text: 'Contact your manager immediately to report the broken formula',
+                        outcome: 'The problem should be addressed first by the tester, If the count is still incorrect a colleague can be contacted.',
+                        experience: 0
+                    }
+                ]
+            },
+            {
+                id: 19,
+                level: 'Basic',
+                title: 'Formula Editing',
+                description: 'When editing formulas in a newly copied Environment Checks table, what is the key modification required?',
+                options: [
+                    {
+                        text: 'Point the formulas to the equivalent cells in the newly created tab',
+                        outcome: 'Correct! The formula in each cell of the new table that\'s pointing to the Environment Checks tab should be edited to instead point to the equivalent cell in the newly created tab.',
+                        experience: 15,
+                        tool: 'Formula Editing'
+                    },
+                    {
+                        text: 'Change the formula to use absolute cell references instead of relative references',
+                        outcome: 'Changing cell references to absolute doesn\'t correct where the formula should be pointed to.',
+                        experience: -10
+                    },
+                    {
+                        text: 'Remove all existing formulas and create simplified versions.',
+                        outcome: 'Removing and simplifying formulas is not recommended as this could affect formula and test result accurracy.',
+                        experience: -5
+                    },
+                    {
+                        text: 'Add error handling functions to each formula.',
+                        outcome: 'Adding error handling functions doesn\'t correct where the formula should be pointed to.',
+                        experience: 0
+                    }
+                ]
+            },
+            {
+                id: 20,
+                level: 'Basic',
+                title: 'Environment Count',
+                description: 'Why might an environment not be counted in the \'Compatibility Environments Complete\' figure despite correct cell population and \'Primary No\' checked?',
+                options: [
+                    {
+                        text: 'The formula in the cell showing the figure isn\'t encompassing all environment rows',
+                        outcome: 'Correct! by double clicking the cell showing the incorrect figure, you can see if the formula is not encompassing the newly added environment row.',
+                        experience: 15,
+                        tool: 'Environment Count'
+                    },
+                    {
+                        text: 'The environment is marked as a primary environment rather than a compatibility environment',
+                        outcome: 'The question stated that the \'Primary No\' column had been checked.',
+                        experience: -10
+                    },
+                    {
+                        text: 'The environment was added after the initial script was created',
+                        outcome: 'When an environment is added shouldn\'t have a bearing on environment count.',
+                        experience: -5
+                    },
+                    {
+                        text: 'The count automatically updates only at the end of each day',
+                        outcome: 'This is not the case, environments should be counted when added to the table and formulas are correctly checked.',
+                        experience: 0
+                    }
+                ]
             }
         ];
 
@@ -524,7 +669,7 @@ export class ScriptMetricsTroubleshootingQuiz extends BaseQuiz {
         setTimeout(() => errorDiv.remove(), 5000);
     }
 
-    shouldEndGame(totalQuestionsAnswered, currentXP) {
+    shouldEndGame() {
         // Only end the game when all 15 questions are answered
         return (this.player?.questionHistory?.length || 0) >= 15;
     }
