@@ -102,7 +102,12 @@ export async function checkAuth() {
         }
         
         // Allow access to admin login page without token
-        return currentPath.includes('admin-login.html');
+        if (currentPath.includes('admin-login.html')) {
+            console.log('On admin login page, allowing access');
+            return true;
+        }
+        
+        return false;
     }
 
     // Handle regular user authentication
@@ -125,7 +130,9 @@ export async function checkAuth() {
     }
     
     // If we're on any other page and user is not authenticated, redirect to login
-    if (!window.location.pathname.includes('login.html') && (!token || !username)) {
+    if (!window.location.pathname.includes('login.html') && 
+        !window.location.pathname.includes('admin-login.html') && 
+        (!token || !username)) {
         console.log('Not authenticated, redirecting to login');
         window.location.replace('/login.html');
         return false;

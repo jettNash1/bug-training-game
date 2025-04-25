@@ -68,7 +68,7 @@ export class Admin2Dashboard extends AdminDashboard {
             // Verify admin token
             const tokenVerification = await this.apiService.verifyAdminToken();
             if (!tokenVerification.success) {
-                window.location.href = '/login.html';
+                window.location.href = '/pages/admin-login.html';
                 return;
             }
 
