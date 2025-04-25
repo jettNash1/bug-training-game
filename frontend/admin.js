@@ -226,7 +226,7 @@ class AdminDashboard {
             }
 
             // Token is already stored by adminLogin method
-            window.location.replace('./admin.html');
+            window.location.replace('./admin2.html');
         } catch (error) {
             console.error('Login error:', error);
             throw new Error(error.message || 'Login failed. Please try again.');
