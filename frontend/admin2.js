@@ -6,7 +6,16 @@ export class Admin2Dashboard extends AdminDashboard {
         // Additional initialization for Admin2Dashboard
         this.isRowView = false; // Default to grid view
         this.guideSettings = {};
-        this.init2();
+        
+        // Only initialize the dashboard if we're not on the login page
+        const currentPath = window.location.pathname;
+        if (!currentPath.includes('admin-login.html')) {
+            this.init2().catch(error => {
+                console.error('Error during Admin2Dashboard initialization:', error);
+            });
+        } else {
+            console.log('On admin-login page, skipping dashboard initialization');
+        }
     }
 
     async handleAdminLogin(formData) {
@@ -65,7 +74,14 @@ export class Admin2Dashboard extends AdminDashboard {
                 });
             }
 
-            // Verify admin token
+            // Check if we're on admin login page - if so, skip token verification
+            const currentPath = window.location.pathname;
+            if (currentPath.includes('admin-login.html')) {
+                console.log('On admin login page, skipping token verification');
+                return;
+            }
+
+            // Verify admin token for all pages except admin-login
             const tokenVerification = await this.apiService.verifyAdminToken();
             if (!tokenVerification.success) {
                 window.location.href = '/pages/admin-login.html';

@@ -43,6 +43,12 @@ export class APIService {
     // Admin-specific fetch method
     async fetchWithAdminAuth(url, options = {}) {
         try {
+            // Skip auth check on admin login page
+            if (window.location.pathname.includes('admin-login.html')) {
+                console.log('On admin login page, skipping admin auth check');
+                throw new Error('Cannot fetch with admin auth on login page');
+            }
+            
             const adminToken = localStorage.getItem('adminToken');
             if (!adminToken) {
                 throw new Error('No admin token found. Please login again.');
