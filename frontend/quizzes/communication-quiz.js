@@ -208,6 +208,152 @@ export class CommunicationQuiz extends BaseQuiz {
                         experience: -5
                     }
                 ]
+            },
+            // Additional Basic Scenarios (IDs 16-20)
+            {
+                id: 16,
+                level: 'Basic',
+                title: 'Meeting Preparation',
+                description: 'You need to attend a project kickoff meeting. How should you prepare?',
+                options: [
+                    {
+                        text: 'Review project documents, prepare questions, and understand your role in the project',
+                        outcome: 'Excellent! Being prepared shows professionalism and helps make meetings productive.',
+                        experience: 15,
+                        tool: 'Meeting Preparation'
+                    },
+                    {
+                        text: 'Just attend the meeting and catch up as things progress',
+                        outcome: 'Preparation is key to effective meeting participation and contributes to project success.',
+                        experience: -10
+                    },
+                    {
+                        text: 'Skim through the meeting invite to get a basic overview',
+                        outcome: 'While better than no preparation, a thorough review of materials is more effective.',
+                        experience: 0
+                    },
+                    {
+                        text: 'Ask a colleague for a quick summary before the meeting',
+                        outcome: 'Personal preparation ensures you form your own understanding and questions.',
+                        experience: -5
+                    }
+                ]
+            },
+            {
+                id: 17,
+                level: 'Basic',
+                title: 'Asking Questions',
+                description: 'You\'re unclear about the requirements for a task. What\'s the best way to seek clarification?',
+                options: [
+                    {
+                        text: 'Research what you can, then ask specific, well-formulated questions about remaining uncertainties',
+                        outcome: 'Perfect! This shows initiative while seeking necessary clarification.',
+                        experience: 15,
+                        tool: 'Effective Questioning'
+                    },
+                    {
+                        text: 'Ask the project manager to explain everything about the task again',
+                        outcome: 'Broad requests for explanation don\'t demonstrate your effort to understand.',
+                        experience: -5
+                    },
+                    {
+                        text: 'Proceed with your best guess of what\'s required',
+                        outcome: 'Working with unclear requirements can lead to wasted effort and rework.',
+                        experience: -10
+                    },
+                    {
+                        text: 'Wait until the next team meeting to bring up all your questions',
+                        outcome: 'Waiting too long for clarification can delay progress unnecessarily.',
+                        experience: 0
+                    }
+                ]
+            },
+            {
+                id: 18,
+                level: 'Basic',
+                title: 'Note Taking',
+                description: 'During an important client call, what\'s the best approach to note-taking?',
+                options: [
+                    {
+                        text: 'Take concise notes of key points, decisions, and action items with clear ownership',
+                        outcome: 'Excellent! This creates a useful record that can be shared and referenced.',
+                        experience: 15,
+                        tool: 'Note Taking'
+                    },
+                    {
+                        text: 'Record every detail of the conversation word for word',
+                        outcome: 'Excessive detail can make notes difficult to review and use later.',
+                        experience: -5
+                    },
+                    {
+                        text: 'Rely on memory and write notes after the call',
+                        outcome: 'Important details may be forgotten without real-time note-taking.',
+                        experience: -10
+                    },
+                    {
+                        text: 'Let someone else take notes since you need to focus on the discussion',
+                        outcome: 'While delegation can work, personal notes help with your understanding and recall.',
+                        experience: 0
+                    }
+                ]
+            },
+            {
+                id: 19,
+                level: 'Basic',
+                title: 'Providing Feedback',
+                description: 'A team member has shared their work for review. How should you approach giving feedback?',
+                options: [
+                    {
+                        text: 'Provide specific, constructive comments with a balance of positive points and areas for improvement',
+                        outcome: 'Perfect! This approach is helpful and motivating.',
+                        experience: 15,
+                        tool: 'Constructive Feedback'
+                    },
+                    {
+                        text: 'Focus only on what needs to be fixed',
+                        outcome: 'Balanced feedback that includes positives is more motivating and effective.',
+                        experience: -5
+                    },
+                    {
+                        text: 'Give general praise to avoid hurting their feelings',
+                        outcome: 'Vague positive feedback doesn\'t help with improvement.',
+                        experience: -10
+                    },
+                    {
+                        text: 'Suggest they look at a similar completed project for guidance',
+                        outcome: 'While examples can be helpful, specific feedback on their work is more valuable.',
+                        experience: 0
+                    }
+                ]
+            },
+            {
+                id: 20,
+                level: 'Basic',
+                title: 'Introduction Email',
+                description: 'You\'re joining a new project team. How should you introduce yourself in an email?',
+                options: [
+                    {
+                        text: 'Write a concise email with your role, relevant experience, and enthusiasm for contributing to the project',
+                        outcome: 'Excellent! This provides helpful context and establishes a positive first impression.',
+                        experience: 15,
+                        tool: 'Professional Introduction'
+                    },
+                    {
+                        text: 'Share detailed information about your entire work history and all your skills',
+                        outcome: 'Excessively long introductions may not be read carefully and could seem unfocused.',
+                        experience: -5
+                    },
+                    {
+                        text: 'Just state your name and that you\'ve joined the team',
+                        outcome: 'A minimalist introduction misses the opportunity to establish rapport.',
+                        experience: -10
+                    },
+                    {
+                        text: 'Wait for the team lead to introduce you to everyone',
+                        outcome: 'Taking initiative in introducing yourself shows professionalism and engagement.',
+                        experience: 0
+                    }
+                ]
             }
         ];
 
@@ -357,6 +503,152 @@ export class CommunicationQuiz extends BaseQuiz {
                         experience: -15
                     }
                 ]
+            },
+            // Additional Intermediate Scenarios (IDs 21-25)
+            {
+                id: 21,
+                level: 'Intermediate',
+                title: 'Cross-team Collaboration',
+                description: 'You need to collaborate with another team on a feature. How do you establish an effective working relationship?',
+                options: [
+                    {
+                        text: 'Set up an initial meeting to align on goals, establish communication channels, and define roles and responsibilities',
+                        outcome: 'Perfect! This creates clear expectations and structures for collaboration.',
+                        experience: 20,
+                        tool: 'Cross-team Coordination'
+                    },
+                    {
+                        text: 'Send a detailed email explaining what you need them to do',
+                        outcome: 'One-way communication doesn\'t foster true collaboration or shared ownership.',
+                        experience: -10
+                    },
+                    {
+                        text: 'Let your team lead handle the collaboration details',
+                        outcome: 'Being proactive in cross-team relationships is a valuable professional skill.',
+                        experience: -15
+                    },
+                    {
+                        text: 'Work independently as much as possible to minimize the need for collaboration',
+                        outcome: 'Avoiding necessary collaboration can lead to misalignment and integration issues.',
+                        experience: -5
+                    }
+                ]
+            },
+            {
+                id: 22,
+                level: 'Intermediate',
+                title: 'Presenting Technical Data',
+                description: 'You need to present test results to a mixed audience of technical and non-technical stakeholders. How do you approach this?',
+                options: [
+                    {
+                        text: 'Create a layered presentation with executive summary, business impacts, and technical details as supporting information',
+                        outcome: 'Excellent! This serves various audience needs while keeping everyone engaged.',
+                        experience: 20,
+                        tool: 'Data Presentation'
+                    },
+                    {
+                        text: 'Focus entirely on the technical details as they\'re the most important part',
+                        outcome: 'This approach may lose the attention of non-technical stakeholders who need business context.',
+                        experience: -10
+                    },
+                    {
+                        text: 'Skip the technical details entirely to keep things simple',
+                        outcome: 'Technical stakeholders need the detailed information to make informed decisions.',
+                        experience: -15
+                    },
+                    {
+                        text: 'Create separate presentations for technical and non-technical audiences',
+                        outcome: 'While this can work, it may lead to information silos and inconsistent messaging.',
+                        experience: -5
+                    }
+                ]
+            },
+            {
+                id: 23,
+                level: 'Intermediate',
+                title: 'Process Improvement Suggestion',
+                description: 'You\'ve identified a way to improve the testing process. How should you communicate this to the team?',
+                options: [
+                    {
+                        text: 'Document the current pain points, your proposed solution with benefits, and request a meeting to discuss implementation',
+                        outcome: 'Perfect! This provides context, a solution, and opens a collaborative discussion.',
+                        experience: 20,
+                        tool: 'Process Improvement'
+                    },
+                    {
+                        text: 'Implement the changes yourself to demonstrate their effectiveness',
+                        outcome: 'Process changes should involve stakeholder input and agreement before implementation.',
+                        experience: -15
+                    },
+                    {
+                        text: 'Mention your idea casually in a team meeting to gauge interest',
+                        outcome: 'While getting initial feedback is good, a more structured approach would be more effective.',
+                        experience: -5
+                    },
+                    {
+                        text: 'Send a detailed email outlining all the problems with the current process',
+                        outcome: 'Focusing only on problems without solutions can seem like complaining rather than constructive feedback.',
+                        experience: -10
+                    }
+                ]
+            },
+            {
+                id: 24,
+                level: 'Intermediate',
+                title: 'Client Communication',
+                description: 'A client is frustrated about some delayed features. How do you handle the communication?',
+                options: [
+                    {
+                        text: 'Acknowledge their concerns, explain the situation transparently, provide a revised timeline with confidence, and offer regular updates',
+                        outcome: 'Excellent! This addresses the frustration while rebuilding trust.',
+                        experience: 20,
+                        tool: 'Client Management'
+                    },
+                    {
+                        text: 'Explain all the technical challenges that led to the delay in detail',
+                        outcome: 'Too much technical detail may not address the client\'s primary concern about project impact.',
+                        experience: -10
+                    },
+                    {
+                        text: 'Promise to deliver everything faster to make up for the delay',
+                        outcome: 'Making promises that may be difficult to keep could further damage trust if not fulfilled.',
+                        experience: -15
+                    },
+                    {
+                        text: 'Let your project manager handle the client communication',
+                        outcome: 'While escalation is sometimes appropriate, being able to handle client communication is a valuable skill.',
+                        experience: -5
+                    }
+                ]
+            },
+            {
+                id: 25,
+                level: 'Intermediate',
+                title: 'Technical Requirements Gathering',
+                description: 'You need to gather technical requirements from different stakeholders. What\'s your approach?',
+                options: [
+                    {
+                        text: 'Prepare a structured template, conduct focused individual interviews, and follow up with a collaborative session to resolve conflicts',
+                        outcome: 'Perfect! This ensures comprehensive input while managing different perspectives.',
+                        experience: 20,
+                        tool: 'Requirements Gathering'
+                    },
+                    {
+                        text: 'Send an email asking everyone to list their requirements',
+                        outcome: 'This passive approach may lead to incomplete information and misunderstandings.',
+                        experience: -10
+                    },
+                    {
+                        text: 'Call a meeting with all stakeholders to discuss requirements',
+                        outcome: 'While meetings are useful, some preparation and structure would make this more effective.',
+                        experience: -5
+                    },
+                    {
+                        text: 'Work from existing documentation and make assumptions where information is missing',
+                        outcome: 'Assumptions without validation can lead to misaligned expectations and rework.',
+                        experience: -15
+                    }
+                ]
             }
         ];
 
@@ -503,6 +795,152 @@ export class CommunicationQuiz extends BaseQuiz {
                     {
                         text: 'Let management handle the communication with all parties',
                         outcome: 'Change proposals and meetings should be driven by the implementors of those proposal.',
+                        experience: -10
+                    }
+                ]
+            },
+            // Additional Advanced Scenarios (IDs 26-30)
+            {
+                id: 26,
+                level: 'Advanced',
+                title: 'Executive Communication',
+                description: 'You need to present test results and quality metrics to executive leadership. How do you approach this?',
+                options: [
+                    {
+                        text: 'Focus on business impact, provide clear visualizations, highlight key risks and mitigation plans, and prepare concise answers to potential questions',
+                        outcome: 'Excellent! This aligns technical information with executive concerns.',
+                        experience: 25,
+                        tool: 'Executive Communication'
+                    },
+                    {
+                        text: 'Present detailed test reports showing all the tests conducted and their results',
+                        outcome: 'Executives typically need higher-level information focused on business outcomes rather than technical details.',
+                        experience: -15
+                    },
+                    {
+                        text: 'Delegate the presentation to your manager who has more experience with leadership',
+                        outcome: 'While sometimes appropriate, developing executive communication skills is valuable for career growth.',
+                        experience: -20
+                    },
+                    {
+                        text: 'Focus primarily on the challenges and risks to ensure leadership is aware of all potential issues',
+                        outcome: 'A balanced approach that includes both successes and challenges provides better context for decision-making.',
+                        experience: -10
+                    }
+                ]
+            },
+            {
+                id: 27,
+                level: 'Advanced',
+                title: 'Communication Strategy',
+                description: 'You\'re leading a major quality initiative that will span 12 months. How do you develop a communication strategy?',
+                options: [
+                    {
+                        text: 'Map stakeholders with their information needs, create a multi-channel approach with regular touchpoints, and plan for both push and pull communication methods',
+                        outcome: 'Perfect! This creates a comprehensive approach tailored to different stakeholders.',
+                        experience: 25,
+                        tool: 'Communication Planning'
+                    },
+                    {
+                        text: 'Create a monthly newsletter that will update everyone on progress',
+                        outcome: 'While regular updates are good, a one-size-fits-all approach may not meet all stakeholder needs.',
+                        experience: -10
+                    },
+                    {
+                        text: 'Plan to communicate major milestones as they are achieved',
+                        outcome: 'Strategic communication should be proactive and regular, not just milestone-driven.',
+                        experience: -15
+                    },
+                    {
+                        text: 'Let each team member communicate with their respective departments',
+                        outcome: 'Without coordination, messaging may become inconsistent and fragmented.',
+                        experience: -20
+                    }
+                ]
+            },
+            {
+                id: 28,
+                level: 'Advanced',
+                title: 'Negotiating Resources',
+                description: 'Your team needs additional resources to maintain quality standards. How do you make the case to leadership?',
+                options: [
+                    {
+                        text: 'Present data showing current constraints, business impact of quality issues, cost-benefit analysis of additional resources, and a phased implementation plan',
+                        outcome: 'Excellent! This provides a compelling business case for the resources.',
+                        experience: 25,
+                        tool: 'Resource Negotiation'
+                    },
+                    {
+                        text: 'Explain that the team is overworked and needs more help to get everything done',
+                        outcome: 'Emotional appeals without data are less effective for resource allocation decisions.',
+                        experience: -15
+                    },
+                    {
+                        text: 'Point out that other similar teams have more resources allocated to them',
+                        outcome: 'Comparisons without context may not address the specific business need for your team\'s resources.',
+                        experience: -20
+                    },
+                    {
+                        text: 'Wait until a major quality issue occurs to demonstrate the need for more resources',
+                        outcome: 'Proactive planning is better than reactive responses after problems occur.',
+                        experience: -10
+                    }
+                ]
+            },
+            {
+                id: 29,
+                level: 'Advanced',
+                title: 'Interdepartmental Conflict',
+                description: 'There\'s an ongoing conflict between the QA and development teams about quality processes. How do you address this?',
+                options: [
+                    {
+                        text: 'Facilitate a structured workshop to identify root causes, establish shared goals, and develop collaborative solutions that meet both teams\' needs',
+                        outcome: 'Perfect! This addresses the underlying issues and builds collaboration.',
+                        experience: 25,
+                        tool: 'Conflict Mediation'
+                    },
+                    {
+                        text: 'Escalate the issue to senior management to make a final decision',
+                        outcome: 'Escalation before attempting resolution may create additional tensions and doesn\'t build team relationships.',
+                        experience: -15
+                    },
+                    {
+                        text: 'Create stricter processes that clearly define each team\'s responsibilities',
+                        outcome: 'Adding more rigid processes without addressing the underlying conflict may increase tensions.',
+                        experience: -20
+                    },
+                    {
+                        text: 'Have separate meetings with each team to hear their concerns',
+                        outcome: 'While understanding perspectives is important, ultimately the teams need to work together toward a solution.',
+                        experience: -10
+                    }
+                ]
+            },
+            {
+                id: 30,
+                level: 'Advanced',
+                title: 'Communicating Test Strategy',
+                description: 'You\'ve developed a new risk-based testing strategy. How do you communicate it to ensure adoption across the organization?',
+                options: [
+                    {
+                        text: 'Develop tailored presentations for different audiences, create practical guidelines with examples, offer training sessions, and identify champions in each team',
+                        outcome: 'Excellent! This multi-faceted approach drives understanding and adoption.',
+                        experience: 25,
+                        tool: 'Change Implementation'
+                    },
+                    {
+                        text: 'Send a comprehensive document explaining the new strategy in detail',
+                        outcome: 'Documentation alone rarely drives significant change in practices.',
+                        experience: -15
+                    },
+                    {
+                        text: 'Announce the new strategy in a company-wide meeting',
+                        outcome: 'A single announcement without follow-up support is unlikely to lead to meaningful adoption.',
+                        experience: -20
+                    },
+                    {
+                        text: 'Implement the strategy in your team first and let others adopt it when they see the benefits',
+                        outcome: 'While demonstration can help, a more active approach to organizational change is typically needed.',
                         experience: -10
                     }
                 ]
