@@ -35,7 +35,7 @@ export async function checkAuth() {
                 const now = Date.now();
                 // Token is valid for 24 hours
                 if ((now - timestamp) < 24 * 60 * 60 * 1000) {
-                    window.location.replace('/pages/admin.html');
+                    window.location.replace('/pages/admin2.html');
                     return true;
                 }
                 clearAdminToken();
@@ -55,7 +55,7 @@ export async function checkAuth() {
                 if (response.ok) {
                     const data = await response.json();
                     if (data.success && data.isAdmin) {
-                        window.location.replace('/pages/admin.html');
+                        window.location.replace('/pages/admin2.html');
                         return true;
                     }
                 }

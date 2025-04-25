@@ -9,6 +9,31 @@ export class Admin2Dashboard extends AdminDashboard {
         this.init2();
     }
 
+    async handleAdminLogin(formData) {
+        try {
+            console.log('Admin2Dashboard: Attempting admin login...');
+            
+            const username = formData.get('username');
+            const password = formData.get('password');
+            
+            if (!username || !password) {
+                throw new Error('Username and password are required');
+            }
+
+            const data = await this.apiService.adminLogin(username, password);
+
+            if (!data.token) {
+                throw new Error('No token received from server');
+            }
+
+            // Token is already stored by adminLogin method
+            window.location.replace('./admin2.html');
+        } catch (error) {
+            console.error('Login error:', error);
+            throw new Error(error.message || 'Login failed. Please try again.');
+        }
+    }
+
     async init2() {
         try {
             // Add a guard variable to prevent too frequent checks

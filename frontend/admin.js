@@ -65,7 +65,7 @@ class AdminDashboard {
         // If we have a valid token and we're on the login page, redirect to admin panel
         if (isTokenValid && currentPath.includes('admin-login.html')) {
             console.log('Valid token on login page, redirecting to admin panel');
-            window.location.href = '/pages/admin.html';
+            window.location.href = '/pages/admin2.html';
             return;
         }
 
