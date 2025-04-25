@@ -8,11 +8,6 @@ export class ContentCopyQuiz extends BaseQuiz {
             maxXP: 300,
             totalQuestions: 15,
             passPercentage: 70,
-            levelThresholds: {
-                basic: { questions: 5, minXP: 35 },
-                intermediate: { questions: 10, minXP: 110 },
-                advanced: { questions: 15, minXP: 235 }
-            },
             performanceThresholds: [
                 { threshold: 90, message: '🏆 Outstanding! You\'re a content copy expert!' },
                 { threshold: 80, message: '👏 Great job! You\'ve shown strong content writing skills!' },
@@ -67,7 +62,7 @@ export class ContentCopyQuiz extends BaseQuiz {
             return;
         }
 
-        // Basic Scenarios (IDs 1-5, 75 XP total, 15 XP each)
+        // Basic Scenarios (IDs 1-10, expanded from 1-5)
         this.basicScenarios = [
             {
                 id: 1,
@@ -210,6 +205,151 @@ export class ContentCopyQuiz extends BaseQuiz {
                         text: 'The client must restart the project to introduce new content',
                         outcome: 'While content changes may affect some areas already tested, it is not considered to fully re-test all content again',
                         experience: 5
+                    }
+                ]
+            },
+            {
+                id: 16,
+                level: 'Basic',
+                title: 'Content Proofing Risks',
+                description: 'Which of the following is not a risk or disadvantage of content proofing?',
+                options: [
+                    {
+                        text: 'Content proofing typically costs more than other types of testing',
+                        outcome: 'Correct! content proofing doesn\'t cost any more than other types of testing general.',
+                        experience: 15,
+                        tool: 'Content Proofing Risks'
+                    },
+                    {
+                        text: 'Changes to content after testing may void previous verification',
+                        outcome: 'This is a risk when performing content proofing as there could be changes to content that have already been tested.',
+                        experience: -5
+                    },
+                    {
+                        text: 'High volumes of small issues can be time-consuming to report individually',
+                        outcome: 'This is a risk as it can be time-consuming and grouping issues by section should be a general approach.',
+                        experience: -10
+                    },
+                    {
+                        text: 'Testing without a copy deck to compare against may be less in-depth',
+                        outcome: 'This can be a test limitation if clients don\'t provide reference materials.',
+                        experience: 0
+                    }
+                ]
+            },
+            {
+                id: 17,
+                level: 'Basic',
+                title: 'Placeholder Testing',
+                description: 'When is it appropriate to raise blurry/placeholder images as a defect',
+                options: [
+                    {
+                        text: 'Only when the client specifically requests image quality checks',
+                        outcome: 'This type of test should be treated as standard content checking.',
+                        experience: -5
+                    },
+                    {
+                        text: 'Only when found in production environments, not in development',
+                        outcome: 'The environment under test should be priority and there shouldn\'t be any restrictions unless stated by the client.',
+                        experience: -10
+                    },
+                    {
+                        text: 'It depends on the scale and focus of the project',
+                        outcome: 'Correct! They can be raised either as a content or \'for reference\' ticket depending on the scale & focus of the project.',
+                        experience: 15,
+                        tool: 'Placeholder Testing'
+                    },
+                    {
+                        text: 'Only when comparing against a design document',
+                        outcome: 'These type of issues can be raised even without comparing against design documents.',
+                        experience: 0
+                    }
+                ]
+            },
+            {
+                id: 18,
+                level: 'Basic',
+                title: 'Documentation Inconsistencies',
+                description: 'What should a tester do when they notice inconsistencies with documentation in a project where content is not the main focus?',
+                options: [
+                    {
+                        text: 'Ignore them as they\'re not relevant to the project\'s focus',
+                        outcome: 'These issues should still be raised as a query.',
+                        experience: -5
+                    },
+                    {
+                        text: 'These types of issues should be raised as critical defects',
+                        outcome: 'Inconsistencies should be raised as queries, especially when content isn\'t the main focus.',
+                        experience: -10
+                    },
+                    {
+                        text: 'These should be raised as queries in case the designs are not up to date',
+                        outcome: 'Correct! when the content is not a main focus of the project, this can be raised as a query in case the designs are not up to date.',
+                        experience: 15,
+                        tool: 'Documentation Inconsistencies'
+                    },
+                    {
+                        text: 'Implement corrections without consulting the client',
+                        outcome: 'The standard process of raising tickets or queries should be followed before anything can be updated within documentation.',
+                        experience: 0
+                    }
+                ]
+            },
+            {
+                id: 19,
+                level: 'Basic',
+                title: 'Content Proofing Characteristics',
+                description: 'What testing characteristic is specifically important for content proofing?',
+                options: [
+                    {
+                        text: 'Attention to detail',
+                        outcome: 'Correct! Attention to detail is a key characteristic of content proofing tests.',
+                        experience: 15,
+                        tool: 'Contant Proofing Characteristics'
+                    },
+                    {
+                        text: 'Technical knowledge',
+                        outcome: 'Technical knowledge is not a required test characteristic unlike attention to detail.',
+                        experience: -10
+                    },
+                    {
+                        text: 'Speed of execution.',
+                        outcome: 'Speed of execution is not a required testing technique for content proofing and could lead to missed defects.',
+                        experience: -5
+                    },
+                    {
+                        text: 'Programming expertise.',
+                        outcome: 'Programming knowledge is not a required test characteristic unlike attention to detail',
+                        experience: 0
+                    }
+                ]
+            },
+            {
+                id: 20,
+                level: 'Basic',
+                title: 'Content Proofing Test Execution',
+                description: 'When content proofing is occurring alongside functional testing on a project, what is true?',
+                options: [
+                    {
+                        text: 'Both can occur, with content proofing focusing only on content issues',
+                        outcome: 'Correct! both can occur at the same time with content proofing maintaining its specific focus.',
+                        experience: 15,
+                        tool: 'Content Proofing Test Execution'
+                    },
+                    {
+                        text: 'Content proofing must be completed before functional testing begins',
+                        outcome: 'Content proofing can take place at any time during the testing process as long as the client has provided the relevant documentation.',
+                        experience: -10
+                    },
+                    {
+                        text: 'Functional testing takes priority over content proofing',
+                        outcome: 'There should only be a priority based on the clients needs.',
+                        experience: -5
+                    },
+                    {
+                        text: 'Content proofing cannot be performed effectively when functional testing is also being done',
+                        outcome: 'Content proofing can occur alongside functional testing for some projects.',
+                        experience: 0
                     }
                 ]
             }
@@ -1099,6 +1239,30 @@ export class ContentCopyQuiz extends BaseQuiz {
             localStorage.removeItem(`quiz_progress_${username}_${variant}`);
             localStorage.removeItem(`quizResults_${username}_${variant}`);
         });
+    }
+
+    getCurrentScenarios() {
+        const totalAnswered = this.player.questionHistory.length;
+        
+        // Progress through levels based only on question count
+        if (totalAnswered >= 15) {
+            return this.advancedScenarios;
+        } else if (totalAnswered >= 10) {
+            return this.intermediateScenarios;
+        }
+        return this.basicScenarios;
+    }
+
+    getCurrentLevel() {
+        const totalAnswered = this.player.questionHistory.length;
+        
+        // Progress through levels based only on question count
+        if (totalAnswered >= 15) {
+            return 'Advanced';
+        } else if (totalAnswered >= 10) {
+            return 'Intermediate';
+        }
+        return 'Basic';
     }
 }
 
