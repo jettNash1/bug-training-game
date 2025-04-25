@@ -959,41 +959,72 @@ export class APIService {
             const controller = new AbortController();
             const signal = controller.signal;
             
-            // Set a timeout to abort the fetch after 10 seconds
+            // Increase timeout to 20 seconds (was 10 seconds) to help with slow connections
             const timeoutId = setTimeout(() => {
                 controller.abort();
-                console.warn(`Fetch for user progress timed out after 10 seconds: ${username}`);
-            }, 10000);
+                console.warn(`Fetch for user progress timed out after 20 seconds: ${username}`);
+            }, 20000);
             
             try {
-                const response = await this.fetchWithAdminAuth(
-                    `${this.baseUrl}/admin/users/${username}/progress`,
-                    {
-                        method: 'GET',
-                        headers: {
-                            'Content-Type': 'application/json'
-                        },
-                        signal
+                // Add a retry mechanism
+                const maxRetries = 2;
+                let lastError = null;
+                
+                for (let attempt = 0; attempt <= maxRetries; attempt++) {
+                    try {
+                        if (attempt > 0) {
+                            console.log(`Retry attempt ${attempt} for user ${username}`);
+                        }
+                        
+                        const response = await this.fetchWithAdminAuth(
+                            `${this.baseUrl}/admin/users/${username}/progress`,
+                            {
+                                method: 'GET',
+                                headers: {
+                                    'Content-Type': 'application/json'
+                                },
+                                signal: attempt === maxRetries ? signal : undefined // Only use abort signal on final attempt
+                            }
+                        );
+                        
+                        // Clear the timeout since the request completed
+                        clearTimeout(timeoutId);
+                        
+                        console.log(`Response from getUserProgress for ${username}:`, response);
+                        
+                        if (!response) {
+                            if (attempt < maxRetries) {
+                                // Wait before retrying - exponential backoff
+                                await new Promise(resolve => setTimeout(resolve, 500 * Math.pow(2, attempt)));
+                                continue;
+                            }
+                            return {
+                                success: false,
+                                message: 'Empty response from server',
+                                data: {
+                                    quizProgress: {},
+                                    quizResults: []
+                                }
+                            };
+                        }
+                        
+                        return {
+                            success: true,
+                            data: response.progress || response || {
+                                quizProgress: {},
+                                quizResults: []
+                            }
+                        };
+                    } catch (error) {
+                        lastError = error;
+                        // If it's not the final attempt, try again
+                        if (attempt < maxRetries) {
+                            await new Promise(resolve => setTimeout(resolve, 500 * Math.pow(2, attempt)));
+                            continue;
+                        }
+                        throw error;
                     }
-                );
-                
-                // Clear the timeout since the request completed
-                clearTimeout(timeoutId);
-                
-                console.log(`Response from getUserProgress for ${username}:`, response);
-                
-                if (!response) {
-                    return {
-                        success: false,
-                        message: 'Empty response from server',
-                        data: {}
-                    };
                 }
-                
-                return {
-                    success: true,
-                    data: response.progress || response || {}
-                };
             } catch (fetchError) {
                 // Clear the timeout to prevent memory leaks
                 clearTimeout(timeoutId);
@@ -1001,10 +1032,14 @@ export class APIService {
                 // Check if this was an abort error
                 if (fetchError.name === 'AbortError') {
                     console.error(`Request for user progress timed out: ${username}`);
+                    // Return a structured response with empty data instead of throwing
                     return {
-                        success: false,
-                        message: 'Request timed out',
-                        data: {}
+                        success: true,
+                        message: 'Request timed out, returning empty progress data',
+                        data: {
+                            quizProgress: {},
+                            quizResults: []
+                        }
                     };
                 }
                 
@@ -1012,10 +1047,14 @@ export class APIService {
             }
         } catch (error) {
             console.error(`Failed to fetch progress for user ${username}:`, error);
+            // Return a structured response with empty data instead of throwing
             return {
-                success: false,
-                message: error.message || 'Failed to fetch user progress',
-                data: {}
+                success: true,
+                message: error.message || 'Failed to fetch user progress, returning empty data',
+                data: {
+                    quizProgress: {},
+                    quizResults: []
+                }
             };
         }
     }

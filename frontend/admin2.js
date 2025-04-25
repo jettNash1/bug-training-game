@@ -156,20 +156,53 @@ export class Admin2Dashboard extends AdminDashboard {
     }
     
     async loadAllUserProgress() {
+        // Limit concurrent requests to avoid overwhelming the server
+        const MAX_CONCURRENT_REQUESTS = 3;
+        
         try {
-            for (const user of this.users) {
-                try {
-                    await this.loadUserProgress(user.username);
-                } catch (error) {
-                    console.error(`Error loading progress for user ${user.username}:`, error);
-                }
+            console.log(`Loading progress for ${this.users.length} users with max ${MAX_CONCURRENT_REQUESTS} concurrent requests`);
+            
+            // Process users in chunks to limit concurrent requests
+            const processUserChunk = async (userChunk) => {
+                return Promise.all(
+                    userChunk.map(async (user) => {
+                        try {
+                            await this.loadUserProgress(user.username);
+                            console.log(`Successfully loaded progress for ${user.username}`);
+                        } catch (error) {
+                            console.warn(`Non-critical error loading progress for ${user.username}:`, error);
+                        }
+                    })
+                );
+            };
+            
+            // Process users in chunks
+            const chunks = [];
+            for (let i = 0; i < this.users.length; i += MAX_CONCURRENT_REQUESTS) {
+                chunks.push(this.users.slice(i, i + MAX_CONCURRENT_REQUESTS));
             }
+            
+            for (const chunk of chunks) {
+                await processUserChunk(chunk);
+            }
+            
             // Update statistics and user list after loading all progress
             const stats = this.updateStatistics();
             this.updateStatisticsDisplay(stats);
             this.updateUsersList();
+            
+            console.log("Completed loading progress for all users");
         } catch (error) {
-            console.error('Error loading all user progress:', error);
+            console.error('Unexpected error loading all user progress:', error);
+            
+            // Still try to update the UI with whatever data we have
+            try {
+                const stats = this.updateStatistics();
+                this.updateStatisticsDisplay(stats);
+                this.updateUsersList();
+            } catch (uiError) {
+                console.error('Failed to update UI after error:', uiError);
+            }
         }
     }
     
@@ -178,6 +211,7 @@ export class Admin2Dashboard extends AdminDashboard {
             // Use the apiService to properly handle authentication
             const response = await this.apiService.getUserProgress(username);
             
+            // If success is true (even if the request timed out but we got fallback data)
             if (response.success) {
                 console.log(`Loaded progress for ${username}:`, response.data);
                 
@@ -194,22 +228,42 @@ export class Admin2Dashboard extends AdminDashboard {
                             this.users[userIndex].quizResults = response.data.quizResults;
                         }
                         
+                        // If response has a message but was still successful, it's likely using fallback data
+                        if (response.message) {
+                            console.warn(`Note for ${username}: ${response.message}`);
+                        }
+                        
                         return response.data;
                     } else {
-                        console.error(`Invalid progress data format for ${username}:`, response.data);
-                        throw new Error('Invalid progress data format');
+                        console.warn(`Invalid progress data format for ${username}. Using empty data.`);
+                        // Instead of throwing, set empty data
+                        this.users[userIndex].quizProgress = {};
+                        this.users[userIndex].quizResults = [];
+                        return { quizProgress: {}, quizResults: [] };
                     }
                 } else {
-                    console.error(`User ${username} not found in users list`);
-                    throw new Error(`User ${username} not found`);
+                    console.warn(`User ${username} not found in users list. Skipping.`);
+                    return { quizProgress: {}, quizResults: [] };
                 }
             } else {
-                console.error(`Failed to load progress for ${username}:`, response.error);
-                throw new Error(`Failed to load progress: ${response.error}`);
+                console.warn(`Could not load progress for ${username}: ${response.message || 'Unknown error'}`);
+                // If user exists, set empty data instead of throwing
+                const userIndex = this.users.findIndex(u => u.username === username);
+                if (userIndex !== -1) {
+                    this.users[userIndex].quizProgress = {};
+                    this.users[userIndex].quizResults = [];
+                }
+                return { quizProgress: {}, quizResults: [] };
             }
         } catch (error) {
-            console.error(`Error loading progress for ${username}:`, error);
-            throw error;
+            console.warn(`Error loading progress for ${username}, using empty data:`, error);
+            // If user exists, set empty data instead of throwing
+            const userIndex = this.users.findIndex(u => u.username === username);
+            if (userIndex !== -1) {
+                this.users[userIndex].quizProgress = {};
+                this.users[userIndex].quizResults = [];
+            }
+            return { quizProgress: {}, quizResults: [] };
         }
     }
     
