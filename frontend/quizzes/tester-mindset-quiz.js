@@ -1248,9 +1248,9 @@ export class TesterMindsetQuiz extends BaseQuiz {
         this.questionStartTime = Date.now();
 
         // Update timer display
-        const timerContainer = document.getElementById('timer-container');
-        if (timerContainer) {
-            timerContainer.textContent = `Time remaining: ${this.remainingTime}s`;
+        const timerDisplay = document.getElementById('timer-display');
+        if (timerDisplay) {
+            timerDisplay.textContent = `${this.remainingTime}`;
         }
 
         // Start the countdown
@@ -1258,14 +1258,17 @@ export class TesterMindsetQuiz extends BaseQuiz {
             this.remainingTime--;
             
             // Update timer display
-            if (timerContainer) {
-                timerContainer.textContent = `Time remaining: ${this.remainingTime}s`;
+            if (timerDisplay) {
+                timerDisplay.textContent = `${this.remainingTime}`;
                 
                 // Add warning class when time is running low
-                if (this.remainingTime <= 5) {
-                    timerContainer.classList.add('timer-warning');
-                } else {
-                    timerContainer.classList.remove('timer-warning');
+                const timerContainer = document.getElementById('timer-container');
+                if (timerContainer) {
+                    if (this.remainingTime <= 5) {
+                        timerContainer.classList.add('timer-warning');
+                    } else {
+                        timerContainer.classList.remove('timer-warning');
+                    }
                 }
             }
 

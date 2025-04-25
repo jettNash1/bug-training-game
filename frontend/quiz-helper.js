@@ -431,7 +431,7 @@ export class BaseQuiz {
         // Update timer display
         const timerDisplay = document.getElementById('timer-display');
         if (timerDisplay) {
-            timerDisplay.textContent = `Time remaining: ${this.remainingTime}s`;
+            timerDisplay.textContent = `${this.remainingTime}`;
         }
 
         // Start the countdown
@@ -440,7 +440,7 @@ export class BaseQuiz {
             
             // Update timer display
             if (timerDisplay) {
-                timerDisplay.textContent = `Time remaining: ${this.remainingTime}s`;
+                timerDisplay.textContent = `${this.remainingTime}`;
             }
 
             // Check if time is up
@@ -457,17 +457,20 @@ export class BaseQuiz {
             return;
         }
         
-        const timerContainer = document.getElementById('timer-container');
-        if (!timerContainer) return;
+        const timerDisplay = document.getElementById('timer-display');
+        if (!timerDisplay) return;
         
         const seconds = Math.ceil(this.remainingTime / 1000);
-        timerContainer.textContent = `Time remaining: ${seconds}s`;
+        timerDisplay.textContent = `${seconds}`;
         
         // Add warning class when time is running low (less than 5 seconds)
-        if (seconds <= 5) {
-            timerContainer.classList.add('timer-warning');
-        } else {
-            timerContainer.classList.remove('timer-warning');
+        const timerContainer = document.getElementById('timer-container');
+        if (timerContainer) {
+            if (seconds <= 5) {
+                timerContainer.classList.add('timer-warning');
+            } else {
+                timerContainer.classList.remove('timer-warning');
+            }
         }
     }
 
