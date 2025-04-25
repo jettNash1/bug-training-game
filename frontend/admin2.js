@@ -1040,8 +1040,16 @@ export class Admin2Dashboard extends AdminDashboard {
             <button class="close-message">&times;</button>
         `;
         
-        // Add to the page
-        document.body.appendChild(infoContainer);
+        // Find the main content area to insert at the top
+        const contentArea = document.querySelector('main.content-area');
+        
+        if (contentArea) {
+            // Insert at the top of the content area
+            contentArea.insertBefore(infoContainer, contentArea.firstChild);
+        } else {
+            // Fallback to body if content area not found
+            document.body.appendChild(infoContainer);
+        }
         
         // Add event listener to close the message
         infoContainer.querySelector('.close-message').addEventListener('click', () => {
