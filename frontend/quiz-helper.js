@@ -44,13 +44,13 @@ export class BaseQuiz {
         // Create a global reference immediately for debugging
         window.quizHelper = this;
         
-        // Initialize timer value with a temporary default
-        // The actual value will be set by loadTimerSettings
-        this.timePerQuestion = null;
+        // Initialize timer value with a default of 60 seconds
+        // This ensures we have a valid default even before the async API call completes
+        this.timePerQuestion = 60;
         this.remainingTime = null;
         this.questionStartTime = null; // Track when each question starts
         
-        // Load timer settings from API immediately
+        // Load timer settings from API immediately to update the default if needed
         this.initializeTimerSettings();
         
         // For guide settings, we'll wait until the quiz starts
@@ -168,12 +168,11 @@ export class BaseQuiz {
                 }
             }
 
-            // If all else fails, use default value
-            this.timePerQuestion = 60; // Use admin panel default of 60 seconds
-            console.log('[Quiz] Using default timer value:', this.timePerQuestion);
+            // If we reach here, we'll keep the default value of 60 that was set in the constructor
+            console.log('[Quiz] Keeping default timer value:', this.timePerQuestion);
         } catch (error) {
             console.warn('Failed to load timer settings, using default value:', error);
-            this.timePerQuestion = 60; // Use admin panel default of 60 seconds
+            // No need to set timePerQuestion to 60 since we already did in the constructor
         }
     }
 
@@ -421,11 +420,9 @@ export class BaseQuiz {
             clearInterval(this.questionTimer);
         }
 
-        // Set default timer value (30 seconds) if not set
-        if (!this.timePerQuestion) {
-            this.timePerQuestion = 30;
-            console.log('[Quiz] Using default timer value:', this.timePerQuestion);
-        }
+        // No need to set a default value here since we've already set it in the constructor
+        // and it may have been updated by initializeTimerSettings
+        console.log('[Quiz] Current timer value:', this.timePerQuestion);
 
         // Reset remaining time
         this.remainingTime = this.timePerQuestion;

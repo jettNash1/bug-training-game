@@ -1335,11 +1335,8 @@ export class FullyScriptedQuiz extends BaseQuiz {
             this.questionTimer = null;
         }
 
-        // Set default timer value if not set
-        if (!this.timePerQuestion) {
-            this.timePerQuestion = 30;
-            console.log('[Quiz] Using default timer value:', this.timePerQuestion);
-        }
+        // No need to set default timer value here - use the value from BaseQuiz
+        // which is either the admin-set value or 60 seconds default
 
         // Reset remaining time
         this.remainingTime = this.timePerQuestion;

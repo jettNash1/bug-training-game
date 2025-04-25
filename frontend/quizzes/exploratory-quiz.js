@@ -1692,11 +1692,6 @@ export class ExploratoryQuiz extends BaseQuiz {
             this.questionTimer = null;
         }
 
-        // Set default timer value if not set
-        if (!this.timePerQuestion) {
-            this.timePerQuestion = 30;
-        }
-
         // Reset remaining time
         this.remainingTime = this.timePerQuestion;
         this.questionStartTime = Date.now();
