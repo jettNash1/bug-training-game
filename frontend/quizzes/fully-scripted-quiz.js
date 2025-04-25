@@ -62,7 +62,7 @@ export class FullyScriptedQuiz extends BaseQuiz {
             return;
         }
 
-        // Basic Scenarios (IDs 1-5)
+        // Basic Scenarios (IDs 1-5, 16-20)
         this.basicScenarios = [
             {
                 id: 1,
@@ -206,6 +206,151 @@ export class FullyScriptedQuiz extends BaseQuiz {
                         text: 'Within each test suite in the test script',
                         outcome: 'While smoke tests are important, they should be in the topmost suite',
                         experience: 5
+                    }
+                ]
+            },
+            {
+                id: 16,
+                level: 'Basic',
+                title: 'Environment Metrics',
+                description: 'What is the purpose of removing dashes \'-\' from the Result and Date column cells of greyed out environment sections?',
+                options: [
+                    {
+                        text: 'To calculate the number of tests remaining or not started',
+                        outcome: 'Correct! While greying out does indicate sections not in scope, removing dashes serves as to calculate the number of tests remaining or not started.',
+                        experience: 15,
+                        tool: 'Environment Metrics'
+                    },
+                    {
+                        text: 'To indicate that these sections are no longer included in the test scope',
+                        outcome: 'While greying out does indicate sections not in scope, removing dashes serves as to calculate the number of tests remaining or not started.',
+                        experience: -5
+                    },
+                    {
+                        text: 'To improve the visual appearance of the test script',
+                        outcome: 'While it might improve visual appearance, its purpose is to calculate the number of tests remaining or not started.',
+                        experience: -10
+                    },
+                    {
+                        text: 'To prevent formula errors in the spreadsheet',
+                        outcome: 'Removing the dashes calculates the number of tests remaining or not started.',
+                        experience: 0
+                    }
+                ]
+            },
+            {
+                id: 17,
+                level: 'Basic',
+                title: 'Change Impact',
+                description: 'What impact on a script may late changes made to the software during the scheduled test phase have?',
+                options: [
+                    {
+                        text: 'It improves test coverage by adding new test cases',
+                        outcome: 'Late changes typically complicate testing rather than improving coverage.',
+                        experience: -5
+                    },
+                    {
+                        text: 'It helps identify previously undiscovered defects',
+                        outcome: 'New changes might introduce new defects, although any previous defects on critical functionality should be previously covered by initial test cases.',
+                        experience: -10
+                    },
+                    {
+                        text: 'It can lead to outdated and redundant test cases',
+                        outcome: 'Correct! These decisions can impact on test execution by having outdated and redundant test cases that were developed against original designs',
+                        experience: 15,
+                        tool: 'Change Impact'
+                    },
+                    {
+                        text: 'It simplifies the test execution process',
+                        outcome: 'Late changes typically complicate the test execution process.',
+                        experience: 0
+                    }
+                ]
+            },
+            {
+                id: 18,
+                level: 'Basic',
+                title: 'Compatibility Testing',
+                description: 'What is recommended for compatibility testing in a fully scripted approach?',
+                options: [
+                    {
+                        text: 'To run all test cases on all environments',
+                        outcome: 'This would prove potentially impossible and extremely time consuming.',
+                        experience: -5
+                    },
+                    {
+                        text: 'To skip compatibility testing and focusing only on primary environments',
+                        outcome: 'Compatibility testing is a fundamental part of the fully scripted approach.', 
+                        experience: -10
+                    },
+                    {
+                        text: 'To run pre-defined smoke tests on a range of environments',
+                        outcome: 'Correct! Smoke tests should be performed on a wide range of environments across desktop, tablet and mobile platforms unless a certain environment type is out of scope.',
+                        experience: 15,
+                        tool: 'Compatibility Testing'
+                    },
+                    {
+                        text: 'To create unique test cases for each device type',
+                        outcome: 'The same smoke tests should be performed across different environments rather than creating unique test cases for each device as this could result in incomplete coverage.',
+                        experience: 0
+                    }
+                ]
+            },
+            {
+                id: 19,
+                level: 'Basic',
+                title: 'Fully Scripted Scoping',
+                description: 'What is the primary context in which fully scripted testing is recommended?',
+                options: [
+                    {
+                        text: 'It is recommended larger scale or complex projects with specific scope requirements',
+                        outcome: 'Correct! fully scripted testing is for larger scale or complex projects that need specific test scenarios.',
+                        experience: 15,
+                        tool: 'Fully Scripted Scoping'
+                    },
+                    {
+                        text: 'It is recommended for simple projects with minimal requirements',
+                        outcome: 'Fully scripted testing is for larger scale or complex projects that need specific test scenarios.',
+                        experience: -10
+                    },
+                    {
+                        text: 'It is recommended for projects where exploratory testing is the main focus.',
+                        outcome: 'Fully scripted testing may limit time for exploratory testing because of its in-depth scenario based tests.',
+                        experience: -5
+                    },
+                    {
+                        text: 'It is recommended for mobile application testing only.',
+                        outcome: 'Fully scripted testing is applicable across different platforms including desktop, tablet, and mobile.',
+                        experience: 0
+                    }
+                ]
+            },
+            {
+                id: 20,
+                level: 'Basic',
+                title: 'Fully Scripted Testing Characteristics',
+                description: 'Which of the following is a characteristic required of testers who should execute fully scripted tests?',
+                options: [
+                    {
+                        text: 'The ability to follow detailed test steps with minimal deviation',
+                        outcome: 'Correct! Testers need to have the qualities and ability to follow a sequence of detailed test steps with minimal deviation from the script.',
+                        experience: 15,
+                        tool: 'Fully Scripted Testing Characteristics'
+                    },
+                    {
+                        text: 'The ability to identify software architecture flaws',
+                        outcome: 'Architecture flaws are defined as technical in nature and are generally not part of a manual test script.',
+                        experience: -10
+                    },
+                    {
+                        text: 'Advanced coding skills in multiple programming languages',
+                        outcome: 'Coding skills are not a requirement for testers executing fully scripted tests, as scenarios follow functional behaviour.',
+                        experience: -5
+                    },
+                    {
+                        text: 'Experience in designing user interfaces',
+                        outcome: 'User Interface design experience is not required for testers as scenarios follow functional behaviour.',
+                        experience: 0
                     }
                 ]
             }

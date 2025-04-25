@@ -5,13 +5,13 @@ import { QuizUser } from '../QuizUser.js';
 export class SanitySmokeQuiz extends BaseQuiz {
     constructor() {
         const config = {
-            maxXP: 300,
-            totalQuestions: 15,
+            maxXP: 400,
+            totalQuestions: 20,
             passPercentage: 70,
             levelThresholds: {
-                basic: { questions: 5, minXP: 35 },
-                intermediate: { questions: 10, minXP: 110 },
-                advanced: { questions: 15, minXP: 235 }
+                basic: { questions: 10, minXP: 70 },
+                intermediate: { questions: 15, minXP: 145 },
+                advanced: { questions: 20, minXP: 315 }
             },
             performanceThresholds: [
                 { threshold: 90, message: '🏆 Outstanding! You\'re a sanity and smoke testing expert!' },
@@ -67,7 +67,7 @@ export class SanitySmokeQuiz extends BaseQuiz {
             return;
         }
 
-        // Basic Scenarios (IDs 1-5)
+        // Basic Scenarios (IDs 1-10, expanded from 1-5)
         this.basicScenarios = [
             {
                 id: 1,
@@ -210,6 +210,151 @@ export class SanitySmokeQuiz extends BaseQuiz {
                     {
                         text: 'External consultants should perform smoke tests',
                         outcome: 'External consultants are typically not involved in routine smoke testing processes.',
+                        experience: 0
+                    }
+                ]
+            },
+            {
+                id: 16,
+                level: 'Basic',
+                title: 'Sanity Test Performance',
+                description: 'Under which circumstances is sanity testing generally performed?',
+                options: [
+                    {
+                        text: 'On builds where production deployment is required immediately',
+                        outcome: 'Correct! Sanity testing is a subset of regression testing and focus is on changes to specific functionality and critical surrounding areas.',
+                        experience: 15,
+                        tool: 'Sanity Test Performance'
+                    },
+                    {
+                        text: 'During the initial development phase by the development team',
+                        outcome: 'Sanity testing should not be restricted to the initial development phase; it can be performed whenever needed for quick validation of changes.',
+                        experience: -5
+                    },
+                    {
+                        text: 'After complete regression testing is finished for the release.',
+                        outcome: 'Sanity testing as a subset of regression testing, not something that happens after it.',
+                        experience: -10
+                    },
+                    {
+                        text: 'When there is enough time for extensive testing on the release.',
+                        outcome: 'Sanity testing is appropriate when time is limited, it helps in the scenario when the time for testing of the product is limited.',
+                        experience: 0
+                    }
+                ]
+            },
+            {
+                id: 17,
+                level: 'Basic',
+                title: 'Sanity Test Failure',
+                description: 'What happens if a sanity test fails?',
+                options: [
+                    {
+                        text: 'Any minor issue failures are documented and fixed later',
+                        outcome: 'Failure should result in rejection of the software product.',
+                        experience: -5
+                    },
+                    {
+                        text: 'All failed components are retested by the development team',
+                        outcome: 'If any components are failed they will be rejected by the test team and subsequently fixed for another round of testing for the test team.',
+                        experience: -10
+                    },
+                    {
+                        text: 'The software product is rejected by the testing team.',
+                        outcome: 'Correct! If the sanity test fails, the software product is rejected by the testing team to save on time and money.',
+                        experience: 15,
+                        tool: 'Sanity Test Failure'
+                    },
+                    {
+                        text: 'The development team performs regression testing',
+                        outcome: 'The development team doesn\'t perform regression testing upon sanity test failure. The test team will perform sanity tests a subset of regression testing.',
+                        experience: 0
+                    }
+                ]
+            },
+            {
+                id: 18,
+                level: 'Basic',
+                title: 'Sanity Test Scenarios',
+                description: 'Why is sanity testing particularly useful in certain development scenarios?',
+                options: [
+                    {
+                        text: 'It provides comprehensive documentation for all test cases',
+                        outcome: 'Sanity testing is usually undocumented, so comprehensive documentation is not a feature.',
+                        experience: -5
+                    },
+                    {
+                        text: 'It thoroughly tests all aspects of the application',
+                        outcome: 'Sanity testing covers only a few areas in the system application rather than testing all aspects thoroughly.',
+                        experience: -10
+                    },
+                    {
+                        text: 'It can be carried out quickly when testing time is limited.',
+                        outcome: 'Correct! Sanity tests help in the scenario when the time for testing of the product is limited.',
+                        experience: 15,
+                        tool: 'Sanity Test Scenario'
+                    },
+                    {
+                        text: 'It focuses primarily on design structure issues',
+                        outcome: 'Emphasis should be on detailed documentation, not minimal detail that requires interpretation.',
+                        experience: 0
+                    }
+                ]
+            },
+            {
+                id: 19,
+                level: 'Basic',
+                title: 'Smoke Test Advantage',
+                description: 'What is the main advantage of smoke testing?',
+                options: [
+                    {
+                        text: 'It reduces the risk of major bugs not being identified in software',
+                        outcome: 'Correct! It reduces the risk of major bugs not being identified in software, as it focusses is on functionality critical to the system under test.',
+                        experience: 15,
+                        tool: 'Smoke Test Advantages'
+                    },
+                    {
+                        text: 'It eliminates the need for functional testing for the system under test',
+                        outcome: 'Smoke testing is a precursor to functional testing, not a replacement',
+                        experience: -10
+                    },
+                    {
+                        text: 'It ensures the software will be free of defects when released.',
+                        outcome: 'While smoke testing improves quality, it doesn\'t guarantee the software will be completely free of defects.',
+                        experience: -5
+                    },
+                    {
+                        text: 'It identifies all possible bugs in the system under test.',
+                        outcome: 'Smoke testing focuses on critical functionality rather than attempting to find all possible bugs.',
+                        experience: 0
+                    }
+                ]
+            },
+            {
+                id: 20,
+                level: 'Basic',
+                title: 'Smoke Test Failures',
+                description: 'What should happen to all smoke test failures',
+                options: [
+                    {
+                        text: 'Smoke test failures should be raised as critical issues',
+                        outcome: 'Correct! They should be raised as critical issues as they focus on functionality critical to the system under test.',
+                        experience: 15,
+                        tool: 'Smoke Test Failure'
+                    },
+                    {
+                        text: 'They should be documented and fixed in the next sprint',
+                        outcome: 'Smoke tests should halt testing for any related area and be addressed immediately.',
+                        experience: -10
+                    },
+                    {
+                        text: 'They should be prioritised based on severity',
+                        outcome: 'All smoke test failures should be deemed critical to functionality.',
+                        experience: -5
+                    },
+                    {
+                        text: 'They should be ignored if they don\'t affect core functionality',
+                        outcome: 'Smoke tests specifically check core functionality, so failures should never be ignored.',
                         experience: 0
                     }
                 ]
@@ -734,18 +879,18 @@ export class SanitySmokeQuiz extends BaseQuiz {
         let scenario;
         const questionCount = this.player.questionHistory.length;
         
-        if (questionCount < 5) {
-            // Basic questions (0-4)
+        if (questionCount < 10) {
+            // Basic questions (0-9)
             scenario = this.basicScenarios[questionCount];
             this.player.currentScenario = questionCount;
-        } else if (questionCount < 10) {
-            // Intermediate questions (5-9)
-            scenario = this.intermediateScenarios[questionCount - 5];
-            this.player.currentScenario = questionCount - 5;
         } else if (questionCount < 15) {
-            // Advanced questions (10-14)
-            scenario = this.advancedScenarios[questionCount - 10];
+            // Intermediate questions (10-14)
+            scenario = this.intermediateScenarios[questionCount - 10];
             this.player.currentScenario = questionCount - 10;
+        } else {
+            // Advanced questions (15-19)
+            scenario = this.advancedScenarios[questionCount - 15];
+            this.player.currentScenario = questionCount - 15;
         }
 
         if (!scenario) {
@@ -760,12 +905,12 @@ export class SanitySmokeQuiz extends BaseQuiz {
         // Show level transition message at the start of each level or when level changes
         const currentLevel = this.getCurrentLevel();
         const previousLevel = questionCount > 0 ? 
-            (questionCount <= 5 ? 'Basic' : 
-             questionCount <= 10 ? 'Intermediate' : 'Advanced') : null;
+            (questionCount <= 10 ? 'Basic' : 
+             questionCount <= 15 ? 'Intermediate' : 'Advanced') : null;
             
         if (questionCount === 0 || 
-            (questionCount === 5 && currentLevel === 'Intermediate') || 
-            (questionCount === 10 && currentLevel === 'Advanced')) {
+            (questionCount === 10 && currentLevel === 'Intermediate') || 
+            (questionCount === 15 && currentLevel === 'Advanced')) {
             const transitionContainer = document.getElementById('level-transition-container');
             if (transitionContainer) {
                 transitionContainer.innerHTML = ''; // Clear any existing messages
@@ -1056,9 +1201,9 @@ export class SanitySmokeQuiz extends BaseQuiz {
         const totalAnswered = this.player.questionHistory.length;
         
         // Progress through levels based only on question count
-        if (totalAnswered >= 10) {
+        if (totalAnswered >= 15) {
             return this.advancedScenarios;
-        } else if (totalAnswered >= 5) {
+        } else if (totalAnswered >= 10) {
             return this.intermediateScenarios;
         }
         return this.basicScenarios;
@@ -1068,9 +1213,9 @@ export class SanitySmokeQuiz extends BaseQuiz {
         const totalAnswered = this.player.questionHistory.length;
         
         // Progress through levels based only on question count
-        if (totalAnswered >= 10) {
+        if (totalAnswered >= 15) {
             return 'Advanced';
-        } else if (totalAnswered >= 5) {
+        } else if (totalAnswered >= 10) {
             return 'Intermediate';
         }
         return 'Basic';

@@ -62,7 +62,7 @@ export class StandardScriptTestingQuiz extends BaseQuiz {
             return;
         }
 
-        // Basic Scenarios (IDs 1-5)
+        // Basic Scenarios (IDs 1-10, now includes 5 additional scenarios)
         this.basicScenarios = [
             {
                 id: 1,
@@ -206,6 +206,151 @@ export class StandardScriptTestingQuiz extends BaseQuiz {
                         text: 'To track bug reports raised against the system under test',
                         outcome: 'Bug tracking is handled in a separate system',
                         experience: -10
+                    }
+                ]
+            },
+            {
+                id: 16,
+                level: 'Basic',
+                title: 'Test Script Execution',
+                description: 'What should be done first when executing a standard test script?',
+                options: [
+                    {
+                        text: 'Run the set of smoke tests',
+                        outcome: 'Correct! Running the smoke tests first should identify defects in functionality critical to the application under test.',
+                        experience: 15,
+                        tool: 'Test Script Execution'
+                    },
+                    {
+                        text: 'Run compatibility tests',
+                        outcome: 'Compatibility testing should come after or, if possible, in conjunction with primary environment coverage.',
+                        experience: -5
+                    },
+                    {
+                        text: 'Focus areas should be extremely detailed and specific, breaking down every possible user action',
+                        outcome: 'This would make test execution more like scripted testing in being more specific.',
+                        experience: -10
+                    },
+                    {
+                        text: 'Begin with the user journeys',
+                        outcome: 'User journeys are executed after the functional test cases have been completed.',
+                        experience: 0
+                    }
+                ]
+            },
+            {
+                id: 17,
+                level: 'Basic',
+                title: 'Standard Scripting Advantages',
+                description: 'What is a key advantage of using standard test scripts according to the guide?',
+                options: [
+                    {
+                        text: 'They require less documentation',
+                        outcome: 'Standard scripts actually require more documentation, not less, as they need detailed test cases and steps',
+                        experience: -5
+                    },
+                    {
+                        text: 'They eliminate the need for client involvement',
+                        outcome: 'If the client prefers to be closely involved in the testing process, standard test scripts provide a clear structure for review.',
+                        experience: -10
+                    },
+                    {
+                        text: 'They ensure consistency and reproducibility across the testing team',
+                        outcome: 'Correct! Standard scripts ensure consistent execution of tests across the testing team, and over time. This is crucial for tracking progress.',
+                        experience: 15,
+                        tool: 'Standard Scripting Advantages'
+                    },
+                    {
+                        text: 'They reduce the time required for test planning',
+                        outcome: 'Standard scripts require significant planning time, as evidenced by the detailed test planning process.',
+                        experience: 0
+                    }
+                ]
+            },
+            {
+                id: 18,
+                level: 'Basic',
+                title: 'Standard Scripting Approach',
+                description: 'What is recommended when creating test cases for a standard script?',
+                options: [
+                    {
+                        text: 'Jump between different areas of the page to ensure comprehensive coverage',
+                        outcome: 'This approach should be avoided in order to create a logical flow when following the script.',
+                        experience: -5
+                    },
+                    {
+                        text: 'Focus only on positive test cases to improve execution speed',
+                        outcome: 'both positive tests (expected behaviour) and negative tests (where potential issues or errors may lie for invalid inputs) should be considered for coverage.',
+                        experience: -10
+                    },
+                    {
+                        text: 'Follow a logical process to maintain clarity for the tester',
+                        outcome: 'Correct! When writing test cases, a logical process should be observed. Avoid jumping around the page to maintain clarity for the tester.',
+                        experience: 15,
+                        tool: 'Standard Scripting Approach'
+                    },
+                    {
+                        text: 'Create test cases with minimal detail to allow for tester interpretation',
+                        outcome: 'Emphasis should be on detailed documentation, not minimal detail that requires interpretation.',
+                        experience: 0
+                    }
+                ]
+            },
+            {
+                id: 19,
+                level: 'Basic',
+                title: 'Test Case Accuracy',
+                description: 'What should be done when there are doubts about the accuracy of a test case?',
+                options: [
+                    {
+                        text: 'Mark the test case and add comments to highlight uncertainties',
+                        outcome: 'Correct! If there are doubts around any test cases, comments can be added to the cell to highlight this and confirmed by either the author or the client.',
+                        experience: 15,
+                        tool: 'Test Case Accuracy'
+                    },
+                    {
+                        text: 'Delete the test case from the script and continue with other test cases',
+                        outcome: 'Deleting the test case can cause missed defects and reduce test coverage of the application under test',
+                        experience: -10
+                    },
+                    {
+                        text: 'Run the test anyway and record all outcomes.',
+                        outcome: 'All uncertainties must be addressed as to avoid any lost testing time on areas not in scope.',
+                        experience: -5
+                    },
+                    {
+                        text: 'Always mark such cases as "failed" to be safe.',
+                        outcome: 'This would be inaccurate if there is uncertainty about requirements rather than an actual failure.',
+                        experience: 0
+                    }
+                ]
+            },
+            {
+                id: 20,
+                level: 'Basic',
+                title: 'Standard Script Allocation',
+                description: 'What factors should be considered when determining whether to use a standard test script approach?',
+                options: [
+                    {
+                        text: 'The complexity of the software and the client\'s preference for involvement',
+                        outcome: 'Correct! If the software has critical components that must function to a high standard and If the client prefers to be closely involved in the testing process, then this is the correct approach.',
+                        experience: 15,
+                        tool: 'Standard Script Allocation'
+                    },
+                    {
+                        text: 'Project budget and timeline should be factors when taking a standard scripting process into consideration',
+                        outcome: 'While budget and timeline are factors, they aren\'t the only factors to be taken into consideration. Critical components within the system should also be considered.',
+                        experience: -10
+                    },
+                    {
+                        text: 'Whether the team prefers exploratory or scripted testing',
+                        outcome: 'Team preferences should not determine the testing approach and what is best for the system under test should always be prioritised.',
+                        experience: -5
+                    },
+                    {
+                        text: 'The programming language used to develop the software should be taken into consideration',
+                        outcome: 'Programming language used for development shouldn\'t be a factor for manual testing.',
+                        experience: 0
                     }
                 ]
             }
