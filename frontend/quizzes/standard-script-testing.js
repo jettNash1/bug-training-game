@@ -370,7 +370,7 @@ export class StandardScriptTestingQuiz extends BaseQuiz {
                         experience: -5
                     },
                     {
-                        text: 'The length of time it takes to execute the specific test',
+                        text: 'The length of time it takes to execute the specific test ',
                         outcome: 'While execution time might be considered, it\'s not a primary factor.',
                         experience: 5
                     },
