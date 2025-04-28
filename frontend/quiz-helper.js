@@ -135,66 +135,93 @@ export class BaseQuiz {
         }
     }
 
+    /**
+     * Initializes the timer settings for the quiz by fetching from localStorage or API
+     * Ensures the correct timer value is used for the current quiz
+     * @returns {Promise} Resolves when timer settings are initialized
+     */
     async initializeTimerSettings() {
         try {
-            // Try to get settings from API first
-            const apiService = new APIService();
-            console.log('[Quiz] Fetching timer settings from API...');
-            const response = await apiService.getQuizTimerSettings();
-            console.log('[Quiz] API response for timer settings:', response);
+            console.log('[Quiz] Initializing timer settings for:', this.quizName);
             
-            if (response.success && response.data) {
-                const { defaultSeconds, quizTimers } = response.data;
-                console.log('[Quiz] Default seconds from API:', defaultSeconds);
-                console.log('[Quiz] Quiz-specific timers from API:', quizTimers);
-                
-                // Check if this quiz has a specific timer setting
-                if (quizTimers && this.quizName && quizTimers[this.quizName] !== undefined) {
-                    this.timePerQuestion = quizTimers[this.quizName];
-                    console.log(`[Quiz] Using quiz-specific timer for ${this.quizName}: ${this.timePerQuestion}s`);
-                } else {
-                    this.timePerQuestion = defaultSeconds;
-                    console.log(`[Quiz] Using default timer value: ${this.timePerQuestion}s`);
-                }
-                
-                // Store the value in localStorage for future use
-                localStorage.setItem('quizTimerValue', this.timePerQuestion.toString());
-                localStorage.setItem(`quizTimer_${this.quizName}`, this.timePerQuestion.toString());
-                console.log(`[Quiz] Saved timer values to localStorage: global=${this.timePerQuestion}, quiz-specific=${this.timePerQuestion}`);
-                return;
-            } else {
-                console.log('[Quiz] No valid timer settings from API, checking localStorage...');
-            }
-
-            // If API call fails, try to get quiz-specific setting from localStorage
-            if (this.quizName) {
-                const quizSpecificTimer = localStorage.getItem(`quizTimer_${this.quizName}`);
-                if (quizSpecificTimer !== null) {
-                    const timerValue = parseInt(quizSpecificTimer, 10);
-                    if (!isNaN(timerValue) && timerValue >= 0 && timerValue <= 300) {
-                        this.timePerQuestion = timerValue;
-                        console.log(`[Quiz] Using quiz-specific timer from localStorage for ${this.quizName}: ${this.timePerQuestion}s`);
-                        return;
+            // Set an initial default as fallback
+            this.timePerQuestion = 30;
+            
+            // Try to get timer settings from localStorage first (faster)
+            try {
+                const cachedSettings = localStorage.getItem('quizTimerSettings');
+                if (cachedSettings) {
+                    const timerSettings = JSON.parse(cachedSettings);
+                    console.log('[Quiz] Found timer settings in localStorage:', timerSettings);
+                    
+                    // Verify we have valid settings
+                    if (timerSettings && typeof timerSettings === 'object') {
+                        const defaultSeconds = timerSettings.defaultSeconds ?? 30;
+                        
+                        // If we have specific timer settings for this quiz, use that
+                        if (this.quizName && timerSettings.quizTimers && 
+                            timerSettings.quizTimers[this.quizName] !== undefined) {
+                            this.timePerQuestion = timerSettings.quizTimers[this.quizName];
+                            console.log(`[Quiz] Using quiz-specific timer from localStorage: ${this.timePerQuestion}s for ${this.quizName}`);
+                        } else {
+                            // Otherwise use the default if quiz-specific not found
+                            this.timePerQuestion = defaultSeconds;
+                            console.log(`[Quiz] Using default timer from localStorage: ${this.timePerQuestion}s for ${this.quizName}`);
+                        }
                     }
                 }
+            } catch (cacheError) {
+                console.warn('[Quiz] Error reading timer settings from localStorage:', cacheError);
             }
             
-            // Try global setting from localStorage
-            const storedTimerValue = localStorage.getItem('quizTimerValue');
-            if (storedTimerValue !== null) {
-                const timerValue = parseInt(storedTimerValue, 10);
-                if (!isNaN(timerValue) && timerValue >= 0 && timerValue <= 300) {
-                    this.timePerQuestion = timerValue;
-                    console.log(`[Quiz] Using global timer value from localStorage: ${this.timePerQuestion}s`);
-                    return;
+            // Always fetch from API to ensure fresh values or update cache
+            try {
+                console.log('[Quiz] Fetching fresh timer settings from API');
+                const response = await fetch('/api/settings/quiz-timer');
+                if (response.ok) {
+                    const freshSettings = await response.json();
+                    if (freshSettings && freshSettings.data) {
+                        // Cache the fresh settings
+                        localStorage.setItem('quizTimerSettings', JSON.stringify(freshSettings.data));
+                        console.log('[Quiz] Updated localStorage with fresh timer settings');
+                        
+                        // If we have specific timer settings for this quiz from API, update
+                        if (this.quizName && freshSettings.data.quizTimers && 
+                            freshSettings.data.quizTimers[this.quizName] !== undefined) {
+                            this.timePerQuestion = freshSettings.data.quizTimers[this.quizName];
+                            console.log(`[Quiz] Updated from API: Using quiz-specific timer: ${this.timePerQuestion}s`);
+                        } else if (freshSettings.data.defaultSeconds !== undefined) {
+                            // Otherwise use the default if quiz-specific not found
+                            this.timePerQuestion = freshSettings.data.defaultSeconds;
+                            console.log(`[Quiz] Updated from API: Using default timer: ${this.timePerQuestion}s`);
+                        }
+                        
+                        // If timer is already running, update it with new values
+                        if (this.remainingTime !== null && this.questionTimer) {
+                            console.log(`[Quiz] Updating active timer with new settings: ${this.timePerQuestion}s`);
+                            // Only reset timer if question just started (within 2 seconds)
+                            const questionElapsed = (Date.now() - (this.questionStartTime || 0)) / 1000;
+                            if (questionElapsed < 2) {
+                                this.remainingTime = this.timePerQuestion;
+                                this.updateTimerDisplay();
+                            }
+                        }
+                    }
+                } else {
+                    console.warn(`[Quiz] API returned ${response.status} when fetching timer settings`);
                 }
+            } catch (apiError) {
+                console.warn('[Quiz] Failed to fetch timer settings from API, using cached values', apiError);
             }
-
-            // If we reach here, we'll keep the default value of 60 that was set in the constructor
-            console.log(`[Quiz] Keeping default timer value: ${this.timePerQuestion}s`);
+            
+            // Log final timer value
+            console.log(`[Quiz] Final timer value for ${this.quizName}: ${this.timePerQuestion}s`);
+            return this.timePerQuestion;
         } catch (error) {
-            console.warn('[Quiz] Failed to load timer settings, using default value:', error);
-            // No need to set timePerQuestion to 60 since we already did in the constructor
+            console.error('[Quiz] Error initializing timer settings:', error);
+            // Fallback to reasonable default if something goes wrong
+            this.timePerQuestion = 30;
+            return this.timePerQuestion;
         }
     }
 
@@ -411,7 +438,9 @@ export class BaseQuiz {
         document.getElementById('finish-button')?.addEventListener('click', () => this.finishQuiz());
     }
 
-    startGame() {
+    async startGame() {
+        console.log('[Quiz] Starting game, initializing settings...');
+        
         this.player.name = localStorage.getItem('username');
         if (!this.player.name) {
             window.location.href = '/login.html';
@@ -424,16 +453,28 @@ export class BaseQuiz {
             console.log('[Quiz] Setting quiz name in startGame:', this.quizName);
         }
         
-        // Initialize or reinitialize guide settings
-        if (this.quizName) {
-            console.log('[Quiz] Initializing guide settings in startGame');
-            this.initializeGuideSettings();
+        try {
+            // Initialize or reinitialize guide settings
+            if (this.quizName) {
+                console.log('[Quiz] Initializing guide settings in startGame');
+                await this.initializeGuideSettings();
+            }
+            
+            // Create a global reference for debugging
+            window.quizHelper = this;
+            
+            // Wait for timer settings to be initialized before showing the question
+            // This ensures the correct timer value is used for the first question
+            console.log('[Quiz] Initializing timer settings before starting game...');
+            await this.initializeTimerSettings();
+            console.log('[Quiz] Timer settings initialized in startGame, timePerQuestion:', this.timePerQuestion);
+            
+            // Now it's safe to start the quiz with the correct timer value
+            this.showQuestion();
+        } catch (error) {
+            console.error('[Quiz] Error in startGame:', error);
+            this.showError('Failed to start the quiz. Please refresh the page and try again.');
         }
-        
-        // Create a global reference for debugging
-        window.quizHelper = this;
-        
-        this.showQuestion();
     }
 
     initializeTimer() {
@@ -1216,6 +1257,120 @@ export class BaseQuiz {
                 toolElement.textContent = '';
             }
         }
+    }
+
+    /**
+     * Shows and starts the timer for the current question
+     */
+    showTimer() {
+        // Check if timer is disabled (0 seconds)
+        if (this.timePerQuestion <= 0) {
+            console.log('[Quiz] Timer is disabled (set to 0 seconds)');
+            const timerContainer = document.getElementById('timer-container');
+            if (timerContainer) {
+                timerContainer.style.display = 'none';
+            }
+            return;
+        }
+
+        // Timer is enabled, show and start it
+        const timerContainer = document.getElementById('timer-container');
+        if (timerContainer) {
+            timerContainer.style.display = 'block';
+        }
+        
+        // Reset timer state
+        this.timeLeft = this.timePerQuestion;
+        this.timerStarted = true;
+        
+        // Update timer display
+        const timerElement = document.getElementById('timer');
+        if (timerElement) {
+            timerElement.textContent = this.timeLeft;
+        }
+        
+        console.log(`[Quiz] Starting timer with ${this.timePerQuestion} seconds`);
+        
+        // Clear any existing timer interval
+        if (this.timerInterval) {
+            clearInterval(this.timerInterval);
+        }
+        
+        // Start the countdown
+        this.timerInterval = setInterval(() => {
+            this.timeLeft -= 1;
+            
+            if (timerElement) {
+                timerElement.textContent = this.timeLeft;
+            }
+            
+            if (this.timeLeft <= 0) {
+                console.log('[Quiz] Timer expired, moving to next question');
+                clearInterval(this.timerInterval);
+                this.timerInterval = null;
+                this.handleTimerExpired();
+            }
+        }, 1000);
+    }
+
+    /**
+     * Handles behavior when a quiz timer runs out
+     * @param {boolean} autoAdvance - Whether to automatically advance to the next question
+     */
+    handleTimerExpired(autoAdvance = false) {
+        console.log('[Quiz] Timer expired');
+        
+        this.logQuestionTimeout();
+        
+        if (autoAdvance) {
+            console.log('[Quiz] Auto-advancing to next question');
+            this.moveToNextQuestion();
+        } else {
+            // Disable answer buttons
+            this.disableAnswerButtons();
+            
+            // Show timeout notification
+            const notification = document.getElementById('timer-expired-notification');
+            if (notification) {
+                notification.classList.add('show');
+                setTimeout(() => {
+                    notification.classList.remove('show');
+                }, 3000);
+            }
+        }
+    }
+    
+    /**
+     * Logs when a question times out
+     */
+    logQuestionTimeout() {
+        console.log(`[Quiz] Question ${this.currentQuestionIndex + 1} timed out after ${this.timePerQuestion} seconds`);
+        
+        // Add to results as timed out
+        this.results.push({
+            questionIndex: this.currentQuestionIndex,
+            question: this.questions[this.currentQuestionIndex].question,
+            userAnswer: null,
+            correctAnswer: this.questions[this.currentQuestionIndex].correctAnswer,
+            timedOut: true,
+            timeTaken: this.timePerQuestion
+        });
+        
+        // Mark as answered to prevent double-counting
+        this.currentQuestionAnswered = true;
+    }
+
+    /**
+     * Disables all answer buttons to prevent further answers
+     */
+    disableAnswerButtons() {
+        console.log('[Quiz] Disabling answer buttons');
+        
+        const answerButtons = document.querySelectorAll('.answer-option');
+        answerButtons.forEach(button => {
+            button.disabled = true;
+            button.classList.add('disabled');
+        });
     }
 }
 

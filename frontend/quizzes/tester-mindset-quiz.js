@@ -676,6 +676,7 @@ export class TesterMindsetQuiz extends BaseQuiz {
         
         try {
             this.isLoading = true;
+            
             // Show loading indicator
             const loadingIndicator = document.getElementById('loading-indicator');
             if (loadingIndicator) {
@@ -714,6 +715,11 @@ export class TesterMindsetQuiz extends BaseQuiz {
             if (this.questionTimer) {
                 clearInterval(this.questionTimer);
             }
+            
+            // Ensure timer settings are properly initialized before displaying the first scenario
+            console.log('[TesterMindsetQuiz] Initializing timer settings before starting the quiz...');
+            await this.initializeTimerSettings();
+            console.log('[TesterMindsetQuiz] Timer initialized with value:', this.timePerQuestion);
             
             // Display the first scenario and start the timer
             await this.displayScenario();

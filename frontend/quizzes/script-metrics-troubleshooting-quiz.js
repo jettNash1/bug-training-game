@@ -20,7 +20,7 @@ export class ScriptMetricsTroubleshootingQuiz extends BaseQuiz {
         
         // Set the quiz name
         Object.defineProperty(this, 'quizName', {
-            value: 'script-metrics-troubleshooting',
+            value: 'script metrics troubleshooting',
             writable: false,
             configurable: false,
             enumerable: true
