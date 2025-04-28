@@ -5,8 +5,8 @@ import { QuizUser } from '../QuizUser.js';
 export class SanitySmokeQuiz extends BaseQuiz {
     constructor() {
         const config = {
-            maxXP: 400,
-            totalQuestions: 20,
+            maxXP: 300,
+            totalQuestions: 15,
             passPercentage: 70,
             levelThresholds: {
                 basic: { questions: 10, minXP: 70 },
