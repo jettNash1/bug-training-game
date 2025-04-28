@@ -624,6 +624,8 @@ export class BaseQuiz {
         const timerContainer = document.getElementById('timer-container');
         if (timerContainer) {
             timerContainer.style.display = 'block';
+            // Ensure the warning class is removed at the start of a new timer
+            timerContainer.classList.remove('timer-warning');
         }
 
         // Ensure we have a valid timePerQuestion value
@@ -636,11 +638,8 @@ export class BaseQuiz {
         this.remainingTime = this.timePerQuestion;
         this.questionStartTime = Date.now();
 
-        // Update timer display
-        const timerDisplay = document.getElementById('timer-display');
-        if (timerDisplay) {
-            timerDisplay.textContent = `${this.remainingTime}`;
-        }
+        // Update timer display using the proper method
+        this.updateTimerDisplay();
 
         // Print debug information
         this.debugTimerSettings();
@@ -649,10 +648,8 @@ export class BaseQuiz {
         this.questionTimer = setInterval(() => {
             this.remainingTime--;
             
-            // Update timer display
-            if (timerDisplay) {
-                timerDisplay.textContent = `${this.remainingTime}`;
-            }
+            // Update timer display using the proper method
+            this.updateTimerDisplay();
 
             // Check if time is up
             if (this.remainingTime <= 0) {
@@ -671,13 +668,13 @@ export class BaseQuiz {
         const timerDisplay = document.getElementById('timer-display');
         if (!timerDisplay) return;
         
-        const seconds = Math.ceil(this.remainingTime / 1000);
-        timerDisplay.textContent = `${seconds}`;
+        // Display the remaining time in seconds
+        timerDisplay.textContent = `${this.remainingTime}`;
         
         // Add warning class when time is running low (less than 5 seconds)
         const timerContainer = document.getElementById('timer-container');
         if (timerContainer) {
-            if (seconds <= 5) {
+            if (this.remainingTime <= 5) {
                 timerContainer.classList.add('timer-warning');
             } else {
                 timerContainer.classList.remove('timer-warning');
