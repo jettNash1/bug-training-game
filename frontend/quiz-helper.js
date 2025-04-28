@@ -58,12 +58,22 @@ export class BaseQuiz {
                     // If we have specific timer settings for this quiz, use that
                     if (this.quizName && timerSettings.quizTimers && 
                         timerSettings.quizTimers[this.quizName] !== undefined) {
+                        // Ensure we treat 0 as a valid value (disabled timer)
                         this.timePerQuestion = timerSettings.quizTimers[this.quizName];
                         console.log(`[Quiz] Constructor: Using quiz-specific timer from localStorage: ${this.timePerQuestion}s`);
+                        if (this.timePerQuestion === 0) {
+                            console.log('[Quiz] Constructor: Timer is disabled for this quiz');
+                            this.timerDisabled = true;
+                        }
                     } else if (timerSettings.defaultSeconds !== undefined) {
                         // Otherwise use the default
+                        // Ensure we treat 0 as a valid value (disabled timer)
                         this.timePerQuestion = timerSettings.defaultSeconds;
                         console.log(`[Quiz] Constructor: Using default timer from localStorage: ${this.timePerQuestion}s`);
+                        if (this.timePerQuestion === 0) {
+                            console.log('[Quiz] Constructor: Timer is disabled by default');
+                            this.timerDisabled = true;
+                        }
                     }
                 }
             } else {
@@ -74,6 +84,10 @@ export class BaseQuiz {
                     if (!isNaN(defaultSeconds)) {
                         this.timePerQuestion = defaultSeconds;
                         console.log(`[Quiz] Constructor: Using legacy timer value from localStorage: ${this.timePerQuestion}s`);
+                        if (this.timePerQuestion === 0) {
+                            console.log('[Quiz] Constructor: Timer is disabled by legacy setting');
+                            this.timerDisabled = true;
+                        }
                     }
                 }
             }
@@ -197,10 +211,24 @@ export class BaseQuiz {
                             timerSettings.quizTimers[this.quizName] !== undefined) {
                             this.timePerQuestion = timerSettings.quizTimers[this.quizName];
                             console.log(`[Quiz] Using quiz-specific timer from localStorage: ${this.timePerQuestion}s for ${this.quizName}`);
-                } else {
+                            // Check if timer is disabled
+                            if (this.timePerQuestion === 0) {
+                                console.log('[Quiz] Timer is disabled for this quiz');
+                                this.timerDisabled = true;
+                            } else {
+                                this.timerDisabled = false;
+                            }
+                        } else {
                             // Otherwise use the default if quiz-specific not found
-                    this.timePerQuestion = defaultSeconds;
+                            this.timePerQuestion = defaultSeconds;
                             console.log(`[Quiz] Using default timer from localStorage: ${this.timePerQuestion}s for ${this.quizName}`);
+                            // Check if timer is disabled
+                            if (this.timePerQuestion === 0) {
+                                console.log('[Quiz] Timer is disabled by default');
+                                this.timerDisabled = true;
+                            } else {
+                                this.timerDisabled = false;
+                            }
                         }
                     }
                 }
@@ -226,10 +254,24 @@ export class BaseQuiz {
                         freshSettings.quizTimers[this.quizName] !== undefined) {
                         this.timePerQuestion = freshSettings.quizTimers[this.quizName];
                         console.log(`[Quiz] Updated from API: Using quiz-specific timer: ${this.timePerQuestion}s`);
+                        // Check if timer is disabled
+                        if (this.timePerQuestion === 0) {
+                            console.log('[Quiz] Timer is disabled for this quiz');
+                            this.timerDisabled = true;
+                        } else {
+                            this.timerDisabled = false;
+                        }
                     } else if (freshSettings.defaultSeconds !== undefined) {
                         // Otherwise use the default if quiz-specific not found
                         this.timePerQuestion = freshSettings.defaultSeconds;
                         console.log(`[Quiz] Updated from API: Using default timer: ${this.timePerQuestion}s`);
+                        // Check if timer is disabled
+                        if (this.timePerQuestion === 0) {
+                            console.log('[Quiz] Timer is disabled by default');
+                            this.timerDisabled = true;
+                        } else {
+                            this.timerDisabled = false;
+                        }
                     }
                     
                     // If timer is already running, update it with new values
@@ -256,6 +298,7 @@ export class BaseQuiz {
             console.error('[Quiz] Error initializing timer settings:', error);
             // Fallback to reasonable default if something goes wrong
             this.timePerQuestion = 30;
+            this.timerDisabled = false;
             return this.timePerQuestion;
         }
     }
@@ -555,6 +598,27 @@ export class BaseQuiz {
         // and it may have been updated by initializeTimerSettings
         console.log('[Quiz] Current timer value:', this.timePerQuestion);
 
+        // Check if timer is disabled (set to 0)
+        if (this.timePerQuestion === 0) {
+            console.log('[Quiz] Timer is disabled (set to 0 seconds)');
+            const timerContainer = document.getElementById('timer-container');
+            if (timerContainer) {
+                timerContainer.style.display = 'none';
+            }
+            // Set timerDisabled flag to handle timeUp events
+            this.timerDisabled = true;
+            // Print debug information
+            this.debugTimerSettings();
+            return; // Exit early, don't start the timer
+        } else {
+            // Timer is enabled, ensure it's visible
+            const timerContainer = document.getElementById('timer-container');
+            if (timerContainer) {
+                timerContainer.style.display = 'block';
+            }
+            this.timerDisabled = false;
+        }
+
         // Ensure we have a valid timePerQuestion value
         if (this.timePerQuestion === undefined || this.timePerQuestion === null) {
             console.warn('[Quiz] timePerQuestion is undefined or null, using fallback value of 30 seconds');
@@ -614,8 +678,23 @@ export class BaseQuiz {
         }
     }
 
+    /**
+     * Clears the active question timer, if any
+     */
+    clearTimer() {
+        if (this.questionTimer) {
+            clearInterval(this.questionTimer);
+            this.questionTimer = null;
+            console.log('[Quiz] Timer cleared');
+        }
+    }
+
     async handleTimeUp() {
-        if (this.timerDisabled) return;
+        // If timer is disabled, don't process timeUp events
+        if (this.timerDisabled) {
+            console.log('[Quiz] Timer is disabled, ignoring timeUp event');
+            return;
+        }
         
         this.clearTimer();
         
