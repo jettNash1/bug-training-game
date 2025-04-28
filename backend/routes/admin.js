@@ -1148,7 +1148,7 @@ router.get('/settings/quiz-timer', auth, async (req, res) => {
                 // Create new settings with consistent naming
                 settings = new Setting({
                     key: 'quizTimerSettings',
-                    value: {
+                value: {
                         defaultSeconds: defaultSeconds,
                         quizTimers: quizTimers
                     }
@@ -1166,9 +1166,9 @@ router.get('/settings/quiz-timer', auth, async (req, res) => {
                     key: 'quizTimerSettings',
                     value: {
                         defaultSeconds: 60,
-                        quizTimers: {}
-                    }
-                });
+                    quizTimers: {}
+                }
+            });
                 await settings.save();
             }
         }
