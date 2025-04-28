@@ -55,7 +55,7 @@ export class BaseQuiz {
             if (cachedSettings) {
                 const timerSettings = JSON.parse(cachedSettings);
                 if (timerSettings && typeof timerSettings === 'object') {
-                    // If we have specific timer settings for this quiz, use that
+                    // PRIORITY: First check for quiz-specific timer settings
                     if (this.quizName && timerSettings.quizTimers && 
                         timerSettings.quizTimers[this.quizName] !== undefined) {
                         // Ensure we treat 0 as a valid value (disabled timer)
@@ -64,8 +64,12 @@ export class BaseQuiz {
                         if (this.timePerQuestion === 0) {
                             console.log('[Quiz] Constructor: Timer is disabled for this quiz');
                             this.timerDisabled = true;
+                        } else {
+                            this.timerDisabled = false;
                         }
-                    } else if (timerSettings.defaultSeconds !== undefined) {
+                    } 
+                    // FALLBACK: Only use default if no quiz-specific setting exists
+                    else if (timerSettings.defaultSeconds !== undefined) {
                         // Otherwise use the default
                         // Ensure we treat 0 as a valid value (disabled timer)
                         this.timePerQuestion = timerSettings.defaultSeconds;
@@ -73,6 +77,8 @@ export class BaseQuiz {
                         if (this.timePerQuestion === 0) {
                             console.log('[Quiz] Constructor: Timer is disabled by default');
                             this.timerDisabled = true;
+                        } else {
+                            this.timerDisabled = false;
                         }
                     }
                 }
@@ -87,6 +93,8 @@ export class BaseQuiz {
                         if (this.timePerQuestion === 0) {
                             console.log('[Quiz] Constructor: Timer is disabled by legacy setting');
                             this.timerDisabled = true;
+                        } else {
+                            this.timerDisabled = false;
                         }
                     }
                 }
@@ -204,9 +212,7 @@ export class BaseQuiz {
                     
                     // Verify we have valid settings
                     if (timerSettings && typeof timerSettings === 'object') {
-                        const defaultSeconds = timerSettings.defaultSeconds ?? 30;
-                
-                        // If we have specific timer settings for this quiz, use that
+                        // PRIORITY: First check for quiz-specific timer settings
                         if (this.quizName && timerSettings.quizTimers && 
                             timerSettings.quizTimers[this.quizName] !== undefined) {
                             this.timePerQuestion = timerSettings.quizTimers[this.quizName];
@@ -218,9 +224,10 @@ export class BaseQuiz {
                             } else {
                                 this.timerDisabled = false;
                             }
-                        } else {
-                            // Otherwise use the default if quiz-specific not found
-                            this.timePerQuestion = defaultSeconds;
+                        } 
+                        // FALLBACK: Only use default if no quiz-specific setting exists
+                        else if (timerSettings.defaultSeconds !== undefined) {
+                            this.timePerQuestion = timerSettings.defaultSeconds;
                             console.log(`[Quiz] Using default timer from localStorage: ${this.timePerQuestion}s for ${this.quizName}`);
                             // Check if timer is disabled
                             if (this.timePerQuestion === 0) {
@@ -249,7 +256,7 @@ export class BaseQuiz {
                     localStorage.setItem('quizTimerSettings', JSON.stringify(freshSettings));
                     console.log('[Quiz] Updated localStorage with fresh timer settings');
                     
-                    // If we have specific timer settings for this quiz from API, update
+                    // PRIORITY: First check for quiz-specific timer settings from API
                     if (this.quizName && freshSettings.quizTimers && 
                         freshSettings.quizTimers[this.quizName] !== undefined) {
                         this.timePerQuestion = freshSettings.quizTimers[this.quizName];
@@ -261,8 +268,9 @@ export class BaseQuiz {
                         } else {
                             this.timerDisabled = false;
                         }
-                    } else if (freshSettings.defaultSeconds !== undefined) {
-                        // Otherwise use the default if quiz-specific not found
+                    } 
+                    // FALLBACK: Only use default if no quiz-specific setting exists
+                    else if (freshSettings.defaultSeconds !== undefined) {
                         this.timePerQuestion = freshSettings.defaultSeconds;
                         console.log(`[Quiz] Updated from API: Using default timer: ${this.timePerQuestion}s`);
                         // Check if timer is disabled
@@ -609,29 +617,13 @@ export class BaseQuiz {
             return;
         }
 
-        // No need to set a default value here since we've already set it in the constructor
-        // and it may have been updated by initializeTimerSettings
+        // Log current timer value for debugging
         console.log('[Quiz] Current timer value:', this.timePerQuestion);
 
-        // Check if timer is disabled (set to 0)
-        if (this.timePerQuestion === 0) {
-            console.log('[Quiz] Timer is disabled (set to 0 seconds)');
-            const timerContainer = document.getElementById('timer-container');
-            if (timerContainer) {
-                timerContainer.style.display = 'none';
-            }
-            // Set timerDisabled flag to handle timeUp events
-            this.timerDisabled = true;
-            // Print debug information
-            this.debugTimerSettings();
-            return; // Exit early, don't start the timer
-        } else {
-            // Timer is enabled, ensure it's visible
-            const timerContainer = document.getElementById('timer-container');
-            if (timerContainer) {
-                timerContainer.style.display = 'block';
-            }
-            this.timerDisabled = false;
+        // Timer is enabled, ensure it's visible
+        const timerContainer = document.getElementById('timer-container');
+        if (timerContainer) {
+            timerContainer.style.display = 'block';
         }
 
         // Ensure we have a valid timePerQuestion value
@@ -844,17 +836,15 @@ export class BaseQuiz {
         // Re-attach event listeners
         this.initializeEventListeners();
         
-        // Hide the timer container if timer is disabled (0 seconds)
-        if (this.timePerQuestion === 0) {
+        // Only check once if timer should be disabled (using already set timerDisabled flag)
+        if (this.timePerQuestion === 0 || this.timerDisabled) {
             console.log('[Quiz] Timer is disabled in showQuestion, hiding timer container');
             const timerContainer = document.getElementById('timer-container');
             if (timerContainer) {
                 timerContainer.style.display = 'none';
             }
-            // Set the flag to prevent time-up processing
-            this.timerDisabled = true;
         } else {
-            // Initialize timer for the new question only if timer is not disabled
+            // Initialize timer for the new question
             this.initializeTimer();
         }
     }
@@ -1002,17 +992,15 @@ export class BaseQuiz {
         // Record start time for this question
         this.questionStartTime = Date.now();
 
-        // Hide the timer container if timer is disabled (0 seconds)
-        if (this.timePerQuestion === 0) {
+        // Only check once if timer should be disabled (using already set timerDisabled flag)
+        if (this.timePerQuestion === 0 || this.timerDisabled) {
             console.log('[Quiz] Timer is disabled, hiding timer container');
             const timerContainer = document.getElementById('timer-container');
             if (timerContainer) {
                 timerContainer.style.display = 'none';
             }
-            // Set the flag to prevent time-up processing
-            this.timerDisabled = true;
         } else {
-            // Initialize timer for the new question only if timer is not disabled
+            // Initialize timer for the new question
             this.initializeTimer();
         }
 
