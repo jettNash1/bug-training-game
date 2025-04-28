@@ -706,7 +706,7 @@ export class Admin2Dashboard extends AdminDashboard {
                         <div class="input-button-group">
                             <input type="number" 
                                 id="quiz-timer" 
-                                value="60" 
+                                value="${defaultSeconds}" 
                                 min="0" 
                                 max="300"
                                 class="timer-seconds-input settings-input">
@@ -787,8 +787,12 @@ export class Admin2Dashboard extends AdminDashboard {
         quizSelect.addEventListener('change', () => {
             const selectedQuiz = quizSelect.value;
             if (selectedQuiz) {
-                const currentSetting = quizTimers[selectedQuiz] || defaultSeconds;
+                // Use the quiz-specific timer setting if available, otherwise use the default
+                const currentSetting = quizTimers[selectedQuiz] !== undefined ? quizTimers[selectedQuiz] : defaultSeconds;
                 quizTimerInput.value = currentSetting;
+            } else {
+                // Reset to default when no quiz is selected
+                quizTimerInput.value = defaultSeconds;
             }
         });
 
