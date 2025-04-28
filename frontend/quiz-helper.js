@@ -139,39 +139,61 @@ export class BaseQuiz {
         try {
             // Try to get settings from API first
             const apiService = new APIService();
+            console.log('[Quiz] Fetching timer settings from API...');
             const response = await apiService.getQuizTimerSettings();
+            console.log('[Quiz] API response for timer settings:', response);
             
             if (response.success && response.data) {
                 const { defaultSeconds, quizTimers } = response.data;
+                console.log('[Quiz] Default seconds from API:', defaultSeconds);
+                console.log('[Quiz] Quiz-specific timers from API:', quizTimers);
                 
                 // Check if this quiz has a specific timer setting
                 if (quizTimers && this.quizName && quizTimers[this.quizName] !== undefined) {
                     this.timePerQuestion = quizTimers[this.quizName];
+                    console.log(`[Quiz] Using quiz-specific timer for ${this.quizName}: ${this.timePerQuestion}s`);
                 } else {
                     this.timePerQuestion = defaultSeconds;
+                    console.log(`[Quiz] Using default timer value: ${this.timePerQuestion}s`);
                 }
                 
                 // Store the value in localStorage for future use
                 localStorage.setItem('quizTimerValue', this.timePerQuestion.toString());
-                console.log('[Quiz] Using timer value from API:', this.timePerQuestion);
+                localStorage.setItem(`quizTimer_${this.quizName}`, this.timePerQuestion.toString());
+                console.log(`[Quiz] Saved timer values to localStorage: global=${this.timePerQuestion}, quiz-specific=${this.timePerQuestion}`);
                 return;
+            } else {
+                console.log('[Quiz] No valid timer settings from API, checking localStorage...');
             }
 
-            // If API call fails, try localStorage
+            // If API call fails, try to get quiz-specific setting from localStorage
+            if (this.quizName) {
+                const quizSpecificTimer = localStorage.getItem(`quizTimer_${this.quizName}`);
+                if (quizSpecificTimer !== null) {
+                    const timerValue = parseInt(quizSpecificTimer, 10);
+                    if (!isNaN(timerValue) && timerValue >= 0 && timerValue <= 300) {
+                        this.timePerQuestion = timerValue;
+                        console.log(`[Quiz] Using quiz-specific timer from localStorage for ${this.quizName}: ${this.timePerQuestion}s`);
+                        return;
+                    }
+                }
+            }
+            
+            // Try global setting from localStorage
             const storedTimerValue = localStorage.getItem('quizTimerValue');
             if (storedTimerValue !== null) {
                 const timerValue = parseInt(storedTimerValue, 10);
                 if (!isNaN(timerValue) && timerValue >= 0 && timerValue <= 300) {
                     this.timePerQuestion = timerValue;
-                    console.log('[Quiz] Using timer value from localStorage:', this.timePerQuestion);
+                    console.log(`[Quiz] Using global timer value from localStorage: ${this.timePerQuestion}s`);
                     return;
                 }
             }
 
             // If we reach here, we'll keep the default value of 60 that was set in the constructor
-            console.log('[Quiz] Keeping default timer value:', this.timePerQuestion);
+            console.log(`[Quiz] Keeping default timer value: ${this.timePerQuestion}s`);
         } catch (error) {
-            console.warn('Failed to load timer settings, using default value:', error);
+            console.warn('[Quiz] Failed to load timer settings, using default value:', error);
             // No need to set timePerQuestion to 60 since we already did in the constructor
         }
     }

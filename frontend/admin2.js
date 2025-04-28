@@ -762,7 +762,7 @@ export class Admin2Dashboard extends AdminDashboard {
             }
             
             try {
-                // Use apiService directly to update default timer
+                // Always use defaultSeconds for consistency
                 const response = await this.apiService.updateQuizTimerSettings(seconds);
                 
                 if (response.success) {

@@ -1131,22 +1131,46 @@ router.get('/quizzes/:quizName/scenarios', auth, async (req, res) => {
 // Quiz timer settings routes
 router.get('/settings/quiz-timer', auth, async (req, res) => {
     try {
-        const settings = await Setting.findOne({ key: 'quizTimer' });
+        // Try to find settings with either key due to legacy naming
+        let settings = await Setting.findOne({ key: 'quizTimerSettings' });
         
+        // If not found with new key, try with old key and migrate
         if (!settings) {
-            // If no settings exist, create default settings
-            const defaultSettings = new Setting({
-                key: 'quizTimer',
-                value: {
-                    secondsPerQuestion: 60,
-                    quizTimers: {}
-                }
-            });
-            await defaultSettings.save();
-            return res.json({
-                success: true,
-                data: defaultSettings.value
-            });
+            const oldSettings = await Setting.findOne({ key: 'quizTimer' });
+            
+            if (oldSettings) {
+                console.log('Found timer settings with legacy key, migrating...');
+                
+                // Migrate old format to new format
+                const defaultSeconds = oldSettings.value.secondsPerQuestion || 60;
+                const quizTimers = oldSettings.value.quizTimers || {};
+                
+                // Create new settings with consistent naming
+                settings = new Setting({
+                    key: 'quizTimerSettings',
+                    value: {
+                        defaultSeconds: defaultSeconds,
+                        quizTimers: quizTimers
+                    }
+                });
+                
+                await settings.save();
+                
+                // Optionally remove old settings to prevent confusion
+                // await Setting.deleteOne({ key: 'quizTimer' });
+                
+                console.log('Timer settings migrated to new format');
+            } else {
+                // If no settings exist under either key, create default settings with new format
+                settings = new Setting({
+                    key: 'quizTimerSettings',
+                    value: {
+                        defaultSeconds: 60,
+                        quizTimers: {}
+                    }
+                });
+                await settings.save();
+            }
         }
         
         res.json({
@@ -1164,10 +1188,14 @@ router.get('/settings/quiz-timer', auth, async (req, res) => {
 
 router.post('/settings/quiz-timer', auth, async (req, res) => {
     try {
-        const { secondsPerQuestion, quizTimers } = req.body;
+        // Support both property names for backward compatibility
+        const defaultSeconds = req.body.defaultSeconds !== undefined ? 
+            req.body.defaultSeconds : req.body.secondsPerQuestion;
+            
+        const quizTimers = req.body.quizTimers || {};
         
-        // Validate secondsPerQuestion
-        const seconds = Number(secondsPerQuestion);
+        // Validate defaultSeconds
+        const seconds = Number(defaultSeconds);
         if (isNaN(seconds) || seconds < 0 || seconds > 300) {
             return res.status(400).json({
                 success: false,
@@ -1188,15 +1216,16 @@ router.post('/settings/quiz-timer', auth, async (req, res) => {
             }
         }
         
-        // Update or create settings
+        // Update or create settings with consistent naming
         const settings = await Setting.findOneAndUpdate(
-            { key: 'quizTimer' },
+            { key: 'quizTimerSettings' },
             {
-                key: 'quizTimer',
+                key: 'quizTimerSettings',
                 value: {
-                    secondsPerQuestion: seconds,
+                    defaultSeconds: seconds,
                     quizTimers: quizTimers || {}
-                }
+                },
+                updatedAt: new Date()
             },
             { upsert: true, new: true }
         );
