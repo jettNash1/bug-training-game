@@ -592,6 +592,21 @@ export class BaseQuiz {
         // Clear any existing timer
         if (this.questionTimer) {
             clearInterval(this.questionTimer);
+            this.questionTimer = null;
+        }
+
+        // Always return early if timer is disabled (0 seconds) or timerDisabled flag is set
+        // This is a safeguard in case this method is called incorrectly
+        if (this.timePerQuestion === 0 || this.timerDisabled) {
+            console.log('[Quiz] Timer initialization skipped - timer is disabled');
+            // Ensure timer container is hidden
+            const timerContainer = document.getElementById('timer-container');
+            if (timerContainer) {
+                timerContainer.style.display = 'none';
+            }
+            // Print debug information
+            this.debugTimerSettings();
+            return;
         }
 
         // No need to set a default value here since we've already set it in the constructor
@@ -829,8 +844,19 @@ export class BaseQuiz {
         // Re-attach event listeners
         this.initializeEventListeners();
         
-        // Initialize timer for the new question
-        this.initializeTimer();
+        // Hide the timer container if timer is disabled (0 seconds)
+        if (this.timePerQuestion === 0) {
+            console.log('[Quiz] Timer is disabled in showQuestion, hiding timer container');
+            const timerContainer = document.getElementById('timer-container');
+            if (timerContainer) {
+                timerContainer.style.display = 'none';
+            }
+            // Set the flag to prevent time-up processing
+            this.timerDisabled = true;
+        } else {
+            // Initialize timer for the new question only if timer is not disabled
+            this.initializeTimer();
+        }
     }
 
     handleOptionSelect(optionElement) {
@@ -976,8 +1002,19 @@ export class BaseQuiz {
         // Record start time for this question
         this.questionStartTime = Date.now();
 
-        // Initialize timer for the new question
-        this.initializeTimer();
+        // Hide the timer container if timer is disabled (0 seconds)
+        if (this.timePerQuestion === 0) {
+            console.log('[Quiz] Timer is disabled, hiding timer container');
+            const timerContainer = document.getElementById('timer-container');
+            if (timerContainer) {
+                timerContainer.style.display = 'none';
+            }
+            // Set the flag to prevent time-up processing
+            this.timerDisabled = true;
+        } else {
+            // Initialize timer for the new question only if timer is not disabled
+            this.initializeTimer();
+        }
 
         // Update progress display
         this.updateProgress();
@@ -1151,6 +1188,9 @@ export class BaseQuiz {
             this.isLoading = true;
             const selectedOption = document.querySelector('input[name="option"]:checked');
             if (!selectedOption) return;
+
+            // Clear any running timer if it exists
+            this.clearTimer();
 
             const currentScenarios = this.getCurrentScenarios();
             const scenario = currentScenarios[this.player.currentScenario];
