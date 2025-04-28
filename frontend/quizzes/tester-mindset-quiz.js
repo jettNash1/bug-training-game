@@ -919,8 +919,17 @@ export class TesterMindsetQuiz extends BaseQuiz {
             // Record start time for this question
             this.questionStartTime = Date.now();
 
-            // Initialize timer for the new question
-            this.initializeTimer();
+            // Check if timer is disabled
+            if (this.timePerQuestion === 0 || this.timerDisabled) {
+                console.log('[TesterMindsetQuiz] Timer is disabled, hiding timer container');
+                const timerContainer = document.getElementById('timer-container');
+                if (timerContainer) {
+                    timerContainer.style.display = 'none';
+                }
+            } else {
+                // Initialize timer for the new question only if timer is not disabled
+                this.initializeTimer();
+            }
             
             console.log('Scenario UI updated successfully');
         } catch (error) {
@@ -1246,8 +1255,15 @@ export class TesterMindsetQuiz extends BaseQuiz {
             this.questionTimer = null;
         }
 
-        // No need to set default timer value here - use the value from BaseQuiz
-        // which is either the admin-set value or 60 seconds default
+        // Check if timer is disabled
+        if (this.timePerQuestion === 0 || this.timerDisabled) {
+            console.log('[TesterMindsetQuiz] Timer is disabled, not initializing timer');
+            const timerContainer = document.getElementById('timer-container');
+            if (timerContainer) {
+                timerContainer.style.display = 'none';
+            }
+            return;
+        }
 
         // Reset remaining time
         this.remainingTime = this.timePerQuestion;
@@ -1266,22 +1282,11 @@ export class TesterMindsetQuiz extends BaseQuiz {
             // Update timer display
             if (timerDisplay) {
                 timerDisplay.textContent = `${this.remainingTime}`;
-                
-                // Add warning class when time is running low
-                const timerContainer = document.getElementById('timer-container');
-                if (timerContainer) {
-                    if (this.remainingTime <= 5) {
-                        timerContainer.classList.add('timer-warning');
-                    } else {
-                        timerContainer.classList.remove('timer-warning');
-                    }
-                }
             }
 
             // Check if time is up
             if (this.remainingTime <= 0) {
                 clearInterval(this.questionTimer);
-                this.questionTimer = null;
                 this.handleTimeUp();
             }
         }, 1000);
@@ -1289,6 +1294,12 @@ export class TesterMindsetQuiz extends BaseQuiz {
 
     // Handle time up situation
     handleTimeUp() {
+        // If timer is disabled, don't process time up events
+        if (this.timePerQuestion === 0 || this.timerDisabled) {
+            console.log('[TesterMindsetQuiz] Timer is disabled, ignoring time up event');
+            return;
+        }
+        
         console.log('Time up! Auto-submitting answer');
         
         try {

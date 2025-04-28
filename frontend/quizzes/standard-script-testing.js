@@ -1006,8 +1006,17 @@ export class StandardScriptTestingQuiz extends BaseQuiz {
             // Record start time for this question
             this.questionStartTime = Date.now();
 
-        // Initialize timer for the new question
-        this.initializeTimer();
+        // Check if timer is disabled
+        if (this.timePerQuestion === 0 || this.timerDisabled) {
+            console.log('[StandardScriptTesting] Timer is disabled, hiding timer container');
+            const timerContainer = document.getElementById('timer-container');
+            if (timerContainer) {
+                timerContainer.style.display = 'none';
+            }
+        } else {
+            // Initialize timer for the new question only if timer is not disabled
+            this.initializeTimer();
+        }
             
             // Update progress display
             this.updateProgress();
@@ -1343,18 +1352,25 @@ export class StandardScriptTestingQuiz extends BaseQuiz {
             clearInterval(this.questionTimer);
             this.questionTimer = null;
         }
-
-        // No need to set default timer value here - use the value from BaseQuiz
-        // which is either the admin-set value or 60 seconds default
+        
+        // Check if timer is disabled
+        if (this.timePerQuestion === 0 || this.timerDisabled) {
+            console.log('[StandardScriptTesting] Timer is disabled, not initializing timer');
+            const timerContainer = document.getElementById('timer-container');
+            if (timerContainer) {
+                timerContainer.style.display = 'none';
+            }
+            return;
+        }
 
         // Reset remaining time
         this.remainingTime = this.timePerQuestion;
         this.questionStartTime = Date.now();
 
         // Update timer display
-        const timerContainer = document.getElementById('timer-container');
-        if (timerContainer) {
-            timerContainer.textContent = `Time remaining: ${this.remainingTime}s`;
+        const timerDisplay = document.getElementById('timer-display');
+        if (timerDisplay) {
+            timerDisplay.textContent = `${this.remainingTime}`;
         }
 
         // Start the countdown
@@ -1362,28 +1378,25 @@ export class StandardScriptTestingQuiz extends BaseQuiz {
             this.remainingTime--;
             
             // Update timer display
-            if (timerContainer) {
-                timerContainer.textContent = `Time remaining: ${this.remainingTime}s`;
-                
-                // Add warning class when time is running low
-                if (this.remainingTime <= 5) {
-                    timerContainer.classList.add('timer-warning');
-                } else {
-                    timerContainer.classList.remove('timer-warning');
-                }
+            if (timerDisplay) {
+                timerDisplay.textContent = `${this.remainingTime}`;
             }
 
             // Check if time is up
             if (this.remainingTime <= 0) {
                 clearInterval(this.questionTimer);
-                this.questionTimer = null;
                 this.handleTimeUp();
             }
         }, 1000);
     }
 
-    // Handle time up situation
     handleTimeUp() {
+        // If timer is disabled, don't process time up events
+        if (this.timePerQuestion === 0 || this.timerDisabled) {
+            console.log('[StandardScriptTesting] Timer is disabled, ignoring time up event');
+            return;
+        }
+
         console.log('Time up! Auto-submitting answer');
         
         try {
