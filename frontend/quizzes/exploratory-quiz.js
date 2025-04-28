@@ -1539,8 +1539,17 @@ export class ExploratoryQuiz extends BaseQuiz {
             // Record start time for this question
             this.questionStartTime = Date.now();
 
-            // Initialize timer for the new question
-            this.initializeTimer();
+            // Check if timer is disabled
+            if (this.timePerQuestion === 0 || this.timerDisabled) {
+                console.log('[ExploratoryQuiz] Timer is disabled, hiding timer container');
+                const timerContainer = document.getElementById('timer-container');
+                if (timerContainer) {
+                    timerContainer.style.display = 'none';
+                }
+            } else {
+                // Initialize timer for the new question only if timer is not disabled
+                this.initializeTimer();
+            }
             
             // Update progress display
             this.updateProgress();
@@ -1692,6 +1701,16 @@ export class ExploratoryQuiz extends BaseQuiz {
             this.questionTimer = null;
         }
 
+        // Check if timer is disabled
+        if (this.timePerQuestion === 0 || this.timerDisabled) {
+            console.log('[ExploratoryQuiz] Timer is disabled, not initializing timer');
+            const timerContainer = document.getElementById('timer-container');
+            if (timerContainer) {
+                timerContainer.style.display = 'none';
+            }
+            return;
+        }
+
         // Reset remaining time
         this.remainingTime = this.timePerQuestion;
         this.questionStartTime = Date.now();
@@ -1729,6 +1748,12 @@ export class ExploratoryQuiz extends BaseQuiz {
 
     // Handle time up situation
     handleTimeUp() {
+        // If timer is disabled, don't process time up events
+        if (this.timePerQuestion === 0 || this.timerDisabled) {
+            console.log('[ExploratoryQuiz] Timer is disabled, ignoring time up event');
+            return;
+        }
+        
         try {
             // Get current scenario
             const currentScenarios = this.getCurrentScenarios();
