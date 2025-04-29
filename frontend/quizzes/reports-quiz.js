@@ -814,7 +814,7 @@ export class ReportsQuiz extends BaseQuiz {
 
     getCurrentScenarios() {
         // Determine the current scenarios based on how many questions have been answered
-        const questionCount = this.player.questionsAnswered;
+        const questionCount = this.player.questionHistory.length;
         
         if (questionCount < 5) {
             return this.basicScenarios;
@@ -827,7 +827,7 @@ export class ReportsQuiz extends BaseQuiz {
 
     getCurrentLevel() {
         // Determine current level based on questions answered
-        const questionCount = this.player.questionsAnswered;
+        const questionCount = this.player.questionHistory.length;
         
         if (questionCount < 5) {
             return 'basic';

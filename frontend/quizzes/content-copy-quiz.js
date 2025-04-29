@@ -1245,9 +1245,9 @@ export class ContentCopyQuiz extends BaseQuiz {
         const totalAnswered = this.player.questionHistory.length;
         
         // Progress through levels based only on question count
-        if (totalAnswered >= 15) {
+        if (totalAnswered >= 10) {
             return this.advancedScenarios;
-        } else if (totalAnswered >= 10) {
+        } else if (totalAnswered >= 5) {
             return this.intermediateScenarios;
         }
         return this.basicScenarios;
@@ -1257,9 +1257,9 @@ export class ContentCopyQuiz extends BaseQuiz {
         const totalAnswered = this.player.questionHistory.length;
         
         // Progress through levels based only on question count
-        if (totalAnswered >= 15) {
+        if (totalAnswered >= 10) {
             return 'Advanced';
-        } else if (totalAnswered >= 10) {
+        } else if (totalAnswered >= 5) {
             return 'Intermediate';
         }
         return 'Basic';

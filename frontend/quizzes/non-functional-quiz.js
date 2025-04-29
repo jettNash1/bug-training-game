@@ -1205,12 +1205,11 @@ export class NonFunctionalQuiz extends BaseQuiz {
 
     getCurrentScenarios() {
         const totalAnswered = this.player.questionHistory.length;
-        const currentXP = this.player.experience;
         
-        // Check for level progression
-        if (totalAnswered >= 10 && currentXP >= this.levelThresholds.intermediate.minXP) {
+        // Progress through levels based only on question count
+        if (totalAnswered >= 10) {
             return this.advancedScenarios;
-        } else if (totalAnswered >= 5 && currentXP >= this.levelThresholds.basic.minXP) {
+        } else if (totalAnswered >= 5) {
             return this.intermediateScenarios;
         }
         return this.basicScenarios;
@@ -1218,11 +1217,10 @@ export class NonFunctionalQuiz extends BaseQuiz {
 
     getCurrentLevel() {
         const totalAnswered = this.player.questionHistory.length;
-        const currentXP = this.player.experience;
         
-        if (totalAnswered >= 10 && currentXP >= this.levelThresholds.intermediate.minXP) {
+        if (totalAnswered >= 10) {
             return 'Advanced';
-        } else if (totalAnswered >= 5 && currentXP >= this.levelThresholds.basic.minXP) {
+        } else if (totalAnswered >= 5) {
             return 'Intermediate';
         }
         return 'Basic';
