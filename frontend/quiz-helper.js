@@ -14,6 +14,10 @@ export class BaseQuiz {
         this.guideUrl = null;
         this.showGuideButton = false;
         
+        // Track randomized scenarios
+        this.randomizedScenarios = {};
+        this.maxScenariosPerLevel = 5;
+        
         // Remove level thresholds since we're not using them anymore
         this.levelThresholds = {
             basic: { minXP: 0 },
@@ -762,6 +766,77 @@ export class BaseQuiz {
     }
 
     /**
+     * Randomly selects scenarios for each level based on maximum per level
+     * @param {string} level - The difficulty level (basic, intermediate, advanced)
+     * @param {Array} availableScenarios - Array of all scenarios for this level
+     * @returns {Array} - Array of randomly selected scenarios
+     */
+    getRandomizedScenarios(level, availableScenarios) {
+        // First check if we already have randomized scenarios for this level
+        if (this.randomizedScenarios[level] && this.randomizedScenarios[level].length > 0) {
+            console.log(`[Quiz] Using existing randomized scenarios for ${level}: ${this.randomizedScenarios[level].length} scenarios`);
+            return this.randomizedScenarios[level];
+        }
+
+        console.log(`[Quiz] Randomizing scenarios for ${level}: ${availableScenarios.length} available scenarios`);
+        
+        // If we have fewer scenarios than max, use all of them
+        if (availableScenarios.length <= this.maxScenariosPerLevel) {
+            console.log(`[Quiz] Using all available scenarios for ${level}: ${availableScenarios.length} scenarios`);
+            this.randomizedScenarios[level] = [...availableScenarios];
+            return this.randomizedScenarios[level];
+        }
+        
+        // Create a copy of the available scenarios to avoid modifying the original
+        const scenarios = [...availableScenarios];
+        const selected = [];
+        
+        // Select random scenarios up to the maximum
+        for (let i = 0; i < this.maxScenariosPerLevel; i++) {
+            if (scenarios.length === 0) break;
+            
+            // Get a random index
+            const randomIndex = Math.floor(Math.random() * scenarios.length);
+            
+            // Add the scenario to selected and remove it from available
+            selected.push(scenarios[randomIndex]);
+            scenarios.splice(randomIndex, 1);
+        }
+        
+        // Store the selected scenarios
+        this.randomizedScenarios[level] = selected;
+        console.log(`[Quiz] Randomized ${selected.length} scenarios for ${level}`);
+        
+        return selected;
+    }
+
+    /**
+     * Gets current scenarios based on player progress and difficulty
+     * @returns {Array} - Array of scenarios for the current level
+     */
+    getCurrentScenarios() {
+        const totalAnswered = this.player.questionHistory.length;
+        
+        // Progress through levels based on question count
+        let levelScenarios;
+        let level;
+        
+        if (totalAnswered >= 10) {
+            level = 'advanced';
+            levelScenarios = this.advancedScenarios || [];
+        } else if (totalAnswered >= 5) {
+            level = 'intermediate';
+            levelScenarios = this.intermediateScenarios || [];
+        } else {
+            level = 'basic';
+            levelScenarios = this.basicScenarios || [];
+        }
+        
+        // Get randomized scenarios for this level
+        return this.getRandomizedScenarios(level, levelScenarios);
+    }
+
+    /**
      * Optimizes the quiz progress data to reduce its size
      * @param {Object} progressData - The original progress data
      * @returns {Object} - The optimized progress data with reduced size
@@ -803,12 +878,12 @@ export class BaseQuiz {
                 });
             }
             
-            // If there are randomized scenarios, just store IDs
-            if (optimized.randomizedScenarios) {
+            // Save randomized scenarios to preserve state across sessions
+            if (this.randomizedScenarios) {
                 const optimizedScenarios = {};
-                Object.keys(optimized.randomizedScenarios).forEach(level => {
-                    if (Array.isArray(optimized.randomizedScenarios[level])) {
-                        optimizedScenarios[level] = optimized.randomizedScenarios[level].map(s => 
+                Object.keys(this.randomizedScenarios).forEach(level => {
+                    if (Array.isArray(this.randomizedScenarios[level])) {
+                        optimizedScenarios[level] = this.randomizedScenarios[level].map(s => 
                             typeof s === 'object' ? s.id : s
                         );
                     }
@@ -831,12 +906,12 @@ export class BaseQuiz {
         // First determine the status based on clear conditions
         let status = 'in-progress';
         
-        // Check for completion (all 15 questions answered)
-        if (this.player.questionHistory.length >= 15) {
+        // Check for completion (all questions answered)
+        if (this.player.questionHistory.length >= this.totalQuestions) {
             // Calculate pass/fail based on correct answers
             const correctAnswers = this.player.questionHistory.filter(q => q.isCorrect).length;
-            const scorePercentage = Math.round((correctAnswers / 15) * 100);
-            status = scorePercentage >= 70 ? 'passed' : 'failed';
+            const scorePercentage = Math.round((correctAnswers / this.totalQuestions) * 100);
+            status = scorePercentage >= this.passPercentage ? 'passed' : 'failed';
         }
 
         // Create the progress data object
@@ -848,7 +923,8 @@ export class BaseQuiz {
             currentScenario: this.player.currentScenario || 0,
             lastUpdated: new Date().toISOString(),
             status: status,
-            scorePercentage: Math.round((this.player.questionHistory.filter(q => q.isCorrect).length / 15) * 100)
+            scorePercentage: Math.round((this.player.questionHistory.filter(q => q.isCorrect).length / this.totalQuestions) * 100),
+            randomizedScenarios: this.randomizedScenarios || {} // Save randomized scenarios
         };
 
         // Optimize the data to reduce size
@@ -885,7 +961,8 @@ export class BaseQuiz {
                     const minimalProgress = {
                         questionsAnswered: progressData.questionsAnswered,
                         experience: progressData.experience,
-                        status: progressData.status
+                        status: progressData.status,
+                        randomizedScenarios: progressData.randomizedScenarios // Include randomized scenarios even in minimal save
                     };
                     localStorage.setItem(storageKey, JSON.stringify({ data: minimalProgress }));
                     console.log('[BaseQuiz] Saved minimal progress to localStorage as fallback');

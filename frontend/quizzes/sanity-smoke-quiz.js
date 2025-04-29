@@ -702,7 +702,8 @@ export class SanitySmokeQuiz extends BaseQuiz {
                 lastUpdated: new Date().toISOString(),
                 questionsAnswered: this.player.questionHistory.length,
                 status: status,
-                scorePercentage: scorePercentage
+                scorePercentage: scorePercentage,
+                randomizedScenarios: this.randomizedScenarios || {} // Save the randomized scenarios
             }
         };
 
@@ -746,7 +747,8 @@ export class SanitySmokeQuiz extends BaseQuiz {
                     questionHistory: savedProgress.data.questionHistory || [],
                     currentScenario: savedProgress.data.currentScenario || 0,
                     status: savedProgress.data.status || 'in-progress',
-                    scorePercentage: savedProgress.data.scorePercentage || 0
+                    scorePercentage: savedProgress.data.scorePercentage || 0,
+                    randomizedScenarios: savedProgress.data.randomizedScenarios || {}
                 };
                 console.log('Normalized progress data:', progress);
             } else {
@@ -760,6 +762,44 @@ export class SanitySmokeQuiz extends BaseQuiz {
             }
 
             if (progress) {
+                // Restore randomized scenarios if available
+                if (progress.randomizedScenarios) {
+                    this.randomizedScenarios = progress.randomizedScenarios;
+                    console.log('Restored randomized scenarios:', this.randomizedScenarios);
+                    
+                    // If we have scenario IDs instead of full objects, restore full scenarios
+                    for (const level in this.randomizedScenarios) {
+                        if (Array.isArray(this.randomizedScenarios[level])) {
+                            // Check if we have IDs instead of full scenario objects
+                            if (this.randomizedScenarios[level].length > 0 && 
+                                (typeof this.randomizedScenarios[level][0] === 'number' || 
+                                 typeof this.randomizedScenarios[level][0] === 'string')) {
+                                console.log(`Restoring full scenarios for level ${level} from IDs`);
+                                
+                                // Get the source scenarios for this level
+                                let sourceScenarios;
+                                if (level === 'basic') {
+                                    sourceScenarios = this.basicScenarios;
+                                } else if (level === 'intermediate') {
+                                    sourceScenarios = this.intermediateScenarios;
+                                } else if (level === 'advanced') {
+                                    sourceScenarios = this.advancedScenarios;
+                                }
+                                
+                                if (sourceScenarios) {
+                                    // Replace IDs with full scenario objects
+                                    this.randomizedScenarios[level] = this.randomizedScenarios[level].map(id => {
+                                        const scenarioId = typeof id === 'string' ? parseInt(id, 10) : id;
+                                        return sourceScenarios.find(s => s.id === scenarioId) || null;
+                                    }).filter(Boolean);
+                                    
+                                    console.log(`Restored ${this.randomizedScenarios[level].length} full scenarios for level ${level}`);
+                                }
+                            }
+                        }
+                    }
+                }
+                
                 // Set the player state from progress
                 this.player.experience = progress.experience || 0;
                 this.player.tools = progress.tools || [];
@@ -818,6 +858,9 @@ export class SanitySmokeQuiz extends BaseQuiz {
                 this.player.tools = [];
                 this.player.currentScenario = 0;
                 this.player.questionHistory = [];
+                
+                // Clear any existing randomized scenarios
+                this.randomizedScenarios = {};
             }
             
             // Clear any existing transition messages
@@ -866,8 +909,6 @@ export class SanitySmokeQuiz extends BaseQuiz {
     }
 
     displayScenario() {
-        const currentScenarios = this.getCurrentScenarios();
-        
         // Check if we've answered all questions
         if (this.player.questionHistory.length >= this.totalQuestions) {
             console.log('All questions answered, ending game');
@@ -875,24 +916,29 @@ export class SanitySmokeQuiz extends BaseQuiz {
             return;
         }
         
-        // Get the next scenario based on current progress
+        // Get the randomized scenarios for the current level
+        const currentScenarios = this.getCurrentScenarios();
+        
+        // Get the next scenario based on current progress within level
         let scenario;
         const questionCount = this.player.questionHistory.length;
         
-        if (questionCount < 10) {
-            // Basic questions (0-9)
-            scenario = this.basicScenarios[questionCount];
-            this.player.currentScenario = questionCount;
-        } else if (questionCount < 15) {
-            // Intermediate questions (10-14)
-            scenario = this.intermediateScenarios[questionCount - 10];
-            this.player.currentScenario = questionCount - 10;
+        // Determine which level we're in and set the correct index
+        let currentLevelIndex;
+        if (questionCount < 5) {
+            // Basic questions (0-4)
+            currentLevelIndex = questionCount;
+        } else if (questionCount < 10) {
+            // Intermediate questions (5-9)
+            currentLevelIndex = questionCount - 5;
         } else {
-            // Advanced questions (15-19)
-            scenario = this.advancedScenarios[questionCount - 15];
-            this.player.currentScenario = questionCount - 15;
+            // Advanced questions (10-14)
+            currentLevelIndex = questionCount - 10;
         }
-
+        
+        // Get the scenario from the current randomized scenarios
+        scenario = currentScenarios[currentLevelIndex];
+        
         if (!scenario) {
             console.error('No scenario found for current progress. Question count:', questionCount);
             this.endGame(true);
@@ -905,12 +951,12 @@ export class SanitySmokeQuiz extends BaseQuiz {
         // Show level transition message at the start of each level or when level changes
         const currentLevel = this.getCurrentLevel();
         const previousLevel = questionCount > 0 ? 
-            (questionCount <= 10 ? 'Basic' : 
-             questionCount <= 15 ? 'Intermediate' : 'Advanced') : null;
+            (questionCount < 5 ? 'Basic' : 
+             questionCount < 10 ? 'Intermediate' : 'Advanced') : null;
             
         if (questionCount === 0 || 
-            (questionCount === 10 && currentLevel === 'Intermediate') || 
-            (questionCount === 15 && currentLevel === 'Advanced')) {
+            (questionCount === 5 && currentLevel === 'Intermediate') || 
+            (questionCount === 10 && currentLevel === 'Advanced')) {
             const transitionContainer = document.getElementById('level-transition-container');
             if (transitionContainer) {
                 transitionContainer.innerHTML = ''; // Clear any existing messages
@@ -1013,7 +1059,23 @@ export class SanitySmokeQuiz extends BaseQuiz {
             if (!selectedOption) return;
 
             const currentScenarios = this.getCurrentScenarios();
-            const scenario = currentScenarios[this.player.currentScenario];
+            
+            // Determine which level we're in and set the correct index
+            const questionCount = this.player.questionHistory.length;
+            let currentLevelIndex;
+            
+            if (questionCount < 5) {
+                // Basic questions (0-4)
+                currentLevelIndex = questionCount;
+            } else if (questionCount < 10) {
+                // Intermediate questions (5-9)
+                currentLevelIndex = questionCount - 5;
+            } else {
+                // Advanced questions (10-14)
+                currentLevelIndex = questionCount - 10;
+            }
+            
+            const scenario = currentScenarios[currentLevelIndex];
             const originalIndex = parseInt(selectedOption.value);
             
             const selectedAnswer = scenario.options[originalIndex];
@@ -1199,23 +1261,31 @@ export class SanitySmokeQuiz extends BaseQuiz {
 
     getCurrentScenarios() {
         const totalAnswered = this.player.questionHistory.length;
+        let level;
+        let scenarios;
         
-        // Progress through levels based only on question count
-        if (totalAnswered >= 15) {
-            return this.advancedScenarios;
-        } else if (totalAnswered >= 10) {
-            return this.intermediateScenarios;
+        if (totalAnswered >= 10) {
+            level = 'advanced';
+            scenarios = this.advancedScenarios;
+        } else if (totalAnswered >= 5) {
+            level = 'intermediate';
+            scenarios = this.intermediateScenarios;
+        } else {
+            level = 'basic';
+            scenarios = this.basicScenarios;
         }
-        return this.basicScenarios;
+        
+        // Use the getRandomizedScenarios method to get or create random scenarios
+        return this.getRandomizedScenarios(level, scenarios);
     }
 
     getCurrentLevel() {
         const totalAnswered = this.player.questionHistory.length;
         
         // Progress through levels based only on question count
-        if (totalAnswered >= 15) {
+        if (totalAnswered >= 10) {
             return 'Advanced';
-        } else if (totalAnswered >= 10) {
+        } else if (totalAnswered >= 5) {
             return 'Intermediate';
         }
         return 'Basic';
