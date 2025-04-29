@@ -913,7 +913,7 @@ export class BaseQuiz {
         document.getElementById('scenario-description').textContent = currentScenario.description;
         
         const optionsContainer = document.getElementById('options-container');
-        optionsContainer.innerHTML = '';
+        optionsContainer.innerHTML = ''; 
         
         currentScenario.options.forEach((option, index) => {
             const button = document.createElement('button');
