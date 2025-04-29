@@ -8,11 +8,6 @@ export class SanitySmokeQuiz extends BaseQuiz {
             maxXP: 300,
             totalQuestions: 15,
             passPercentage: 70,
-            levelThresholds: {
-                basic: { questions: 10, minXP: 70 },
-                intermediate: { questions: 15, minXP: 145 },
-                advanced: { questions: 20, minXP: 315 }
-            },
             performanceThresholds: [
                 { threshold: 90, message: '🏆 Outstanding! You\'re a sanity and smoke testing expert!' },
                 { threshold: 80, message: '👏 Great job! You\'ve shown strong sanity and smoke testing skills!' },

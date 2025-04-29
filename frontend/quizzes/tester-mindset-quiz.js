@@ -25,16 +25,6 @@ export class TesterMindsetQuiz extends BaseQuiz {
             configurable: false,
             enumerable: true
         });
-        
-        // Initialize randomized scenarios at the class level
-        this.randomizedScenarios = {
-            basic: null,
-            intermediate: null,
-            advanced: null
-        };
-        
-        // Store current scenario
-        this.currentScenario = null;
 
         // Initialize player state
         this.player = {
@@ -216,6 +206,152 @@ export class TesterMindsetQuiz extends BaseQuiz {
                         text: 'Ask developers what and which areas to test within the project',
                         outcome: 'Developer input helps but thorough planning is required as a developer mindset is not always the same as an end user.',
                         experience: 5
+                    }
+                ]
+            },
+            // Additional Basic Scenarios from Guide - Tester Mindset Additional Questions
+            {
+                id: 16,
+                level: 'Basic',
+                title: 'Issue Verification Mindset',
+                description: 'When adopting a tester mindset for Issue Verification (IV), which is not a characteristic of the process?',
+                options: [
+                    {
+                        text: 'Being competitive is not a characteristic of an Issue Verifcation tester mindset',
+                        outcome: 'Correct! being detailed, timely, observant, investigative, impartial, and quality-driven are all characteristics of a tester mindset during Issue Verification not being competitive.',
+                        experience: 15,
+                        tool: 'Issue Verification Mindset'
+                    },
+                    {
+                        text: 'Being detailed is not a characteristic of an Issue Verifcation tester mindset',
+                        outcome: 'Being detailed is a characteristic for Issue Verification, aiming to provide the client with valuable information to aid them in fixing outstanding issues.',
+                        experience: -5
+                    },
+                    {
+                        text: 'Being investigative is not a characteristic of an Issue Verifcation tester mindset',
+                        outcome: 'Being investigative is a characteristic of Issue Verifcation, actively looking for ways to discover new issues.',
+                        experience: -10
+                    },
+                    {
+                        text: 'Being impartial is not a characteristic of an Issue Verifcation tester mindset',
+                        outcome: 'Being impartial is a characteristic of Issue Verification, we may observe an issue differently from a client and must be objective in our feedback.',
+                        experience: 0
+                    }
+                ]
+            },
+            {
+                id: 17,
+                level: 'Basic',
+                title: 'Mindset Risk',
+                description: 'What is a risk of applying the same mindset to every testing project?',
+                options: [
+                    {
+                        text: 'It provides maximum test coverage',
+                        outcome: 'Tailoring the mindset to each project leads to better coverage and finding more relevant issues.',
+                        experience: -5
+                    },
+                    {
+                        text: 'It increases testing speed',
+                        outcome: 'While this may increase speed through familiarisation. A tailored approach makes better use of time and results as each project has its own specific requirements.',
+                        experience: -10
+                    },
+                    {
+                        text: 'It yields mediocre results and less value to clients',
+                        outcome: 'Correct! Applying the same mindset to every project and approaching testing in the same manner, no matter the test approach, will likely yield mediocre results and provide less value to clients.',
+                        experience: 15,
+                        tool: 'Mindset Risk'
+                    },
+                    {
+                        text: 'It standardizes the testing approach',
+                        outcome: 'While this might be true, standardisation without adaptation is a disadvantage, not an advantage.',
+                        experience: 0
+                    }
+                ]
+            },
+            {
+                id: 18,
+                level: 'Basic',
+                title: 'Exploratory Testing Mindset',
+                description: 'For an exploratory testing approach, which is not a characteristic of a tester mindset approach',
+                options: [
+                    {
+                        text: 'Being destructive is a characteristic of tester mindset towards exploratory testing',
+                        outcome: 'Being destructive is a characteristic of exploratory testing, aiming to break the app/site and reveal issues.',
+                        experience: -5
+                    },
+                    {
+                        text: 'Adopting a free to explore approach is a characteristic of tester mindset towards exploratory testing',
+                        outcome: 'Being free to explore is a characteristic of exploratory testing, as to not get held back by restrictive test cases.', 
+                        experience: -10
+                    },
+                    {
+                        text: 'Adopting process driven approach is a characteristic of tester mindset towards exploratory testing',
+                        outcome: 'Correct! The exploratory approach is characterised by being less process-driven and more free-form than scripted approaches.',
+                        experience: 15,
+                        tool: 'Exploratory Testing Mindset'
+                    },
+                    {
+                        text: 'Being risk aware is a characteristic of a tester mindset towards exploratory testing',
+                        outcome: 'Being risk-aware is as a characteristic of exploratory testing, being conscious of scope, timings and ability to deliver tasks on time.',
+                        experience: 0
+                    }
+                ]
+            },
+            {
+                id: 19,
+                level: 'Basic',
+                title: 'Project Context',
+                description: 'When considering the context for a new testing project, what is not a factor to be considered?',
+                options: [
+                    {
+                        text: 'The client\'s competitors is not a factor to be considered for a new project',
+                        outcome: 'Correct! focus should be on understanding the specific project rather than market positioning or competitive analysis.',
+                        experience: 15,
+                        tool: 'Project Context'
+                    },
+                    {
+                        text: 'Project scope is not a factor to be considered for a new project',
+                        outcome: 'Scope is a context factor to consider, including questions about unique functionalities and areas of concern.',
+                        experience: -10
+                    },
+                    {
+                        text: 'Test approach is not a factor to be considered for a new project',
+                        outcome: 'Test approach is a context factor to consider, including understanding why the client chose a particular approach for their project.',
+                        experience: -5
+                    },
+                    {
+                        text: 'Development life cycle is not a factor to be considered for a new project',
+                        outcome: 'The development life cycle is as a context factor to consider, to determine how far into development the project is.',
+                        experience: 0
+                    }
+                ]
+            },
+            {
+                id: 20,
+                level: 'Basic',
+                title: 'Project Mindset',
+                description: 'What is recommended when a tester is unsure about what mindset might be required for a particular project?',
+                options: [
+                    {
+                        text: 'The project stand up should be utilised to ask questions and discuss the project with the project manager',
+                        outcome: 'Correct! If you are unsure what mindset might be required for a particular project, utilise the project stand up to ask questions and discuss the mindset with the project manager and test team.',
+                        experience: 15,
+                        tool: 'Project Mindset'
+                    },
+                    {
+                        text: 'The last projects mindset approach should be followed',
+                        outcome: 'This contradicts the emphasis on tailoring a mindset to each specific project.',
+                        experience: -10
+                    },
+                    {
+                        text: 'Creating a survey for the client to complete should be the approach',
+                        outcome: 'This would be time consuming for both tester and client.',
+                        experience: -5
+                    },
+                    {
+                        text: 'You should always default to the exploratory approach',
+                        outcome: 'An appropriate mindset for each project should be undertaken rather than defaulting to any particular approach.',
+                        experience: 0
                     }
                 ]
             }
@@ -1423,14 +1559,14 @@ export class TesterMindsetQuiz extends BaseQuiz {
             quizName.replace(/-/g, '_'),                          // snake_case
         ];
 
-        // Add sanity-smoke specific variations
-        if (quizName.toLowerCase().includes('sanity-smoke')) {
+        // Add tester-mindset specific variations
+        if (quizName.toLowerCase().includes('tester-mindset')) {
             variations.push(
-                'Sanity-Smoke',
-                'sanity-smoke',
-                'sanitySmokeTest',
-                'Sanity_Smoke',
-                'sanity_smoke'
+                'Tester-Mindset',
+                'tester-mindset',
+                'testerMindsetTest',
+                'Tester_Mindset',
+                'tester_mindset'
             );
         }
 

@@ -354,6 +354,152 @@ export class CommunicationQuiz extends BaseQuiz {
                         experience: 0
                     }
                 ]
+            },
+            // New additional scenarios from the guide
+            {
+                id: 21,
+                level: 'Basic',
+                title: 'Client Enquiry',
+                description: 'How should you respond if you don\'t know the answer to a client\'s question?',
+                options: [
+                    {
+                        text: 'Say you\'re unsure but will find out the answer',
+                        outcome: 'Correct! giving incorrect information could lead to accountability issues later.',
+                        experience: 15,
+                        tool: 'Client Enquiry'
+                    },
+                    {
+                        text: 'Provide your best guess to maintain credibility',
+                        outcome: 'It can be worse to state an incorrect answer in the moment and then be held accountable for your answer later.',
+                        experience: -5
+                    },
+                    {
+                        text: 'Defer to a colleague who might know',
+                        outcome: 'While collaboration is valuable, taking personal responsibility for finding answers is the preferred approach.',
+                        experience: -10
+                    },
+                    {
+                        text: 'Tell them it\'s outside your area of expertise',
+                        outcome: 'Responding with I don\'t know with no follow-up can appear unhelpful.',
+                        experience: 0
+                    }
+                ]
+            },
+            {
+                id: 22,
+                level: 'Basic',
+                title: 'Duplicate Issue Prevention',
+                description: 'What is as an appropriate response when a colleague mentions raising an issue that you know has already been raised in a previous session?',
+                options: [
+                    {
+                        text: 'Simply paste the issue link with no accompanying commentary',
+                        outcome: 'If context is missing, it could lead to misunderstandings and be perceived as abrupt',
+                        experience: -5
+                    },
+                    {
+                        text: 'Let them know privately to avoid embarrassing them',
+                        outcome: 'While being tactful is important, clear communication should be performed in the appropriate channels. Moving the conversation private isn\'t suggested and might not prevent duplicates.',
+                        experience: -10
+                    },
+                    {
+                        text: 'Post a friendly reply with context and link to the existing issue',
+                        outcome: 'Correct! A friendly, informative approach prevents the duplicate issue ticket from being raised.',
+                        experience: 15,
+                        tool: 'Duplicate Issue Prevention'
+                    },
+                    {
+                        text: 'Allow them to raise the duplicate ticket as the client will sort it out later',
+                        outcome: 'In this instance we\'ve not helped our colleague and the duplicate ticket has been raised and this will likely be picked up on by the client',
+                        experience: 0
+                    }
+                ]
+            },
+            {
+                id: 23,
+                level: 'Basic',
+                title: 'Communication Characteristics',
+                description: 'Which of the following is not a key characteristic of effective communication?',
+                options: [
+                    {
+                        text: 'Being clear is a key characteristic of effective communication',
+                        outcome: 'Being clear and easy to understand is a characteristic of effective communication.',
+                        experience: -5
+                    },
+                    {
+                        text: 'Being timely is a key characteristic of effective communication',
+                        outcome: 'Being timely promotes professionalism and is a characteristic of effective communication.', 
+                        experience: -10
+                    },
+                    {
+                        text: 'Being persuasive is a key characteristic of effective communication',
+                        outcome: 'Correct! being persuasive is not a characteristic of effective communication. The following characteristics should be observed. Being Clear, Consistent, Relevant, Timely, Honest, Open, and Approachable',
+                        experience: 15,
+                        tool: 'Communication Characteristics'
+                    },
+                    {
+                        text: 'Being approachable is a key characteristic of effective communication',
+                        outcome: 'Being approachable and friendly, reachable promotes good relationship building and effective communication.',
+                        experience: 0
+                    }
+                ]
+            },
+            {
+                id: 24,
+                level: 'Basic',
+                title: 'Electronic Messaging',
+                description: 'What should you do if you feel unsure about the tone of a message you\'ve drafted for a client?',
+                options: [
+                    {
+                        text: 'Ask a peer or project manager to review and provide feedback',
+                        outcome: 'Correct! ask a peer or project manager to review and provide feedback. This helps ensure communication maintains the appropriate professional tone.',
+                        experience: 15,
+                        tool: 'Electronic Messaging'
+                    },
+                    {
+                        text: 'Send it anyway as overthinking can delay important communications',
+                        outcome: 'It is recommended to be cautious about tone, especially in electronic messaging. Sending potentially inappropriate communications could damage client relationships.',
+                        experience: -10
+                    },
+                    {
+                        text: 'Add emojis to lighten the tone and make it more friendly',
+                        outcome: 'While friendliness is valued, adding emojis should be avoided as it might be seen as unprofessional in certain client communications.',
+                        experience: -5
+                    },
+                    {
+                        text: 'Rewrite it to be as formal as possible to ensure professionalism',
+                        outcome: 'Communication shouldn\'t be robotic. By keeping client communication professional, this does also not mean being unfriendly or robotic.',
+                        experience: 0
+                    }
+                ]
+            },
+            {
+                id: 25,
+                level: 'Basic',
+                title: 'Communication Aspects',
+                description: 'What aspect of communication is often overlooked but just as important?',
+                options: [
+                    {
+                        text: 'Body language is an aspect of communication that is often overlooked',
+                        outcome: 'Correct! this is an aspect that is often overlooked but just as important, our body language says a lot about us, before we even speak.',
+                        experience: 15,
+                        tool: 'Communication Aspects'
+                    },
+                    {
+                        text: 'Email signatures are an aspect of communication that is often overlooked',
+                        outcome: 'While email signatures should promote a professional outlook. They are not an integral part of communication.',
+                        experience: -10
+                    },
+                    {
+                        text: 'Document formatting is an aspect of communication that is often overlooked',
+                        outcome: 'While document formatting might affect clarity, it is not an integral part of communication.',
+                        experience: -5
+                    },
+                    {
+                        text: 'Social media presence is an aspect of communication that is often overlooked',
+                        outcome: 'Social media presence isn\'t a form of one to one communication.',
+                        experience: 0
+                    }
+                ]
             }
         ];
 
