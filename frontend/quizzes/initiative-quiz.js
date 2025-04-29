@@ -1635,8 +1635,11 @@ export class InitiativeQuiz extends BaseQuiz {
     }
 }
 
-// Start the quiz when the page loads
+// Initialize quiz when the page loads
 document.addEventListener('DOMContentLoaded', () => {
+    // Clear any existing quiz instances before starting this quiz
+    BaseQuiz.clearQuizInstances('initiative');
+    
     const quiz = new InitiativeQuiz();
     quiz.startGame();
 }); 

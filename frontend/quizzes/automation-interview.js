@@ -1324,6 +1324,9 @@ export class AutomationInterviewQuiz extends BaseQuiz {
 
 // Start the quiz when the page loads
 document.addEventListener('DOMContentLoaded', () => {
+    // Clear any existing quiz instances before starting this quiz
+    BaseQuiz.clearQuizInstances('automation-interview');
+    
     const quiz = new AutomationInterviewQuiz();
     quiz.startGame();
 }); 

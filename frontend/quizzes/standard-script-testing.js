@@ -1784,8 +1784,11 @@ export class StandardScriptTestingQuiz extends BaseQuiz {
     }
 }
 
-// Start the quiz when the page loads
+// Initialize quiz when the page loads
 document.addEventListener('DOMContentLoaded', () => {
+    // Clear any existing quiz instances before starting this quiz
+    BaseQuiz.clearQuizInstances('standard-script-testing');
+    
     const quiz = new StandardScriptTestingQuiz();
     quiz.startGame();
 }); 

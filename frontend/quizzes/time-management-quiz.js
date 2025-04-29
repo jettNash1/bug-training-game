@@ -1342,6 +1342,9 @@ export class TimeManagementQuiz extends BaseQuiz {
 
 // Initialize quiz when the page loads
 document.addEventListener('DOMContentLoaded', () => {
+    // Clear any existing quiz instances before starting this quiz
+    BaseQuiz.clearQuizInstances('time-management');
+    
     const quiz = new TimeManagementQuiz();
     quiz.startGame();
 }); 

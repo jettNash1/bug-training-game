@@ -1775,8 +1775,11 @@ export class FullyScriptedQuiz extends BaseQuiz {
     }
 }
 
-// Start the quiz when the page loads
+// Initialize quiz when the page loads
 document.addEventListener('DOMContentLoaded', () => {
+    // Clear any existing quiz instances before starting this quiz
+    BaseQuiz.clearQuizInstances('fully-scripted');
+    
     const quiz = new FullyScriptedQuiz();
     quiz.startGame();
 }); 

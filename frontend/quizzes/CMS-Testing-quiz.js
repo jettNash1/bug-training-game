@@ -1185,6 +1185,9 @@ export class CMS_Testing_Quiz extends BaseQuiz {
 
 // Initialize quiz on page load
 document.addEventListener('DOMContentLoaded', () => {
+    // Clear any existing quiz instances before starting this quiz
+    BaseQuiz.clearQuizInstances('cms-testing');
+    
     const quiz = new CMS_Testing_Quiz();
     quiz.startGame();
 });

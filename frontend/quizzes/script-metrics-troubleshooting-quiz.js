@@ -1447,73 +1447,11 @@ export class ScriptMetricsTroubleshootingQuiz extends BaseQuiz {
     }
 }
 
-// Start the quiz when the page loads
+// Initialize quiz when the page loads
 document.addEventListener('DOMContentLoaded', () => {
-    console.log('[ScriptMetricsTroubleshootingQuiz] Initializing quiz');
+    // Clear any existing quiz instances before starting this quiz
+    BaseQuiz.clearQuizInstances('script-metrics-troubleshooting');
     
-    // Force clean any existing quiz references that might be in memory
-    if (window.currentQuiz) {
-        console.log('[ScriptMetricsTroubleshootingQuiz] Cleaning up existing quiz instance:', window.currentQuiz.quizName);
-        // Clear any timers or other resources
-        if (window.currentQuiz.questionTimer) {
-            clearInterval(window.currentQuiz.questionTimer);
-        }
-    }
-    
-    // Clear any conflicting localStorage entries
-    const username = localStorage.getItem('username');
-    if (username) {
-        // List all quiz names that might conflict
-        const potentialConflicts = [
-            'sanity-smoke',
-            'standard-script-testing',
-            'fully-scripted',
-            'exploratory'
-        ];
-        
-        // Clean localStorage to prevent cross-contamination
-        potentialConflicts.forEach(quizName => {
-            const key = `quiz_progress_${username}_${quizName}`;
-            const data = localStorage.getItem(key);
-            if (data) {
-                console.log(`[ScriptMetricsQuiz] Found potential conflicting quiz data: ${quizName}`);
-                try {
-                    const parsed = JSON.parse(data);
-                    if (parsed && parsed.data && parsed.data.randomizedScenarios) {
-                        console.log(`[ScriptMetricsQuiz] Cleaning randomized scenarios from ${quizName}`);
-                        delete parsed.data.randomizedScenarios;
-                        localStorage.setItem(key, JSON.stringify(parsed));
-                    }
-                } catch (e) {
-                    console.error(`[ScriptMetricsQuiz] Error cleaning scenarios:`, e);
-                }
-            }
-        });
-    }
-    
-    // Create a new instance and keep a global reference
     const quiz = new ScriptMetricsTroubleshootingQuiz();
-    window.currentQuiz = quiz;
-    
-    // Add a specific property to identify this quiz
-    Object.defineProperty(window, 'ACTIVE_QUIZ_NAME', {
-        value: 'script-metrics-troubleshooting',
-        writable: true,
-        configurable: true
-    });
-    
-    // Force clear any unrelated randomized scenarios
-    if (quiz.randomizedScenarios) {
-        // Keep only keys specific to this quiz
-        Object.keys(quiz.randomizedScenarios).forEach(key => {
-            if (!key.startsWith('script-metrics-troubleshooting_')) {
-                console.log(`[ScriptMetricsQuiz] Removing unrelated randomized scenario: ${key}`);
-                delete quiz.randomizedScenarios[key];
-            }
-        });
-    }
-    
-    // Start the quiz
-    console.log('[ScriptMetricsQuiz] Starting quiz');
     quiz.startGame();
 }); 

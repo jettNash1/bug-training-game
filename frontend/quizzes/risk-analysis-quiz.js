@@ -1041,6 +1041,9 @@ export class RiskAnalysisQuiz extends BaseQuiz {
 
 // Initialize quiz when the page loads
 document.addEventListener('DOMContentLoaded', () => {
+    // Clear any existing quiz instances before starting this quiz
+    BaseQuiz.clearQuizInstances('risk-analysis');
+    
     const quiz = new RiskAnalysisQuiz();
     quiz.startGame();
 });

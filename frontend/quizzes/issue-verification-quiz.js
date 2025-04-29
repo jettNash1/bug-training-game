@@ -1456,8 +1456,11 @@ export class IssueVerificationQuiz extends BaseQuiz {
     }
 }
 
-// Add DOMContentLoaded event listener
+// Initialize quiz when the page loads
 document.addEventListener('DOMContentLoaded', () => {
+    // Clear any existing quiz instances before starting this quiz
+    BaseQuiz.clearQuizInstances('issue-verification');
+    
     const quiz = new IssueVerificationQuiz();
     quiz.startGame();
 }); 

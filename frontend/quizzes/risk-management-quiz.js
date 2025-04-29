@@ -1121,7 +1121,7 @@ export class RiskManagementQuiz extends BaseQuiz {
             });
             recommendationsHTML += '</ul>';
         } else {
-            recommendationsHTML = '<p>�� Here are key areas for improvement:</p>';
+            recommendationsHTML = '<p>Here are key areas for improvement:</p>';
             recommendationsHTML += '<ul>';
             weakAreas.forEach(area => {
                 recommendationsHTML += `<li>${this.getRecommendation(area)}</li>`;
@@ -1302,8 +1302,11 @@ export class RiskManagementQuiz extends BaseQuiz {
     }
 }
 
-// Add DOMContentLoaded event listener
+// Initialize quiz when the page loads
 document.addEventListener('DOMContentLoaded', () => {
+    // Clear any existing quiz instances before starting this quiz
+    BaseQuiz.clearQuizInstances('risk-management');
+    
     const quiz = new RiskManagementQuiz();
     quiz.startGame();
 }); 

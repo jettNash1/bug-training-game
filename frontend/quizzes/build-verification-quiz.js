@@ -1336,7 +1336,11 @@ export class BuildVerificationQuiz extends BaseQuiz {
     }
 }
 
+// Initialize quiz when the page loads
 document.addEventListener('DOMContentLoaded', () => {
+    // Clear any existing quiz instances before starting this quiz
+    BaseQuiz.clearQuizInstances('build-verification');
+    
     const quiz = new BuildVerificationQuiz();
     quiz.startGame();
 });

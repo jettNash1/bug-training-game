@@ -1459,8 +1459,11 @@ export class NonFunctionalQuiz extends BaseQuiz {
     }
 }
 
-// Add DOMContentLoaded event listener
+// Initialize quiz when the page loads
 document.addEventListener('DOMContentLoaded', () => {
+    // Clear any existing quiz instances before starting this quiz
+    BaseQuiz.clearQuizInstances('non-functional');
+    
     const quiz = new NonFunctionalQuiz();
     quiz.startGame();
 });

@@ -1245,3 +1245,12 @@ export class ReportsQuiz extends BaseQuiz {
         }
     }
 }
+
+// Initialize quiz when the page loads
+document.addEventListener('DOMContentLoaded', () => {
+    // Clear any existing quiz instances before starting this quiz
+    BaseQuiz.clearQuizInstances('reports');
+    
+    const quiz = new ReportsQuiz();
+    quiz.startGame();
+});
