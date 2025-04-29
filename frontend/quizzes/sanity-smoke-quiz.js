@@ -844,6 +844,32 @@ export class SanitySmokeQuiz extends BaseQuiz {
                 window.location.href = '/login.html';
                 return;
             }
+            
+            // Clear any conflicting randomized scenarios
+            const username = localStorage.getItem('username');
+            if (username) {
+                // Clear any leftover randomized scenarios from other quizzes
+                // to prevent cross-contamination
+                const quizzes = ['script-metrics-troubleshooting', 'standard-script-testing'];
+                quizzes.forEach(quizName => {
+                    if (quizName !== this.quizName) {
+                        const key = `quiz_progress_${username}_${quizName}`;
+                        const data = localStorage.getItem(key);
+                        if (data) {
+                            try {
+                                console.log(`[Quiz] Clearing potential conflicting scenarios from ${quizName}`);
+                                const parsed = JSON.parse(data);
+                                if (parsed && parsed.data && parsed.data.randomizedScenarios) {
+                                    delete parsed.data.randomizedScenarios;
+                                    localStorage.setItem(key, JSON.stringify(parsed));
+                                }
+                            } catch (e) {
+                                console.error(`[Quiz] Error clearing scenarios from ${quizName}:`, e);
+                            }
+                        }
+                    }
+                });
+            }
 
             // Initialize event listeners
             this.initializeEventListeners();

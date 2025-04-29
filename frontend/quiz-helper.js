@@ -772,19 +772,35 @@ export class BaseQuiz {
      * @returns {Array} - Array of randomly selected scenarios
      */
     getRandomizedScenarios(level, availableScenarios) {
+        if (!this.quizName) {
+            console.error('[Quiz] Quiz name not set, randomization may not be isolated between quizzes');
+            // Try to detect quiz name
+            this.quizName = this.detectQuizNameFromPage();
+        }
+        
+        // Create a qualified level key that includes the quiz name to isolate scenarios between quizzes
+        const quizLevelKey = `${this.quizName}_${level}`;
+        
         // First check if we already have randomized scenarios for this level
-        if (this.randomizedScenarios[level] && this.randomizedScenarios[level].length > 0) {
-            console.log(`[Quiz] Using existing randomized scenarios for ${level}: ${this.randomizedScenarios[level].length} scenarios`);
-            return this.randomizedScenarios[level];
+        if (this.randomizedScenarios[quizLevelKey] && this.randomizedScenarios[quizLevelKey].length > 0) {
+            console.log(`[Quiz] Using existing randomized scenarios for ${this.quizName} - ${level}: ${this.randomizedScenarios[quizLevelKey].length} scenarios`);
+            return this.randomizedScenarios[quizLevelKey];
         }
 
-        console.log(`[Quiz] Randomizing scenarios for ${level}: ${availableScenarios.length} available scenarios`);
+        console.log(`[Quiz] Randomizing scenarios for ${this.quizName} - ${level}: ${availableScenarios?.length || 0} available scenarios`);
+        
+        // Handle case where available scenarios are undefined or empty
+        if (!availableScenarios || availableScenarios.length === 0) {
+            console.error(`[Quiz] No available scenarios for ${this.quizName} - ${level}`);
+            this.randomizedScenarios[quizLevelKey] = [];
+            return [];
+        }
         
         // If we have fewer scenarios than max, use all of them
         if (availableScenarios.length <= this.maxScenariosPerLevel) {
-            console.log(`[Quiz] Using all available scenarios for ${level}: ${availableScenarios.length} scenarios`);
-            this.randomizedScenarios[level] = [...availableScenarios];
-            return this.randomizedScenarios[level];
+            console.log(`[Quiz] Using all available scenarios for ${this.quizName} - ${level}: ${availableScenarios.length} scenarios`);
+            this.randomizedScenarios[quizLevelKey] = [...availableScenarios];
+            return this.randomizedScenarios[quizLevelKey];
         }
         
         // Create a copy of the available scenarios to avoid modifying the original
@@ -804,8 +820,8 @@ export class BaseQuiz {
         }
         
         // Store the selected scenarios
-        this.randomizedScenarios[level] = selected;
-        console.log(`[Quiz] Randomized ${selected.length} scenarios for ${level}`);
+        this.randomizedScenarios[quizLevelKey] = selected;
+        console.log(`[Quiz] Randomized ${selected.length} scenarios for ${this.quizName} - ${level}`);
         
         return selected;
     }
@@ -815,7 +831,12 @@ export class BaseQuiz {
      * @returns {Array} - Array of scenarios for the current level
      */
     getCurrentScenarios() {
-        const totalAnswered = this.player.questionHistory.length;
+        if (!this.player) {
+            console.error('[Quiz] Player object not initialized');
+            return [];
+        }
+        
+        const totalAnswered = this.player.questionHistory ? this.player.questionHistory.length : 0;
         
         // Progress through levels based on question count
         let levelScenarios;
@@ -832,7 +853,7 @@ export class BaseQuiz {
             levelScenarios = this.basicScenarios || [];
         }
         
-        // Get randomized scenarios for this level
+        // Get randomized scenarios for this level with quiz-specific key
         return this.getRandomizedScenarios(level, levelScenarios);
     }
 
@@ -1722,6 +1743,132 @@ export class BaseQuiz {
             button.disabled = true;
             button.classList.add('disabled');
         });
+    }
+
+    /**
+     * Loads saved progress including randomized scenarios
+     * @returns {boolean} - Whether progress was successfully loaded
+     */
+    async loadProgress() {
+        try {
+            const username = localStorage.getItem('username');
+            if (!username) {
+                console.error('[Quiz] No user found, cannot load progress');
+                return false;
+            }
+
+            // Use user-specific key for localStorage
+            const storageKey = `quiz_progress_${username}_${this.quizName}`;
+            const savedProgress = await this.apiService.getQuizProgress(this.quizName);
+            console.log('[Quiz] Raw API Response:', savedProgress);
+            let progress = null;
+            
+            if (savedProgress && savedProgress.data) {
+                // Normalize the data structure
+                progress = {
+                    experience: savedProgress.data.experience || 0,
+                    tools: savedProgress.data.tools || [],
+                    questionHistory: savedProgress.data.questionHistory || [],
+                    currentScenario: savedProgress.data.currentScenario || 0,
+                    status: savedProgress.data.status || 'in-progress',
+                    scorePercentage: savedProgress.data.scorePercentage || 0,
+                    randomizedScenarios: savedProgress.data.randomizedScenarios || {}
+                };
+                console.log('[Quiz] Normalized progress data:', progress);
+            } else {
+                // Try loading from localStorage as fallback
+                const localData = localStorage.getItem(storageKey);
+                if (localData) {
+                    const parsed = JSON.parse(localData);
+                    progress = parsed.data || parsed;
+                    console.log('[Quiz] Loaded progress from localStorage:', progress);
+                }
+            }
+
+            if (progress) {
+                // Restore randomized scenarios
+                if (progress.randomizedScenarios) {
+                    this.randomizedScenarios = progress.randomizedScenarios;
+                    console.log('[Quiz] Restored randomized scenarios:', this.randomizedScenarios);
+                    
+                    // If we have scenario IDs instead of full objects, restore full scenarios
+                    // This happens when the progress is optimized
+                    for (const key in this.randomizedScenarios) {
+                        if (Array.isArray(this.randomizedScenarios[key])) {
+                            // Check if we have IDs instead of full scenario objects
+                            if (this.randomizedScenarios[key].length > 0 && 
+                                (typeof this.randomizedScenarios[key][0] === 'number' || 
+                                 typeof this.randomizedScenarios[key][0] === 'string')) {
+                                console.log(`[Quiz] Restoring full scenarios for key ${key} from IDs`);
+                                
+                                // Extract the level from the qualified key (e.g., 'sanity-smoke_basic' -> 'basic')
+                                const levelMatch = key.match(/_([^_]+)$/);
+                                const level = levelMatch ? levelMatch[1] : key;
+                                
+                                // Get the source scenarios for this level
+                                let sourceScenarios;
+                                if (level === 'basic') {
+                                    sourceScenarios = this.basicScenarios;
+                                } else if (level === 'intermediate') {
+                                    sourceScenarios = this.intermediateScenarios;
+                                } else if (level === 'advanced') {
+                                    sourceScenarios = this.advancedScenarios;
+                                }
+                                
+                                if (sourceScenarios) {
+                                    // Replace IDs with full scenario objects
+                                    this.randomizedScenarios[key] = this.randomizedScenarios[key].map(id => {
+                                        const scenarioId = typeof id === 'string' ? parseInt(id, 10) : id;
+                                        return sourceScenarios.find(s => s.id === scenarioId) || null;
+                                    }).filter(Boolean);
+                                    
+                                    console.log(`[Quiz] Restored ${this.randomizedScenarios[key].length} full scenarios for key ${key}`);
+                                }
+                            }
+                        }
+                    }
+                    
+                    // Also handle the old format (without qualified keys) for backward compatibility
+                    // This converts scenarios from old format to the new qualified format
+                    const oldLevels = ['basic', 'intermediate', 'advanced'];
+                    oldLevels.forEach(level => {
+                        const oldKey = level;
+                        const newKey = `${this.quizName}_${level}`;
+                        
+                        // If we have scenarios in the old format but not in the new format, convert them
+                        if (this.randomizedScenarios[oldKey] && !this.randomizedScenarios[newKey]) {
+                            console.log(`[Quiz] Converting old format scenarios from ${oldKey} to ${newKey}`);
+                            this.randomizedScenarios[newKey] = this.randomizedScenarios[oldKey];
+                            delete this.randomizedScenarios[oldKey];
+                        }
+                    });
+                }
+                
+                // Set the player state from progress
+                this.player.experience = progress.experience || 0;
+                this.player.tools = progress.tools || [];
+                this.player.questionHistory = progress.questionHistory || [];
+                this.player.currentScenario = progress.currentScenario || 0;
+
+                // Ensure we're updating the UI correctly
+                this.updateProgress();
+                
+                // Check quiz status and show appropriate screen
+                if (progress.status === 'failed') {
+                    this.endGame(true);
+                    return true;
+                } else if (progress.status === 'passed' || progress.status === 'completed') {
+                    this.endGame(false);
+                    return true;
+                }
+
+                return true;
+            }
+            return false;
+        } catch (error) {
+            console.error('[Quiz] Failed to load progress:', error);
+            return false;
+        }
     }
 }
 
