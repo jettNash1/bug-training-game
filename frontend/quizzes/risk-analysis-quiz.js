@@ -650,6 +650,60 @@ export class RiskAnalysisQuiz extends BaseQuiz {
         }
     }
 
+    nextScenario() {
+        // Hide outcome screen and show game screen
+        if (this.outcomeScreen && this.gameScreen) {
+            this.outcomeScreen.classList.add('hidden');
+            this.gameScreen.classList.remove('hidden');
+        }
+        
+        // Display next scenario
+        this.displayScenario();
+    }
+
+    updateProgress() {
+        // Get current level and question count
+        const currentLevel = this.getCurrentLevel();
+        const totalAnswered = this.player.questionHistory.length;
+        const questionNumber = totalAnswered + 1;
+        
+        // Update the existing progress card elements
+        const levelInfoElement = document.querySelector('.level-info');
+        const questionInfoElement = document.querySelector('.question-info');
+        
+        if (levelInfoElement) {
+            levelInfoElement.textContent = `Level: ${currentLevel}`;
+        }
+        
+        if (questionInfoElement) {
+            questionInfoElement.textContent = `Question: ${questionNumber}/${this.totalQuestions}`;
+        }
+        
+        // Ensure the card is visible
+        const progressCard = document.querySelector('.quiz-header-progress');
+        if (progressCard) {
+            progressCard.style.display = 'block';
+        }
+        
+        // Update legacy progress elements if they exist
+        const levelIndicator = document.getElementById('level-indicator');
+        const questionProgress = document.getElementById('question-progress');
+        const progressFill = document.getElementById('progress-fill');
+        
+        if (levelIndicator) {
+            levelIndicator.textContent = `Level: ${currentLevel}`;
+        }
+        
+        if (questionProgress) {
+            questionProgress.textContent = `Question: ${questionNumber}/${this.totalQuestions}`;
+        }
+        
+        if (progressFill) {
+            const progressPercentage = (totalAnswered / this.totalQuestions) * 100;
+            progressFill.style.width = `${progressPercentage}%`;
+        }
+    }
+
     getCurrentScenarios() {
         const totalAnswered = this.player.questionHistory.length;
         
