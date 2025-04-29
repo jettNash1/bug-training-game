@@ -608,6 +608,7 @@ export class TesterMindsetQuiz extends BaseQuiz {
             
             if (result.success) {
                 console.log('[Quiz] Progress saved successfully');
+                return true;
             } else {
                 console.error('[Quiz] Failed to save progress:', result.message);
                 
@@ -618,6 +619,7 @@ export class TesterMindsetQuiz extends BaseQuiz {
                     localStorage.setItem(storageKey, JSON.stringify({ data: progress }));
                     console.log('[Quiz] Saved progress to localStorage as fallback');
                 }
+                return false;
             }
         } catch (error) {
             console.error('[Quiz] Error saving progress:', error);
@@ -638,6 +640,7 @@ export class TesterMindsetQuiz extends BaseQuiz {
             } catch (fallbackError) {
                 console.error('[Quiz] Failed to save fallback progress:', fallbackError);
             }
+            return false;
         }
     }
 
@@ -1066,7 +1069,7 @@ export class TesterMindsetQuiz extends BaseQuiz {
      * Handle player's answer selection
      * @param {Event} event - The click event
      */
-    handleAnswer(event) {
+    async handleAnswer(event) {
         try {
             if (event) {
                 event.preventDefault();
@@ -1127,8 +1130,39 @@ export class TesterMindsetQuiz extends BaseQuiz {
                 this.player.tools.push(selectedAnswer.tool);
             }
             
-            // Save progress
-            this.saveProgress();
+            // Save progress - await here to ensure it completes
+            try {
+                await this.saveProgress();
+                console.log('Progress saved successfully');
+                
+                // Save quiz result
+                const username = localStorage.getItem('username');
+                if (username) {
+                    try {
+                        const quizUser = new QuizUser(username);
+                        const score = {
+                            score: Math.round((this.player.questionHistory.filter(q => this.isCorrectAnswer(q.selectedAnswer)).length / Math.min(this.player.questionHistory.length, 15)) * 100),
+                            experience: this.player.experience || 0,
+                            questionHistory: this.player.questionHistory || [],
+                            questionsAnswered: this.player.questionHistory.length
+                        };
+                        
+                        await quizUser.updateQuizScore(
+                            this.quizName,
+                            score.score,
+                            score.experience,
+                            this.player.tools || [],
+                            score.questionHistory,
+                            score.questionsAnswered
+                        );
+                    } catch (error) {
+                        console.error('Failed to save quiz result:', error);
+                    }
+                }
+            } catch (error) {
+                console.error('Failed to save progress:', error);
+                this.showError('Warning: Progress may not have saved correctly');
+            }
             
             // Display the outcome
             this.displayOutcome(selectedAnswer);
@@ -1211,87 +1245,120 @@ export class TesterMindsetQuiz extends BaseQuiz {
     }
 
     displayOutcome(selectedAnswer) {
+        if (!selectedAnswer) {
+            console.error('No answer selected');
+            return;
+        }
+
         try {
-            console.log('Displaying outcome:', JSON.stringify({
-                isCorrect: this.isCorrectAnswer(selectedAnswer),
-                selectedAnswer: selectedAnswer,
-                scenario: this.currentScenario?.title || 'Unknown'
-            }));
+            const currentScenarios = this.getCurrentScenarios();
+            if (!currentScenarios || !this.player || this.player.currentScenario === undefined) {
+                console.error('No current scenario found');
+                return;
+            }
             
-            // Get outcome screen elements
+            const scenario = currentScenarios[this.player.currentScenario];
+            if (!scenario) {
+                console.error('Current scenario not found');
+                return;
+            }
+            
+            const earnedXP = selectedAnswer.experience || 0;
+            
+            // Find the max possible XP for this scenario
+            const maxXP = Math.max(...scenario.options.map(o => o.experience || 0));
+            const isCorrect = selectedAnswer.isCorrect || (earnedXP === maxXP);
+            
+            console.log('Displaying outcome:', { 
+                isCorrect, 
+                selectedAnswer, 
+                scenario: scenario.title 
+            });
+            
+            // Update UI - safely access elements
             const outcomeScreen = document.getElementById('outcome-screen');
+            const gameScreen = document.getElementById('game-screen');
+            
+            // Show outcome screen if elements exist
+            if (gameScreen) {
+                gameScreen.classList.add('hidden');
+                gameScreen.style.display = 'none';
+            }
+            
+            if (outcomeScreen) {
+                outcomeScreen.classList.remove('hidden');
+                outcomeScreen.style.display = 'block';
+            }
+            
+            // Clear any existing button event listeners by recreating the content
             const outcomeContent = outcomeScreen.querySelector('.outcome-content');
-            const outcomeText = document.getElementById('outcome-text');
-            const continueButton = document.getElementById('continue-btn');
-            
-            if (!outcomeScreen || !outcomeContent || !outcomeText || !continueButton) {
-                throw new Error('Outcome screen elements not found');
-            }
-            
-            // Show the outcome screen
-            document.getElementById('game-screen').classList.add('hidden');
-            outcomeScreen.classList.remove('hidden');
-            
-            // Display the outcome text
-            outcomeText.textContent = selectedAnswer.outcome || 'No outcome provided.';
-            
-            // Add experience gained display if element exists
-            const xpGained = document.getElementById('xp-gained');
-            if (xpGained) {
-                xpGained.textContent = `Experience: ${selectedAnswer.experience || 0}`;
-            }
-            
-            // Add tool gained display if element exists and there's a tool
-            const toolGained = document.getElementById('tool-gained');
-            if (toolGained) {
-                toolGained.textContent = selectedAnswer.tool ? `Tool acquired: ${selectedAnswer.tool}` : '';
-            }
-            
-            // Add continue button event listener
-            console.log('Adding event listener to continue button');
-            continueButton.onclick = () => {
-                // Hide outcome screen
-                outcomeScreen.classList.add('hidden');
+            if (outcomeContent) {
+                // Create fresh HTML content
+                outcomeContent.innerHTML = `
+                    <h3>${isCorrect ? 'Correct!' : 'Incorrect'}</h3>
+                    <p>${selectedAnswer.outcome || ''}</p>
+                    <p class="result">${isCorrect ? 'Correct answer!' : 'Try again next time.'}</p>
+                    <button id="continue-btn" class="submit-button">Continue</button>
+                `;
                 
-                // Show game screen
-                document.getElementById('game-screen').classList.remove('hidden');
+                // Immediately add event listener to the new button
+                const continueBtn = outcomeContent.querySelector('#continue-btn');
+                if (continueBtn) {
+                    console.log('Adding event listener to continue button');
+                    continueBtn.addEventListener('click', () => {
+                        console.log('Continue button clicked');
+                        this.nextScenario();
+                    });
+                }
+            } else {
+                // If no outcomeContent found, try individual elements as fallback
+                console.error('Could not find outcome content element, trying individual elements');
                 
-                // Check if we need to end the game
-                if (this.player.questionHistory.length >= 15) {
-                    this.endGame();
-                    return;
+                // Update individual elements
+                const outcomeText = document.getElementById('outcome-text');
+                const resultText = document.getElementById('result-text');
+                
+                if (outcomeText) {
+                    outcomeText.textContent = selectedAnswer.outcome || '';
                 }
                 
-                // Update progress display - use the correct method name
-                this.updateProgressDisplay();
+                if (resultText) {
+                    resultText.textContent = isCorrect ? 'Correct!' : 'Incorrect';
+                    resultText.className = isCorrect ? 'correct' : 'incorrect';
+                }
                 
-                // Display next scenario
-                this.displayScenario();
-            };
+                // Ensure we have a continue button and it has the right event listener
+                const continueBtn = document.getElementById('continue-btn');
+                if (!continueBtn) {
+                    // Try to create a continue button if it doesn't exist
+                    const outcomeActions = document.querySelector('.outcome-actions');
+                    if (outcomeActions) {
+                        outcomeActions.innerHTML = '<button id="continue-btn" class="submit-button">Continue</button>';
+                    }
+                }
+                
+                // Add event listener to the continue button (whether it existed or we created it)
+                const newContinueBtn = document.getElementById('continue-btn');
+                if (newContinueBtn) {
+                    // Remove any existing event listeners by cloning and replacing
+                    const newBtn = newContinueBtn.cloneNode(true);
+                    if (newContinueBtn.parentNode) {
+                        newContinueBtn.parentNode.replaceChild(newBtn, newContinueBtn);
+                    }
+                    
+                    // Add fresh event listener
+                    newBtn.addEventListener('click', () => {
+                        console.log('Continue button clicked');
+                        this.nextScenario();
+                    });
+                }
+            }
+            
+            // Update progress
+            this.updateProgress();
         } catch (error) {
             console.error('Error in displayOutcome:', error);
-            
-            // If there's an error, try to move to the next scenario anyway
-            setTimeout(() => {
-                try {
-                    // Reset screens
-                    const outcomeScreen = document.getElementById('outcome-screen');
-                    if (outcomeScreen) {
-                        outcomeScreen.classList.add('hidden');
-                    }
-                    
-                    const gameScreen = document.getElementById('game-screen');
-                    if (gameScreen) {
-                        gameScreen.classList.remove('hidden');
-                    }
-                    
-                    // Display next scenario
-                    this.displayScenario();
-                } catch (recoveryError) {
-                    console.error('Failed to recover from display outcome error:', recoveryError);
-                    this.showError('An error occurred. Please try refreshing the page.');
-                }
-            }, 2000);
+            this.showError('An error occurred. Please try again.');
         }
     }
 
