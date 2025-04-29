@@ -761,6 +761,70 @@ export class BaseQuiz {
         }
     }
 
+    /**
+     * Optimizes the quiz progress data to reduce its size
+     * @param {Object} progressData - The original progress data
+     * @returns {Object} - The optimized progress data with reduced size
+     */
+    optimizeProgressData(progressData) {
+        try {
+            // Create a deep copy to avoid modifying the original object
+            const optimized = JSON.parse(JSON.stringify(progressData));
+            
+            // If there's question history, optimize it
+            if (optimized.questionHistory && Array.isArray(optimized.questionHistory)) {
+                optimized.questionHistory = optimized.questionHistory.map(item => {
+                    // Extract only essential scenario data
+                    const scenarioData = item.scenario ? {
+                        id: item.scenario.id,
+                        level: item.scenario.level,
+                        title: item.scenario.title
+                    } : (item.scenarioId ? { id: item.scenarioId } : { id: 0 });
+                    
+                    // Extract only essential answer data
+                    const answerData = item.selectedAnswer ? {
+                        text: item.selectedAnswer.text ? item.selectedAnswer.text.substring(0, 50) : 'Answer',
+                        experience: item.selectedAnswer.experience || 0,
+                        isCorrect: item.selectedAnswer.isCorrect || (item.selectedAnswer.experience > 0),
+                        outcome: item.selectedAnswer.outcome ? item.selectedAnswer.outcome.substring(0, 100) : ''
+                    } : { experience: 0, isCorrect: false };
+                    
+                    // Return a slim record with only the essential data
+                    return {
+                        scenarioId: scenarioData.id,
+                        scenarioTitle: scenarioData.title,
+                        scenarioLevel: scenarioData.level,
+                        selectedAnswer: answerData,
+                        timestamp: item.timestamp || item.timeSpent || new Date().toISOString(),
+                        isCorrect: answerData.isCorrect,
+                        timeSpent: item.timeSpent,
+                        timedOut: item.timedOut || false
+                    };
+                });
+            }
+            
+            // If there are randomized scenarios, just store IDs
+            if (optimized.randomizedScenarios) {
+                const optimizedScenarios = {};
+                Object.keys(optimized.randomizedScenarios).forEach(level => {
+                    if (Array.isArray(optimized.randomizedScenarios[level])) {
+                        optimizedScenarios[level] = optimized.randomizedScenarios[level].map(s => 
+                            typeof s === 'object' ? s.id : s
+                        );
+                    }
+                });
+                optimized.randomizedScenarios = optimizedScenarios;
+            }
+            
+            console.log(`[Quiz] Optimized progress data: ${JSON.stringify(optimized).length} bytes`);
+            return optimized;
+        } catch (error) {
+            console.error('[Quiz] Error optimizing progress data:', error);
+            // Return original data if optimization fails
+            return progressData;
+        }
+    }
+
     // Default saveProgress method that will be called by handleTimeUp
     // if the quiz implementation doesn't override it
     async saveProgress() {
@@ -775,15 +839,20 @@ export class BaseQuiz {
             status = scorePercentage >= 70 ? 'passed' : 'failed';
         }
 
-        const progress = {
-            data: {
-                questionsAnswered: this.player.questionHistory.length,
-                questionHistory: this.player.questionHistory,
-                lastUpdated: new Date().toISOString(),
-                status: status,
-                scorePercentage: Math.round((this.player.questionHistory.filter(q => q.isCorrect).length / 15) * 100)
-            }
+        // Create the progress data object
+        let progressData = {
+            questionsAnswered: this.player.questionHistory.length,
+            questionHistory: this.player.questionHistory,
+            experience: this.player.experience || 0,
+            tools: this.player.tools || [],
+            currentScenario: this.player.currentScenario || 0,
+            lastUpdated: new Date().toISOString(),
+            status: status,
+            scorePercentage: Math.round((this.player.questionHistory.filter(q => q.isCorrect).length / 15) * 100)
         };
+
+        // Optimize the data to reduce size
+        progressData = this.optimizeProgressData(progressData);
 
         try {
             const username = localStorage.getItem('username');
@@ -794,12 +863,36 @@ export class BaseQuiz {
             
             // Use user-specific key for localStorage
             const storageKey = `quiz_progress_${username}_${this.quizName}`;
-            localStorage.setItem(storageKey, JSON.stringify(progress));
+            localStorage.setItem(storageKey, JSON.stringify({ data: progressData }));
             
-            console.log('Saving progress with status:', status);
-            await this.apiService.saveQuizProgress(this.quizName, progress.data);
+            console.log('[BaseQuiz] Saving progress with status:', status);
+            const size = JSON.stringify(progressData).length;
+            console.log(`[BaseQuiz] Progress data size: ${size} bytes`);
+            
+            // Check if data is too large (over 100KB) and warn
+            if (size > 100000) {
+                console.warn('[BaseQuiz] Warning: Progress data is very large (>100KB)');
+            }
+            
+            await this.apiService.saveQuizProgress(this.quizName, progressData);
         } catch (error) {
-            console.error('Failed to save progress:', error);
+            console.error('[BaseQuiz] Failed to save progress:', error);
+            // Save minimal data to localStorage as a fallback
+            try {
+                const username = localStorage.getItem('username');
+                if (username) {
+                    const storageKey = `quiz_progress_${username}_${this.quizName}`;
+                    const minimalProgress = {
+                        questionsAnswered: progressData.questionsAnswered,
+                        experience: progressData.experience,
+                        status: progressData.status
+                    };
+                    localStorage.setItem(storageKey, JSON.stringify({ data: minimalProgress }));
+                    console.log('[BaseQuiz] Saved minimal progress to localStorage as fallback');
+                }
+            } catch (fallbackError) {
+                console.error('[BaseQuiz] Failed to save fallback progress:', fallbackError);
+            }
         }
     }
 

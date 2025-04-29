@@ -1120,7 +1120,7 @@ export class LocaleTestingQuiz extends BaseQuiz {
         // Get current level and question count
         const currentLevel = this.getCurrentLevel();
         const totalAnswered = this.player.questionHistory.length;
-        const questionNumber = totalAnswered + 1;
+        const questionNumber = totalAnswered >= 15 ? 15 : totalAnswered + 1;
         
         // Update the existing progress card elements
         const levelInfoElement = document.querySelector('.level-info');
@@ -1154,7 +1154,7 @@ export class LocaleTestingQuiz extends BaseQuiz {
         }
         
         if (progressFill) {
-            const progressPercentage = (totalAnswered / (this.totalQuestions || 15)) * 100;
+            const progressPercentage = Math.min(100, (totalAnswered / (this.totalQuestions || 15)) * 100);
             progressFill.style.width = `${progressPercentage}%`;
         }
     }

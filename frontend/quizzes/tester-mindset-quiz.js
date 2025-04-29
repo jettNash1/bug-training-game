@@ -550,15 +550,32 @@ export class TesterMindsetQuiz extends BaseQuiz {
                 return;
             }
             
-            // Optimize the question history by removing unnecessary data
-            // This helps prevent the progress object from becoming too large
-            const optimizedHistory = this.player.questionHistory.map(item => ({
-                scenarioId: item.scenarioId,
-                questionId: item.questionId, 
-                selectedOption: item.selectedOption,
-                correct: item.correct,
-                pointsEarned: item.pointsEarned || 0
-            }));
+            // Create a truly optimized version of question history that doesn't include full scenario objects
+            const optimizedHistory = this.player.questionHistory.map(item => {
+                // Extract only essential data from the scenario
+                const scenarioData = item.scenario ? {
+                    id: item.scenario.id,
+                    level: item.scenario.level,
+                    title: item.scenario.title
+                } : (item.scenarioId ? { id: item.scenarioId } : { id: 0 });
+                
+                // Extract only essential data from the selected answer
+                const answerData = item.selectedAnswer ? {
+                    text: item.selectedAnswer.text ? item.selectedAnswer.text.substring(0, 50) : 'Answer',
+                    experience: item.selectedAnswer.experience || 0,
+                    isCorrect: item.selectedAnswer.isCorrect || (item.selectedAnswer.experience > 0)
+                } : { experience: 0, isCorrect: false };
+                
+                // Return a slim record with only the essential data
+                return {
+                    scenarioId: scenarioData.id,
+                    scenarioTitle: scenarioData.title,
+                    scenarioLevel: scenarioData.level,
+                    selectedAnswer: answerData,
+                    timestamp: item.timestamp || new Date().toISOString(),
+                    isCorrect: answerData.isCorrect
+                };
+            });
             
             // Create a slimmed-down progress object
             const progress = {
@@ -568,7 +585,12 @@ export class TesterMindsetQuiz extends BaseQuiz {
                 questionHistory: optimizedHistory,
                 lastUpdated: new Date().toISOString(),
                 questionsAnswered: this.player.questionHistory?.length || 0,
-                randomizedScenarios: this.randomizedScenarios || null,
+                // Don't include full randomized scenarios - just the IDs
+                randomizedScenarios: this.randomizedScenarios ? {
+                    basic: this.randomizedScenarios.basic?.map(s => s.id) || [],
+                    intermediate: this.randomizedScenarios.intermediate?.map(s => s.id) || [],
+                    advanced: this.randomizedScenarios.advanced?.map(s => s.id) || []
+                } : null,
                 status: this.gameStatus || 'in-progress',
                 scorePercentage: this.calculateScore() || 0
             };
@@ -588,9 +610,34 @@ export class TesterMindsetQuiz extends BaseQuiz {
                 console.log('[Quiz] Progress saved successfully');
             } else {
                 console.error('[Quiz] Failed to save progress:', result.message);
+                
+                // Save to localStorage as fallback
+                const username = localStorage.getItem('username');
+                if (username) {
+                    const storageKey = `quiz_progress_${username}_tester-mindset`;
+                    localStorage.setItem(storageKey, JSON.stringify({ data: progress }));
+                    console.log('[Quiz] Saved progress to localStorage as fallback');
+                }
             }
         } catch (error) {
             console.error('[Quiz] Error saving progress:', error);
+            
+            // Save to localStorage as fallback
+            try {
+                const username = localStorage.getItem('username');
+                if (username) {
+                    const storageKey = `quiz_progress_${username}_tester-mindset`;
+                    const progress = {
+                        experience: this.player.experience || 0,
+                        questionsAnswered: this.player.questionHistory?.length || 0,
+                        status: 'in-progress'
+                    };
+                    localStorage.setItem(storageKey, JSON.stringify({ data: progress }));
+                    console.log('[Quiz] Saved minimal progress to localStorage as error fallback');
+                }
+            } catch (fallbackError) {
+                console.error('[Quiz] Failed to save fallback progress:', fallbackError);
+            }
         }
     }
 
