@@ -813,84 +813,177 @@ export class IssueVerificationQuiz extends BaseQuiz {
         }
     }
 
-    async startGame() {
-        if (this.isLoading) return;
+    /**
+     * Ensures all required elements exist in the DOM
+     * @returns {boolean} - True if all required elements exist
+     */
+    ensureRequiredElementsExist() {
+        console.log('[IssueVerificationQuiz] Checking required elements');
+        const requiredElements = [
+            { id: 'scenario-title', type: 'h2', parent: '#game-screen', fallbackClass: 'scenario-title' },
+            { id: 'scenario-description', type: 'p', parent: '#game-screen', fallbackClass: 'scenario-description' },
+            { id: 'options-container', type: 'div', parent: '#game-screen', fallbackClass: 'options-container' },
+            { id: 'question-progress', type: 'div', parent: '.quiz-header-progress', fallbackClass: 'question-info' },
+            { id: 'level-indicator', type: 'div', parent: '.quiz-header-progress', fallbackClass: 'level-info' }
+        ];
         
+        let allExist = true;
+        
+        requiredElements.forEach(element => {
+            // Check if element exists
+            let domElement = document.getElementById(element.id);
+            
+            // If it doesn't exist, try to create it
+            if (!domElement) {
+                console.log(`[IssueVerificationQuiz] Element ${element.id} not found, attempting to create`);
+                
+                try {
+                    const parentElement = document.querySelector(element.parent);
+                    if (!parentElement) {
+                        console.error(`[IssueVerificationQuiz] Parent element ${element.parent} not found`);
+                        allExist = false;
+                        return;
+                    }
+                    
+                    domElement = document.createElement(element.type);
+                    domElement.id = element.id;
+                    if (element.fallbackClass) {
+                        domElement.className = element.fallbackClass;
+                    }
+                    
+                    // Special handling for specific elements
+                    if (element.id === 'options-container') {
+                        // Options container should be placed in a specific position
+                        const submitButton = parentElement.querySelector('.submit-button');
+                        if (submitButton) {
+                            parentElement.insertBefore(domElement, submitButton);
+                        } else {
+                            parentElement.appendChild(domElement);
+                        }
+                    } else if (element.id === 'question-progress' || element.id === 'level-indicator') {
+                        // Progress elements go into the header
+                        parentElement.appendChild(domElement);
+                        
+                        // Initialize with default text
+                        if (element.id === 'question-progress') {
+                            domElement.textContent = 'Question: 1/15';
+                        } else if (element.id === 'level-indicator') {
+                            domElement.textContent = 'Level: Basic';
+                        }
+                    } else {
+                        // Default placement
+                        parentElement.appendChild(domElement);
+                    }
+                    
+                    console.log(`[IssueVerificationQuiz] Created element ${element.id}`);
+                } catch (error) {
+                    console.error(`[IssueVerificationQuiz] Failed to create element ${element.id}:`, error);
+                    allExist = false;
+                }
+            }
+        });
+        
+        // Ensure the game screen is visible
+        const gameScreen = document.getElementById('game-screen');
+        if (gameScreen) {
+            gameScreen.classList.remove('hidden');
+        }
+        
+        // Ensure outcome and end screens are hidden
+        const outcomeScreen = document.getElementById('outcome-screen');
+        if (outcomeScreen) {
+            outcomeScreen.classList.add('hidden');
+        }
+        
+        const endScreen = document.getElementById('end-screen');
+        if (endScreen) {
+            endScreen.classList.add('hidden');
+        }
+        
+        console.log('[IssueVerificationQuiz] Required elements check completed, result:', allExist);
+        return allExist;
+    }
+    
+    async startGame() {
+        console.log('[IssueVerificationQuiz] Starting game');
         try {
             this.isLoading = true;
-            // Show loading indicator
-            const loadingIndicator = document.getElementById('loading-indicator');
-            if (loadingIndicator) {
-                loadingIndicator.classList.remove('hidden');
+            
+            // First attempt to load any existing progress
+            const progressLoaded = await this.loadProgress();
+            console.log('[IssueVerificationQuiz] Progress loaded:', progressLoaded);
+            
+            if (!progressLoaded) {
+                console.log('[IssueVerificationQuiz] No progress found, starting new game');
+                // If no progress was loaded, initialize a new player state
+                const username = localStorage.getItem('username');
+                this.player = {
+                    name: username || '',
+                    experience: 0,
+                    tools: [],
+                    currentScenario: 0,
+                    questionHistory: []
+                };
             }
-
-            // Set player name from localStorage
-            this.player.name = localStorage.getItem('username');
-            if (!this.player.name) {
-                window.location.href = '/login.html';
+            
+            // Ensure required DOM elements exist
+            if (!this.ensureRequiredElementsExist()) {
+                console.error('[IssueVerificationQuiz] Required elements could not be created');
+                this.showError('Quiz initialization failed. Please refresh the page.');
                 return;
             }
-
-            // Initialize event listeners
-            this.initializeEventListeners();
-
-            // Load previous progress
-            const hasProgress = await this.loadProgress();
-            console.log('Previous progress loaded:', hasProgress);
             
-            if (!hasProgress) {
-                // Reset player state if no valid progress exists
-                this.player.experience = 0;
-                this.player.tools = [];
-                this.player.currentScenario = 0;
-                this.player.questionHistory = [];
+            // Initialize timer settings
+            await this.initializeTimerSettings();
+            
+            // Show the game screen
+            if (this.gameScreen) {
+                this.gameScreen.classList.remove('hidden');
             }
             
-            // Clear any existing transition messages
-            const transitionContainer = document.getElementById('level-transition-container');
-            if (transitionContainer) {
-                transitionContainer.innerHTML = '';
-                transitionContainer.classList.remove('active');
+            // Hide outcome and end screens
+            if (this.outcomeScreen) {
+                this.outcomeScreen.classList.add('hidden');
             }
             
-            await this.displayScenario();
+            if (this.endScreen) {
+                this.endScreen.classList.add('hidden');
+            }
+            
+            // Update progress display
+            this.updateProgress();
+            
+            // Display the first scenario
+            this.displayScenario();
+            
+            // Initialize guide button if enabled
+            await this.initializeGuideSettings();
+            
+            console.log('[IssueVerificationQuiz] Game started successfully');
         } catch (error) {
-            console.error('Failed to start game:', error);
-            this.showError('Failed to start the quiz. Please try refreshing the page.');
+            console.error('[IssueVerificationQuiz] Error starting game:', error);
+            this.showError('Failed to start the quiz. Please refresh and try again.');
         } finally {
             this.isLoading = false;
-            // Hide loading state
-            const loadingIndicator = document.getElementById('loading-indicator');
-            if (loadingIndicator) {
-                loadingIndicator.classList.add('hidden');
-            }
         }
     }
-
-    initializeEventListeners() {
-        // Add event listeners for the continue and restart buttons
-        document.getElementById('continue-btn')?.addEventListener('click', () => this.nextScenario());
-        document.getElementById('restart-btn')?.addEventListener('click', () => this.restartGame());
-
-        // Add form submission handler
-        document.getElementById('options-form')?.addEventListener('submit', (e) => {
-            e.preventDefault();
-            this.handleAnswer();
-        });
-
-        // Add keyboard navigation
-        document.addEventListener('keydown', (e) => {
-            if (e.key === 'Enter' && e.target.type === 'radio') {
-                this.handleAnswer();
-            }
-        });
-    }
-
+    
     displayScenario() {
+        console.log('[IssueVerificationQuiz] Starting displayScenario method');
+        
+        // Ensure all required elements exist in the DOM
+        if (!this.ensureRequiredElementsExist()) {
+            console.error('[IssueVerificationQuiz] Required elements could not be created. Stopping displayScenario.');
+            this.showError('Quiz initialization failed. Please refresh the page.');
+            return;
+        }
+        
         const currentScenarios = this.getCurrentScenarios();
+        console.log('[IssueVerificationQuiz] currentScenarios:', currentScenarios);
         
         // Check if we've answered all questions
         if (this.shouldEndGame()) {
+            console.log('[IssueVerificationQuiz] Ending game - all questions answered');
             this.endGame(false);
             return;
         }
@@ -898,33 +991,40 @@ export class IssueVerificationQuiz extends BaseQuiz {
         // Get the next scenario based on current progress
         let scenario;
         const questionCount = this.player.questionHistory.length;
+        console.log('[IssueVerificationQuiz] questionCount:', questionCount);
         
         // Reset currentScenario based on the current level
         if (questionCount < 5) {
             // Basic questions (0-4)
+            console.log('[IssueVerificationQuiz] Selecting from basicScenarios, index:', questionCount);
             scenario = this.basicScenarios[questionCount];
             this.player.currentScenario = questionCount;
         } else if (questionCount < 10) {
             // Intermediate questions (5-9)
+            console.log('[IssueVerificationQuiz] Selecting from intermediateScenarios, index:', questionCount - 5);
             scenario = this.intermediateScenarios[questionCount - 5];
             this.player.currentScenario = questionCount - 5;
         } else if (questionCount < 15) {
             // Advanced questions (10-14)
+            console.log('[IssueVerificationQuiz] Selecting from advancedScenarios, index:', questionCount - 10);
             scenario = this.advancedScenarios[questionCount - 10];
             this.player.currentScenario = questionCount - 10;
         }
 
         if (!scenario) {
-            console.error('No scenario found for current progress. Question count:', questionCount);
+            console.error('[IssueVerificationQuiz] No scenario found for current progress. Question count:', questionCount);
             this.endGame(true);
             return;
         }
+        
+        console.log('[IssueVerificationQuiz] Selected scenario:', scenario.id, scenario.title);
 
         // Store current question number for consistency
         this.currentQuestionNumber = questionCount + 1;
         
         // Show level transition message at the start of each level or when level changes
         const currentLevel = this.getCurrentLevel();
+        console.log('[IssueVerificationQuiz] Current level:', currentLevel);
         const previousLevel = questionCount > 0 ? 
             (questionCount <= 5 ? 'Basic' : 
              questionCount <= 10 ? 'Intermediate' : 'Advanced') : null;
@@ -960,13 +1060,20 @@ export class IssueVerificationQuiz extends BaseQuiz {
             }
         }
 
-        // Update scenario display
+        // Update scenario display - elements should exist after ensureRequiredElementsExist
         const titleElement = document.getElementById('scenario-title');
         const descriptionElement = document.getElementById('scenario-description');
         const optionsContainer = document.getElementById('options-container');
 
+        console.log('[IssueVerificationQuiz] DOM elements:', {
+            titleElement: !!titleElement,
+            descriptionElement: !!descriptionElement,
+            optionsContainer: !!optionsContainer
+        });
+
         if (!titleElement || !descriptionElement || !optionsContainer) {
-            console.error('Required elements not found');
+            console.error('[IssueVerificationQuiz] Required elements not found even after ensureRequiredElementsExist');
+            this.showError('Quiz initialization failed. Required elements not found.');
             return;
         }
 
@@ -992,6 +1099,7 @@ export class IssueVerificationQuiz extends BaseQuiz {
         }
 
         optionsContainer.innerHTML = '';
+        console.log('[IssueVerificationQuiz] Adding', shuffledOptions.length, 'options to container');
 
         shuffledOptions.forEach((option, index) => {
             const optionElement = document.createElement('div');
@@ -1009,10 +1117,32 @@ export class IssueVerificationQuiz extends BaseQuiz {
             optionsContainer.appendChild(optionElement);
         });
 
+        console.log('[IssueVerificationQuiz] Options added to container, updating progress');
         this.updateProgress();
 
         // Initialize timer for the new question
+        console.log('[IssueVerificationQuiz] Initializing timer');
         this.initializeTimer();
+        console.log('[IssueVerificationQuiz] displayScenario complete');
+    }
+
+    initializeEventListeners() {
+        // Add event listeners for the continue and restart buttons
+        document.getElementById('continue-btn')?.addEventListener('click', () => this.nextScenario());
+        document.getElementById('restart-btn')?.addEventListener('click', () => this.restartGame());
+
+        // Add form submission handler
+        document.getElementById('options-form')?.addEventListener('submit', (e) => {
+            e.preventDefault();
+            this.handleAnswer();
+        });
+
+        // Add keyboard navigation
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' && e.target.type === 'radio') {
+                this.handleAnswer();
+            }
+        });
     }
 
     async handleAnswer() {

@@ -14,24 +14,23 @@ export class ReportsQuiz extends BaseQuiz {
                 advanced: { questions: 15, minXP: 235 }
             },
             performanceThresholds: [
-                { threshold: 90, message: '🏆 Outstanding! You\'re a reporting expert!' },
-                { threshold: 80, message: '👏 Great job! You\'ve shown strong reporting skills!' },
+                { threshold: 90, message: '🏆 Outstanding! You\'re an issue verification expert!' },
+                { threshold: 80, message: '👏 Great job! You\'ve shown strong verification skills!' },
                 { threshold: 70, message: '👍 Good work! You\'ve passed the quiz!' },
-                { threshold: 0, message: '📚 Consider reviewing reporting best practices and try again!' }
+                { threshold: 0, message: '📚 Consider reviewing issue verification best practices and try again!' }
             ]
         };
         
         super(config);
         
-        // Set the quiz name
+        // Set the quiz name as a non-configurable, non-writable property
         Object.defineProperty(this, 'quizName', {
-            value: 'reports',
+            value: 'issue-verification',
             writable: false,
             configurable: false,
             enumerable: true
         });
         
-        // Initialize player state
         this.player = {
             name: '',
             experience: 0,
@@ -39,7 +38,7 @@ export class ReportsQuiz extends BaseQuiz {
             currentScenario: 0,
             questionHistory: []
         };
-
+        
         // Initialize API service
         this.apiService = new APIService();
 
@@ -47,20 +46,20 @@ export class ReportsQuiz extends BaseQuiz {
         this.gameScreen = document.getElementById('game-screen');
         this.outcomeScreen = document.getElementById('outcome-screen');
         this.endScreen = document.getElementById('end-screen');
-        
+       
         // Verify all required elements exist
         if (!this.gameScreen) {
             console.error('Game screen element not found');
             this.showError('Quiz initialization failed. Please refresh the page.');
             return;
         }
-        
+       
         if (!this.outcomeScreen) {
             console.error('Outcome screen element not found');
             this.showError('Quiz initialization failed. Please refresh the page.');
             return;
         }
-        
+       
         if (!this.endScreen) {
             console.error('End screen element not found');
             this.showError('Quiz initialization failed. Please refresh the page.');
@@ -72,31 +71,31 @@ export class ReportsQuiz extends BaseQuiz {
             {
                 id: 1,
                 level: 'Basic',
-                title: 'Report Timing',
-                description: 'When should you start writing a daily report?',
+                title: 'Verification Priority',
+                description: 'You have limited time for issue verification. How do you prioritize tickets?',
                 options: [
                     {
-                        text: 'Start at 16:45 for standard reports, 16:30 if peer review needed, deliver by 17:00',
-                        outcome: 'Perfect! This ensures timely delivery with review time.',
+                        text: 'Start with highest priority and severity issues, ensuring critical fixes are verified first',
+                        outcome: 'Perfect! This ensures most important issues are verified.',
                         experience: 15,
                         isCorrect: true,
-                        tool: 'Time Management'
+                        tool: 'Prioritization'
                     },
                     {
-                        text: 'Start writing the report at end of the working day',
-                        outcome: 'Reports need time for review from the project manager and any revisions needed.',
+                        text: 'Verify tickets in chronological order to address the most current issues first',
+                        outcome: 'Priority and severity should guide verification order.',
                         experience: -10,
                         isCorrect: false
                     },
                     {
-                        text: 'Write the report throughout day and submit what has been observed at the time of documenting',
-                        outcome: 'A final report requires the latest updated information at the point of submitting.',
+                        text: 'Start with easiest tickets to gain the most coverage of open tickets',
+                        outcome: 'Critical issues need verification first.',
                         experience: -5,
                         isCorrect: false
                     },
                     {
-                        text: 'Start after 17:00',
-                        outcome: 'Reports must be delivered before the end of day and starting too late may potentially not leave enough time for reviews and revisions.',
+                        text: 'Verify issues based on your familiarity with specific tickets',
+                        outcome: 'Structured prioritisation is required to address the most critical issues first.',
                         experience: 0,
                         isCorrect: false
                     }
@@ -105,28 +104,28 @@ export class ReportsQuiz extends BaseQuiz {
             {
                 id: 2,
                 level: 'Basic',
-                title: 'Writing Style',
-                description: 'How should you write the report summary?',
+                title: 'Environment Matching',
+                description: 'You need to verify a device-specific issue. What\'s the correct approach?',
                 options: [
                     {
-                        text: 'Use third person, present tense, objective language without technical jargon',
-                        outcome: 'Excellent! This maintains a professional tone.',
+                        text: 'Verify on the original environment where possible, or clearly document any environment differences',
+                        outcome: 'Excellent! This maintains testing consistency.',
                         experience: 15,
-                        tool: 'Writing Standards'
+                        tool: 'Environment Management'
                     },
                     {
-                        text: 'Use a first person approach to keep the report to a personal level',
-                        outcome: 'Reports require a third person approach to keep to keep the tone objective.',
+                        text: 'Test on any available device to verify the issue has been resolved',
+                        outcome: 'The original environment should be prioritised as this is where the issue was raised and has been addressed.',
                         experience: -10
                     },
                     {
-                        text: 'Include technical references so developers can identify issues quickly',
-                        outcome: 'The language used should be accessible to all stakeholders and technical references should not be included unless absolutely required.',
+                        text: 'Verify on an older device before moving onto the specified device',
+                        outcome: 'Device-specific issues require verification as users will operate many different devices.',
                         experience: -5
                     },
                     {
-                        text: 'Use a past tense approach when writing the summary section',
-                        outcome: 'Present tense writing should be used as it shows the current state of a project.',
+                        text: 'This can be marked as verified without testing as long as functionality on the primary environment behaves as intended',
+                        outcome: 'Verification is required on specific devices the issue was raised on.',
                         experience: 0
                     }
                 ]
@@ -134,28 +133,28 @@ export class ReportsQuiz extends BaseQuiz {
             {
                 id: 3,
                 level: 'Basic',
-                title: 'Summary Structure',
-                description: 'What are the four main sections of a report summary?',
+                title: 'Verification Comments',
+                description: 'How should you document your verification findings?',
                 options: [
                     {
-                        text: 'Introduction, what went well, what could be better, conclusion',
-                        outcome: 'Perfect! This covers all key aspects.',
+                        text: 'Use template format with status, date, observations, version, environments, and evidence',
+                        outcome: 'Perfect! This provides comprehensive verification documentation.',
                         experience: 15,
-                        tool: 'Report Structure'
+                        tool: 'Documentation'
                     },
                     {
-                        text: 'Issues found, blocking issues, resolved issues and queries',
-                        outcome: 'This approach only refers to issues and balanced coverage of all aspects is required.',
+                        text: 'Update the ticket status, as this ensures proper traceability of the issue',
+                        outcome: 'More details are required for traceability.',
                         experience: -10
                     },
                     {
-                        text: 'Introduction, technical details, what went well, conclusion',
-                        outcome: 'Technical details should not be included in the summary as it should be accessible to all stakeholders.',
+                        text: 'Update the ticket by stating "fixed" or "not fixed" as further details are not required',
+                        outcome: 'More detailed documentation is required for developer and stakeholder information.',
                         experience: -5
                     },
                     {
-                        text: 'Sections related to observations from the days testing activities based on the testers preference',
-                        outcome: 'A structured approach is required to maintain consistency across all reports.',
+                        text: 'Add screenshots as visual representation of issues is vital for developers to debug issues',
+                        outcome: 'Written documentation is also required to accompany evidence.',
                         experience: 0
                     }
                 ]
@@ -163,28 +162,28 @@ export class ReportsQuiz extends BaseQuiz {
             {
                 id: 4,
                 level: 'Basic',
-                title: 'Metrics Inclusion',
-                description: 'What metrics should be included in the report?',
+                title: 'Evidence Capture',
+                description: 'What\'s the best practice for capturing verification evidence?',
                 options: [
                     {
-                        text: 'New issues, closed issues, outstanding issues, and relevant progress tables',
-                        outcome: 'Excellent! This provides comprehensive metrics.',
+                        text: 'Use appropriate tools, highlight issues clearly, repeat demonstrations in videos',
+                        outcome: 'Excellent! This provides clear verification evidence.',
                         experience: 15,
-                        tool: 'Metrics Documentation'
+                        tool: 'Evidence Capture'
                     },
                     {
-                        text: 'New issue metrics, as this is the current relevant information for the client',
-                        outcome: 'All relevant metrics including progress, closed and outstanding issues are required for traceability purposes.',
+                        text: 'Included screenshots don\'t need labelling as attachment should provide enough detail',
+                        outcome: 'Any submitted evidence requires clear highlighting.',
                         experience: -10
                     },
                     {
-                        text: 'Project progress as this is crucial for the project manger to gauge resources for the agreed test time frame',
-                        outcome: 'Whilst this is an important metric, other metrics are also required for full project understanding.',
+                        text: 'Evidence capture is generally not needed as steps and description should provide enough detail',
+                        outcome: 'Visual evidence is essential for verification.',
                         experience: -5
                     },
                     {
-                        text: 'Closed ticket metrics as this informs the client on developer performance',
-                        outcome: 'All metrics are crucial for reports, including new, closed, outstanding issues, and relevant progress.',
+                        text: 'A video capture in low resolution should be sufficient evidence',
+                        outcome: 'While a video capture is good evidence, the resolution should be up to a legible standard.',
                         experience: 0
                     }
                 ]
@@ -192,28 +191,28 @@ export class ReportsQuiz extends BaseQuiz {
             {
                 id: 5,
                 level: 'Basic',
-                title: 'Graph Presentation',
-                description: 'How should graphs be presented in the report?',
+                title: 'Status Updates',
+                description: 'An issue is partially fixed. How do you update its status?',
                 options: [
                     {
-                        text: 'Consistent width, visible labels, appropriate legends, and alt text',
-                        outcome: 'Perfect! This ensures accessible presentation.',
+                        text: 'Mark as partially fixed with a detailed explanation of the remaining issues',
+                        outcome: 'Perfect! This accurately reflects partial fixes.',
                         experience: 15,
-                        tool: 'Visual Documentation'
+                        tool: 'Status Management'
                     },
                     {
-                        text: 'With emphasis focused on each specific data element related to the graph and sized to fit the data',
-                        outcome: 'Consistency is required in size throughout the report.',
+                        text: 'Change the status to fixed, adding a note to re-open once fully fixed',
+                        outcome: 'Partial fixes should not be closed unless instructed by the client.',
                         experience: -10
                     },
                     {
-                        text: 'Without labels as the graphs themselves provide enough data and information',
-                        outcome: 'Labels for graphs and data are required for clarity.',
+                        text: 'Update the status to not fixed without adding a comment, as the status itself indicates the ticket requires a revisit',
+                        outcome: 'Partial fix tickets require a partial fix status with full details included.',
                         experience: -5
                     },
                     {
-                        text: 'With placement preference based on experience of the tester',
-                        outcome: 'Organized and structured presentation is required for all reports for consistency throughout.',
+                        text: 'Keep the status unchanged, as the open ticket reflects the current situation',
+                        outcome: 'This type of ticket requires the correct status update with the relevant verification details.',
                         experience: 0
                     }
                 ]
@@ -221,31 +220,31 @@ export class ReportsQuiz extends BaseQuiz {
             {
                 id: 16,
                 level: 'Basic',
-                title: 'Summary Numbering Reference',
-                description: 'How should numbers be represented in the report summary?',
+                title: 'Issue Status',
+                description: 'What term describes an issue that shows some improvements but still has unresolved aspects?',
                 options: [
                     {
-                        text: 'All numbers should be written in words (e.g., seven)',
-                        outcome: 'Correct! All references to numbers within the summary should be spelled out.',
+                        text: 'Partially Fixed',
+                        outcome: 'Correct! This is an issue that has been noted as partly showing expected behaviour or improvements, but part of the issue remains unresolved.',
                         experience: 15,
                         isCorrect: true,
-                        tool: 'Summary Numbering Reference'
+                        tool: 'Issue Status'
                     },
                     {
-                        text: 'Numbers one through nine should be spelled out, numbers 10 and above should be written as numerals',
-                        outcome: 'All references to numbers within the summary should be spelled out.',
+                        text: 'Won\'t Fix',
+                        outcome: 'Won\'t Fix means the client has decided not to address the issue.',
                         experience: -5,
                         isCorrect: false
                     },
                     {
-                        text: 'All numbers should be written as numerals (e.g., 7)',
-                        outcome: 'All references to numbers within the summary should be spelled out.',
+                        text: 'Not Reproducible',
+                        outcome: 'Not Reproducible means the issue cannot be recreated during testing.',
                         experience: -10,
                         isCorrect: false
                     },
                     {
-                        text: 'Only important metrics should be written as numerals, all other numbers should be spelled out',
-                        outcome: 'All references to numbers within the summary should be spelled out.',
+                        text: 'Out of Scope',
+                        outcome: 'Out of Scope indicates the issue is beyond the project requirements.',
                         experience: 0,
                         isCorrect: false
                     }
@@ -254,31 +253,31 @@ export class ReportsQuiz extends BaseQuiz {
             {
                 id: 17,
                 level: 'Basic',
-                title: 'Report Communication',
-                description: 'What tense should be consistently used throughout a report?',
+                title: 'Issue Verification & Additional Testing',
+                description: 'What is a crucial component of issue verification that should be performed alongside retesting specific issues?',
                 options: [
                     {
-                        text: 'Past tense should be used for the summary section within the report',
-                        outcome: 'This is incorrect as past tense may imply defects are no longer present',
+                        text: 'Creating detailed test cases for future test cycles',
+                        outcome: 'Creating test cases is part of planning activities and not generally part of issue verification',
                         experience: -5,
                         isCorrect: false
                     },
                     {
-                        text: 'Future tense should be used throughout the report',
-                        outcome: 'Present tense should be used throughout the report as it clearly defines where the project is up to progress wise.',
+                        text: 'Interviewing developers about their implementation methods',
+                        outcome: 'Whilst comments can be added to tickets about findings and queries. Interviewing developers is not part of issue verification.',
                         experience: -10,
                         isCorrect: false
                     },
                     {
-                        text: 'Present tense should be used throughout the report',
-                        outcome: 'Correct! Present tense should be used throughout the report as it clearly defines where the project is up to progress wise.',
+                        text: 'Regression testing in areas where fixes have been made',
+                        outcome: 'Correct! It is critical you ensure time for regression testing to identify new issues that may have been introduced as a result of fixes.',
                         experience: 15,
                         isCorrect: true,
-                        tool: 'Report Communication'
+                        tool: 'Issue Verification & Additional Testing'
                     },
                     {
-                        text: 'A mix of past and present tense depending on the section should be used',
-                        outcome: 'Present tense should be used consistently throughout the report as it clearly defines where the project is up to progress wise',
+                        text: 'Redesigning the user interface to prevent future issues',
+                        outcome: 'User Interface redesign is not part of the tester\'s responsibility during issue verification',
                         experience: 0,
                         isCorrect: false
                     }
@@ -287,31 +286,31 @@ export class ReportsQuiz extends BaseQuiz {
             {
                 id: 18,
                 level: 'Basic',
-                title: 'Report Blocking Issues',
-                description: 'What should happen with blocking issues in the report?',
+                title: 'Issue Verification Characteristics',
+                description: 'What is a key characteristic of issue verification compared to exploratory testing?',
                 options: [
                     {
-                        text: 'They should be included in the Top 5 issues section',
-                        outcome: 'Blocking issues should be reported in their own section.',
+                        text: 'Issue verification requires less attention to detail than exploratory testing',
+                        outcome: 'Issue verification requires being Observant, Detail oriented and aware of change, so it doesn\'t require less attention to detail.',
                         experience: -5,
                         isCorrect: false
                     },
                     {
-                        text: 'These should only be stated in the summary section',
-                        outcome: 'While blocking issues may be mentioned in the summary, they should be listed in their own section as well.', 
+                        text: 'Issue verification is always performed by a different tester than the original test execution',
+                        outcome: 'The same tester that performed the original test execution on the system can perform the regression tests as well as different testers.', 
                         experience: -10,
                         isCorrect: false
                     },
                     {
-                        text: 'They should be listed separately from the Top 5 issues',
-                        outcome: 'Correct! Blocking issues should be separate from the top 5 issues and should be listed directly above in the Blocking issue(s) found section.',
+                        text: 'Issue verification focuses more on reporting than on detailing destructive test methods',
+                        outcome: 'Correct! The reporting process differs from, exploratory testing which is focused on detailing destructive/edge case methods and reporting the issues found. Instead, it is centred around verifying and building a picture of product quality.',
                         experience: 15,
                         isCorrect: true,
-                        tool: 'Report Blocking Issues'
+                        tool: 'Issue Verification Characteristics'
                     },
                     {
-                        text: 'They should only be listed if they cannot be resolved quickly',
-                        outcome: 'All blocking issues should be listed regardless of resolution time.',
+                        text: 'Issue verification allows for more creative test approaches than exploratory testing',
+                        outcome: 'Issue verification generally relies on following a set of steps for each ticket raised rather than a more creative approach that exploratory testing employs.',
                         experience: 0,
                         isCorrect: false
                     }
@@ -320,31 +319,31 @@ export class ReportsQuiz extends BaseQuiz {
             {
                 id: 19,
                 level: 'Basic',
-                title: 'Top 5 Issues of Concern',
-                description: 'What should be done if there are fewer than 5 open issues remaining?',
+                title: 'Issue Verification Terms',
+                description: 'What does the term "Global" mean in the context of issue verification?',
                 options: [
                     {
-                        text: 'Remove the excess rows and rename the table to top issues of concern',
-                        outcome: 'Correct! If there are less than 5 issues remaining open, we can remove the excess rows in the Top 5 table and amend the table\'s title to, top issues of concern.',
+                        text: 'The issue is present on all environments and all operating systems based on tested samples',
+                        outcome: 'Correct! Stating global is making a calculated assumption based on observations that the issue is present on all environments and all operating systems.',
                         experience: 15,
                         isCorrect: true,
-                        tool: 'Top 5 Issues of Concern'
+                        tool: 'Issue Verification Terms'
                     },
                     {
-                        text: 'Make up additional issues to complete the list',
-                        outcome: 'Creating fictional issues would be unethical and misleading.',
+                        text: 'The issue affects all users in all countries worldwide',
+                        outcome: 'While this might seem logical, global is defined in terms of environments and operating systems, not geographic regions.',
                         experience: -10,
                         isCorrect: false
                     },
                     {
-                        text: 'Leave the remaining rows blank in the table.',
-                        outcome: 'Leaving blank rows would make the report look incomplete',
+                        text: 'The issue requires approval from global management.',
+                        outcome: 'This is incorrect, and management should not be involved in ticket raising criteria.',
                         experience: -5,
                         isCorrect: false
                     },
                     {
-                        text: 'Include previously fixed issues to reach 5 total issues.',
-                        outcome: 'Including fixed issues in the current open issues list would be misleading and inaccurate',
+                        text: 'The issue can only be verified by international teams.',
+                        outcome: 'This is incorrect as global issues should require the testers experience and knowledge',
                         experience: 0,
                         isCorrect: false
                     }
@@ -353,31 +352,31 @@ export class ReportsQuiz extends BaseQuiz {
             {
                 id: 20,
                 level: 'Basic',
-                title: 'Test Environment Matrix',
-                description: 'What is the appropriate formatting for the Test Environment Matrix in the report?',
+                title: 'Unresolved Issues',
+                description: 'What should a tester do if they discover that clients have not addressed issues in time for the issue verification session?',
                 options: [
                     {
-                        text: 'Keep all text for each row contained within one line where possible',
-                        outcome: 'Correct! It\'s ideal to see if you can get all text for each row contained within one line and to select the AutoFit to Window option to extend the table to the full width of the page.',
+                        text: 'Identify unresolved issues as lower priority for retesting',
+                        outcome: 'Correct! Where possible, confirm with the project manager which & how many issues the client has been able to work on ahead of the issue verification session. If there are known unresolved issues, identify them as lower priority for retest.',
                         experience: 15,
                         isCorrect: true,
-                        tool: 'Test Environment Matrix'
+                        tool: 'Unresolved Issues'
                     },
                     {
-                        text: 'Allow text to overflow to multiple lines to ensure readability',
-                        outcome: 'Text overflow should be avoided where possible as it can become unreadable and display an unprofessional approach.',
+                        text: 'Cancel the session and reschedule for a later date',
+                        outcome: 'This should not be the process. Any unresolved issues should be identified as low priority for re-test.',
                         experience: -10,
                         isCorrect: false
                     },
                     {
-                        text: 'Use a smaller font size to fit all text on one line',
-                        outcome: 'Whilst this could potentially correct any overflow issues. Font size should be kept consistent where possible.',
+                        text: 'Test only the fixed issues and ignore all others',
+                        outcome: 'Prioritising of all issues should be the process, rather than ignoring any tickets that have any other status.',
                         experience: -5,
                         isCorrect: false
                     },
                     {
-                        text: 'Split the environment matrix across multiple pages',
-                        outcome: 'Whilst this could potentially solve any issues with size. It could reduce readability.',
+                        text: 'Automatically mark all untested issues as \'Not Fixed\'',
+                        outcome: 'Automatically marking issues as Not Fixed without testing would be inaccurate and contradicts the purpose of verification.',
                         experience: 0,
                         isCorrect: false
                     }
@@ -390,28 +389,28 @@ export class ReportsQuiz extends BaseQuiz {
             {
                 id: 6,
                 level: 'Intermediate',
-                title: 'Peer Review Process',
-                description: 'How should you handle peer review feedback?',
+                title: 'Regression Testing',
+                description: 'After verifying fixes, how do you approach regression testing?',
                 options: [
                     {
-                        text: 'Review all comments, address each point, resolve comments after fixing and discuss if clarification needed',
-                        outcome: 'Perfect! This ensures thorough review process.',
+                        text: 'Focus on areas where fixes were implemented, while also checking surrounding functionality',
+                        outcome: 'Perfect! This ensures thorough regression coverage.',
                         experience: 20,
-                        tool: 'Peer Review'
+                        tool: 'Regression Testing'
                     },
                     {
-                        text: 'Respond to feedback that is considered an improvement on what is currently stated',
-                        outcome: 'All feedback requires consideration and a response stating the authors views.',
+                        text: 'Check all of the fixed issues as confirmed by the client',
+                        outcome: 'Regression testing should cover areas that have been recently modified. This may include new features or bug fixes.',
                         experience: -15
                     },
                     {
-                        text: 'Delete any comments without fixing potential changes if they are not deemed to improve the report',
-                        outcome: 'Comments correct resolution with feedback and documented information.',
+                        text: 'Stick to minimal regression testing as previous issues have been fixed and tested during the current release',
+                        outcome: 'Regression testing reduces the risk of introducing new bugs into the system, which can be costly and time-consuming to fix later.',
                         experience: -10
                     },
                     {
-                        text: 'Update any areas suggested from the review without marking comments as resolved',
-                        outcome: 'Comment resolution is required for tracking purposes.',
+                        text: 'Focus regression testing on tester preference using experience gained during initial testing',
+                        outcome: 'Regression tests should focus on high risk areas, recent changes and core functionality.',
                         experience: 0
                     }
                 ]
@@ -419,28 +418,28 @@ export class ReportsQuiz extends BaseQuiz {
             {
                 id: 7,
                 level: 'Intermediate',
-                title: 'Environment Documentation',
-                description: 'How do you document test environments in the report?',
+                title: 'Time Management',
+                description: 'How do you manage time during a verification session?',
                 options: [
                     {
-                        text: 'Include a matrix with accurate versions, consistent formatting, and relevant environment details',
-                        outcome: 'Excellent! This provides clear environment context.',
+                        text: 'Set goals for ticket verification numbers and allocate specific time for regression',
+                        outcome: 'Excellent! This ensures balanced coverage.',
                         experience: 20,
-                        tool: 'Environment Documentation'
+                        tool: 'Time Management'
                     },
                     {
-                        text: 'Incorporate a matrix with device names listed for each environment',
-                        outcome: 'Other information is required for an environment matrix such as version details.',
+                        text: 'Work through verification of all tickets to completion',
+                        outcome: 'Time needs to be allocated for both issue verification and regression testing on a priority basis.',
                         experience: -15
                     },
                     {
-                        text: 'Include a matrix with primary environment details stated',
-                        outcome: 'Environment documentation for all environments tested are required for traceability.',
+                        text: 'Focus time management on regression testing',
+                        outcome: 'Issue verification requires time allocation for both ticket verification and regression testing.',
                         experience: -10
                     },
                     {
-                        text: 'Use the summary to outline environment coverage',
-                        outcome: 'Whilst some environment coverage can be stated in the summary, a more detailed approach is required in the form of an environment matrix for full traceability.',
+                        text: 'Focus time management and planning on issue verification',
+                        outcome: 'Issue verification requires time allocation for both ticket verification and regression testing.',
                         experience: 0
                     }
                 ]
@@ -448,28 +447,28 @@ export class ReportsQuiz extends BaseQuiz {
             {
                 id: 8,
                 level: 'Intermediate',
-                title: 'Issue Summary Presentation',
-                description: 'How should you present the top issues in the report?',
+                title: 'New Issues Discovery',
+                description: 'You find new issues during verification. How do you handle them?',
                 options: [
                     {
-                        text: 'List most functionally impactive issues, include blocking issues separately, hyperlink all references',
-                        outcome: 'Perfect! This provides organized issue overview.',
+                        text: 'Raise new tickets and note if they\'re related to recent fixes',
+                        outcome: 'Perfect! This tracks new issues properly.',
                         experience: 20,
-                        tool: 'Issue Documentation'
+                        tool: 'Issue Management'
                     },
                     {
-                        text: 'List issues by tester preference based on experience of the project',
-                        outcome: 'Issue need to be prioritised by impact on the system under test.',
+                        text: 'Add any new issues to existing tickets within the project',
+                        outcome: 'Any new issues found require separate tickets.',
                         experience: -15
                     },
                     {
-                        text: 'List issues in standard text format in priority order',
-                        outcome: 'Tickets in the top issues section require hyperlinks that direct to the correct bug tracker.',
+                        text: 'Leave new issues for a further round of testing as issue verification should focus on current tickets',
+                        outcome: 'All issues require documentation as and when they are found.',
                         experience: -10
                     },
                     {
-                        text: 'State the top issues in priority order with any blockers stated first',
-                        outcome: 'Blocking issues should be kept separate and documented in their own section in the report.',
+                        text: 'Raise any new issue found during issue verification in the report summary',
+                        outcome: 'While new issue can be stated in a report summary, they also require tickets to be raised.',
                         experience: 0
                     }
                 ]
@@ -477,28 +476,28 @@ export class ReportsQuiz extends BaseQuiz {
             {
                 id: 9,
                 level: 'Intermediate',
-                title: 'Weekly Report Management',
-                description: 'How do you manage content for a weekly report?',
+                title: 'Device Availability',
+                description: 'An original test device isn\'t available. How do you proceed?',
                 options: [
                     {
-                        text: 'Set up template first day, add draft notes daily, compile and refine at week end',
-                        outcome: 'Excellent! This ensures comprehensive coverage.',
+                        text: 'Contact the device owner early, check device lists and consider BrowserStack with PM approval',
+                        outcome: 'Excellent! This shows correct device management.',
                         experience: 20,
-                        tool: 'Report Management'
+                        tool: 'Resource Management'
                     },
                     {
-                        text: 'Document everything from the week on the last working day',
-                        outcome: 'Progressive documentation is the best approach as its difficult to retain all information from the weeks testing activities.',
+                        text: 'Test on any available device to verify the issue has been resolved',
+                        outcome: 'The original environment should be prioritised, even if this is tested on BrowserStack as this is where the issue was raised and has been addressed.',
                         experience: -15
                     },
                     {
-                        text: 'Use daily reports collated from weekly testing activities and include them into the weekly report',
-                        outcome: 'A dedicated weekly report is required for consistency and ease of use for the client.',
+                        text: 'Test on a similar device and document test outcome',
+                        outcome: 'Using a different device for verification should be confirmed by the project manager and all environment differences require documentation.',
                         experience: -10
                     },
                     {
-                        text: 'Include information from later in the week to keep in line with more current activities',
-                        outcome: 'A full week approach is required to specify all coverage attained from testing.',
+                        text: 'Mark the ticket as cannot test due to lack of device resources',
+                        outcome: 'Alternative testing options must be explored including a similar device and BrowserStack.',
                         experience: 0
                     }
                 ]
@@ -506,28 +505,28 @@ export class ReportsQuiz extends BaseQuiz {
             {
                 id: 10,
                 level: 'Intermediate',
-                title: 'Stakeholder Communication',
-                description: 'How do you adapt report content for different stakeholders?',
+                title: 'Client Communication',
+                description: 'The client hasn\'t updated ticket statuses. How do you proceed?',
                 options: [
                     {
-                        text: 'Use clear language, avoid jargon, focus on business impact, maintain professional tone',
-                        outcome: 'Perfect! This ensures wide accessibility.',
+                        text: 'Contact the Project Manager to confirm which issues have been worked on and prioritise known fixed issues',
+                        outcome: 'Perfect! This ensures efficient verification.',
                         experience: 20,
-                        tool: 'Stakeholder Management'
+                        tool: 'Communication'
                     },
                     {
-                        text: 'Use technical terms so developers can pinpoint and debug root causes',
-                        outcome: 'Language used in reports needs to be accessible and understandable for all stakeholders involved in a project.',
+                        text: 'Test all tickets that have previously been raised within the project',
+                        outcome: 'Prioritisation is required as some tickets may not have been worked on by the client.',
                         experience: -15
                     },
                     {
-                        text: 'Use language that focuses on Quality Assurance terminology',
-                        outcome: 'All stakeholders must be considered, and language must be simple and fully inclusive.',
+                        text: 'Continue with issue verification whilst awaiting updates to tickets from the client',
+                        outcome: 'Proactive communication with the Project Manager and client is required in this instance as they may not intend to work on specific tickets.',
                         experience: -10
                     },
                     {
-                        text: 'Use informal language to keep a friendly tone and maintain a good personal relationship',
-                        outcome: 'A professional tone must be used throughout reports to keep a level of consistency and good business standard.',
+                        text: 'Leave the tickets that don\'t have any status update and include the information in the summary report.',
+                        outcome: 'It is best practice to confirm with the client which that has tickets are intended for verification.',
                         experience: 0
                     }
                 ]
@@ -539,28 +538,28 @@ export class ReportsQuiz extends BaseQuiz {
             {
                 id: 11,
                 level: 'Advanced',
-                title: 'Report Format Adaptation',
-                description: 'The client requests a different report format mid-project. How do you handle it?',
+                title: 'Complex Issue Verification',
+                description: 'A complex issue involves multiple interconnected features. How do you verify it?',
                 options: [
                     {
-                        text: 'Discuss the change with the Project Manager, adapt templates while maintaining key information and ensure consistent transition',
-                        outcome: 'Perfect! This ensures proper format adaptation.',
+                        text: 'Test all connected features, document dependencies, verify full workflow',
+                        outcome: 'Perfect! This ensures thorough verification.',
                         experience: 25,
-                        tool: 'Format Management'
+                        tool: 'Complex Testing'
                     },
                     {
-                        text: 'Use both the current format and the new requested format on data you see fit for purpose',
-                        outcome: 'The client requirements require consideration, clarification with the project manager and consistency.',
+                        text: 'Test the main feature and document the outcome',
+                        outcome: 'All connected features require verification and regression testing.',
                         experience: -15
                     },
                     {
-                        text: 'Create the new report format straight away and submit this at the usual time to the Project Manager',
-                        outcome: 'Project Manager coordination required before making any changes to report formats to ensure consistency and clarity.',
+                        text: 'Test the features that are connected to the main feature as this ensures all issues have been addressed',
+                        outcome: 'Complex issues need thorough testing and all affected features require attention.',
                         experience: -10
                     },
                     {
-                        text: 'Inform the client that the business use a structured guideline that needs to be followed for consistency',
-                        outcome: 'While consistency is important, the client can essentially request how they receive the data they require and the way they want the data to be reported.',
+                        text: 'Test the specific issues that have been addressed by the client without the full feature workflow',
+                        outcome: 'All issues require verification as well as the full workflow of interconnected features.',
                         experience: -5
                     }
                 ]
@@ -568,28 +567,28 @@ export class ReportsQuiz extends BaseQuiz {
             {
                 id: 12,
                 level: 'Advanced',
-                title: 'Complex Metrics Analysis',
-                description: 'How do you handle conflicting metrics in the report?',
+                title: 'Multiple Environment Issues',
+                description: 'An issue affects multiple environments differently. How do you verify it?',
                 options: [
                     {
-                        text: 'Verify source data, cross-reference scripts, document discrepancies, consult the project manager if needed',
-                        outcome: 'Excellent! This ensures accurate reporting.',
+                        text: 'Test each environment, document specific behaviours, note any variations',
+                        outcome: 'Excellent! This provides complete environment coverage.',
                         experience: 25,
-                        tool: 'Data Analysis'
+                        tool: 'Environment Testing'
                     },
                     {
-                        text: 'Adjust the formulas within the script to fit the numbers stated in the report',
-                        outcome: 'Formulas should not be updated as this can return inconsistent results.',
+                        text: 'Test any of the affected environments to verify the issue has been addressed by the client',
+                        outcome: 'All affected environments require testing as behaviour has been stated as environment specific.',
                         experience: -15
                     },
                     {
-                        text: 'Conflicting metrics should be reported to the project manager straight away',
-                        outcome: 'In this instance other avenues should be visited first, such as source data and troubleshooting guides. Project managers have multiple reports to review at the end of the working day.',
+                        text: 'Test the majority of environments, ascertain an average outcome and document results',
+                        outcome: 'All stated environment variations are required for verification.',
                         experience: -10
                     },
                     {
-                        text: 'Take an average of the numbers stated in the test script and which have been stated in the report',
-                        outcome: 'Accurate data is required for reporting and verifying source data should be performed first.',
+                        text: 'Test all stated environments and document the outcome of the primary device',
+                        outcome: 'Environment differences require full documentation for traceability.',
                         experience: -5
                     }
                 ]
@@ -597,28 +596,28 @@ export class ReportsQuiz extends BaseQuiz {
             {
                 id: 13,
                 level: 'Advanced',
-                title: 'Multi-Environment Reporting',
-                description: 'How do you report on testing across multiple complex environments?',
+                title: 'Regression Impact Analysis',
+                description: 'Multiple fixes have been implemented. How do you assess regression impact?',
                 options: [
                     {
-                        text: 'Create clear environment matrix, document specific behaviours, highlight key differences',
-                        outcome: 'Perfect! This provides comprehensive environment coverage.',
+                        text: 'Research fix relationships, test impacted areas, document any cascading effects',
+                        outcome: 'Perfect! This ensures comprehensive regression analysis.',
                         experience: 25,
-                        tool: 'Environment Analysis'
+                        tool: 'Impact Analysis'
                     },
                     {
-                        text: 'Group all environment data together and report as one metric',
-                        outcome: 'Specific details required per environment for traceability.',
+                        text: 'Verify any client stated fixes specifically',
+                        outcome: 'Potential related impacts from specific bug fixes also require assessment.',
                         experience: -15
                     },
                     {
-                        text: 'Ensure the report includes primary environment testing data',
-                        outcome: 'Data for testing activities across all environments are required for coverage reporting.',
+                        text: 'Use a basic regression process to ascertain focus feature fixes',
+                        outcome: 'Thorough impact analysis is required for regression testing to explore any other areas that might be affected by a specific bug fix.',
                         experience: -10
                     },
                     {
-                        text: 'Specify the hardware used for each environment that has been tested',
-                        outcome: 'Full environment documentation including, device, operating system and browser version details is essential.',
+                        text: 'Impact analysis can be left until all specific fixes have been verified',
+                        outcome: 'Fix impacts require assessment systematically throughout verification as blocking issues could be direct impact of a current fix.',
                         experience: -5
                     }
                 ]
@@ -626,28 +625,28 @@ export class ReportsQuiz extends BaseQuiz {
             {
                 id: 14,
                 level: 'Advanced',
-                title: 'Critical Issue Reporting',
-                description: 'How do you report different multiple critical issues found late in the day?',
+                title: 'Verification Report Creation',
+                description: 'How do you create a comprehensive verification report?',
                 options: [
                     {
-                        text: 'Immediately notify project manager, document thoroughly in report, highlight business impact',
-                        outcome: 'Excellent! This ensures proper critical issue handling.',
+                        text: 'Document verified issues, regression findings, new issues, and quality assessment',
+                        outcome: 'Excellent! This provides complete verification coverage.',
                         experience: 25,
-                        tool: 'Critical Issue Management'
+                        tool: 'Reporting'
                     },
                     {
-                        text: 'Include the issues within the report and submit this at the agreed time',
-                        outcome: 'Immediate notification to the project manager is the best approach in this instance so clients are aware of any alternative planning that may be required.',
+                        text: 'List all issues fixed by the client within the application release',
+                        outcome: 'All aspects need reporting not just fixed issues.',
                         experience: -15
                     },
                     {
-                        text: 'Collate all critical issues into one ticket for ease and speed of client delegation',
-                        outcome: 'If issues are not related they require individual tickets raising regardless of time of working day.',
+                        text: 'Document a basic status update of each existing issue within the release',
+                        outcome: 'Comprehensive reporting needed is required including new issues and regression details.',
                         experience: -10
                     },
                     {
-                        text: 'Leave the detail out of the report and communicate the issues with the project manager',
-                        outcome: 'Thorough documentation as well as communication with the project manager on these critical issues required.',
+                        text: 'Document all details surrounding regression testing of the new release',
+                        outcome: 'Verification needs full documentation not just regression test reporting.',
                         experience: -5
                     }
                 ]
@@ -655,28 +654,28 @@ export class ReportsQuiz extends BaseQuiz {
             {
                 id: 15,
                 level: 'Advanced',
-                title: 'Report Quality Assurance',
-                description: 'How do you ensure report quality before submission?',
+                title: 'Quality Assessment',
+                description: 'How do you assess if additional testing is needed after verification?',
                 options: [
                     {
-                        text: 'Review content, verify metrics, check formatting, validate links, run spell check, read aloud',
-                        outcome: 'Perfect! This ensures comprehensive quality check.',
+                        text: 'Analyse fix impact, regression findings, and new issues to recommend next steps',
+                        outcome: 'Perfect! This provides informed testing recommendations.',
                         experience: 25,
-                        tool: 'Quality Assurance'
+                        tool: 'Quality Assessment'
                     },
                     {
-                        text: 'Run the report through a spellchecker to make sure a professional standard is maintained',
-                        outcome: 'Whilst good grammar is important, a thorough review of all data and formatting is required.',
+                        text: 'Check that all open issues within the release have been fixed',
+                        outcome: 'Other factors also need to be taken into consideration like regression findings and new issues raised.',
                         experience: -15
                     },
                     {
-                        text: 'Once all information has been collated a review is only required by the project manager',
-                        outcome: 'A quality check is crucial before submitting to the project manager as they should not have to change anything or only make minimal changes.',
+                        text: 'Rely on client feedback so they can make a decision on additional testing',
+                        outcome: 'Proactive assessment required and additional testing can be judged on regression findings and new issues raised.',
                         experience: -10
                     },
                     {
-                        text: 'Thoroughly check all metrics data adds up correctly and is representative of testing activities carried out',
-                        outcome: 'While metrics data is important, all aspects of reporting need thorough review.',
+                        text: 'Await feedback from the project manager on issue verification findings to decide on additional testing',
+                        outcome: 'Quality assessment is crucial and initiative should be taken on additional testing as well as informing the project manager of the outcome.',
                         experience: -5
                     }
                 ]
@@ -685,9 +684,9 @@ export class ReportsQuiz extends BaseQuiz {
 
         // Initialize UI and add event listeners
         this.initializeEventListeners();
+
         this.isLoading = false;
     }
-
     showError(message) {
         const errorDiv = document.createElement('div');
         errorDiv.className = 'error-notification';
@@ -708,8 +707,10 @@ export class ReportsQuiz extends BaseQuiz {
             return q.selectedAnswer && q.selectedAnswer.isCorrect === true;
         }).length;
         
-        // Always use total questions as denominator to get accurate percentage
-        return Math.round((correctAnswers / this.totalQuestions) * 100);
+        // Cap the questions answered at total questions
+        const questionsAnswered = Math.min(this.player.questionHistory.length, this.totalQuestions);
+        
+        return questionsAnswered > 0 ? Math.round((correctAnswers / questionsAnswered) * 100) : 0;
     }
 
     async saveProgress() {
@@ -812,71 +813,218 @@ export class ReportsQuiz extends BaseQuiz {
         }
     }
 
-    getCurrentScenarios() {
-        // Determine the current scenarios based on how many questions have been answered
-        const questionCount = this.player.questionHistory.length;
+    /**
+     * Ensures all required elements exist in the DOM
+     * @returns {boolean} - True if all required elements exist
+     */
+    ensureRequiredElementsExist() {
+        console.log('[ReportsQuiz] Checking required elements');
+        const requiredElements = [
+            { id: 'scenario-title', type: 'h2', parent: '#game-screen', fallbackClass: 'scenario-title' },
+            { id: 'scenario-description', type: 'p', parent: '#game-screen', fallbackClass: 'scenario-description' },
+            { id: 'options-container', type: 'div', parent: '#game-screen', fallbackClass: 'options-container' },
+            { id: 'question-progress', type: 'div', parent: '.quiz-header-progress', fallbackClass: 'question-info' },
+            { id: 'level-indicator', type: 'div', parent: '.quiz-header-progress', fallbackClass: 'level-info' }
+        ];
         
-        if (questionCount < 5) {
-            return this.basicScenarios;
-        } else if (questionCount < 10) {
-            return this.intermediateScenarios;
-        } else {
-            return this.advancedScenarios;
+        let allExist = true;
+        
+        requiredElements.forEach(element => {
+            // Check if element exists
+            let domElement = document.getElementById(element.id);
+            
+            // If it doesn't exist, try to create it
+            if (!domElement) {
+                console.log(`[ReportsQuiz] Element ${element.id} not found, attempting to create`);
+                
+                try {
+                    const parentElement = document.querySelector(element.parent);
+                    if (!parentElement) {
+                        console.error(`[ReportsQuiz] Parent element ${element.parent} not found`);
+                        allExist = false;
+                        return;
+                    }
+                    
+                    domElement = document.createElement(element.type);
+                    domElement.id = element.id;
+                    if (element.fallbackClass) {
+                        domElement.className = element.fallbackClass;
+                    }
+                    
+                    // Special handling for specific elements
+                    if (element.id === 'options-container') {
+                        // Options container should be placed in a specific position
+                        const submitButton = parentElement.querySelector('.submit-button');
+                        if (submitButton) {
+                            parentElement.insertBefore(domElement, submitButton);
+                        } else {
+                            parentElement.appendChild(domElement);
+                        }
+                    } else if (element.id === 'question-progress' || element.id === 'level-indicator') {
+                        // Progress elements go into the header
+                        parentElement.appendChild(domElement);
+                        
+                        // Initialize with default text
+                        if (element.id === 'question-progress') {
+                            domElement.textContent = 'Question: 1/15';
+                        } else if (element.id === 'level-indicator') {
+                            domElement.textContent = 'Level: Basic';
+                        }
+                    } else {
+                        // Default placement
+                        parentElement.appendChild(domElement);
+                    }
+                    
+                    console.log(`[ReportsQuiz] Created element ${element.id}`);
+                } catch (error) {
+                    console.error(`[ReportsQuiz] Failed to create element ${element.id}:`, error);
+                    allExist = false;
+                }
+            }
+        });
+        
+        // Ensure the game screen is visible
+        const gameScreen = document.getElementById('game-screen');
+        if (gameScreen) {
+            gameScreen.classList.remove('hidden');
+        }
+        
+        // Ensure outcome and end screens are hidden
+        const outcomeScreen = document.getElementById('outcome-screen');
+        if (outcomeScreen) {
+            outcomeScreen.classList.add('hidden');
+        }
+        
+        const endScreen = document.getElementById('end-screen');
+        if (endScreen) {
+            endScreen.classList.add('hidden');
+        }
+        
+        console.log('[ReportsQuiz] Required elements check completed, result:', allExist);
+        return allExist;
+    }
+    
+    async startGame() {
+        console.log('[ReportsQuiz] Starting game');
+        try {
+            this.isLoading = true;
+            
+            // First attempt to load any existing progress
+            const progressLoaded = await this.loadProgress();
+            console.log('[ReportsQuiz] Progress loaded:', progressLoaded);
+            
+            if (!progressLoaded) {
+                console.log('[ReportsQuiz] No progress found, starting new game');
+                // If no progress was loaded, initialize a new player state
+                const username = localStorage.getItem('username');
+                this.player = {
+                    name: username || '',
+                    experience: 0,
+                    tools: [],
+                    currentScenario: 0,
+                    questionHistory: []
+                };
+            }
+            
+            // Ensure required DOM elements exist
+            if (!this.ensureRequiredElementsExist()) {
+                console.error('[ReportsQuiz] Required elements could not be created');
+                this.showError('Quiz initialization failed. Please refresh the page.');
+                return;
+            }
+            
+            // Initialize timer settings
+            await this.initializeTimerSettings();
+            
+            // Show the game screen
+            if (this.gameScreen) {
+                this.gameScreen.classList.remove('hidden');
+            }
+            
+            // Hide outcome and end screens
+            if (this.outcomeScreen) {
+                this.outcomeScreen.classList.add('hidden');
+            }
+            
+            if (this.endScreen) {
+                this.endScreen.classList.add('hidden');
+            }
+            
+            // Update progress display
+            this.updateProgress();
+            
+            // Display the first scenario
+            this.displayScenario();
+            
+            // Initialize guide button if enabled
+            await this.initializeGuideSettings();
+            
+            console.log('[ReportsQuiz] Game started successfully');
+        } catch (error) {
+            console.error('[ReportsQuiz] Error starting game:', error);
+            this.showError('Failed to start the quiz. Please refresh and try again.');
+        } finally {
+            this.isLoading = false;
         }
     }
-
-    getCurrentLevel() {
-        // Determine current level based on questions answered
-        const questionCount = this.player.questionHistory.length;
-        
-        if (questionCount < 5) {
-            return 'basic';
-        } else if (questionCount < 10) {
-            return 'intermediate';
-        } else {
-            return 'advanced';
-        }
-    }
-
+    
     displayScenario() {
+        console.log('[ReportsQuiz] Starting displayScenario method');
+        
+        // Ensure all required elements exist in the DOM
+        if (!this.ensureRequiredElementsExist()) {
+            console.error('[ReportsQuiz] Required elements could not be created. Stopping displayScenario.');
+            this.showError('Quiz initialization failed. Please refresh the page.');
+            return;
+        }
+        
         const currentScenarios = this.getCurrentScenarios();
-        const questionCount = this.player.questionHistory.length;
+        console.log('[ReportsQuiz] currentScenarios:', currentScenarios);
         
         // Check if we've answered all questions
         if (this.shouldEndGame()) {
+            console.log('[ReportsQuiz] Ending game - all questions answered');
             this.endGame(false);
             return;
         }
 
         // Get the next scenario based on current progress
         let scenario;
+        const questionCount = this.player.questionHistory.length;
+        console.log('[ReportsQuiz] questionCount:', questionCount);
         
         // Reset currentScenario based on the current level
         if (questionCount < 5) {
             // Basic questions (0-4)
+            console.log('[ReportsQuiz] Selecting from basicScenarios, index:', questionCount);
             scenario = this.basicScenarios[questionCount];
             this.player.currentScenario = questionCount;
         } else if (questionCount < 10) {
             // Intermediate questions (5-9)
+            console.log('[ReportsQuiz] Selecting from intermediateScenarios, index:', questionCount - 5);
             scenario = this.intermediateScenarios[questionCount - 5];
             this.player.currentScenario = questionCount - 5;
-        } else {
+        } else if (questionCount < 15) {
             // Advanced questions (10-14)
+            console.log('[ReportsQuiz] Selecting from advancedScenarios, index:', questionCount - 10);
             scenario = this.advancedScenarios[questionCount - 10];
             this.player.currentScenario = questionCount - 10;
         }
 
         if (!scenario) {
-            console.error('No scenario found for current progress. Question count:', questionCount);
+            console.error('[ReportsQuiz] No scenario found for current progress. Question count:', questionCount);
             this.endGame(true);
             return;
         }
+        
+        console.log('[ReportsQuiz] Selected scenario:', scenario.id, scenario.title);
 
         // Store current question number for consistency
         this.currentQuestionNumber = questionCount + 1;
         
         // Show level transition message at the start of each level or when level changes
         const currentLevel = this.getCurrentLevel();
+        console.log('[ReportsQuiz] Current level:', currentLevel);
         const previousLevel = questionCount > 0 ? 
             (questionCount <= 5 ? 'Basic' : 
              questionCount <= 10 ? 'Intermediate' : 'Advanced') : null;
@@ -899,7 +1047,7 @@ export class ReportsQuiz extends BaseQuiz {
                 // Update the level indicator
                 const levelIndicator = document.getElementById('level-indicator');
                 if (levelIndicator) {
-                    levelIndicator.textContent = `Level: ${currentLevel.charAt(0).toUpperCase() + currentLevel.slice(1)}`;
+                    levelIndicator.textContent = `Level: ${currentLevel}`;
                 }
                 
                 // Remove the message and container height after animation
@@ -912,13 +1060,20 @@ export class ReportsQuiz extends BaseQuiz {
             }
         }
 
-        // Update scenario display
+        // Update scenario display - elements should exist after ensureRequiredElementsExist
         const titleElement = document.getElementById('scenario-title');
         const descriptionElement = document.getElementById('scenario-description');
         const optionsContainer = document.getElementById('options-container');
 
+        console.log('[ReportsQuiz] DOM elements:', {
+            titleElement: !!titleElement,
+            descriptionElement: !!descriptionElement,
+            optionsContainer: !!optionsContainer
+        });
+
         if (!titleElement || !descriptionElement || !optionsContainer) {
-            console.error('Required elements not found');
+            console.error('[ReportsQuiz] Required elements not found even after ensureRequiredElementsExist');
+            this.showError('Quiz initialization failed. Required elements not found.');
             return;
         }
 
@@ -944,6 +1099,7 @@ export class ReportsQuiz extends BaseQuiz {
         }
 
         optionsContainer.innerHTML = '';
+        console.log('[ReportsQuiz] Adding', shuffledOptions.length, 'options to container');
 
         shuffledOptions.forEach((option, index) => {
             const optionElement = document.createElement('div');
@@ -961,10 +1117,32 @@ export class ReportsQuiz extends BaseQuiz {
             optionsContainer.appendChild(optionElement);
         });
 
+        console.log('[ReportsQuiz] Options added to container, updating progress');
         this.updateProgress();
 
         // Initialize timer for the new question
+        console.log('[ReportsQuiz] Initializing timer');
         this.initializeTimer();
+        console.log('[ReportsQuiz] displayScenario complete');
+    }
+
+    initializeEventListeners() {
+        // Add event listeners for the continue and restart buttons
+        document.getElementById('continue-btn')?.addEventListener('click', () => this.nextScenario());
+        document.getElementById('restart-btn')?.addEventListener('click', () => this.restartGame());
+
+        // Add form submission handler
+        document.getElementById('options-form')?.addEventListener('submit', (e) => {
+            e.preventDefault();
+            this.handleAnswer();
+        });
+
+        // Add keyboard navigation
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' && e.target.type === 'radio') {
+                this.handleAnswer();
+            }
+        });
     }
 
     async handleAnswer() {
@@ -1072,6 +1250,17 @@ export class ReportsQuiz extends BaseQuiz {
         }
     }
 
+    nextScenario() {
+        // Hide outcome screen and show game screen
+        if (this.outcomeScreen && this.gameScreen) {
+            this.outcomeScreen.classList.add('hidden');
+            this.gameScreen.classList.remove('hidden');
+        }
+        
+        // Display next scenario
+        this.displayScenario();
+    }
+
     updateProgress() {
         // Get current level and question count
         const currentLevel = this.getCurrentLevel();
@@ -1115,6 +1304,59 @@ export class ReportsQuiz extends BaseQuiz {
         }
     }
 
+    restartGame() {
+        // Reset player state
+        this.player = {
+            name: localStorage.getItem('username'),
+            experience: 0,
+            tools: [],
+            currentScenario: 0,
+            questionHistory: []
+        };
+
+        // Reset UI
+        this.gameScreen.classList.remove('hidden');
+        this.outcomeScreen.classList.add('hidden');
+        this.endScreen.classList.add('hidden');
+
+        // Clear any existing transition messages
+        const transitionContainer = document.getElementById('level-transition-container');
+        if (transitionContainer) {
+            transitionContainer.innerHTML = '';
+            transitionContainer.classList.remove('active');
+        }
+
+        // Update progress display
+        this.updateProgress();
+
+        // Start from first scenario
+        this.displayScenario();
+    }
+
+    getCurrentScenarios() {
+        const totalAnswered = this.player.questionHistory.length;
+        
+        // Progress through levels based only on question count
+        if (totalAnswered >= 10) {
+            return this.advancedScenarios;
+        } else if (totalAnswered >= 5) {
+            return this.intermediateScenarios;
+        }
+        return this.basicScenarios;
+    }
+
+    getCurrentLevel() {
+        const totalAnswered = this.player.questionHistory.length;
+        
+        // Progress through levels based only on question count
+        if (totalAnswered >= 10) {
+            return 'Advanced';
+        } else if (totalAnswered >= 5) {
+            return 'Intermediate';
+        }
+        return 'Basic';
+    }
+
     generateRecommendations() {
         const recommendationsContainer = document.getElementById('recommendations');
         if (!recommendationsContainer) return;
@@ -1145,9 +1387,9 @@ export class ReportsQuiz extends BaseQuiz {
         let recommendationsHTML = '';
 
         if (scorePercentage >= 90 && weakAreas.length === 0) {
-            recommendationsHTML = '<p>🌟 Outstanding! You have demonstrated mastery in all aspects of reports. You clearly understand the nuances of reports and are well-equipped to handle any reports challenges!</p>';
+            recommendationsHTML = '<p>🌟 Outstanding! You have demonstrated mastery in all aspects of issue verification. You clearly understand the nuances of issue verification and are well-equipped to handle any issue verification challenges!</p>';
         } else if (scorePercentage >= 80) {
-            recommendationsHTML = '<p>🌟 Excellent performance! Your reports skills are very strong. To achieve complete mastery, consider focusing on:</p>';
+            recommendationsHTML = '<p>🌟 Excellent performance! Your issue verification skills are very strong. To achieve complete mastery, consider focusing on:</p>';
             recommendationsHTML += '<ul>';
             if (weakAreas.length > 0) {
                 weakAreas.forEach(area => {
@@ -1172,6 +1414,45 @@ export class ReportsQuiz extends BaseQuiz {
         }
 
         recommendationsContainer.innerHTML = recommendationsHTML;
+    }
+
+    categorizeQuestion(scenario) {
+        // Categorize questions based on their content
+        const title = scenario.title.toLowerCase();
+        const description = scenario.description.toLowerCase();
+
+        if (title.includes('priority') || description.includes('prioritize')) {
+            return 'Verification Prioritization';
+        } else if (title.includes('environment') || description.includes('environment')) {
+            return 'Environment Management';
+        } else if (title.includes('regression') || description.includes('regression')) {
+            return 'Regression Testing';
+        } else if (title.includes('new issue') || description.includes('new issue')) {
+            return 'Issue Discovery';
+        } else if (title.includes('complex') || description.includes('complex')) {
+            return 'Complex Issue Handling';
+        } else if (title.includes('quality') || description.includes('quality')) {
+            return 'Quality Assessment';
+        } else if (title.includes('documentation') || description.includes('documentation')) {
+            return 'Verification Documentation';
+        } else {
+            return 'General Verification Process';
+        }
+    }
+
+    getRecommendation(area) {
+        const recommendations = {
+            'Verification Prioritization': 'Focus on improving issue prioritization based on severity, impact, and business value.',
+            'Environment Management': 'Strengthen environment matching and documentation of testing conditions.',
+            'Regression Testing': 'Enhance regression testing strategies around verified fixes and impacted areas.',
+            'Issue Discovery': 'Improve handling and documentation of new issues found during verification.',
+            'Complex Issue Handling': 'Develop better approaches for verifying interconnected features and dependencies.',
+            'Quality Assessment': 'Work on comprehensive quality evaluation and next steps recommendations.',
+            'Verification Documentation': 'Focus on clear, detailed documentation of verification steps and results.',
+            'General Verification Process': 'Continue developing fundamental verification principles and methodologies.'
+        };
+
+        return recommendations[area] || 'Continue practicing core issue verification principles.';
     }
 
     async endGame(failed = false) {
@@ -1232,7 +1513,7 @@ export class ReportsQuiz extends BaseQuiz {
         }
 
         document.getElementById('final-score').textContent = `Final Score: ${scorePercentage}%`;
-        
+       
         // Update the quiz complete header based on status
         const quizCompleteHeader = document.querySelector('#end-screen h2');
         if (quizCompleteHeader) {
@@ -1240,17 +1521,76 @@ export class ReportsQuiz extends BaseQuiz {
         }
 
         const performanceSummary = document.getElementById('performance-summary');
-        if (performanceSummary) {
-            performanceSummary.textContent = isPassed ? 'Congratulations! You passed the quiz.' : 'Sorry, you did not pass the quiz. Please review the recommendations and try again.';
+        if (!isPassed) {
+            performanceSummary.textContent = `Quiz failed. You scored ${scorePercentage}% but needed at least ${this.passPercentage}% to pass.`;
+            // Hide restart button if failed
+            const restartBtn = document.getElementById('restart-btn');
+            if (restartBtn) {
+                restartBtn.style.display = 'none';
+            }
+            // Add failed class to quiz container for styling
+            const quizContainer = document.getElementById('quiz-container');
+            if (quizContainer) {
+                quizContainer.classList.add('failed');
+            }
+        } else {
+            const threshold = this.config.performanceThresholds.find(t => t.threshold <= scorePercentage);
+            if (threshold) {
+                performanceSummary.textContent = threshold.message;
+            } else {
+                performanceSummary.textContent = 'Quiz completed successfully!';
+            }
         }
+
+        // Generate question review list
+        const reviewList = document.getElementById('question-review');
+        if (reviewList) {
+            reviewList.innerHTML = ''; // Clear existing content
+            this.player.questionHistory.forEach((record, index) => {
+                const reviewItem = document.createElement('div');
+                reviewItem.className = 'review-item';
+                
+                const isCorrect = record.isCorrect;
+                reviewItem.classList.add(isCorrect ? 'correct' : 'incorrect');
+                
+                reviewItem.innerHTML = `
+                    <h4>Question ${index + 1}</h4>
+                    <p class="scenario">${record.scenario.description}</p>
+                    <p class="answer"><strong>Your Answer:</strong> ${record.selectedAnswer.text}</p>
+                    <p class="outcome"><strong>Outcome:</strong> ${record.selectedAnswer.outcome}</p>
+                    <p class="result"><strong>Result:</strong> ${isCorrect ? 'Correct' : 'Incorrect'}</p>
+                `;
+                
+                reviewList.appendChild(reviewItem);
+            });
+        }
+
+        this.generateRecommendations();
+    }
+    
+    clearQuizLocalStorage(username, quizName) {
+        const variations = [
+            quizName,                                              // original
+            quizName.toLowerCase(),                               // lowercase
+            quizName.toUpperCase(),                               // uppercase
+            quizName.replace(/-/g, ''),                           // no hyphens
+            quizName.replace(/([A-Z])/g, '-$1').toLowerCase(),    // kebab-case
+            quizName.replace(/-([a-z])/g, (_, c) => c.toUpperCase()), // camelCase
+            quizName.replace(/-/g, '_'),                          // snake_case
+        ];
+
+        variations.forEach(variant => {
+            localStorage.removeItem(`quiz_progress_${username}_${variant}`);
+            localStorage.removeItem(`quizResults_${username}_${variant}`);
+        });
     }
 }
 
 // Initialize quiz when the page loads
 document.addEventListener('DOMContentLoaded', () => {
     // Clear any existing quiz instances before starting this quiz
-    BaseQuiz.clearQuizInstances('reports');
+    BaseQuiz.clearQuizInstances('issue-verification');
     
     const quiz = new ReportsQuiz();
     quiz.startGame();
-});
+}); 
