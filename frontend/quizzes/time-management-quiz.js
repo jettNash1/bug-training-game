@@ -213,6 +213,152 @@ export class TimeManagementQuiz extends BaseQuiz {
                         experience: 0
                     }
                 ]
+            },
+            // Additional Basic Scenarios from Guide - Time Management & Organisation Additional Questions
+            {
+                id: 16,
+                level: 'Basic',
+                title: 'Effective Time Management',
+                description: 'Why is effective time management important for Zoonou testers?',
+                options: [
+                    {
+                        text: 'As functional testing is sold in blocks of time and clients should get maximum value',
+                        outcome: 'Correct! As testers, it is important that you manage your time effectively. This ensures our clients get the most value out of the time they have procured from us.',
+                        experience: 15,
+                        tool: 'Effective Time Management'
+                    },
+                    {
+                        text: 'To ensure personal career advancement opportunities',
+                        outcome: 'While good time management might help with career advancement, this isn\'t a reason in relation to project work and management.',
+                        experience: -5
+                    },
+                    {
+                        text: 'To maximize paid overtime opportunities',
+                        outcome: 'This isn\'t a project goal like completing work efficiently within allocated time.',
+                        experience: -10
+                    },
+                    {
+                        text: 'To reduce the need for detailed documentation',
+                        outcome: 'Time management doesn\'t reduce documentation needs, in fact, proper documentation is implied to be part of delivering quality work.',
+                        experience: 0
+                    }
+                ]
+            },
+            {
+                id: 17,
+                level: 'Basic',
+                title: 'Ineffective Time Management',
+                description: 'Which of the following is identified as a risk of ineffective time management?',
+                options: [
+                    {
+                        text: 'Spending too much time on detailed documentation',
+                        outcome: 'Detailed documentation is not identified as a risk.',
+                        experience: -5
+                    },
+                    {
+                        text: 'Being overly thorough in testing low-priority areas',
+                        outcome: 'While this might be an issue, it\'s not specifically identified as a risk of poor time management.',
+                        experience: -10
+                    },
+                    {
+                        text: 'Having colleagues need to cover your outstanding tasks, leading to frustration',
+                        outcome: 'Correct! Your colleagues may be required to cover your outstanding tasks, which could lead to frustration or resentment within the team.',
+                        experience: 15,
+                        tool: 'Ineffective Time Management'
+                    },
+                    {
+                        text: 'Discovering too many bugs which delays project completion',
+                        outcome: 'Discovering bugs is the purpose of testing, finding too many bugs is not a risk of poor time management.',
+                        experience: 0
+                    }
+                ]
+            },
+            {
+                id: 18,
+                level: 'Basic',
+                title: 'Environment Time Management',
+                description: 'What is recommend regarding testing environments and user journeys?',
+                options: [
+                    {
+                        text: 'All environments should receive equal testing time regardless of user behaviour.',
+                        outcome: 'Prioritising testing based on user behaviour and client priorities, not equal distribution is recommended.',
+                        experience: -5
+                    },
+                    {
+                        text: 'Always test desktop environments first, then mobile environments',
+                        outcome: 'Prioritisation should be based on how end users will access the software.', 
+                        experience: -10
+                    },
+                    {
+                        text: 'Prioritise environments and journeys based on how end users will access the software',
+                        outcome: 'Correct! for example, if a website is designed for use on tablet devices, prioritise tablet coverage, as issues found here will be of a higher value to the client.',
+                        experience: 15,
+                        tool: 'Environment Time Management'
+                    },
+                    {
+                        text: 'Follow the script order exactly as written regardless of priorities',
+                        outcome: 'Working in a linear fashion from top to bottom of a script or software is usually not the most appropriate approach and prioritising according to project requirements should be followed.',
+                        experience: 0
+                    }
+                ]
+            },
+            {
+                id: 19,
+                level: 'Basic',
+                title: 'Project Time Assessment',
+                description: 'How should testers reassess timings during a test session?',
+                options: [
+                    {
+                        text: 'Project timings should be assessed throughout the day based on progress and remaining coverage',
+                        outcome: 'Correct! It is important to re-assess timings throughout the day based on progress, and keep in mind what is left to cover.',
+                        experience: 15,
+                        tool: 'Project Time Assessment'
+                    },
+                    {
+                        text: 'Project time assessment should be carried out at the end of the day to avoid disrupting workflow',
+                        outcome: 'Waiting until the end of the day to re-assess doesn\'t give any time to check if coverage can be met.',
+                        experience: -10
+                    },
+                    {
+                        text: 'Project time assessment should be carried out only when explicitly requested by the Project Manager',
+                        outcome: 'Testers should proactively reassess timings and inform project managers in case extra resources are required.',
+                        experience: -5
+                    },
+                    {
+                        text: 'Project time assessment should be carried out according to predetermined intervals set at the beginning of the project',
+                        outcome: 'While this could be true for specific projects. Testers should also apply continuous assessment based on actual progress.',
+                        experience: 0
+                    }
+                ]
+            },
+            {
+                id: 20,
+                level: 'Basic',
+                title: 'Time Management Benefit',
+                description: 'What is a benefit of good project time management?',
+                options: [
+                    {
+                        text: 'Higher levels of productivity are a benefit of good time management',
+                        outcome: 'Correct! Productivity levels have proven to increase when good time management of projects are applied.',
+                        experience: 15,
+                        tool: 'Time Management Benefit'
+                    },
+                    {
+                        text: 'A benefit of good time management increases the ability to multitask on multiple projects simultaneously',
+                        outcome: 'While this may be helpful in some cases. In general it is recommended to work on one project at a time.',
+                        experience: -10
+                    },
+                    {
+                        text: 'A benefit of good time management results in a reduced need for project documentation',
+                        outcome: 'Project documentation should always be complete and full. This should be factored into the project itself.',
+                        experience: -5
+                    },
+                    {
+                        text: 'A benefit of good time management results in guaranteed salary increases',
+                        outcome: 'Good project time management should always be observed and not a direct factor in salary increase.',
+                        experience: 0
+                    }
+                ]
             }
         ];
 

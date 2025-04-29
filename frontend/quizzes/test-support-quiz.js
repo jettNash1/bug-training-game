@@ -204,6 +204,152 @@ export class TestSupportQuiz extends BaseQuiz {
                         experience: 0
                     }
                 ]
+            },
+            // Additional Basic Scenarios from Guide - Test Support Additional Questions
+            {
+                id: 16,
+                level: 'Basic',
+                title: 'Test Support Relationships',
+                description: 'Which of the following best describes the relationship between Zoonou testers and the client during test support?',
+                options: [
+                    {
+                        text: 'Testers become embedded in the client\'s development team, sometimes joining sprint planning and daily standups',
+                        outcome: 'Correct! during test support, testers essentially become a part of the client\'s development team.',
+                        experience: 15,
+                        tool: 'Test Support Relationships'
+                    },
+                    {
+                        text: 'Testers work completely independently with no client interaction',
+                        outcome: 'This contradicts the embedded nature of test support, where direct client interaction is common.',
+                        experience: -5
+                    },
+                    {
+                        text: 'Testers provide only written reports with no direct communication',
+                        outcome: 'Emphasis should be on good communication including written communication and voice/video calls.',
+                        experience: -10
+                    },
+                    {
+                        text: 'Testers only communicate through the project manager',
+                        outcome: 'While project managers are involved, testers often have direct communication with clients, particularly in the independent type of test support.',
+                        experience: 0
+                    }
+                ]
+            },
+            {
+                id: 17,
+                level: 'Basic',
+                title: 'Test Support Disadvantage',
+                description: 'What is one key risk or disadvantage of test support?',
+                options: [
+                    {
+                        text: 'Test support always costs more than standalone testing',
+                        outcome: 'Test support doesn\'t generally cost the company offering the service any more than other types of testing.',
+                        experience: -5
+                    },
+                    {
+                        text: 'Test support always requires more testers than other testing approaches',
+                        outcome: 'Test support doesn\'t generally require more resources and that all depends on the needs of a specific project.',
+                        experience: -10
+                    },
+                    {
+                        text: 'The line between Zoonou\'s and the client\'s ways of working can become blurred',
+                        outcome: 'Correct! This can occur with the way Zoonou operates and the way the client operates which needs to be managed on a regular basis.',
+                        experience: 15,
+                        tool: 'Test Support Disadvantage'
+                    },
+                    {
+                        text: 'Test support slows down the development process significantly',
+                        outcome: 'Test support can actually make development more efficient by catching issues earlier.',
+                        experience: 0
+                    }
+                ]
+            },
+            {
+                id: 18,
+                level: 'Basic',
+                title: 'Test Support Documentation',
+                description: 'What type of document should be created and maintained for test support projects?',
+                options: [
+                    {
+                        text: 'Technical architecture diagrams should be created and maintained.',
+                        outcome: 'While technical architecture might be useful to understand, process guides should take priority.',
+                        experience: -5
+                    },
+                    {
+                        text: 'Weekly formal testing reports only should be created and maintained',
+                        outcome: 'While reporting may be part of the process, a comprehensive process guide should be kept up to date for any type of project handover required.', 
+                        experience: -10
+                    },
+                    {
+                        text: 'Handover and process guides should be created and maintained',
+                        outcome: 'Correct! It is important that some form of process guide is present on test support projects, especially on longer running ongoing test support projects',
+                        experience: 15,
+                        tool: 'Test Support Documentation'
+                    },
+                    {
+                        text: 'Detailed coding standards document should be created and maintained',
+                        outcome: 'Coding standards do not apply to a manual testing service.',
+                        experience: 0
+                    }
+                ]
+            },
+            {
+                id: 19,
+                level: 'Basic',
+                title: 'Test Support Characteristics',
+                description: 'Which of the following is not a characteristic of test support?',
+                options: [
+                    {
+                        text: 'Rigid adherence to standardised test processes',
+                        outcome: 'Correct! Flexibility is a key characteristic of test support and the need to adapt to client practices while maintaining Zoonou\'s characteristics is essential.',
+                        experience: 15,
+                        tool: 'Test Support Characteristics'
+                    },
+                    {
+                        text: 'Flexibility in testing tasks is a characteristic of test support',
+                        outcome: 'This is correct as test support tasks can vary from session to session.',
+                        experience: -10
+                    },
+                    {
+                        text: 'Independence in decision-making is a characteristic of test support',
+                        outcome: 'This is correct as test support should allow testers to make decisions related to testing based on their in-depth understanding of the software.',
+                        experience: -5
+                    },
+                    {
+                        text: 'Development of in-depth project expertise is a characteristic of test support',
+                        outcome: 'This is correct as test support testers should build an in-depth understanding of the software and the development team\'s processes.',
+                        experience: 0
+                    }
+                ]
+            },
+            {
+                id: 20,
+                level: 'Basic',
+                title: 'Documentation Updates',
+                description: 'When should a tester update the handover and process guides during a test support project?',
+                options: [
+                    {
+                        text: 'As and when new information is introduced or processes change',
+                        outcome: 'Correct! These guides should not be stagnant, it is important to update these documents as and when new information is introduced to the project or changes are made to the processes.',
+                        experience: 15,
+                        tool: 'Documentation Updates'
+                    },
+                    {
+                        text: 'A handover guide should only be updated at the beginning of the project',
+                        outcome: 'Updating only at the beginning would mean the guide becomes outdated as the project evolves.',
+                        experience: -10
+                    },
+                    {
+                        text: 'A handover guide should only be updated when a new tester joins the project',
+                        outcome: 'While a handover guide is particularly useful when new testers join, the guide should be updated whenever there are changes, not just when new testers join.',
+                        experience: -5
+                    },
+                    {
+                        text: 'A handover guide should only be updated at the end of the project',
+                        outcome: 'Updating only at the end would mean the guide is not helpful during the ongoing project and could result in lost information if not documented promptly.',
+                        experience: 0
+                    }
+                ]
             }
         ];
 

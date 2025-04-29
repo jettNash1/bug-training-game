@@ -217,6 +217,152 @@ export class RiskAnalysisQuiz extends BaseQuiz {
                         experience: 0
                     }
                 ]
+            },
+            // Additional Basic Scenarios from Guide - Risk Analysis Additional Questions
+            {
+                id: 16,
+                level: 'Basic',
+                title: 'Risk Identification Focus',
+                description: 'What is the primary focus of risk identification?',
+                options: [
+                    {
+                        text: 'Questions should be the primary focus of risk identification',
+                        outcome: 'Correct! Questioning the who, what, why, and where of activities to identify potential issues ahead of time should be the primary focus.',
+                        experience: 15,
+                        tool: 'Risk Identification Focus'
+                    },
+                    {
+                        text: 'Documentation should be the primary focus of risk identification',
+                        outcome: 'While documentation is important throughout the process, it\'s not identified as the primary focus of risk identification.',
+                        experience: -5
+                    },
+                    {
+                        text: 'Solutions should be the primary focus of risk identification',
+                        outcome: 'Solutions are part of risk management rather than risk identification.',
+                        experience: -10
+                    },
+                    {
+                        text: 'Budgeting should be the primary focus of risk identification',
+                        outcome: 'While budget considerations may appear in risk analysis, this is not the primary focus of risk identification.',
+                        experience: 0
+                    }
+                ]
+            },
+            {
+                id: 17,
+                level: 'Basic',
+                title: 'Risk Severity Estimation',
+                description: 'Which of the following is not a factor to consider when estimating the severity of a risk?',
+                options: [
+                    {
+                        text: 'How many people or parties will be affected by the risk',
+                        outcome: 'This is a factor for severity assessment.',
+                        experience: -5
+                    },
+                    {
+                        text: 'How long the effect of the risk lasts',
+                        outcome: 'The duration of impact is specifically considered as a severity consideration.',
+                        experience: -10
+                    },
+                    {
+                        text: 'The history of the risk occurring',
+                        outcome: 'Correct! The history of the risk occurring is a factor to consider when estimating the likelihood of a risk, not the severity.',
+                        experience: 15,
+                        tool: 'Risk Severity Estimation'
+                    },
+                    {
+                        text: 'The impact when the risk occurs',
+                        outcome: 'This is directly related to severity assessment.',
+                        experience: 0
+                    }
+                ]
+            },
+            {
+                id: 18,
+                level: 'Basic',
+                title: 'Likelihood Scale',
+                description: 'What is the highest level on the Likelihood Scale according to the guide?',
+                options: [
+                    {
+                        text: 'Extremely Likely.',
+                        outcome: 'This term doesn\'t appear on the scale in the guide.',
+                        experience: -5
+                    },
+                    {
+                        text: 'Almost Certain',
+                        outcome: 'This is level 4 on the scale, not the highest level.', 
+                        experience: -10
+                    },
+                    {
+                        text: 'Certain',
+                        outcome: 'Correct! according to the Likelihood Scale in the guide, the highest level (5) is defined as Certain. This represents risks that are guaranteed to occur.',
+                        experience: 15,
+                        tool: 'Likelihood Scale'
+                    },
+                    {
+                        text: 'Inevitable',
+                        outcome: 'This term doesn\'t appear on the scale in the guide.',
+                        experience: 0
+                    }
+                ]
+            },
+            {
+                id: 19,
+                level: 'Basic',
+                title: 'Risk Assessment Checkpoint',
+                description: 'What is one of the key checkpoints for risk assessment during a tester\'s daily routine?',
+                options: [
+                    {
+                        text: 'The start of the workday should be determined as key checkpoint for risk assessment',
+                        outcome: 'Correct! The start of each day is a great time to start assessing project risk as this is a primary operation that allow for greater success throughout a day.',
+                        experience: 15,
+                        tool: 'Risk Assessment Checkpoint'
+                    },
+                    {
+                        text: 'The end of each test case should be determined as key checkpoint for risk assessment',
+                        outcome: 'While ongoing assessment is important, a specific checkpoint at every test case could prove too time consuming.',
+                        experience: -10
+                    },
+                    {
+                        text: 'After client meetings should be determined as key checkpoint for risk assessment',
+                        outcome: 'While client interactions may trigger risk assessments. This is not a standard checkpoint for ongoing projects',
+                        experience: -5
+                    },
+                    {
+                        text: 'After each deployment should be determined as key checkpoint for risk assessment',
+                        outcome: 'Deployments may trigger risk assessments. This is not a standard checkpoint for ongoing projects.',
+                        experience: 0
+                    }
+                ]
+            },
+            {
+                id: 20,
+                level: 'Basic',
+                title: 'Project Scoping Risk Assessment',
+                description: 'During the Scoping/Presale stage, who has responsibility for risk assessment according to the guide?',
+                options: [
+                    {
+                        text: 'Delivery Manager, Head of Service or Project Manager if involving in scoping should be responsible for the risk assessment',
+                        outcome: 'Correct! If involved in scoping the responsibility belongs to Delivery Manager, Head of Service or Project Manager.',
+                        experience: 15,
+                        tool: 'Project Scoping Risk Assessment'
+                    },
+                    {
+                        text: 'Test analysts only should be responsible for the risk assessment',
+                        outcome: 'While a test analyst may be asked for information about risk assessments. They should not be the only person responsible.',
+                        experience: -10
+                    },
+                    {
+                        text: 'The project manager only should be responsible for the risk assessment',
+                        outcome: 'While project managers might be involved, they\'re not the only responsible parties.',
+                        experience: -5
+                    },
+                    {
+                        text: 'The client representative and delivery manager should be responsible for the risk assessment',
+                        outcome: 'The client representative should not be responsible for this stage in the process.',
+                        experience: 0
+                    }
+                ]
             }
         ];
 

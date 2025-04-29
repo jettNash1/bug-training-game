@@ -221,6 +221,152 @@ export class RiskManagementQuiz extends BaseQuiz {
                         experience: 0
                     }
                 ]
+            },
+            // Additional Basic Scenarios from Guide - Risk Management Additional Questions
+            {
+                id: 16,
+                level: 'Basic',
+                title: 'Risk Management Characteristics',
+                description: 'Which of the following is not a characteristic of risk management?',
+                options: [
+                    {
+                        text: 'Being reactive responding to problems as they arise',
+                        outcome: 'Correct! Being proactive is as a characteristic, emphasising being mindful of potential risks rather than reacting to problems. Reactive approaches are the opposite of the recommended approach.',
+                        experience: 15,
+                        tool: 'Risk Management Characteristics'
+                    },
+                    {
+                        text: 'Being proactive and mindful of potential risks',
+                        outcome: 'Being proactive is as a key characteristic of risk management.',
+                        experience: -5
+                    },
+                    {
+                        text: 'Good communication, sharing identified risks with your team',
+                        outcome: 'Communication is a characteristic, particularly sharing identified risks with your team.',
+                        experience: -10
+                    },
+                    {
+                        text: 'Being timely to act on risks as early as possible',
+                        outcome: 'Being timely is as a characteristic with emphasis on acting on risks as early as possible.',
+                        experience: 0
+                    }
+                ]
+            },
+            {
+                id: 17,
+                level: 'Basic',
+                title: 'Project Feature Management',
+                description: 'In a scenario where a project feature is missing during testing, what is one of the recommended actions for the project manager?',
+                options: [
+                    {
+                        text: 'Additional payment from the client should be sought for schedule disruption',
+                        outcome: 'Demanding additional payment would likely damage client relationships.',
+                        experience: -5
+                    },
+                    {
+                        text: 'Make sure to complete the project without testing the missing feature',
+                        outcome: 'Testing on all scoped features should be attempted and communication with the client should be sought on clarification of those features.',
+                        experience: -10
+                    },
+                    {
+                        text: 'Offer to repurpose issue verification time to accommodate the release feature when available',
+                        outcome: 'Correct! The project manager should, if within notice period offer to repurpose issue verification time to accommodate the release feature when available.',
+                        experience: 15,
+                        tool: 'Project Feature Management'
+                    },
+                    {
+                        text: 'Automatically extend the project timeline without client consultation',
+                        outcome: 'Consultation with the client about options is recommended rather than automatically extending timelines.',
+                        experience: 0
+                    }
+                ]
+            },
+            {
+                id: 18,
+                level: 'Basic',
+                title: 'Test Duration Risk Mitigation',
+                description: 'What should be a risk mitigation action when a client reduces testing days from 10 to 5?',
+                options: [
+                    {
+                        text: 'A mitigation should be to refuse to proceed with testing until the original timeline is restored.',
+                        outcome: 'Flexibility and adaptability to changing circumstances should be observed, not a refusal to proceed.',
+                        experience: -5
+                    },
+                    {
+                        text: 'A mitigation should be to automatically double the number of testers assigned to maintain complete coverage',
+                        outcome: 'While resource reallocation might be considered, automatically doubling testers without discussion with all affected is not recommended.', 
+                        experience: -10
+                    },
+                    {
+                        text: 'A mitigation should be to identify further prioritisation of software to ensure critical features receive high coverage',
+                        outcome: 'Correct! If the script cannot be completed, then reprioritisation of test effort to cover critical areas should be considered',
+                        experience: 15,
+                        tool: 'Test Duration Risk Mitigation'
+                    },
+                    {
+                        text: 'A mitigation should be to test all features with equal depth but at a faster pace',
+                        outcome: 'Test coverage will be reduced and re-prioritisation rather than maintaining equal depth for all features is recommended.',
+                        experience: 0
+                    }
+                ]
+            },
+            {
+                id: 19,
+                level: 'Basic',
+                title: 'Risk Management Objectives',
+                description: 'What is an of the objectives of risk management?',
+                options: [
+                    {
+                        text: 'To understand how risks can affect our work',
+                        outcome: 'Correct! This is the primary objective for risk management.',
+                        experience: 15,
+                        tool: 'Risk Management Objectives'
+                    },
+                    {
+                        text: 'To eliminate the need for client communication during projects',
+                        outcome: 'Client communication is essential and should not be eliminated.',
+                        experience: -10
+                    },
+                    {
+                        text: 'To avoid all potential defects in software development',
+                        outcome: 'Defects will occur and focus should be on managing them, not avoiding all potential defects',
+                        experience: -5
+                    },
+                    {
+                        text: 'To guarantee project completion within original timeframes',
+                        outcome: 'While effective risk management helps with timely completion, timeframes may need to change based on circumstances.',
+                        experience: 0
+                    }
+                ]
+            },
+            {
+                id: 20,
+                level: 'Basic',
+                title: 'Risk Management Importance',
+                description: 'Why is risk management important?',
+                options: [
+                    {
+                        text: 'It improves delivery of projects, ensuring they are completed on time and to the best ability',
+                        outcome: 'Correct! It can help identify and manage risks to prioritise risk areas and deliver projects on time.',
+                        experience: 15,
+                        tool: 'Risk Management Importance'
+                    },
+                    {
+                        text: 'It eliminates the need for client involvement in project decisions',
+                        outcome: 'Client communication and involvement should be sought, not eliminated. This can help build client relationships and trust.',
+                        experience: -10
+                    },
+                    {
+                        text: 'It helps justify additional project costs to clients',
+                        outcome: 'Risk management should be about improving project outcomes, not justifying additional costs.',
+                        experience: -5
+                    },
+                    {
+                        text: 'It reduces the time needed for testing activities',
+                        outcome: 'Risk management might actually increase testing time in certain cases to mitigate identified risks properly.',
+                        experience: 0
+                    }
+                ]
             }
         ];
 
