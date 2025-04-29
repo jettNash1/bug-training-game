@@ -1128,6 +1128,30 @@ export class RiskAnalysisQuiz extends BaseQuiz {
      */
     ensureRequiredElementsExist() {
         console.log('[RiskAnalysisQuiz] Checking required elements');
+        
+        // First ensure the quiz-header-progress element exists
+        let headerProgress = document.querySelector('.quiz-header-progress');
+        if (!headerProgress) {
+            console.log('[RiskAnalysisQuiz] Creating quiz-header-progress element');
+            headerProgress = document.createElement('div');
+            headerProgress.className = 'quiz-header-progress';
+            
+            // Find the game screen to append the header to
+            const gameScreen = document.getElementById('game-screen');
+            if (gameScreen) {
+                // Insert as the first child of game screen
+                if (gameScreen.firstChild) {
+                    gameScreen.insertBefore(headerProgress, gameScreen.firstChild);
+                } else {
+                    gameScreen.appendChild(headerProgress);
+                }
+                console.log('[RiskAnalysisQuiz] Added quiz-header-progress to game-screen');
+            } else {
+                console.error('[RiskAnalysisQuiz] Could not find game-screen to add quiz-header-progress');
+                return false;
+            }
+        }
+        
         const requiredElements = [
             { id: 'scenario-title', type: 'h2', parent: '#game-screen', fallbackClass: 'scenario-title' },
             { id: 'scenario-description', type: 'p', parent: '#game-screen', fallbackClass: 'scenario-description' },
@@ -1211,6 +1235,155 @@ export class RiskAnalysisQuiz extends BaseQuiz {
         
         console.log('[RiskAnalysisQuiz] Required elements check completed, result:', allExist);
         return allExist;
+    }
+
+    initializeEventListeners() {
+        // Add event listeners for the continue and restart buttons
+        document.getElementById('continue-btn')?.addEventListener('click', () => this.nextScenario());
+        document.getElementById('restart-btn')?.addEventListener('click', () => this.restartGame());
+
+        // Add form submission handler
+        document.getElementById('options-form')?.addEventListener('submit', (e) => {
+            e.preventDefault();
+            this.handleAnswer();
+        });
+
+        // Add submit button click handler
+        document.querySelector('.submit-button')?.addEventListener('click', () => this.handleAnswer());
+
+        // Add keyboard navigation
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' && e.target.type === 'radio') {
+                this.handleAnswer();
+            }
+        });
+    }
+
+    restartGame() {
+        // Reset player state
+        this.player = {
+            name: localStorage.getItem('username'),
+            experience: 0,
+            tools: [],
+            currentScenario: 0,
+            questionHistory: []
+        };
+
+        // Reset UI
+        this.gameScreen.classList.remove('hidden');
+        this.outcomeScreen.classList.add('hidden');
+        this.endScreen.classList.add('hidden');
+
+        // Clear any existing transition messages
+        const transitionContainer = document.getElementById('level-transition-container');
+        if (transitionContainer) {
+            transitionContainer.innerHTML = '';
+            transitionContainer.classList.remove('active');
+        }
+
+        // Update progress display
+        this.updateProgress();
+
+        // Start from first scenario
+        this.displayScenario();
+    }
+
+    generateRecommendations() {
+        const recommendationsContainer = document.getElementById('recommendations');
+        if (!recommendationsContainer) return;
+
+        const scorePercentage = this.calculateScorePercentage();
+        const weakAreas = [];
+        const strongAreas = [];
+
+        // Analyze performance in different areas
+        this.player.questionHistory.forEach(record => {
+            const isCorrect = record.isCorrect;
+
+            // Categorize the question based on its content
+            const questionType = this.categorizeQuestion(record.scenario);
+            
+            if (isCorrect) {
+                if (!strongAreas.includes(questionType)) {
+                    strongAreas.push(questionType);
+                }
+            } else {
+                if (!weakAreas.includes(questionType)) {
+                    weakAreas.push(questionType);
+                }
+            }
+        });
+
+        // Generate recommendations HTML
+        let recommendationsHTML = '';
+
+        if (scorePercentage >= 90 && weakAreas.length === 0) {
+            recommendationsHTML = '<p>🌟 Outstanding! You have demonstrated mastery in all aspects of risk analysis. You clearly understand the nuances of risk assessment and are well-equipped to handle any risk analysis challenges!</p>';
+        } else if (scorePercentage >= 80) {
+            recommendationsHTML = '<p>🌟 Excellent performance! Your risk analysis skills are very strong. To achieve complete mastery, consider focusing on:</p>';
+            recommendationsHTML += '<ul>';
+            if (weakAreas.length > 0) {
+                weakAreas.forEach(area => {
+                    recommendationsHTML += `<li>${this.getRecommendation(area)}</li>`;
+                });
+            }
+            recommendationsHTML += '</ul>';
+        } else if (scorePercentage >= 70) {
+            recommendationsHTML = '<p>👍 Good effort! Here are some areas to focus on:</p>';
+            recommendationsHTML += '<ul>';
+            weakAreas.forEach(area => {
+                recommendationsHTML += `<li>${this.getRecommendation(area)}</li>`;
+            });
+            recommendationsHTML += '</ul>';
+        } else {
+            recommendationsHTML = '<p>📚 Here are key areas for improvement:</p>';
+            recommendationsHTML += '<ul>';
+            weakAreas.forEach(area => {
+                recommendationsHTML += `<li>${this.getRecommendation(area)}</li>`;
+            });
+            recommendationsHTML += '</ul>';
+        }
+
+        recommendationsContainer.innerHTML = recommendationsHTML;
+    }
+
+    categorizeQuestion(scenario) {
+        // Categorize questions based on their content
+        const title = scenario.title.toLowerCase();
+        const description = scenario.description.toLowerCase();
+
+        if (title.includes('severity') || description.includes('severity')) {
+            return 'Risk Severity Assessment';
+        } else if (title.includes('likelihood') || description.includes('likelihood')) {
+            return 'Risk Likelihood Evaluation';
+        } else if (title.includes('timeline') || description.includes('timeline')) {
+            return 'Project Timeline Risk';
+        } else if (title.includes('documentation') || description.includes('documentation')) {
+            return 'Documentation Risk';
+        } else if (title.includes('environment') || description.includes('environment')) {
+            return 'Environment Risk';
+        } else if (title.includes('communication') || description.includes('communication')) {
+            return 'Communication Risk';
+        } else if (title.includes('assessment') || description.includes('assessment')) {
+            return 'Risk Assessment Process';
+        } else {
+            return 'General Risk Analysis';
+        }
+    }
+
+    getRecommendation(area) {
+        const recommendations = {
+            'Risk Severity Assessment': 'Focus on comprehensively evaluating risk impact by considering all affected parties, duration, and business impact.',
+            'Risk Likelihood Evaluation': 'Strengthen your approach to evaluating probability based on historical data and frequency of user interaction.',
+            'Project Timeline Risk': 'Develop better strategies for timeline risk management, especially regarding resource allocation and flexibility.',
+            'Documentation Risk': 'Improve documentation review processes to identify potential gaps before testing begins.',
+            'Environment Risk': 'Enhance your approach to environment access verification and stability assessment.',
+            'Communication Risk': 'Work on establishing robust communication channels and escalation paths with clients.',
+            'Risk Assessment Process': 'Develop more systematic approaches to regular risk assessment throughout the project lifecycle.',
+            'General Risk Analysis': 'Continue developing foundational risk analysis principles and methodologies.'
+        };
+
+        return recommendations[area] || 'Continue practicing core risk analysis principles.';
     }
 
     async startGame() {
