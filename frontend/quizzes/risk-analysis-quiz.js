@@ -1420,14 +1420,14 @@ export class RiskAnalysisQuiz extends BaseQuiz {
             quizName.replace(/-/g, '_'),                          // snake_case
         ];
 
-        // Add sanity-smoke specific variations
-        if (quizName.toLowerCase().includes('sanity-smoke')) {
+        // Add risk-analysis specific variations
+        if (quizName.toLowerCase().includes('risk-analysis')) {
             variations.push(
-                'Sanity-Smoke',
-                'sanity-smoke',
-                'sanitySmokeTest',
-                'Sanity_Smoke',
-                'sanity_smoke'
+                'Risk-Analysis',
+                'risk-analysis',
+                'riskAnalysisTest',
+                'Risk_Analysis',
+                'risk_analysis'
             );
         }
 
@@ -1440,11 +1440,11 @@ export class RiskAnalysisQuiz extends BaseQuiz {
 
 // Start the quiz when the page loads
 document.addEventListener('DOMContentLoaded', () => {
-    console.log('[SanitySmokeQuiz] Initializing quiz');
+    console.log('[Risk-Analysis-Quiz] Initializing quiz');
     
     // Force clean any existing quiz references that might be in memory
     if (window.currentQuiz) {
-        console.log('[SanitySmokeQuiz] Cleaning up existing quiz instance:', window.currentQuiz.quizName);
+        console.log('[Risk-Analysis-Quiz] Cleaning up existing quiz instance:', window.currentQuiz.quizName);
         // Clear any timers or other resources
         if (window.currentQuiz.questionTimer) {
             clearInterval(window.currentQuiz.questionTimer);
@@ -1467,28 +1467,28 @@ document.addEventListener('DOMContentLoaded', () => {
             const key = `quiz_progress_${username}_${quizName}`;
             const data = localStorage.getItem(key);
             if (data) {
-                console.log(`[SanitySmokeQuiz] Found potential conflicting quiz data: ${quizName}`);
+                console.log(`[Risk-Analysis-Quiz] Found potential conflicting quiz data: ${quizName}`);
                 try {
                     const parsed = JSON.parse(data);
                     if (parsed && parsed.data && parsed.data.randomizedScenarios) {
-                        console.log(`[SanitySmokeQuiz] Cleaning randomized scenarios from ${quizName}`);
+                        console.log(`[Risk-Analysis-Quiz] Cleaning randomized scenarios from ${quizName}`);
                         delete parsed.data.randomizedScenarios;
                         localStorage.setItem(key, JSON.stringify(parsed));
                     }
                 } catch (e) {
-                    console.error(`[SanitySmokeQuiz] Error cleaning scenarios:`, e);
+                    console.error(`[Risk-Analysis-Quiz] Error cleaning scenarios:`, e);
                 }
             }
         });
     }
     
     // Create a new instance and keep a global reference
-    const quiz = new SanitySmokeQuiz();
+    const quiz = new RiskAnalysisQuiz;
     window.currentQuiz = quiz;
     
     // Add a specific property to identify this quiz
     Object.defineProperty(window, 'ACTIVE_QUIZ_NAME', {
-        value: 'sanity-smoke',
+        value: 'risk-analysis',
         writable: true,
         configurable: true
     });
@@ -1497,14 +1497,14 @@ document.addEventListener('DOMContentLoaded', () => {
     if (quiz.randomizedScenarios) {
         // Keep only keys specific to this quiz
         Object.keys(quiz.randomizedScenarios).forEach(key => {
-            if (!key.startsWith('sanity-smoke_')) {
-                console.log(`[SanitySmokeQuiz] Removing unrelated randomized scenario: ${key}`);
+            if (!key.startsWith('risk-analysis_')) {
+                console.log(`[Risk-Analysis-Quiz] Removing unrelated randomized scenario: ${key}`);
                 delete quiz.randomizedScenarios[key];
             }
         });
     }
     
     // Start the quiz
-    console.log('[SanitySmokeQuiz] Starting quiz');
+    console.log('[Risk-Analysis-Quiz] Starting quiz');
     quiz.startGame();
 }); 
