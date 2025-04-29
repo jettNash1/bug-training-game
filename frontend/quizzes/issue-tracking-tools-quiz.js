@@ -1297,8 +1297,11 @@ export class IssueTrackingToolsQuiz extends BaseQuiz {
     }
 }
 
-// Initialize quiz when DOM is loaded
+// Initialize quiz when the page loads
 document.addEventListener('DOMContentLoaded', () => {
+    // Clear any existing quiz instances before starting this quiz
+    BaseQuiz.clearQuizInstances('issue-tracking-tools');
+    
     const quiz = new IssueTrackingToolsQuiz();
     quiz.startGame();
 }); 

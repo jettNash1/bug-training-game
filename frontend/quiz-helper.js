@@ -1751,6 +1751,12 @@ export class BaseQuiz {
      */
     async loadProgress() {
         try {
+            // Check the active quiz name from window global to enforce isolation
+            if (window.ACTIVE_QUIZ_NAME && window.ACTIVE_QUIZ_NAME !== this.quizName) {
+                console.warn(`[Quiz] Active quiz (${window.ACTIVE_QUIZ_NAME}) doesn't match this quiz (${this.quizName}). Forcing clean load.`);
+                return false; // Force clean state
+            }
+            
             const username = localStorage.getItem('username');
             if (!username) {
                 console.error('[Quiz] No user found, cannot load progress');
@@ -1786,10 +1792,28 @@ export class BaseQuiz {
             }
 
             if (progress) {
+                // Safety check for quiz name
+                // If we somehow loaded the wrong quiz's progress, don't use it
+                if (progress.quizName && progress.quizName !== this.quizName) {
+                    console.error(`[Quiz] Progress quizName (${progress.quizName}) doesn't match this quiz (${this.quizName}). Discarding.`);
+                    return false;
+                }
+                
+                // Add the quiz name to the progress data to aid debugging
+                progress.quizName = this.quizName;
+                
                 // Restore randomized scenarios
                 if (progress.randomizedScenarios) {
-                    this.randomizedScenarios = progress.randomizedScenarios;
-                    console.log('[Quiz] Restored randomized scenarios:', this.randomizedScenarios);
+                    // Only restore scenarios that match this quiz name
+                    const filteredScenarios = {};
+                    Object.keys(progress.randomizedScenarios).forEach(key => {
+                        if (key.startsWith(`${this.quizName}_`)) {
+                            filteredScenarios[key] = progress.randomizedScenarios[key];
+                        }
+                    });
+                    
+                    this.randomizedScenarios = filteredScenarios;
+                    console.log('[Quiz] Restored randomized scenarios for ', this.quizName, this.randomizedScenarios);
                     
                     // If we have scenario IDs instead of full objects, restore full scenarios
                     // This happens when the progress is optimized
@@ -1868,6 +1892,66 @@ export class BaseQuiz {
         } catch (error) {
             console.error('[Quiz] Failed to load progress:', error);
             return false;
+        }
+    }
+
+    /**
+     * Cleans up any existing quiz instances and prepares for a new quiz
+     * @param {string} currentQuizName - The name of the quiz being initialized
+     * @static
+     * @returns {void}
+     */
+    static clearQuizInstances(currentQuizName) {
+        console.log(`[BaseQuiz] Clearing any existing quiz instances before starting ${currentQuizName}`);
+        
+        // Clear any global quiz reference
+        if (window.currentQuiz) {
+            // Clear any timers or intervals
+            if (window.currentQuiz.timers) {
+                window.currentQuiz.timers.forEach(timer => clearTimeout(timer));
+            }
+            if (window.currentQuiz.intervals) {
+                window.currentQuiz.intervals.forEach(interval => clearInterval(interval));
+            }
+            
+            console.log('[BaseQuiz] Cleared existing quiz instance:', window.currentQuiz.quizName);
+            delete window.currentQuiz;
+        }
+        
+        // Set active quiz name for isolation purposes
+        window.ACTIVE_QUIZ_NAME = currentQuizName;
+        console.log(`[BaseQuiz] Set active quiz to: ${currentQuizName}`);
+        
+        // Clear any localStorage entries with conflicting quiz names
+        // This prevents cross-contamination between quizzes
+        if (currentQuizName) {
+            const username = localStorage.getItem('username');
+            if (username) {
+                // Remove any quiz-specific localStorage items from other quizzes
+                const quizTypes = [
+                    'sanity-smoke',
+                    'script-metrics-troubleshooting',
+                    'communication-skills',
+                    // Add other quiz types here as they're developed
+                ];
+                
+                quizTypes.forEach(quizType => {
+                    // Skip the current quiz
+                    if (quizType === currentQuizName) return;
+                    
+                    // Remove temporary randomized scenarios
+                    for (let key in localStorage) {
+                        // Clean up randomized scenarios from other quizzes
+                        if (key.startsWith(`randomized_${quizType}_`) ||
+                            key === `${quizType}_last_scenario` ||
+                            key === `${quizType}_level` ||
+                            key === `${quizType}_score`) {
+                            console.log(`[BaseQuiz] Removing conflicting localStorage key: ${key}`);
+                            localStorage.removeItem(key);
+                        }
+                    }
+                });
+            }
         }
     }
 }

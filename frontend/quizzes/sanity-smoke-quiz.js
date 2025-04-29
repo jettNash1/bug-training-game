@@ -1588,6 +1588,71 @@ export class SanitySmokeQuiz extends BaseQuiz {
 
 // Start the quiz when the page loads
 document.addEventListener('DOMContentLoaded', () => {
+    console.log('[SanitySmokeQuiz] Initializing quiz');
+    
+    // Force clean any existing quiz references that might be in memory
+    if (window.currentQuiz) {
+        console.log('[SanitySmokeQuiz] Cleaning up existing quiz instance:', window.currentQuiz.quizName);
+        // Clear any timers or other resources
+        if (window.currentQuiz.questionTimer) {
+            clearInterval(window.currentQuiz.questionTimer);
+        }
+    }
+    
+    // Clear any conflicting localStorage entries
+    const username = localStorage.getItem('username');
+    if (username) {
+        // List all quiz names that might conflict
+        const potentialConflicts = [
+            'script-metrics-troubleshooting',
+            'standard-script-testing',
+            'fully-scripted',
+            'exploratory'
+        ];
+        
+        // Clean localStorage to prevent cross-contamination
+        potentialConflicts.forEach(quizName => {
+            const key = `quiz_progress_${username}_${quizName}`;
+            const data = localStorage.getItem(key);
+            if (data) {
+                console.log(`[SanitySmokeQuiz] Found potential conflicting quiz data: ${quizName}`);
+                try {
+                    const parsed = JSON.parse(data);
+                    if (parsed && parsed.data && parsed.data.randomizedScenarios) {
+                        console.log(`[SanitySmokeQuiz] Cleaning randomized scenarios from ${quizName}`);
+                        delete parsed.data.randomizedScenarios;
+                        localStorage.setItem(key, JSON.stringify(parsed));
+                    }
+                } catch (e) {
+                    console.error(`[SanitySmokeQuiz] Error cleaning scenarios:`, e);
+                }
+            }
+        });
+    }
+    
+    // Create a new instance and keep a global reference
     const quiz = new SanitySmokeQuiz();
+    window.currentQuiz = quiz;
+    
+    // Add a specific property to identify this quiz
+    Object.defineProperty(window, 'ACTIVE_QUIZ_NAME', {
+        value: 'sanity-smoke',
+        writable: true,
+        configurable: true
+    });
+    
+    // Force clear any unrelated randomized scenarios
+    if (quiz.randomizedScenarios) {
+        // Keep only keys specific to this quiz
+        Object.keys(quiz.randomizedScenarios).forEach(key => {
+            if (!key.startsWith('sanity-smoke_')) {
+                console.log(`[SanitySmokeQuiz] Removing unrelated randomized scenario: ${key}`);
+                delete quiz.randomizedScenarios[key];
+            }
+        });
+    }
+    
+    // Start the quiz
+    console.log('[SanitySmokeQuiz] Starting quiz');
     quiz.startGame();
 }); 
