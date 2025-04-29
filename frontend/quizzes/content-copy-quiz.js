@@ -658,43 +658,38 @@ export class ContentCopyQuiz extends BaseQuiz {
         setTimeout(() => errorDiv.remove(), 5000);
     }
 
-    shouldEndGame() {
-        // End game if we've answered all questions
-        return this.player.questionHistory.length >= this.totalQuestions;
-    }
-
-    calculateScorePercentage() {
-        // Calculate percentage based on correct answers
-        const correctAnswers = this.player.questionHistory.filter(q => 
-            q.selectedAnswer && (q.selectedAnswer.isCorrect || q.selectedAnswer.experience > 0)
-        ).length;
-        
-        // Cap the questions answered at total questions
-        const questionsAnswered = Math.min(this.player.questionHistory.length, this.totalQuestions);
-        
-        return questionsAnswered > 0 ? Math.round((correctAnswers / questionsAnswered) * 100) : 0;
+    shouldEndGame(totalQuestionsAnswered, currentXP) {
+        // End game when all questions are answered
+        return totalQuestionsAnswered >= this.totalQuestions;
     }
 
     async saveProgress() {
-        // Determine the status based on clear conditions
+        // First determine the status based on quiz completion and score
         let status = 'in-progress';
+        let scorePercentage = 0;
+        
+        // Calculate score percentage based on correct answers
+        if (this.player.questionHistory.length > 0) {
+            scorePercentage = this.calculateScorePercentage();
+        }
         
         // Check for completion (all questions answered)
         if (this.player.questionHistory.length >= this.totalQuestions) {
-            // Calculate percentage score
-            const scorePercentage = this.calculateScorePercentage();
             status = scorePercentage >= this.passPercentage ? 'passed' : 'failed';
         }
 
         const progress = {
-            experience: this.player.experience,
-            tools: this.player.tools,
-            currentScenario: this.player.currentScenario,
-            questionHistory: this.player.questionHistory,
-            lastUpdated: new Date().toISOString(),
-            questionsAnswered: this.player.questionHistory.length,
-            status: status,
-            scorePercentage: this.calculateScorePercentage()
+            data: {
+                experience: this.player.experience,
+                tools: this.player.tools,
+                currentScenario: this.player.currentScenario,
+                questionHistory: this.player.questionHistory,
+                lastUpdated: new Date().toISOString(),
+                questionsAnswered: this.player.questionHistory.length,
+                status: status,
+                scorePercentage: scorePercentage,
+                randomizedScenarios: this.randomizedScenarios || {} // Save the randomized scenarios
+            }
         };
 
         try {
@@ -706,10 +701,10 @@ export class ContentCopyQuiz extends BaseQuiz {
             
             // Use user-specific key for localStorage
             const storageKey = `quiz_progress_${username}_${this.quizName}`;
-            localStorage.setItem(storageKey, JSON.stringify({ data: progress }));
+            localStorage.setItem(storageKey, JSON.stringify(progress));
             
-            console.log('Saving progress with status:', status, 'scorePercentage:', progress.scorePercentage);
-            await this.apiService.saveQuizProgress(this.quizName, progress);
+            console.log('Saving progress with status:', status, 'and score:', scorePercentage);
+            await this.apiService.saveQuizProgress(this.quizName, progress.data);
         } catch (error) {
             console.error('Failed to save progress:', error);
         }
@@ -737,7 +732,8 @@ export class ContentCopyQuiz extends BaseQuiz {
                     questionHistory: savedProgress.data.questionHistory || [],
                     currentScenario: savedProgress.data.currentScenario || 0,
                     status: savedProgress.data.status || 'in-progress',
-                    scorePercentage: savedProgress.data.scorePercentage || 0
+                    scorePercentage: savedProgress.data.scorePercentage || 0,
+                    randomizedScenarios: savedProgress.data.randomizedScenarios || {}
                 };
                 console.log('Normalized progress data:', progress);
             } else {
@@ -751,6 +747,44 @@ export class ContentCopyQuiz extends BaseQuiz {
             }
 
             if (progress) {
+                // Restore randomized scenarios if available
+                if (progress.randomizedScenarios) {
+                    this.randomizedScenarios = progress.randomizedScenarios;
+                    console.log('Restored randomized scenarios:', this.randomizedScenarios);
+                    
+                    // If we have scenario IDs instead of full objects, restore full scenarios
+                    for (const level in this.randomizedScenarios) {
+                        if (Array.isArray(this.randomizedScenarios[level])) {
+                            // Check if we have IDs instead of full scenario objects
+                            if (this.randomizedScenarios[level].length > 0 && 
+                                (typeof this.randomizedScenarios[level][0] === 'number' || 
+                                 typeof this.randomizedScenarios[level][0] === 'string')) {
+                                console.log(`Restoring full scenarios for level ${level} from IDs`);
+                                
+                                // Get the source scenarios for this level
+                                let sourceScenarios;
+                                if (level === 'basic') {
+                                    sourceScenarios = this.basicScenarios;
+                                } else if (level === 'intermediate') {
+                                    sourceScenarios = this.intermediateScenarios;
+                                } else if (level === 'advanced') {
+                                    sourceScenarios = this.advancedScenarios;
+                                }
+                                
+                                if (sourceScenarios) {
+                                    // Replace IDs with full scenario objects
+                                    this.randomizedScenarios[level] = this.randomizedScenarios[level].map(id => {
+                                        const scenarioId = typeof id === 'string' ? parseInt(id, 10) : id;
+                                        return sourceScenarios.find(s => s.id === scenarioId) || null;
+                                    }).filter(Boolean);
+                                    
+                                    console.log(`Restored ${this.randomizedScenarios[level].length} full scenarios for level ${level}`);
+                                }
+                            }
+                        }
+                    }
+                }
+                
                 // Set the player state from progress
                 this.player.experience = progress.experience || 0;
                 this.player.tools = progress.tools || [];
@@ -761,8 +795,11 @@ export class ContentCopyQuiz extends BaseQuiz {
                 this.updateProgress();
                 
                 // Check quiz status and show appropriate screen
-                if (progress.status === 'failed' || progress.status === 'passed') {
-                    this.endGame(progress.status === 'failed');
+                if (progress.status === 'failed') {
+                    this.endGame(true);
+                    return true;
+                } else if (progress.status === 'passed' || progress.status === 'completed') {
+                    this.endGame(false);
                     return true;
                 }
 
@@ -775,35 +812,144 @@ export class ContentCopyQuiz extends BaseQuiz {
         }
     }
 
-    displayScenario() {
-        const currentScenarios = this.getCurrentScenarios();
+    async startGame() {
+        if (this.isLoading) return;
         
+        try {
+            this.isLoading = true;
+            // Show loading indicator
+            const loadingIndicator = document.getElementById('loading-indicator');
+            if (loadingIndicator) {
+                loadingIndicator.classList.remove('hidden');
+            }
+
+            // Set player name from localStorage
+            this.player.name = localStorage.getItem('username');
+            if (!this.player.name) {
+                window.location.href = '/login.html';
+                return;
+            }
+            
+            // Clear any conflicting randomized scenarios
+            const username = localStorage.getItem('username');
+            if (username) {
+                // Clear any leftover randomized scenarios from other quizzes
+                // to prevent cross-contamination
+                const quizzes = ['script-metrics-troubleshooting', 'standard-script-testing'];
+                quizzes.forEach(quizName => {
+                    if (quizName !== this.quizName) {
+                        const key = `quiz_progress_${username}_${quizName}`;
+                        const data = localStorage.getItem(key);
+                        if (data) {
+                            try {
+                                console.log(`[Quiz] Clearing potential conflicting scenarios from ${quizName}`);
+                                const parsed = JSON.parse(data);
+                                if (parsed && parsed.data && parsed.data.randomizedScenarios) {
+                                    delete parsed.data.randomizedScenarios;
+                                    localStorage.setItem(key, JSON.stringify(parsed));
+                                }
+                            } catch (e) {
+                                console.error(`[Quiz] Error clearing scenarios from ${quizName}:`, e);
+                            }
+                        }
+                    }
+                });
+            }
+
+            // Initialize event listeners
+            this.initializeEventListeners();
+
+            // Load previous progress
+            const hasProgress = await this.loadProgress();
+            console.log('Previous progress loaded:', hasProgress);
+            
+            if (!hasProgress) {
+                // Reset player state if no valid progress exists
+                this.player.experience = 0;
+                this.player.tools = [];
+                this.player.currentScenario = 0;
+                this.player.questionHistory = [];
+                
+                // Clear any existing randomized scenarios
+                this.randomizedScenarios = {};
+            }
+            
+            // Clear any existing transition messages
+            const transitionContainer = document.getElementById('level-transition-container');
+            if (transitionContainer) {
+                transitionContainer.innerHTML = '';
+                transitionContainer.classList.remove('active');
+            }
+
+            // Clear any existing timer
+            if (this.questionTimer) {
+                clearInterval(this.questionTimer);
+            }
+            
+            await this.displayScenario();
+        } catch (error) {
+            console.error('Failed to start game:', error);
+            this.showError('Failed to start the quiz. Please try refreshing the page.');
+        } finally {
+            this.isLoading = false;
+            // Hide loading state
+            const loadingIndicator = document.getElementById('loading-indicator');
+            if (loadingIndicator) {
+                loadingIndicator.classList.add('hidden');
+            }
+        }
+    }
+
+    initializeEventListeners() {
+        // Add event listeners for the continue and restart buttons
+        document.getElementById('continue-btn')?.addEventListener('click', () => this.nextScenario());
+        document.getElementById('restart-btn')?.addEventListener('click', () => this.restartGame());
+
+        // Add form submission handler
+        document.getElementById('options-form')?.addEventListener('submit', (e) => {
+            e.preventDefault();
+            this.handleAnswer();
+        });
+
+        // Add keyboard navigation
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' && e.target.type === 'radio') {
+                this.handleAnswer();
+            }
+        });
+    }
+
+    displayScenario() {
         // Check if we've answered all questions
-        if (this.shouldEndGame()) {
-            const scorePercentage = this.calculateScorePercentage();
-            this.endGame(scorePercentage < this.passPercentage);
+        if (this.player.questionHistory.length >= this.totalQuestions) {
+            console.log('All questions answered, ending game');
+            this.endGame(false);
             return;
         }
-
-        // Get the next scenario based on current progress
+        
+        // Get the randomized scenarios for the current level
+        const currentScenarios = this.getCurrentScenarios();
+        
+        // Get the next scenario based on current progress within level
         let scenario;
         const questionCount = this.player.questionHistory.length;
         
-        // Reset currentScenario based on the current level
+        // Determine which level we're in and set the correct index
+        let currentLevelIndex;
         if (questionCount < 5) {
             // Basic questions (0-4)
-            scenario = this.basicScenarios[questionCount];
-            this.player.currentScenario = questionCount;
+            currentLevelIndex = questionCount;
         } else if (questionCount < 10) {
             // Intermediate questions (5-9)
-            scenario = this.intermediateScenarios[questionCount - 5];
-            this.player.currentScenario = questionCount - 5;
-        } else if (questionCount < 15) {
+            currentLevelIndex = questionCount - 5;
+        } else {
             // Advanced questions (10-14)
-            scenario = this.advancedScenarios[questionCount - 10];
-            this.player.currentScenario = questionCount - 10;
+            currentLevelIndex = questionCount - 10;
         }
-
+        
+        // Get the scenario from the current randomized scenarios
+        scenario = currentScenarios[currentLevelIndex];
+        
         if (!scenario) {
             console.error('No scenario found for current progress. Question count:', questionCount);
             this.endGame(true);
@@ -816,8 +962,8 @@ export class ContentCopyQuiz extends BaseQuiz {
         // Show level transition message at the start of each level or when level changes
         const currentLevel = this.getCurrentLevel();
         const previousLevel = questionCount > 0 ? 
-            (questionCount <= 5 ? 'Basic' : 
-             questionCount <= 10 ? 'Intermediate' : 'Advanced') : null;
+            (questionCount < 5 ? 'Basic' : 
+             questionCount < 10 ? 'Intermediate' : 'Advanced') : null;
             
         if (questionCount === 0 || 
             (questionCount === 5 && currentLevel === 'Intermediate') || 
@@ -913,7 +1059,7 @@ export class ContentCopyQuiz extends BaseQuiz {
             submitButton.disabled = true;
         }
 
-        // Clear the timer when an answer is submitted
+        // Clear any existing timer
         if (this.questionTimer) {
             clearInterval(this.questionTimer);
         }
@@ -924,22 +1070,47 @@ export class ContentCopyQuiz extends BaseQuiz {
             if (!selectedOption) return;
 
             const currentScenarios = this.getCurrentScenarios();
-            const scenario = currentScenarios[this.player.currentScenario];
+            
+            // Determine which level we're in and set the correct index
+            const questionCount = this.player.questionHistory.length;
+            let currentLevelIndex;
+            
+            if (questionCount < 5) {
+                // Basic questions (0-4)
+                currentLevelIndex = questionCount;
+            } else if (questionCount < 10) {
+                // Intermediate questions (5-9)
+                currentLevelIndex = questionCount - 5;
+            } else {
+                // Advanced questions (10-14)
+                currentLevelIndex = questionCount - 10;
+            }
+            
+            const scenario = currentScenarios[currentLevelIndex];
             const originalIndex = parseInt(selectedOption.value);
             
             const selectedAnswer = scenario.options[originalIndex];
 
-            // Keep track of experience for backward compatibility
+            // Find the correct answer (option with highest experience)
+            const correctAnswer = scenario.options.reduce((prev, current) => 
+                (prev.experience > current.experience) ? prev : current
+            );
+
+            // Mark selected answer as correct or incorrect
+            selectedAnswer.isCorrect = selectedAnswer === correctAnswer;
+
+            // Update player experience with bounds
             this.player.experience = Math.max(0, Math.min(this.maxXP, this.player.experience + selectedAnswer.experience));
             
             // Calculate time spent on this question
             const timeSpent = this.questionStartTime ? Date.now() - this.questionStartTime : null;
 
-            // Add to question history with isCorrect property
+            // Add to question history
             this.player.questionHistory.push({
                 scenario: scenario,
                 selectedAnswer: selectedAnswer,
-                isCorrect: selectedAnswer.isCorrect || selectedAnswer.experience > 0,
+                isCorrect: selectedAnswer.isCorrect,
+                maxPossibleXP: Math.max(...scenario.options.map(o => o.experience)),
                 timeSpent: timeSpent,
                 timedOut: false
             });
@@ -953,17 +1124,26 @@ export class ContentCopyQuiz extends BaseQuiz {
             // Calculate the score percentage
             const scorePercentage = this.calculateScorePercentage();
             
+            const score = {
+                quizName: this.quizName,
+                score: scorePercentage,
+                experience: this.player.experience,
+                questionHistory: this.player.questionHistory,
+                questionsAnswered: this.player.questionHistory.length,
+                lastUpdated: new Date().toISOString()
+            };
+            
             // Save quiz result
             const username = localStorage.getItem('username');
             if (username) {
                 const quizUser = new QuizUser(username);
                 await quizUser.updateQuizScore(
                     this.quizName,
-                    scorePercentage,
-                    this.player.experience,
+                    score.score,
+                    score.experience,
                     this.player.tools,
-                    this.player.questionHistory,
-                    this.player.questionHistory.length
+                    score.questionHistory,
+                    score.questionsAnswered
                 );
             }
 
@@ -991,10 +1171,10 @@ export class ContentCopyQuiz extends BaseQuiz {
             }
 
             this.updateProgress();
-            
-            // Check if we should end the game
-            if (this.shouldEndGame()) {
-                await this.endGame(scorePercentage < this.passPercentage);
+
+            // Check if all questions have been answered
+            if (this.shouldEndGame(this.player.questionHistory.length, this.player.experience)) {
+                await this.endGame(false);
             }
         } catch (error) {
             console.error('Failed to handle answer:', error);
@@ -1005,6 +1185,17 @@ export class ContentCopyQuiz extends BaseQuiz {
                 submitButton.disabled = false;
             }
         }
+    }
+
+    nextScenario() {
+        // Hide outcome screen and show game screen
+        if (this.outcomeScreen && this.gameScreen) {
+            this.outcomeScreen.classList.add('hidden');
+            this.gameScreen.classList.remove('hidden');
+        }
+        
+        // Display next scenario
+        this.displayScenario();
     }
 
     updateProgress() {
@@ -1050,6 +1241,67 @@ export class ContentCopyQuiz extends BaseQuiz {
         }
     }
 
+    restartGame() {
+        // Reset player state
+        this.player = {
+            name: localStorage.getItem('username'),
+            experience: 0,
+            tools: [],
+            currentScenario: 0,
+            questionHistory: []
+        };
+
+        // Reset UI
+        this.gameScreen.classList.remove('hidden');
+        this.outcomeScreen.classList.add('hidden');
+        this.endScreen.classList.add('hidden');
+
+        // Clear any existing transition messages
+        const transitionContainer = document.getElementById('level-transition-container');
+        if (transitionContainer) {
+            transitionContainer.innerHTML = '';
+            transitionContainer.classList.remove('active');
+        }
+
+        // Update progress display
+        this.updateProgress();
+
+        // Start from first scenario
+        this.displayScenario();
+    }
+
+    getCurrentScenarios() {
+        const totalAnswered = this.player.questionHistory.length;
+        let level;
+        let scenarios;
+        
+        if (totalAnswered >= 10) {
+            level = 'advanced';
+            scenarios = this.advancedScenarios;
+        } else if (totalAnswered >= 5) {
+            level = 'intermediate';
+            scenarios = this.intermediateScenarios;
+        } else {
+            level = 'basic';
+            scenarios = this.basicScenarios;
+        }
+        
+        // Use the getRandomizedScenarios method to get or create random scenarios
+        return this.getRandomizedScenarios(level, scenarios);
+    }
+
+    getCurrentLevel() {
+        const totalAnswered = this.player.questionHistory.length;
+        
+        // Progress through levels based only on question count
+        if (totalAnswered >= 10) {
+            return 'Advanced';
+        } else if (totalAnswered >= 5) {
+            return 'Intermediate';
+        }
+        return 'Basic';
+    }
+
     generateRecommendations() {
         const recommendationsContainer = document.getElementById('recommendations');
         if (!recommendationsContainer) return;
@@ -1060,9 +1312,13 @@ export class ContentCopyQuiz extends BaseQuiz {
 
         // Analyze performance in different areas
         this.player.questionHistory.forEach(record => {
-            const isCorrect = record.isCorrect;
-            const questionType = this.categorizeQuestion(record.scenario);
-            
+            const maxXP = record.maxPossibleXP;
+            const earnedXP = record.selectedAnswer.experience;
+            const isCorrect = earnedXP === maxXP;
+
+            // Categorize the question based on its content
+            const questionType = this.categorizeQuestion(record.scenario);    
+
             if (isCorrect) {
                 if (!strongAreas.includes(questionType)) {
                     strongAreas.push(questionType);
@@ -1107,6 +1363,45 @@ export class ContentCopyQuiz extends BaseQuiz {
         recommendationsContainer.innerHTML = recommendationsHTML;
     }
 
+    categorizeQuestion(scenario) {
+        // Categorize questions based on their content
+        const title = scenario.title.toLowerCase();
+        const description = scenario.description.toLowerCase();
+
+        if (title.includes('content') || description.includes('content')) {
+            return 'Content Testing';
+        } else if (title.includes('review') || description.includes('review')) {
+            return 'Content Review';
+        } else if (title.includes('volume') || description.includes('volume')) {
+            return 'Issue Volume Management';
+        } else if (title.includes('image') || description.includes('image')) {
+            return 'Image Content Testing';
+        } else if (title.includes('requirements') || description.includes('requirements')) {
+            return 'Requirements Analysis';
+        } else if (title.includes('platform') || description.includes('platform')) {
+            return 'Platform Consistency';
+        } else if (title.includes('documentation') || description.includes('documentation')) {
+            return 'Documentation Testing';
+        } else {
+            return 'General Content Testing';
+        }
+    }
+
+    getRecommendation(area) {
+        const recommendations = {
+            'Content Testing': 'Focus on improving content verification methodologies and consistency checks.',
+            'Content Review': 'Strengthen content review approaches and attention to detail.',
+            'Issue Volume Management': 'Enhance strategies for handling and organizing multiple content issues efficiently.',
+            'Image Content Testing': 'Improve testing approaches for image quality and resolution across environments.',
+            'Requirements Analysis': 'Develop better understanding of content requirements and documentation needs.',
+            'Platform Consistency': 'Focus on ensuring content consistency across different platforms and environments.',
+            'Documentation Testing': 'Work on thorough documentation review and verification processes.',
+            'General Content Testing': 'Continue developing core content testing principles and methodologies.'
+        };
+
+        return recommendations[area] || 'Continue practicing fundamental content testing principles.';
+    }
+
     async endGame(failed = false) {
         this.gameScreen.classList.add('hidden');
         this.outcomeScreen.classList.add('hidden');
@@ -1118,65 +1413,70 @@ export class ContentCopyQuiz extends BaseQuiz {
             progressCard.style.display = 'none';
         }
 
-        // Calculate score percentage
+        // Calculate final score percentage based on correct answers
         const scorePercentage = this.calculateScorePercentage();
-        const isPassed = scorePercentage >= this.passPercentage;
-        
-        // Determine final status
-        const finalStatus = failed ? 'failed' : (isPassed ? 'passed' : 'failed');
+        const hasPassed = !failed && scorePercentage >= this.passPercentage;
         
         // Save the final quiz result with pass/fail status
         const username = localStorage.getItem('username');
         if (username) {
             try {
                 const user = new QuizUser(username);
-                console.log('Setting final quiz status:', { status: finalStatus, score: scorePercentage });
+                const status = hasPassed ? 'passed' : 'failed';
+                console.log('Setting final quiz status:', { status, score: scorePercentage });
                 
-                // Save to QuizUser
-                await user.updateQuizScore(
-                    this.quizName,
-                    scorePercentage,
-                    this.player.experience,
-                    this.player.tools,
-                    this.player.questionHistory,
-                    this.player.questionHistory.length,
-                    finalStatus
-                );
-
-                // Clear localStorage data for this quiz
-                this.clearQuizLocalStorage(username, this.quizName);
-
-                // Save to API with proper structure
-                const progress = {
+                const result = {
+                    score: scorePercentage,
+                    status: status,
                     experience: this.player.experience,
-                    tools: this.player.tools,
-                    currentScenario: this.player.currentScenario,
                     questionHistory: this.player.questionHistory,
-                    lastUpdated: new Date().toISOString(),
                     questionsAnswered: this.player.questionHistory.length,
-                    status: finalStatus,
+                    lastUpdated: new Date().toISOString(),
                     scorePercentage: scorePercentage
                 };
 
+                // Save to QuizUser
+                await user.updateQuizScore(
+                    this.quizName,
+                    result.score,
+                    result.experience,
+                    this.player.tools,
+                    result.questionHistory,
+                    result.questionsAnswered,
+                    status
+                );
+
+                // Save to API with proper structure
+                const apiProgress = {
+                    data: {
+                        ...result,
+                        tools: this.player.tools,
+                        currentScenario: this.player.currentScenario
+                    }
+                };
+
                 // Save directly via API to ensure status is updated
-                console.log('Saving final progress to API:', progress);
-                await this.apiService.saveQuizProgress(this.quizName, progress);
+                console.log('Saving final progress to API:', apiProgress);
+                await this.apiService.saveQuizProgress(this.quizName, apiProgress.data);
+                
+                // Clear any local storage for this quiz
+                this.clearQuizLocalStorage(username, this.quizName);
             } catch (error) {
                 console.error('Error saving final quiz score:', error);
             }
         }
 
         document.getElementById('final-score').textContent = `Final Score: ${scorePercentage}%`;
-
+        
         // Update the quiz complete header based on status
         const quizCompleteHeader = document.querySelector('#end-screen h2');
         if (quizCompleteHeader) {
-            quizCompleteHeader.textContent = failed ? 'Quiz Failed!' : 'Quiz Complete!';
+            quizCompleteHeader.textContent = hasPassed ? 'Quiz Complete!' : 'Quiz Failed!';
         }
 
         const performanceSummary = document.getElementById('performance-summary');
-        if (failed) {
-            performanceSummary.textContent = `Quiz failed. You scored ${scorePercentage}% but needed at least ${this.passPercentage}% to pass.`;
+        if (!hasPassed) {
+            performanceSummary.textContent = 'Quiz failed. You did not earn enough points to pass. You can retry this quiz later.';
             // Hide restart button if failed
             const restartBtn = document.getElementById('restart-btn');
             if (restartBtn) {
@@ -1188,8 +1488,8 @@ export class ContentCopyQuiz extends BaseQuiz {
                 quizContainer.classList.add('failed');
             }
         } else {
-            // Find the appropriate threshold message
-            const threshold = this.config.performanceThresholds.find(t => t.threshold <= scorePercentage);
+            // Find the appropriate performance message
+            const threshold = this.config.performanceThresholds.find(t => scorePercentage >= t.threshold);
             if (threshold) {
                 performanceSummary.textContent = threshold.message;
             } else {
@@ -1205,7 +1505,8 @@ export class ContentCopyQuiz extends BaseQuiz {
                 const reviewItem = document.createElement('div');
                 reviewItem.className = 'review-item';
                 
-                const isCorrect = record.isCorrect;
+                const isCorrect = record.selectedAnswer && (record.selectedAnswer.isCorrect || 
+                    record.selectedAnswer.experience === Math.max(...record.scenario.options.map(o => o.experience || 0)));
                 reviewItem.classList.add(isCorrect ? 'correct' : 'incorrect');
                 
                 reviewItem.innerHTML = `
@@ -1223,54 +1524,114 @@ export class ContentCopyQuiz extends BaseQuiz {
         this.generateRecommendations();
     }
 
-    // Utility method to clean up localStorage
+    // Helper method to calculate the score percentage based on correct answers
+    calculateScorePercentage() {
+        const correctAnswers = this.player.questionHistory.filter(q => 
+            q.selectedAnswer && (q.selectedAnswer.isCorrect || 
+            q.selectedAnswer.experience === Math.max(...q.scenario.options.map(o => o.experience || 0)))
+        ).length;
+        
+        // Calculate percentage based on completed questions (cap at max questions)
+        const totalAnswered = Math.min(this.player.questionHistory.length, this.totalQuestions);
+        return totalAnswered > 0 ? Math.round((correctAnswers / totalAnswered) * 100) : 0;
+    }
+
     clearQuizLocalStorage(username, quizName) {
         const variations = [
-            quizName,
-            quizName.toLowerCase(),
-            quizName.toUpperCase(),
-            quizName.replace(/-/g, ''),
-            quizName.replace(/([A-Z])/g, '-$1').toLowerCase(),
-            quizName.replace(/-([a-z])/g, (_, c) => c.toUpperCase()),
-            quizName.replace(/-/g, '_')
+            quizName,                                              // original
+            quizName.toLowerCase(),                               // lowercase
+            quizName.toUpperCase(),                               // uppercase
+            quizName.replace(/-/g, ''),                           // no hyphens
+            quizName.replace(/([A-Z])/g, '-$1').toLowerCase(),    // kebab-case
+            quizName.replace(/-([a-z])/g, (_, c) => c.toUpperCase()), // camelCase
+            quizName.replace(/-/g, '_'),                          // snake_case
         ];
+
+        // Add sanity-smoke specific variations
+        if (quizName.toLowerCase().includes('sanity-smoke')) {
+            variations.push(
+                'Sanity-Smoke',
+                'sanity-smoke',
+                'sanitySmokeTest',
+                'Sanity_Smoke',
+                'sanity_smoke'
+            );
+        }
 
         variations.forEach(variant => {
             localStorage.removeItem(`quiz_progress_${username}_${variant}`);
             localStorage.removeItem(`quizResults_${username}_${variant}`);
         });
     }
-
-    getCurrentScenarios() {
-        const totalAnswered = this.player.questionHistory.length;
-        
-        // Progress through levels based only on question count
-        if (totalAnswered >= 10) {
-            return this.advancedScenarios;
-        } else if (totalAnswered >= 5) {
-            return this.intermediateScenarios;
-        }
-        return this.basicScenarios;
-    }
-
-    getCurrentLevel() {
-        const totalAnswered = this.player.questionHistory.length;
-        
-        // Progress through levels based only on question count
-        if (totalAnswered >= 10) {
-            return 'Advanced';
-        } else if (totalAnswered >= 5) {
-            return 'Intermediate';
-        }
-        return 'Basic';
-    }
 }
 
-// Initialize quiz when the page loads
+// Start the quiz when the page loads
 document.addEventListener('DOMContentLoaded', () => {
-    // Clear any existing quiz instances before starting this quiz
-    BaseQuiz.clearQuizInstances('content-copy');
+    console.log('[ContentCopyQuiz] Initializing quiz');
     
+    // Force clean any existing quiz references that might be in memory
+    if (window.currentQuiz) {
+        console.log('[ContentCopyQuiz] Cleaning up existing quiz instance:', window.currentQuiz.quizName);
+        // Clear any timers or other resources
+        if (window.currentQuiz.questionTimer) {
+            clearInterval(window.currentQuiz.questionTimer);
+        }
+    }
+    
+    // Clear any conflicting localStorage entries
+    const username = localStorage.getItem('username');
+    if (username) {
+        // List all quiz names that might conflict
+        const potentialConflicts = [
+            'script-metrics-troubleshooting',
+            'standard-script-testing',
+            'fully-scripted',
+            'exploratory'
+        ];
+        
+        // Clean localStorage to prevent cross-contamination
+        potentialConflicts.forEach(quizName => {
+            const key = `quiz_progress_${username}_${quizName}`;
+            const data = localStorage.getItem(key);
+            if (data) {
+                console.log(`[ContentCopyQuiz] Found potential conflicting quiz data: ${quizName}`);
+                try {
+                    const parsed = JSON.parse(data);
+                    if (parsed && parsed.data && parsed.data.randomizedScenarios) {
+                        console.log(`[ContentCopyQuiz] Cleaning randomized scenarios from ${quizName}`);
+                        delete parsed.data.randomizedScenarios;
+                        localStorage.setItem(key, JSON.stringify(parsed));
+                    }
+                } catch (e) {
+                    console.error(`[ContentCopyQuiz] Error cleaning scenarios:`, e);
+                }
+            }
+        });
+    }
+    
+    // Create a new instance and keep a global reference
     const quiz = new ContentCopyQuiz();
+    window.currentQuiz = quiz;
+    
+    // Add a specific property to identify this quiz
+    Object.defineProperty(window, 'ACTIVE_QUIZ_NAME', {
+        value: 'content-copy',
+        writable: true,
+        configurable: true
+    });
+    
+    // Force clear any unrelated randomized scenarios
+    if (quiz.randomizedScenarios) {
+        // Keep only keys specific to this quiz
+        Object.keys(quiz.randomizedScenarios).forEach(key => {
+            if (!key.startsWith('content-copy_')) {
+                console.log(`[ContentCopyQuiz] Removing unrelated randomized scenario: ${key}`);
+                delete quiz.randomizedScenarios[key];
+            }
+        });
+    }
+    
+    // Start the quiz
+    console.log('[ContentCopyQuiz] Starting quiz');
     quiz.startGame();
 }); 
