@@ -3796,22 +3796,44 @@ export class Admin2Dashboard extends AdminDashboard {
             if (!confirmed) return;
             
             try {
+                this.showInfo(`Removing ${selectedGuides.length} guide settings...`);
                 let removedCount = 0;
+                
                 for (const quiz of selectedGuides) {
                     if (this.guideSettings[quiz]) {
-                        // Set to empty string to "remove" the guide
-                        await this.saveGuideSettings(quiz, '', false);
-                        removedCount++;
+                        try {
+                            // Completely delete the guide setting
+                            await this.apiService.deleteGuideSetting(quiz);
+                            
+                            // Also remove from in-memory state
+                            delete this.guideSettings[quiz];
+                            
+                            removedCount++;
+                        } catch (error) {
+                            console.error(`Failed to delete guide setting for ${quiz}:`, error);
+                        }
                     }
                 }
                 
-                this.showInfo(`${removedCount} guide setting(s) removed successfully`);
-                
-                // Refresh the guide settings list
-                this.refreshGuideSettingsList();
+                if (removedCount > 0) {
+                    this.showInfo(`${removedCount} guide setting(s) removed successfully`);
+                    
+                    // Save updated settings to localStorage
+                    try {
+                        localStorage.setItem('guideSettings', JSON.stringify(this.guideSettings));
+                        console.log(`Updated guide settings in localStorage. Remaining: ${Object.keys(this.guideSettings).length}`);
+                    } catch (e) {
+                        console.warn(`Failed to save updated settings to localStorage:`, e);
+                    }
+                    
+                    // Refresh the guide settings list without resetting event handlers
+                    this.refreshGuideSettingsList(false);
+                } else {
+                    this.showInfo('No guide settings were removed', 'warning');
+                }
             } catch (error) {
                 console.error('Failed to remove guides:', error);
-                alert('Failed to remove guides');
+                this.showInfo('Failed to remove guides', 'error');
             }
         });
         
@@ -3861,20 +3883,23 @@ export class Admin2Dashboard extends AdminDashboard {
                 });
             });
             
-            // Handle Test button clicks
+            // Handle Test button clicks (open in new tab)
             const testButtons = container.querySelectorAll('.test-guide-btn');
             testButtons.forEach(button => {
-                button.addEventListener('click', () => {
-                    const url = button.getAttribute('data-url');
-                    if (url) {
-                        // Open the URL in a new tab
-                        window.open(url, '_blank', 'noopener,noreferrer');
-                    }
-                });
+                const url = button.getAttribute('data-url');
+                if (url) {
+                    button.removeAttribute('disabled');
+                    button.addEventListener('click', () => {
+                        window.open(url, '_blank');
+                    });
+                } else {
+                    button.setAttribute('disabled', 'true');
+                }
             });
         };
         
-        // Store the function on the container element for later use
+        // Store the function on the container so it can be accessed by refreshGuideSettingsList
+        // Important: Use a property name that won't conflict with native DOM properties
         container.setupGuideItemEventListeners = setupGuideItemEventListeners;
         
         // Setup the event listeners
@@ -3923,17 +3948,26 @@ export class Admin2Dashboard extends AdminDashboard {
                 console.warn(`Failed to save guide settings to localStorage: ${e.message}`);
             }
             
-            // Refresh the guide settings list immediately to show pending state
-            this.refreshGuideSettingsList();
-            
-            // Make the API call
+            // Make the API call - don't refresh list yet to avoid double event handlers
             const response = await this.apiService.saveGuideSetting(quiz, url, enabled);
 
             if (response.success) {
                 console.log('Guide setting saved successfully:', response);
                 
-                // Reload all guide settings to ensure consistency
-                await this.loadGuideSettings();
+                // Reload all guide settings to ensure consistency, but don't trigger displayGuideSettings
+                // which would set up event listeners again
+                try {
+                    const refreshResponse = await this.apiService.getGuideSettings();
+                    if (refreshResponse.success) {
+                        this.guideSettings = refreshResponse.data || {};
+                        console.log('Guide settings reloaded with', Object.keys(this.guideSettings).length, 'guides');
+                    }
+                } catch (refreshError) {
+                    console.warn('Error refreshing guide settings:', refreshError);
+                }
+                
+                // Now refresh the list display without setting up new event handlers
+                this.refreshGuideSettingsList(false); // Pass false to indicate not to set up new event handlers
                 
                 // Show success message
                 if (response.source === 'localStorage') {
@@ -3955,9 +3989,6 @@ export class Admin2Dashboard extends AdminDashboard {
             } else {
                 this.showInfo('Failed to save guide settings', 'error');
             }
-            
-            // Reload settings from API to ensure consistent state
-            await this.loadGuideSettings();
             
             throw error;
         }
@@ -5400,8 +5431,8 @@ export class Admin2Dashboard extends AdminDashboard {
     }
 
     // Helper method to refresh the guide settings list
-    refreshGuideSettingsList() {
-        console.log('Refreshing guide settings list...');
+    refreshGuideSettingsList(setupEventListeners = true) {
+        console.log(`Refreshing guide settings list (setupEventListeners=${setupEventListeners})...`);
         const container = document.getElementById('guide-settings-container');
         if (!container) {
             console.warn('Guide settings container not found');
@@ -5418,80 +5449,70 @@ export class Admin2Dashboard extends AdminDashboard {
         guideSettingsList.innerHTML = this.generateGuideSettingsList(this.guideSettings);
         console.log(`Updated guide settings list with ${Object.keys(this.guideSettings || {}).length} guides`);
         
-        // Re-initialize all event listeners
-        // We need to get the original setupGuideItemEventListeners function from the displayGuideSettings method
-        if (typeof container.setupGuideItemEventListeners === 'function') {
-            console.log('Re-initializing all event listeners for guide settings');
-            container.setupGuideItemEventListeners();
-            
-            // Also reinitialize the test buttons
-            const testButtons = container.querySelectorAll('.test-guide-btn');
-            testButtons.forEach(button => {
-                const url = button.getAttribute('data-url');
-                if (url) {
-                    button.removeAttribute('disabled');
-                    button.addEventListener('click', () => {
-                        window.open(url, '_blank');
+        // Only set up event listeners if requested
+        if (setupEventListeners) {
+            // Re-initialize all event listeners
+            // We need to get the original setupGuideItemEventListeners function from the displayGuideSettings method
+            if (typeof container.setupGuideItemEventListeners === 'function') {
+                console.log('Re-initializing all event listeners for guide settings');
+                container.setupGuideItemEventListeners();
+            } else {
+                console.warn('setupGuideItemEventListeners function not found on container');
+                // If we can't find the setup function on the container, we need to reattach the 
+                // edit button event listeners manually
+                const editButtons = container.querySelectorAll('.edit-guide-btn');
+                editButtons.forEach(button => {
+                    button.addEventListener('click', async () => {
+                        const quizName = button.getAttribute('data-quiz');
+                        if (quizName && this.guideSettings[quizName]) {
+                            const currentUrl = this.guideSettings[quizName].url || '';
+                            const currentEnabled = this.guideSettings[quizName].enabled || false;
+                            
+                            // Simple URL prompt approach - guaranteed to work
+                            const newUrl = prompt(`Edit URL for ${this.formatQuizName(quizName)}:`, currentUrl);
+                            if (newUrl === null) return; // User canceled
+                            
+                            if (!newUrl.trim()) {
+                                alert('Please enter a URL');
+                                return;
+                            }
+                            
+                            try {
+                                // Validate URL format
+                                new URL(newUrl);
+                            } catch (e) {
+                                alert('Please enter a valid URL (include http:// or https://)');
+                                return;
+                            }
+                            
+                            // Simple confirm for enabled state
+                            const newEnabled = confirm(`Enable guide for ${this.formatQuizName(quizName)}?`);
+                            
+                            try {
+                                await this.saveGuideSettings(quizName, newUrl, newEnabled);
+                            } catch (error) {
+                                console.error('Error during guide edit:', error);
+                            }
+                        }
                     });
-                } else {
-                    button.setAttribute('disabled', 'true');
-                }
-            });
-        } else {
-            console.warn('setupGuideItemEventListeners function not found on container');
-            // If we can't find the setup function on the container, we need to reattach the 
-            // edit button event listeners manually
-            const editButtons = container.querySelectorAll('.edit-guide-btn');
-            editButtons.forEach(button => {
-                button.addEventListener('click', async () => {
-                    const quizName = button.getAttribute('data-quiz');
-                    if (quizName && this.guideSettings[quizName]) {
-                        const currentUrl = this.guideSettings[quizName].url || '';
-                        const currentEnabled = this.guideSettings[quizName].enabled || false;
-                        
-                        // Simple URL prompt approach - guaranteed to work
-                        const newUrl = prompt(`Edit URL for ${this.formatQuizName(quizName)}:`, currentUrl);
-                        if (newUrl === null) return; // User canceled
-                        
-                        if (!newUrl.trim()) {
-                            alert('Please enter a URL');
-                            return;
-                        }
-                        
-                        try {
-                            // Validate URL format
-                            new URL(newUrl);
-                        } catch (e) {
-                            alert('Please enter a valid URL (include http:// or https://)');
-                            return;
-                        }
-                        
-                        // Simple confirm for enabled state
-                        const newEnabled = confirm(`Enable guide for ${this.formatQuizName(quizName)}?`);
-                        
-                        try {
-                            await this.saveGuideSettings(quizName, newUrl, newEnabled);
-                        } catch (error) {
-                            console.error('Error during guide edit:', error);
-                        }
-                    }
                 });
-            });
-            
-            // Also attach test button events manually
-            const testButtons = container.querySelectorAll('.test-guide-btn');
-            testButtons.forEach(button => {
-                const url = button.getAttribute('data-url');
-                if (url) {
-                    button.removeAttribute('disabled');
-                    button.addEventListener('click', () => {
-                        window.open(url, '_blank');
-                    });
-                } else {
-                    button.setAttribute('disabled', 'true');
-                }
-            });
+            }
         }
+        
+        // Always reattach test button listeners regardless of setupEventListeners value
+        // since these are simple and don't trigger a save operation
+        const testButtons = container.querySelectorAll('.test-guide-btn');
+        testButtons.forEach(button => {
+            const url = button.getAttribute('data-url');
+            if (url) {
+                button.removeAttribute('disabled');
+                button.addEventListener('click', () => {
+                    window.open(url, '_blank');
+                });
+            } else {
+                button.setAttribute('disabled', 'true');
+            }
+        });
     }
 }
 

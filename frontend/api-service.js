@@ -2752,4 +2752,92 @@ export class APIService {
             return { success: false, message: error.message };
         }
     }
+
+    // Delete a guide setting completely
+    async deleteGuideSetting(quizName) {
+        try {
+            // Verify admin authentication first
+            const authCheck = await this.verifyAdminToken();
+            if (!authCheck.success) {
+                console.error('[API] Admin authentication failed when deleting guide setting');
+                throw new Error('Authentication failed. Please log in again.');
+            }
+
+            // Sanitize input
+            const sanitizedQuiz = quizName.trim().toLowerCase();
+            
+            console.log(`[API] Deleting guide setting for ${sanitizedQuiz}`);
+            
+            // Get the current guide settings
+            const settingsResponse = await this.getGuideSettings();
+            if (!settingsResponse.success) {
+                throw new Error('Failed to fetch current guide settings');
+            }
+            
+            const currentSettings = settingsResponse.data || {};
+            
+            // Remove the guide setting for the specified quiz
+            delete currentSettings[sanitizedQuiz];
+            
+            // Save the updated settings
+            const apiUrl = `${this.baseUrl}/admin/guide-settings`;
+            const response = await this.fetchWithAdminAuth(apiUrl, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(currentSettings)
+            });
+            
+            // Update localStorage regardless of API response
+            try {
+                const settingsJson = localStorage.getItem('guideSettings');
+                if (settingsJson) {
+                    const localSettings = JSON.parse(settingsJson);
+                    delete localSettings[sanitizedQuiz];
+                    localStorage.setItem('guideSettings', JSON.stringify(localSettings));
+                    console.log(`[API] Removed guide setting from localStorage for ${sanitizedQuiz}`);
+                }
+            } catch (e) {
+                console.warn(`[API] Error updating localStorage after deleting guide setting: ${e.message}`);
+            }
+            
+            if (!response.success) {
+                console.warn(`[API] API response indicated failure: ${response.message}`);
+                return {
+                    success: true, // Return success even if API fails, since we updated localStorage
+                    message: 'Guide setting deleted locally, but server update may have failed',
+                    source: 'localStorage'
+                };
+            }
+            
+            return {
+                success: true,
+                message: `Guide setting for ${sanitizedQuiz} deleted successfully`
+            };
+        } catch (error) {
+            console.error('[API] Error deleting guide setting:', error);
+            
+            // Try localStorage as fallback
+            try {
+                const settingsJson = localStorage.getItem('guideSettings');
+                if (settingsJson) {
+                    const settings = JSON.parse(settingsJson);
+                    delete settings[quizName];
+                    localStorage.setItem('guideSettings', JSON.stringify(settings));
+                    console.log(`[API] Updated localStorage as fallback for ${quizName}`);
+                    
+                    return {
+                        success: true,
+                        message: 'Guide setting deleted from local storage only (server error)',
+                        source: 'localStorage'
+                    };
+                }
+            } catch (e) {
+                console.warn('[API] Error updating localStorage:', e);
+            }
+            
+            throw error;
+        }
+    }
 } 

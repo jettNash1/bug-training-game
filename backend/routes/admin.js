@@ -1495,6 +1495,67 @@ router.post('/guide-settings/:quizName', auth, async (req, res) => {
     }
 });
 
+// New endpoint to update all guide settings at once (for bulk operations including deletion)
+router.put('/guide-settings', auth, async (req, res) => {
+    try {
+        // Verify admin status
+        if (!req.user.isAdmin) {
+            return res.status(403).json({
+                success: false,
+                message: 'Admin access required'
+            });
+        }
+        
+        // Validate the request body - should be an object with quiz names as keys
+        if (!req.body || typeof req.body !== 'object') {
+            return res.status(400).json({
+                success: false,
+                message: 'Invalid request body. Expected an object of guide settings.'
+            });
+        }
+        
+        // Validate each URL in the settings
+        for (const [quizName, setting] of Object.entries(req.body)) {
+            if (setting && setting.url && !setting.url.match(/^https?:\/\/.+/)) {
+                return res.status(400).json({
+                    success: false,
+                    message: `Invalid URL format for quiz "${quizName}". URLs must start with http:// or https://`
+                });
+            }
+        }
+        
+        console.log(`[Admin] Updating all guide settings. New count: ${Object.keys(req.body).length}`);
+        
+        // Get or create settings document
+        let settings = await Setting.findOne({ key: 'guideSettings' });
+        if (!settings) {
+            settings = new Setting({
+                key: 'guideSettings',
+                value: {}
+            });
+        }
+        
+        // Replace entire value with the new settings
+        settings.value = req.body;
+        settings.updatedAt = new Date();
+        
+        await settings.save();
+        
+        res.json({
+            success: true,
+            message: 'All guide settings updated successfully',
+            data: settings.value
+        });
+    } catch (error) {
+        console.error('Error updating all guide settings:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Failed to update guide settings',
+            error: error.message
+        });
+    }
+});
+
 // Get all auto-reset settings
 router.get('/auto-resets', auth, async (req, res) => {
     try {
