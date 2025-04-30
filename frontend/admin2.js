@@ -3860,19 +3860,19 @@ export class Admin2Dashboard extends AdminDashboard {
                         document.body.appendChild(modalOverlay);
                         
                         // Focus on the URL input
-                        const urlInput = document.getElementById('edit-url-input');
-                        urlInput.focus();
+                        setTimeout(() => {
+                            const urlInput = document.getElementById('edit-url-input');
+                            if (urlInput) urlInput.focus();
+                        }, 100);
                         
-                        // Handle cancel button
-                        const cancelBtn = document.getElementById('cancel-edit-btn');
-                        cancelBtn.addEventListener('click', () => {
+                        // Handle cancel button - FIXED
+                        document.getElementById('cancel-edit-btn').onclick = () => {
                             document.body.removeChild(modalOverlay);
-                        });
+                        };
                         
-                        // Handle save button
-                        const saveBtn = document.getElementById('save-edit-btn');
-                        saveBtn.addEventListener('click', async () => {
-                            const newUrl = urlInput.value.trim();
+                        // Handle save button - FIXED
+                        document.getElementById('save-edit-btn').onclick = async () => {
+                            const newUrl = document.getElementById('edit-url-input').value.trim();
                             if (!newUrl) {
                                 alert('Please enter a URL');
                                 return;
@@ -3902,7 +3902,7 @@ export class Admin2Dashboard extends AdminDashboard {
                                 console.error('Failed to save guide settings:', error);
                                 alert('Failed to save guide settings');
                             }
-                        });
+                        };
                         
                         // Close modal when pressing Escape
                         const handleEscapeKey = (e) => {
