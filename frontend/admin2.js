@@ -3739,21 +3739,51 @@ export class Admin2Dashboard extends AdminDashboard {
             }
             
             try {
+                this.showInfo(`Enabling ${selectedGuides.length} guide settings...`);
                 let updatedCount = 0;
+                let skippedCount = 0;
+                
                 for (const quiz of selectedGuides) {
-                    if (this.guideSettings[quiz] && this.guideSettings[quiz].url) {
-                        await this.saveGuideSettings(quiz, this.guideSettings[quiz].url, true);
-                        updatedCount++;
+                    if (this.guideSettings[quiz]) {
+                        const guideSetting = this.guideSettings[quiz];
+                        const url = guideSetting.url;
+                        
+                        // Skip if already enabled or if there's no URL
+                        if (guideSetting.enabled === true) {
+                            console.log(`Guide for ${quiz} already enabled, skipping.`);
+                            skippedCount++;
+                            continue;
+                        }
+                        
+                        if (!url) {
+                            console.log(`Guide for ${quiz} has no URL, skipping.`);
+                            skippedCount++;
+                            continue;
+                        }
+                        
+                        try {
+                            // Update the setting
+                            await this.saveGuideSettings(quiz, url, true);
+                            updatedCount++;
+                        } catch (error) {
+                            console.error(`Failed to enable guide for ${quiz}:`, error);
+                        }
                     }
                 }
                 
-                this.showInfo(`${updatedCount} guide(s) enabled successfully`);
-                
-                // Refresh the guide settings list
-                this.refreshGuideSettingsList();
+                if (updatedCount > 0) {
+                    this.showInfo(`${updatedCount} guide(s) enabled successfully${skippedCount > 0 ? `, ${skippedCount} skipped` : ''}`);
+                    
+                    // Refresh the guide settings list without resetting event handlers
+                    this.refreshGuideSettingsList(false);
+                } else if (skippedCount > 0) {
+                    this.showInfo(`No guides were enabled. ${skippedCount} guide(s) were already enabled or had no URL.`, 'info');
+                } else {
+                    this.showInfo('No guides were enabled', 'warning');
+                }
             } catch (error) {
                 console.error('Failed to enable guides:', error);
-                alert('Failed to enable guides');
+                this.showInfo('Failed to enable guides', 'error');
             }
         });
         
@@ -3766,21 +3796,51 @@ export class Admin2Dashboard extends AdminDashboard {
             }
             
             try {
+                this.showInfo(`Disabling ${selectedGuides.length} guide settings...`);
                 let updatedCount = 0;
+                let skippedCount = 0;
+                
                 for (const quiz of selectedGuides) {
-                    if (this.guideSettings[quiz] && this.guideSettings[quiz].url) {
-                        await this.saveGuideSettings(quiz, this.guideSettings[quiz].url, false);
-                        updatedCount++;
+                    if (this.guideSettings[quiz]) {
+                        const guideSetting = this.guideSettings[quiz];
+                        const url = guideSetting.url;
+                        
+                        // Skip if already disabled or if there's no URL
+                        if (guideSetting.enabled === false) {
+                            console.log(`Guide for ${quiz} already disabled, skipping.`);
+                            skippedCount++;
+                            continue;
+                        }
+                        
+                        if (!url) {
+                            console.log(`Guide for ${quiz} has no URL, skipping.`);
+                            skippedCount++;
+                            continue;
+                        }
+                        
+                        try {
+                            // Update the setting
+                            await this.saveGuideSettings(quiz, url, false);
+                            updatedCount++;
+                        } catch (error) {
+                            console.error(`Failed to disable guide for ${quiz}:`, error);
+                        }
                     }
                 }
                 
-                this.showInfo(`${updatedCount} guide(s) disabled successfully`);
-                
-                // Refresh the guide settings list
-                this.refreshGuideSettingsList();
+                if (updatedCount > 0) {
+                    this.showInfo(`${updatedCount} guide(s) disabled successfully${skippedCount > 0 ? `, ${skippedCount} skipped` : ''}`);
+                    
+                    // Refresh the guide settings list without resetting event handlers
+                    this.refreshGuideSettingsList(false);
+                } else if (skippedCount > 0) {
+                    this.showInfo(`No guides were disabled. ${skippedCount} guide(s) were already disabled or had no URL.`, 'info');
+                } else {
+                    this.showInfo('No guides were disabled', 'warning');
+                }
             } catch (error) {
                 console.error('Failed to disable guides:', error);
-                alert('Failed to disable guides');
+                this.showInfo('Failed to disable guides', 'error');
             }
         });
         
