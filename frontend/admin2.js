@@ -3519,29 +3519,23 @@ export class Admin2Dashboard extends AdminDashboard {
             const response = await this.apiService.getGuideSettings();
             
             if (response.success) {
-                console.log('Guide settings loaded successfully from', response.source);
-                console.log('Guide settings data:', response.data);
+                console.log('Guide settings loaded successfully:', response);
                 
                 // Store guide settings in instance variable
                 this.guideSettings = response.data || {};
                 
-                // Make sure we have a complete guide settings object in localStorage
-                try {
-                    const localSettingsJson = localStorage.getItem('guideSettings');
-                    const localSettings = localSettingsJson ? JSON.parse(localSettingsJson) : {};
-                    
-                    // Merge any missing settings from API into localStorage
-                    const mergedSettings = { ...localSettings, ...this.guideSettings };
-                    localStorage.setItem('guideSettings', JSON.stringify(mergedSettings));
-                    
-                    // Debug: log all guide settings for verification
-                    console.log('Guide settings saved to localStorage:', mergedSettings);
-                    
-                    // Log individual settings for better debugging
-                    console.log('Available guide settings:');
-                    for (const [quizName, setting] of Object.entries(mergedSettings)) {
+                // Debug: log all guide settings for verification
+                console.log('Active guide settings:');
+                for (const [quizName, setting] of Object.entries(this.guideSettings)) {
+                    if (setting && setting.url) {
                         console.log(`- ${quizName}: url=${setting.url}, enabled=${setting.enabled}`);
                     }
+                }
+                
+                // Make sure we have a complete guide settings object in localStorage
+                try {
+                    localStorage.setItem('guideSettings', JSON.stringify(this.guideSettings));
+                    console.log('Guide settings saved to localStorage');
                 } catch (storageError) {
                     console.warn('Failed to save guide settings to localStorage:', storageError);
                 }
@@ -3549,16 +3543,32 @@ export class Admin2Dashboard extends AdminDashboard {
                 // Display the guide settings
                 this.displayGuideSettings();
                 
-                return response.data;
+                return this.guideSettings;
             } else {
                 throw new Error('Failed to load guide settings');
             }
         } catch (error) {
             console.error('Error loading guide settings:', error);
-            this.showError('Failed to load guide settings');
+            this.showError('Failed to load guide settings. Using defaults.');
+            
+            // Try to load from localStorage if API fails
+            try {
+                const settingsJson = localStorage.getItem('guideSettings');
+                if (settingsJson) {
+                    this.guideSettings = JSON.parse(settingsJson);
+                    console.log('Loaded guide settings from localStorage:', this.guideSettings);
+                    
+                    // Display the guide settings from localStorage
+                    this.displayGuideSettings();
+                    return this.guideSettings;
+                }
+            } catch (storageError) {
+                console.error('Error loading from localStorage:', storageError);
+            }
             
             // Use empty object as fallback
             this.guideSettings = {};
+            this.displayGuideSettings();
             return {};
         }
     }
@@ -3688,12 +3698,9 @@ export class Admin2Dashboard extends AdminDashboard {
                 this.showInfo(`Guide settings for ${selectedQuiz} saved successfully`);
                 
                 // Refresh the guide settings list
-                const guideSettingsList = container.querySelector('#guide-settings-list');
-                if (guideSettingsList) {
-                    guideSettingsList.innerHTML = this.generateGuideSettingsList(this.guideSettings);
-                }
-                } catch (error) {
-                    console.error('Failed to save guide settings:', error);
+                this.refreshGuideSettingsList();
+            } catch (error) {
+                console.error('Failed to save guide settings:', error);
                 alert('Failed to save guide settings');
             }
         });
@@ -3726,10 +3733,7 @@ export class Admin2Dashboard extends AdminDashboard {
                 this.showInfo(`${updatedCount} guide(s) enabled successfully`);
                 
                 // Refresh the guide settings list
-                const guideSettingsList = container.querySelector('#guide-settings-list');
-                if (guideSettingsList) {
-                    guideSettingsList.innerHTML = this.generateGuideSettingsList(this.guideSettings);
-                }
+                this.refreshGuideSettingsList();
             } catch (error) {
                 console.error('Failed to enable guides:', error);
                 alert('Failed to enable guides');
@@ -3756,10 +3760,7 @@ export class Admin2Dashboard extends AdminDashboard {
                 this.showInfo(`${updatedCount} guide(s) disabled successfully`);
                 
                 // Refresh the guide settings list
-                const guideSettingsList = container.querySelector('#guide-settings-list');
-                if (guideSettingsList) {
-                    guideSettingsList.innerHTML = this.generateGuideSettingsList(this.guideSettings);
-                }
+                this.refreshGuideSettingsList();
             } catch (error) {
                 console.error('Failed to disable guides:', error);
                 alert('Failed to disable guides');
@@ -3790,17 +3791,14 @@ export class Admin2Dashboard extends AdminDashboard {
                 this.showInfo(`${removedCount} guide setting(s) removed successfully`);
                 
                 // Refresh the guide settings list
-                const guideSettingsList = container.querySelector('#guide-settings-list');
-                if (guideSettingsList) {
-                    guideSettingsList.innerHTML = this.generateGuideSettingsList(this.guideSettings);
-                }
+                this.refreshGuideSettingsList();
             } catch (error) {
                 console.error('Failed to remove guides:', error);
                 alert('Failed to remove guides');
             }
         });
         
-        // Add event listeners for edit and test buttons after the list is populated
+        // Define the function to set up event listeners for the guide item buttons
         const setupGuideItemEventListeners = () => {
             // Handle Edit button clicks
             const editButtons = container.querySelectorAll('.edit-guide-btn');
@@ -3834,6 +3832,9 @@ export class Admin2Dashboard extends AdminDashboard {
                 });
             });
         };
+        
+        // Store the function on the container element for later use
+        container.setupGuideItemEventListeners = setupGuideItemEventListeners;
         
         // Setup the event listeners
         setupGuideItemEventListeners();
@@ -5353,6 +5354,24 @@ export class Admin2Dashboard extends AdminDashboard {
         } catch (error) {
             console.error('Error exporting simple CSV:', error);
             this.showError('Failed to export simple CSV file');
+        }
+    }
+
+    // Helper method to refresh the guide settings list
+    refreshGuideSettingsList() {
+        const container = document.getElementById('guide-settings-container');
+        if (!container) return;
+        
+        const guideSettingsList = container.querySelector('#guide-settings-list');
+        if (guideSettingsList) {
+            // Update the HTML content
+            guideSettingsList.innerHTML = this.generateGuideSettingsList(this.guideSettings);
+            
+            // Re-setup event listeners for the newly generated items
+            const setupGuideItemEventListeners = container.setupGuideItemEventListeners;
+            if (typeof setupGuideItemEventListeners === 'function') {
+                setupGuideItemEventListeners();
+            }
         }
     }
 }

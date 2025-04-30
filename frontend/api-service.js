@@ -2282,6 +2282,13 @@ export class APIService {
 
     async saveGuideSetting(quizName, url, enabled) {
         try {
+            // Verify admin authentication first
+            const authCheck = await this.verifyAdminToken();
+            if (!authCheck.success) {
+                console.error('Admin authentication failed when saving guide settings');
+                throw new Error('Authentication failed. Please log in again.');
+            }
+
             // Sanitize inputs
             const sanitizedQuiz = quizName.trim().toLowerCase();
             const sanitizedUrl = url.trim();
@@ -2290,6 +2297,8 @@ export class APIService {
             if (sanitizedUrl && !sanitizedUrl.match(/^https?:\/\/.+/)) {
                 throw new Error('Invalid URL format. Must start with http:// or https://');
             }
+            
+            console.log(`[API] Saving guide setting for ${sanitizedQuiz}: url=${sanitizedUrl}, enabled=${Boolean(enabled)}`);
             
             // API call
             const response = await this.fetchWithAdminAuth(`${this.baseUrl}/admin/guide-settings/${sanitizedQuiz}`, {
@@ -2303,31 +2312,37 @@ export class APIService {
                 })
             });
             
-            if (response.success) {
-                // Update localStorage with the new settings
-                try {
-                    const existingSettingsJson = localStorage.getItem('guideSettings');
-                    const existingSettings = existingSettingsJson ? JSON.parse(existingSettingsJson) : {};
-                    
-                    const updatedSettings = {
-                        ...existingSettings,
-                        [sanitizedQuiz]: { url: sanitizedUrl, enabled: Boolean(enabled) }
-                    };
-                    
-                    localStorage.setItem('guideSettings', JSON.stringify(updatedSettings));
-                } catch (storageError) {
-                    console.warn('Failed to update localStorage:', storageError);
-                }
-                
-                return {
-                    success: true,
-                    data: response.data || { [sanitizedQuiz]: { url: sanitizedUrl, enabled: Boolean(enabled) } }
-                };
-            } else {
-                throw new Error(response.message || 'Failed to save guide settings');
+            // Check response explicitly to ensure we got a valid response
+            if (!response || !response.success) {
+                const errorMsg = response?.message || 'Failed to save guide settings';
+                console.error(`[API] Error saving guide setting: ${errorMsg}`);
+                throw new Error(errorMsg);
             }
+            
+            console.log(`[API] Successfully saved guide setting for ${sanitizedQuiz}`);
+            
+            // Update localStorage with the new settings
+            try {
+                const existingSettingsJson = localStorage.getItem('guideSettings');
+                const existingSettings = existingSettingsJson ? JSON.parse(existingSettingsJson) : {};
+                
+                const updatedSettings = {
+                    ...existingSettings,
+                    [sanitizedQuiz]: { url: sanitizedUrl, enabled: Boolean(enabled) }
+                };
+                
+                localStorage.setItem('guideSettings', JSON.stringify(updatedSettings));
+                console.log('[API] Updated guide settings in localStorage');
+            } catch (storageError) {
+                console.warn('[API] Failed to update localStorage:', storageError);
+            }
+            
+            return {
+                success: true,
+                data: response.data || { [sanitizedQuiz]: { url: sanitizedUrl, enabled: Boolean(enabled) } }
+            };
         } catch (error) {
-            console.error('Error saving guide setting:', error);
+            console.error('[API] Error saving guide setting:', error);
             
             // If we get an HTML response, use localStorage as fallback
             if (error.message && (
@@ -2346,7 +2361,7 @@ export class APIService {
                     
                     localStorage.setItem('guideSettings', JSON.stringify(updatedSettings));
                     
-                    console.warn('API returned HTML, using localStorage fallback for guide settings');
+                    console.warn('[API] API returned HTML, using localStorage fallback for guide settings');
                     return {
                         success: true,
                         data: { [quizName]: { url, enabled: Boolean(enabled) } },
@@ -2354,7 +2369,7 @@ export class APIService {
                         warning: 'API unavailable, using localStorage fallback'
                     };
                 } catch (localError) {
-                    console.error('Failed to use localStorage fallback:', localError);
+                    console.error('[API] Failed to use localStorage fallback:', localError);
                 }
             }
             
