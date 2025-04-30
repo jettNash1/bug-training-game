@@ -45,6 +45,7 @@ export class Admin2Dashboard extends AdminDashboard {
 
     async init2() {
         try {
+            console.log('Initializing Admin2Dashboard...');
             // Add a guard variable to prevent too frequent checks
             this.lastScheduleCheck = 0;
             const MIN_CHECK_INTERVAL = 30000; // 30 seconds minimum between checks
@@ -91,28 +92,44 @@ export class Admin2Dashboard extends AdminDashboard {
             // Set up event listeners first to ensure menu functionality
             this.setupEventListeners();
 
+            console.log('Loading essential components...');
             // Initialize all components in parallel
             await Promise.all([
                 this.loadUsers(),
                 this.loadTimerSettings(),
-                this.loadGuideSettings(),
-                this.loadAutoResetSettings() // Add this line
+                this.loadGuideSettings().catch(error => {
+                    console.error('Failed to load guide settings, but continuing with other initializations:', error);
+                    return {};
+                }),
+                this.loadAutoResetSettings().catch(error => {
+                    console.error('Failed to load auto reset settings, but continuing with other initializations:', error);
+                    return {};
+                })
             ]);
 
             // Set up all UI components
+            console.log('Setting up UI components...');
             this.setupCreateAccountForm();
             this.setupScenariosList();
             this.setupScheduleSection();
             this.displayTimerSettings();
+            
+            // Ensure guide settings are displayed even if loading had errors
+            if (!this.guideSettings) {
+                console.warn('Guide settings were not properly loaded, initializing with empty object');
+                this.guideSettings = {};
+            }
             this.displayGuideSettings();
-            this.setupAutoResetSettings(); // Add this line
-            this.displayAutoResetSettings(); // Add this line to display auto reset settings
+            
+            this.setupAutoResetSettings();
+            this.displayAutoResetSettings();
 
             // Initialize badges section
             this.setupBadgesSection();
 
             // Update dashboard with initial data
             await this.updateDashboard();
+            console.log('Admin2Dashboard initialization complete');
         } catch (error) {
             console.error('Error initializing Admin2Dashboard:', error);
             this.showError('Failed to initialize dashboard. Please reload the page.');
@@ -3516,10 +3533,24 @@ export class Admin2Dashboard extends AdminDashboard {
         try {
             console.log('Loading guide settings from API...');
             
+            // First check localStorage for any cached settings
+            let localSettings = {};
+            try {
+                const settingsJson = localStorage.getItem('guideSettings');
+                if (settingsJson) {
+                    localSettings = JSON.parse(settingsJson);
+                    console.log('Found cached guide settings in localStorage with', Object.keys(localSettings).length, 'entries');
+                }
+            } catch (e) {
+                console.warn('Error reading cached guide settings from localStorage:', e);
+            }
+            
+            // Attempt to fetch from API
             const response = await this.apiService.getGuideSettings();
             
             if (response.success) {
-                console.log('Guide settings loaded successfully:', response);
+                console.log('Guide settings loaded successfully from API with', 
+                            Object.keys(response.data || {}).length, 'entries');
                 
                 // Store guide settings in instance variable
                 this.guideSettings = response.data || {};
@@ -3533,9 +3564,15 @@ export class Admin2Dashboard extends AdminDashboard {
                 }
                 
                 // Make sure we have a complete guide settings object in localStorage
+                // and merge any existing settings that might not be in the API response
                 try {
-                    localStorage.setItem('guideSettings', JSON.stringify(this.guideSettings));
-                    console.log('Guide settings saved to localStorage');
+                    // Combine API settings with any local settings
+                    const mergedSettings = {...localSettings, ...this.guideSettings};
+                    localStorage.setItem('guideSettings', JSON.stringify(mergedSettings));
+                    console.log('Merged and saved guide settings to localStorage with', Object.keys(mergedSettings).length, 'entries');
+                    
+                    // Update the instance variable with the merged settings
+                    this.guideSettings = mergedSettings;
                 } catch (storageError) {
                     console.warn('Failed to save guide settings to localStorage:', storageError);
                 }
@@ -3545,29 +3582,32 @@ export class Admin2Dashboard extends AdminDashboard {
                 
                 return this.guideSettings;
             } else {
-                throw new Error('Failed to load guide settings');
+                console.warn('Failed to load guide settings from API:', response.message);
+                throw new Error('Failed to load guide settings from API');
             }
         } catch (error) {
-            console.error('Error loading guide settings:', error);
-            this.showError('Failed to load guide settings. Using defaults.');
+            console.error('Error loading guide settings from API:', error);
             
             // Try to load from localStorage if API fails
             try {
                 const settingsJson = localStorage.getItem('guideSettings');
                 if (settingsJson) {
                     this.guideSettings = JSON.parse(settingsJson);
-                    console.log('Loaded guide settings from localStorage:', this.guideSettings);
+                    console.log('Loaded guide settings from localStorage fallback with', 
+                                Object.keys(this.guideSettings).length, 'entries');
                     
                     // Display the guide settings from localStorage
                     this.displayGuideSettings();
+                    this.showError('Using cached guide settings. Some changes may not be reflected.');
                     return this.guideSettings;
                 }
             } catch (storageError) {
-                console.error('Error loading from localStorage:', storageError);
+                console.error('Error loading guide settings from localStorage:', storageError);
             }
             
             // Use empty object as fallback
             this.guideSettings = {};
+            console.warn('Initializing with empty guide settings as both API and localStorage failed');
             this.displayGuideSettings();
             return {};
         }
@@ -3812,81 +3852,67 @@ export class Admin2Dashboard extends AdminDashboard {
                         // Create a simple modal dialog for editing
                         const modalOverlay = document.createElement('div');
                         modalOverlay.className = 'modal-overlay';
-                        modalOverlay.style.cssText = `
-                            position: fixed;
-                            top: 0;
-                            left: 0;
-                            width: 100%;
-                            height: 100%;
-                            background-color: rgba(0, 0, 0, 0.5);
-                            display: flex;
-                            justify-content: center;
-                            align-items: center;
-                            z-index: 1000;
-                        `;
+                        modalOverlay.style.position = 'fixed';
+                        modalOverlay.style.top = '0';
+                        modalOverlay.style.left = '0';
+                        modalOverlay.style.width = '100%';
+                        modalOverlay.style.height = '100%';
+                        modalOverlay.style.backgroundColor = 'rgba(0, 0, 0, 0.5)';
+                        modalOverlay.style.display = 'flex';
+                        modalOverlay.style.justifyContent = 'center';
+                        modalOverlay.style.alignItems = 'center';
+                        modalOverlay.style.zIndex = '1000';
                         
-                        const modalContent = document.createElement('div');
-                        modalContent.className = 'modal-content';
-                        modalContent.style.cssText = `
-                            background-color: white;
-                            padding: 30px;
-                            border-radius: 8px;
-                            width: 90%;
-                            max-width: 500px;
-                            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
-                        `;
-                        
-                        modalContent.innerHTML = `
-                            <h3 style="margin-top: 0; color: #2c3e50; margin-bottom: 20px;">Edit Guide URL for ${this.formatQuizName(quizName)}</h3>
-                            <div style="margin-bottom: 20px;">
-                                <label for="edit-url-input" style="display: block; margin-bottom: 8px; font-weight: 600;">Guide URL:</label>
-                                <input type="url" id="edit-url-input" style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 4px; font-size: 16px;" 
-                                    value="${currentUrl}" placeholder="https://example.com/guide">
-                            </div>
-                            <div style="margin-bottom: 25px;">
-                                <label style="display: flex; align-items: center; cursor: pointer;">
-                                    <input type="checkbox" id="edit-enabled-checkbox" style="margin-right: 10px; width: 18px; height: 18px;" 
-                                        ${currentEnabled ? 'checked' : ''}>
-                                    <span>Enable Guide</span>
-                                </label>
-                            </div>
-                            <div style="display: flex; justify-content: flex-end; gap: 10px;">
-                                <button id="cancel-edit-btn" class="btn-cancel" style="padding: 10px 20px; border: none; border-radius: 4px; background-color: #6c757d; color: white; cursor: pointer;">Cancel</button>
-                                <button id="save-edit-btn" class="btn-save" style="padding: 10px 20px; border: none; border-radius: 4px; background-color: #3498db; color: white; cursor: pointer;">Save Changes</button>
+                        modalOverlay.innerHTML = `
+                            <div style="background: white; padding: 20px; border-radius: 5px; width: 400px; max-width: 90%;">
+                                <h3>Edit Guide for ${this.formatQuizName(quizName)}</h3>
+                                <div style="margin-bottom: 15px;">
+                                    <label for="edit-url-input" style="display: block; margin-bottom: 5px;">Guide URL:</label>
+                                    <input type="url" id="edit-url-input" value="${currentUrl}" style="width: 100%; padding: 8px; box-sizing: border-box;">
+                                </div>
+                                <div style="margin-bottom: 15px;">
+                                    <label style="display: flex; align-items: center;">
+                                        <input type="checkbox" id="edit-enabled-checkbox" ${currentEnabled ? 'checked' : ''}>
+                                        <span style="margin-left: 8px;">Enable Guide</span>
+                                    </label>
+                                </div>
+                                <div style="display: flex; justify-content: flex-end; gap: 10px;">
+                                    <button id="cancel-edit-btn" style="padding: 8px 15px; background: #f1f1f1; border: none; border-radius: 4px; cursor: pointer;">Cancel</button>
+                                    <button id="save-edit-btn" style="padding: 8px 15px; background: var(--primary-color, #4CAF50); color: white; border: none; border-radius: 4px; cursor: pointer;">Save</button>
+                                </div>
                             </div>
                         `;
                         
-                        modalOverlay.appendChild(modalContent);
                         document.body.appendChild(modalOverlay);
                         
-                        // Focus on the URL input
-                        setTimeout(() => {
-                            const urlInput = document.getElementById('edit-url-input');
-                            if (urlInput) urlInput.focus();
-                        }, 100);
+                        // Get references to the elements
+                        const urlInput = document.getElementById('edit-url-input');
+                        const enabledCheckbox = document.getElementById('edit-enabled-checkbox');
+                        const cancelButton = document.getElementById('cancel-edit-btn');
+                        const saveButton = document.getElementById('save-edit-btn');
                         
-                        // Handle cancel button - FIXED
-                        document.getElementById('cancel-edit-btn').onclick = () => {
+                        // Add event listeners to the buttons
+                        cancelButton.onclick = () => {
                             document.body.removeChild(modalOverlay);
                         };
                         
-                        // Handle save button - FIXED
-                        document.getElementById('save-edit-btn').onclick = async () => {
-                            const newUrl = document.getElementById('edit-url-input').value.trim();
+                        saveButton.onclick = async () => {
+                            const newUrl = urlInput.value.trim();
+                            
+                            // Validate URL
                             if (!newUrl) {
                                 alert('Please enter a URL');
                                 return;
                             }
                             
                             try {
-                                // Validate URL format
                                 new URL(newUrl);
                             } catch (e) {
                                 alert('Please enter a valid URL (include http:// or https://)');
                                 return;
                             }
                             
-                            const newEnabled = document.getElementById('edit-enabled-checkbox').checked;
+                            const newEnabled = enabledCheckbox.checked;
                             
                             // Close the modal
                             document.body.removeChild(modalOverlay);
