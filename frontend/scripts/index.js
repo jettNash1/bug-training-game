@@ -528,24 +528,29 @@ class IndexPage {
                         font-size: 14px;
                         font-weight: 500;
                         cursor: pointer;
-                        margin-top: auto;
                         display: inline-block;
                         text-decoration: none;
                         transition: all 0.2s ease;
+                        text-align: center;
                     }
                     .quiz-guide-button:hover {
                         background-color: #3867d6;
                         text-decoration: none;
                         color: white;
                     }
+                    .quiz-guide-button:focus {
+                        outline: 2px solid #4e73df;
+                        outline-offset: 2px;
+                    }
                     .quiz-item {
                         position: relative;
                         display: flex;
                         flex-direction: column;
                         padding: 16px;
-                        min-height: 120px;
+                        min-height: 180px; /* Increased to accommodate the button */
                         background: #fff;
                         border-radius: 8px;
+                        justify-content: space-between;
                     }
                     .quiz-item .quiz-info {
                         display: flex;
@@ -577,9 +582,11 @@ class IndexPage {
                         margin: 8px 0 12px 28px;
                     }
                     .guide-button-container {
-                        margin-top: auto;
-                        text-align: left;
-                        padding-left: 28px;
+                        display: flex;
+                        justify-content: center;
+                        width: 100%;
+                        margin-top: 16px;
+                        padding-top: 8px;
                     }
                     .quiz-completion {
                         position: absolute;
@@ -612,6 +619,15 @@ class IndexPage {
                         grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
                         gap: 16px;
                         padding: 0 8px;
+                    }
+                    /* Media query for smaller screens */
+                    @media (max-width: 768px) {
+                        .quiz-item {
+                            min-height: 200px;
+                        }
+                        .guide-button-container {
+                            margin-top: 12px;
+                        }
                     }
                 `;
                 document.head.appendChild(styles);
@@ -671,21 +687,21 @@ class IndexPage {
         guideButton.target = '_blank';
         guideButton.setAttribute('data-quiz-id', quizId);
         guideButton.setAttribute('aria-label', `Open guide for ${quizId}`);
+        guideButton.setAttribute('tabindex', '0');
         
         // Create a container for the guide button
         const buttonContainer = document.createElement('div');
         buttonContainer.className = 'guide-button-container';
         buttonContainer.appendChild(guideButton);
         
-        // Find the quiz info container
-        const quizInfo = quizItem.querySelector('.quiz-info');
-        if (quizInfo) {
-            // Add the button container after the quiz info
-            quizInfo.appendChild(buttonContainer);
-        } else {
-            // Fallback: append to quiz item
-            quizItem.appendChild(buttonContainer);
+        // Remove any existing guide button container
+        const existingContainer = quizItem.querySelector('.guide-button-container');
+        if (existingContainer) {
+            existingContainer.remove();
         }
+        
+        // Add the button container at the end of the quiz item
+        quizItem.appendChild(buttonContainer);
     }
 }
 
