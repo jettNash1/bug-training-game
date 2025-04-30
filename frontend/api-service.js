@@ -2321,26 +2321,26 @@ export class APIService {
             
             console.log(`[API] Successfully saved guide setting for ${sanitizedQuiz}`);
             
-            // Update localStorage with the new settings
-            try {
-                const existingSettingsJson = localStorage.getItem('guideSettings');
-                const existingSettings = existingSettingsJson ? JSON.parse(existingSettingsJson) : {};
-                
-                const updatedSettings = {
-                    ...existingSettings,
-                    [sanitizedQuiz]: { url: sanitizedUrl, enabled: Boolean(enabled) }
-                };
-                
-                localStorage.setItem('guideSettings', JSON.stringify(updatedSettings));
+                // Update localStorage with the new settings
+                try {
+                    const existingSettingsJson = localStorage.getItem('guideSettings');
+                    const existingSettings = existingSettingsJson ? JSON.parse(existingSettingsJson) : {};
+                    
+                    const updatedSettings = {
+                        ...existingSettings,
+                        [sanitizedQuiz]: { url: sanitizedUrl, enabled: Boolean(enabled) }
+                    };
+                    
+                    localStorage.setItem('guideSettings', JSON.stringify(updatedSettings));
                 console.log('[API] Updated guide settings in localStorage');
-            } catch (storageError) {
+                } catch (storageError) {
                 console.warn('[API] Failed to update localStorage:', storageError);
-            }
-            
-            return {
-                success: true,
-                data: response.data || { [sanitizedQuiz]: { url: sanitizedUrl, enabled: Boolean(enabled) } }
-            };
+                }
+                
+                return {
+                    success: true,
+                    data: response.data || { [sanitizedQuiz]: { url: sanitizedUrl, enabled: Boolean(enabled) } }
+                };
         } catch (error) {
             console.error('[API] Error saving guide setting:', error);
             

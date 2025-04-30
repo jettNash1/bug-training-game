@@ -3523,8 +3523,8 @@ export class Admin2Dashboard extends AdminDashboard {
                 
                 // Store guide settings in instance variable
                 this.guideSettings = response.data || {};
-                
-                // Debug: log all guide settings for verification
+                    
+                    // Debug: log all guide settings for verification
                 console.log('Active guide settings:');
                 for (const [quizName, setting] of Object.entries(this.guideSettings)) {
                     if (setting && setting.url) {
@@ -3699,8 +3699,8 @@ export class Admin2Dashboard extends AdminDashboard {
                 
                 // Refresh the guide settings list
                 this.refreshGuideSettingsList();
-            } catch (error) {
-                console.error('Failed to save guide settings:', error);
+                } catch (error) {
+                    console.error('Failed to save guide settings:', error);
                 alert('Failed to save guide settings');
             }
         });
@@ -3803,19 +3803,115 @@ export class Admin2Dashboard extends AdminDashboard {
             // Handle Edit button clicks
             const editButtons = container.querySelectorAll('.edit-guide-btn');
             editButtons.forEach(button => {
-                button.addEventListener('click', () => {
+                button.addEventListener('click', async () => {
                     const quizName = button.getAttribute('data-quiz');
                     if (quizName && this.guideSettings[quizName]) {
-                        // Populate the form with the selected guide's settings
-                        quizSelect.value = quizName;
-                        urlInput.value = this.guideSettings[quizName].url || '';
-                        enabledCheckbox.checked = this.guideSettings[quizName].enabled || false;
+                        const currentUrl = this.guideSettings[quizName].url || '';
+                        const currentEnabled = this.guideSettings[quizName].enabled || false;
                         
-                        // Scroll to the form
-                        const formSection = container.querySelector('.quiz-guide-form');
-                        if (formSection) {
-                            formSection.scrollIntoView({ behavior: 'smooth' });
-                        }
+                        // Create a simple modal dialog for editing
+                        const modalOverlay = document.createElement('div');
+                        modalOverlay.className = 'modal-overlay';
+                        modalOverlay.style.cssText = `
+                            position: fixed;
+                            top: 0;
+                            left: 0;
+                            width: 100%;
+                            height: 100%;
+                            background-color: rgba(0, 0, 0, 0.5);
+                            display: flex;
+                            justify-content: center;
+                            align-items: center;
+                            z-index: 1000;
+                        `;
+                        
+                        const modalContent = document.createElement('div');
+                        modalContent.className = 'modal-content';
+                        modalContent.style.cssText = `
+                            background-color: white;
+                            padding: 30px;
+                            border-radius: 8px;
+                            width: 90%;
+                            max-width: 500px;
+                            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+                        `;
+                        
+                        modalContent.innerHTML = `
+                            <h3 style="margin-top: 0; color: #2c3e50; margin-bottom: 20px;">Edit Guide URL for ${this.formatQuizName(quizName)}</h3>
+                            <div style="margin-bottom: 20px;">
+                                <label for="edit-url-input" style="display: block; margin-bottom: 8px; font-weight: 600;">Guide URL:</label>
+                                <input type="url" id="edit-url-input" style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 4px; font-size: 16px;" 
+                                    value="${currentUrl}" placeholder="https://example.com/guide">
+                            </div>
+                            <div style="margin-bottom: 25px;">
+                                <label style="display: flex; align-items: center; cursor: pointer;">
+                                    <input type="checkbox" id="edit-enabled-checkbox" style="margin-right: 10px; width: 18px; height: 18px;" 
+                                        ${currentEnabled ? 'checked' : ''}>
+                                    <span>Enable Guide</span>
+                                </label>
+                            </div>
+                            <div style="display: flex; justify-content: flex-end; gap: 10px;">
+                                <button id="cancel-edit-btn" class="btn-cancel" style="padding: 10px 20px; border: none; border-radius: 4px; background-color: #6c757d; color: white; cursor: pointer;">Cancel</button>
+                                <button id="save-edit-btn" class="btn-save" style="padding: 10px 20px; border: none; border-radius: 4px; background-color: #3498db; color: white; cursor: pointer;">Save Changes</button>
+                            </div>
+                        `;
+                        
+                        modalOverlay.appendChild(modalContent);
+                        document.body.appendChild(modalOverlay);
+                        
+                        // Focus on the URL input
+                        const urlInput = document.getElementById('edit-url-input');
+                        urlInput.focus();
+                        
+                        // Handle cancel button
+                        const cancelBtn = document.getElementById('cancel-edit-btn');
+                        cancelBtn.addEventListener('click', () => {
+                            document.body.removeChild(modalOverlay);
+                        });
+                        
+                        // Handle save button
+                        const saveBtn = document.getElementById('save-edit-btn');
+                        saveBtn.addEventListener('click', async () => {
+                            const newUrl = urlInput.value.trim();
+                            if (!newUrl) {
+                                alert('Please enter a URL');
+                                return;
+                            }
+                            
+                            try {
+                                // Validate URL format
+                                new URL(newUrl);
+                            } catch (e) {
+                                alert('Please enter a valid URL (include http:// or https://)');
+                                return;
+                            }
+                            
+                            const newEnabled = document.getElementById('edit-enabled-checkbox').checked;
+                            
+                            // Close the modal
+                            document.body.removeChild(modalOverlay);
+                            
+                            try {
+                                // Save the updated settings
+                                await this.saveGuideSettings(quizName, newUrl, newEnabled);
+                                this.showInfo(`Guide settings for ${this.formatQuizName(quizName)} updated successfully`);
+                                
+                                // Refresh the guide settings list
+                                this.refreshGuideSettingsList();
+                            } catch (error) {
+                                console.error('Failed to save guide settings:', error);
+                                alert('Failed to save guide settings');
+                            }
+                        });
+                        
+                        // Close modal when pressing Escape
+                        const handleEscapeKey = (e) => {
+                            if (e.key === 'Escape') {
+                                document.body.removeChild(modalOverlay);
+                                document.removeEventListener('keydown', handleEscapeKey);
+                            }
+                        };
+                        document.addEventListener('keydown', handleEscapeKey);
                     }
                 });
             });
