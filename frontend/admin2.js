@@ -2805,10 +2805,6 @@ export class Admin2Dashboard extends AdminDashboard {
             // Filter valid quizzes and log them
             const allowedQuizzes = selectedQuizzes.filter(quiz => validQuizTypes.includes(quiz));
             console.log('Allowed quizzes (after validation):', allowedQuizzes);
-            
-            if (allowedQuizzes.length === 0) {
-                throw new Error('No valid quiz types selected');
-            }
 
             // Create array of hidden quizzes and log them
             const hiddenQuizzes = validQuizTypes.filter(quiz => !allowedQuizzes.includes(quiz));
@@ -3908,7 +3904,7 @@ export class Admin2Dashboard extends AdminDashboard {
                         const currentUrl = this.guideSettings[quizName].url || '';
                         const currentEnabled = this.guideSettings[quizName].enabled || false;
                         
-                        // Simple URL prompt approach - this is guaranteed to work
+                        // Simple URL prompt approach - guaranteed to work
                         const newUrl = prompt(`Edit URL for ${this.formatQuizName(quizName)}:`, currentUrl);
                         if (newUrl === null) return; // User canceled
                         
@@ -3925,22 +3921,18 @@ export class Admin2Dashboard extends AdminDashboard {
                             return;
                         }
                         
-                        // Simple confirm for enabled state
+                        // Simple confirm for enabled state - store result but don't show another message yet
                         const newEnabled = confirm(`Enable guide for ${this.formatQuizName(quizName)}?`);
                         
                         try {
-                            // Save the updated settings
-                            await this.saveGuideSettings(quizName, newUrl, newEnabled);
-                            this.showInfo(`Guide settings for ${this.formatQuizName(quizName)} updated successfully`);
-                            
-                            // Refresh the guide settings list
-                            this.refreshGuideSettingsList();
+                            // Use a separate method that doesn't show the initial loading message
+                            await this.saveGuideSettingsWithoutInitialMessage(quizName, newUrl, newEnabled);
                         } catch (error) {
-                            console.error('Failed to save guide settings:', error);
-                            alert('Failed to save guide settings');
+                            console.error('Error during guide edit:', error);
+                            this.showInfo('Failed to save guide settings', 'error');
                         }
-            }
-        });
+                    }
+                });
             });
             
             // Handle Test button clicks (open in new tab)
@@ -5545,13 +5537,15 @@ export class Admin2Dashboard extends AdminDashboard {
                                 return;
                             }
                             
-                            // Simple confirm for enabled state
+                            // Simple confirm for enabled state - store result but don't show another message yet
                             const newEnabled = confirm(`Enable guide for ${this.formatQuizName(quizName)}?`);
                             
                             try {
-                                await this.saveGuideSettings(quizName, newUrl, newEnabled);
+                                // Use a separate method that doesn't show the initial loading message
+                                await this.saveGuideSettingsWithoutInitialMessage(quizName, newUrl, newEnabled);
                             } catch (error) {
                                 console.error('Error during guide edit:', error);
+                                this.showInfo('Failed to save guide settings', 'error');
                             }
                         }
                     });
@@ -5573,6 +5567,72 @@ export class Admin2Dashboard extends AdminDashboard {
                 button.setAttribute('disabled', 'true');
             }
         });
+    }
+
+    async saveGuideSettingsWithoutInitialMessage(quiz, url, enabled) {
+        try {
+            // Skip showing the initial loading message to avoid duplicate notifications
+            console.log(`Saving guide setting for ${quiz}: url=${url}, enabled=${enabled}`);
+
+            // First update in-memory state for immediate UI feedback
+            if (!this.guideSettings) {
+                this.guideSettings = {};
+            }
+                
+            this.guideSettings[quiz] = { url, enabled };
+                
+            // Update localStorage immediately for redundancy
+            try {
+                localStorage.setItem('guideSettings', JSON.stringify(this.guideSettings));
+                console.log(`Updated guide settings in localStorage (${Object.keys(this.guideSettings).length} guides)`);
+            } catch (e) {
+                console.warn(`Failed to save guide settings to localStorage: ${e.message}`);
+            }
+            
+            // Make the API call - don't refresh list yet to avoid double event handlers
+            const response = await this.apiService.saveGuideSetting(quiz, url, enabled);
+
+            if (response.success) {
+                console.log('Guide setting saved successfully:', response);
+                
+                // Reload all guide settings to ensure consistency, but don't trigger displayGuideSettings
+                // which would set up event listeners again
+                try {
+                    const refreshResponse = await this.apiService.getGuideSettings();
+                    if (refreshResponse.success) {
+                        this.guideSettings = refreshResponse.data || {};
+                        console.log('Guide settings reloaded with', Object.keys(this.guideSettings).length, 'guides');
+                    }
+                } catch (refreshError) {
+                    console.warn('Error refreshing guide settings:', refreshError);
+                }
+                
+                // Now refresh the list display without setting up new event handlers
+                this.refreshGuideSettingsList(false); // Pass false to indicate not to set up new event handlers
+                
+                // Show success message
+                if (response.source === 'localStorage') {
+                    this.showInfo(`Guide settings saved locally only (server unavailable).`, 'warning');
+                } else {
+                    this.showInfo(`Guide settings for ${this.formatQuizName(quiz)} saved successfully!`);
+                }
+                
+                return true;
+            } else {
+                throw new Error(response.message || 'Failed to save guide settings');
+            }
+        } catch (error) {
+            console.error('Error saving guide settings:', error);
+            
+            // Special handling for validation errors
+            if (error.message && error.message.includes('URL format')) {
+                this.showInfo(`Error: ${error.message}`, 'error');
+            } else {
+                this.showInfo('Failed to save guide settings', 'error');
+            }
+            
+            throw error;
+        }
     }
 }
 
