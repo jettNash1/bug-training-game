@@ -208,6 +208,151 @@ export class BuildVerificationQuiz extends BaseQuiz {
                         experience: 0
                     }
                 ]
+            },
+            {
+                id: 16,
+                level: 'Basic',
+                title: 'Build Verification Test Suites',
+                description: 'How are test suites typically organised in Build Verification Testing at Zoonou?',
+                options: [
+                    {
+                        text: 'Test suites are organised by environment type',
+                        outcome: 'Correct! Build Verification Test suites are broken down by environment, rather than focus areas. This means the same or a very similar set of tests can be executed for each suite, aside from any key areas that may differ between environments.',
+                        experience: 15,
+                        tool: 'Build Verification Test Suites'
+                    },
+                    {
+                        text: 'Test suites are organised by feature complexity',
+                        outcome: 'Test suites are organised by environment type and not feature complexity.',
+                        experience: -5
+                    },
+                    {
+                        text: 'Test suites are organised by the development team',
+                        outcome: 'Test suites are organised by environment type and not by the development team.',
+                        experience: -10
+                    },
+                    {
+                        text: 'Test suites are organised by the expected execution time',
+                        outcome: 'Test suites are organised by environment type and not by expected execution time.',
+                        experience: 0
+                    }
+                ]
+            },
+            {
+                id: 17,
+                level: 'Basic',
+                title: 'Build Verification Characteristics',
+                description: 'Which of the following is not considered a characteristic of Build Verification Testing according to the guide?',
+                options: [
+                    {
+                        text: 'Acceptance is a characteristic of build verification testing',
+                        outcome: 'Acceptance is a characteristic and is defined as establishing approval that the software has met specifications.',
+                        experience: -5
+                    },
+                    {
+                        text: 'Validation is a characteristic of build verification testing',
+                        outcome: 'Validation is a characteristic and is defined as checking software integrity ahead of further testing.',
+                        experience: -10
+                    },
+                    {
+                        text: 'Customisation is a characteristic of build verification testing',
+                        outcome: 'Correct! this is not a characteristic of build verification testing such as Acceptance, Validation, Regression, and Efficiency.',
+                        experience: 15,
+                        tool: 'Build Verification Characteristics'
+                    },
+                    {
+                        text: 'Regression is a characteristic of build verification testing',
+                        outcome: 'Regression is a characteristic and is defined as developing a set of test cases to check critical functionality and that no new bugs have been introduced as a result of development activities.',
+                        experience: 0
+                    }
+                ]
+            },
+            {
+                id: 18,
+                level: 'Basic',
+                title: 'Build Verification Issue Types',
+                description: 'What type of issues are primarily focused on during Build Verification Testing?',
+                options: [
+                    {
+                        text: 'Minor visual inconsistencies should be the main focus.',
+                        outcome: 'Minor visual inconsistencies would fall under less severe issues which are not the focus of BVT.',
+                        experience: -5
+                    },
+                    {
+                        text: 'Documentation errors should be the main focus',
+                        outcome: 'Documentation errors would fall under less severe issues which are not the focus of BVT.', 
+                        experience: -10
+                    },
+                    {
+                        text: 'Critical functionality issues should be the main focus',
+                        outcome: 'Correct! Build Verification Testing does not focus on the less severe issues that may be present and looks mostly at critical functionality.',
+                        experience: 15,
+                        tool: 'Build Verification Issue Types'
+                    },
+                    {
+                        text: 'Performance under heavy load should be the main focus',
+                        outcome: 'While performance could be considered important, the focus of BVT should be on core functionality rather than performance testing specifically.',
+                        experience: 0
+                    }
+                ]
+            },
+            {
+                id: 19,
+                level: 'Basic',
+                title: 'Build Verification Risks',
+                description: 'What is one of the risks associated with Build Verification Testing?',
+                options: [
+                    {
+                        text: 'Test cases need to be kept up to date throughout development',
+                        outcome: 'Correct! Build Verification Testing test cases must be kept up to date throughout the development process, to include any new features developed. Failing to keep tests updated may lead to under-tested areas or bugs going undetected.',
+                        experience: 15,
+                        tool: 'Build Verification Risks'
+                    },
+                    {
+                        text: 'It takes too long to execute compared to other testing methods',
+                        outcome: 'BVT is efficient and can save time by identifying issues early, not that the testing takes too long.',
+                        experience: -10
+                    },
+                    {
+                        text: 'It requires too many testing resources to be practical',
+                        outcome: 'Build verification testing can actually save time & money by finding bugs early.',
+                        experience: -5
+                    },
+                    {
+                        text: 'Build verification testing cannot be automated',
+                        outcome: 'Build verification testing may be automated even though Zoonou currently conducts it manually.',
+                        experience: 0
+                    }
+                ]
+            },
+            {
+                id: 20,
+                level: 'Basic',
+                title: 'Build Verification Advantages',
+                description: 'Which of the following is not mentioned as an advantage of Build Verification Testing?',
+                options: [
+                    {
+                        text: 'Eliminating the need for further testing is an advantage of build verification testing',
+                        outcome: 'Correct! BVT does not eliminate the need for further testing. On the contrary, it emphasises that BVT ensures the software is ready for further testing and integration.',
+                        experience: 15,
+                        tool: 'Build Verification Advantages'
+                    },
+                    {
+                        text: 'Increasing confidence in builds is an advantage of build verification testing',
+                        outcome: 'Build verification testing increases confidence in builds, resolving bugs early in the development lifecycle, therefore is an advantage.',
+                        experience: -10
+                    },
+                    {
+                        text: 'Saving time and money by finding bugs early is an advantage of build verification testing',
+                        outcome: 'Build verification testing can save time & money, picking up bugs early, before they potentially become more costly or time consuming to fix, therefore is an advantage.',
+                        experience: -5
+                    },
+                    {
+                        text: 'Helping establish software stability is an advantage of build verification testing',
+                        outcome: 'Build verification testing establishes the stability of the software, therefore is an advantage.',
+                        experience: 0
+                    }
+                ]
             }
         ];
 

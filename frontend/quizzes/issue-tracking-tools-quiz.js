@@ -79,26 +79,22 @@ export class IssueTrackingToolsQuiz extends BaseQuiz {
                         text: 'Select the "+" icon, fill in details, and submit the issue',
                         outcome: 'Perfect! This is the correct process for creating an issue.',
                         experience: 15,
-                        isCorrect: true,
                         tool: 'Issue Creation'
                     },
                     {
                         text: 'Email the issue details to the developer so they can start debugging straight away',
                         outcome: 'Issues should be logged in a tracking tool for traceability.',
-                        experience: -10,
-                        isCorrect: false
+                        experience: -10
                     },
                     {
                         text: 'Write the issue in a document for bulk upload at a later date',
                         outcome: 'Issues need to be logged in the tracking tool straight away for visibility and traceability.',
-                        experience: -5,
-                        isCorrect: false
+                        experience: -5
                     },
                     {
                         text: 'Send the issue to a colleague for environment reproduction rates and ask them to log it to the tracker',
                         outcome: 'Whilst reproduction rates are important, proactive issue logging is essential and relates to coverage and good time management.',
-                        experience: 0,
-                        isCorrect: false
+                        experience: 0
                     }
                 ]
             },
@@ -214,6 +210,151 @@ export class IssueTrackingToolsQuiz extends BaseQuiz {
                     {
                         text: 'A tool that tracks all bugs related to a project',
                         outcome: 'Kanban can manage various types of tickets, including tasks and stories.',
+                        experience: 0
+                    }
+                ]
+            },
+            {
+                id: 11,
+                level: 'Basic',
+                title: 'Issue Tracking Tools Features',
+                description: 'Which of the following is not a common feature of issue tracking tools?',
+                options: [
+                    {
+                        text: 'Automated bug fixing is not a feature of tracking tools',
+                        outcome: 'Correct! during test support, testers essentially become a part of the client\'s development team.',
+                        experience: 15,
+                        tool: 'Test Support Relationships'
+                    },
+                    {
+                        text: 'Raising/Logging issues is not a feature of tracking tools',
+                        outcome: 'A key feature of all trackers is logging or raising newly discovered bugs, issues, or tickets.',
+                        experience: -5
+                    },
+                    {
+                        text: 'Sorting and filtering issues are not features of tracking tools',
+                        outcome: 'Most trackers allow the user to sort and filter issues.',
+                        experience: -10
+                    },
+                    {
+                        text: 'Tags, Epics and Child issues are not features of tracking tools',
+                        outcome: 'Many tracking tools include the ability to apply custom tags, which aids in organising issues more effectively.',
+                        experience: 0
+                    }
+                ]
+            },
+            {
+                id: 12,
+                level: 'Basic',
+                title: 'Issue Tracking Styles',
+                description: 'Which of the following is described as an issue tracking style in the guide?',
+                options: [
+                    {
+                        text: 'Recursive is an issue tracking style',
+                        outcome: 'This is a term not associated with an issue tracking style.',
+                        experience: -5
+                    },
+                    {
+                        text: 'Chronological is an issue tracking style',
+                        outcome: 'While issues may be sorted chronologically in some tools, this is not an issue tracking style.',
+                        experience: -10
+                    },
+                    {
+                        text: 'Kanban is an issue tracking style',
+                        outcome: 'Correct! Kanban is a style that uses a series of lanes and containing cards to manage workflow and issues.',
+                        experience: 15,
+                        tool: 'Issue Tracking Styles'
+                    },
+                    {
+                        text: 'Sequential is an issue tracking style',
+                        outcome: 'While this might sound similar to a list-based approach, sequential is not specifically an issue tracking style.',
+                        experience: 0
+                    }
+                ]
+            },
+            {
+                id: 13,
+                level: 'Basic',
+                title: 'DoneDone Permissions',
+                description: 'What action can be performed in DoneDone if you have admin permissions but not if you have regular user permissions?',
+                options: [
+                    {
+                        text: 'Creating a new issue is an action that can be performed if you have admin rights.',
+                        outcome: 'Regular permissions grant the action of creating an issue and doesn\'t require admin permissions',
+                        experience: -5
+                    },
+                    {
+                        text: 'Creating a new issue is an action that can be performed if you have admin rights',
+                        outcome: 'Regular permissions grant the action of creating a new issue and doesn\'t require admin permissions', 
+                        experience: -10
+                    },
+                    {
+                        text: 'Editing multiple issues at once is an action that can be performed if you have admin rights',
+                        outcome: 'Correct! If you have Admin permissions in DoneDone, you are permitted to edit tickets in bulk',
+                        experience: 15,
+                        tool: 'Test Support Documentation'
+                    },
+                    {
+                        text: 'Searching for a project is an action that can be performed if you have admin rights',
+                        outcome: 'Regular permissions grant the action of searching for a project and doesn\'t require admin permissions.',
+                        experience: 0
+                    }
+                ]
+            },
+            {
+                id: 14,
+                level: 'Basic',
+                title: 'Tracking Tool Risk',
+                description: 'Which of the following is listed as a risk or disadvantage of using issue tracking tools?',
+                options: [
+                    {
+                        text: 'Ineffective usage is a risk of using a tracking tool',
+                        outcome: 'Correct! Despite having issues organised within a tracker, if used ineffectively the issues raised can become redundant or ignored by developers and testers, with no development progress being made.',
+                        experience: 15,
+                        tool: 'Tracking Tool Risk'
+                    },
+                    {
+                        text: 'Decreased collaboration is a risk of using a tracking tool',
+                        outcome: 'Communication & collaboration is as an advantage of using issue tracking tools.',
+                        experience: -10
+                    },
+                    {
+                        text: 'Limited visibility is a risk of using a tracking tool',
+                        outcome: 'Improved visibility & traceability is as an advantage of using issue tracking tools.',
+                        experience: -5
+                    },
+                    {
+                        text: 'Reduced traceability is a risk of using a tracking tool',
+                        outcome: 'Improved traceability is an advantage of using issue trackers.',
+                        experience: 0
+                    }
+                ]
+            },
+            {
+                id: 15,
+                level: 'Basic',
+                title: 'Issue Tracker Tags',
+                description: 'What is the primary purpose of using tags in issue tracking tools?',
+                options: [
+                    {
+                        text: 'To organize issues more effectively',
+                        outcome: 'Correct! many tracking tools include the ability to apply custom tags which aids in organising and searching for issues more effectively.',
+                        experience: 15,
+                        tool: 'Issue Tracker Tags'
+                    },
+                    {
+                        text: 'To create visual distinctions between issues',
+                        outcome: 'While tags might create visual distinctions, this is not their primary purpose.',
+                        experience: -10
+                    },
+                    {
+                        text: 'To automate issue resolution processes',
+                        outcome: 'The primary purpose is to make organising and searching for issues more effectively not to automate a resolution process.',
+                        experience: -5
+                    },
+                    {
+                        text: 'To assign priority levels',
+                        outcome: 'Priority levels are treated as a separate feature from tags.',
                         experience: 0
                     }
                 ]

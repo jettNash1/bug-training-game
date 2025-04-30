@@ -216,6 +216,151 @@ export class RaisingTicketsQuiz extends BaseQuiz {
                         experience: 0
                     }
                 ]
+            },
+            {
+                id: 16,
+                level: 'Basic',
+                title: 'Issue Reproduction Rates',
+                description: 'Which of the following is the appropriate reproduction rate to indicate for an issue that can be recreated in 3 out of 4 attempts?',
+                options: [
+                    {
+                        text: '75% - Mostly reproducible',
+                        outcome: 'Correct! The guide specifically states that 75% means in 3 out of 4 attempts we were able to recreate the issue with minimal difficulty.',
+                        experience: 15,
+                        tool: 'Issue Reproduction Rates'
+                    },
+                    {
+                        text: '99% - Consistently reproducible',
+                        outcome: '99% means the tester can reproduce the issue every time it is attempted.',
+                        experience: -5
+                    },
+                    {
+                        text: '25% - Sporadic issue',
+                        outcome: 'This type of issue has only been able to be reproduced 1 in every 4 attempts.',
+                        experience: -10
+                    },
+                    {
+                        text: '0% - Not reproducible',
+                        outcome: 'This rating is for issues that have been observed once but cannot be recreated at all.',
+                        experience: 0
+                    }
+                ]
+            },
+            {
+                id: 17,
+                level: 'Basic',
+                title: 'Issue Severity',
+                description: 'Which severity level should be assigned to an issue that prevents you from testing an entire section of the application?',
+                options: [
+                    {
+                        text: 'Major Impact on Functionality',
+                        outcome: 'While this is a serious severity level, it\'s defined as issues that have a significant impact on the user but generally is not so critical as to prevent any further testing.',
+                        experience: -5
+                    },
+                    {
+                        text: 'Minor Impact on Functionality',
+                        outcome: 'This severity is for issues with a minor impact on the user, generally only indicating a small inconvenience.',
+                        experience: -10
+                    },
+                    {
+                        text: 'Blocking Issue/Crash',
+                        outcome: 'Correct! a blocking Issue/Crash would likely prevent further testing completely or prevent testing of an area of the site or application.',
+                        experience: 15,
+                        tool: 'Issue Severity'
+                    },
+                    {
+                        text: 'Feature Enhancement/Suggestion/Query',
+                        outcome: 'This severity is for constructive feedback on efficiency or user-friendliness, or for queries about possible requirement discrepancies.',
+                        experience: 0
+                    }
+                ]
+            },
+            {
+                id: 18,
+                level: 'Basic',
+                title: 'Supporting Material',
+                description: 'What is the most appropriate supporting material to include for an issue with a low reproduction rate?',
+                options: [
+                    {
+                        text: 'A brief textual description should be included only.',
+                        outcome: 'Evidence should be included for defects with low reproducibility rates as it allows the developer to clearly see what the defect is.',
+                        experience: -5
+                    },
+                    {
+                        text: 'A step-by-step guide should be included without visual evidence',
+                        outcome: 'While steps to reproduce are important, for issues that are difficult to reproduce visual evidence is crucial.', 
+                        experience: -10
+                    },
+                    {
+                        text: 'A video or screenshot showing the issue occurring should be included',
+                        outcome: 'Correct! adding evidence can assist with identifying the root cause of the defect. For defects with low replicability rates, it allows the developer to clearly see what the defect is.',
+                        experience: 15,
+                        tool: 'Supporting Material'
+                    },
+                    {
+                        text: 'A detailed technical analysis of the code causing the issue should be included',
+                        outcome: 'Testers typically don\'t provide code analysis in tickets. Tickets should use clear and non-technical language and be focused on the observed behaviour rather than technical diagnoses.',
+                        experience: 0
+                    }
+                ]
+            },
+            {
+                id: 19,
+                level: 'Basic',
+                title: 'Ticket Characteristics',
+                description: 'Which of the following is a key characteristic of well-written tickets?',
+                options: [
+                    {
+                        text: 'Tickets should be factual, neutral, and helpful information and are key characteristics',
+                        outcome: 'Correct! these are all characteristics of a well-written ticket.',
+                        experience: 15,
+                        tool: 'Ticket Characteristics'
+                    },
+                    {
+                        text: 'Detailed technical jargon for developers are key characteristics',
+                        outcome: 'Tickets should be written in a clear and non-technical language and be jargon-free so all stakeholders can understand them.',
+                        experience: -10
+                    },
+                    {
+                        text: 'Subjective opinions about the severity of the issue should be included and are key characteristics',
+                        outcome: 'Tickets should be factual and we should avoid inserting our opinion or being overly critical.',
+                        experience: -5
+                    },
+                    {
+                        text: 'Exhaustive details regardless of relevance should be included and are key characteristics',
+                        outcome: 'Tickets should be concise and should not include any unnecessary details.',
+                        experience: 0
+                    }
+                ]
+            },
+            {
+                id: 20,
+                level: 'Basic',
+                title: 'Ticket Raising',
+                description: 'What should you do before raising a ticket?',
+                options: [
+                    {
+                        text: 'You should check if there are specific client requests for raising issues',
+                        outcome: 'Correct! consider if there are any specific requests from the client on how they would like issues to be raised to the tracker. You can generally find this information out by looking at the Operational Project Details document.',
+                        experience: 15,
+                        tool: 'Ticket Raising'
+                    },
+                    {
+                        text: 'You should wait for another tester to confirm the issue',
+                        outcome: 'While issues are posted within the channel to increase team awareness, tickets must be raised as they are observed and shouldn\'t be delayed.',
+                        experience: -10
+                    },
+                    {
+                        text: 'You should discuss with the development team how to fix the issue',
+                        outcome: 'Testers are responsible for reporting issues, not determining how they should be fixed.',
+                        experience: -5
+                    },
+                    {
+                        text: 'You should attempt to fix the issue yourself first',
+                        outcome: 'This would be outside the scope of a tester\'s responsibilities.',
+                        experience: 0
+                    }
+                ]
             }
         ];
 
