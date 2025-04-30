@@ -2185,16 +2185,23 @@ export class APIService {
         try {
             console.log('[API] Fetching all guide settings');
             
-            const response = await fetch(`${this.baseUrl}/guide-settings`, {
+            // First verify admin auth
+            const authCheck = await this.verifyAdminToken();
+            if (!authCheck.success) {
+                console.warn('[API] Admin authentication failed when fetching guide settings');
+                throw new Error('Authentication failed. Please log in again.');
+            }
+            
+            // Use fetchWithAdminAuth to consistently handle authentication
+            const response = await this.fetchWithAdminAuth(`${this.baseUrl}/admin/guide-settings`, {
                 method: 'GET',
                 headers: {
                     'Accept': 'application/json'
-                },
-                credentials: 'include'
+                }
             });
             
-            if (!response.ok) {
-                console.warn(`[API] Error response from guide settings API: ${response.status}`);
+            if (!response.success) {
+                console.warn(`[API] Error response from guide settings API:`, response);
                 
                 // Try localStorage as fallback
                 try {
@@ -2212,19 +2219,20 @@ export class APIService {
                     console.warn(`[API] Error checking localStorage fallback for guide settings:`, e);
                 }
                 
-                throw new Error(`Failed to fetch guide settings: ${response.status}`);
+                throw new Error(`Failed to fetch guide settings: ${response.message || 'Unknown error'}`);
             }
             
-            const data = await response.json();
+            console.log('[API] Successfully fetched guide settings from API:', response.data);
             
             // Save to localStorage for backup
             try {
-                localStorage.setItem('guideSettings', JSON.stringify(data.data || {}));
+                localStorage.setItem('guideSettings', JSON.stringify(response.data || {}));
+                console.log('[API] Saved guide settings to localStorage');
             } catch (e) {
                 console.warn('[API] Error saving guide settings to localStorage:', e);
             }
             
-            return data;
+            return response;
         } catch (error) {
             console.error('[API] Error fetching guide settings:', error);
             
