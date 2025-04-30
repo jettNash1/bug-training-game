@@ -3799,6 +3799,51 @@ export class Admin2Dashboard extends AdminDashboard {
                 alert('Failed to remove guides');
             }
         });
+        
+        // Add event listeners for edit and test buttons after the list is populated
+        const setupGuideItemEventListeners = () => {
+            // Handle Edit button clicks
+            const editButtons = container.querySelectorAll('.edit-guide-btn');
+            editButtons.forEach(button => {
+                button.addEventListener('click', () => {
+                    const quizName = button.getAttribute('data-quiz');
+                    if (quizName && this.guideSettings[quizName]) {
+                        // Populate the form with the selected guide's settings
+                        quizSelect.value = quizName;
+                        urlInput.value = this.guideSettings[quizName].url || '';
+                        enabledCheckbox.checked = this.guideSettings[quizName].enabled || false;
+                        
+                        // Scroll to the form
+                        const formSection = container.querySelector('.quiz-guide-form');
+                        if (formSection) {
+                            formSection.scrollIntoView({ behavior: 'smooth' });
+                        }
+                    }
+                });
+            });
+            
+            // Handle Test button clicks
+            const testButtons = container.querySelectorAll('.test-guide-btn');
+            testButtons.forEach(button => {
+                button.addEventListener('click', () => {
+                    const url = button.getAttribute('data-url');
+                    if (url) {
+                        // Open the URL in a new tab
+                        window.open(url, '_blank', 'noopener,noreferrer');
+                    }
+                });
+            });
+        };
+        
+        // Setup the event listeners
+        setupGuideItemEventListeners();
+        
+        // Add a mutation observer to handle dynamically added guide items
+        const guideSettingsList = container.querySelector('#guide-settings-list');
+        if (guideSettingsList) {
+            const observer = new MutationObserver(setupGuideItemEventListeners);
+            observer.observe(guideSettingsList, { childList: true, subtree: true });
+        }
     }
     
     // Helper method to get selected guides from the UI
