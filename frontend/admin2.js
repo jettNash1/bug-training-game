@@ -3543,8 +3543,8 @@ export class Admin2Dashboard extends AdminDashboard {
             if (response.success) {
                 this.guideSettings = response.data || {};
                 console.log('Guide settings loaded successfully. Number of guides:', Object.keys(this.guideSettings).length);
-                
-                // Debug: log all guide settings for verification
+                    
+                    // Debug: log all guide settings for verification
                 for (const [quizName, setting] of Object.entries(this.guideSettings)) {
                     console.log(`Guide setting for ${quizName}:`, setting);
                 }
@@ -3764,7 +3764,7 @@ export class Admin2Dashboard extends AdminDashboard {
                         try {
                             // Update the setting
                             await this.saveGuideSettings(quiz, url, true);
-                            updatedCount++;
+                        updatedCount++;
                         } catch (error) {
                             console.error(`Failed to enable guide for ${quiz}:`, error);
                         }
@@ -3773,7 +3773,7 @@ export class Admin2Dashboard extends AdminDashboard {
                 
                 if (updatedCount > 0) {
                     this.showInfo(`${updatedCount} guide(s) enabled successfully${skippedCount > 0 ? `, ${skippedCount} skipped` : ''}`);
-                    
+                
                     // Refresh the guide settings list without resetting event handlers
                     this.refreshGuideSettingsList(false);
                 } else if (skippedCount > 0) {
@@ -3821,7 +3821,7 @@ export class Admin2Dashboard extends AdminDashboard {
                         try {
                             // Update the setting
                             await this.saveGuideSettings(quiz, url, false);
-                            updatedCount++;
+                        updatedCount++;
                         } catch (error) {
                             console.error(`Failed to disable guide for ${quiz}:`, error);
                         }
@@ -3830,7 +3830,7 @@ export class Admin2Dashboard extends AdminDashboard {
                 
                 if (updatedCount > 0) {
                     this.showInfo(`${updatedCount} guide(s) disabled successfully${skippedCount > 0 ? `, ${skippedCount} skipped` : ''}`);
-                    
+                
                     // Refresh the guide settings list without resetting event handlers
                     this.refreshGuideSettingsList(false);
                 } else if (skippedCount > 0) {
@@ -3868,7 +3868,7 @@ export class Admin2Dashboard extends AdminDashboard {
                             // Also remove from in-memory state
                             delete this.guideSettings[quiz];
                             
-                            removedCount++;
+                        removedCount++;
                         } catch (error) {
                             console.error(`Failed to delete guide setting for ${quiz}:`, error);
                         }
@@ -3876,8 +3876,8 @@ export class Admin2Dashboard extends AdminDashboard {
                 }
                 
                 if (removedCount > 0) {
-                    this.showInfo(`${removedCount} guide setting(s) removed successfully`);
-                    
+                this.showInfo(`${removedCount} guide setting(s) removed successfully`);
+                
                     // Save updated settings to localStorage
                     try {
                         localStorage.setItem('guideSettings', JSON.stringify(this.guideSettings));
@@ -3939,8 +3939,8 @@ export class Admin2Dashboard extends AdminDashboard {
                             console.error('Failed to save guide settings:', error);
                             alert('Failed to save guide settings');
                         }
-                    }
-                });
+            }
+        });
             });
             
             // Handle Test button clicks (open in new tab)
@@ -3988,20 +3988,20 @@ export class Admin2Dashboard extends AdminDashboard {
 
     async saveGuideSettings(quiz, url, enabled) {
         try {
-            // Show a loading state
-            this.showInfo(`Saving guide settings for ${this.formatQuizName(quiz)}...`);
+            // Remove the initial loading message to avoid duplicate notifications
+            // this.showInfo(`Saving guide settings for ${this.formatQuizName(quiz)}...`);
             
             console.log(`Saving guide setting for ${quiz}: url=${url}, enabled=${enabled}`);
-            
+
             // First update in-memory state for immediate UI feedback
-            if (!this.guideSettings) {
-                this.guideSettings = {};
-            }
-            
-            this.guideSettings[quiz] = { url, enabled };
-            
+                if (!this.guideSettings) {
+                    this.guideSettings = {};
+                }
+                
+                    this.guideSettings[quiz] = { url, enabled };
+                
             // Update localStorage immediately for redundancy
-            try {
+                try {
                 localStorage.setItem('guideSettings', JSON.stringify(this.guideSettings));
                 console.log(`Updated guide settings in localStorage (${Object.keys(this.guideSettings).length} guides)`);
             } catch (e) {
