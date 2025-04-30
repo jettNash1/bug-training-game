@@ -3849,95 +3849,37 @@ export class Admin2Dashboard extends AdminDashboard {
                         const currentUrl = this.guideSettings[quizName].url || '';
                         const currentEnabled = this.guideSettings[quizName].enabled || false;
                         
-                        // Create a simple modal dialog for editing
-                        const modalOverlay = document.createElement('div');
-                        modalOverlay.className = 'modal-overlay';
-                        modalOverlay.style.position = 'fixed';
-                        modalOverlay.style.top = '0';
-                        modalOverlay.style.left = '0';
-                        modalOverlay.style.width = '100%';
-                        modalOverlay.style.height = '100%';
-                        modalOverlay.style.backgroundColor = 'rgba(0, 0, 0, 0.5)';
-                        modalOverlay.style.display = 'flex';
-                        modalOverlay.style.justifyContent = 'center';
-                        modalOverlay.style.alignItems = 'center';
-                        modalOverlay.style.zIndex = '1000';
+                        // Simple URL prompt approach - this is guaranteed to work
+                        const newUrl = prompt(`Edit URL for ${this.formatQuizName(quizName)}:`, currentUrl);
+                        if (newUrl === null) return; // User canceled
                         
-                        modalOverlay.innerHTML = `
-                            <div style="background: white; padding: 20px; border-radius: 5px; width: 400px; max-width: 90%;">
-                                <h3>Edit Guide for ${this.formatQuizName(quizName)}</h3>
-                                <div style="margin-bottom: 15px;">
-                                    <label for="edit-url-input" style="display: block; margin-bottom: 5px;">Guide URL:</label>
-                                    <input type="url" id="edit-url-input" value="${currentUrl}" style="width: 100%; padding: 8px; box-sizing: border-box;">
-                                </div>
-                                <div style="margin-bottom: 15px;">
-                                    <label style="display: flex; align-items: center;">
-                                        <input type="checkbox" id="edit-enabled-checkbox" ${currentEnabled ? 'checked' : ''}>
-                                        <span style="margin-left: 8px;">Enable Guide</span>
-                                    </label>
-                                </div>
-                                <div style="display: flex; justify-content: flex-end; gap: 10px;">
-                                    <button id="cancel-edit-btn" style="padding: 8px 15px; background: #f1f1f1; border: none; border-radius: 4px; cursor: pointer;">Cancel</button>
-                                    <button id="save-edit-btn" style="padding: 8px 15px; background: var(--primary-color, #4CAF50); color: white; border: none; border-radius: 4px; cursor: pointer;">Save</button>
-                                </div>
-                            </div>
-                        `;
+                        if (!newUrl.trim()) {
+                            alert('Please enter a URL');
+                            return;
+                        }
                         
-                        document.body.appendChild(modalOverlay);
+                        try {
+                            // Validate URL format
+                            new URL(newUrl);
+                        } catch (e) {
+                            alert('Please enter a valid URL (include http:// or https://)');
+                            return;
+                        }
                         
-                        // Get references to the elements
-                        const urlInput = document.getElementById('edit-url-input');
-                        const enabledCheckbox = document.getElementById('edit-enabled-checkbox');
-                        const cancelButton = document.getElementById('cancel-edit-btn');
-                        const saveButton = document.getElementById('save-edit-btn');
+                        // Simple confirm for enabled state
+                        const newEnabled = confirm(`Enable guide for ${this.formatQuizName(quizName)}?`);
                         
-                        // Add event listeners to the buttons
-                        cancelButton.onclick = () => {
-                            document.body.removeChild(modalOverlay);
-                        };
-                        
-                        saveButton.onclick = async () => {
-                            const newUrl = urlInput.value.trim();
+                        try {
+                            // Save the updated settings
+                            await this.saveGuideSettings(quizName, newUrl, newEnabled);
+                            this.showInfo(`Guide settings for ${this.formatQuizName(quizName)} updated successfully`);
                             
-                            // Validate URL
-                            if (!newUrl) {
-                                alert('Please enter a URL');
-                                return;
-                            }
-                            
-                            try {
-                                new URL(newUrl);
-                            } catch (e) {
-                                alert('Please enter a valid URL (include http:// or https://)');
-                                return;
-                            }
-                            
-                            const newEnabled = enabledCheckbox.checked;
-                            
-                            // Close the modal
-                            document.body.removeChild(modalOverlay);
-                            
-                            try {
-                                // Save the updated settings
-                                await this.saveGuideSettings(quizName, newUrl, newEnabled);
-                                this.showInfo(`Guide settings for ${this.formatQuizName(quizName)} updated successfully`);
-                                
-                                // Refresh the guide settings list
-                                this.refreshGuideSettingsList();
-                            } catch (error) {
-                                console.error('Failed to save guide settings:', error);
-                                alert('Failed to save guide settings');
-                            }
-                        };
-                        
-                        // Close modal when pressing Escape
-                        const handleEscapeKey = (e) => {
-                            if (e.key === 'Escape') {
-                                document.body.removeChild(modalOverlay);
-                                document.removeEventListener('keydown', handleEscapeKey);
-                            }
-                        };
-                        document.addEventListener('keydown', handleEscapeKey);
+                            // Refresh the guide settings list
+                            this.refreshGuideSettingsList();
+                        } catch (error) {
+                            console.error('Failed to save guide settings:', error);
+                            alert('Failed to save guide settings');
+                        }
                     }
                 });
             });
