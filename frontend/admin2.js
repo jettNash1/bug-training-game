@@ -223,6 +223,54 @@ export class Admin2Dashboard extends AdminDashboard {
         }
     }
     
+    /**
+     * Calculates the score percentage based on correct answers or experience points
+     * @param {object} quizData - The quiz progress or result data
+     * @returns {number} - The calculated score percentage
+     */
+    calculateScorePercentage(quizData) {
+        // If scorePercentage already exists, use it
+        if (typeof quizData.scorePercentage === 'number') {
+            return quizData.scorePercentage;
+        }
+        
+        // If score property exists (legacy data), use it
+        if (typeof quizData.score === 'number') {
+            return Math.round(quizData.score);
+        }
+        
+        // If we have questionHistory with isCorrect flags, calculate based on that
+        if (Array.isArray(quizData.questionHistory) && quizData.questionHistory.length > 0) {
+            const correctAnswers = quizData.questionHistory.filter(q => 
+                q.isCorrect || 
+                (q.selectedAnswer && (
+                    q.selectedAnswer.isCorrect || 
+                    (q.selectedAnswer.experience && q.scenario && 
+                     q.selectedAnswer.experience === Math.max(...q.scenario.options.map(o => o.experience || 0)))
+                ))
+            ).length;
+            
+            // Calculate percentage based on completed questions (cap at max questions)
+            const totalAnswered = Math.min(quizData.questionHistory.length, 15);
+            return totalAnswered > 0 ? Math.round((correctAnswers / totalAnswered) * 100) : 0;
+        }
+        
+        // If we have experience points, calculate based on that (roughly)
+        if (typeof quizData.experience === 'number') {
+            // Maximum possible experience is ~300 (20 points per question * 15 questions)
+            return Math.min(100, Math.round((quizData.experience / 300) * 100));
+        }
+        
+        // If we have questionsAnswered but no other data, estimate conservatively
+        if (typeof quizData.questionsAnswered === 'number' && quizData.questionsAnswered > 0) {
+            // Assume ~70% correct answers (conservative estimate)
+            return Math.round(70);
+        }
+        
+        // Default to 0 if we can't calculate
+        return 0;
+    }
+
     async loadUserProgress(username) {
         try {
             // Use the apiService to properly handle authentication
@@ -240,9 +288,53 @@ export class Admin2Dashboard extends AdminDashboard {
                         // Store quiz progress data
                         this.users[userIndex].quizProgress = response.data.quizProgress || {};
                         
+                        // Ensure all quiz progress has scorePercentage
+                        for (const quizName in this.users[userIndex].quizProgress) {
+                            const progress = this.users[userIndex].quizProgress[quizName];
+                            if (progress && typeof progress === 'object') {
+                                // Add scorePercentage if missing
+                                if (typeof progress.scorePercentage !== 'number') {
+                                    progress.scorePercentage = this.calculateScorePercentage(progress);
+                                    console.log(`Added scorePercentage ${progress.scorePercentage}% to ${quizName} progress`);
+                                }
+                            }
+                        }
+                        
+                        // Debug - check for scorePercentage in quizProgress
+                        console.log(`DEBUG - Quiz progress for ${username}:`, this.users[userIndex].quizProgress);
+                        for (const quizName in this.users[userIndex].quizProgress) {
+                            const progress = this.users[userIndex].quizProgress[quizName];
+                            console.log(`Quiz ${quizName} progress:`, {
+                                questionsAnswered: progress?.questionsAnswered || 0,
+                                scorePercentage: progress?.scorePercentage,
+                                experience: progress?.experience,
+                            });
+                        }
+                        
                         // Store quiz results data if available
                         if (response.data.quizResults && Array.isArray(response.data.quizResults)) {
                             this.users[userIndex].quizResults = response.data.quizResults;
+                            
+                            // Ensure all quiz results have scorePercentage
+                            this.users[userIndex].quizResults.forEach(result => {
+                                if (result && typeof result === 'object') {
+                                    // Add scorePercentage if missing
+                                    if (typeof result.scorePercentage !== 'number') {
+                                        result.scorePercentage = this.calculateScorePercentage(result);
+                                        console.log(`Added scorePercentage ${result.scorePercentage}% to ${result.quizName} result`);
+                                    }
+                                }
+                            });
+                            
+                            // Debug - check for scorePercentage in quizResults
+                            console.log(`DEBUG - Quiz results for ${username}:`, this.users[userIndex].quizResults);
+                            this.users[userIndex].quizResults.forEach(result => {
+                                console.log(`Quiz ${result.quizName} result:`, {
+                                    score: result?.score,
+                                    scorePercentage: result?.scorePercentage,
+                                    questionsAnswered: result?.questionsAnswered,
+                                });
+                            });
                         }
                         
                         // If response has a message but was still successful, it's likely using fallback data
@@ -467,37 +559,13 @@ export class Admin2Dashboard extends AdminDashboard {
                 acc.activeUsers++;
             }
 
-            // Calculate progress for average
+            // Calculate progress for average (this also calculates user.averageScore)
             const userProgress = this.calculateUserProgress(user);
             acc.totalProgress += userProgress;
             
-            // Calculate average score percentage
-            let totalScore = 0;
-            let quizCount = 0;
-            
-            if (this.quizTypes && Array.isArray(this.quizTypes)) {
-                this.quizTypes.forEach(quizType => {
-                    if (typeof quizType === 'string') {
-                        const quizLower = quizType.toLowerCase();
-                        const progress = user.quizProgress?.[quizLower];
-                        const result = user.quizResults?.find(r => r.quizName.toLowerCase() === quizLower);
-                        
-                        // Check if we have a score percentage
-                        if (result?.scorePercentage) {
-                            totalScore += result.scorePercentage;
-                            quizCount++;
-                        } else if (progress?.scorePercentage) {
-                            totalScore += progress.scorePercentage;
-                            quizCount++;
-                        }
-                    }
-                });
-            }
-            
-            // Add user's average score to total
-            if (quizCount > 0) {
-                const userAvgScore = Math.round(totalScore / quizCount);
-                acc.totalScore += userAvgScore;
+            // Add user's average score to total if it has been calculated
+            if (typeof user.averageScore === 'number') {
+                acc.totalScore += user.averageScore;
                 acc.scoreCount++;
             }
             
@@ -583,14 +651,11 @@ export class Admin2Dashboard extends AdminDashboard {
 
         // Create and append user cards
         filteredUsers.forEach(user => {
-            const progress = this.calculateUserProgress(user);
+            const progress = this.calculateUserProgress(user); // This also calculates user.averageScore
             const lastActive = this.getLastActiveDate(user);
             
-            // Calculate total questions answered, XP, and average score across all quizzes
+            // Calculate total questions answered
             let totalQuestionsAnswered = 0;
-            let totalXP = 0;
-            let totalScore = 0;
-            let quizCount = 0;
             
             if (this.quizTypes && Array.isArray(this.quizTypes)) {
                 this.quizTypes.forEach(quizType => {
@@ -606,26 +671,12 @@ export class Admin2Dashboard extends AdminDashboard {
                                                progress?.questionHistory?.length || 0;
                         
                         totalQuestionsAnswered += questionsAnswered;
-                        
-                        // Get experience and ensure it's a multiple of 5
-                        let xp = progress?.experience || result?.experience || 0;
-                        xp = Math.round(xp / 5) * 5;
-                        totalXP += xp;
-                        
-                        // Calculate score for this quiz
-                        if (result?.scorePercentage) {
-                            totalScore += result.scorePercentage;
-                            quizCount++;
-                        } else if (progress?.scorePercentage) {
-                            totalScore += progress.scorePercentage;
-                            quizCount++;
-                        }
                     }
                 });
             }
             
-            // Calculate average score
-            const averageScore = quizCount > 0 ? Math.round(totalScore / quizCount) : 0;
+            // Use previously calculated average score
+            const averageScore = user.averageScore || 0;
 
             const card = document.createElement('div');
             card.className = 'user-card';
@@ -1925,6 +1976,9 @@ export class Admin2Dashboard extends AdminDashboard {
                 throw new Error('User not found');
             }
 
+            // Make sure user progress and scores are calculated
+            this.calculateUserProgress(user);
+
             const isInterviewAccount = user.userType === 'interview_candidate';
             // For interview accounts, allowedQuizzes means visible, everything else is hidden
             // For regular accounts, hiddenQuizzes means hidden, everything else is visible
@@ -1991,6 +2045,10 @@ export class Admin2Dashboard extends AdminDashboard {
                             <div class="info-label">Overall Progress:</div>
                             <div class="info-value">${this.calculateUserProgress(user).toFixed(1)}%</div>
                         </div>
+                        <div class="info-row">
+                            <div class="info-label">Average Score:</div>
+                            <div class="info-value">${user.averageScore || 0}%</div>
+                        </div>
                     </div>
                 </div>
                 
@@ -2021,30 +2079,29 @@ export class Admin2Dashboard extends AdminDashboard {
                     
                     // Determine visibility based on account type
                     const isVisible = isInterviewAccount ? isInAllowedQuizzes : !isInHiddenQuizzes;
-                    
-                    console.log('Quiz visibility details:', {
-                        quizName: quizType,
-                        quizLower,
-                        isInterviewAccount,
-                        allowedQuizzes,
-                        hiddenQuizzes,
-                        isInAllowedQuizzes,
-                        isInHiddenQuizzes,
-                        isVisible
-                    });
                 
                     const quizProgress = user.quizProgress?.[quizLower] || {};
                     const quizResult = user.quizResults?.find(r => r.quizName.toLowerCase() === quizLower);
                 
-                // Use data from either progress or results, prioritizing results
-                const questionsAnswered = quizResult?.questionsAnswered || 
-                                        quizResult?.questionHistory?.length ||
-                                        quizProgress?.questionsAnswered || 
-                                        quizProgress?.questionHistory?.length || 0;
-                    const experience = quizResult?.experience || quizProgress?.experience || 0;
-                    // Get scorePercentage instead of score
-                    const scorePercentage = quizResult?.scorePercentage || quizProgress?.scorePercentage || 0;
-                    const lastActive = quizResult?.completedAt || quizResult?.lastActive || quizProgress?.lastUpdated || 'Never';
+                    // Use data from either progress or results, prioritizing results
+                    const questionsAnswered = quizResult?.questionsAnswered || 
+                                            quizResult?.questionHistory?.length ||
+                                            quizProgress?.questionsAnswered || 
+                                            quizProgress?.questionHistory?.length || 0;
+                    
+                    // Get the score percentage, calculating it if needed
+                    let scorePercentage = quizResult?.scorePercentage || quizProgress?.scorePercentage;
+                    if (typeof scorePercentage !== 'number' && questionsAnswered > 0) {
+                        const quizData = quizResult || quizProgress;
+                        if (quizData) {
+                            scorePercentage = this.calculateScorePercentage(quizData);
+                        } else {
+                            scorePercentage = 0;
+                        }
+                    }
+                    
+                    const lastActive = quizResult?.completedAt || quizResult?.lastActive || 
+                                    quizProgress?.lastUpdated || 'Never';
                     
                     const status = questionsAnswered === 15 ? 'Completed' : 
                                 questionsAnswered > 0 ? 'In Progress' : 
@@ -2085,7 +2142,7 @@ export class Admin2Dashboard extends AdminDashboard {
                         <h3>${this.formatQuizName(quizType)}</h3>
                         <div class="quiz-stats">
                             <p><strong>Status:</strong> ${status}</p>
-                            <p><strong>Score:</strong> ${scorePercentage}%</p>
+                            <p><strong>Score:</strong> ${scorePercentage || 0}%</p>
                             <p><strong>Questions Answered:</strong> ${questionsAnswered}/15</p>
                             <p><strong>Last Active:</strong> ${this.formatDate(lastActive)}</p>
                             <div class="visibility-control">
@@ -5696,6 +5753,68 @@ export class Admin2Dashboard extends AdminDashboard {
             
             throw error;
         }
+    }
+
+    // Helper method to calculate user progress and average score
+    calculateUserProgress(user) {
+        if (!user) return 0;
+
+        let totalQuestionsAnswered = 0;
+        let totalPossibleQuestions = 0;
+        let totalScorePercentage = 0;
+        let quizCount = 0;
+
+        // Ensure we have quizTypes array
+        if (!this.quizTypes || !Array.isArray(this.quizTypes)) {
+            console.warn('Missing quizTypes array in calculateUserProgress');
+            return 0;
+        }
+
+        // Sum up questions answered and score percentages across all quizzes
+        this.quizTypes.forEach(quizType => {
+            if (typeof quizType === 'string') {
+                const quizLower = quizType.toLowerCase();
+                totalPossibleQuestions += 15; // 15 questions per quiz type
+                
+                const progress = user.quizProgress?.[quizLower];
+                const result = user.quizResults?.find(r => r.quizName?.toLowerCase() === quizLower);
+                
+                // Prioritize values from quiz results over progress
+                const questionsAnswered = result?.questionsAnswered || 
+                                        result?.questionHistory?.length ||
+                                        progress?.questionsAnswered || 
+                                        progress?.questionHistory?.length || 0;
+                
+                totalQuestionsAnswered += questionsAnswered;
+                
+                // If we have score data in either location, calculate total
+                if (result?.scorePercentage || progress?.scorePercentage) {
+                    totalScorePercentage += result?.scorePercentage || progress?.scorePercentage || 0;
+                    quizCount++;
+                } 
+                // If no scorePercentage but we have other data, calculate it
+                else if (questionsAnswered > 0) {
+                    const quizData = result || progress;
+                    if (quizData) {
+                        totalScorePercentage += this.calculateScorePercentage(quizData);
+                        quizCount++;
+                    }
+                }
+            }
+        });
+
+        // Calculate progress as percentage of total possible questions
+        const progressPercentage = totalPossibleQuestions > 0 ? 
+            (totalQuestionsAnswered / totalPossibleQuestions) * 100 : 0;
+        
+        // Store the average score on the user object for use elsewhere
+        if (quizCount > 0) {
+            user.averageScore = Math.round(totalScorePercentage / quizCount);
+        } else {
+            user.averageScore = 0;
+        }
+        
+        return progressPercentage;
     }
 }
 
