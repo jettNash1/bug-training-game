@@ -1,3 +1,11 @@
+// Add polyfill for SlowBuffer in Node.js 24+
+if (!global.SlowBuffer && Buffer.from) {
+  global.SlowBuffer = Buffer.from;
+  if (!global.SlowBuffer.prototype) {
+    global.SlowBuffer.prototype = Buffer.prototype;
+  }
+}
+
 // Update any relative path references
 require('dotenv').config({ path: '../.env' });
 require('dotenv').config({ path: '.env' });
@@ -140,6 +148,11 @@ app.use((req, res, next) => {
     };
 
     next();
+});
+
+// Health check endpoint for Render
+app.get('/health', (req, res) => {
+  res.status(200).json({ status: 'ok', message: 'Service is healthy' });
 });
 
 // Connect to MongoDB with indexes and better error handling

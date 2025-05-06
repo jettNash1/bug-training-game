@@ -10,7 +10,7 @@
     "postbuild": "cd build && npm install --production"
   },
   "engines": {
-    "node": ">=14.0.0"
+    "node": ">=14.0.0 <20.0.0"
   },
   "dependencies": {
     "bcryptjs": "^2.4.3",
