@@ -471,15 +471,50 @@ export class Admin2Dashboard extends AdminDashboard {
             const userProgress = this.calculateUserProgress(user);
             acc.totalProgress += userProgress;
             
+            // Calculate average score percentage
+            let totalScore = 0;
+            let quizCount = 0;
+            
+            if (this.quizTypes && Array.isArray(this.quizTypes)) {
+                this.quizTypes.forEach(quizType => {
+                    if (typeof quizType === 'string') {
+                        const quizLower = quizType.toLowerCase();
+                        const progress = user.quizProgress?.[quizLower];
+                        const result = user.quizResults?.find(r => r.quizName.toLowerCase() === quizLower);
+                        
+                        // Check if we have a score percentage
+                        if (result?.scorePercentage) {
+                            totalScore += result.scorePercentage;
+                            quizCount++;
+                        } else if (progress?.scorePercentage) {
+                            totalScore += progress.scorePercentage;
+                            quizCount++;
+                        }
+                    }
+                });
+            }
+            
+            // Add user's average score to total
+            if (quizCount > 0) {
+                const userAvgScore = Math.round(totalScore / quizCount);
+                acc.totalScore += userAvgScore;
+                acc.scoreCount++;
+            }
+            
             return acc;
         }, {
             totalUsers: this.users.length,
             activeUsers: 0,
-            totalProgress: 0
+            totalProgress: 0,
+            totalScore: 0,
+            scoreCount: 0
         });
 
         stats.averageProgress = this.users.length > 0 ? 
             Math.round(stats.totalProgress / stats.totalUsers) : 0;
+        
+        stats.averageScore = stats.scoreCount > 0 ?
+            Math.round(stats.totalScore / stats.scoreCount) : 0;
         
         console.log('Statistics updated:', stats);
         return stats;
@@ -490,6 +525,7 @@ export class Admin2Dashboard extends AdminDashboard {
         const totalUsersElement = document.getElementById('totalUsers');
         const activeUsersElement = document.getElementById('activeUsers');
         const averageCompletionElement = document.getElementById('averageCompletion');
+        const averageScoreElement = document.getElementById('averageScore');
 
         if (totalUsersElement) {
             totalUsersElement.textContent = stats.totalUsers || 0;
@@ -499,6 +535,9 @@ export class Admin2Dashboard extends AdminDashboard {
         }
         if (averageCompletionElement) {
             averageCompletionElement.textContent = `${stats.averageProgress || 0}%`;
+        }
+        if (averageScoreElement) {
+            averageScoreElement.textContent = `${stats.averageScore || 0}%`;
         }
     }
     
@@ -547,15 +586,18 @@ export class Admin2Dashboard extends AdminDashboard {
             const progress = this.calculateUserProgress(user);
             const lastActive = this.getLastActiveDate(user);
             
-            // Calculate total questions answered and XP across all quizzes
+            // Calculate total questions answered, XP, and average score across all quizzes
             let totalQuestionsAnswered = 0;
             let totalXP = 0;
+            let totalScore = 0;
+            let quizCount = 0;
             
             if (this.quizTypes && Array.isArray(this.quizTypes)) {
                 this.quizTypes.forEach(quizType => {
                     if (typeof quizType === 'string') {
-                        const progress = user.quizProgress?.[quizType.toLowerCase()];
-                        const result = user.quizResults?.find(r => r.quizName.toLowerCase() === quizType.toLowerCase());
+                        const quizLower = quizType.toLowerCase();
+                        const progress = user.quizProgress?.[quizLower];
+                        const result = user.quizResults?.find(r => r.quizName.toLowerCase() === quizLower);
                         
                         // Prioritize values from quiz results over progress
                         const questionsAnswered = result?.questionsAnswered || 
@@ -569,9 +611,21 @@ export class Admin2Dashboard extends AdminDashboard {
                         let xp = progress?.experience || result?.experience || 0;
                         xp = Math.round(xp / 5) * 5;
                         totalXP += xp;
+                        
+                        // Calculate score for this quiz
+                        if (result?.scorePercentage) {
+                            totalScore += result.scorePercentage;
+                            quizCount++;
+                        } else if (progress?.scorePercentage) {
+                            totalScore += progress.scorePercentage;
+                            quizCount++;
+                        }
                     }
                 });
             }
+            
+            // Calculate average score
+            const averageScore = quizCount > 0 ? Math.round(totalScore / quizCount) : 0;
 
             const card = document.createElement('div');
             card.className = 'user-card';
@@ -593,6 +647,10 @@ export class Admin2Dashboard extends AdminDashboard {
                             <div class="stat">
                                 <span class="stat-label">Questions:</span>
                                 <span class="stat-value">${totalQuestionsAnswered}</span>
+                            </div>
+                            <div class="stat">
+                                <span class="stat-label">Score:</span>
+                                <span class="stat-value">${averageScore}%</span>
                             </div>
                             <div class="stat">
                                 <span class="stat-label">Last Active:</span>
@@ -632,6 +690,10 @@ export class Admin2Dashboard extends AdminDashboard {
                             <div class="stat">
                                 <span class="stat-label">Questions:</span>
                                 <span class="stat-value">${totalQuestionsAnswered}</span>
+                            </div>
+                            <div class="stat">
+                                <span class="stat-label">Score:</span>
+                                <span class="stat-value">${averageScore}%</span>
                             </div>
                             <div class="stat">
                                 <span class="stat-label">Last Active:</span>
@@ -1980,7 +2042,8 @@ export class Admin2Dashboard extends AdminDashboard {
                                         quizProgress?.questionsAnswered || 
                                         quizProgress?.questionHistory?.length || 0;
                     const experience = quizResult?.experience || quizProgress?.experience || 0;
-                    const score = quizResult?.score || 0;
+                    // Get scorePercentage instead of score
+                    const scorePercentage = quizResult?.scorePercentage || quizProgress?.scorePercentage || 0;
                     const lastActive = quizResult?.completedAt || quizResult?.lastActive || quizProgress?.lastUpdated || 'Never';
                     
                     const status = questionsAnswered === 15 ? 'Completed' : 
@@ -1992,7 +2055,7 @@ export class Admin2Dashboard extends AdminDashboard {
                     if (questionsAnswered > 0) {
                         if (questionsAnswered === 15) {
                             // All questions completed
-                            if (score >= 100) {
+                            if (scorePercentage >= 100) {
                                 backgroundColor = '#e8f5e9'; // Light green for perfect score
                             } else {
                                 backgroundColor = '#fff3e0'; // Light yellow for completed but not perfect score
@@ -2005,7 +2068,7 @@ export class Admin2Dashboard extends AdminDashboard {
                     // Determine quiz status class
                     let statusClass = 'not-started';
                     if (questionsAnswered === 15) {
-                        if (score >= 100) {
+                        if (scorePercentage >= 100) {
                             statusClass = 'completed-perfect'; // Perfect score
                         } else {
                             statusClass = 'completed-partial'; // Completed but not perfect
@@ -2022,7 +2085,7 @@ export class Admin2Dashboard extends AdminDashboard {
                         <h3>${this.formatQuizName(quizType)}</h3>
                         <div class="quiz-stats">
                             <p><strong>Status:</strong> ${status}</p>
-                            <p><strong>Score:</strong> ${score}%</p>
+                            <p><strong>Score:</strong> ${scorePercentage}%</p>
                             <p><strong>Questions Answered:</strong> ${questionsAnswered}/15</p>
                             <p><strong>Last Active:</strong> ${this.formatDate(lastActive)}</p>
                             <div class="visibility-control">
