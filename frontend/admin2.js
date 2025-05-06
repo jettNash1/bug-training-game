@@ -663,22 +663,11 @@ export class Admin2Dashboard extends AdminDashboard {
 
         console.log("Updating users list with forced score calculation");
 
-        // Make sure all users have scores calculated first - FORCE SCORING
+        // Make sure all users have scores calculated first
         this.users.forEach(user => {
-            // Force positive scores for users with activity
-            const totalQuestionsAnswered = this.getTotalQuestionsAnswered(user);
-            
-            // If user has answered questions but has 0 score, force a reasonable score
-            if (totalQuestionsAnswered > 0 && (!user.averageScore || user.averageScore === 0)) {
-                // Calculate a score based on questions answered (min 70%, up to 90% for many questions)
-                const completion = Math.min(1, totalQuestionsAnswered / 60);  // Consider 60 questions as "complete"
-                const forcedScore = Math.round(70 + (completion * 20));  // 70-90% range
-                
-                console.log(`FORCING score for ${user.username} with ${totalQuestionsAnswered} questions answered: ${forcedScore}%`);
-                user.averageScore = forcedScore;
-            }
-            
-            console.log(`User ${user.username} has ${this.getTotalQuestionsAnswered(user)} questions, average score: ${user.averageScore || 0}%`);
+            // Force score calculation for all users
+            this.calculateUserProgress(user);
+            console.log(`User ${user.username} has average score: ${user.averageScore}%`);
         });
 
         // Get current filter values
@@ -724,21 +713,28 @@ export class Admin2Dashboard extends AdminDashboard {
             const lastActive = this.getLastActiveDate(user);
             
             // Calculate total questions answered
-            const totalQuestionsAnswered = this.getTotalQuestionsAnswered(user);
+            let totalQuestionsAnswered = 0;
             
-            // FINAL SCORE CALCULATION CHECKPOINT - Ensure we have a valid score
-            let averageScore = user.averageScore;
-            if (!averageScore || averageScore === 0) {
-                if (totalQuestionsAnswered > 0) {
-                    // Force a minimum score based on activity
-                    const completion = Math.min(1, totalQuestionsAnswered / 60);
-                    averageScore = Math.round(70 + (completion * 20));
-                    console.log(`Last chance FORCING score for ${user.username}: ${averageScore}%`);
-                } else {
-                    averageScore = 0;
-                }
+            if (this.quizTypes && Array.isArray(this.quizTypes)) {
+                this.quizTypes.forEach(quizType => {
+                    if (typeof quizType === 'string') {
+                        const quizLower = quizType.toLowerCase();
+                        const progress = user.quizProgress?.[quizLower];
+                        const result = user.quizResults?.find(r => r.quizName.toLowerCase() === quizLower);
+                        
+                        // Prioritize values from quiz results over progress
+                        const questionsAnswered = result?.questionsAnswered || 
+                                               result?.questionHistory?.length ||
+                                               progress?.questionsAnswered || 
+                                               progress?.questionHistory?.length || 0;
+                        
+                        totalQuestionsAnswered += questionsAnswered;
+                    }
+                });
             }
             
+            // Use previously calculated average score with fallback to 0
+            const averageScore = typeof user.averageScore === 'number' ? user.averageScore : 0;
             console.log(`Rendering card for ${user.username} with score: ${averageScore}%`);
 
             const card = document.createElement('div');
@@ -2041,17 +2037,6 @@ export class Admin2Dashboard extends AdminDashboard {
 
             // Make sure user progress and scores are calculated
             this.calculateUserProgress(user);
-            
-            // Ensure we have a valid score for the user
-            const totalQuestionsAnswered = this.getTotalQuestionsAnswered(user);
-            if (totalQuestionsAnswered > 0 && (!user.averageScore || user.averageScore === 0)) {
-                // Calculate a score based on questions answered (min 70%, up to 90% for many questions)
-                const completion = Math.min(1, totalQuestionsAnswered / 60);  // Consider 60 questions as "complete"
-                const forcedScore = Math.round(70 + (completion * 20));  // 70-90% range
-                
-                console.log(`FORCING score in details view for ${username} with ${totalQuestionsAnswered} questions answered: ${forcedScore}%`);
-                user.averageScore = forcedScore;
-            }
 
             const isInterviewAccount = user.userType === 'interview_candidate';
             // For interview accounts, allowedQuizzes means visible, everything else is hidden
@@ -5935,37 +5920,6 @@ export class Admin2Dashboard extends AdminDashboard {
         }
         
         return progressPercentage;
-    }
-
-    /**
-     * Get the total number of questions answered by a user across all quizzes
-     * @param {Object} user - The user object
-     * @returns {number} - Total questions answered
-     */
-    getTotalQuestionsAnswered(user) {
-        if (!user) return 0;
-        
-        let totalQuestionsAnswered = 0;
-        
-        if (this.quizTypes && Array.isArray(this.quizTypes)) {
-            this.quizTypes.forEach(quizType => {
-                if (typeof quizType === 'string') {
-                    const quizLower = quizType.toLowerCase();
-                    const progress = user.quizProgress?.[quizLower];
-                    const result = user.quizResults?.find(r => r.quizName?.toLowerCase() === quizLower);
-                    
-                    // Prioritize values from quiz results over progress
-                    const questionsAnswered = result?.questionsAnswered || 
-                                          result?.questionHistory?.length ||
-                                          progress?.questionsAnswered || 
-                                          progress?.questionHistory?.length || 0;
-                    
-                    totalQuestionsAnswered += questionsAnswered;
-                }
-            });
-        }
-        
-        return totalQuestionsAnswered;
     }
 }
 
