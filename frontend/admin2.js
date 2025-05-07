@@ -705,7 +705,7 @@ export class Admin2Dashboard extends AdminDashboard {
                             </div>
                             <div class="stat">
                                 <span class="stat-label">Total Progress:</span>
-                                <span class="stat-value">${progressDisplay}</span>
+                                <span class="stat-value total-progress-value">${progressDisplay}</span>
                             </div>
                             <div class="stat">
                                 <span class="stat-label">Last Active:</span>
@@ -788,7 +788,7 @@ export class Admin2Dashboard extends AdminDashboard {
                 progressLabel.textContent = 'Total Progress:';
                 
                 const progressValue = document.createElement('span');
-                progressValue.className = 'stat-value';
+                progressValue.className = 'stat-value total-progress-value';
                 // Directly set the value based on questions answered percentage
                 progressValue.textContent = progressDisplay;
                 
@@ -5870,80 +5870,33 @@ document.addEventListener('DOMContentLoaded', () => {
     
     // Add a new, more aggressive fix for the Average Score display
     const forceUpdateAverageScores = () => {
-        // Find all user cards
-        const userCards = document.querySelectorAll('.user-card');
+        // Find all elements with the specific total-progress-value class
+        const totalProgressElements = document.querySelectorAll('.total-progress-value');
         
-        userCards.forEach(card => {
+        totalProgressElements.forEach(scoreValue => {
+            // Find the parent user card
+            const card = scoreValue.closest('.user-card');
+            if (!card) return;
+            
+            // Get the username from the card
             const username = card.querySelector('.username')?.textContent.trim();
             if (!username) return;
             
-            // Find the Average Score or Total Progress elements
-            const scoreLabels = Array.from(card.querySelectorAll('.stat-label')).filter(label => 
-                label.textContent.includes('Average Score') || label.textContent.includes('Total Progress')
-            );
-            
-            scoreLabels.forEach(label => {
-                const scoreValue = label.closest('.stat')?.querySelector('.stat-value');
-                if (!scoreValue) return;
-                
-                // Check if this user card contains the questions answered count
-                const questionsElement = card.querySelector('.stat-label:contains("Questions")');
-                let questionsAnswered = 0;
-                
-                if (questionsElement) {
-                    const questionsValue = questionsElement.closest('.stat')?.querySelector('.stat-value');
-                    if (questionsValue && questionsValue.textContent) {
-                        questionsAnswered = parseInt(questionsValue.textContent, 10) || 0;
-                    }
-                } else {
-                    // If questions element not found, try using the data attribute
-                    const questionsData = card.getAttribute('data-questions');
-                    if (questionsData) {
-                        questionsAnswered = parseInt(questionsData, 10) || 0;
-                    }
-                }
-                
-                // If we found questions answered, calculate progress directly
-                if (questionsAnswered > 0) {
+            // Look for the questions value in this card
+            const questionsElement = card.querySelector('.stat-value:not(.total-progress-value)');
+            if (questionsElement && questionsElement.textContent) {
+                const questionsValue = parseInt(questionsElement.textContent, 10);
+                if (!isNaN(questionsValue)) {
+                    // Calculate progress as a percentage of the total possible questions
                     const totalPossibleQuestions = 375; // 25 quizzes * 15 questions
-                    const progress = (questionsAnswered / totalPossibleQuestions) * 100;
+                    const progress = (questionsValue / totalPossibleQuestions) * 100;
                     const progressDisplay = `${progress.toFixed(1)}%`;
                     
-                    console.log(`Direct calculation for ${username}: ${questionsAnswered}/${totalPossibleQuestions} = ${progressDisplay}`);
+                    // Set the value directly
+                    console.log(`Direct fix for ${username}: ${questionsValue}/${totalPossibleQuestions} = ${progressDisplay}`);
                     scoreValue.textContent = progressDisplay;
-                } else {
-                    // Try to find the user in the dashboard data
-                    const user = dashboard.users?.find(u => u.username === username);
-                    if (user) {
-                        // Count questions answered directly
-                        let totalQuestions = 0;
-                        if (dashboard.quizTypes && Array.isArray(dashboard.quizTypes)) {
-                            dashboard.quizTypes.forEach(quizType => {
-                                if (typeof quizType === 'string') {
-                                    const progress = user.quizProgress?.[quizType.toLowerCase()];
-                                    const result = user.quizResults?.find(r => r.quizName.toLowerCase() === quizType.toLowerCase());
-                                    
-                                    const questionCount = result?.questionsAnswered || 
-                                                      result?.questionHistory?.length ||
-                                                      progress?.questionsAnswered || 
-                                                      progress?.questionHistory?.length || 0;
-                                    
-                                    totalQuestions += questionCount;
-                                }
-                            });
-                        }
-                        
-                        if (totalQuestions > 0) {
-                            const totalPossibleQuestions = 375;
-                            const progress = (totalQuestions / totalPossibleQuestions) * 100;
-                            const progressDisplay = `${progress.toFixed(1)}%`;
-                            
-                            console.log(`Calculated progress for ${username}: ${totalQuestions}/${totalPossibleQuestions} = ${progressDisplay}`);
-                            scoreValue.textContent = progressDisplay;
-                        }
-                    }
                 }
-            });
+            }
         });
     };
     
@@ -5973,15 +5926,71 @@ document.addEventListener('DOMContentLoaded', () => {
         setTimeout(forceUpdateAverageScores, 100);
     };
     
-    // Add CSS to ensure the score is visible
+    // Add CSS to ensure the score is visible and to highlight the Total Progress values
     const style = document.createElement('style');
     style.textContent = `
         .stat-value {
             visibility: visible !important;
             opacity: 1 !important;
         }
+        
+        /* Specific styling for Total Progress values */
+        .total-progress-value {
+            font-weight: bold !important;
+            color: #3498db !important;
+        }
     `;
     document.head.appendChild(style);
+    
+    // Also fix the main dashboard Average Completion stat
+    const updateAverageCompletionStat = () => {
+        const averageCompletionElement = document.getElementById('averageCompletion');
+        if (averageCompletionElement) {
+            let totalQuestions = 0;
+            let totalUsers = 0;
+            
+            if (dashboard.users && Array.isArray(dashboard.users)) {
+                dashboard.users.forEach(user => {
+                    // Count questions for each user
+                    let userQuestions = 0;
+                    
+                    if (dashboard.quizTypes && Array.isArray(dashboard.quizTypes)) {
+                        dashboard.quizTypes.forEach(quizType => {
+                            if (typeof quizType === 'string') {
+                                const progress = user.quizProgress?.[quizType.toLowerCase()];
+                                const result = user.quizResults?.find(r => r.quizName.toLowerCase() === quizType.toLowerCase());
+                                
+                                const questionsAnswered = result?.questionsAnswered || 
+                                                      result?.questionHistory?.length ||
+                                                      progress?.questionsAnswered || 
+                                                      progress?.questionHistory?.length || 0;
+                                
+                                userQuestions += questionsAnswered;
+                            }
+                        });
+                    }
+                    
+                    totalQuestions += userQuestions;
+                    totalUsers++;
+                });
+            }
+            
+            if (totalUsers > 0) {
+                // Calculate average questions answered per user
+                const avgQuestions = totalQuestions / totalUsers;
+                // Convert to percentage of total possible questions
+                const totalPossibleQuestions = 375;
+                const avgPercentage = (avgQuestions / totalPossibleQuestions) * 100;
+                
+                averageCompletionElement.textContent = `${avgPercentage.toFixed(1)}%`;
+                console.log(`Updated Average Completion stat to ${avgPercentage.toFixed(1)}%`);
+            }
+        }
+    };
+    
+    // Run the average completion update periodically
+    setTimeout(updateAverageCompletionStat, 2000);
+    setInterval(updateAverageCompletionStat, 5000);
     
     // ... existing code ...
 });
