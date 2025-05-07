@@ -542,6 +542,7 @@ export class Admin2Dashboard extends AdminDashboard {
         // Create and append user cards
         filteredUsers.forEach(user => {
             const progress = this.calculateQuestionsAnsweredPercent(user);
+            const averageScore = this.calculateAverageScore(user);
             const lastActive = this.getLastActiveDate(user);
             
             // Calculate total questions answered and XP across all quizzes
@@ -592,6 +593,10 @@ export class Admin2Dashboard extends AdminDashboard {
                                 <span class="stat-value">${totalQuestionsAnswered}</span>
                             </div>
                             <div class="stat">
+                                <span class="stat-label">Average Score:</span>
+                                <span class="stat-value">${averageScore.toFixed(1)}%</span>
+                            </div>
+                            <div class="stat">
                                 <span class="stat-label">Last Active:</span>
                                 <span class="stat-value">${this.formatDate(lastActive)}</span>
                             </div>
@@ -627,8 +632,12 @@ export class Admin2Dashboard extends AdminDashboard {
                         </div>
                         <div class="user-stats">
                             <div class="stat">
-                                <span class="stat-label">Questions:</span>
+                                <span class="stat-label">Questions Answered:</span>
                                 <span class="stat-value">${totalQuestionsAnswered}</span>
+                            </div>
+                            <div class="stat">
+                                <span class="stat-label">Average Score:</span>
+                                <span class="stat-value">${averageScore.toFixed(1)}%</span>
                             </div>
                             <div class="stat">
                                 <span class="stat-label">Last Active:</span>
@@ -5659,6 +5668,12 @@ export class Admin2Dashboard extends AdminDashboard {
 
         // Calculate progress as percentage of total possible questions
         return (totalQuestionsAnswered / totalPossibleQuestions) * 100;
+    }
+
+    // Calculate the average score for a user based on total questions answered percentage
+    calculateAverageScore(user) {
+        if (!user) return 0;
+        return this.calculateQuestionsAnsweredPercent(user);
     }
 }
 
