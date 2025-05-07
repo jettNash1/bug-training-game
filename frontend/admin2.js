@@ -5924,7 +5924,21 @@ document.addEventListener('DOMContentLoaded', () => {
         await originalUpdateUsersList.apply(this, arguments);
         console.log("updateUsersList completed, forcing average score update");
         setTimeout(forceUpdateAverageScores, 100);
+        updateAverageCompletionStat(this); // <-- Call here after users list is updated
     };
+
+    // Remove the periodic update for average completion stat
+    // setTimeout(updateAverageCompletionStat, 2000);
+    // setInterval(updateAverageCompletionStat, 5000);
+
+    // Patch quiz types loading to also update the stat
+    const originalLoadQuizTypes = Admin2Dashboard.prototype.loadQuizTypes;
+    if (originalLoadQuizTypes) {
+        Admin2Dashboard.prototype.loadQuizTypes = async function() {
+            await originalLoadQuizTypes.apply(this, arguments);
+            updateAverageCompletionStat(this);
+        };
+    }
     
     // Add CSS to ensure the score is visible and to highlight the Total Progress values
     const style = document.createElement('style');
