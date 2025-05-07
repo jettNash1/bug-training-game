@@ -638,10 +638,25 @@ class AdminDashboard {
         if (!user) return 0;
 
         let totalQuestionsAnswered = 0;
-        const totalPossibleQuestions = this.quizTypes.length * 15; // 15 questions per quiz
+        let totalScore = 0;
+        let quizCount = 0;
+        
+        // Determine which quizzes should be included for this user
+        const isInterviewAccount = user.userType === 'interview_candidate';
+        const allowedQuizzes = (user.allowedQuizzes || []).map(q => q.toLowerCase());
+        const hiddenQuizzes = (user.hiddenQuizzes || []).map(q => q.toLowerCase());
 
         // Sum up questions answered across all quizzes
         this.quizTypes.forEach(quizType => {
+            const quizLower = quizType.toLowerCase();
+            
+            // Skip quizzes that should be hidden for this user
+            if (isInterviewAccount && !allowedQuizzes.includes(quizLower)) {
+                return; // Skip quizzes not allowed for interview accounts
+            } else if (!isInterviewAccount && hiddenQuizzes.includes(quizLower)) {
+                return; // Skip quizzes that are hidden for regular accounts
+            }
+            
             const progress = user.quizProgress?.[quizType.toLowerCase()];
             const result = user.quizResults?.find(r => r.quizName.toLowerCase() === quizType.toLowerCase());
             
@@ -652,18 +667,47 @@ class AdminDashboard {
                                     progress?.questionHistory?.length || 0;
             
             totalQuestionsAnswered += questionsAnswered;
+            
+            // Add score for this quiz if available
+            if (result?.scorePercentage) {
+                totalScore += result.scorePercentage;
+                quizCount++;
+            } else if (progress?.scorePercentage) {
+                totalScore += progress.scorePercentage;
+                quizCount++;
+            }
         });
 
-        // Calculate progress as percentage of total possible questions
-        const progress = (totalQuestionsAnswered / totalPossibleQuestions) * 100;
+        // Calculate average score based on quizzes with scores
+        const averageScore = quizCount > 0 ? totalScore / quizCount : 0;
+        
+        // For the progress percentage, we need to count visible quizzes
+        const visibleQuizTypes = this.quizTypes.filter(quizType => {
+            const quizLower = quizType.toLowerCase();
+            if (isInterviewAccount) {
+                return allowedQuizzes.includes(quizLower);
+            } else {
+                return !hiddenQuizzes.includes(quizLower);
+            }
+        });
+        
+        // If no quizzes are visible, return 0 progress
+        if (visibleQuizTypes.length === 0) return 0;
+        
+        // Calculate progress as percentage of total possible questions in visible quizzes
+        const totalPossibleQuestions = visibleQuizTypes.length * 15; // 15 questions per quiz
+        const progress = totalPossibleQuestions > 0 ? 
+            (totalQuestionsAnswered / totalPossibleQuestions) * 100 : 0;
 
         /*console.log(`Progress calculation for ${user.username}:`, {
             totalQuestionsAnswered,
             totalPossibleQuestions,
-            progress
+            progress,
+            averageScore
         });*/
 
-        return progress;
+        // Return the average score instead of the progress percentage
+        return averageScore;
     }
 
     // Helper method to get last active date
