@@ -591,7 +591,7 @@ export class Admin2Dashboard extends AdminDashboard {
                                 <span class="stat-value">${totalQuestionsAnswered}</span>
                             </div>
                             <div class="stat">
-                                <span class="stat-label">Overall Progress:</span>
+                                <span class="stat-label">Average Score:</span>
                                 <span class="stat-value">${progress.toFixed(1)}%</span>
                             </div>
                             <div class="stat">
@@ -634,7 +634,7 @@ export class Admin2Dashboard extends AdminDashboard {
                                 <span class="stat-value">${totalQuestionsAnswered}</span>
                             </div>
                             <div class="stat">
-                                <span class="stat-label">Overall Progress:</span>
+                                <span class="stat-label">Average Score:</span>
                                 <span class="stat-value">${progress.toFixed(1)}%</span>
                             </div>
                             <div class="stat">
@@ -1930,7 +1930,7 @@ export class Admin2Dashboard extends AdminDashboard {
                             <div class="info-value">${this.formatDate(this.getLastActiveDate(user))}</div>
                         </div>
                         <div class="info-row">
-                            <div class="info-label">Overall Progress:</div>
+                            <div class="info-label">Average Score:</div>
                             <div class="info-value">${this.calculateUserProgress(user).toFixed(1)}%</div>
                         </div>
                     </div>
