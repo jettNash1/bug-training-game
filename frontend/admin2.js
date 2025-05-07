@@ -5887,44 +5887,15 @@ document.addEventListener('DOMContentLoaded', () => {
                 const scoreValue = label.closest('.stat')?.querySelector('.stat-value');
                 if (!scoreValue) return;
                 
-                // If already showing a non-zero value, no need to update
-                if (scoreValue.textContent !== '0%') return;
-                
-                // Look for the progress in the console logs first (most accurate)
-                console.log(`Fixing score for ${username}...`);
-                
-                // Direct approach: use the data from the card if available
-                const progressData = card.getAttribute('data-progress');
-                if (progressData && progressData !== '0%') {
-                    console.log(`Using data-progress attribute: ${progressData}`);
-                    scoreValue.textContent = progressData;
-                    return;
-                }
-                
+                // Always update the value to ensure consistency with the details panel
                 // Find the user in dashboard data
                 const user = dashboard.users?.find(u => u.username === username);
                 if (user) {
+                    // This is the exact same method used in the details panel
                     const calculatedProgress = dashboard.calculateQuestionsAnsweredPercent(user);
-                    if (calculatedProgress > 0) {
-                        const progressDisplay = `${calculatedProgress.toFixed(1)}%`;
-                        console.log(`Calculated progress for ${username}: ${progressDisplay}`);
-                        scoreValue.textContent = progressDisplay;
-                        return;
-                    }
-                }
-                
-                // Last resort: look for progress logs in the DOM
-                const progressRegex = new RegExp(`User ${username}: progress=([\\d.]+)%`);
-                const allDivs = document.querySelectorAll('div');
-                
-                for (const div of allDivs) {
-                    if (!div.textContent) continue;
-                    const match = div.textContent.match(progressRegex);
-                    if (match && match[1]) {
-                        console.log(`Found progress in logs: ${match[1]}%`);
-                        scoreValue.textContent = `${match[1]}%`;
-                        break;
-                    }
+                    const progressDisplay = `${calculatedProgress.toFixed(1)}%`;
+                    console.log(`Setting progress for ${username} to ${progressDisplay}`);
+                    scoreValue.textContent = progressDisplay;
                 }
             });
         });
