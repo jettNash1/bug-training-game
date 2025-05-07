@@ -642,6 +642,7 @@ export class Admin2Dashboard extends AdminDashboard {
 
         // Create and append user cards
         filteredUsers.forEach(user => {
+            // Calculate the progress using the same method as in showUserDetails
             const progress = this.calculateQuestionsAnsweredPercent(user);
             const lastActive = this.getLastActiveDate(user);
             
@@ -676,8 +677,8 @@ export class Admin2Dashboard extends AdminDashboard {
             const card = document.createElement('div');
             card.className = 'user-card';
             
-            // Use progress value directly for display - ensure it's not "0%" unless truly zero
-            const progressDisplay = progress > 0 ? `${progress.toFixed(1)}%` : '0%';
+            // Format the progress value - ensure it's consistent with the user details panel
+            const progressDisplay = `${progress.toFixed(1)}%`;
             
             // Set a data attribute on the card to store the username and progress for easy reference
             card.setAttribute('data-username', user.username);
@@ -703,7 +704,7 @@ export class Admin2Dashboard extends AdminDashboard {
                             </div>
                             <div class="stat">
                                 <span class="stat-label">Total Progress:</span>
-                                <span class="stat-value" data-real-score="${progressDisplay}">${progressDisplay}</span>
+                                <span class="stat-value">${progressDisplay}</span>
                             </div>
                             <div class="stat">
                                 <span class="stat-label">Last Active:</span>
@@ -787,11 +788,8 @@ export class Admin2Dashboard extends AdminDashboard {
                 
                 const progressValue = document.createElement('span');
                 progressValue.className = 'stat-value';
+                // Directly set the value to match what's shown in user details panel
                 progressValue.textContent = progressDisplay;
-                progressValue.setAttribute('data-real-score', progressDisplay);
-                // Ensure visibility
-                progressValue.style.color = 'black';
-                progressValue.style.visibility = 'visible';
                 
                 progressStat.appendChild(progressLabel);
                 progressStat.appendChild(progressValue);
