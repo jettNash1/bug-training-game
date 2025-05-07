@@ -5948,7 +5948,9 @@ document.addEventListener('DOMContentLoaded', () => {
             const statElements = card.querySelectorAll('.stat');
             statElements.forEach(stat => {
                 const labelEl = stat.querySelector('.stat-label');
-                if (!labelEl || labelEl.textContent.trim() !== 'Total Progress') return;
+                // FIX: The condition was wrong, it was checking "label text is not equal" when it should check "label text is equal"
+                if (!labelEl) return;
+                if (labelEl.textContent.trim() !== 'Total Progress') return;
                 
                 const valueEl = stat.querySelector('.stat-value');
                 if (!valueEl) return;
