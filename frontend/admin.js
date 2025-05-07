@@ -633,51 +633,39 @@ class AdminDashboard {
         this.updateStatistics();
     }
 
-    // Helper method to calculate user progress
+    // Helper method to calculate user progress (average completion %)
     calculateUserProgress(user) {
         if (!user) return 0;
 
-        let totalQuestionsAnswered = 0;
-        let totalScore = 0;
-        let quizCount = 0;
-        
         // Determine which quizzes should be included for this user
         const isInterviewAccount = user.userType === 'interview_candidate';
         const allowedQuizzes = (user.allowedQuizzes || []).map(q => q.toLowerCase());
         const hiddenQuizzes = (user.hiddenQuizzes || []).map(q => q.toLowerCase());
 
-        // Sum up questions answered and scores across all visible quizzes
+        let totalQuestionsAnswered = 0;
+        let visibleQuizCount = 0;
+
         this.quizTypes.forEach(quizType => {
             const quizLower = quizType.toLowerCase();
-            // Skip quizzes that should be hidden for this user
-            if (isInterviewAccount && !allowedQuizzes.includes(quizLower)) {
-                return;
-            } else if (!isInterviewAccount && hiddenQuizzes.includes(quizLower)) {
-                return;
+            // Only include visible quizzes
+            if (isInterviewAccount) {
+                if (!allowedQuizzes.includes(quizLower)) return;
+            } else {
+                if (hiddenQuizzes.includes(quizLower)) return;
             }
+            visibleQuizCount++;
             const progress = user.quizProgress?.[quizLower];
             const result = user.quizResults?.find(r => r.quizName.toLowerCase() === quizLower);
             // Prioritize values from quiz results over progress
-            const questionsAnswered = result?.questionsAnswered || 
-                                    result?.questionHistory?.length ||
-                                    progress?.questionsAnswered || 
-                                    progress?.questionHistory?.length || 0;
+            const questionsAnswered = result?.questionsAnswered ||
+                                      result?.questionHistory?.length ||
+                                      progress?.questionsAnswered ||
+                                      progress?.questionHistory?.length || 0;
             totalQuestionsAnswered += questionsAnswered;
-            // Use scorePercentage or score, fallback to 0
-            let score =
-                (typeof result?.scorePercentage === 'number' ? result.scorePercentage :
-                typeof result?.score === 'number' ? result.score :
-                typeof progress?.scorePercentage === 'number' ? progress.scorePercentage :
-                typeof progress?.score === 'number' ? progress.score :
-                null);
-            if (score !== null && !isNaN(score)) {
-                totalScore += score;
-                quizCount++;
-            }
         });
-        // Calculate average score based on quizzes with scores
-        const averageScore = quizCount > 0 ? totalScore / quizCount : 0;
-        return averageScore;
+        const totalPossibleQuestions = visibleQuizCount * 15;
+        const completionPercent = totalPossibleQuestions > 0 ? (totalQuestionsAnswered / totalPossibleQuestions) * 100 : 0;
+        return completionPercent;
     }
 
     // Helper method to get last active date
