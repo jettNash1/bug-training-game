@@ -5,98 +5,6 @@ export class Admin2Dashboard extends AdminDashboard {
         super();
         console.log("Initializing Admin2Dashboard...");
         
-        // Add this direct event listener to fix the Average Score fields showing 0%
-        document.addEventListener('DOMContentLoaded', () => {
-            // Simple fix that directly replaces "Average Score: 0%" with the correct value
-            const fixAverageScoreFields = () => {
-                // This is the simplest possible approach - find all cards with 0% scores
-                const averageScoreElements = document.querySelectorAll('.stat-value');
-                
-                averageScoreElements.forEach(scoreElement => {
-                    // Only process elements showing 0%
-                    if (scoreElement.textContent !== '0%') return;
-                    
-                    // Make sure this is actually an Average Score field
-                    const statLabel = scoreElement.closest('.stat')?.querySelector('.stat-label');
-                    if (!statLabel) return;
-                    
-                    if (statLabel.textContent !== 'Average Score:' && 
-                        statLabel.textContent !== 'Total Progress:') return;
-                    
-                    // Find the username for this card
-                    const userCard = scoreElement.closest('.user-card');
-                    if (!userCard) return;
-                    
-                    const usernameElement = userCard.querySelector('.username');
-                    if (!usernameElement) return;
-                    
-                    const username = usernameElement.textContent.trim();
-                    
-                    // Find the progress element in the same card (which is working properly)
-                    const progressElement = userCard.querySelector('.stat-label');
-                    if (progressElement && progressElement.textContent === 'Progress:') {
-                        const progressValueElement = progressElement.closest('.stat')?.querySelector('.stat-value');
-                        if (progressValueElement && progressValueElement.textContent !== '0%') {
-                            // Use the working Progress value
-                            scoreElement.textContent = progressValueElement.textContent;
-                            console.log(`Fixed ${username}'s Average Score/Total Progress using Progress value: ${progressValueElement.textContent}`);
-                            return;
-                        }
-                    }
-                    
-                    // Second attempt: use the data attribute on the user card
-                    const progressFromAttribute = userCard.getAttribute('data-progress');
-                    if (progressFromAttribute && progressFromAttribute !== '0%') {
-                        scoreElement.textContent = progressFromAttribute;
-                        console.log(`Fixed ${username}'s Average Score/Total Progress using card attribute: ${progressFromAttribute}`);
-                        return;
-                    }
-                    
-                    // Finally, check the dashboard instance directly
-                    if (window.adminDashboard && window.adminDashboard.users) {
-                        const user = window.adminDashboard.users.find(u => u.username === username);
-                        if (user) {
-                            const progress = window.adminDashboard.calculateQuestionsAnsweredPercent(user);
-                            if (progress > 0) {
-                                const progressDisplay = `${progress.toFixed(1)}%`;
-                                scoreElement.textContent = progressDisplay;
-                                console.log(`Fixed ${username}'s Average Score/Total Progress using dashboard: ${progressDisplay}`);
-                            }
-                        }
-                    }
-                });
-            };
-            
-            // Run immediately and periodically
-            const applyFix = () => {
-                console.log("Applying Average Score/Total Progress fix");
-                fixAverageScoreFields();
-                setTimeout(fixAverageScoreFields, 500);
-                setTimeout(fixAverageScoreFields, 1000);
-                setTimeout(fixAverageScoreFields, 2000);
-            };
-            
-            // Apply immediately
-            applyFix();
-            
-            // Set up a MutationObserver to watch for changes to the usersList
-            const observer = new MutationObserver((mutations) => {
-                console.log("User list changed, applying Average Score/Total Progress fix");
-                applyFix();
-            });
-            
-            // Start observing when the container is available
-            setTimeout(() => {
-                const usersList = document.getElementById('usersList');
-                if (usersList) {
-                    observer.observe(usersList, { 
-                        childList: true, 
-                        subtree: true 
-                    });
-                }
-            }, 1000);
-        });
-        
         // Store the dashboard instance globally for easier access
         window.adminDashboard = this;
         
@@ -583,8 +491,8 @@ export class Admin2Dashboard extends AdminDashboard {
     updateStatisticsDisplay(stats) {
         const totalUsersElement = document.getElementById('totalUsers');
         const activeUsersElement = document.getElementById('activeUsers');
+        // Rename Average Completion to Overall Progress
         const averageCompletionElement = document.getElementById('averageCompletion');
-
         if (totalUsersElement) {
             totalUsersElement.textContent = stats.totalUsers || 0;
         }
@@ -593,6 +501,12 @@ export class Admin2Dashboard extends AdminDashboard {
         }
         if (averageCompletionElement) {
             averageCompletionElement.textContent = `${(stats.averageCompletion || 0).toFixed(1)}%`;
+            // Also update the label if present
+            const statCard = averageCompletionElement.closest('.stat-card');
+            if (statCard) {
+                const h3 = statCard.querySelector('h3');
+                if (h3) h3.textContent = 'Overall Progress';
+            }
         }
     }
     
@@ -601,6 +515,10 @@ export class Admin2Dashboard extends AdminDashboard {
         if (!container) return;
 
         console.log("Updating users list...");
+        console.log("Current quizTypes:", this.quizTypes);
+        if (!this.quizTypes || !Array.isArray(this.quizTypes) || this.quizTypes.length === 0) {
+            console.error("quizTypes is empty or not set! Progress will always be 0.");
+        }
 
         // Get current filter values
         const searchQuery = document.getElementById('userSearch')?.value.toLowerCase() || '';
