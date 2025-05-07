@@ -545,6 +545,7 @@ export class Admin2Dashboard extends AdminDashboard {
         // Create and append user cards
         filteredUsers.forEach(user => {
             const progress = this.calculateUserProgress(user);
+            const averageScore = this.calculateAverageScore(user);
             const lastActive = this.getLastActiveDate(user);
             
             // Calculate total questions answered and XP across all quizzes
@@ -592,7 +593,7 @@ export class Admin2Dashboard extends AdminDashboard {
                             </div>
                             <div class="stat">
                                 <span class="stat-label">Average Score:</span>
-                                <span class="stat-value">${progress.toFixed(1)}%</span>
+                                <span class="stat-value">${averageScore.toFixed(1)}%</span>
                             </div>
                             <div class="stat">
                                 <span class="stat-label">Last Active:</span>
@@ -635,7 +636,7 @@ export class Admin2Dashboard extends AdminDashboard {
                             </div>
                             <div class="stat">
                                 <span class="stat-label">Average Score:</span>
-                                <span class="stat-value">${progress.toFixed(1)}%</span>
+                                <span class="stat-value">${averageScore.toFixed(1)}%</span>
                             </div>
                             <div class="stat">
                                 <span class="stat-label">Last Active:</span>
@@ -1931,7 +1932,7 @@ export class Admin2Dashboard extends AdminDashboard {
                         </div>
                         <div class="info-row">
                             <div class="info-label">Average Score:</div>
-                            <div class="info-value">${this.calculateUserProgress(user).toFixed(1)}%</div>
+                            <div class="info-value">${this.calculateAverageScore(user).toFixed(1)}%</div>
                         </div>
                     </div>
                 </div>
@@ -5637,6 +5638,54 @@ export class Admin2Dashboard extends AdminDashboard {
             
             throw error;
         }
+    }
+
+    // Calculate average score across all attempted quizzes
+    calculateAverageScore(user) {
+        if (!user) return 0;
+        
+        let totalScore = 0;
+        let attemptedQuizzes = 0;
+        
+        if (this.quizTypes && Array.isArray(this.quizTypes)) {
+            this.quizTypes.forEach(quizType => {
+                if (typeof quizType === 'string') {
+                    const quizLower = quizType.toLowerCase();
+                    // Check if quiz is visible to the user (not hidden)
+                    const isHidden = user.hiddenQuizzes && 
+                                    user.hiddenQuizzes.map(q => q.toLowerCase()).includes(quizLower);
+                    const isAllowed = user.allowedQuizzes && 
+                                    user.allowedQuizzes.map(q => q.toLowerCase()).includes(quizLower);
+                    const isInterviewUser = user.userType === 'interview_candidate';
+                    
+                    // Skip if quiz is not visible to user
+                    // For interview users: only include if in allowedQuizzes
+                    // For regular users: include unless in hiddenQuizzes
+                    const isVisible = isInterviewUser ? isAllowed : !isHidden;
+                    if (!isVisible) return;
+                    
+                    // Get progress and results data
+                    const progress = user.quizProgress?.[quizLower];
+                    const result = user.quizResults?.find(r => r.quizName.toLowerCase() === quizLower);
+                    
+                    // Prioritize score from quiz results over progress
+                    const score = result?.score || progress?.score || 0;
+                    const questionsAnswered = result?.questionsAnswered || 
+                                           result?.questionHistory?.length ||
+                                           progress?.questionsAnswered || 
+                                           progress?.questionHistory?.length || 0;
+                    
+                    // Only count quizzes that have been started
+                    if (questionsAnswered > 0) {
+                        totalScore += score;
+                        attemptedQuizzes++;
+                    }
+                }
+            });
+        }
+        
+        // Calculate average score from all attempted quizzes
+        return attemptedQuizzes > 0 ? totalScore / attemptedQuizzes : 0;
     }
 }
 
