@@ -5869,643 +5869,102 @@ export class Admin2Dashboard extends AdminDashboard {
 document.addEventListener('DOMContentLoaded', () => {
     const dashboard = new Admin2Dashboard();
     
-    // Direct fix targeting the exact DOM structure in the screenshot
-    function fixExactZeroPercentNodes() {
-        // Find all span.class="stat-value" nodes with text content 0%
-        const scoreSpans = document.querySelectorAll('span.stat-value');
-        
-        scoreSpans.forEach(span => {
-            if (span.textContent === '0%') {
-                // Find the parent structure to ensure we're looking at a Total Progress element
-                const parentStat = span.closest('.stat');
-                if (!parentStat) return;
-                
-                const labelSpan = parentStat.querySelector('span.stat-label');
-                if (!labelSpan || !labelSpan.textContent.includes('Total Progress')) return;
-                
-                // Find the containing user card
-                const userCard = span.closest('.user-card');
-                if (!userCard) return;
-                
-                // Get the username
-                const usernameElement = userCard.querySelector('.username');
-                if (!usernameElement) return;
-                
-                const username = usernameElement.textContent.trim();
-                
-                // Find the user and calculate the correct score
-                const user = dashboard.users?.find(u => u.username === username);
-                if (!user) return;
-                
-                const correctScore = dashboard.calculateQuestionsAnsweredPercent(user);
-                console.log(`Direct DOM fix for ${username}: Replacing 0% with ${correctScore.toFixed(1)}%`);
-                
-                // Replace the content
-                span.textContent = `${correctScore.toFixed(1)}%`;
-                
-                // Also directly modify the DOM element style to make sure it's visible
-                span.style.color = 'black';
-                span.style.visibility = 'visible';
-            }
-        });
-    }
-    
-    // Run the fix immediately after load and then periodically
-    setTimeout(() => {
-        fixExactZeroPercentNodes();
-        
-        // Set up a periodic check
-        setInterval(fixExactZeroPercentNodes, 500);
-    }, 100);
-    
-    // Direct fix for the "0%" Total Progress issue
-    function fixZeroPercentScores() {
-        // Find all user cards in the DOM
-        const userCards = document.querySelectorAll('.user-card');
-        
-        userCards.forEach(card => {
-            // Get the username from the card
-            const username = card.querySelector('.username')?.textContent?.trim();
-            if (!username) return;
-            
-            // Find all stat-value spans with "0%" content
-            const zeroSpans = card.querySelectorAll('span.stat-value');
-            zeroSpans.forEach(span => {
-                // Check if this is the Total Progress span
-                const label = span.closest('.stat')?.querySelector('.stat-label');
-                if (label && label.textContent.includes('Total Progress') && span.textContent === '0%') {
-                    // Find the user object
-                    const user = dashboard.users?.find(u => u.username === username);
-                    if (user) {
-                        // Calculate the correct percentage
-                        const correctPercentage = dashboard.calculateQuestionsAnsweredPercent(user);
-                        console.log(`Fixing score for ${username}: 0% → ${correctPercentage.toFixed(1)}%`);
-                        // Update the span text
-                        span.textContent = `${correctPercentage.toFixed(1)}%`;
-                    }
-                }
-            });
-        });
-    }
-    
-    // Run the fix after initial load and periodically
-    setTimeout(fixZeroPercentScores, 500);  // Initial fix
-    setInterval(fixZeroPercentScores, 1000); // Keep checking periodically
-    
-    // Add a CSS injection to directly target any remaining 0% values
-    const styleOverride = document.createElement('style');
-    styleOverride.textContent = `
-        /* Override for Total Progress 0% values */
-        .stat-value[data-real-score]:not([data-real-score="0%"]) {
-            position: relative;
-        }
-        
-        .stat-value[data-real-score]:not([data-real-score="0%"]):empty::after,
-        .stat-value[data-real-score]:not([data-real-score="0%"])[data-real-score]:empty::after {
-            content: attr(data-real-score);
-            position: absolute;
-            left: 0;
-            top: 0;
-        }
-        
-        /* Hide 0% specifically in Total Progress stats */
-        .stat:has(.stat-label:has(+.stat-value[data-real-score="0%"])) .stat-value,
-        .stat:has(.stat-label:contains("Total Progress")) .stat-value:contains("0%") {
-            visibility: hidden;
-        }
-    `;
-    document.head.appendChild(styleOverride);
-    
-    // Add a more robust way to ensure correct scores are shown
-    const scriptsForDOM = document.createElement('script');
-    scriptsForDOM.textContent = `
-        // Patch function to fix zero values
-        function patchZeroPercentValues() {
-            // Get all stat-value elements
-            const statValues = document.querySelectorAll('.stat-value');
-            
-            statValues.forEach(span => {
-                if (span.textContent === '0%') {
-                    // Find the parent stat element
-                    const parentStat = span.closest('.stat');
-                    if (!parentStat) return;
-                    
-                    // Check if this is a Total Progress stat
-                    const labelSpan = parentStat.querySelector('.stat-label');
-                    if (!labelSpan || !labelSpan.textContent.includes('Total Progress')) return;
-                    
-                    // Get the username from the card
-                    const userCard = span.closest('.user-card');
-                    if (!userCard) return;
-                    
-                    const usernameEl = userCard.querySelector('.username');
-                    if (!usernameEl) return;
-                    
-                    const username = usernameEl.textContent.trim();
-                    
-                    // Use the data-real-score attribute if available
-                    const realScore = span.getAttribute('data-real-score');
-                    if (realScore && realScore !== '0%') {
-                        span.textContent = realScore;
-                        return;
-                    }
-                    
-                    // Log for debugging that we have a problematic score
-                    console.log('Found a problematic 0% score for: ' + username);
-                    
-                    // Force an update by dispatching a custom event that our code can listen for
-                    document.dispatchEvent(new CustomEvent('force-score-update', {
-                        detail: { username }
-                    }));
-                }
-            });
-        }
-        
-        // Run immediately and periodically
-        patchZeroPercentValues();
-        setInterval(patchZeroPercentValues, 800);
-    `;
-    document.head.appendChild(scriptsForDOM);
-
-    // Add a direct fix that will forcefully update all Total Progress spans
-    const updateAllTotalProgressSpans = () => {
+    // Add a new, more aggressive fix for the Average Score display
+    const forceUpdateAverageScores = () => {
         // Find all user cards
         const userCards = document.querySelectorAll('.user-card');
-        console.log(`Force updating ${userCards.length} user cards...`);
         
         userCards.forEach(card => {
-            // Get the username
-            const usernameEl = card.querySelector('.username');
-            if (!usernameEl) return;
-            
-            const username = usernameEl.textContent.trim();
-            
-            // Find the user object
-            const user = dashboard.users?.find(u => u.username === username);
-            if (!user) return;
-            
-            // Calculate the correct progress
-            const correctProgress = dashboard.calculateQuestionsAnsweredPercent(user);
-            const progressDisplay = `${correctProgress.toFixed(1)}%`;
-            
-            // Find all stat elements
-            const statElements = card.querySelectorAll('.stat');
-            statElements.forEach(stat => {
-                const labelEl = stat.querySelector('.stat-label');
-                // FIX: The condition was wrong, it was checking "label text is not equal" when it should check "label text is equal"
-                if (!labelEl) return;
-                if (labelEl.textContent.trim() !== 'Total Progress') return;
-                
-                const valueEl = stat.querySelector('.stat-value');
-                if (!valueEl) return;
-                
-                console.log(`Forcing update for ${username}: ${valueEl.textContent} → ${progressDisplay}`);
-                
-                // Update the content directly
-                valueEl.textContent = progressDisplay;
-                valueEl.setAttribute('data-real-score', progressDisplay);
-                valueEl.style.color = 'black';
-                valueEl.style.visibility = 'visible';
-                valueEl.style.display = 'inline-block';
-            });
-        });
-    };
-
-    // Run this fix immediately and periodically
-    setTimeout(updateAllTotalProgressSpans, 100);
-    setInterval(updateAllTotalProgressSpans, 1000);
-
-    // Add a direct mutation observer to watch for changes to the usersList
-    const userListObserver = new MutationObserver((mutations) => {
-        console.log('User list mutation detected, updating Total Progress values...');
-        setTimeout(updateAllTotalProgressSpans, 50);
-    });
-
-    setTimeout(() => {
-        const usersList = document.getElementById('usersList');
-        if (usersList) {
-            userListObserver.observe(usersList, { 
-                childList: true, 
-                subtree: true,
-                characterData: true,
-                attributes: true
-            });
-        }
-    }, 500);
-
-    // Add event listener for the custom event
-    document.addEventListener('force-score-update', (event) => {
-        const username = event.detail?.username;
-        if (!username) return;
-        
-        console.log('Force updating score for: ' + username);
-        
-        // Find the user in our data
-        const user = dashboard.users?.find(u => u.username === username);
-        if (!user) return;
-        
-        // Calculate the correct score
-        const correctScore = dashboard.calculateQuestionsAnsweredPercent(user);
-        
-        // Find the card in the DOM
-        const userCards = document.querySelectorAll('.user-card');
-        userCards.forEach(card => {
-            const cardUsername = card.querySelector('.username')?.textContent.trim();
-            if (cardUsername !== username) return;
-            
-            // Find the Total Progress stat
-            const stats = card.querySelectorAll('.stat');
-            stats.forEach(stat => {
-                const label = stat.querySelector('.stat-label');
-                if (!label || !label.textContent.includes('Total Progress')) return;
-                
-                const valueSpan = stat.querySelector('.stat-value');
-                if (!valueSpan) return;
-                
-                // Set both the text content and the data attribute
-                valueSpan.textContent = `${correctScore.toFixed(1)}%`;
-                valueSpan.setAttribute('data-real-score', `${correctScore.toFixed(1)}%`);
-                valueSpan.style.color = 'black';
-                valueSpan.style.visibility = 'visible';
-                
-                console.log(`Updated score for ${username} to ${correctScore.toFixed(1)}%`);
-            });
-        });
-    });
-});
-
-// Remove the class-level updateUsersList override since we're now handling this with inline functions
-// that run inside the DOMContentLoaded event handler.
-
-// Add some additional styles to the document
-const styleElement = document.createElement('style');
-styleElement.textContent = `
-    /* Form styles */
-    .form-group {
-        margin-bottom: 1.5rem;
-    }
-    
-    .form-group label {
-        display: block;
-        margin-bottom: 0.5rem;
-        font-weight: 500;
-        color: #333;
-    }
-    
-    /* And all the other styles from the original code */
-    /* Many style definitions omitted for brevity */
-
-    /* Loading spinner */
-    .loading-spinner {
-        width: 40px;
-        height: 40px;
-        border: 3px solid rgba(0, 0, 0, 0.1);
-        border-radius: 50%;
-        border-top-color: #3498db;
-        animation: spin 1s ease-in-out infinite;
-        margin: 1rem auto;
-    }
-    
-    @keyframes spin {
-        to { transform: rotate(360deg); }
-    }
-    
-    /* Info message */
-    .info-message {
-        position: fixed;
-        top: 20px;
-        right: 20px;
-        background-color: #d1ecf1;
-        color: #0c5460;
-        padding: 1rem;
-        border-radius: 4px;
-        box-shadow: 0 2px 8px rgba(0,0,0,0.2);
-        z-index: 1000;
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        max-width: 400px;
-        border-left: 4px solid #0c5460;
-        animation: slide-in 0.3s ease-out;
-    }
-    
-    .info-message .close-message {
-        background: none;
-        border: none;
-        color: #0c5460;
-        font-size: 1.2rem;
-        cursor: pointer;
-        padding: 0 0 0 10px;
-        margin-left: 10px;
-    }
-    
-    @keyframes slide-in {
-        from { transform: translateX(100%); opacity: 0; }
-        to { transform: translateX(0); opacity: 1; }
-    }
-
-    /* Add styles for timer settings */
-    .timer-settings {
-        padding: 20px;
-        max-width: 800px;
-        margin: 0 auto;
-    }
-    
-    .timer-table {
-        width: 100%;
-        border-collapse: collapse;
-        margin-top: 10px;
-    }
-    
-    .timer-table th,
-    .timer-table td {
-        padding: 8px;
-        text-align: left;
-        border-bottom: 1px solid #ddd;
-    }
-    
-    .timer-table th {
-        background-color: #f5f5f5;
-        font-weight: 600;
-    }
-    
-    .timer-checkbox {
-        width: 16px;
-        height: 16px;
-        cursor: pointer;
-    }
-    
-    /* More timer and auto-reset styles omitted for brevity */
-    
-    .countdown {
-        font-weight: 500;
-        color: #007bff;
-        transition: color 0.3s ease;
-        min-width: 100px;
-        display: inline-block;
-    }
-    
-    .countdown-overdue {
-        color: #dc3545;
-        font-weight: 700;
-        animation: pulse 1s infinite;
-    }
-    
-    @keyframes pulse {
-        0% { opacity: 1; }
-        50% { opacity: 0.7; }
-        100% { opacity: 1; }
-    }
-`;
-document.head.appendChild(styleElement);
-
-// Important addition to ensure values are enforced
-document.addEventListener('DOMContentLoaded', () => {
-    // Existing code...
-    
-    // Directly patch the original updateUsersList function on page load
-    const originalUpdateMethod = Admin2Dashboard.prototype.updateUsersList;
-    Admin2Dashboard.prototype.updateUsersList = async function() {
-        // Call the original method first
-        await originalUpdateMethod.apply(this, arguments);
-        console.log('UpdateUsersList patch: Setting correct Total Progress values on all newly created cards...');
-        
-        // After cards are created, ensure all Total Progress values are correct
-        const userCards = document.querySelectorAll('.user-card');
-        userCards.forEach(card => {
-            const username = card.getAttribute('data-username') || 
-                          card.querySelector('.username')?.textContent?.trim();
+            const username = card.querySelector('.username')?.textContent.trim();
             if (!username) return;
             
-            // Find user and calculate progress
-            const user = this.users?.find(u => u.username === username);
-            if (!user) return;
-            
-            const progress = this.calculateQuestionsAnsweredPercent(user);
-            const progressDisplay = progress > 0 ? `${progress.toFixed(1)}%` : '0%';
-            
-            // Find and update all Total Progress spans
-            const statElements = card.querySelectorAll('.stat');
-            statElements.forEach(stat => {
-                const labelEl = stat.querySelector('.stat-label');
-                if (!labelEl) return;
-                if (labelEl.textContent.trim() !== 'Total Progress') return;
-                
-                const valueEl = stat.querySelector('.stat-value');
-                if (!valueEl) return;
-                
-                // Update with correct progress
-                valueEl.textContent = progressDisplay;
-                valueEl.setAttribute('data-real-score', progressDisplay);
-                valueEl.style.color = 'black';
-                valueEl.style.visibility = 'visible';
-                valueEl.style.display = 'inline-block';
-            });
-        });
-    };
-});
-
-// Add this right before the document.head.appendChild(styleElement) line
-// Direct solution for the remaining 0% issue
-const directSolutionScript = document.createElement('script');
-directSolutionScript.textContent = `
-    // Wait for DOM to be fully loaded and cards to be rendered
-    document.addEventListener('DOMContentLoaded', () => {
-        function fixZeroPercentScores() {
-            // Get all Total Progress/Average Score spans
-            const scoreLabels = document.querySelectorAll('.user-card span.stat-label');
-            
-            scoreLabels.forEach(label => {
-                // Check for both label texts since the UI might be using either name
-                if (label.textContent === 'Total Progress:' || label.textContent === 'Average Score:') {
-                    const statContainer = label.closest('.stat');
-                    if (!statContainer) return;
-                    
-                    const scoreValue = statContainer.querySelector('.stat-value');
-                    if (!scoreValue || scoreValue.textContent !== '0%') return;
-                    
-                    // Get the username from the card
-                    const card = label.closest('.user-card');
-                    if (!card) return;
-                    
-                    const usernameElem = card.querySelector('.username');
-                    if (!usernameElem) return;
-                    
-                    const username = usernameElem.textContent.trim();
-                    
-                    // Get user data from logs
-                    // Find the corresponding progress value 
-                    const progressLogs = Array.from(document.querySelectorAll('div'))
-                        .filter(div => div.textContent && div.textContent.match(/User .*: progress=.*%/))
-                        .map(div => {
-                            const match = div.textContent.match(/User (.*): progress=(.*)%/);
-                            return match ? { username: match[1], progress: match[2] } : null;
-                        })
-                        .filter(item => item !== null);
-                    
-                    // Find the matching progress for this username
-                    const userProgress = progressLogs.find(log => log.username === username);
-                    
-                    if (userProgress) {
-                        console.log('Found progress in logs:', username, userProgress.progress + '%');
-                        scoreValue.textContent = userProgress.progress + '%';
-                    } else {
-                        // Get all questions answered
-                        const questionsContainer = card.querySelector('.stat:has(.stat-label:contains("Questions"))');
-                        if (questionsContainer) {
-                            const questionsValue = questionsContainer.querySelector('.stat-value');
-                            if (questionsValue) {
-                                const questions = parseInt(questionsValue.textContent);
-                                if (!isNaN(questions) && questions > 0) {
-                                    const calculatedProgress = ((questions / 375) * 100).toFixed(1);
-                                    console.log('Calculated progress:', username, calculatedProgress + '%');
-                                    scoreValue.textContent = calculatedProgress + '%';
-                                }
-                            }
-                        }
-                    }
-                }
-            });
-        }
-        
-        // Update immediately after page loads
-        setTimeout(fixZeroPercentScores, 500); 
-        
-        // And periodically check
-        setInterval(fixZeroPercentScores, 1000);
-        
-        // Also update whenever users list changes
-        const usersList = document.getElementById('usersList');
-        if (usersList) {
-            const observer = new MutationObserver(mutations => {
-                setTimeout(fixZeroPercentScores, 100);
-            });
-            observer.observe(usersList, { childList: true, subtree: true });
-        }
-    });
-`;
-document.head.appendChild(directSolutionScript);
-
-// ... existing code ...
-
-// Create a function to directly update all score values
-// Aggressive approach that updates all user cards immediately
-function updateAllScoreLabels() {
-    // Find the console output logs
-    const consoleOutputs = [];
-    // Parse progress logs from any display in the DOM
-    const logs = document.querySelector('#console-output') || 
-                 document.querySelector('.console-output') ||
-                 document.querySelector('[data-testid="console-output"]');
-    
-    if (logs) {
-        const progressRegex = /User (.*?): progress=(\d+\.\d+)%/g;
-        let match;
-        const logText = logs.textContent;
-        while ((match = progressRegex.exec(logText)) !== null) {
-            consoleOutputs.push({
-                username: match[1],
-                progress: match[2]
-            });
-        }
-    }
-    
-    // For each user card
-    const userCards = document.querySelectorAll('.user-card');
-    console.log(`Aggressively updating ${userCards.length} user cards with zero values...`);
-    
-    userCards.forEach(card => {
-        // Get the username
-        const usernameEl = card.querySelector('.username');
-        if (!usernameEl) return;
-        
-        const username = usernameEl.textContent.trim();
-        
-        // Find this user's progress in console logs
-        const userProgress = consoleOutputs.find(o => o.username === username);
-        
-        // Get all 0% score values
-        const scoreLabels = card.querySelectorAll('.stat-label');
-        scoreLabels.forEach(label => {
-            if (label.textContent.includes('Average Score') || label.textContent.includes('Total Progress')) {
-                const stat = label.closest('.stat');
-                if (!stat) return;
-                
-                const scoreEl = stat.querySelector('.stat-value');
-                if (!scoreEl || scoreEl.textContent !== '0%') return;
-                
-                // If we have progress from logs, use it
-                if (userProgress) {
-                    scoreEl.textContent = `${userProgress.progress}%`;
-                    console.log(`Updated score for ${username} to ${userProgress.progress}%`);
-                } else {
-                    // If no progress from logs, try to calculate from questions
-                    const questionsStat = card.querySelector('.stat-label:contains("Questions")');
-                    if (questionsStat) {
-                        const questionsValue = questionsStat.closest('.stat')?.querySelector('.stat-value');
-                        if (questionsValue) {
-                            const questions = parseInt(questionsValue.textContent);
-                            if (!isNaN(questions) && questions > 0) {
-                                const calculatedProgress = ((questions / 375) * 100).toFixed(1);
-                                scoreEl.textContent = `${calculatedProgress}%`;
-                                console.log(`Calculated and updated score for ${username} to ${calculatedProgress}%`);
-                            }
-                        }
-                    }
-                }
-            }
-        });
-    });
-}
-
-// Run immediately and every 2 seconds
-setTimeout(() => {
-    updateAllScoreLabels();
-    setInterval(updateAllScoreLabels, 2000);
-}, 1000);
-
-// Enhanced string prototype to help with contains selectors 
-if (!String.prototype.contains) {
-    String.prototype.contains = function(substring) {
-        return this.indexOf(substring) !== -1;
-    };
-}
-
-// Add a more direct mutation observer for the Average Score/Total Progress field specifically
-document.addEventListener('DOMContentLoaded', () => {
-    // Give the DOM time to fully render before applying our fixes
-    setTimeout(() => {
-        // Find all Average Score/Total Progress fields that show 0%
-        document.querySelectorAll('.user-card').forEach(card => {
+            // Find the Average Score or Total Progress elements
             const scoreLabels = Array.from(card.querySelectorAll('.stat-label')).filter(label => 
                 label.textContent.includes('Average Score') || label.textContent.includes('Total Progress')
             );
             
             scoreLabels.forEach(label => {
                 const scoreValue = label.closest('.stat')?.querySelector('.stat-value');
-                if (scoreValue && scoreValue.textContent === '0%') {
-                    // Get the username
-                    const username = card.querySelector('.username')?.textContent.trim();
-                    if (!username) return;
-                    
-                    // Get progress from console logs (these are printed to console so we know they exist)
-                    const progressMatches = [];
-                    const logLines = Array.from(document.querySelectorAll('div'))
-                        .filter(div => div.textContent && div.textContent.includes(`User ${username}: progress=`));
-                    
-                    logLines.forEach(line => {
-                        const match = line.textContent.match(/User .*?: progress=(\d+\.\d+)%/);
-                        if (match) {
-                            progressMatches.push(match[1]);
-                        }
-                    });
-                    
-                    if (progressMatches.length > 0) {
-                        console.log(`Direct fix for ${username}: Found progress ${progressMatches[0]}%`);
-                        scoreValue.textContent = `${progressMatches[0]}%`;
+                if (!scoreValue) return;
+                
+                // If already showing a non-zero value, no need to update
+                if (scoreValue.textContent !== '0%') return;
+                
+                // Look for the progress in the console logs first (most accurate)
+                console.log(`Fixing score for ${username}...`);
+                
+                // Direct approach: use the data from the card if available
+                const progressData = card.getAttribute('data-progress');
+                if (progressData && progressData !== '0%') {
+                    console.log(`Using data-progress attribute: ${progressData}`);
+                    scoreValue.textContent = progressData;
+                    return;
+                }
+                
+                // Find the user in dashboard data
+                const user = dashboard.users?.find(u => u.username === username);
+                if (user) {
+                    const calculatedProgress = dashboard.calculateQuestionsAnsweredPercent(user);
+                    if (calculatedProgress > 0) {
+                        const progressDisplay = `${calculatedProgress.toFixed(1)}%`;
+                        console.log(`Calculated progress for ${username}: ${progressDisplay}`);
+                        scoreValue.textContent = progressDisplay;
+                        return;
+                    }
+                }
+                
+                // Last resort: look for progress logs in the DOM
+                const progressRegex = new RegExp(`User ${username}: progress=([\\d.]+)%`);
+                const allDivs = document.querySelectorAll('div');
+                
+                for (const div of allDivs) {
+                    if (!div.textContent) continue;
+                    const match = div.textContent.match(progressRegex);
+                    if (match && match[1]) {
+                        console.log(`Found progress in logs: ${match[1]}%`);
+                        scoreValue.textContent = `${match[1]}%`;
+                        break;
                     }
                 }
             });
         });
-    }, 1500);
+    };
+    
+    // Run immediately and periodically
+    setTimeout(forceUpdateAverageScores, 1000);
+    setInterval(forceUpdateAverageScores, 2000);
+    
+    // Also observe the usersList for changes
+    const usersList = document.getElementById('usersList');
+    if (usersList) {
+        const observer = new MutationObserver(() => {
+            console.log("Users list changed, updating average scores...");
+            forceUpdateAverageScores();
+        });
+        
+        observer.observe(usersList, { 
+            childList: true, 
+            subtree: true 
+        });
+    }
+    
+    // Add specific listener for updateUsersList completion
+    const originalUpdateUsersList = Admin2Dashboard.prototype.updateUsersList;
+    Admin2Dashboard.prototype.updateUsersList = async function() {
+        await originalUpdateUsersList.apply(this, arguments);
+        console.log("updateUsersList completed, forcing average score update");
+        setTimeout(forceUpdateAverageScores, 100);
+    };
+    
+    // Add CSS to ensure the score is visible
+    const style = document.createElement('style');
+    style.textContent = `
+        .stat-value {
+            visibility: visible !important;
+            opacity: 1 !important;
+        }
+    `;
+    document.head.appendChild(style);
+    
+    // ... existing code ...
 });
