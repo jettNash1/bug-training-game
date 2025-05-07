@@ -5851,7 +5851,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // Add a CSS injection to directly target any remaining 0% values
     const styleOverride = document.createElement('style');
     styleOverride.textContent = `
-        /* Override for Average Score 0% values */
+        /* Override for Total Progress 0% values */
         .stat-value[data-real-score]:not([data-real-score="0%"]) {
             position: relative;
         }
@@ -5864,9 +5864,9 @@ document.addEventListener('DOMContentLoaded', () => {
             top: 0;
         }
         
-        /* Hide 0% specifically in Average Score stats */
+        /* Hide 0% specifically in Total Progress stats */
         .stat:has(.stat-label:has(+.stat-value[data-real-score="0%"])) .stat-value,
-        .stat:has(.stat-label:contains("Average Score")) .stat-value:contains("0%") {
+        .stat:has(.stat-label:contains("Total Progress")) .stat-value:contains("0%") {
             visibility: hidden;
         }
     `;
@@ -5886,9 +5886,9 @@ document.addEventListener('DOMContentLoaded', () => {
                     const parentStat = span.closest('.stat');
                     if (!parentStat) return;
                     
-                    // Check if this is an Average Score stat
+                    // Check if this is a Total Progress stat
                     const labelSpan = parentStat.querySelector('.stat-label');
-                    if (!labelSpan || !labelSpan.textContent.includes('Average Score')) return;
+                    if (!labelSpan || !labelSpan.textContent.includes('Total Progress')) return;
                     
                     // Get the username from the card
                     const userCard = span.closest('.user-card');
@@ -5922,7 +5922,71 @@ document.addEventListener('DOMContentLoaded', () => {
         setInterval(patchZeroPercentValues, 800);
     `;
     document.head.appendChild(scriptsForDOM);
-    
+
+    // Add a direct fix that will forcefully update all Total Progress spans
+    const updateAllTotalProgressSpans = () => {
+        // Find all user cards
+        const userCards = document.querySelectorAll('.user-card');
+        console.log(`Force updating ${userCards.length} user cards...`);
+        
+        userCards.forEach(card => {
+            // Get the username
+            const usernameEl = card.querySelector('.username');
+            if (!usernameEl) return;
+            
+            const username = usernameEl.textContent.trim();
+            
+            // Find the user object
+            const user = dashboard.users?.find(u => u.username === username);
+            if (!user) return;
+            
+            // Calculate the correct progress
+            const correctProgress = dashboard.calculateQuestionsAnsweredPercent(user);
+            const progressDisplay = `${correctProgress.toFixed(1)}%`;
+            
+            // Find all stat elements
+            const statElements = card.querySelectorAll('.stat');
+            statElements.forEach(stat => {
+                const labelEl = stat.querySelector('.stat-label');
+                if (!labelEl || labelEl.textContent.trim() !== 'Total Progress') return;
+                
+                const valueEl = stat.querySelector('.stat-value');
+                if (!valueEl) return;
+                
+                console.log(`Forcing update for ${username}: ${valueEl.textContent} → ${progressDisplay}`);
+                
+                // Update the content directly
+                valueEl.textContent = progressDisplay;
+                valueEl.setAttribute('data-real-score', progressDisplay);
+                valueEl.style.color = 'black';
+                valueEl.style.visibility = 'visible';
+                valueEl.style.display = 'inline-block';
+            });
+        });
+    };
+
+    // Run this fix immediately and periodically
+    setTimeout(updateAllTotalProgressSpans, 100);
+    setInterval(updateAllTotalProgressSpans, 1000);
+
+    // Add a direct mutation observer to watch for changes to the usersList
+    const userListObserver = new MutationObserver((mutations) => {
+        console.log('User list mutation detected, updating Total Progress values...');
+        setTimeout(updateAllTotalProgressSpans, 50);
+    });
+
+    setTimeout(() => {
+        const usersList = document.getElementById('usersList');
+        if (usersList) {
+            userListObserver.observe(usersList, { 
+                childList: true, 
+                subtree: true,
+                characterData: true,
+                attributes: true
+            });
+        }
+    }, 500);
+
     // Add event listener for the custom event
     document.addEventListener('force-score-update', (event) => {
         const username = event.detail?.username;
@@ -5962,45 +6026,10 @@ document.addEventListener('DOMContentLoaded', () => {
             });
         });
     });
-
-    // Enhance the updateUsersList method to ensure score data is correct
-    const originalUpdateUsersList = Admin2Dashboard.prototype.updateUsersList;
-    Admin2Dashboard.prototype.updateUsersList = async function() {
-        // Call the original method
-        await originalUpdateUsersList.apply(this, arguments);
-        
-        // Additional processing to ensure scores are correct
-        setTimeout(() => {
-            const container = document.getElementById('usersList');
-            if (!container) return;
-            
-            const userCards = container.querySelectorAll('.user-card');
-            userCards.forEach(card => {
-                const username = card.querySelector('.username')?.textContent.trim();
-                if (!username) return;
-                
-                const user = this.users?.find(u => u.username === username);
-                if (!user) return;
-                
-                const correctScore = this.calculateQuestionsAnsweredPercent(user);
-                const averageScoreSpans = card.querySelectorAll('.stat-value');
-                
-                averageScoreSpans.forEach(span => {
-                    const statLabel = span.closest('.stat')?.querySelector('.stat-label');
-                    if (!statLabel || !statLabel.textContent.includes('Average Score')) return;
-                    
-                    // Always update both content and attribute
-                    span.textContent = `${correctScore.toFixed(1)}%`;
-                    span.setAttribute('data-real-score', `${correctScore.toFixed(1)}%`);
-                    span.style.visibility = 'visible';
-                    span.style.color = 'black';
-                    
-                    console.log(`Post-rendered score update for ${username} to ${correctScore.toFixed(1)}%`);
-                });
-            });
-        }, 300);
-    };
 });
+
+// Remove the class-level updateUsersList override since we're now handling this with inline functions
+// that run inside the DOMContentLoaded event handler.
 
 // Add some additional styles to the document
 const styleElement = document.createElement('style');
