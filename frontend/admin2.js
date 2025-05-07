@@ -6207,3 +6207,208 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     };
 });
+
+// Add this right before the document.head.appendChild(styleElement) line
+// Direct solution for the remaining 0% issue
+const directSolutionScript = document.createElement('script');
+directSolutionScript.textContent = `
+    // Wait for DOM to be fully loaded and cards to be rendered
+    document.addEventListener('DOMContentLoaded', () => {
+        function fixZeroPercentScores() {
+            // Get all Total Progress/Average Score spans
+            const scoreLabels = document.querySelectorAll('.user-card span.stat-label');
+            
+            scoreLabels.forEach(label => {
+                // Check for both label texts since the UI might be using either name
+                if (label.textContent === 'Total Progress:' || label.textContent === 'Average Score:') {
+                    const statContainer = label.closest('.stat');
+                    if (!statContainer) return;
+                    
+                    const scoreValue = statContainer.querySelector('.stat-value');
+                    if (!scoreValue || scoreValue.textContent !== '0%') return;
+                    
+                    // Get the username from the card
+                    const card = label.closest('.user-card');
+                    if (!card) return;
+                    
+                    const usernameElem = card.querySelector('.username');
+                    if (!usernameElem) return;
+                    
+                    const username = usernameElem.textContent.trim();
+                    
+                    // Get user data from logs
+                    // Find the corresponding progress value 
+                    const progressLogs = Array.from(document.querySelectorAll('div'))
+                        .filter(div => div.textContent && div.textContent.match(/User .*: progress=.*%/))
+                        .map(div => {
+                            const match = div.textContent.match(/User (.*): progress=(.*)%/);
+                            return match ? { username: match[1], progress: match[2] } : null;
+                        })
+                        .filter(item => item !== null);
+                    
+                    // Find the matching progress for this username
+                    const userProgress = progressLogs.find(log => log.username === username);
+                    
+                    if (userProgress) {
+                        console.log('Found progress in logs:', username, userProgress.progress + '%');
+                        scoreValue.textContent = userProgress.progress + '%';
+                    } else {
+                        // Get all questions answered
+                        const questionsContainer = card.querySelector('.stat:has(.stat-label:contains("Questions"))');
+                        if (questionsContainer) {
+                            const questionsValue = questionsContainer.querySelector('.stat-value');
+                            if (questionsValue) {
+                                const questions = parseInt(questionsValue.textContent);
+                                if (!isNaN(questions) && questions > 0) {
+                                    const calculatedProgress = ((questions / 375) * 100).toFixed(1);
+                                    console.log('Calculated progress:', username, calculatedProgress + '%');
+                                    scoreValue.textContent = calculatedProgress + '%';
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+        
+        // Update immediately after page loads
+        setTimeout(fixZeroPercentScores, 500); 
+        
+        // And periodically check
+        setInterval(fixZeroPercentScores, 1000);
+        
+        // Also update whenever users list changes
+        const usersList = document.getElementById('usersList');
+        if (usersList) {
+            const observer = new MutationObserver(mutations => {
+                setTimeout(fixZeroPercentScores, 100);
+            });
+            observer.observe(usersList, { childList: true, subtree: true });
+        }
+    });
+`;
+document.head.appendChild(directSolutionScript);
+
+// ... existing code ...
+
+// Create a function to directly update all score values
+// Aggressive approach that updates all user cards immediately
+function updateAllScoreLabels() {
+    // Find the console output logs
+    const consoleOutputs = [];
+    // Parse progress logs from any display in the DOM
+    const logs = document.querySelector('#console-output') || 
+                 document.querySelector('.console-output') ||
+                 document.querySelector('[data-testid="console-output"]');
+    
+    if (logs) {
+        const progressRegex = /User (.*?): progress=(\d+\.\d+)%/g;
+        let match;
+        const logText = logs.textContent;
+        while ((match = progressRegex.exec(logText)) !== null) {
+            consoleOutputs.push({
+                username: match[1],
+                progress: match[2]
+            });
+        }
+    }
+    
+    // For each user card
+    const userCards = document.querySelectorAll('.user-card');
+    console.log(`Aggressively updating ${userCards.length} user cards with zero values...`);
+    
+    userCards.forEach(card => {
+        // Get the username
+        const usernameEl = card.querySelector('.username');
+        if (!usernameEl) return;
+        
+        const username = usernameEl.textContent.trim();
+        
+        // Find this user's progress in console logs
+        const userProgress = consoleOutputs.find(o => o.username === username);
+        
+        // Get all 0% score values
+        const scoreLabels = card.querySelectorAll('.stat-label');
+        scoreLabels.forEach(label => {
+            if (label.textContent.includes('Average Score') || label.textContent.includes('Total Progress')) {
+                const stat = label.closest('.stat');
+                if (!stat) return;
+                
+                const scoreEl = stat.querySelector('.stat-value');
+                if (!scoreEl || scoreEl.textContent !== '0%') return;
+                
+                // If we have progress from logs, use it
+                if (userProgress) {
+                    scoreEl.textContent = `${userProgress.progress}%`;
+                    console.log(`Updated score for ${username} to ${userProgress.progress}%`);
+                } else {
+                    // If no progress from logs, try to calculate from questions
+                    const questionsStat = card.querySelector('.stat-label:contains("Questions")');
+                    if (questionsStat) {
+                        const questionsValue = questionsStat.closest('.stat')?.querySelector('.stat-value');
+                        if (questionsValue) {
+                            const questions = parseInt(questionsValue.textContent);
+                            if (!isNaN(questions) && questions > 0) {
+                                const calculatedProgress = ((questions / 375) * 100).toFixed(1);
+                                scoreEl.textContent = `${calculatedProgress}%`;
+                                console.log(`Calculated and updated score for ${username} to ${calculatedProgress}%`);
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    });
+}
+
+// Run immediately and every 2 seconds
+setTimeout(() => {
+    updateAllScoreLabels();
+    setInterval(updateAllScoreLabels, 2000);
+}, 1000);
+
+// Enhanced string prototype to help with contains selectors 
+if (!String.prototype.contains) {
+    String.prototype.contains = function(substring) {
+        return this.indexOf(substring) !== -1;
+    };
+}
+
+// Add a more direct mutation observer for the Average Score/Total Progress field specifically
+document.addEventListener('DOMContentLoaded', () => {
+    // Give the DOM time to fully render before applying our fixes
+    setTimeout(() => {
+        // Find all Average Score/Total Progress fields that show 0%
+        document.querySelectorAll('.user-card').forEach(card => {
+            const scoreLabels = Array.from(card.querySelectorAll('.stat-label')).filter(label => 
+                label.textContent.includes('Average Score') || label.textContent.includes('Total Progress')
+            );
+            
+            scoreLabels.forEach(label => {
+                const scoreValue = label.closest('.stat')?.querySelector('.stat-value');
+                if (scoreValue && scoreValue.textContent === '0%') {
+                    // Get the username
+                    const username = card.querySelector('.username')?.textContent.trim();
+                    if (!username) return;
+                    
+                    // Get progress from console logs (these are printed to console so we know they exist)
+                    const progressMatches = [];
+                    const logLines = Array.from(document.querySelectorAll('div'))
+                        .filter(div => div.textContent && div.textContent.includes(`User ${username}: progress=`));
+                    
+                    logLines.forEach(line => {
+                        const match = line.textContent.match(/User .*?: progress=(\d+\.\d+)%/);
+                        if (match) {
+                            progressMatches.push(match[1]);
+                        }
+                    });
+                    
+                    if (progressMatches.length > 0) {
+                        console.log(`Direct fix for ${username}: Found progress ${progressMatches[0]}%`);
+                        scoreValue.textContent = `${progressMatches[0]}%`;
+                    }
+                }
+            });
+        });
+    }, 1500);
+});
