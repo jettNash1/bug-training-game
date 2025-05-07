@@ -503,6 +503,8 @@ export class Admin2Dashboard extends AdminDashboard {
         const container = document.getElementById('usersList');
         if (!container) return;
 
+        console.log("Updating users list...");
+
         // Get current filter values
         const searchQuery = document.getElementById('userSearch')?.value.toLowerCase() || '';
         const sortBy = document.getElementById('sortBy')?.value || 'username-asc';
@@ -539,11 +541,15 @@ export class Admin2Dashboard extends AdminDashboard {
         // Clear existing content
         container.innerHTML = '';
 
+        console.log(`Creating ${filteredUsers.length} user cards...`);
+
         // Create and append user cards
         filteredUsers.forEach(user => {
             const progress = this.calculateQuestionsAnsweredPercent(user);
             const averageScore = this.calculateAverageScore(user);
             const lastActive = this.getLastActiveDate(user);
+            
+            console.log(`User ${user.username}: progress=${progress.toFixed(1)}%, averageScore=${averageScore.toFixed(1)}%`);
             
             // Calculate total questions answered and XP across all quizzes
             let totalQuestionsAnswered = 0;
@@ -618,6 +624,9 @@ export class Admin2Dashboard extends AdminDashboard {
                     });
                 }
             } else {
+                // Force the average score calculation explicitly to avoid any missing values
+                const scoreText = averageScore.toFixed(1) + '%';
+                
                 card.innerHTML = `
                     <div class="user-card-content">
                         <div class="user-header">
@@ -637,7 +646,7 @@ export class Admin2Dashboard extends AdminDashboard {
                             </div>
                             <div class="stat">
                                 <span class="stat-label">Average Score:</span>
-                                <span class="stat-value">${averageScore.toFixed(1)}%</span>
+                                <span class="stat-value">${scoreText}</span>
                             </div>
                             <div class="stat">
                                 <span class="stat-label">Last Active:</span>
@@ -649,6 +658,15 @@ export class Admin2Dashboard extends AdminDashboard {
                         View Details
                     </button>
                 `;
+                
+                // Double-check the average score element after rendering
+                setTimeout(() => {
+                    const scoreElement = card.querySelector('.stat-label:contains("Average Score")')?.nextElementSibling;
+                    if (scoreElement && scoreElement.textContent !== scoreText) {
+                        console.log(`Fixing score for ${user.username}: was ${scoreElement.textContent}, should be ${scoreText}`);
+                        scoreElement.textContent = scoreText;
+                    }
+                }, 0);
                 
                 // Add event listener for view details button
                 card.querySelector('.view-details-btn').addEventListener('click', () => {
@@ -663,11 +681,20 @@ export class Admin2Dashboard extends AdminDashboard {
             }
 
             container.appendChild(card);
+            
+            // After card is added to the DOM, ensure average score is correct
+            const scoreElement = card.querySelector('.stat-label')?.parentElement.querySelector('.stat-value');
+            if (scoreElement && scoreElement.textContent === '0%') {
+                console.log(`Direct fix: Updating score for ${user.username} from 0% to ${averageScore.toFixed(1)}%`);
+                scoreElement.textContent = `${averageScore.toFixed(1)}%`;
+            }
         });
 
         if (filteredUsers.length === 0) {
             container.innerHTML = '<div class="no-users">No users match your search criteria</div>';
         }
+        
+        console.log("Users list update complete.");
         
         // Update statistics based on filtered users
         const stats = this.updateStatistics();
@@ -5680,6 +5707,127 @@ export class Admin2Dashboard extends AdminDashboard {
 // Initialize the Admin2Dashboard when the document is ready
 document.addEventListener('DOMContentLoaded', () => {
     const dashboard = new Admin2Dashboard();
+    
+    // Use MutationObserver to watch for DOM changes and fix the scores
+    const observer = new MutationObserver((mutations) => {
+        mutations.forEach(mutation => {
+            // Look for added nodes that might be user cards
+            if (mutation.addedNodes && mutation.addedNodes.length > 0) {
+                // Check each added node
+                mutation.addedNodes.forEach(node => {
+                    // If the node is an element and has user cards, update them
+                    if (node.querySelectorAll) {
+                        const userCards = node.querySelectorAll('.user-card');
+                        if (userCards.length > 0) {
+                            updateUserCardScores(dashboard, userCards);
+                        }
+                        
+                        // If the node itself is a user card, update it
+                        if (node.classList && node.classList.contains('user-card')) {
+                            updateUserCardScores(dashboard, [node]);
+                        }
+                    }
+                });
+            }
+        });
+    });
+    
+    // Function to update scores in user cards
+    function updateUserCardScores(dashboard, userCards) {
+        userCards.forEach(card => {
+            const username = card.querySelector('.username')?.textContent;
+            if (!username) return;
+            
+            // Find the user
+            const user = dashboard.users?.find(u => u.username === username);
+            if (!user) return;
+            
+            // Calculate the score
+            const averageScore = dashboard.calculateAverageScore(user);
+            
+            // Find and update any "Average Score" elements
+            const scoreElements = card.querySelectorAll('.stat');
+            scoreElements.forEach(statElement => {
+                const label = statElement.querySelector('.stat-label');
+                if (label && label.textContent.includes('Average Score')) {
+                    const valueElement = statElement.querySelector('.stat-value');
+                    if (valueElement) {
+                        // Always update the value regardless of current content
+                        valueElement.textContent = `${averageScore.toFixed(1)}%`;
+                    }
+                }
+            });
+        });
+    }
+    
+    // Start observing the document with the configured parameters
+    observer.observe(document.body, { childList: true, subtree: true });
+    
+    // Add direct DOM patching to override any script that might be setting the value to 0%
+    function patchAverageScoreDisplay() {
+        console.log("Patching Average Score displays...");
+        
+        // Get all elements that might contain "Average Score: 0%"
+        const allElements = document.querySelectorAll('*');
+        const textNodes = [];
+        
+        // Find all text nodes
+        const walk = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT, null, false);
+        let node;
+        while (node = walk.nextNode()) {
+            if (node.nodeValue.includes('Average Score') && node.nodeValue.includes('0%')) {
+                textNodes.push(node);
+            }
+        }
+        
+        console.log(`Found ${textNodes.length} text nodes with "Average Score" and "0%"`);
+        
+        // Replace the text in these nodes
+        textNodes.forEach(textNode => {
+            // Find the closest user card
+            let parent = textNode.parentElement;
+            let userCard = null;
+            while (parent && !userCard) {
+                if (parent.classList && parent.classList.contains('user-card')) {
+                    userCard = parent;
+                }
+                parent = parent.parentElement;
+            }
+            
+            if (userCard) {
+                const username = userCard.querySelector('.username')?.textContent;
+                if (username) {
+                    // Find the user
+                    const user = dashboard.users?.find(u => u.username === username);
+                    if (user) {
+                        // Calculate the score
+                        const averageScore = dashboard.calculateAverageScore(user);
+                        
+                        // Replace the text
+                        const newText = textNode.nodeValue.replace(/Average Score:(\s*)0%/g, `Average Score:$1${averageScore.toFixed(1)}%`);
+                        if (newText !== textNode.nodeValue) {
+                            console.log(`Directly replacing text for ${username}: "${textNode.nodeValue}" -> "${newText}"`);
+                            textNode.nodeValue = newText;
+                        }
+                    }
+                }
+            }
+        });
+    }
+    
+    // Direct patch all Average Score elements immediately after load
+    setTimeout(patchAverageScoreDisplay, 1000);
+    
+    // Also patch periodically in case new elements are added
+    setInterval(patchAverageScoreDisplay, 3000);
+    
+    // Also add a direct update for any existing user cards
+    setTimeout(() => {
+        const userCards = document.querySelectorAll('.user-card');
+        if (userCards.length > 0) {
+            updateUserCardScores(dashboard, userCards);
+        }
+    }, 500);
 });
 
 // Add some additional styles to the document
