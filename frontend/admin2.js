@@ -642,13 +642,9 @@ export class Admin2Dashboard extends AdminDashboard {
 
         // Create and append user cards
         filteredUsers.forEach(user => {
-            // Calculate the progress using the same method as in showUserDetails
-            const progress = this.calculateQuestionsAnsweredPercent(user);
             const lastActive = this.getLastActiveDate(user);
             
-            console.log(`User ${user.username}: progress=${progress.toFixed(1)}%`);
-            
-            // Calculate total questions answered and XP across all quizzes
+            // Calculate total questions answered across all quizzes
             let totalQuestionsAnswered = 0;
             let totalXP = 0;
             
@@ -673,16 +669,21 @@ export class Admin2Dashboard extends AdminDashboard {
                     }
                 });
             }
+            
+            // Calculate progress directly from questions answered
+            const totalPossibleQuestions = 375; // 25 quizzes * 15 questions
+            const progress = (totalQuestionsAnswered / totalPossibleQuestions) * 100;
+            const progressDisplay = `${progress.toFixed(1)}%`;
+            
+            console.log(`User ${user.username}: questions=${totalQuestionsAnswered}, progress=${progressDisplay}`);
 
             const card = document.createElement('div');
             card.className = 'user-card';
             
-            // Format the progress value - ensure it's consistent with the user details panel
-            const progressDisplay = `${progress.toFixed(1)}%`;
-            
             // Set a data attribute on the card to store the username and progress for easy reference
             card.setAttribute('data-username', user.username);
             card.setAttribute('data-progress', progressDisplay);
+            card.setAttribute('data-questions', totalQuestionsAnswered.toString());
             
             if (isRowView) {
                 card.innerHTML = `
@@ -788,7 +789,7 @@ export class Admin2Dashboard extends AdminDashboard {
                 
                 const progressValue = document.createElement('span');
                 progressValue.className = 'stat-value';
-                // Directly set the value to match what's shown in user details panel
+                // Directly set the value based on questions answered percentage
                 progressValue.textContent = progressDisplay;
                 
                 progressStat.appendChild(progressLabel);
@@ -5885,15 +5886,62 @@ document.addEventListener('DOMContentLoaded', () => {
                 const scoreValue = label.closest('.stat')?.querySelector('.stat-value');
                 if (!scoreValue) return;
                 
-                // Always update the value to ensure consistency with the details panel
-                // Find the user in dashboard data
-                const user = dashboard.users?.find(u => u.username === username);
-                if (user) {
-                    // This is the exact same method used in the details panel
-                    const calculatedProgress = dashboard.calculateQuestionsAnsweredPercent(user);
-                    const progressDisplay = `${calculatedProgress.toFixed(1)}%`;
-                    console.log(`Setting progress for ${username} to ${progressDisplay}`);
+                // Check if this user card contains the questions answered count
+                const questionsElement = card.querySelector('.stat-label:contains("Questions")');
+                let questionsAnswered = 0;
+                
+                if (questionsElement) {
+                    const questionsValue = questionsElement.closest('.stat')?.querySelector('.stat-value');
+                    if (questionsValue && questionsValue.textContent) {
+                        questionsAnswered = parseInt(questionsValue.textContent, 10) || 0;
+                    }
+                } else {
+                    // If questions element not found, try using the data attribute
+                    const questionsData = card.getAttribute('data-questions');
+                    if (questionsData) {
+                        questionsAnswered = parseInt(questionsData, 10) || 0;
+                    }
+                }
+                
+                // If we found questions answered, calculate progress directly
+                if (questionsAnswered > 0) {
+                    const totalPossibleQuestions = 375; // 25 quizzes * 15 questions
+                    const progress = (questionsAnswered / totalPossibleQuestions) * 100;
+                    const progressDisplay = `${progress.toFixed(1)}%`;
+                    
+                    console.log(`Direct calculation for ${username}: ${questionsAnswered}/${totalPossibleQuestions} = ${progressDisplay}`);
                     scoreValue.textContent = progressDisplay;
+                } else {
+                    // Try to find the user in the dashboard data
+                    const user = dashboard.users?.find(u => u.username === username);
+                    if (user) {
+                        // Count questions answered directly
+                        let totalQuestions = 0;
+                        if (dashboard.quizTypes && Array.isArray(dashboard.quizTypes)) {
+                            dashboard.quizTypes.forEach(quizType => {
+                                if (typeof quizType === 'string') {
+                                    const progress = user.quizProgress?.[quizType.toLowerCase()];
+                                    const result = user.quizResults?.find(r => r.quizName.toLowerCase() === quizType.toLowerCase());
+                                    
+                                    const questionCount = result?.questionsAnswered || 
+                                                      result?.questionHistory?.length ||
+                                                      progress?.questionsAnswered || 
+                                                      progress?.questionHistory?.length || 0;
+                                    
+                                    totalQuestions += questionCount;
+                                }
+                            });
+                        }
+                        
+                        if (totalQuestions > 0) {
+                            const totalPossibleQuestions = 375;
+                            const progress = (totalQuestions / totalPossibleQuestions) * 100;
+                            const progressDisplay = `${progress.toFixed(1)}%`;
+                            
+                            console.log(`Calculated progress for ${username}: ${totalQuestions}/${totalPossibleQuestions} = ${progressDisplay}`);
+                            scoreValue.textContent = progressDisplay;
+                        }
+                    }
                 }
             });
         });
