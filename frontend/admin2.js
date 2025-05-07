@@ -670,19 +670,18 @@ export class Admin2Dashboard extends AdminDashboard {
                 });
             }
             
-            // Calculate progress directly from questions answered
-            const totalPossibleQuestions = 375; // 25 quizzes * 15 questions
-            const progress = (totalQuestionsAnswered / totalPossibleQuestions) * 100;
-            const progressDisplay = `${progress.toFixed(1)}%`;
+            // Use the same calculation as the details overlay for overall progress
+            const overallProgress = this.calculateQuestionsAnsweredPercent(user);
+            const overallProgressDisplay = `${overallProgress.toFixed(1)}%`;
             
-            console.log(`User ${user.username}: questions=${totalQuestionsAnswered}, progress=${progressDisplay}`);
+            console.log(`User ${user.username}: questions=${totalQuestionsAnswered}, progress=${overallProgressDisplay}`);
 
             const card = document.createElement('div');
             card.className = 'user-card';
             
             // Set a data attribute on the card to store the username and progress for easy reference
             card.setAttribute('data-username', user.username);
-            card.setAttribute('data-progress', progressDisplay);
+            card.setAttribute('data-progress', overallProgressDisplay);
             card.setAttribute('data-questions', totalQuestionsAnswered.toString());
             
             if (isRowView) {
@@ -696,16 +695,12 @@ export class Admin2Dashboard extends AdminDashboard {
                         </div>
                         <div class="user-stats">
                             <div class="stat">
-                                <span class="stat-label">Progress:</span>
-                                <span class="stat-value">${progressDisplay}</span>
-                            </div>
-                            <div class="stat">
-                                <span class="stat-label">Questions:</span>
+                                <span class="stat-label">Questions Answered:</span>
                                 <span class="stat-value">${totalQuestionsAnswered}</span>
                             </div>
                             <div class="stat">
-                                <span class="stat-label">Total Progress:</span>
-                                <span class="stat-value total-progress-value">${progressDisplay}</span>
+                                <span class="stat-label">Overall Progress:</span>
+                                <span class="stat-value total-progress-value">${overallProgressDisplay}</span>
                             </div>
                             <div class="stat">
                                 <span class="stat-label">Last Active:</span>
@@ -752,11 +747,11 @@ export class Admin2Dashboard extends AdminDashboard {
                 
                 const progressBar = document.createElement('div');
                 progressBar.className = 'progress-bar';
-                progressBar.style.width = `${progress}%`;
+                progressBar.style.width = `${overallProgress}%`;
                 
                 const progressText = document.createElement('span');
                 progressText.className = 'progress-text';
-                progressText.textContent = progressDisplay;
+                progressText.textContent = overallProgressDisplay;
                 
                 progressContainer.appendChild(progressBar);
                 progressContainer.appendChild(progressText);
@@ -779,18 +774,17 @@ export class Admin2Dashboard extends AdminDashboard {
                 questionsStat.appendChild(questionsLabel);
                 questionsStat.appendChild(questionsValue);
                 
-                // Total Progress stat (renamed from Average Score)
+                // Overall Progress stat
                 const progressStat = document.createElement('div');
                 progressStat.className = 'stat';
                 
                 const progressLabel = document.createElement('span');
                 progressLabel.className = 'stat-label';
-                progressLabel.textContent = 'Total Progress:';
+                progressLabel.textContent = 'Overall Progress:';
                 
                 const progressValue = document.createElement('span');
                 progressValue.className = 'stat-value total-progress-value';
-                // Directly set the value based on questions answered percentage
-                progressValue.textContent = progressDisplay;
+                progressValue.textContent = overallProgressDisplay;
                 
                 progressStat.appendChild(progressLabel);
                 progressStat.appendChild(progressValue);
@@ -845,7 +839,7 @@ export class Admin2Dashboard extends AdminDashboard {
             scoreElements.forEach(element => {
                 if (element.textContent === '0%') {
                     console.log(`Direct fix: Found a zero percent value that needs updating in ${user.username}'s card`);
-                    element.textContent = progressDisplay;
+                    element.textContent = overallProgressDisplay;
                 }
             });
         });
