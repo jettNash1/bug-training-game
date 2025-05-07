@@ -646,67 +646,37 @@ class AdminDashboard {
         const allowedQuizzes = (user.allowedQuizzes || []).map(q => q.toLowerCase());
         const hiddenQuizzes = (user.hiddenQuizzes || []).map(q => q.toLowerCase());
 
-        // Sum up questions answered across all quizzes
+        // Sum up questions answered and scores across all visible quizzes
         this.quizTypes.forEach(quizType => {
             const quizLower = quizType.toLowerCase();
-            
             // Skip quizzes that should be hidden for this user
             if (isInterviewAccount && !allowedQuizzes.includes(quizLower)) {
-                return; // Skip quizzes not allowed for interview accounts
+                return;
             } else if (!isInterviewAccount && hiddenQuizzes.includes(quizLower)) {
-                return; // Skip quizzes that are hidden for regular accounts
+                return;
             }
-            
-            const progress = user.quizProgress?.[quizType.toLowerCase()];
-            const result = user.quizResults?.find(r => r.quizName.toLowerCase() === quizType.toLowerCase());
-            
+            const progress = user.quizProgress?.[quizLower];
+            const result = user.quizResults?.find(r => r.quizName.toLowerCase() === quizLower);
             // Prioritize values from quiz results over progress
             const questionsAnswered = result?.questionsAnswered || 
                                     result?.questionHistory?.length ||
                                     progress?.questionsAnswered || 
                                     progress?.questionHistory?.length || 0;
-            
             totalQuestionsAnswered += questionsAnswered;
-            
-            // Add score for this quiz if available
-            if (result?.scorePercentage) {
-                totalScore += result.scorePercentage;
-                quizCount++;
-            } else if (progress?.scorePercentage) {
-                totalScore += progress.scorePercentage;
+            // Use scorePercentage or score, fallback to 0
+            let score =
+                (typeof result?.scorePercentage === 'number' ? result.scorePercentage :
+                typeof result?.score === 'number' ? result.score :
+                typeof progress?.scorePercentage === 'number' ? progress.scorePercentage :
+                typeof progress?.score === 'number' ? progress.score :
+                null);
+            if (score !== null && !isNaN(score)) {
+                totalScore += score;
                 quizCount++;
             }
         });
-
         // Calculate average score based on quizzes with scores
         const averageScore = quizCount > 0 ? totalScore / quizCount : 0;
-        
-        // For the progress percentage, we need to count visible quizzes
-        const visibleQuizTypes = this.quizTypes.filter(quizType => {
-            const quizLower = quizType.toLowerCase();
-            if (isInterviewAccount) {
-                return allowedQuizzes.includes(quizLower);
-            } else {
-                return !hiddenQuizzes.includes(quizLower);
-            }
-        });
-        
-        // If no quizzes are visible, return 0 progress
-        if (visibleQuizTypes.length === 0) return 0;
-        
-        // Calculate progress as percentage of total possible questions in visible quizzes
-        const totalPossibleQuestions = visibleQuizTypes.length * 15; // 15 questions per quiz
-        const progress = totalPossibleQuestions > 0 ? 
-            (totalQuestionsAnswered / totalPossibleQuestions) * 100 : 0;
-
-        /*console.log(`Progress calculation for ${user.username}:`, {
-            totalQuestionsAnswered,
-            totalPossibleQuestions,
-            progress,
-            averageScore
-        });*/
-
-        // Return the average score instead of the progress percentage
         return averageScore;
     }
 
