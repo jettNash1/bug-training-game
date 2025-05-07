@@ -579,8 +579,12 @@ export class Admin2Dashboard extends AdminDashboard {
             const card = document.createElement('div');
             card.className = 'user-card';
             
-            // Use progress value directly for display
-            const progressDisplay = `${progress.toFixed(1)}%`;
+            // Use progress value directly for display - ensure it's not "0%" unless truly zero
+            const progressDisplay = progress > 0 ? `${progress.toFixed(1)}%` : '0%';
+            
+            // Set a data attribute on the card to store the username and progress for easy reference
+            card.setAttribute('data-username', user.username);
+            card.setAttribute('data-progress', progressDisplay);
             
             if (isRowView) {
                 card.innerHTML = `
@@ -688,6 +692,9 @@ export class Admin2Dashboard extends AdminDashboard {
                 progressValue.className = 'stat-value';
                 progressValue.textContent = progressDisplay;
                 progressValue.setAttribute('data-real-score', progressDisplay);
+                // Ensure visibility
+                progressValue.style.color = 'black';
+                progressValue.style.visibility = 'visible';
                 
                 progressStat.appendChild(progressLabel);
                 progressStat.appendChild(progressValue);
@@ -695,7 +702,7 @@ export class Admin2Dashboard extends AdminDashboard {
                 // Last Active stat
                 const lastActiveStat = document.createElement('div');
                 lastActiveStat.className = 'stat';
-                
+
                 const lastActiveLabel = document.createElement('span');
                 lastActiveLabel.className = 'stat-label';
                 lastActiveLabel.textContent = 'Last Active:';
@@ -6154,3 +6161,49 @@ styleElement.textContent = `
     }
 `;
 document.head.appendChild(styleElement);
+
+// Important addition to ensure values are enforced
+document.addEventListener('DOMContentLoaded', () => {
+    // Existing code...
+    
+    // Directly patch the original updateUsersList function on page load
+    const originalUpdateMethod = Admin2Dashboard.prototype.updateUsersList;
+    Admin2Dashboard.prototype.updateUsersList = async function() {
+        // Call the original method first
+        await originalUpdateMethod.apply(this, arguments);
+        console.log('UpdateUsersList patch: Setting correct Total Progress values on all newly created cards...');
+        
+        // After cards are created, ensure all Total Progress values are correct
+        const userCards = document.querySelectorAll('.user-card');
+        userCards.forEach(card => {
+            const username = card.getAttribute('data-username') || 
+                          card.querySelector('.username')?.textContent?.trim();
+            if (!username) return;
+            
+            // Find user and calculate progress
+            const user = this.users?.find(u => u.username === username);
+            if (!user) return;
+            
+            const progress = this.calculateQuestionsAnsweredPercent(user);
+            const progressDisplay = progress > 0 ? `${progress.toFixed(1)}%` : '0%';
+            
+            // Find and update all Total Progress spans
+            const statElements = card.querySelectorAll('.stat');
+            statElements.forEach(stat => {
+                const labelEl = stat.querySelector('.stat-label');
+                if (!labelEl) return;
+                if (labelEl.textContent.trim() !== 'Total Progress') return;
+                
+                const valueEl = stat.querySelector('.stat-value');
+                if (!valueEl) return;
+                
+                // Update with correct progress
+                valueEl.textContent = progressDisplay;
+                valueEl.setAttribute('data-real-score', progressDisplay);
+                valueEl.style.color = 'black';
+                valueEl.style.visibility = 'visible';
+                valueEl.style.display = 'inline-block';
+            });
+        });
+    };
+});
