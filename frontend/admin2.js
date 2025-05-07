@@ -458,47 +458,44 @@ export class Admin2Dashboard extends AdminDashboard {
     }
     
     updateStatistics() {
-        const today = new Date().setHours(0, 0, 0, 0);
-        
-        const stats = this.users.reduce((acc, user) => {
-            // Check if user was active today
+        // Create statistics data
+        const totalUsers = this.users.length;
+        const activeToday = this.users.filter(user => {
             const lastActive = this.getLastActiveDate(user);
-            if (lastActive >= today) {
-                acc.activeUsers++;
-            }
+            const today = new Date();
+            const lastActiveDate = new Date(lastActive);
+            return lastActiveDate.toDateString() === today.toDateString();
+        }).length;
 
-            // Calculate progress for average
-            const userProgress = this.calculateUserProgress(user);
-            acc.totalProgress += userProgress;
-            
-            return acc;
-        }, {
-            totalUsers: this.users.length,
-            activeUsers: 0,
-            totalProgress: 0
+        // Calculate average completion
+        let totalCompletion = 0;
+        this.users.forEach(user => {
+            const userProgress = this.calculateQuestionsAnsweredPercent(user);
+            totalCompletion += userProgress;
         });
+        const averageCompletion = totalUsers > 0 ? totalCompletion / totalUsers : 0;
 
-        stats.averageProgress = this.users.length > 0 ? 
-            Math.round(stats.totalProgress / stats.totalUsers) : 0;
-        
-        console.log('Statistics updated:', stats);
-        return stats;
+        // Return statistics
+        return {
+            totalUsers,
+            activeToday,
+            averageCompletion
+        };
     }
 
     updateStatisticsDisplay(stats) {
-        // Update the statistics in the UI
         const totalUsersElement = document.getElementById('totalUsers');
         const activeUsersElement = document.getElementById('activeUsers');
         const averageCompletionElement = document.getElementById('averageCompletion');
-
+        
         if (totalUsersElement) {
             totalUsersElement.textContent = stats.totalUsers || 0;
         }
         if (activeUsersElement) {
-            activeUsersElement.textContent = stats.activeUsers || 0;
+            activeUsersElement.textContent = stats.activeToday || 0;
         }
         if (averageCompletionElement) {
-            averageCompletionElement.textContent = `${stats.averageProgress || 0}%`;
+            averageCompletionElement.textContent = `${(stats.averageCompletion || 0).toFixed(1)}%`;
         }
     }
     
@@ -529,9 +526,9 @@ export class Admin2Dashboard extends AdminDashboard {
                 case 'username-desc':
                     return b.username.localeCompare(a.username);
                 case 'progress-high':
-                    return this.calculateUserProgress(b) - this.calculateUserProgress(a);
+                    return this.calculateQuestionsAnsweredPercent(b) - this.calculateQuestionsAnsweredPercent(a);
                 case 'progress-low':
-                    return this.calculateUserProgress(a) - this.calculateUserProgress(b);
+                    return this.calculateQuestionsAnsweredPercent(a) - this.calculateQuestionsAnsweredPercent(b);
                 case 'last-active':
                     return this.getLastActiveDate(b) - this.getLastActiveDate(a);
                 default:
@@ -544,7 +541,7 @@ export class Admin2Dashboard extends AdminDashboard {
 
         // Create and append user cards
         filteredUsers.forEach(user => {
-            const progress = this.calculateUserProgress(user);
+            const progress = this.calculateQuestionsAnsweredPercent(user);
             const lastActive = this.getLastActiveDate(user);
             
             // Calculate total questions answered and XP across all quizzes
@@ -1919,15 +1916,15 @@ export class Admin2Dashboard extends AdminDashboard {
                         </div>
                         <div class="info-row">
                             <div class="info-label">Account Type:</div>
-                            <div class="info-value">${isInterviewAccount ? 'Interview Candidate' : 'Regular'}</div>
+                            <div class="info-value">${user.userType === 'interview_candidate' ? 'Interview Account' : 'Regular Account'}</div>
+                        </div>
+                        <div class="info-row">
+                            <div class="info-label">Overall Progress:</div>
+                            <div class="info-value">${this.calculateQuestionsAnsweredPercent(user).toFixed(1)}%</div>
                         </div>
                         <div class="info-row">
                             <div class="info-label">Last Active:</div>
                             <div class="info-value">${this.formatDate(this.getLastActiveDate(user))}</div>
-                        </div>
-                        <div class="info-row">
-                            <div class="info-label">Overall Progress:</div>
-                            <div class="info-value">${this.calculateUserProgress(user).toFixed(1)}%</div>
                         </div>
                     </div>
                 </div>
@@ -3950,7 +3947,7 @@ export class Admin2Dashboard extends AdminDashboard {
             });
         };
         
-        // Store the function on the container so it can be accessed by refreshGuideSettingsList
+        // Store the function on the container so it can be accessed by refreshGuideSettings
         // Important: Use a property name that won't conflict with native DOM properties
         container.setupGuideItemEventListeners = setupGuideItemEventListeners;
         
@@ -5392,7 +5389,7 @@ export class Admin2Dashboard extends AdminDashboard {
                 });
                 
                 // Add overall stats
-                const overallProgress = this.calculateUserProgress(user).toFixed(1);
+                const overallProgress = this.calculateQuestionsAnsweredPercent(user).toFixed(1);
                 const totalQuestions = this.quizTypes.reduce((total, quizType) => {
                     const quizLower = quizType.toLowerCase();
                     const progress = user.quizProgress?.[quizLower];
@@ -5633,6 +5630,35 @@ export class Admin2Dashboard extends AdminDashboard {
             
             throw error;
         }
+    }
+
+    // Helper method to calculate percentage of total questions answered (out of 375)
+    calculateQuestionsAnsweredPercent(user) {
+        if (!user) return 0;
+
+        let totalQuestionsAnswered = 0;
+        const totalPossibleQuestions = 375; // 25 quizzes * 15 questions
+        
+        // Sum up questions answered across all quizzes
+        if (this.quizTypes && Array.isArray(this.quizTypes)) {
+            this.quizTypes.forEach(quizType => {
+                if (typeof quizType === 'string') {
+                    const progress = user.quizProgress?.[quizType.toLowerCase()];
+                    const result = user.quizResults?.find(r => r.quizName.toLowerCase() === quizType.toLowerCase());
+                    
+                    // Prioritize values from quiz results over progress
+                    const questionsAnswered = result?.questionsAnswered || 
+                                          result?.questionHistory?.length ||
+                                          progress?.questionsAnswered || 
+                                          progress?.questionHistory?.length || 0;
+                    
+                    totalQuestionsAnswered += questionsAnswered;
+                }
+            });
+        }
+
+        // Calculate progress as percentage of total possible questions
+        return (totalQuestionsAnswered / totalPossibleQuestions) * 100;
     }
 }
 
