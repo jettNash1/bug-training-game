@@ -642,30 +642,60 @@ class AdminDashboard {
         const allowedQuizzes = (user.allowedQuizzes || []).map(q => q.toLowerCase());
         const hiddenQuizzes = (user.hiddenQuizzes || []).map(q => q.toLowerCase());
 
+        let totalQuizzes = 0;
+        let totalAvailableQuestions = 0;
         let totalQuestionsAnswered = 0;
-        let visibleQuizCount = 0;
 
+        // Process all available quiz types
         this.quizTypes.forEach(quizType => {
             const quizLower = quizType.toLowerCase();
-            // Only include visible quizzes
+            
+            // Skip if quiz should be hidden for this user
+            let isVisible = true;
             if (isInterviewAccount) {
-                if (!allowedQuizzes.includes(quizLower)) return;
+                isVisible = allowedQuizzes.includes(quizLower);
             } else {
-                if (hiddenQuizzes.includes(quizLower)) return;
+                isVisible = !hiddenQuizzes.includes(quizLower);
             }
-            visibleQuizCount++;
+            
+            if (!isVisible) {
+                return; // Skip this quiz
+            }
+            
+            // Count this quiz as available
+            totalQuizzes++;
+            totalAvailableQuestions += 15; // Each quiz has 15 questions
+            
+            // Get progress data for this quiz
             const progress = user.quizProgress?.[quizLower];
-            const result = user.quizResults?.find(r => r.quizName.toLowerCase() === quizLower);
-            // Prioritize values from quiz results over progress
-            const questionsAnswered = result?.questionsAnswered ||
-                                      result?.questionHistory?.length ||
-                                      progress?.questionsAnswered ||
-                                      progress?.questionHistory?.length || 0;
+            const result = user.quizResults?.find(r => r.quizName?.toLowerCase() === quizLower);
+            
+            // Get questions answered count, checking various places
+            let questionsAnswered = 0;
+            
+            // First check results data
+            if (result) {
+                questionsAnswered = result.questionsAnswered || 
+                                   (result.questionHistory ? result.questionHistory.length : 0) || 0;
+            }
+            // Then check progress data if needed
+            else if (progress) {
+                questionsAnswered = progress.questionsAnswered || 
+                                   (progress.questionHistory ? progress.questionHistory.length : 0) || 0;
+            }
+            
+            // Add to total questions answered
             totalQuestionsAnswered += questionsAnswered;
         });
-        const totalPossibleQuestions = visibleQuizCount * 15;
-        const completionPercent = totalPossibleQuestions > 0 ? (totalQuestionsAnswered / totalPossibleQuestions) * 100 : 0;
-        return completionPercent;
+        
+        // Calculate overall progress percentage
+        let progressPercentage = 0;
+        if (totalAvailableQuestions > 0) {
+            progressPercentage = (totalQuestionsAnswered / totalAvailableQuestions) * 100;
+        }
+        
+        // Ensure we handle extremely large values by capping at 100%
+        return Math.min(Math.round(progressPercentage), 100);
     }
 
     // Helper method to get last active date
