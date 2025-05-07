@@ -5868,59 +5868,46 @@ export class Admin2Dashboard extends AdminDashboard {
 document.addEventListener('DOMContentLoaded', () => {
     const dashboard = new Admin2Dashboard();
     
-    // Add a new, more aggressive fix for the Average Score display
-    const forceUpdateAverageScores = () => {
-        // Find all elements with the specific total-progress-value class
-        const totalProgressElements = document.querySelectorAll('.total-progress-value');
-        
-        totalProgressElements.forEach(scoreValue => {
-            // Find the parent user card
-            const card = scoreValue.closest('.user-card');
-            if (!card) return;
-            
-            // Get the username from the card
-            const username = card.querySelector('.username')?.textContent.trim();
-            if (!username) return;
-            
-            // Look for the questions value in this card
-            const questionsElement = card.querySelector('.stat-value:not(.total-progress-value)');
-            if (questionsElement && questionsElement.textContent) {
-                const questionsValue = parseInt(questionsElement.textContent, 10);
-                if (!isNaN(questionsValue)) {
-                    // Calculate progress as a percentage of the total possible questions
-                    const totalPossibleQuestions = 375; // 25 quizzes * 15 questions
-                    const progress = (questionsValue / totalPossibleQuestions) * 100;
-                    const progressDisplay = `${progress.toFixed(1)}%`;
-                    
-                    // Set the value directly
-                    console.log(`Direct fix for ${username}: ${questionsValue}/${totalPossibleQuestions} = ${progressDisplay}`);
-                    scoreValue.textContent = progressDisplay;
+    // --- Move this function up so it's defined before use ---
+    const updateAverageCompletionStat = (dashboardInstance) => {
+        const averageCompletionElement = document.getElementById('averageCompletion');
+        if (!averageCompletionElement) return;
+        let totalQuestions = 0;
+        let totalUsers = 0;
+        if (dashboardInstance.users && Array.isArray(dashboardInstance.users)) {
+            dashboardInstance.users.forEach(user => {
+                let userQuestions = 0;
+                if (dashboardInstance.quizTypes && Array.isArray(dashboardInstance.quizTypes)) {
+                    dashboardInstance.quizTypes.forEach(quizType => {
+                        if (typeof quizType === 'string') {
+                            const progress = user.quizProgress?.[quizType.toLowerCase()];
+                            const result = user.quizResults?.find(r => r.quizName.toLowerCase() === quizType.toLowerCase());
+                            const questionsAnswered = result?.questionsAnswered || 
+                                result?.questionHistory?.length ||
+                                progress?.questionsAnswered || 
+                                progress?.questionHistory?.length || 0;
+                            userQuestions += questionsAnswered;
+                        }
+                    });
                 }
-            }
-        });
+                totalQuestions += userQuestions;
+                totalUsers++;
+            });
+        }
+        if (totalUsers > 0) {
+            const avgQuestions = totalQuestions / totalUsers;
+            const totalPossibleQuestions = 375;
+            const avgPercentage = (avgQuestions / totalPossibleQuestions) * 100;
+            averageCompletionElement.textContent = `${avgPercentage.toFixed(1)}%`;
+            console.log(`Updated Average Completion stat to ${avgPercentage.toFixed(1)}%`);
+        }
     };
-    
-    // Run immediately and periodically
-    setTimeout(forceUpdateAverageScores, 1000);
-    setInterval(forceUpdateAverageScores, 2000);
-    
-    // Also observe the usersList for changes
-    const usersList = document.getElementById('usersList');
-    if (usersList) {
-        const observer = new MutationObserver(() => {
-            console.log("Users list changed, updating average scores...");
-            forceUpdateAverageScores();
-        });
-        
-        observer.observe(usersList, { 
-            childList: true, 
-            subtree: true 
-        });
-    }
-    
+
+    // ... existing code ...
     // Add specific listener for updateUsersList completion
     const originalUpdateUsersList = Admin2Dashboard.prototype.updateUsersList;
     Admin2Dashboard.prototype.updateUsersList = async function() {
+        console.log('updateUsersList called, users:', this.users);
         await originalUpdateUsersList.apply(this, arguments);
         console.log("updateUsersList completed, forcing average score update");
         setTimeout(forceUpdateAverageScores, 100);
@@ -5939,72 +5926,16 @@ document.addEventListener('DOMContentLoaded', () => {
             updateAverageCompletionStat(this);
         };
     }
-    
-    // Add CSS to ensure the score is visible and to highlight the Total Progress values
-    const style = document.createElement('style');
-    style.textContent = `
-        .stat-value {
-            visibility: visible !important;
-            opacity: 1 !important;
-        }
-        
-        /* Specific styling for Total Progress values */
-        .total-progress-value {
-            font-weight: bold !important;
-            color: #3498db !important;
-        }
-    `;
-    document.head.appendChild(style);
-    
-    // Also fix the main dashboard Average Completion stat
-    const updateAverageCompletionStat = () => {
-        const averageCompletionElement = document.getElementById('averageCompletion');
-        if (averageCompletionElement) {
-            let totalQuestions = 0;
-            let totalUsers = 0;
-            
-            if (dashboard.users && Array.isArray(dashboard.users)) {
-                dashboard.users.forEach(user => {
-                    // Count questions for each user
-                    let userQuestions = 0;
-                    
-                    if (dashboard.quizTypes && Array.isArray(dashboard.quizTypes)) {
-                        dashboard.quizTypes.forEach(quizType => {
-                            if (typeof quizType === 'string') {
-                                const progress = user.quizProgress?.[quizType.toLowerCase()];
-                                const result = user.quizResults?.find(r => r.quizName.toLowerCase() === quizType.toLowerCase());
-                                
-                                const questionsAnswered = result?.questionsAnswered || 
-                                                      result?.questionHistory?.length ||
-                                                      progress?.questionsAnswered || 
-                                                      progress?.questionHistory?.length || 0;
-                                
-                                userQuestions += questionsAnswered;
-                            }
-                        });
-                    }
-                    
-                    totalQuestions += userQuestions;
-                    totalUsers++;
-                });
-            }
-            
-            if (totalUsers > 0) {
-                // Calculate average questions answered per user
-                const avgQuestions = totalQuestions / totalUsers;
-                // Convert to percentage of total possible questions
-                const totalPossibleQuestions = 375;
-                const avgPercentage = (avgQuestions / totalPossibleQuestions) * 100;
-                
-                averageCompletionElement.textContent = `${avgPercentage.toFixed(1)}%`;
-                console.log(`Updated Average Completion stat to ${avgPercentage.toFixed(1)}%`);
-            }
-        }
-    };
-    
-    // Run the average completion update periodically
-    setTimeout(updateAverageCompletionStat, 2000);
-    setInterval(updateAverageCompletionStat, 5000);
-    
+
+    // Patch loadUsers to also update the stat after users are loaded
+    const originalLoadUsers = Admin2Dashboard.prototype.loadUsers;
+    if (originalLoadUsers) {
+        Admin2Dashboard.prototype.loadUsers = async function() {
+            const result = await originalLoadUsers.apply(this, arguments);
+            updateAverageCompletionStat(this);
+            return result;
+        };
+    }
+
     // ... existing code ...
 });
