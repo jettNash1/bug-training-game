@@ -550,6 +550,8 @@ export class Admin2Dashboard extends AdminDashboard {
             // Calculate total questions answered and XP across all quizzes
             let totalQuestionsAnswered = 0;
             let totalXP = 0;
+            let totalScore = 0;
+            let quizCount = 0;
             
             if (this.quizTypes && Array.isArray(this.quizTypes)) {
                 this.quizTypes.forEach(quizType => {
@@ -569,10 +571,20 @@ export class Admin2Dashboard extends AdminDashboard {
                         let xp = progress?.experience || result?.experience || 0;
                         xp = Math.round(xp / 5) * 5;
                         totalXP += xp;
+                        
+                        // Calculate score for this quiz if questions were answered
+                        if (questionsAnswered > 0) {
+                            const score = result?.score || progress?.score || 0;
+                            totalScore += score;
+                            quizCount++;
+                        }
                     }
                 });
             }
-
+            
+            // Calculate average score
+            const averageScore = quizCount > 0 ? Math.round(totalScore / quizCount) : 0;
+            
             const card = document.createElement('div');
             card.className = 'user-card';
             
@@ -593,6 +605,10 @@ export class Admin2Dashboard extends AdminDashboard {
                             <div class="stat">
                                 <span class="stat-label">Questions:</span>
                                 <span class="stat-value">${totalQuestionsAnswered}</span>
+                            </div>
+                            <div class="stat">
+                                <span class="stat-label">Average Score:</span>
+                                <span class="stat-value">${averageScore}%</span>
                             </div>
                             <div class="stat">
                                 <span class="stat-label">Last Active:</span>
@@ -632,6 +648,10 @@ export class Admin2Dashboard extends AdminDashboard {
                             <div class="stat">
                                 <span class="stat-label">Questions:</span>
                                 <span class="stat-value">${totalQuestionsAnswered}</span>
+                            </div>
+                            <div class="stat">
+                                <span class="stat-label">Average Score:</span>
+                                <span class="stat-value">${averageScore}%</span>
                             </div>
                             <div class="stat">
                                 <span class="stat-label">Last Active:</span>
@@ -3950,7 +3970,7 @@ export class Admin2Dashboard extends AdminDashboard {
             });
         };
         
-        // Store the function on the container so it can be accessed by refreshGuideSettingsList
+        // Store the function on the container so it can be accessed by refreshGuideSettings
         // Important: Use a property name that won't conflict with native DOM properties
         container.setupGuideItemEventListeners = setupGuideItemEventListeners;
         
