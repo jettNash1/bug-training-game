@@ -546,10 +546,9 @@ export class Admin2Dashboard extends AdminDashboard {
         // Create and append user cards
         filteredUsers.forEach(user => {
             const progress = this.calculateQuestionsAnsweredPercent(user);
-            const averageScore = this.calculateAverageScore(user);
             const lastActive = this.getLastActiveDate(user);
             
-            console.log(`User ${user.username}: progress=${progress.toFixed(1)}%, averageScore=${averageScore.toFixed(1)}%`);
+            console.log(`User ${user.username}: progress=${progress.toFixed(1)}%`);
             
             // Calculate total questions answered and XP across all quizzes
             let totalQuestionsAnswered = 0;
@@ -580,9 +579,8 @@ export class Admin2Dashboard extends AdminDashboard {
             const card = document.createElement('div');
             card.className = 'user-card';
             
-            // Calculate percentage of questions answered for display
-            // Make sure we have a proper value, not 0%
-            const scoreDisplay = averageScore > 0 ? averageScore.toFixed(1) + '%' : progress.toFixed(1) + '%';
+            // Use progress value directly for display
+            const progressDisplay = `${progress.toFixed(1)}%`;
             
             if (isRowView) {
                 card.innerHTML = `
@@ -596,15 +594,15 @@ export class Admin2Dashboard extends AdminDashboard {
                         <div class="user-stats">
                             <div class="stat">
                                 <span class="stat-label">Progress:</span>
-                                <span class="stat-value">${progress.toFixed(1)}%</span>
+                                <span class="stat-value">${progressDisplay}</span>
                             </div>
                             <div class="stat">
                                 <span class="stat-label">Questions:</span>
                                 <span class="stat-value">${totalQuestionsAnswered}</span>
                             </div>
                             <div class="stat">
-                                <span class="stat-label">Average Score:</span>
-                                <span class="stat-value" data-real-score="${scoreDisplay}">${scoreDisplay}</span>
+                                <span class="stat-label">Total Progress:</span>
+                                <span class="stat-value" data-real-score="${progressDisplay}">${progressDisplay}</span>
                             </div>
                             <div class="stat">
                                 <span class="stat-label">Last Active:</span>
@@ -655,7 +653,7 @@ export class Admin2Dashboard extends AdminDashboard {
                 
                 const progressText = document.createElement('span');
                 progressText.className = 'progress-text';
-                progressText.textContent = `${progress.toFixed(1)}%`;
+                progressText.textContent = progressDisplay;
                 
                 progressContainer.appendChild(progressBar);
                 progressContainer.appendChild(progressText);
@@ -678,21 +676,21 @@ export class Admin2Dashboard extends AdminDashboard {
                 questionsStat.appendChild(questionsLabel);
                 questionsStat.appendChild(questionsValue);
                 
-                // Average Score stat
-                const scoreStat = document.createElement('div');
-                scoreStat.className = 'stat';
+                // Total Progress stat (renamed from Average Score)
+                const progressStat = document.createElement('div');
+                progressStat.className = 'stat';
                 
-                const scoreLabel = document.createElement('span');
-                scoreLabel.className = 'stat-label';
-                scoreLabel.textContent = 'Average Score:';
+                const progressLabel = document.createElement('span');
+                progressLabel.className = 'stat-label';
+                progressLabel.textContent = 'Total Progress:';
                 
-                const scoreValue = document.createElement('span');
-                scoreValue.className = 'stat-value';
-                scoreValue.textContent = scoreDisplay;
-                scoreValue.setAttribute('data-real-score', scoreDisplay);
+                const progressValue = document.createElement('span');
+                progressValue.className = 'stat-value';
+                progressValue.textContent = progressDisplay;
+                progressValue.setAttribute('data-real-score', progressDisplay);
                 
-                scoreStat.appendChild(scoreLabel);
-                scoreStat.appendChild(scoreValue);
+                progressStat.appendChild(progressLabel);
+                progressStat.appendChild(progressValue);
                 
                 // Last Active stat
                 const lastActiveStat = document.createElement('div');
@@ -710,7 +708,7 @@ export class Admin2Dashboard extends AdminDashboard {
                 lastActiveStat.appendChild(lastActiveValue);
                 
                 userStats.appendChild(questionsStat);
-                userStats.appendChild(scoreStat);
+                userStats.appendChild(progressStat);
                 userStats.appendChild(lastActiveStat);
                 
                 cardContent.appendChild(userHeader);
@@ -744,7 +742,7 @@ export class Admin2Dashboard extends AdminDashboard {
             scoreElements.forEach(element => {
                 if (element.textContent === '0%') {
                     console.log(`Direct fix: Found a zero percent value that needs updating in ${user.username}'s card`);
-                    element.textContent = scoreDisplay;
+                    element.textContent = progressDisplay;
                 }
             });
         });
@@ -5774,12 +5772,12 @@ document.addEventListener('DOMContentLoaded', () => {
         
         scoreSpans.forEach(span => {
             if (span.textContent === '0%') {
-                // Find the parent structure to ensure we're looking at an Average Score element
+                // Find the parent structure to ensure we're looking at a Total Progress element
                 const parentStat = span.closest('.stat');
                 if (!parentStat) return;
                 
                 const labelSpan = parentStat.querySelector('span.stat-label');
-                if (!labelSpan || !labelSpan.textContent.includes('Average Score')) return;
+                if (!labelSpan || !labelSpan.textContent.includes('Total Progress')) return;
                 
                 // Find the containing user card
                 const userCard = span.closest('.user-card');
@@ -5816,7 +5814,7 @@ document.addEventListener('DOMContentLoaded', () => {
         setInterval(fixExactZeroPercentNodes, 500);
     }, 100);
     
-    // Direct fix for the "0%" average score issue
+    // Direct fix for the "0%" Total Progress issue
     function fixZeroPercentScores() {
         // Find all user cards in the DOM
         const userCards = document.querySelectorAll('.user-card');
@@ -5829,9 +5827,9 @@ document.addEventListener('DOMContentLoaded', () => {
             // Find all stat-value spans with "0%" content
             const zeroSpans = card.querySelectorAll('span.stat-value');
             zeroSpans.forEach(span => {
-                // Check if this is the Average Score span
+                // Check if this is the Total Progress span
                 const label = span.closest('.stat')?.querySelector('.stat-label');
-                if (label && label.textContent.includes('Average Score') && span.textContent === '0%') {
+                if (label && label.textContent.includes('Total Progress') && span.textContent === '0%') {
                     // Find the user object
                     const user = dashboard.users?.find(u => u.username === username);
                     if (user) {
@@ -5945,11 +5943,11 @@ document.addEventListener('DOMContentLoaded', () => {
             const cardUsername = card.querySelector('.username')?.textContent.trim();
             if (cardUsername !== username) return;
             
-            // Find the Average Score stat
+            // Find the Total Progress stat
             const stats = card.querySelectorAll('.stat');
             stats.forEach(stat => {
                 const label = stat.querySelector('.stat-label');
-                if (!label || !label.textContent.includes('Average Score')) return;
+                if (!label || !label.textContent.includes('Total Progress')) return;
                 
                 const valueSpan = stat.querySelector('.stat-value');
                 if (!valueSpan) return;
