@@ -5853,79 +5853,154 @@ document.addEventListener('DOMContentLoaded', () => {
     // Add a CSS injection to directly target any remaining 0% values
     const styleOverride = document.createElement('style');
     styleOverride.textContent = `
-        /* Hide 0% values in Average Score elements */
-        span.stat-label:contains("Average Score") + span.stat-value:contains("0%") {
+        /* Override for Average Score 0% values */
+        .stat-value[data-real-score]:not([data-real-score="0%"]) {
             position: relative;
-            color: transparent !important;
         }
         
-        /* Replace with a calculated value - not hardcoded */
-        span.stat-label:contains("Average Score") + span.stat-value:contains("0%")::after {
+        .stat-value[data-real-score]:not([data-real-score="0%"]):empty::after,
+        .stat-value[data-real-score]:not([data-real-score="0%"])[data-real-score]:empty::after {
             content: attr(data-real-score);
             position: absolute;
             left: 0;
             top: 0;
-            color: black;
         }
         
-        /* Directly target the exact span as seen in dev tools */
-        div.user-stats > div.stat > span.stat-value:contains("0%") {
-            position: relative;
-            color: transparent !important;
-        }
-        
-        div.user-stats > div.stat > span.stat-value:contains("0%")::after {
-            content: attr(data-real-score);
-            position: absolute;
-            left: 0;
-            top: 0;
-            color: black;
+        /* Hide 0% specifically in Average Score stats */
+        .stat:has(.stat-label:has(+.stat-value[data-real-score="0%"])) .stat-value,
+        .stat:has(.stat-label:contains("Average Score")) .stat-value:contains("0%") {
+            visibility: hidden;
         }
     `;
     document.head.appendChild(styleOverride);
     
-    // Add a more reliable way to override the display of 0% values by injecting a script
-    const scriptOverride = document.createElement('script');
-    scriptOverride.textContent = `
-        // Direct patch for 0% values in DOM
+    // Add a more robust way to ensure correct scores are shown
+    const scriptsForDOM = document.createElement('script');
+    scriptsForDOM.textContent = `
+        // Patch function to fix zero values
         function patchZeroPercentValues() {
-            // Get all elements with class stat-value
+            // Get all stat-value elements
             const statValues = document.querySelectorAll('.stat-value');
             
-            // Filter to only those containing "0%"
-            const zeroValues = Array.from(statValues).filter(
-                el => el.textContent.trim() === '0%'
-            );
-            
-            // Replace 0% with calculated value or leave it alone
-            zeroValues.forEach(el => {
-                // Only process if it has a real-score attribute
-                if (el.hasAttribute('data-real-score')) {
-                    const realValue = el.getAttribute('data-real-score');
-                    el.textContent = realValue;
+            statValues.forEach(span => {
+                if (span.textContent === '0%') {
+                    // Find the parent stat element
+                    const parentStat = span.closest('.stat');
+                    if (!parentStat) return;
                     
-                    // Also apply a style to ensure it's visible
-                    el.style.color = 'black';
-                    el.style.visibility = 'visible';
+                    // Check if this is an Average Score stat
+                    const labelSpan = parentStat.querySelector('.stat-label');
+                    if (!labelSpan || !labelSpan.textContent.includes('Average Score')) return;
+                    
+                    // Get the username from the card
+                    const userCard = span.closest('.user-card');
+                    if (!userCard) return;
+                    
+                    const usernameEl = userCard.querySelector('.username');
+                    if (!usernameEl) return;
+                    
+                    const username = usernameEl.textContent.trim();
+                    
+                    // Use the data-real-score attribute if available
+                    const realScore = span.getAttribute('data-real-score');
+                    if (realScore && realScore !== '0%') {
+                        span.textContent = realScore;
+                        return;
+                    }
+                    
+                    // Log for debugging that we have a problematic score
+                    console.log('Found a problematic 0% score for: ' + username);
+                    
+                    // Force an update by dispatching a custom event that our code can listen for
+                    document.dispatchEvent(new CustomEvent('force-score-update', {
+                        detail: { username }
+                    }));
                 }
             });
         }
         
-        // Run immediately and then periodically
+        // Run immediately and periodically
         patchZeroPercentValues();
-        setInterval(patchZeroPercentValues, 1000);
+        setInterval(patchZeroPercentValues, 800);
     `;
-    document.head.appendChild(scriptOverride);
+    document.head.appendChild(scriptsForDOM);
     
-    // Override the updateUsersList method to directly create fully-formed nodes
-    // instead of using innerHTML to avoid any potential HTML processing issues
-    const originalUpdateUsersList = dashboard.updateUsersList;
-    dashboard.updateUsersList = async function() {
-        await originalUpdateUsersList.call(this);
+    // Add event listener for the custom event
+    document.addEventListener('force-score-update', (event) => {
+        const username = event.detail?.username;
+        if (!username) return;
         
-        // Apply fix immediately after user list is updated
-        fixZeroPercentScores();
-        fixExactZeroPercentNodes();
+        console.log('Force updating score for: ' + username);
+        
+        // Find the user in our data
+        const user = dashboard.users?.find(u => u.username === username);
+        if (!user) return;
+        
+        // Calculate the correct score
+        const correctScore = dashboard.calculateQuestionsAnsweredPercent(user);
+        
+        // Find the card in the DOM
+        const userCards = document.querySelectorAll('.user-card');
+        userCards.forEach(card => {
+            const cardUsername = card.querySelector('.username')?.textContent.trim();
+            if (cardUsername !== username) return;
+            
+            // Find the Average Score stat
+            const stats = card.querySelectorAll('.stat');
+            stats.forEach(stat => {
+                const label = stat.querySelector('.stat-label');
+                if (!label || !label.textContent.includes('Average Score')) return;
+                
+                const valueSpan = stat.querySelector('.stat-value');
+                if (!valueSpan) return;
+                
+                // Set both the text content and the data attribute
+                valueSpan.textContent = `${correctScore.toFixed(1)}%`;
+                valueSpan.setAttribute('data-real-score', `${correctScore.toFixed(1)}%`);
+                valueSpan.style.color = 'black';
+                valueSpan.style.visibility = 'visible';
+                
+                console.log(`Updated score for ${username} to ${correctScore.toFixed(1)}%`);
+            });
+        });
+    });
+
+    // Enhance the updateUsersList method to ensure score data is correct
+    const originalUpdateUsersList = Admin2Dashboard.prototype.updateUsersList;
+    Admin2Dashboard.prototype.updateUsersList = async function() {
+        // Call the original method
+        await originalUpdateUsersList.apply(this, arguments);
+        
+        // Additional processing to ensure scores are correct
+        setTimeout(() => {
+            const container = document.getElementById('usersList');
+            if (!container) return;
+            
+            const userCards = container.querySelectorAll('.user-card');
+            userCards.forEach(card => {
+                const username = card.querySelector('.username')?.textContent.trim();
+                if (!username) return;
+                
+                const user = this.users?.find(u => u.username === username);
+                if (!user) return;
+                
+                const correctScore = this.calculateQuestionsAnsweredPercent(user);
+                const averageScoreSpans = card.querySelectorAll('.stat-value');
+                
+                averageScoreSpans.forEach(span => {
+                    const statLabel = span.closest('.stat')?.querySelector('.stat-label');
+                    if (!statLabel || !statLabel.textContent.includes('Average Score')) return;
+                    
+                    // Always update both content and attribute
+                    span.textContent = `${correctScore.toFixed(1)}%`;
+                    span.setAttribute('data-real-score', `${correctScore.toFixed(1)}%`);
+                    span.style.visibility = 'visible';
+                    span.style.color = 'black';
+                    
+                    console.log(`Post-rendered score update for ${username} to ${correctScore.toFixed(1)}%`);
+                });
+            });
+        }, 300);
     };
 });
 
