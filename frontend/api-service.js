@@ -2703,25 +2703,17 @@ export class APIService {
     }
 
     async resetQuizProgress(username, quizName) {
-        try {
-            console.log(`Resetting quiz progress for ${username}'s ${quizName} quiz`);
-            const response = await this.fetchWithAdminAuth(
-                `${this.baseUrl}/admin/users/${encodeURIComponent(username)}/quiz-progress/${encodeURIComponent(quizName)}/reset`,
-                {
-                    method: 'POST'
-                }
-            );
-            
-            if (response.success) {
-                console.log(`Successfully reset ${username}'s ${quizName} quiz progress`);
-                return response;
-            } else {
-                throw new Error(response.message || 'Failed to reset quiz progress');
-            }
-        } catch (error) {
-            console.error(`Error resetting quiz progress for ${username}'s ${quizName} quiz:`, error);
-            return { success: false, message: error.message };
-        }
+        return this.fetchWithAdminAuth(`admin/users/${username}/quiz/${quizName}/reset`, {
+            method: 'POST'
+        });
+    }
+
+    async updateQuizVisibility(username, quizName, isVisible) {
+        console.log(`Updating visibility for ${username}'s quiz ${quizName} to ${isVisible}`);
+        return this.fetchWithAdminAuth(`admin/users/${username}/quiz-visibility/${quizName}`, {
+            method: 'POST',
+            body: JSON.stringify({ isVisible })
+        });
     }
 
     async getUserQuizProgress(username, quizName) {
