@@ -472,7 +472,7 @@ export class Admin2Dashboard {
             this.updateStatisticsDisplay(stats);
             
             // Update user list with current filters
-            await this.updateUserList();
+            await this.updateUsersList();
             
         } catch (error) {
             console.error('Error updating dashboard:', error);
@@ -6078,7 +6078,7 @@ document.addEventListener('DOMContentLoaded', () => {
         console.log('updateUsersList called, users:', this.users);
         await originalUpdateUsersList.apply(this, arguments);
         console.log("updateUsersList completed, forcing average score update");
-        setTimeout(forceUpdateAverageScores, 100);
+        // setTimeout(forceUpdateAverageScores, 100); // Removed undefined function call
         updateAverageCompletionStat(this); // <-- Call here after users list is updated
     };
 
