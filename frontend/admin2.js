@@ -1,16 +1,34 @@
-import { AdminDashboard } from './admin.js';
+import { APIService } from './api-service.js';
 
-export class Admin2Dashboard extends AdminDashboard {
+export class Admin2Dashboard {
     constructor() {
-        super();
-        console.log("Initializing Admin2Dashboard...");
+        // Initialize APIService directly rather than through super()
+        this.apiService = new APIService();
         
-        // Store the dashboard instance globally for easier access
-        window.adminDashboard = this;
+        // Copy initialization properties from AdminDashboard
+        this.userScores = new Map();
+        this.users = [];
+        this.quizTypes = [
+            'communication', 'initiative', 'time-management', 'tester-mindset',
+            'risk-analysis', 'risk-management', 'non-functional', 'test-support',
+            'issue-verification', 'build-verification', 'issue-tracking-tools',
+            'raising-tickets', 'reports', 'cms-testing', 'email-testing', 'content-copy',
+            'locale-testing', 'script-metrics-troubleshooting','standard-script-testing',
+            'test-types-tricks', 'automation-interview', 'fully-scripted', 'exploratory',
+            'sanity-smoke', 'functional-interview'
+        ];
+        
+        this.timerSettings = {
+            secondsPerQuestion: 60, // Default value
+            quizTimers: {} // Property for custom timers
+        };
         
         // Additional initialization for Admin2Dashboard
         this.isRowView = false; // Default to grid view
         this.guideSettings = {};
+        
+        // Store the dashboard instance globally for easier access
+        window.adminDashboard = this;
         
         // Only initialize the dashboard if we're not on the login page
         const currentPath = window.location.pathname;
@@ -5773,6 +5791,68 @@ export class Admin2Dashboard extends AdminDashboard {
     calculateAverageScore(user) {
         if (!user) return 0;
         return this.calculateQuestionsAnsweredPercent(user);
+    }
+
+    // Add methods from AdminDashboard base class
+    async verifyAdminToken(token) {
+        if (!token) return false;
+        
+        try {
+            const result = await this.apiService.verifyAdminToken();
+            return result.valid;
+        } catch (error) {
+            console.error('Token verification failed:', error);
+            return false;
+        }
+    }
+
+    async preloadTimerSettings() {
+        try {
+            // First check if there's already a value in localStorage
+            const storedValue = localStorage.getItem('quizTimerValue');
+            if (storedValue !== null) {
+                // Parse the value, ensuring it's a valid number between 0-300
+                let timerValue = parseInt(storedValue, 10);
+                
+                // Validate the value
+                if (isNaN(timerValue) || timerValue < 0 || timerValue > 300) {
+                    console.warn('Invalid timer value in localStorage, resetting to default');
+                    timerValue = 60; // Default to 60 seconds
+                    localStorage.setItem('quizTimerValue', timerValue.toString());
+                }
+                
+                this.timerSettings.secondsPerQuestion = timerValue;
+                console.log('Using timer settings from localStorage:', timerValue);
+            }
+            
+            // Try to get settings from API (but don't block on failure)
+            try {
+                const settings = await this.apiService.getQuizTimerSettings();
+                if (settings.success && settings.data && settings.data.secondsPerQuestion !== undefined) {
+                    this.timerSettings.secondsPerQuestion = settings.data.secondsPerQuestion;
+                    
+                    // Save to localStorage for quizzes to use
+                    localStorage.setItem('quizTimerValue', settings.data.secondsPerQuestion.toString());
+                    console.log('Preloaded timer settings from API:', settings.data.secondsPerQuestion);
+                }
+            } catch (apiError) {
+                console.warn('Failed to get timer settings from API, using localStorage value', apiError);
+                
+                // Ensure there's always a value in localStorage
+                if (localStorage.getItem('quizTimerValue') === null) {
+                    localStorage.setItem('quizTimerValue', '60'); // Default to 60 seconds
+                    this.timerSettings.secondsPerQuestion = 60;
+                }
+            }
+        } catch (error) {
+            console.error('Failed to preload timer settings:', error);
+            
+            // Make sure we have a default value as fallback
+            if (localStorage.getItem('quizTimerValue') === null) {
+                localStorage.setItem('quizTimerValue', '60');
+                this.timerSettings.secondsPerQuestion = 60;
+            }
+        }
     }
 }
 
