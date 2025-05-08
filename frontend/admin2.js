@@ -532,25 +532,15 @@ export class Admin2Dashboard {
         const container = document.getElementById('usersList');
         if (!container) return;
 
-        console.log("Updating users list...");
-        console.log("Current quizTypes:", this.quizTypes);
-        if (!this.quizTypes || !Array.isArray(this.quizTypes) || this.quizTypes.length === 0) {
-            console.error("quizTypes is empty or not set! Progress will always be 0.");
-        }
-
         // Get current filter values
         const searchQuery = document.getElementById('userSearch')?.value.toLowerCase() || '';
         const sortBy = document.getElementById('sortBy')?.value || 'username-asc';
-        const accountType = document.getElementById('accountType')?.value || 'all';
         const isRowView = !container.classList.contains('grid-view');
 
-        // Filter users
+        // Filter users - remove account type filtering
         let filteredUsers = this.users.filter(user => {
             const matchesSearch = user.username.toLowerCase().includes(searchQuery);
-            const matchesType = accountType === 'all' || 
-                              (accountType === 'regular' && user.userType !== 'interview_candidate') ||
-                              (accountType === 'interview' && user.userType === 'interview_candidate');
-            return matchesSearch && matchesType;
+            return matchesSearch;
         });
 
         // Sort users based on selected criteria
@@ -635,9 +625,7 @@ export class Admin2Dashboard {
                                 display: inline-flex;
                                 align-items: center;
                                 margin-left: 8px;
-                            ">
-                                Regular
-                            </span>
+                            ">Regular</span>
                         </div>
                         <div class="user-stats">
                             <div class="stat">
@@ -2043,17 +2031,11 @@ export class Admin2Dashboard {
                 throw new Error('User not found');
             }
 
-            const isInterviewAccount = user.userType === 'interview_candidate';
-            // For interview accounts, allowedQuizzes means visible, everything else is hidden
-            // For regular accounts, hiddenQuizzes means hidden, everything else is visible
-            const allowedQuizzes = (user.allowedQuizzes || []).map(q => q.toLowerCase());
+            // Only use hiddenQuizzes for visibility - remove interview account logic
             const hiddenQuizzes = (user.hiddenQuizzes || []).map(q => q.toLowerCase());
 
             console.log('User details:', {
                 username,
-                isInterviewAccount,
-                userType: user.userType,
-                allowedQuizzes,
                 hiddenQuizzes
             });
 
@@ -2099,7 +2081,7 @@ export class Admin2Dashboard {
                         </div>
                         <div class="info-row">
                             <div class="info-label">Account Type:</div>
-                            <div class="info-value">${user.userType === 'interview_candidate' ? 'Interview Account' : 'Regular Account'}</div>
+                            <div class="info-value">Regular Account</div>
                         </div>
                         <div class="info-row">
                             <div class="info-label">Overall Progress:</div>
@@ -2128,26 +2110,13 @@ export class Admin2Dashboard {
                 .forEach(quizType => {
                     const quizLower = quizType.toLowerCase();
                     
-                    // For interview accounts:
-                    //   - Visible (checked) if in allowedQuizzes
-                    //   - Hidden (unchecked) if not in allowedQuizzes
-                    // For regular accounts:
-                    //   - Visible (checked) if not in hiddenQuizzes
-                    //   - Hidden (unchecked) if in hiddenQuizzes
-                    const isInAllowedQuizzes = allowedQuizzes.includes(quizLower);
-                    const isInHiddenQuizzes = hiddenQuizzes.includes(quizLower);
-                    
-                    // Determine visibility based on account type
-                    const isVisible = isInterviewAccount ? isInAllowedQuizzes : !isInHiddenQuizzes;
+                    // Determine visibility - quiz is visible if not in hiddenQuizzes
+                    const isVisible = !hiddenQuizzes.includes(quizLower);
                     
                     console.log('Quiz visibility details:', {
                         quizName: quizType,
                         quizLower,
-                        isInterviewAccount,
-                        allowedQuizzes,
                         hiddenQuizzes,
-                        isInAllowedQuizzes,
-                        isInHiddenQuizzes,
                         isVisible
                     });
                 
