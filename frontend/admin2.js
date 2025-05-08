@@ -2277,13 +2277,78 @@ export class Admin2Dashboard {
                     console.log(`Visibility toggle changed for ${quizName}: isVisible=${isVisible}`);
                     
                     try {
-                        const apiService = new ApiService();
-                        await apiService.updateQuizVisibility(username, quizName, isVisible);
-                        this.showSuccess(`Updated visibility for ${this.formatQuizName(quizName)}`);
+                        await this.apiService.updateQuizVisibility(username, quizName, isVisible);
+                        
+                        // Create success message overlay
+                        const messageOverlay = document.createElement('div');
+                        messageOverlay.className = 'message-overlay';
+                        messageOverlay.style.cssText = `
+                            position: fixed;
+                            top: 50%;
+                            left: 50%;
+                            transform: translate(-50%, -50%);
+                            background: white;
+                            padding: 20px;
+                            border-radius: 8px;
+                            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+                            z-index: 2000;
+                            text-align: center;
+                        `;
+                        messageOverlay.innerHTML = `
+                            <div style="color: #28a745; margin-bottom: 10px;">
+                                <i class="fas fa-check-circle" style="font-size: 24px;"></i>
+                            </div>
+                            <p style="margin: 0;">Updated visibility for ${this.formatQuizName(quizName)}</p>
+                        `;
+                        document.body.appendChild(messageOverlay);
+                        
+                        // Remove the message after 2 seconds
+                        setTimeout(() => {
+                            messageOverlay.remove();
+                        }, 2000);
                     } catch (error) {
                         console.error('Failed to update quiz visibility:', error);
-                        this.showError(`Failed to update visibility for ${this.formatQuizName(quizName)}`);
-                        e.target.checked = !isVisible; // Revert the checkbox
+                        
+                        // Create error message overlay
+                        const errorOverlay = document.createElement('div');
+                        errorOverlay.className = 'error-overlay';
+                        errorOverlay.style.cssText = `
+                            position: fixed;
+                            top: 50%;
+                            left: 50%;
+                            transform: translate(-50%, -50%);
+                            background: white;
+                            padding: 20px;
+                            border-radius: 8px;
+                            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+                            z-index: 2000;
+                            text-align: center;
+                        `;
+                        errorOverlay.innerHTML = `
+                            <div style="color: #dc3545; margin-bottom: 10px;">
+                                <i class="fas fa-exclamation-circle" style="font-size: 24px;"></i>
+                            </div>
+                            <p style="margin: 0;">Failed to update visibility for ${this.formatQuizName(quizName)}</p>
+                            <button class="close-error-btn" style="
+                                margin-top: 15px;
+                                padding: 8px 16px;
+                                background: #6c757d;
+                                color: white;
+                                border: none;
+                                border-radius: 4px;
+                                cursor: pointer;">
+                                Close
+                            </button>
+                        `;
+                        document.body.appendChild(errorOverlay);
+                        
+                        // Add event listener for close button
+                        errorOverlay.querySelector('.close-error-btn').addEventListener('click', () => {
+                            errorOverlay.remove();
+                        });
+                        
+                        // Revert the checkbox
+                        e.target.checked = !isVisible;
                     }
                 });
                 
