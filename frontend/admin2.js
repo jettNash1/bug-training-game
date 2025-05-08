@@ -2631,10 +2631,19 @@ export class Admin2Dashboard {
         try {
             let successCount = 0;
             let failureCount = 0;
-            
-            // Show loading message
-            this.showInfo(`Resetting all quiz progress for ${username}...`);
-            
+
+            // Show a visible loading overlay
+            const loadingOverlay = document.createElement('div');
+            loadingOverlay.className = 'modal-overlay';
+            loadingOverlay.innerHTML = `
+                <div style="background: white; padding: 2rem; border-radius: 8px; text-align: center; max-width: 400px; margin: 100px auto;">
+                    <div class="loading-spinner" style="margin-bottom: 1rem;"></div>
+                    <h3>Resetting all quiz progress for ${username}...</h3>
+                    <p>Please wait while all quizzes are being reset.</p>
+                </div>
+            `;
+            document.body.appendChild(loadingOverlay);
+
             // Reset each quiz individually
             for (const quizType of this.quizTypes) {
                 try {
@@ -2650,7 +2659,10 @@ export class Admin2Dashboard {
                     console.error(`Error resetting ${quizType} for ${username}:`, quizError);
                 }
             }
-            
+
+            // Remove loading overlay
+            loadingOverlay.remove();
+
             // Show final status
             if (failureCount === 0) {
                 this.showSuccess(`Successfully reset all quiz progress for ${username}`);
@@ -2659,9 +2671,15 @@ export class Admin2Dashboard {
             } else {
                 throw new Error(`Failed to reset any quiz progress for ${username}`);
             }
-            
+
+            // Refresh the user list and UI
+            await this.updateUsersList();
+
             return { success: true, message: 'Reset operation completed' };
         } catch (error) {
+            // Remove loading overlay if present
+            const overlay = document.querySelector('.modal-overlay');
+            if (overlay) overlay.remove();
             console.error('Error resetting user progress:', error);
             throw error;
         }
