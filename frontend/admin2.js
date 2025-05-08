@@ -2634,9 +2634,20 @@ export class Admin2Dashboard {
 
             // Show a visible loading overlay
             const loadingOverlay = document.createElement('div');
-            loadingOverlay.className = 'modal-overlay';
+            loadingOverlay.className = 'loading-modal-overlay';
+            loadingOverlay.style.cssText = `
+                position: fixed;
+                top: 0; left: 0; right: 0; bottom: 0;
+                width: 100vw; height: 100vh;
+                background: rgba(0,0,0,0.4);
+                z-index: 9999;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                pointer-events: all;
+            `;
             loadingOverlay.innerHTML = `
-                <div style="background: white; padding: 2rem; border-radius: 8px; text-align: center; max-width: 400px; margin: 100px auto;">
+                <div style="background: white; padding: 2rem; border-radius: 8px; text-align: center; max-width: 400px; margin: 100px auto; box-shadow: 0 4px 24px rgba(0,0,0,0.2);">
                     <div class="loading-spinner" style="margin-bottom: 1rem;"></div>
                     <h3>Resetting all quiz progress for ${username}...</h3>
                     <p>Please wait while all quizzes are being reset.</p>
@@ -2663,13 +2674,19 @@ export class Admin2Dashboard {
             // Remove loading overlay
             loadingOverlay.remove();
 
+            // Remove any lingering error overlays
+            document.querySelectorAll('.modal-overlay').forEach(overlay => {
+                if (overlay !== loadingOverlay) overlay.remove();
+            });
+
             // Show final status
-            if (failureCount === 0) {
-                this.showSuccess(`Successfully reset all quiz progress for ${username}`);
-            } else if (successCount > 0) {
+            if (successCount === 0) {
+                this.showError(`Failed to reset any quiz progress for ${username}`);
+                throw new Error(`Failed to reset any quiz progress for ${username}`);
+            } else if (failureCount > 0) {
                 this.showInfo(`Partially reset progress for ${username}. ${successCount} quizzes reset, ${failureCount} failed.`, 'warning');
             } else {
-                throw new Error(`Failed to reset any quiz progress for ${username}`);
+                this.showSuccess(`Successfully reset all quiz progress for ${username}`);
             }
 
             // Refresh the user list and UI
@@ -2678,7 +2695,7 @@ export class Admin2Dashboard {
             return { success: true, message: 'Reset operation completed' };
         } catch (error) {
             // Remove loading overlay if present
-            const overlay = document.querySelector('.modal-overlay');
+            const overlay = document.querySelector('.loading-modal-overlay');
             if (overlay) overlay.remove();
             console.error('Error resetting user progress:', error);
             throw error;
