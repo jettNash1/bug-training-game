@@ -2441,11 +2441,32 @@ export class Admin2Dashboard {
                 resetPasswordBtn.addEventListener('click', async () => {
                     if (confirm(`Are you sure you want to reset the password for ${username}?`)) {
                         try {
+                            // Prompt the admin for a new password
+                            let newPassword = '';
+                            let confirmPassword = '';
+                            while (true) {
+                                newPassword = prompt('Enter the new password for ' + username + ' (min 6 characters):', '');
+                                if (newPassword === null) return; // Cancelled
+                                if (newPassword.length < 6) {
+                                    alert('Password must be at least 6 characters.');
+                                    continue;
+                                }
+                                confirmPassword = prompt('Confirm the new password:', '');
+                                if (confirmPassword === null) return; // Cancelled
+                                if (newPassword !== confirmPassword) {
+                                    alert('Passwords do not match. Please try again.');
+                                    continue;
+                                }
+                                break;
+                            }
                             // Use this.apiService instead of creating a new instance
-                            const response = await this.apiService.resetUserPassword(username);
-                            
-                            this.showSuccess(`Password reset for ${username}: ${response.newPassword}`);
-                            console.log('Password reset successful:', response);
+                            const response = await this.apiService.resetUserPassword(username, newPassword);
+                            if (response.success !== false) {
+                                this.showSuccess(`Password reset for ${username}.`);
+                                console.log('Password reset successful:', response);
+                            } else {
+                                throw new Error(response.message || 'Failed to reset password');
+                            }
                         } catch (error) {
                             console.error('Failed to reset password:', error);
                             this.showError(`Failed to reset password for ${username}`);
