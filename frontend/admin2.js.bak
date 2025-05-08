@@ -3,54 +3,14 @@ import { AdminDashboard } from './admin.js';
 export class Admin2Dashboard extends AdminDashboard {
     constructor() {
         super();
-        console.log("Initializing Admin2Dashboard...");
-        
-        // Store the dashboard instance globally for easier access
-        window.adminDashboard = this;
-        
         // Additional initialization for Admin2Dashboard
         this.isRowView = false; // Default to grid view
         this.guideSettings = {};
-        
-        // Only initialize the dashboard if we're not on the login page
-        const currentPath = window.location.pathname;
-        if (!currentPath.includes('admin-login.html')) {
-            this.init2().catch(error => {
-                console.error('Error during Admin2Dashboard initialization:', error);
-            });
-        } else {
-            console.log('On admin-login page, skipping dashboard initialization');
-        }
-    }
-
-    async handleAdminLogin(formData) {
-        try {
-            console.log('Admin2Dashboard: Attempting admin login...');
-            
-            const username = formData.get('username');
-            const password = formData.get('password');
-            
-            if (!username || !password) {
-                throw new Error('Username and password are required');
-            }
-
-            const data = await this.apiService.adminLogin(username, password);
-
-            if (!data.token) {
-                throw new Error('No token received from server');
-            }
-
-            // Token is already stored by adminLogin method
-            window.location.replace('./admin2.html');
-        } catch (error) {
-            console.error('Login error:', error);
-            throw new Error(error.message || 'Login failed. Please try again.');
-        }
+        this.init2();
     }
 
     async init2() {
         try {
-            console.log('Initializing Admin2Dashboard...');
             // Add a guard variable to prevent too frequent checks
             this.lastScheduleCheck = 0;
             const MIN_CHECK_INTERVAL = 30000; // 30 seconds minimum between checks
@@ -80,61 +40,35 @@ export class Admin2Dashboard extends AdminDashboard {
                 });
             }
 
-            // Check if we're on admin login page - if so, skip token verification
-            const currentPath = window.location.pathname;
-            if (currentPath.includes('admin-login.html')) {
-                console.log('On admin login page, skipping token verification');
-                return;
-            }
-
-            // Verify admin token for all pages except admin-login
+            // Verify admin token
             const tokenVerification = await this.apiService.verifyAdminToken();
             if (!tokenVerification.success) {
-                window.location.href = '/pages/admin-login.html';
+                window.location.href = '/login.html';
                 return;
             }
 
             // Set up event listeners first to ensure menu functionality
             this.setupEventListeners();
 
-            console.log('Loading essential components...');
             // Initialize all components in parallel
             await Promise.all([
                 this.loadUsers(),
                 this.loadTimerSettings(),
-                this.loadGuideSettings().catch(error => {
-                    console.error('Failed to load guide settings, but continuing with other initializations:', error);
-                    return {};
-                }),
-                this.loadAutoResetSettings().catch(error => {
-                    console.error('Failed to load auto reset settings, but continuing with other initializations:', error);
-                    return {};
-                })
+                this.loadGuideSettings(),
+                this.loadAutoResetSettings() // Add this line
             ]);
 
             // Set up all UI components
-            console.log('Setting up UI components...');
             this.setupCreateAccountForm();
             this.setupScenariosList();
             this.setupScheduleSection();
             this.displayTimerSettings();
-            
-            // Ensure guide settings are displayed even if loading had errors
-            if (!this.guideSettings) {
-                console.warn('Guide settings were not properly loaded, initializing with empty object');
-                this.guideSettings = {};
-            }
             this.displayGuideSettings();
-            
-            this.setupAutoResetSettings();
-            this.displayAutoResetSettings();
-
-            // Initialize badges section
-            this.setupBadgesSection();
+            this.setupAutoResetSettings(); // Add this line
+            this.displayAutoResetSettings(); // Add this line to display auto reset settings
 
             // Update dashboard with initial data
             await this.updateDashboard();
-            console.log('Admin2Dashboard initialization complete');
         } catch (error) {
             console.error('Error initializing Admin2Dashboard:', error);
             this.showError('Failed to initialize dashboard. Please reload the page.');
@@ -154,16 +88,9 @@ export class Admin2Dashboard extends AdminDashboard {
                 
                 // Update dashboard with user data
                 this.updateUsersList();
-                this.updateStatistics();
                 
                 // Load user progress for all users
                 this.loadAllUserProgress();
-                
-                // Update badges section user dropdown
-                this.populateBadgesUserDropdown();
-                
-                // Update schedule section user dropdown
-                this.populateUserDropdown();
                 
                 return response.data;
             } else {
@@ -178,53 +105,20 @@ export class Admin2Dashboard extends AdminDashboard {
     }
     
     async loadAllUserProgress() {
-        // Limit concurrent requests to avoid overwhelming the server
-        const MAX_CONCURRENT_REQUESTS = 3;
-        
         try {
-            console.log(`Loading progress for ${this.users.length} users with max ${MAX_CONCURRENT_REQUESTS} concurrent requests`);
-            
-            // Process users in chunks to limit concurrent requests
-            const processUserChunk = async (userChunk) => {
-                return Promise.all(
-                    userChunk.map(async (user) => {
-                        try {
-                            await this.loadUserProgress(user.username);
-                            console.log(`Successfully loaded progress for ${user.username}`);
-                        } catch (error) {
-                            console.warn(`Non-critical error loading progress for ${user.username}:`, error);
-                        }
-                    })
-                );
-            };
-            
-            // Process users in chunks
-            const chunks = [];
-            for (let i = 0; i < this.users.length; i += MAX_CONCURRENT_REQUESTS) {
-                chunks.push(this.users.slice(i, i + MAX_CONCURRENT_REQUESTS));
+            for (const user of this.users) {
+                try {
+                    await this.loadUserProgress(user.username);
+                } catch (error) {
+                    console.error(`Error loading progress for user ${user.username}:`, error);
+                }
             }
-            
-            for (const chunk of chunks) {
-                await processUserChunk(chunk);
-            }
-            
             // Update statistics and user list after loading all progress
             const stats = this.updateStatistics();
             this.updateStatisticsDisplay(stats);
             this.updateUsersList();
-            
-            console.log("Completed loading progress for all users");
         } catch (error) {
-            console.error('Unexpected error loading all user progress:', error);
-            
-            // Still try to update the UI with whatever data we have
-            try {
-                const stats = this.updateStatistics();
-                this.updateStatisticsDisplay(stats);
-                this.updateUsersList();
-            } catch (uiError) {
-                console.error('Failed to update UI after error:', uiError);
-            }
+            console.error('Error loading all user progress:', error);
         }
     }
     
@@ -233,7 +127,6 @@ export class Admin2Dashboard extends AdminDashboard {
             // Use the apiService to properly handle authentication
             const response = await this.apiService.getUserProgress(username);
             
-            // If success is true (even if the request timed out but we got fallback data)
             if (response.success) {
                 console.log(`Loaded progress for ${username}:`, response.data);
                 
@@ -250,42 +143,22 @@ export class Admin2Dashboard extends AdminDashboard {
                             this.users[userIndex].quizResults = response.data.quizResults;
                         }
                         
-                        // If response has a message but was still successful, it's likely using fallback data
-                        if (response.message) {
-                            console.warn(`Note for ${username}: ${response.message}`);
-                        }
-                        
                         return response.data;
                     } else {
-                        console.warn(`Invalid progress data format for ${username}. Using empty data.`);
-                        // Instead of throwing, set empty data
-                        this.users[userIndex].quizProgress = {};
-                        this.users[userIndex].quizResults = [];
-                        return { quizProgress: {}, quizResults: [] };
+                        console.error(`Invalid progress data format for ${username}:`, response.data);
+                        throw new Error('Invalid progress data format');
                     }
                 } else {
-                    console.warn(`User ${username} not found in users list. Skipping.`);
-                    return { quizProgress: {}, quizResults: [] };
+                    console.error(`User ${username} not found in users list`);
+                    throw new Error(`User ${username} not found`);
                 }
             } else {
-                console.warn(`Could not load progress for ${username}: ${response.message || 'Unknown error'}`);
-                // If user exists, set empty data instead of throwing
-                const userIndex = this.users.findIndex(u => u.username === username);
-                if (userIndex !== -1) {
-                    this.users[userIndex].quizProgress = {};
-                    this.users[userIndex].quizResults = [];
-                }
-                return { quizProgress: {}, quizResults: [] };
+                console.error(`Failed to load progress for ${username}:`, response.error);
+                throw new Error(`Failed to load progress: ${response.error}`);
             }
         } catch (error) {
-            console.warn(`Error loading progress for ${username}, using empty data:`, error);
-            // If user exists, set empty data instead of throwing
-            const userIndex = this.users.findIndex(u => u.username === username);
-            if (userIndex !== -1) {
-                this.users[userIndex].quizProgress = {};
-                this.users[userIndex].quizResults = [];
-            }
-            return { quizProgress: {}, quizResults: [] };
+            console.error(`Error loading progress for ${username}:`, error);
+            throw error;
         }
     }
     
@@ -354,10 +227,6 @@ export class Admin2Dashboard extends AdminDashboard {
                             break;
                         case 'create-account-section':
                             this.setupCreateAccountForm();
-                            break;
-                        case 'badges-section':
-                            // Refresh badges user dropdown when badge section is activated
-                            this.populateBadgesUserDropdown();
                             break;
                     }
                 });
@@ -428,23 +297,6 @@ export class Admin2Dashboard extends AdminDashboard {
                 this.exportUserData('simple');
             });
         }
-
-        // Badges section
-        document.getElementById('badgesUserDropdown')?.addEventListener('change', (e) => {
-            const username = e.target.value;
-            if (username) {
-                this.loadUserBadges(username);
-            } else {
-                // Reset the badges container to initial state
-                const badgesContainer = document.getElementById('userBadgesContainer');
-                badgesContainer.innerHTML = `
-                    <div class="initial-message">
-                        <i class="fas fa-user-circle"></i>
-                        <p>Select a user to view their badges</p>
-                    </div>
-                `;
-            }
-        });
     }
     
     async updateDashboard() {
@@ -463,62 +315,53 @@ export class Admin2Dashboard extends AdminDashboard {
     }
     
     updateStatistics() {
-        // Create statistics data
-        const totalUsers = this.users.length;
-        const activeToday = this.users.filter(user => {
+        const today = new Date().setHours(0, 0, 0, 0);
+        
+        const stats = this.users.reduce((acc, user) => {
+            // Check if user was active today
             const lastActive = this.getLastActiveDate(user);
-            const today = new Date();
-            const lastActiveDate = new Date(lastActive);
-            return lastActiveDate.toDateString() === today.toDateString();
-        }).length;
+            if (lastActive >= today) {
+                acc.activeUsers++;
+            }
 
-        // Calculate average completion
-        let totalCompletion = 0;
-        this.users.forEach(user => {
-            const userProgress = this.calculateQuestionsAnsweredPercent(user);
-            totalCompletion += userProgress;
+            // Calculate progress for average
+            const userProgress = this.calculateUserProgress(user);
+            acc.totalProgress += userProgress;
+            
+            return acc;
+        }, {
+            totalUsers: this.users.length,
+            activeUsers: 0,
+            totalProgress: 0
         });
-        const averageCompletion = totalUsers > 0 ? totalCompletion / totalUsers : 0;
 
-        // Return statistics
-        return {
-            totalUsers,
-            activeToday,
-            averageCompletion
-        };
+        stats.averageProgress = this.users.length > 0 ? 
+            Math.round(stats.totalProgress / stats.totalUsers) : 0;
+        
+        console.log('Statistics updated:', stats);
+        return stats;
     }
 
     updateStatisticsDisplay(stats) {
+        // Update the statistics in the UI
         const totalUsersElement = document.getElementById('totalUsers');
         const activeUsersElement = document.getElementById('activeUsers');
-        // Rename Average Completion to Overall Progress
         const averageCompletionElement = document.getElementById('averageCompletion');
+
         if (totalUsersElement) {
             totalUsersElement.textContent = stats.totalUsers || 0;
         }
         if (activeUsersElement) {
-            activeUsersElement.textContent = stats.activeToday || 0;
+            activeUsersElement.textContent = stats.activeUsers || 0;
         }
         if (averageCompletionElement) {
-            averageCompletionElement.textContent = `${(stats.averageCompletion || 0).toFixed(1)}%`;
-            // Also update the label if present
-            const statCard = averageCompletionElement.closest('.stat-card');
-            if (statCard) {
-                const h3 = statCard.querySelector('h3');
-                if (h3) h3.textContent = 'Overall Progress';
-            }
+            averageCompletionElement.textContent = `${stats.averageProgress || 0}%`;
         }
     }
     
     async updateUsersList() {
         const container = document.getElementById('usersList');
         if (!container) return;
-
-        console.log("Updating users list...");
-        console.log("Current quizTypes:", this.quizTypes);
-        if (!this.quizTypes || !Array.isArray(this.quizTypes) || this.quizTypes.length === 0) {
-            console.error("quizTypes is empty or not set! Progress will always be 0.");
-        }
 
         // Get current filter values
         const searchQuery = document.getElementById('userSearch')?.value.toLowerCase() || '';
@@ -543,9 +386,9 @@ export class Admin2Dashboard extends AdminDashboard {
                 case 'username-desc':
                     return b.username.localeCompare(a.username);
                 case 'progress-high':
-                    return this.calculateQuestionsAnsweredPercent(b) - this.calculateQuestionsAnsweredPercent(a);
+                    return this.calculateUserProgress(b) - this.calculateUserProgress(a);
                 case 'progress-low':
-                    return this.calculateQuestionsAnsweredPercent(a) - this.calculateQuestionsAnsweredPercent(b);
+                    return this.calculateUserProgress(a) - this.calculateUserProgress(b);
                 case 'last-active':
                     return this.getLastActiveDate(b) - this.getLastActiveDate(a);
                 default:
@@ -556,13 +399,12 @@ export class Admin2Dashboard extends AdminDashboard {
         // Clear existing content
         container.innerHTML = '';
 
-        console.log(`Creating ${filteredUsers.length} user cards...`);
-
         // Create and append user cards
         filteredUsers.forEach(user => {
+            const progress = this.calculateUserProgress(user);
             const lastActive = this.getLastActiveDate(user);
             
-            // Calculate total questions answered across all quizzes
+            // Calculate total questions answered and XP across all quizzes
             let totalQuestionsAnswered = 0;
             let totalXP = 0;
             
@@ -587,20 +429,9 @@ export class Admin2Dashboard extends AdminDashboard {
                     }
                 });
             }
-            
-            // Use the same calculation as the details overlay for overall progress
-            const overallProgress = this.calculateQuestionsAnsweredPercent(user);
-            const overallProgressDisplay = `${overallProgress.toFixed(1)}%`;
-            
-            console.log(`User ${user.username}: questions=${totalQuestionsAnswered}, progress=${overallProgressDisplay}`);
 
             const card = document.createElement('div');
             card.className = 'user-card';
-            
-            // Set a data attribute on the card to store the username and progress for easy reference
-            card.setAttribute('data-username', user.username);
-            card.setAttribute('data-progress', overallProgressDisplay);
-            card.setAttribute('data-questions', totalQuestionsAnswered.toString());
             
             if (isRowView) {
                 card.innerHTML = `
@@ -613,12 +444,16 @@ export class Admin2Dashboard extends AdminDashboard {
                         </div>
                         <div class="user-stats">
                             <div class="stat">
-                                <span class="stat-label">Questions Answered:</span>
+                                <span class="stat-label">Progress:</span>
+                                <span class="stat-value">${progress.toFixed(1)}%</span>
+                            </div>
+                            <div class="stat">
+                                <span class="stat-label">Questions:</span>
                                 <span class="stat-value">${totalQuestionsAnswered}</span>
                             </div>
                             <div class="stat">
-                                <span class="stat-label">Overall Progress:</span>
-                                <span class="stat-value total-progress-value">${overallProgressDisplay}</span>
+                                <span class="stat-label">XP:</span>
+                                <span class="stat-value">${totalXP}</span>
                             </div>
                             <div class="stat">
                                 <span class="stat-label">Last Active:</span>
@@ -642,131 +477,56 @@ export class Admin2Dashboard extends AdminDashboard {
                     });
                 }
             } else {
-                // Use direct DOM manipulation to avoid any issues with HTML processing
-                const cardContent = document.createElement('div');
-                cardContent.className = 'user-card-content';
+                card.innerHTML = `
+                    <div class="user-card-content">
+                        <div class="user-header">
+                            <span class="username">${user.username}</span>
+                            <span class="account-type-badge">
+                                ${user.userType === 'interview_candidate' ? 'Interview' : 'Regular'}
+                            </span>
+                        </div>
+                        <div class="progress-container">
+                            <div class="progress-bar" style="width: ${progress}%"></div>
+                            <span class="progress-text">${progress.toFixed(1)}%</span>
+                        </div>
+                        <div class="user-stats">
+                            <div class="stat">
+                                <span class="stat-label">Questions:</span>
+                                <span class="stat-value">${totalQuestionsAnswered}</span>
+                            </div>
+                            <div class="stat">
+                                <span class="stat-label">Total XP:</span>
+                                <span class="stat-value">${totalXP}</span>
+                            </div>
+                            <div class="stat">
+                                <span class="stat-label">Last Active:</span>
+                                <span class="stat-value">${this.formatDate(lastActive)}</span>
+                            </div>
+                        </div>
+                    </div>
+                    <button class="view-details-btn" tabindex="0" aria-label="View details for ${user.username}">
+                        View Details
+                    </button>
+                `;
                 
-                const userHeader = document.createElement('div');
-                userHeader.className = 'user-header';
-                
-                const username = document.createElement('span');
-                username.className = 'username';
-                username.textContent = user.username;
-                
-                const accountTypeBadge = document.createElement('span');
-                accountTypeBadge.className = 'account-type-badge';
-                accountTypeBadge.textContent = user.userType === 'interview_candidate' ? 'Interview' : 'Regular';
-                
-                userHeader.appendChild(username);
-                userHeader.appendChild(accountTypeBadge);
-                
-                const progressContainer = document.createElement('div');
-                progressContainer.className = 'progress-container';
-                
-                const progressBar = document.createElement('div');
-                progressBar.className = 'progress-bar';
-                progressBar.style.width = `${overallProgress}%`;
-                
-                const progressText = document.createElement('span');
-                progressText.className = 'progress-text';
-                progressText.textContent = overallProgressDisplay;
-                
-                progressContainer.appendChild(progressBar);
-                progressContainer.appendChild(progressText);
-                
-                const userStats = document.createElement('div');
-                userStats.className = 'user-stats';
-                
-                // Questions Answered stat
-                const questionsStat = document.createElement('div');
-                questionsStat.className = 'stat';
-                
-                const questionsLabel = document.createElement('span');
-                questionsLabel.className = 'stat-label';
-                questionsLabel.textContent = 'Questions Answered:';
-                
-                const questionsValue = document.createElement('span');
-                questionsValue.className = 'stat-value';
-                questionsValue.textContent = totalQuestionsAnswered.toString();
-                
-                questionsStat.appendChild(questionsLabel);
-                questionsStat.appendChild(questionsValue);
-                
-                // Overall Progress stat
-                const progressStat = document.createElement('div');
-                progressStat.className = 'stat';
-                
-                const progressLabel = document.createElement('span');
-                progressLabel.className = 'stat-label';
-                progressLabel.textContent = 'Overall Progress:';
-                
-                const progressValue = document.createElement('span');
-                progressValue.className = 'stat-value total-progress-value';
-                progressValue.textContent = overallProgressDisplay;
-                
-                progressStat.appendChild(progressLabel);
-                progressStat.appendChild(progressValue);
-                
-                // Last Active stat
-                const lastActiveStat = document.createElement('div');
-                lastActiveStat.className = 'stat';
-
-                const lastActiveLabel = document.createElement('span');
-                lastActiveLabel.className = 'stat-label';
-                lastActiveLabel.textContent = 'Last Active:';
-                
-                const lastActiveValue = document.createElement('span');
-                lastActiveValue.className = 'stat-value';
-                lastActiveValue.textContent = this.formatDate(lastActive);
-                
-                lastActiveStat.appendChild(lastActiveLabel);
-                lastActiveStat.appendChild(lastActiveValue);
-                
-                userStats.appendChild(questionsStat);
-                userStats.appendChild(progressStat);
-                userStats.appendChild(lastActiveStat);
-                
-                cardContent.appendChild(userHeader);
-                cardContent.appendChild(progressContainer);
-                cardContent.appendChild(userStats);
-                
-                const viewDetailsBtn = document.createElement('button');
-                viewDetailsBtn.className = 'view-details-btn';
-                viewDetailsBtn.setAttribute('tabindex', '0');
-                viewDetailsBtn.setAttribute('aria-label', `View details for ${user.username}`);
-                viewDetailsBtn.textContent = 'View Details';
-                
-                viewDetailsBtn.addEventListener('click', () => {
+                // Add event listener for view details button
+                card.querySelector('.view-details-btn').addEventListener('click', () => {
                     this.showUserDetails(user.username);
                 });
-                viewDetailsBtn.addEventListener('keydown', (e) => {
+                card.querySelector('.view-details-btn').addEventListener('keydown', (e) => {
                     if (e.key === 'Enter' || e.key === ' ') {
                         e.preventDefault();
                         this.showUserDetails(user.username);
                     }
                 });
-                
-                card.appendChild(cardContent);
-                card.appendChild(viewDetailsBtn);
             }
 
             container.appendChild(card);
-            
-            // Final verification
-            const scoreElements = card.querySelectorAll('.stat-value');
-            scoreElements.forEach(element => {
-                if (element.textContent === '0%') {
-                    console.log(`Direct fix: Found a zero percent value that needs updating in ${user.username}'s card`);
-                    element.textContent = overallProgressDisplay;
-                }
-            });
         });
 
         if (filteredUsers.length === 0) {
             container.innerHTML = '<div class="no-users">No users match your search criteria</div>';
         }
-        
-        console.log("Users list update complete.");
         
         // Update statistics based on filtered users
         const stats = this.updateStatistics();
@@ -828,7 +588,7 @@ export class Admin2Dashboard extends AdminDashboard {
                         <div class="input-button-group">
                             <input type="number" 
                                 id="quiz-timer" 
-                                value="${defaultSeconds}" 
+                                value="60" 
                                 min="0" 
                                 max="300"
                                 class="timer-seconds-input settings-input">
@@ -884,7 +644,7 @@ export class Admin2Dashboard extends AdminDashboard {
             }
             
             try {
-                // Always use defaultSeconds for consistency
+                // Use apiService directly to update default timer
                 const response = await this.apiService.updateQuizTimerSettings(seconds);
                 
                 if (response.success) {
@@ -909,12 +669,8 @@ export class Admin2Dashboard extends AdminDashboard {
         quizSelect.addEventListener('change', () => {
             const selectedQuiz = quizSelect.value;
             if (selectedQuiz) {
-                // Use the quiz-specific timer setting if available, otherwise use the default
-                const currentSetting = quizTimers[selectedQuiz] !== undefined ? quizTimers[selectedQuiz] : defaultSeconds;
+                const currentSetting = quizTimers[selectedQuiz] || defaultSeconds;
                 quizTimerInput.value = currentSetting;
-            } else {
-                // Reset to default when no quiz is selected
-                quizTimerInput.value = defaultSeconds;
             }
         });
 
@@ -1166,16 +922,8 @@ export class Admin2Dashboard extends AdminDashboard {
             <button class="close-message">&times;</button>
         `;
         
-        // Find the main content area to insert at the top
-        const contentArea = document.querySelector('main.content-area');
-        
-        if (contentArea) {
-            // Insert at the top of the content area
-            contentArea.insertBefore(infoContainer, contentArea.firstChild);
-        } else {
-            // Fallback to body if content area not found
-            document.body.appendChild(infoContainer);
-        }
+        // Add to the page
+        document.body.appendChild(infoContainer);
         
         // Add event listener to close the message
         infoContainer.querySelector('.close-message').addEventListener('click', () => {
@@ -2024,15 +1772,15 @@ export class Admin2Dashboard extends AdminDashboard {
                         </div>
                         <div class="info-row">
                             <div class="info-label">Account Type:</div>
-                            <div class="info-value">${user.userType === 'interview_candidate' ? 'Interview Account' : 'Regular Account'}</div>
-                        </div>
-                        <div class="info-row">
-                            <div class="info-label">Overall Progress:</div>
-                            <div class="info-value">${this.calculateQuestionsAnsweredPercent(user).toFixed(1)}%</div>
+                            <div class="info-value">${isInterviewAccount ? 'Interview Candidate' : 'Regular'}</div>
                         </div>
                         <div class="info-row">
                             <div class="info-label">Last Active:</div>
                             <div class="info-value">${this.formatDate(this.getLastActiveDate(user))}</div>
+                        </div>
+                        <div class="info-row">
+                            <div class="info-label">Overall Progress:</div>
+                            <div class="info-value">${this.calculateUserProgress(user).toFixed(1)}%</div>
                         </div>
                     </div>
                 </div>
@@ -2092,45 +1840,69 @@ export class Admin2Dashboard extends AdminDashboard {
                                 questionsAnswered > 0 ? 'In Progress' : 
                                 'Not Started';
                     
-                    // Determine background color based on status and score
+                    // Determine background color based on XP and status
                     let backgroundColor = '#f5f5f5'; // Default gray for not started
                     if (questionsAnswered > 0) {
                         if (questionsAnswered === 15) {
                             // All questions completed
-                            if (score >= 100) {
-                                backgroundColor = '#e8f5e9'; // Light green for perfect score
+                            if (experience >= 300 || score >= 100) {
+                                backgroundColor = '#e8f5e9'; // Light green for perfect score (300/300 or 100%)
                             } else {
                                 backgroundColor = '#fff3e0'; // Light yellow for completed but not perfect score
                             }
                         } else {
-                            backgroundColor = '#ffebee'; // Light red for in progress
+                            // Not all questions completed
+                            if (experience >= 235) {
+                                backgroundColor = '#fff3e0'; // Light yellow for pass (≥235/300)
+                            } else {
+                                backgroundColor = '#ffebee'; // Light red for fail (<235/300)
+                            }
                         }
                     }
                     
                     // Determine quiz status class
                     let statusClass = 'not-started';
                     if (questionsAnswered === 15) {
-                        if (score >= 100) {
+                        if (experience >= 300 || score >= 100) {
                             statusClass = 'completed-perfect'; // Perfect score
-                        } else {
+                } else {
                             statusClass = 'completed-partial'; // Completed but not perfect
                         }
                     } else if (questionsAnswered > 0) {
                         statusClass = 'in-progress';
-                    }
+                }
                     
                     // Create quiz card
                     const quizCard = document.createElement('div');
-                    quizCard.className = `quiz-card ${statusClass}`;
+                    quizCard.className = `quiz-progress-item ${statusClass}`;
                     quizCard.style.backgroundColor = backgroundColor;
-                    quizCard.innerHTML = `
-                        <h3>${this.formatQuizName(quizType)}</h3>
-                        <div class="quiz-stats">
-                            <p><strong>Status:</strong> ${status}</p>
-                            <p><strong>Score:</strong> ${score}%</p>
-                            <p><strong>Questions Answered:</strong> ${questionsAnswered}/15</p>
-                            <p><strong>Last Active:</strong> ${this.formatDate(lastActive)}</p>
-                            <div class="visibility-control">
+                
+                quizCard.innerHTML = `
+                    <h4>${this.formatQuizName(quizType)}</h4>
+                    <div class="progress-details">
+                        <div>
+                            <strong>Progress:</strong>
+                                <span class="${status === 'Completed' ? 'text-success' : 
+                                            status === 'In Progress' ? 'text-warning' : 
+                                            'text-muted'}">${status}</span>
+                        </div>
+                        <div>
+                                <strong>Score:</strong> 
+                                <span>${score}%</span>
+                        </div>
+                        <div>
+                            <strong>Questions:</strong>
+                                <span>${questionsAnswered}/15</span>
+                        </div>
+                        <div>
+                                <strong>XP:</strong> 
+                                <span>${experience}/300</span>
+                            </div>
+                            <div>
+                                <strong>Last Active:</strong> 
+                                <span>${this.formatDate(lastActive)}</span>
+                            </div>
+                            <div>
                                 <strong>Visibility:</strong>
                                 <label class="visibility-toggle">
                                     <input type="checkbox" 
@@ -2141,28 +1913,28 @@ export class Admin2Dashboard extends AdminDashboard {
                                         tabindex="0">
                                     <span>Make visible to user</span>
                                 </label>
-                            </div>
                         </div>
-                        <div class="quiz-actions">
+                    </div>
+                    <div class="quiz-actions">
                             <button class="reset-quiz-btn"
                                 data-quiz-name="${quizType}"
                                 data-username="${username}"
                                 aria-label="Reset progress for ${this.formatQuizName(quizType)}"
                                 tabindex="0">
-                                Reset Progress
-                            </button>
+                            Reset Progress
+                        </button>
                             <button class="view-questions-btn"
                                 data-quiz-name="${quizType}"
                                 data-username="${username}"
                                 aria-label="View questions for ${this.formatQuizName(quizType)}"
                                 tabindex="0">
                                 View Questions
-                            </button>
-                        </div>
-                    `;
-                    
-                    quizProgressList.appendChild(quizCard);
-                });
+                        </button>
+                    </div>
+                `;
+                
+                quizProgressList.appendChild(quizCard);
+            });
             
             // User actions
             const userActions = document.createElement('div');
@@ -2910,6 +2682,10 @@ export class Admin2Dashboard extends AdminDashboard {
             // Filter valid quizzes and log them
             const allowedQuizzes = selectedQuizzes.filter(quiz => validQuizTypes.includes(quiz));
             console.log('Allowed quizzes (after validation):', allowedQuizzes);
+            
+            if (allowedQuizzes.length === 0) {
+                throw new Error('No valid quiz types selected');
+            }
 
             // Create array of hidden quizzes and log them
             const hiddenQuizzes = validQuizTypes.filter(quiz => !allowedQuizzes.includes(quiz));
@@ -3632,62 +3408,21 @@ export class Admin2Dashboard extends AdminDashboard {
 
     async loadGuideSettings() {
         try {
-            console.log('Loading guide settings from API...');
-            
-            // Clear any existing guide settings to avoid stale data
-            this.guideSettings = {};
-            
-            // Attempt to fetch from API
             const response = await this.apiService.getGuideSettings();
-            console.log('Guide settings API response:', response);
-            
             if (response.success) {
                 this.guideSettings = response.data || {};
-                console.log('Guide settings loaded successfully. Number of guides:', Object.keys(this.guideSettings).length);
-                    
-                    // Debug: log all guide settings for verification
-                for (const [quizName, setting] of Object.entries(this.guideSettings)) {
-                    console.log(`Guide setting for ${quizName}:`, setting);
-                }
+                console.log('Loaded guide settings:', this.guideSettings, 'from', response.source || 'unknown');
                 
-                // Store in localStorage as backup
-                try {
-                    localStorage.setItem('guideSettings', JSON.stringify(this.guideSettings));
-                    console.log('Guide settings saved to localStorage');
-                } catch (e) {
-                    console.warn('Error saving guide settings to localStorage:', e);
+                if (response.source === 'localStorage') {
+                    console.warn('Using guide settings from localStorage (API may be unavailable)');
                 }
-                
-                // If we're displaying guide settings, refresh the display
-                if (document.getElementById('guide-settings-container') && 
-                    document.getElementById('guide-settings-container').querySelector('#guide-settings-list')) {
-                    console.log('Refreshing guide settings display after load');
-                    this.refreshGuideSettingsList();
-                }
-                
-                return this.guideSettings;
             } else {
-                console.warn('Failed to load guide settings from API:', response.message);
-                throw new Error(response.message || 'Failed to load guide settings');
+                console.warn('Failed to load guide settings:', response);
+                this.guideSettings = {};
             }
         } catch (error) {
             console.error('Error loading guide settings:', error);
-            
-            // Try to load from localStorage as fallback
-            try {
-                const settingsJson = localStorage.getItem('guideSettings');
-                if (settingsJson) {
-                    this.guideSettings = JSON.parse(settingsJson);
-                    console.log('Loaded guide settings from localStorage. Number of guides:', Object.keys(this.guideSettings).length);
-                    return this.guideSettings;
-                }
-            } catch (localStorageError) {
-                console.error('Error loading from localStorage:', localStorageError);
-            }
-            
-            // Initialize empty guide settings if all else fails
             this.guideSettings = {};
-            return this.guideSettings;
         }
     }
 
@@ -3816,7 +3551,10 @@ export class Admin2Dashboard extends AdminDashboard {
                 this.showInfo(`Guide settings for ${selectedQuiz} saved successfully`);
                 
                 // Refresh the guide settings list
-                this.refreshGuideSettingsList();
+                const guideSettingsList = container.querySelector('#guide-settings-list');
+                if (guideSettingsList) {
+                    guideSettingsList.innerHTML = this.generateGuideSettingsList(this.guideSettings);
+                }
                 } catch (error) {
                     console.error('Failed to save guide settings:', error);
                 alert('Failed to save guide settings');
@@ -3840,51 +3578,24 @@ export class Admin2Dashboard extends AdminDashboard {
             }
             
             try {
-                this.showInfo(`Enabling ${selectedGuides.length} guide settings...`);
                 let updatedCount = 0;
-                let skippedCount = 0;
-                
                 for (const quiz of selectedGuides) {
-                    if (this.guideSettings[quiz]) {
-                        const guideSetting = this.guideSettings[quiz];
-                        const url = guideSetting.url;
-                        
-                        // Skip if already enabled or if there's no URL
-                        if (guideSetting.enabled === true) {
-                            console.log(`Guide for ${quiz} already enabled, skipping.`);
-                            skippedCount++;
-                            continue;
-                        }
-                        
-                        if (!url) {
-                            console.log(`Guide for ${quiz} has no URL, skipping.`);
-                            skippedCount++;
-                            continue;
-                        }
-                        
-                        try {
-                            // Update the setting
-                            await this.saveGuideSettings(quiz, url, true);
+                    if (this.guideSettings[quiz] && this.guideSettings[quiz].url) {
+                        await this.saveGuideSettings(quiz, this.guideSettings[quiz].url, true);
                         updatedCount++;
-                        } catch (error) {
-                            console.error(`Failed to enable guide for ${quiz}:`, error);
-                        }
                     }
                 }
                 
-                if (updatedCount > 0) {
-                    this.showInfo(`${updatedCount} guide(s) enabled successfully${skippedCount > 0 ? `, ${skippedCount} skipped` : ''}`);
+                this.showInfo(`${updatedCount} guide(s) enabled successfully`);
                 
-                    // Refresh the guide settings list without resetting event handlers
-                    this.refreshGuideSettingsList(false);
-                } else if (skippedCount > 0) {
-                    this.showInfo(`No guides were enabled. ${skippedCount} guide(s) were already enabled or had no URL.`, 'info');
-                } else {
-                    this.showInfo('No guides were enabled', 'warning');
+                // Refresh the guide settings list
+                const guideSettingsList = container.querySelector('#guide-settings-list');
+                if (guideSettingsList) {
+                    guideSettingsList.innerHTML = this.generateGuideSettingsList(this.guideSettings);
                 }
             } catch (error) {
                 console.error('Failed to enable guides:', error);
-                this.showInfo('Failed to enable guides', 'error');
+                alert('Failed to enable guides');
             }
         });
         
@@ -3897,51 +3608,24 @@ export class Admin2Dashboard extends AdminDashboard {
             }
             
             try {
-                this.showInfo(`Disabling ${selectedGuides.length} guide settings...`);
                 let updatedCount = 0;
-                let skippedCount = 0;
-                
                 for (const quiz of selectedGuides) {
-                    if (this.guideSettings[quiz]) {
-                        const guideSetting = this.guideSettings[quiz];
-                        const url = guideSetting.url;
-                        
-                        // Skip if already disabled or if there's no URL
-                        if (guideSetting.enabled === false) {
-                            console.log(`Guide for ${quiz} already disabled, skipping.`);
-                            skippedCount++;
-                            continue;
-                        }
-                        
-                        if (!url) {
-                            console.log(`Guide for ${quiz} has no URL, skipping.`);
-                            skippedCount++;
-                            continue;
-                        }
-                        
-                        try {
-                            // Update the setting
-                            await this.saveGuideSettings(quiz, url, false);
+                    if (this.guideSettings[quiz] && this.guideSettings[quiz].url) {
+                        await this.saveGuideSettings(quiz, this.guideSettings[quiz].url, false);
                         updatedCount++;
-                        } catch (error) {
-                            console.error(`Failed to disable guide for ${quiz}:`, error);
-                        }
                     }
                 }
                 
-                if (updatedCount > 0) {
-                    this.showInfo(`${updatedCount} guide(s) disabled successfully${skippedCount > 0 ? `, ${skippedCount} skipped` : ''}`);
+                this.showInfo(`${updatedCount} guide(s) disabled successfully`);
                 
-                    // Refresh the guide settings list without resetting event handlers
-                    this.refreshGuideSettingsList(false);
-                } else if (skippedCount > 0) {
-                    this.showInfo(`No guides were disabled. ${skippedCount} guide(s) were already disabled or had no URL.`, 'info');
-                } else {
-                    this.showInfo('No guides were disabled', 'warning');
+                // Refresh the guide settings list
+                const guideSettingsList = container.querySelector('#guide-settings-list');
+                if (guideSettingsList) {
+                    guideSettingsList.innerHTML = this.generateGuideSettingsList(this.guideSettings);
                 }
             } catch (error) {
                 console.error('Failed to disable guides:', error);
-                this.showInfo('Failed to disable guides', 'error');
+                alert('Failed to disable guides');
             }
         });
         
@@ -3957,117 +3641,27 @@ export class Admin2Dashboard extends AdminDashboard {
             if (!confirmed) return;
             
             try {
-                this.showInfo(`Removing ${selectedGuides.length} guide settings...`);
                 let removedCount = 0;
-                
                 for (const quiz of selectedGuides) {
                     if (this.guideSettings[quiz]) {
-                        try {
-                            // Completely delete the guide setting
-                            await this.apiService.deleteGuideSetting(quiz);
-                            
-                            // Also remove from in-memory state
-                            delete this.guideSettings[quiz];
-                            
+                        // Set to empty string to "remove" the guide
+                        await this.saveGuideSettings(quiz, '', false);
                         removedCount++;
-                        } catch (error) {
-                            console.error(`Failed to delete guide setting for ${quiz}:`, error);
-                        }
                     }
                 }
                 
-                if (removedCount > 0) {
                 this.showInfo(`${removedCount} guide setting(s) removed successfully`);
                 
-                    // Save updated settings to localStorage
-                    try {
-                        localStorage.setItem('guideSettings', JSON.stringify(this.guideSettings));
-                        console.log(`Updated guide settings in localStorage. Remaining: ${Object.keys(this.guideSettings).length}`);
-                    } catch (e) {
-                        console.warn(`Failed to save updated settings to localStorage:`, e);
-                    }
-                    
-                    // Refresh the guide settings list without resetting event handlers
-                    this.refreshGuideSettingsList(false);
-                } else {
-                    this.showInfo('No guide settings were removed', 'warning');
+                // Refresh the guide settings list
+                const guideSettingsList = container.querySelector('#guide-settings-list');
+                if (guideSettingsList) {
+                    guideSettingsList.innerHTML = this.generateGuideSettingsList(this.guideSettings);
                 }
             } catch (error) {
                 console.error('Failed to remove guides:', error);
-                this.showInfo('Failed to remove guides', 'error');
+                alert('Failed to remove guides');
             }
         });
-        
-        // Define the function to set up event listeners for the guide item buttons
-        const setupGuideItemEventListeners = () => {
-            // Handle Edit button clicks
-            const editButtons = container.querySelectorAll('.edit-guide-btn');
-            editButtons.forEach(button => {
-                button.addEventListener('click', async () => {
-                    const quizName = button.getAttribute('data-quiz');
-                    if (quizName && this.guideSettings[quizName]) {
-                        const currentUrl = this.guideSettings[quizName].url || '';
-                        const currentEnabled = this.guideSettings[quizName].enabled || false;
-                        
-                        // Simple URL prompt approach - guaranteed to work
-                        const newUrl = prompt(`Edit URL for ${this.formatQuizName(quizName)}:`, currentUrl);
-                        if (newUrl === null) return; // User canceled
-                        
-                        if (!newUrl.trim()) {
-                            alert('Please enter a URL');
-                            return;
-                        }
-                        
-                        try {
-                            // Validate URL format
-                            new URL(newUrl);
-                        } catch (e) {
-                            alert('Please enter a valid URL (include http:// or https://)');
-                            return;
-                        }
-                        
-                        // Simple confirm for enabled state - store result but don't show another message yet
-                        const newEnabled = confirm(`Enable guide for ${this.formatQuizName(quizName)}?`);
-                        
-                        try {
-                            // Use a separate method that doesn't show the initial loading message
-                            await this.saveGuideSettingsWithoutInitialMessage(quizName, newUrl, newEnabled);
-                        } catch (error) {
-                            console.error('Error during guide edit:', error);
-                            this.showInfo('Failed to save guide settings', 'error');
-                        }
-                    }
-                });
-            });
-            
-            // Handle Test button clicks (open in new tab)
-            const testButtons = container.querySelectorAll('.test-guide-btn');
-            testButtons.forEach(button => {
-                const url = button.getAttribute('data-url');
-                if (url) {
-                    button.removeAttribute('disabled');
-                    button.addEventListener('click', () => {
-                        window.open(url, '_blank');
-                    });
-                } else {
-                    button.setAttribute('disabled', 'true');
-                }
-            });
-        };
-        
-        // Store the function on the container so it can be accessed by refreshGuideSettings
-        // Important: Use a property name that won't conflict with native DOM properties
-        container.setupGuideItemEventListeners = setupGuideItemEventListeners;
-        
-        // Setup the event listeners
-        setupGuideItemEventListeners();
-        
-        // Add a mutation observer to handle dynamically added guide items
-        const guideSettingsList = container.querySelector('#guide-settings-list');
-        if (guideSettingsList) {
-            const observer = new MutationObserver(setupGuideItemEventListeners);
-            observer.observe(guideSettingsList, { childList: true, subtree: true });
-        }
     }
     
     // Helper method to get selected guides from the UI
@@ -4085,50 +3679,43 @@ export class Admin2Dashboard extends AdminDashboard {
 
     async saveGuideSettings(quiz, url, enabled) {
         try {
-            // Remove the initial loading message to avoid duplicate notifications
-            // this.showInfo(`Saving guide settings for ${this.formatQuizName(quiz)}...`);
+            // Show a loading state
+            this.showInfo(`Saving guide settings for ${this.formatQuizName(quiz)}...`);
             
-            console.log(`Saving guide setting for ${quiz}: url=${url}, enabled=${enabled}`);
+            const response = await this.apiService.saveGuideSetting(quiz, url, enabled);
 
-            // First update in-memory state for immediate UI feedback
+            if (response.success) {
+                // Update local state with the new guide settings
                 if (!this.guideSettings) {
                     this.guideSettings = {};
                 }
                 
+                // If the response includes data, update from that, otherwise use input params
+                if (response.data && response.data[quiz]) {
+                    this.guideSettings[quiz] = response.data[quiz];
+                } else {
                     this.guideSettings[quiz] = { url, enabled };
-                
-            // Update localStorage immediately for redundancy
-                try {
-                localStorage.setItem('guideSettings', JSON.stringify(this.guideSettings));
-                console.log(`Updated guide settings in localStorage (${Object.keys(this.guideSettings).length} guides)`);
-            } catch (e) {
-                console.warn(`Failed to save guide settings to localStorage: ${e.message}`);
-            }
-            
-            // Make the API call - don't refresh list yet to avoid double event handlers
-            const response = await this.apiService.saveGuideSetting(quiz, url, enabled);
-
-            if (response.success) {
-                console.log('Guide setting saved successfully:', response);
-                
-                // Reload all guide settings to ensure consistency, but don't trigger displayGuideSettings
-                // which would set up event listeners again
-                try {
-                    const refreshResponse = await this.apiService.getGuideSettings();
-                    if (refreshResponse.success) {
-                        this.guideSettings = refreshResponse.data || {};
-                        console.log('Guide settings reloaded with', Object.keys(this.guideSettings).length, 'guides');
-                    }
-                } catch (refreshError) {
-                    console.warn('Error refreshing guide settings:', refreshError);
                 }
                 
-                // Now refresh the list display without setting up new event handlers
-                this.refreshGuideSettingsList(false); // Pass false to indicate not to set up new event handlers
+                // Always save to localStorage for quiz page to find
+                try {
+                    const existingSettingsJson = localStorage.getItem('guideSettings');
+                    const existingSettings = existingSettingsJson ? JSON.parse(existingSettingsJson) : {};
+                    
+                    // Update with new settings
+                    existingSettings[quiz] = { url, enabled };
+                    
+                    // Save back to localStorage
+                    localStorage.setItem('guideSettings', JSON.stringify(existingSettings));
+                    console.log(`[Guide] Saved guide settings to localStorage for ${quiz}:`, existingSettings[quiz]);
+                } catch (e) {
+                    console.warn(`[Guide] Failed to save guide settings to localStorage: ${e.message}`);
+                }
                 
-                // Show success message
+                // Show warning if using localStorage fallback
                 if (response.source === 'localStorage') {
-                    this.showInfo(`Guide settings saved locally only (server unavailable).`, 'warning');
+                    this.showInfo(`Guide settings saved locally (server unavailable).`);
+                    console.warn('Guide settings saved to localStorage only - API was unavailable');
                 } else {
                     this.showInfo(`Guide settings for ${this.formatQuizName(quiz)} saved successfully!`);
                 }
@@ -4198,68 +3785,46 @@ export class Admin2Dashboard extends AdminDashboard {
 
     // Helper method to generate HTML for the list of guide settings
     generateGuideSettingsList(guideSettings) {
-        if (!guideSettings || Object.keys(guideSettings).length === 0) {
-            return '<div class="no-settings-message">No guide settings configured yet.</div>';
-        }
-
-        console.log('Generating guide settings list for:', guideSettings);
+        const guideEntries = Object.entries(guideSettings || {})
+            .filter(([_, settings]) => settings && settings.url);
         
-        let html = '';
-        
-        // Sort quiz names alphabetically
-        const quizNames = Object.keys(guideSettings).sort();
-        
-        for (const quizName of quizNames) {
-            const setting = guideSettings[quizName] || {};
-            
-            // Skip invalid settings (no quiz name or undefined settings)
-            if (!quizName || !setting) continue;
-            
-            // Handle potentially missing properties - provide defaults
-            const guideUrl = setting.url || '';
-            const isEnabled = setting.enabled === true; // Explicit check for true
-            
-            console.log(`Guide setting for ${quizName}:`, setting);
-            
-            html += `
-                <div class="guide-settings-item">
-                    <div class="guide-settings-info">
-                        <div class="guide-settings-header">
-                            <div class="guide-checkbox-name">
-                                <input type="checkbox" 
-                                    class="guide-selector" 
-                                    data-quiz="${quizName}" 
-                                    id="guide-select-${quizName}"
-                                    aria-label="Select ${this.formatQuizName(quizName)} guide">
-                                <label for="guide-select-${quizName}" class="guide-name">
-                                    ${this.formatQuizName(quizName)}
-                                </label>
-                            </div>
-                            <div class="guide-status-badge ${isEnabled ? 'enabled' : 'disabled'}">
-                                ${isEnabled ? 'Enabled' : 'Disabled'}
-                            </div>
-                        </div>
-                        <div class="guide-url-container">
-                            <span class="guide-url-label">URL:</span>
-                            <span class="guide-url-value" title="${guideUrl}">${guideUrl || 'No URL set'}</span>
-                        </div>
-                    </div>
-                    <div class="guide-settings-actions">
-                        <button class="edit-guide-btn action-button secondary" data-quiz="${quizName}">
-                            <i class="fas fa-edit"></i> Edit
-                        </button>
-                        <button class="test-guide-btn action-button" 
-                            data-quiz="${quizName}" 
-                            data-url="${guideUrl}" 
-                            ${guideUrl ? '' : 'disabled'}>
-                            <i class="fas fa-external-link-alt"></i> Test
-                        </button>
-                    </div>
-                </div>
-            `;
+        if (guideEntries.length === 0) {
+            return '<p class="no-settings">No guide settings configured yet.</p>';
         }
         
-        return html || '<div class="no-settings-message">No guide settings configured yet.</div>';
+        // Sort entries by quiz name
+        guideEntries.sort((a, b) => this.formatQuizName(a[0]).localeCompare(this.formatQuizName(b[0])));
+        
+        return `
+            <table class="settings-table">
+                <thead>
+                    <tr>
+                        <th style="width: 40px;"></th>
+                        <th>Quiz</th>
+                        <th>URL</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${guideEntries.map(([quizName, settings]) => `
+                        <tr>
+                            <td>
+                                <input type="checkbox" class="guide-checkbox" data-quiz="${quizName}">
+                            </td>
+                            <td>${this.formatQuizName(quizName)}</td>
+                            <td>
+                                <a href="${settings.url}" target="_blank" rel="noopener noreferrer">${settings.url}</a>
+                            </td>
+                            <td>
+                                <span class="status-badge ${settings.enabled ? 'enabled' : 'disabled'}">
+                                    ${settings.enabled ? 'Enabled' : 'Disabled'}
+                                </span>
+                            </td>
+                        </tr>
+                    `).join('')}
+                </tbody>
+            </table>
+        `;
     }
 
     // Helper function to format quiz names from kebab-case to Title Case
@@ -4355,18 +3920,6 @@ export class Admin2Dashboard extends AdminDashboard {
         for (const [quizName, settings] of Object.entries(this.autoResetSettings)) {
             if (!quizName) continue;
             
-            console.log(`Rendering settings for ${quizName}:`, settings);
-            console.log(`nextResetTime for ${quizName}:`, settings.nextResetTime);
-            
-            // If nextResetTime is missing but resetPeriod exists and enabled, calculate it
-            if (!settings.nextResetTime && settings.resetPeriod && settings.enabled) {
-                settings.nextResetTime = this.calculateNextResetTime(settings.resetPeriod);
-                console.log(`Calculated nextResetTime for ${quizName}: ${settings.nextResetTime}`);
-                
-                // Update the global settings
-                this.autoResetSettings[quizName] = settings;
-            }
-            
             const row = document.createElement('tr');
             
             // Format reset period text
@@ -4408,38 +3961,8 @@ export class Admin2Dashboard extends AdminDashboard {
                 }
             }
             
-            // Create the countdown text for next reset
-            let nextResetText = 'Not scheduled';
-            
-            // If we have nextResetTime, calculate a countdown
-            if (settings.nextResetTime) {
-                const nextResetTime = new Date(settings.nextResetTime);
-                const now = new Date();
-                const timeDiff = nextResetTime - now;
-                
-                if (timeDiff <= 0) {
-                    nextResetText = 'Reset due now!';
-                } else {
-                    // Calculate time units
-                    const days = Math.floor(timeDiff / (1000 * 60 * 60 * 24));
-                    const hours = Math.floor((timeDiff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-                    const minutes = Math.floor((timeDiff % (1000 * 60 * 60)) / (1000 * 60));
-                    const seconds = Math.floor((timeDiff % (1000 * 60)) / 1000);
-                    
-                    // Format countdown text
-                    nextResetText = '';
-                    if (days > 0) {
-                        nextResetText += `${days}d `;
-                    }
-                    if (hours > 0 || days > 0) {
-                        nextResetText += `${hours}h `;
-                    }
-                    if (minutes > 0 || hours > 0 || days > 0) {
-                        nextResetText += `${minutes}m `;
-                    }
-                    nextResetText += `${seconds}s`;
-                }
-            }
+            // Format next reset time - starts with a placeholder that will be updated by the countdown timer
+            let nextResetText = 'Loading...';
             
             // Set row content
             row.innerHTML = `
@@ -4745,21 +4268,6 @@ export class Admin2Dashboard extends AdminDashboard {
             if (!quizName || !this.autoResetSettings || !this.autoResetSettings[quizName]) return;
 
             const settings = this.autoResetSettings[quizName];
-            
-            // If nextResetTime is missing but we have resetPeriod and the setting is enabled,
-            // calculate the nextResetTime dynamically
-            if (!settings.nextResetTime && settings.resetPeriod && settings.enabled) {
-                // Use the second calculateNextResetTime that accepts just resetPeriod
-                const calculatedNextReset = this.calculateNextResetTime(settings.resetPeriod);
-                console.log(`Dynamically calculated next reset for ${quizName}: ${calculatedNextReset}`);
-                
-                // Store the calculated time so we don't recalculate every second
-                settings.nextResetTime = calculatedNextReset;
-                
-                // Update the autoResetSettings object with the calculated time
-                this.autoResetSettings[quizName] = settings;
-            }
-            
             if (!settings.nextResetTime) {
                 element.textContent = 'Not scheduled';
                 return;
@@ -4776,77 +4284,49 @@ export class Admin2Dashboard extends AdminDashboard {
     }
 
     updateCountdownDisplay(countdownElement, nextResetTime) {
-        try {
-            // Ensure nextResetTime is a valid Date object
-            let resetDate;
-            
-            if (typeof nextResetTime === 'string') {
-                resetDate = new Date(nextResetTime);
-                console.log(`Converted string date: ${nextResetTime} to Date object: ${resetDate}`);
-            } else if (nextResetTime instanceof Date) {
-                resetDate = nextResetTime;
-            } else {
-                console.error('Invalid nextResetTime format:', nextResetTime);
-                countdownElement.textContent = 'Invalid date';
-                return;
-            }
-            
-            // Check if date is valid
-            if (isNaN(resetDate.getTime())) {
-                console.error('Invalid date object:', resetDate);
-                countdownElement.textContent = 'Invalid date';
-                return;
-            }
-            
-            const now = new Date();
-            const timeDiff = resetDate - now;
-            
-            console.log(`Countdown calculation: nextResetTime=${resetDate}, now=${now}, diff=${timeDiff}ms`);
+        const now = new Date();
+        const timeDiff = nextResetTime - now;
 
-            if (timeDiff <= 0) {
-                countdownElement.textContent = 'Reset due now!';
-                countdownElement.classList.add('countdown-overdue');
-                
-                // Trigger a check for auto-resets that need processing
-                this.checkScheduledResets().catch(err => {
-                    console.error('Error checking scheduled resets:', err);
-                });
-                
-                return;
-            }
-
-            // Remove overdue class if it exists
-            countdownElement.classList.remove('countdown-overdue');
-
-            // Calculate time units
-            const days = Math.floor(timeDiff / (1000 * 60 * 60 * 24));
-            const hours = Math.floor((timeDiff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-            const minutes = Math.floor((timeDiff % (1000 * 60 * 60)) / (1000 * 60));
-            const seconds = Math.floor((timeDiff % (1000 * 60)) / 1000);
-
-            // Format countdown text
-            let countdownText = '';
-            if (days > 0) {
-                countdownText += `${days}d `;
-            }
-            if (hours > 0 || days > 0) {
-                countdownText += `${hours}h `;
-            }
-            if (minutes > 0 || hours > 0 || days > 0) {
-                countdownText += `${minutes}m `;
-            }
-            countdownText += `${seconds}s`;
-
-            // Show full date on hover
-            const fullDateStr = resetDate.toLocaleString();
-            countdownElement.title = `Next reset at: ${fullDateStr}`;
+        if (timeDiff <= 0) {
+            countdownElement.textContent = 'Reset due now!';
+            countdownElement.classList.add('countdown-overdue');
             
-            // Update the element with the countdown
-            countdownElement.textContent = countdownText;
-        } catch (error) {
-            console.error('Error updating countdown display:', error);
-            countdownElement.textContent = 'Error';
+            // Trigger a check for auto-resets that need processing
+            this.checkScheduledResets().catch(err => {
+                console.error('Error checking scheduled resets:', err);
+            });
+            
+            return;
         }
+
+        // Remove overdue class if it exists
+        countdownElement.classList.remove('countdown-overdue');
+
+        // Calculate time units
+        const days = Math.floor(timeDiff / (1000 * 60 * 60 * 24));
+        const hours = Math.floor((timeDiff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+        const minutes = Math.floor((timeDiff % (1000 * 60 * 60)) / (1000 * 60));
+        const seconds = Math.floor((timeDiff % (1000 * 60)) / 1000);
+
+        // Format countdown text
+        let countdownText = '';
+        if (days > 0) {
+            countdownText += `${days}d `;
+        }
+        if (hours > 0 || days > 0) {
+            countdownText += `${hours}h `;
+        }
+        if (minutes > 0 || hours > 0 || days > 0) {
+            countdownText += `${minutes}m `;
+        }
+        countdownText += `${seconds}s`;
+
+        // Show full date on hover
+        const fullDateStr = nextResetTime.toLocaleString();
+        countdownElement.title = `Next reset at: ${fullDateStr}`;
+        
+        // Update the element with the countdown
+        countdownElement.textContent = countdownText;
     }
 
     getPeriodLabel(minutes) {
@@ -4911,93 +4391,84 @@ export class Admin2Dashboard extends AdminDashboard {
 
     // Add this method after displayCurrentAutoResets
     async manuallyTriggerReset(quizName) {
-        try {
-            console.log(`Manually triggering reset for quiz: ${quizName}`);
-            
-            // Confirm with the user
-            const confirmed = confirm(`Are you sure you want to reset all completed ${this.formatQuizName(quizName)} quizzes? This will reset progress for all users who have completed this quiz.`);
-            
-            if (!confirmed) {
-                console.log('Reset cancelled by user');
-                return;
-            }
-            
-            // Show loading notification
-            this.showInfo(`Processing reset for ${this.formatQuizName(quizName)} quiz...`);
-            
-            // Get all users
-            const usersResponse = await this.apiService.getAllUsers();
-            
-            if (!usersResponse.success) {
-                throw new Error(`Failed to get users: ${usersResponse.message}`);
-            }
-            
-            const users = usersResponse.data || [];
-            console.log(`Checking ${users.length} users for completed ${quizName} quizzes`);
-            
-            // First pass: check all users' quizResults to find completed quizzes
-            // without making API calls (more efficient)
-            console.log("First pass: checking quizResults for all users");
+        console.log("Manual reset triggered for " + quizName);
+        
+        // First, check if any resets are scheduled or already completed
+        const autoResetStatus = await this.checkScheduledResets(quizName);
+        
+        // Get all users
+        const response = await this.apiService.getAllUsers();
+        const users = response.data;
+        if (!users || !Array.isArray(users)) {
+            console.error("Failed to get users or invalid response format");
+            return false;
+        }
+        console.log(`Found ${users.length} users`);
+        
+        // Define a function to check if a user completed the quiz
+        const hasCompletedQuiz = (user, quizName) => {
+            // Normalize quiz name
             const normalizedQuizName = quizName.toLowerCase().trim();
-            let completedUsers = [];
             
-            for (const user of users) {
-                if (user.quizResults && Array.isArray(user.quizResults)) {
-                    const quizResult = user.quizResults.find(r => 
-                        r.quizName && r.quizName.toLowerCase().trim() === normalizedQuizName);
-                    
-                    if (quizResult && quizResult.questionsAnswered >= 15) {
-                        console.log(`First pass: User ${user.username} has completed ${quizName} quiz with ${quizResult.questionsAnswered} questions`);
-                        completedUsers.push(user.username);
-                    }
+            // Check quizResults first (more reliable source)
+            if (user.quizResults && Array.isArray(user.quizResults)) {
+                const quizResult = user.quizResults.find(r => 
+                    r.quizName && r.quizName.toLowerCase().trim() === normalizedQuizName);
+                
+                if (quizResult && quizResult.questionsAnswered >= 15) {
+                    console.log(`User ${user.username} has completed quiz in quizResults: ${quizResult.questionsAnswered} questions`);
+                    return true;
                 }
             }
+            return false;
+        };
+        
+        // Special handling for TestUser4 - check directly
+        const testUser4 = users.find(u => u.username === "TestUser4");
+        if (testUser4 && hasCompletedQuiz(testUser4, quizName)) {
+            console.log("TestUser4 found with completed quiz - adding directly to completed users");
+            var completedUsers = ["TestUser4"];
+        } else {
+            var completedUsers = [];
+        }
+        
+        var skippedUsers = [];
+        
+        // Process the users to check their quiz progress
+        for (const user of users) {
+            // Skip TestUser4 if already in completedUsers
+            if (user.username === "TestUser4" && completedUsers.includes("TestUser4")) {
+                console.log("Skipping TestUser4 - already checked and added");
+                continue;
+            }
             
-            console.log(`First pass found ${completedUsers.length} users who completed the quiz`);
+            console.log(`Checking user ${user.username} for completed ${quizName} quiz`);
             
-            // Second pass: check remaining users with API calls
-            console.log("Second pass: checking quizProgress with API for remaining users");
-            const skippedUsers = [];
-            
-            for (const user of users) {
-                // Skip users already identified as having completed the quiz
-                if (completedUsers.includes(user.username)) {
-                    console.log(`Skipping API check for ${user.username} - already identified as completed`);
-                    continue;
+            try {
+                // Check if we can determine completion from quizResults first
+                if (hasCompletedQuiz(user, quizName)) {
+                    completedUsers.push(user.username);
+                    continue; // Skip the API call if we already determined completion
                 }
                 
-                console.log(`Checking user ${user.username} for completed ${quizName} quiz`);
-                
-                try {
-                    console.log(`Checking quizProgress for ${user.username}`);
-                    
-                    // Add a timeout to prevent hanging on unresponsive API calls
-                    const progressResponse = await Promise.race([
-                        this.apiService.getUserQuizProgress(user.username, quizName),
-                        new Promise((_, reject) => setTimeout(() => reject(new Error('API call timeout')), 5000))
-                    ]);
-                    
-                    if (progressResponse.success && progressResponse.data) {
-                        const progress = progressResponse.data;
-                        console.log(`${user.username} quizProgress data:`, progress);
-                        
-                        // Check if user has completed the quiz - ONLY check question count
-                        const isCompleted = progress.questionsAnswered >= 15 || 
-                                         (progress.questionHistory && progress.questionHistory.length >= 15);
-                        
-                        if (isCompleted) {
-                            console.log(`User ${user.username} has completed ${quizName} quiz (from quizProgress)`);
-                            completedUsers.push(user.username);
+                console.log(`Checking quizProgress for ${user.username}`);
+                            } else {
+                                console.log(`User ${user.username} has NOT completed ${quizName} quiz (from quizProgress)`);
+                                skippedUsers.push(user.username);
+                            }
                         } else {
-                            console.log(`User ${user.username} has NOT completed ${quizName} quiz (from quizProgress)`);
+                            console.log(`No progress data found for ${user.username} on ${quizName}`);
                             skippedUsers.push(user.username);
                         }
-                    } else {
-                        console.log(`No progress data found for ${user.username} on ${quizName}`);
+                    } catch (progressError) {
+                        console.error(`Error getting quiz progress for ${user.username}:`, progressError);
+                        console.log(`Skipping API call for ${user.username} and continuing with next user`);
                         skippedUsers.push(user.username);
                     }
-                } catch (error) {
-                    console.error(`Error checking progress for user ${user.username}:`, error);
+                } catch (userError) {
+                    // Even if checking this user fails completely, continue to the next user
+                    console.error(`Error checking user ${user.username}:`, userError);
+                    console.log(`Continuing to next user despite error`);
                     skippedUsers.push(user.username);
                 }
             }
@@ -5275,579 +4746,1176 @@ export class Admin2Dashboard extends AdminDashboard {
             }
         });
     }
-
-    // New methods for badges section
-    setupBadgesSection() {
-        console.log('Setting up badges section');
-        // Populate user dropdown
-        this.populateBadgesUserDropdown();
-    }
-    
-    populateBadgesUserDropdown() {
-        const userDropdown = document.getElementById('badgesUserDropdown');
-        if (!userDropdown) return;
-        
-        // Clear existing options
-        userDropdown.innerHTML = '<option value="">-- Select User --</option>';
-        
-        // Sort users alphabetically by username
-        const sortedUsers = [...this.users].sort((a, b) => 
-            a.username.localeCompare(b.username)
-        );
-        
-        // Add user options
-        sortedUsers.forEach(user => {
-            const option = document.createElement('option');
-            option.value = user.username;
-            option.textContent = user.username;
-            userDropdown.appendChild(option);
-        });
-    }
-    
-    async loadUserBadges(username) {
-        try {
-            // Show loading state
-            const badgesContainer = document.getElementById('userBadgesContainer');
-            badgesContainer.innerHTML = `
-                <div class="loading-message" style="text-align: center; padding: 40px 20px;">
-                    <div class="spinner-border text-primary" role="status">
-                        <span class="sr-only">Loading...</span>
-                    </div>
-                    <p style="margin-top: 15px;">Loading badges for ${username}...</p>
-                </div>
-            `;
-            
-            // Set a timeout to show an error message if it takes too long
-            const timeoutId = setTimeout(() => {
-                console.warn('Badge loading is taking too long, showing timeout message');
-                badgesContainer.innerHTML = `
-                    <div style="text-align: center; padding: 40px 20px; color: #e67e22;">
-                        <div style="font-size: 60px; margin-bottom: 20px;">
-                            <i class="fa-solid fa-clock"></i>
-                        </div>
-                        <h3 style="margin-bottom: 10px;">Loading is taking longer than expected</h3>
-                        <p>The server might be slow to respond. You can try again later or refresh the page.</p>
-                        <button id="retry-badges-btn" class="btn btn-primary mt-3" style="margin-top: 15px; padding: 8px 16px; background-color: #4e73df; color: white; border: none; border-radius: 4px; cursor: pointer;">Retry Loading</button>
-                    </div>
-                `;
-                
-                // Add event listener to retry button
-                document.getElementById('retry-badges-btn')?.addEventListener('click', () => {
-                    this.loadUserBadges(username);
-                });
-            }, 15000); // 15 seconds timeout
-            
-            // Call API to get user badges
-            console.log(`Requesting badges for user: ${username}`);
-            const response = await this.apiService.getUserBadgesByAdmin(username);
-            console.log(`Received badges response for ${username}:`, response);
-            
-            // Clear the timeout as we got a response
-            clearTimeout(timeoutId);
-            
-            if (!response.success) {
-                throw new Error(response.message || 'Failed to load badges');
-            }
-            
-            const badgesData = response.data;
-            console.log('Badges data received:', badgesData);
-            
-            // Generate badges HTML
-            let badgesHTML = '';
-            
-            // If no badges, show a message
-            if (!badgesData.badges || badgesData.badges.length === 0) {
-                badgesHTML = `
-                    <div style="text-align: center; padding: 40px 20px;">
-                        <div style="font-size: 80px; color: #ccc; margin-bottom: 20px;">
-                            <i class="fa-solid fa-award"></i>
-                        </div>
-                        <h3 style="color: #555; margin-bottom: 10px;">No Badges Available</h3>
-                        <p style="color: #777;">${username} hasn't started any quizzes yet.</p>
-                    </div>
-                `;
-            } else {
-                // Add badges summary
-                badgesHTML = `
-                    <div class="badges-summary">
-                        <div class="progress-container">
-                            <div class="progress-header">
-                                <div class="progress-title">Achievement Progress</div>
-                                <div class="progress-text">${badgesData.earnedCount}/${badgesData.totalBadges} Badges</div>
-                            </div>
-                            <div class="progress-bar">
-                                <div class="progress-fill" style="width: ${Math.round((badgesData.earnedCount / badgesData.totalBadges) * 100)}%"></div>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="badges-grid">
-                `;
-                
-                // Add each badge card
-                badgesData.badges.forEach(badge => {
-                    badgesHTML += `
-                        <div class="badge-card ${badge.earned ? '' : 'locked'}" id="badge-${badge.id}">
-                            <div class="badge-icon">
-                                <i class="${badge.icon}"></i>
-                            </div>
-                            <h3 class="badge-name">${badge.name}</h3>
-                            <p class="badge-description">${badge.description}</p>
-                            ${badge.earned && badge.completionDate 
-                                ? `<div class="badge-completion-date">Completed: ${this.formatDate(badge.completionDate)}</div>` 
-                                : ''}
-                            ${!badge.earned ? '<div class="lock-icon"><i class="fa-solid fa-lock"></i></div>' : ''}
-                        </div>
-                    `;
-                });
-                
-                badgesHTML += '</div>'; // Close badges-grid
-            }
-            
-            // Update the container
-            badgesContainer.innerHTML = badgesHTML;
-            
-        } catch (error) {
-            console.error('Error loading badges:', error);
-            const badgesContainer = document.getElementById('userBadgesContainer');
-            badgesContainer.innerHTML = `
-                <div style="text-align: center; padding: 40px 20px; color: #dc3545;">
-                    <div style="font-size: 60px; margin-bottom: 20px;">
-                        <i class="fa-solid fa-exclamation-circle"></i>
-                    </div>
-                    <h3 style="margin-bottom: 10px;">Error Loading Badges</h3>
-                    <p>${error.message || 'Failed to load badges. Please try again.'}</p>
-                    <button id="retry-badges-btn" class="btn btn-danger mt-3" style="margin-top: 15px; padding: 8px 16px; background-color: #dc3545; color: white; border: none; border-radius: 4px; cursor: pointer;">Retry</button>
-                </div>
-            `;
-            
-            // Add event listener to retry button
-            document.getElementById('retry-badges-btn')?.addEventListener('click', () => {
-                this.loadUserBadges(username);
-            });
-        }
-    }
-    
-    // Helper method for formatting dates in badge display
-    formatDate(dateString) {
-        if (!dateString) return 'N/A';
-        
-        try {
-            const date = new Date(dateString);
-            return date.toLocaleDateString('en-GB', {
-                day: 'numeric',
-                month: 'short',
-                year: 'numeric'
-            });
-        } catch (error) {
-            console.error('Error formatting date:', error);
-            return 'Invalid Date';
-        }
-    }
-
-    // Fix for export functions
-    exportUserData(type) {
-        if (type === 'simple') {
-            this.exportSimpleCSV();
-        } else {
-            this.exportUserDataToCSV();
-        }
-    }
-
-    exportUserDataToCSV() {
-        try {
-            // Create CSV header row
-            let csvContent = "Username,";
-            
-            // Add quiz names to header
-            this.quizTypes.forEach(quizName => {
-                csvContent += `${this.formatQuizName(quizName)} Questions,${this.formatQuizName(quizName)} Score%,${this.formatQuizName(quizName)} Status,`;
-            });
-            
-            // Add overall stats
-            csvContent += "Overall Progress%,Total Questions,Last Active\n";
-            
-            // Add data for each user
-            this.users.forEach(user => {
-                // Add username
-                csvContent += `${user.username},`;
-                
-                // Add data for each quiz
-                this.quizTypes.forEach(quizType => {
-                    const quizLower = quizType.toLowerCase();
-                    const progress = user.quizProgress?.[quizLower];
-                    const result = user.quizResults?.find(r => r.quizName.toLowerCase() === quizLower);
-                    
-                    // Prioritize values from quiz results over progress
-                    const questionsAnswered = result?.questionsAnswered || 
-                                            result?.questionHistory?.length ||
-                                            progress?.questionsAnswered || 
-                                            progress?.questionHistory?.length || 0;
-                    const score = result?.score || 0;
-                    
-                    // Determine status
-                    let status = "Not Started";
-                    if (questionsAnswered === 15) {
-                        status = score >= 70 ? "Pass" : "Fail";
-                    } else if (questionsAnswered > 0) {
-                        status = "Incomplete";
-                    }
-                    
-                    // Add quiz data to CSV
-                    csvContent += `${questionsAnswered}/15,${score}%,${status},`;
-                });
-                
-                // Add overall stats
-                const overallProgress = this.calculateQuestionsAnsweredPercent(user).toFixed(1);
-                const totalQuestions = this.quizTypes.reduce((total, quizType) => {
-                    const quizLower = quizType.toLowerCase();
-                    const progress = user.quizProgress?.[quizLower];
-                    const result = user.quizResults?.find(r => r.quizName.toLowerCase() === quizLower);
-                    
-                    const questionsAnswered = result?.questionsAnswered || 
-                                            result?.questionHistory?.length ||
-                                            progress?.questionsAnswered || 
-                                            progress?.questionHistory?.length || 0;
-                    
-                    return total + questionsAnswered;
-                }, 0);
-                
-                const lastActive = this.formatDate(this.getLastActiveDate(user));
-                
-                csvContent += `${overallProgress}%,${totalQuestions}/${this.quizTypes.length * 15},${lastActive}\n`;
-            });
-            
-            // Create a download link for the CSV file
-            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-            const url = URL.createObjectURL(blob);
-            const link = document.createElement('a');
-            link.setAttribute('href', url);
-            link.setAttribute('download', `user_quiz_data_${new Date().toISOString().slice(0, 10)}.csv`);
-            link.style.visibility = 'hidden';
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-            
-            this.showSuccess('CSV file downloaded successfully');
-        } catch (error) {
-            console.error('Error exporting CSV:', error);
-            this.showError('Failed to export CSV file');
-        }
-    }
-
-    exportSimpleCSV() {
-        try {
-            // Create CSV header row
-            let csvContent = "Name,Quiz,Questions,Score%,Status\n";
-            
-            // Add data for each user and their quizzes
-            this.users.forEach(user => {
-                // For each quiz, create a row
-                this.quizTypes.forEach(quizType => {
-                    const quizLower = quizType.toLowerCase();
-                    const progress = user.quizProgress?.[quizLower];
-                    const result = user.quizResults?.find(r => r.quizName.toLowerCase() === quizLower);
-                    
-                    // Prioritize values from quiz results over progress
-                    const questionsAnswered = result?.questionsAnswered || 
-                                            result?.questionHistory?.length ||
-                                            progress?.questionsAnswered || 
-                                            progress?.questionHistory?.length || 0;
-                    const score = result?.score || 0;
-                    
-                    // Determine status
-                    let status = "Not Started";
-                    if (questionsAnswered === 15) {
-                        status = score >= 70 ? "Pass" : "Fail";
-                    } else if (questionsAnswered > 0) {
-                        status = "Incomplete";
-                    }
-                    
-                    // Only add rows for quizzes that have been started
-                    if (questionsAnswered > 0) {
-                        csvContent += `${user.username},${this.formatQuizName(quizType)},${questionsAnswered}/15,${score}%,${status}\n`;
-                    }
-                });
-            });
-            
-            // Create a download link for the CSV file
-            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-            const url = URL.createObjectURL(blob);
-            const link = document.createElement('a');
-            link.setAttribute('href', url);
-            link.setAttribute('download', `simple_quiz_data_${new Date().toISOString().slice(0, 10)}.csv`);
-            link.style.visibility = 'hidden';
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-            
-            this.showSuccess('Simple CSV file downloaded successfully');
-        } catch (error) {
-            console.error('Error exporting simple CSV:', error);
-            this.showError('Failed to export simple CSV file');
-        }
-    }
-
-    // Helper method to refresh the guide settings list
-    refreshGuideSettingsList(setupEventListeners = true) {
-        console.log(`Refreshing guide settings list (setupEventListeners=${setupEventListeners})...`);
-        const container = document.getElementById('guide-settings-container');
-        if (!container) {
-            console.warn('Guide settings container not found');
-            return;
-        }
-        
-        const guideSettingsList = container.querySelector('#guide-settings-list');
-        if (!guideSettingsList) {
-            console.warn('Guide settings list element not found');
-            return;
-        }
-        
-        // Update the HTML content
-        guideSettingsList.innerHTML = this.generateGuideSettingsList(this.guideSettings);
-        console.log(`Updated guide settings list with ${Object.keys(this.guideSettings || {}).length} guides`);
-        
-        // Only set up event listeners if requested
-        if (setupEventListeners) {
-            // Re-initialize all event listeners
-            // We need to get the original setupGuideItemEventListeners function from the displayGuideSettings method
-            if (typeof container.setupGuideItemEventListeners === 'function') {
-                console.log('Re-initializing all event listeners for guide settings');
-                container.setupGuideItemEventListeners();
-            } else {
-                console.warn('setupGuideItemEventListeners function not found on container');
-                // If we can't find the setup function on the container, we need to reattach the 
-                // edit button event listeners manually
-                const editButtons = container.querySelectorAll('.edit-guide-btn');
-                editButtons.forEach(button => {
-                    button.addEventListener('click', async () => {
-                        const quizName = button.getAttribute('data-quiz');
-                        if (quizName && this.guideSettings[quizName]) {
-                            const currentUrl = this.guideSettings[quizName].url || '';
-                            const currentEnabled = this.guideSettings[quizName].enabled || false;
-                            
-                            // Simple URL prompt approach - guaranteed to work
-                            const newUrl = prompt(`Edit URL for ${this.formatQuizName(quizName)}:`, currentUrl);
-                            if (newUrl === null) return; // User canceled
-                            
-                            if (!newUrl.trim()) {
-                                alert('Please enter a URL');
-                                return;
-                            }
-                            
-                            try {
-                                // Validate URL format
-                                new URL(newUrl);
-                            } catch (e) {
-                                alert('Please enter a valid URL (include http:// or https://)');
-                                return;
-                            }
-                            
-                            // Simple confirm for enabled state - store result but don't show another message yet
-                            const newEnabled = confirm(`Enable guide for ${this.formatQuizName(quizName)}?`);
-                            
-                            try {
-                                // Use a separate method that doesn't show the initial loading message
-                                await this.saveGuideSettingsWithoutInitialMessage(quizName, newUrl, newEnabled);
-                            } catch (error) {
-                                console.error('Error during guide edit:', error);
-                                this.showInfo('Failed to save guide settings', 'error');
-                            }
-                        }
-                    });
-                });
-            }
-        }
-        
-        // Always reattach test button listeners regardless of setupEventListeners value
-        // since these are simple and don't trigger a save operation
-        const testButtons = container.querySelectorAll('.test-guide-btn');
-        testButtons.forEach(button => {
-            const url = button.getAttribute('data-url');
-            if (url) {
-                button.removeAttribute('disabled');
-                button.addEventListener('click', () => {
-                    window.open(url, '_blank');
-                });
-            } else {
-                button.setAttribute('disabled', 'true');
-            }
-        });
-    }
-
-    async saveGuideSettingsWithoutInitialMessage(quiz, url, enabled) {
-        try {
-            // Skip showing the initial loading message to avoid duplicate notifications
-            console.log(`Saving guide setting for ${quiz}: url=${url}, enabled=${enabled}`);
-
-            // First update in-memory state for immediate UI feedback
-            if (!this.guideSettings) {
-                this.guideSettings = {};
-            }
-                
-            this.guideSettings[quiz] = { url, enabled };
-                
-            // Update localStorage immediately for redundancy
-            try {
-                localStorage.setItem('guideSettings', JSON.stringify(this.guideSettings));
-                console.log(`Updated guide settings in localStorage (${Object.keys(this.guideSettings).length} guides)`);
-            } catch (e) {
-                console.warn(`Failed to save guide settings to localStorage: ${e.message}`);
-            }
-            
-            // Make the API call - don't refresh list yet to avoid double event handlers
-            const response = await this.apiService.saveGuideSetting(quiz, url, enabled);
-
-            if (response.success) {
-                console.log('Guide setting saved successfully:', response);
-                
-                // Reload all guide settings to ensure consistency, but don't trigger displayGuideSettings
-                // which would set up event listeners again
-                try {
-                    const refreshResponse = await this.apiService.getGuideSettings();
-                    if (refreshResponse.success) {
-                        this.guideSettings = refreshResponse.data || {};
-                        console.log('Guide settings reloaded with', Object.keys(this.guideSettings).length, 'guides');
-                    }
-                } catch (refreshError) {
-                    console.warn('Error refreshing guide settings:', refreshError);
-                }
-                
-                // Now refresh the list display without setting up new event handlers
-                this.refreshGuideSettingsList(false); // Pass false to indicate not to set up new event handlers
-                
-                // Show success message
-                if (response.source === 'localStorage') {
-                    this.showInfo(`Guide settings saved locally only (server unavailable).`, 'warning');
-                } else {
-                    this.showInfo(`Guide settings for ${this.formatQuizName(quiz)} saved successfully!`);
-                }
-                
-                return true;
-            } else {
-                throw new Error(response.message || 'Failed to save guide settings');
-            }
-        } catch (error) {
-            console.error('Error saving guide settings:', error);
-            
-            // Special handling for validation errors
-            if (error.message && error.message.includes('URL format')) {
-                this.showInfo(`Error: ${error.message}`, 'error');
-            } else {
-                this.showInfo('Failed to save guide settings', 'error');
-            }
-            
-            throw error;
-        }
-    }
-
-    // Helper method to calculate percentage of total questions answered (out of 375)
-    calculateQuestionsAnsweredPercent(user) {
-        if (!user) return 0;
-
-        let totalQuestionsAnswered = 0;
-        const totalPossibleQuestions = 375; // 25 quizzes * 15 questions
-        
-        // Sum up questions answered across all quizzes
-        if (this.quizTypes && Array.isArray(this.quizTypes)) {
-            this.quizTypes.forEach(quizType => {
-                if (typeof quizType === 'string') {
-                    const progress = user.quizProgress?.[quizType.toLowerCase()];
-                    const result = user.quizResults?.find(r => r.quizName.toLowerCase() === quizType.toLowerCase());
-                    
-                    // Prioritize values from quiz results over progress
-                    const questionsAnswered = result?.questionsAnswered || 
-                                          result?.questionHistory?.length ||
-                                          progress?.questionsAnswered || 
-                                          progress?.questionHistory?.length || 0;
-                    
-                    totalQuestionsAnswered += questionsAnswered;
-                }
-            });
-        }
-
-        // Calculate progress as percentage of total possible questions
-        return (totalQuestionsAnswered / totalPossibleQuestions) * 100;
-    }
-
-    // Calculate the average score for a user based on total questions answered percentage
-    calculateAverageScore(user) {
-        if (!user) return 0;
-        return this.calculateQuestionsAnsweredPercent(user);
-    }
 }
 
 // Initialize the Admin2Dashboard when the document is ready
 document.addEventListener('DOMContentLoaded', () => {
     const dashboard = new Admin2Dashboard();
-    
-    // --- Move this function up so it's defined before use ---
-    const updateAverageCompletionStat = (dashboardInstance) => {
-        const averageCompletionElement = document.getElementById('averageCompletion');
-        if (!averageCompletionElement) return;
-        let totalQuestions = 0;
-        let totalUsers = 0;
-        if (dashboardInstance.users && Array.isArray(dashboardInstance.users)) {
-            dashboardInstance.users.forEach(user => {
-                let userQuestions = 0;
-                if (dashboardInstance.quizTypes && Array.isArray(dashboardInstance.quizTypes)) {
-                    dashboardInstance.quizTypes.forEach(quizType => {
-                        if (typeof quizType === 'string') {
-                            const progress = user.quizProgress?.[quizType.toLowerCase()];
-                            const result = user.quizResults?.find(r => r.quizName.toLowerCase() === quizType.toLowerCase());
-                            const questionsAnswered = result?.questionsAnswered || 
-                                result?.questionHistory?.length ||
-                                progress?.questionsAnswered || 
-                                progress?.questionHistory?.length || 0;
-                            userQuestions += questionsAnswered;
-                        }
-                    });
-                }
-                totalQuestions += userQuestions;
-                totalUsers++;
-            });
-        }
-        if (totalUsers > 0) {
-            const avgQuestions = totalQuestions / totalUsers;
-            const totalPossibleQuestions = 375;
-            const avgPercentage = (avgQuestions / totalPossibleQuestions) * 100;
-            averageCompletionElement.textContent = `${avgPercentage.toFixed(1)}%`;
-            console.log(`Updated Average Completion stat to ${avgPercentage.toFixed(1)}%`);
-        }
-    };
-
-    // ... existing code ...
-    // Add specific listener for updateUsersList completion
-    const originalUpdateUsersList = Admin2Dashboard.prototype.updateUsersList;
-    Admin2Dashboard.prototype.updateUsersList = async function() {
-        console.log('updateUsersList called, users:', this.users);
-        await originalUpdateUsersList.apply(this, arguments);
-        console.log("updateUsersList completed, forcing average score update");
-        setTimeout(forceUpdateAverageScores, 100);
-        updateAverageCompletionStat(this); // <-- Call here after users list is updated
-    };
-
-    // Remove the periodic update for average completion stat
-    // setTimeout(updateAverageCompletionStat, 2000);
-    // setInterval(updateAverageCompletionStat, 5000);
-
-    // Patch quiz types loading to also update the stat
-    const originalLoadQuizTypes = Admin2Dashboard.prototype.loadQuizTypes;
-    if (originalLoadQuizTypes) {
-        Admin2Dashboard.prototype.loadQuizTypes = async function() {
-            await originalLoadQuizTypes.apply(this, arguments);
-            updateAverageCompletionStat(this);
-        };
-    }
-
-    // Patch loadUsers to also update the stat after users are loaded
-    const originalLoadUsers = Admin2Dashboard.prototype.loadUsers;
-    if (originalLoadUsers) {
-        Admin2Dashboard.prototype.loadUsers = async function() {
-            const result = await originalLoadUsers.apply(this, arguments);
-            updateAverageCompletionStat(this);
-            return result;
-        };
-    }
-
-    // ... existing code ...
 });
+
+// Add some additional styles to the document
+const styleElement = document.createElement('style');
+styleElement.textContent = `
+    /* Form styles */
+    .form-group {
+        margin-bottom: 1.5rem;
+    }
+    
+    .form-group label {
+        display: block;
+        margin-bottom: 0.5rem;
+        font-weight: 500;
+        color: #333;
+    }
+    
+    .form-group input {
+        width: 100%;
+        padding: 10px 12px;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        font-size: 1rem;
+        transition: border-color 0.2s;
+    }
+    
+    .form-group input:focus {
+        border-color: #3498db;
+        outline: none;
+        box-shadow: 0 0 0 2px rgba(52, 152, 219, 0.2);
+    }
+    
+    .password-input-container {
+        position: relative;
+        width: 100%;
+    }
+    
+    .password-toggle {
+        position: absolute;
+        right: 12px;
+        top: 50%;
+        transform: translateY(-50%);
+        background: none;
+        border: none;
+        cursor: pointer;
+        font-size: 1rem;
+        color: #555;
+        transition: color 0.2s;
+    }
+    
+    .password-toggle:hover {
+        color: #3498db;
+    }
+    
+    .settings-form {
+        max-width: 600px;
+        background: white;
+        padding: 1.5rem;
+        border-radius: 8px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+    
+    .settings-input {
+        width: 100%;
+        max-width: 300px;
+        padding: 10px 12px;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        margin-bottom: 0.5rem;
+        font-size: 1rem;
+    }
+    
+    /* Action button styles */
+    .action-button {
+        background: #3498db;
+        color: white;
+        border: none;
+        padding: 10px 16px;
+        border-radius: 4px;
+        cursor: pointer;
+        font-weight: 500;
+        transition: background-color 0.2s, transform 0.1s;
+        font-size: 1rem;
+    }
+    
+    .action-button:hover {
+        background: #2980b9;
+    }
+    
+    .action-button:active {
+        transform: translateY(1px);
+    }
+    
+    /* Create account form styles */
+    .create-account-form {
+        width: 100%;
+        max-width: 800px;
+        background: white;
+        padding: 2rem;
+        border-radius: 8px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        margin: 0 auto;
+    }
+    
+    .quiz-selection-container {
+        max-height: none;
+    }
+    
+    .quiz-selection {
+        max-height: 400px;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        padding: 1rem;
+        overflow-y: auto;
+        background-color: #f9f9f9;
+    }
+    
+    .select-all-option {
+        padding: 0.75rem;
+        margin-bottom: 1rem;
+        background-color: #f0f0f0;
+        border-radius: 4px;
+        position: relative;
+        z-index: 1;
+        font-weight: 500;
+    }
+    
+    .quiz-options {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+        gap: 0.75rem;
+    }
+    
+    .quiz-option {
+        padding: 0.75rem;
+        background-color: white;
+        border-radius: 4px;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        transition: background-color 0.2s;
+    }
+    
+    .quiz-option:hover {
+        background-color: #f5f5f5;
+    }
+    
+    /* Improve checkbox styling */
+    input[type="checkbox"] {
+        margin-right: 8px;
+        position: relative;
+        top: 2px;
+        width: 16px;
+        height: 16px;
+    }
+    
+    /* Scenarios styles */
+    .scenarios-intro {
+        margin-bottom: 1.5rem;
+        color: #555;
+    }
+    
+    .scenario-categories {
+        display: flex;
+        flex-direction: column;
+        gap: 2rem;
+        margin-top: 1.5rem;
+        width: 100%;
+    }
+    
+    .scenario-category {
+        background: white;
+        border-radius: 8px;
+        padding: 1.5rem;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+    
+    .category-heading {
+        margin-top: 0;
+        margin-bottom: 1.5rem;
+        color: #2c3e50;
+        font-size: 1.3rem;
+        padding-bottom: 0.75rem;
+        border-bottom: 1px solid #eee;
+    }
+    
+    .category-quizzes {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+        gap: 1.5rem;
+        width: 100%;
+    }
+    
+    .quiz-type-card {
+        background: white;
+        border-radius: 8px;
+        padding: 1.5rem;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
+        transition: transform 0.2s, box-shadow 0.2s;
+        border: 1px solid #eee;
+        width: 100%;
+    }
+    
+    .quiz-type-card:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    }
+    
+    .quiz-type-card h3 {
+        margin-top: 0;
+        margin-bottom: 1rem;
+        font-size: 1.2rem;
+        color: #2c3e50;
+    }
+    
+    .view-scenarios-btn {
+        background: #3498db;
+        color: white;
+        border: none;
+        padding: 8px 16px;
+        border-radius: 4px;
+        cursor: pointer;
+        font-weight: 500;
+        transition: background 0.2s;
+    }
+    
+    .view-scenarios-btn:hover {
+        background: #2980b9;
+    }
+    
+    /* Scenario details */
+    .scenario-section {
+        margin-bottom: 2.5rem;
+    }
+    
+    .scenario-level-title {
+        margin-top: 0;
+        padding-bottom: 0.75rem;
+        border-bottom: 1px solid #eee;
+        color: #2c3e50;
+        font-size: 1.3rem;
+    }
+    
+    .scenarios-list {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+        gap: 1.5rem;
+        margin-top: 1rem;
+        width: 100%;
+    }
+    
+    .user-details-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(0, 0, 0, 0.5);
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        z-index: 1000;
+    }
+    
+    .user-details-content {
+        background: white;
+        border-radius: 8px;
+        padding: 2rem;
+        box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+        max-height: 90vh;
+        overflow-y: auto;
+        width: 90%;
+        max-width: 1200px;
+    }
+
+    .details-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 1.5rem;
+        padding-bottom: 1rem;
+        border-bottom: 1px solid #eee;
+    }
+
+    .details-header h3 {
+        margin: 0;
+        font-size: 1.5rem;
+        color: #2c3e50;
+    }
+
+    .close-btn {
+        background: none;
+        border: none;
+        font-size: 1.5rem;
+        color: #555;
+        cursor: pointer;
+        transition: color 0.2s;
+    }
+
+    .close-btn:hover {
+        color: #e74c3c;
+    }
+    
+    .scenario-card {
+        background: #f8f9fa;
+        border-radius: 8px;
+        padding: 1.5rem;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        border: 1px solid #eee;
+        width: 100%;
+        transition: transform 0.2s, box-shadow 0.2s;
+    }
+    
+    .scenario-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 3px 6px rgba(0,0,0,0.1);
+    }
+    
+    .scenario-card h4 {
+        margin-top: 0;
+        margin-bottom: 0.75rem;
+        color: #2c3e50;
+        font-size: 1.1rem;
+    }
+    
+    .scenario-description {
+        color: #555;
+        margin-bottom: 1rem;
+        line-height: 1.5;
+    }
+    
+    .scenario-options {
+        margin-top: 1rem;
+    }
+
+    .scenario-options strong {
+        display: block;
+        margin-bottom: 0.5rem;
+        color: #333;
+    }
+    
+    .options-list {
+        list-style-type: none;
+        padding: 0;
+        margin: 0;
+    }
+    
+    .option-item {
+        padding: 0.75rem;
+        background: white;
+        border-radius: 4px;
+        margin-bottom: 0.75rem;
+        border: 1px solid #eee;
+    }
+    
+    .option-item:last-child {
+        margin-bottom: 0;
+    }
+    
+    .correct-option {
+        border-left: 4px solid #2ecc71;
+    }
+
+    .option-text {
+        line-height: 1.4;
+    }
+
+    .option-outcome {
+        margin-top: 0.5rem;
+        color: #27ae60;
+        font-style: italic;
+    }
+    
+    /* Row view styles */
+    .users-list.row-view {
+        display: flex;
+        flex-direction: column;
+        gap: 0.75rem;
+        margin-top: 1.5rem;
+    }
+    
+    .users-list.row-view .user-card {
+        background: white;
+        border-radius: 8px;
+        margin-bottom: 0.75rem;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        transition: transform 0.2s, box-shadow 0.2s;
+        width: 100%;
+    }
+    
+    .users-list.row-view .user-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    }
+    
+    .users-list.row-view .row-content {
+        display: flex;
+        align-items: center;
+        padding: 1rem 1.5rem;
+        width: 100%;
+    }
+    
+    .users-list.row-view .user-info {
+        display: flex;
+        align-items: center;
+        min-width: 180px;
+        margin-right: 1.5rem;
+    }
+    
+    .users-list.row-view .username {
+        font-weight: 600;
+        font-size: 1.1rem;
+        margin-right: 0.75rem;
+        color: #2c3e50;
+    }
+    
+    .users-list.row-view .account-type-badge {
+        padding: 3px 8px;
+        border-radius: 12px;
+        font-size: 0.75rem;
+        background-color: #3498db;
+        color: white;
+        font-weight: 500;
+    }
+    
+    .users-list.row-view .user-stats {
+        display: flex;
+        flex: 1;
+        justify-content: space-between;
+        gap: 1.5rem;
+        margin-right: 1.5rem;
+    }
+    
+    .users-list.row-view .stat {
+        display: flex;
+        align-items: baseline;
+        white-space: nowrap;
+    }
+    
+    .users-list.row-view .stat-label {
+        color: #666;
+        margin-right: 0.5rem;
+        font-size: 0.9rem;
+    }
+    
+    .users-list.row-view .stat-value {
+        font-weight: 600;
+        color: #333;
+    }
+    
+    .users-list.row-view .row-btn {
+        background: #3498db;
+        color: white;
+        border: none;
+        border-radius: 4px;
+        padding: 0.5rem 1rem;
+        cursor: pointer;
+        font-weight: 500;
+        white-space: nowrap;
+        min-width: 110px;
+        transition: background 0.2s;
+    }
+    
+    .users-list.row-view .row-btn:hover {
+        background: #2980b9;
+    }
+
+    /* Grid view styles */
+    .users-list.grid-view .user-card {
+        background: white;
+        border-radius: 8px;
+        padding: 1.5rem;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        transition: transform 0.2s, box-shadow 0.2s;
+        display: flex;
+        flex-direction: column;
+    }
+
+    .users-list.grid-view .user-card:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+    }
+
+    .users-list.grid-view .user-card-content {
+        flex: 1;
+    }
+
+    .users-list.grid-view .user-header {
+        margin-bottom: 1rem;
+    }
+
+    .users-list.grid-view .user-header h4 {
+        margin-top: 0;
+        margin-bottom: 0.5rem;
+        color: #2c3e50;
+    }
+
+    .users-list.grid-view .user-stats {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 0.75rem;
+    }
+
+    .users-list.grid-view .stat {
+        display: flex;
+        flex-direction: column;
+    }
+
+    .users-list.grid-view .stat-label {
+        color: #666;
+        font-size: 0.85rem;
+        margin-bottom: 0.25rem;
+    }
+
+    .users-list.grid-view .stat-value {
+        font-weight: 600;
+        color: #333;
+    }
+
+    .users-list.grid-view .view-details-btn {
+        background: #3498db;
+        color: white;
+        border: none;
+        border-radius: 4px;
+        padding: 0.75rem 1rem;
+        margin-top: 1rem;
+        cursor: pointer;
+        font-weight: 500;
+        transition: background 0.2s;
+        width: 100%;
+    }
+
+    .users-list.grid-view .view-details-btn:hover {
+        background: #2980b9;
+    }
+    
+    /* Error and success messages */
+    .error-message {
+        background-color: #f8d7da;
+        color: #721c24;
+        padding: 1rem;
+        border-radius: 4px;
+        margin-bottom: 1rem;
+        border: 1px solid #f5c6cb;
+    }
+
+    .success-message {
+        background-color: #d4edda;
+        color: #155724;
+        padding: 1rem;
+        border-radius: 4px;
+        margin-bottom: 1rem;
+        border: 1px solid #c3e6cb;
+    }
+
+    .retry-button {
+        background: #3498db;
+        color: white;
+        border: none;
+        border-radius: 4px;
+        padding: 0.5rem 1rem;
+        margin-top: 0.5rem;
+        cursor: pointer;
+        font-weight: 500;
+    }
+
+    /* Loading spinner */
+    .loading-spinner {
+        width: 40px;
+        height: 40px;
+        border: 3px solid rgba(0, 0, 0, 0.1);
+        border-radius: 50%;
+        border-top-color: #3498db;
+        animation: spin 1s ease-in-out infinite;
+        margin: 1rem auto;
+    }
+
+    @keyframes spin {
+        to { transform: rotate(360deg); }
+    }
+    
+    /* Responsive styles */
+    @media (max-width: 1024px) {
+        .users-list.row-view .user-stats {
+            flex-wrap: wrap;
+            gap: 0.75rem;
+        }
+        
+        .users-list.row-view .row-content {
+            flex-wrap: wrap;
+        }
+        
+        .users-list.row-view .row-btn {
+            margin-top: 0.75rem;
+        }
+        
+        .category-quizzes {
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        }
+        
+        .scenarios-list {
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        }
+    }
+    
+    @media (max-width: 768px) {
+        .quiz-options {
+            grid-template-columns: 1fr;
+        }
+        
+        .category-quizzes {
+            grid-template-columns: 1fr;
+        }
+        
+        .scenarios-list {
+            grid-template-columns: 1fr;
+        }
+        
+        .users-list.row-view .user-info,
+        .users-list.row-view .user-stats {
+            width: 100%;
+            margin-bottom: 0.75rem;
+        }
+        
+        .users-list.row-view .row-content {
+            flex-direction: column;
+            align-items: flex-start;
+        }
+        
+        .users-list.row-view .row-btn {
+            align-self: flex-end;
+        }
+        
+        .user-details-content {
+            width: 95%;
+            padding: 1rem;
+        }
+    }
+
+    /* User details modal styles */
+    .details-tabs {
+        display: flex;
+        border-bottom: 1px solid #dee2e6;
+        margin-bottom: 1.5rem;
+    }
+    
+    .tab-button {
+        padding: 0.75rem 1rem;
+        background: none;
+        border: none;
+        border-bottom: 3px solid transparent;
+        font-weight: 500;
+        color: #666;
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+    
+    .tab-button:hover {
+        color: #3498db;
+    }
+    
+    .tab-button.active {
+        color: #3498db;
+        border-bottom-color: #3498db;
+    }
+    
+    .tab-content {
+        display: none;
+    }
+    
+    .tab-content.active {
+        display: block;
+    }
+    
+    .user-summary {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 2rem;
+        margin-bottom: 2rem;
+    }
+    
+    .user-info-section {
+        flex: 1;
+        min-width: 300px;
+    }
+    
+    .user-actions {
+        display: flex;
+        flex-direction: column;
+        gap: 0.75rem;
+    }
+    
+    .danger-button {
+        background-color: #e74c3c;
+    }
+    
+    .danger-button:hover {
+        background-color: #c0392b;
+    }
+    
+    .info-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+        gap: 1rem;
+        margin-top: 1rem;
+    }
+    
+    .info-item {
+        display: flex;
+        flex-direction: column;
+    }
+    
+    .info-label {
+        color: #666;
+        font-size: 0.85rem;
+        margin-bottom: 0.25rem;
+    }
+    
+    .info-value {
+        font-weight: 600;
+        color: #333;
+    }
+    
+    .progress-summary {
+        margin-top: 1.5rem;
+    }
+    
+    .progress-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+        gap: 1.5rem;
+        margin-top: 1rem;
+    }
+    
+    .quiz-progress-item {
+        background-color: white;
+        border-radius: 8px;
+        padding: 1rem;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+    }
+    
+    .quiz-progress-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 0.75rem;
+    }
+    
+    .quiz-name {
+        font-weight: 600;
+        color: #2c3e50;
+    }
+    
+    .quiz-percent {
+        font-weight: 700;
+        color: #3498db;
+    }
+    
+    .progress-bar-container {
+        height: 8px;
+        background-color: #f1f1f1;
+        border-radius: 4px;
+        overflow: hidden;
+        margin-bottom: 0.75rem;
+    }
+    
+    .progress-bar {
+        height: 100%;
+        background-color: #3498db;
+        border-radius: 4px;
+    }
+    
+    .quiz-stats {
+        display: flex;
+        justify-content: space-between;
+        color: #666;
+        font-size: 0.9rem;
+    }
+    
+    .quiz-stat i {
+        margin-right: 0.25rem;
+        color: #7f8c8d;
+    }
+    
+    /* Quiz Results Tab Styles */
+    .quiz-results-container {
+        margin-top: 1rem;
+    }
+    
+    .quiz-details-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+        gap: 1.5rem;
+        margin-top: 1rem;
+    }
+    
+    .quiz-detail-card {
+        background-color: white;
+        border-radius: 8px;
+        padding: 1.25rem;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+    }
+    
+    .quiz-detail-card h5 {
+        margin-top: 0;
+        margin-bottom: 1rem;
+        color: #2c3e50;
+        border-bottom: 1px solid #eee;
+        padding-bottom: 0.5rem;
+    }
+    
+    .answer-stats {
+        display: flex;
+        justify-content: center;
+        gap: 2rem;
+        margin-bottom: 1.5rem;
+    }
+    
+    .stat-circle {
+        width: 80px;
+        height: 80px;
+        border-radius: 50%;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        color: white;
+    }
+    
+    .stat-circle.correct {
+        background-color: #2ecc71;
+    }
+    
+    .stat-circle.incorrect {
+        background-color: #e74c3c;
+    }
+    
+    .stat-value {
+        font-size: 1.5rem;
+        font-weight: 700;
+    }
+    
+    .stat-label {
+        font-size: 0.8rem;
+        margin-top: 0.25rem;
+    }
+    
+    .accuracy-bar {
+        margin-top: 1rem;
+    }
+    
+    .accuracy-label {
+        margin-bottom: 0.5rem;
+        color: #666;
+        font-size: 0.9rem;
+    }
+    
+    .accuracy-bar-container {
+        height: 8px;
+        background-color: #f1f1f1;
+        border-radius: 4px;
+        overflow: hidden;
+        margin-bottom: 0.5rem;
+    }
+    
+    .accuracy-bar-fill {
+        height: 100%;
+        background-color: #2ecc71;
+        border-radius: 4px;
+    }
+    
+    .accuracy-value {
+        text-align: right;
+        font-weight: 600;
+        color: #333;
+        font-size: 0.9rem;
+    }
+    
+    .no-activity {
+        color: #7f8c8d;
+        font-style: italic;
+        text-align: center;
+        margin-top: 1rem;
+    }
+    
+    /* Activity Tab Styles */
+    .activity-history {
+        margin-top: 1rem;
+    }
+    
+    .activity-timeline {
+        margin-top: 1.5rem;
+    }
+    
+    .activity-item {
+        display: flex;
+        margin-bottom: 1.5rem;
+        position: relative;
+    }
+    
+    .activity-item:not(:last-child)::after {
+        content: '';
+        position: absolute;
+        left: 80px;
+        top: 24px;
+        bottom: -24px;
+        width: 2px;
+        background-color: #f1f1f1;
+    }
+    
+    .activity-time {
+        min-width: 160px;
+        color: #7f8c8d;
+        font-size: 0.9rem;
+        padding-top: 0.25rem;
+    }
+    
+    .activity-details {
+        flex: 1;
+        background-color: white;
+        border-radius: 8px;
+        padding: 1rem;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+    }
+    
+    .activity-type {
+        font-weight: 600;
+        color: #2c3e50;
+        margin-bottom: 0.5rem;
+    }
+    
+    .activity-type i {
+        margin-right: 0.5rem;
+        color: #3498db;
+    }
+    
+    .activity-description {
+        color: #555;
+    }
+
+    .retry-button:hover {
+        background: #2980b9;
+    }
+
+    /* Loading spinner */
+    .loading-spinner {
+        width: 40px;
+        height: 40px;
+        border: 3px solid rgba(0, 0, 0, 0.1);
+        border-radius: 50%;
+        border-top-color: #3498db;
+        animation: spin 1s ease-in-out infinite;
+        margin: 1rem auto;
+    }
+
+    @keyframes spin {
+        to { transform: rotate(360deg); }
+    }
+    
+    /* Info message */
+    .info-message {
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        background-color: #d1ecf1;
+        color: #0c5460;
+        padding: 1rem;
+        border-radius: 4px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+        z-index: 1000;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        max-width: 400px;
+        border-left: 4px solid #0c5460;
+        animation: slide-in 0.3s ease-out;
+    }
+    
+    .info-message .close-message {
+        background: none;
+        border: none;
+        color: #0c5460;
+        font-size: 1.2rem;
+        cursor: pointer;
+        padding: 0 0 0 10px;
+        margin-left: 10px;
+    }
+    
+    @keyframes slide-in {
+        from { transform: translateX(100%); opacity: 0; }
+        to { transform: translateX(0); opacity: 1; }
+    }
+
+    /* Add styles for timer settings */
+    .timer-settings {
+        padding: 20px;
+        max-width: 800px;
+        margin: 0 auto;
+    }
+    
+    .timer-table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 10px;
+    }
+    
+    .timer-table th,
+    .timer-table td {
+        padding: 8px;
+        text-align: left;
+        border-bottom: 1px solid #ddd;
+    }
+    
+    .timer-table th {
+        background-color: #f5f5f5;
+        font-weight: 600;
+    }
+    
+    .timer-checkbox {
+        width: 16px;
+        height: 16px;
+        cursor: pointer;
+    }
+    
+    .custom-timers-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 15px;
+        padding: 10px 0;
+        border-bottom: 2px solid #eee;
+    }
+    
+    .custom-timers-actions {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+    
+    .select-all-label {
+        display: flex;
+        align-items: center;
+        gap: 5px;
+        cursor: pointer;
+        user-select: none;
+    }
+    
+    .action-button {
+        padding: 6px 12px;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 14px;
+        transition: all 0.2s ease;
+    }
+    
+    .action-button:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+    }
+    
+    .action-button.danger {
+        background-color: #dc3545;
+        color: white;
+    }
+    
+    .action-button.danger:hover:not(:disabled) {
+        background-color: #c82333;
+    }
+    
+    .no-custom-timers {
+        color: #666;
+        font-style: italic;
+        margin: 20px 0;
+    }
+    
+    /* Auto-reset table styles */
+    .auto-reset-table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 15px;
+        background-color: #fff;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        border-radius: 4px;
+    }
+    
+    .auto-reset-table th, 
+    .auto-reset-table td {
+        padding: 12px 15px;
+        text-align: left;
+        border-bottom: 1px solid #e0e0e0;
+    }
+    
+    .auto-reset-table th {
+        background-color: #f8f9fa;
+        font-weight: 600;
+        color: #333;
+    }
+    
+    .auto-reset-table tr:last-child td {
+        border-bottom: none;
+    }
+    
+    .auto-reset-table tr:hover {
+        background-color: #f5f5f5;
+    }
+    
+    .auto-reset-table .edit-auto-reset,
+    .auto-reset-table .delete-auto-reset,
+    .auto-reset-table .reset-now {
+        padding: 6px 12px;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 0.9rem;
+        margin-right: 5px;
+    }
+    
+    .auto-reset-table .edit-auto-reset {
+        background-color: #007bff;
+        color: white;
+    }
+    
+    .auto-reset-table .delete-auto-reset {
+        background-color: #dc3545;
+        color: white;
+    }
+    
+    .auto-reset-table .reset-now {
+        background-color: #28a745;
+        color: white;
+    }
+    
+    .auto-reset-table .edit-auto-reset:hover {
+        background-color: #0069d9;
+    }
+    
+    .auto-reset-table .delete-auto-reset:hover {
+        background-color: #c82333;
+    }
+    
+    .auto-reset-table .reset-now:hover {
+        background-color: #218838;
+    }
+    
+    .countdown {
+        font-weight: 500;
+        color: #007bff;
+        transition: color 0.3s ease;
+        min-width: 100px;
+        display: inline-block;
+    }
+    
+    .countdown-overdue {
+        color: #dc3545;
+        font-weight: 700;
+        animation: pulse 1s infinite;
+    }
+    
+    @keyframes pulse {
+        0% { opacity: 1; }
+        50% { opacity: 0.7; }
+        100% { opacity: 1; }
+    }
+`;
+document.head.appendChild(styleElement); 
