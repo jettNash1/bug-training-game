@@ -5854,6 +5854,151 @@ export class Admin2Dashboard {
             }
         }
     }
+
+    // ... Add these utility methods after verifyAdminToken and preloadTimerSettings methods
+
+    getLastActiveDate(user) {
+        console.log('getLastActiveDate called with:', user ? user.username : 'undefined');
+        if (!user) return 0;
+
+        const dates = [];
+
+        // Add lastLogin if exists
+        if (user.lastLogin) {
+            dates.push(new Date(user.lastLogin).getTime());
+        }
+
+        // Add quiz completion dates
+        if (user.quizResults && user.quizResults.length > 0) {
+            user.quizResults.forEach(result => {
+                if (result.completedAt) {
+                    dates.push(new Date(result.completedAt).getTime());
+                }
+                if (result.lastActive) {
+                    dates.push(new Date(result.lastActive).getTime());
+                }
+            });
+        }
+
+        // Return most recent date or 0 if no dates found
+        return dates.length > 0 ? Math.max(...dates) : 0;
+    }
+
+    formatDate(timestamp) {
+        if (!timestamp || timestamp === 'Never') return 'Never';
+        
+        const date = new Date(timestamp);
+        const now = new Date();
+        
+        // Check if invalid date
+        if (isNaN(date.getTime())) return 'Invalid date';
+        
+        // For today, show time
+        if (date.toDateString() === now.toDateString()) {
+            return `Today ${date.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}`;
+        }
+        
+        // For yesterday
+        const yesterday = new Date(now);
+        yesterday.setDate(now.getDate() - 1);
+        if (date.toDateString() === yesterday.toDateString()) {
+            return 'Yesterday';
+        } else {
+            return date.toLocaleDateString();
+        }
+    }
+
+    showError(message) {
+        // Create error overlay
+        const errorOverlay = document.createElement('div');
+        errorOverlay.className = 'modal-overlay';
+        errorOverlay.innerHTML = `
+            <div style="
+                background: white;
+                padding: 2rem;
+                border-radius: 8px;
+                text-align: center;
+                max-width: 500px;">
+                <h3 style="color: #dc3545;">Error</h3>
+                <p>${message}</p>
+                <button id="closeErrorBtn" class="action-button" style="
+                    margin-top: 20px;
+                    background: #6c757d;
+                    color: white;
+                    border: none;
+                    padding: 8px 16px;
+                    border-radius: 4px;
+                    cursor: pointer;">
+                    Close
+                </button>
+            </div>
+        `;
+        document.body.appendChild(errorOverlay);
+        
+        // Add event listener for close button
+        const closeErrorBtn = document.getElementById('closeErrorBtn');
+        if (closeErrorBtn) {
+            closeErrorBtn.addEventListener('click', () => {
+                errorOverlay.remove();
+            });
+        }
+        
+        // Add escape key handler
+        const handleEscapeKey = (e) => {
+            if (e.key === 'Escape') {
+                errorOverlay.remove();
+                document.removeEventListener('keydown', handleEscapeKey);
+            }
+        };
+        
+        document.addEventListener('keydown', handleEscapeKey);
+        
+        // Close on click outside
+        errorOverlay.addEventListener('click', (e) => {
+            if (e.target === errorOverlay) {
+                errorOverlay.remove();
+            }
+        });
+    }
+
+    verifyQuizProgress(user) {
+        if (!user.quizProgress) {
+            console.warn(`Initializing empty quiz progress for user ${user.username}`);
+            user.quizProgress = {};
+        }
+
+        this.quizTypes.forEach(quizName => {
+            if (!user.quizProgress[quizName]) {
+                console.warn(`Initializing empty progress for quiz ${quizName} for user ${user.username}`);
+                user.quizProgress[quizName] = {
+                    questionHistory: [],
+                    experience: 0,
+                    lastUpdated: null,
+                    questionsAnswered: 0
+                };
+            }
+        });
+        
+        return user;
+    }
+
+    initializeQuizData(user) {
+        if (!user.quizProgress) user.quizProgress = {};
+        if (!user.quizResults) user.quizResults = [];
+        
+        this.quizTypes.forEach(quizName => {
+            if (!user.quizProgress[quizName]) {
+                user.quizProgress[quizName] = {
+                    questionHistory: [],
+                    experience: 0,
+                    lastUpdated: null,
+                    questionsAnswered: 0
+                };
+            }
+        });
+        
+        return user;
+    }
 }
 
 // Initialize the Admin2Dashboard when the document is ready
