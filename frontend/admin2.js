@@ -2419,7 +2419,7 @@ export class Admin2Dashboard {
                             await this.resetAllProgress(username);
                             overlay.remove();
                             this.showSuccess(`Progress reset for ${username}`);
-                            this.updateUserList();
+                            this.updateUsersList();
                         } catch (error) {
                             this.showError(`Failed to reset progress: ${error.message}`);
                         }
@@ -2471,7 +2471,7 @@ export class Admin2Dashboard {
                             await this.deleteUser(username);
                             overlay.remove();
                             this.showSuccess(`Account deleted for ${username}`);
-                            this.updateUserList();
+                            this.updateUsersList();
                         } catch (error) {
                             this.showError(`Failed to delete account: ${error.message}`);
                         }
