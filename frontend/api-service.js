@@ -2703,7 +2703,7 @@ export class APIService {
     }
 
     async resetQuizProgress(username, quizName) {
-        return this.fetchWithAdminAuth(`admin/users/${username}/quiz/${quizName}/reset`, {
+        return this.fetchWithAdminAuth(`admin/users/${username}/quiz-progress/${quizName}/reset`, {
             method: 'POST'
         });
     }
