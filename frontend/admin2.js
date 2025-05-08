@@ -2630,7 +2630,7 @@ export class Admin2Dashboard {
     async resetAllProgress(username) {
         try {
             // Use apiService instead of direct fetch
-            const response = await this.apiService.fetchWithAdminAuth(`${this.apiService.baseUrl}/admin/users/${username}/reset-progress`, {
+            const response = await this.apiService.fetchWithAdminAuth(`${this.apiService.baseUrl}/admin/users/${username}/quiz-progress/reset-all`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
