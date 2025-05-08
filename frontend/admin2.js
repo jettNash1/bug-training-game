@@ -2629,19 +2629,38 @@ export class Admin2Dashboard {
     // Implement resetAllProgress to match the method name used in the showUserDetails method
     async resetAllProgress(username) {
         try {
-            // Use apiService instead of direct fetch
-            const response = await this.apiService.fetchWithAdminAuth(`${this.apiService.baseUrl}/admin/users/${username}/quiz-progress/reset-all`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
+            let successCount = 0;
+            let failureCount = 0;
+            
+            // Show loading message
+            this.showInfo(`Resetting all quiz progress for ${username}...`);
+            
+            // Reset each quiz individually
+            for (const quizType of this.quizTypes) {
+                try {
+                    const response = await this.apiService.resetQuizProgress(username, quizType);
+                    if (response.success) {
+                        successCount++;
+                    } else {
+                        failureCount++;
+                        console.warn(`Failed to reset ${quizType} for ${username}:`, response.message);
+                    }
+                } catch (quizError) {
+                    failureCount++;
+                    console.error(`Error resetting ${quizType} for ${username}:`, quizError);
                 }
-            });
-
-            if (!response.success) {
-                throw new Error(response.message || 'Failed to reset user progress');
             }
-
-            return response;
+            
+            // Show final status
+            if (failureCount === 0) {
+                this.showSuccess(`Successfully reset all quiz progress for ${username}`);
+            } else if (successCount > 0) {
+                this.showInfo(`Partially reset progress for ${username}. ${successCount} quizzes reset, ${failureCount} failed.`, 'warning');
+            } else {
+                throw new Error(`Failed to reset any quiz progress for ${username}`);
+            }
+            
+            return { success: true, message: 'Reset operation completed' };
         } catch (error) {
             console.error('Error resetting user progress:', error);
             throw error;
