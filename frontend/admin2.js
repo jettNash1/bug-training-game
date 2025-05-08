@@ -2492,7 +2492,7 @@ export class Admin2Dashboard {
                             await this.deleteUserAccount(username);
                             overlay.remove();
                             this.showSuccess(`Account deleted for ${username}`);
-                            this.updateUsersList();
+                            await this.loadUsers();
                         } catch (error) {
                             this.showError(`Failed to delete account: ${error.message}`);
                         }
