@@ -2832,4 +2832,14 @@ export class APIService {
             throw error;
         }
     }
+
+    async deleteUserAccount(username) {
+        return this.fetchWithAdminAuth(
+            `${this.baseUrl}/admin/users/${username}`,
+            {
+                method: 'DELETE',
+                headers: { 'Content-Type': 'application/json' }
+            }
+        );
+    }
 } 

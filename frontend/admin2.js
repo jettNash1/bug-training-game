@@ -2489,7 +2489,7 @@ export class Admin2Dashboard {
                 deleteUserBtn.addEventListener('click', async () => {
                     if (confirm(`Are you sure you want to delete ${username}'s account? This cannot be undone.`)) {
                         try {
-                            await this.deleteUser(username);
+                            await this.deleteUserAccount(username);
                             overlay.remove();
                             this.showSuccess(`Account deleted for ${username}`);
                             this.updateUsersList();
@@ -6160,6 +6160,22 @@ export class Admin2Dashboard {
         
         return user;
     }
+
+    // ... existing code ...
+    // Add a method to delete a user account
+    async deleteUserAccount(username) {
+        try {
+            const response = await this.apiService.deleteUserAccount(username);
+            if (!response.success) {
+                throw new Error(response.message || 'Failed to delete user');
+            }
+            return response;
+        } catch (error) {
+            console.error('Error deleting user:', error);
+            throw error;
+        }
+    }
+    // ... existing code ...
 }
 
 // Initialize the Admin2Dashboard when the document is ready
