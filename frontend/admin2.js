@@ -625,8 +625,18 @@ export class Admin2Dashboard {
                     <div class="row-content">
                         <div class="user-info">
                             <span class="username">${user.username}</span>
-                            <span class="account-type-badge">
-                                ${user.userType === 'interview_candidate' ? 'Interview' : 'Regular'}
+                            <span class="account-type-badge" style="
+                                background-color: #e3f2fd;
+                                color: #1976d2;
+                                padding: 4px 12px;
+                                border-radius: 20px;
+                                font-size: 0.85rem;
+                                font-weight: 500;
+                                display: inline-flex;
+                                align-items: center;
+                                margin-left: 8px;
+                            ">
+                                Regular
                             </span>
                         </div>
                         <div class="user-stats">
@@ -673,7 +683,16 @@ export class Admin2Dashboard {
                 
                 const accountTypeBadge = document.createElement('span');
                 accountTypeBadge.className = 'account-type-badge';
-                accountTypeBadge.textContent = user.userType === 'interview_candidate' ? 'Interview' : 'Regular';
+                accountTypeBadge.textContent = 'Regular';
+                accountTypeBadge.style.backgroundColor = '#e3f2fd';
+                accountTypeBadge.style.color = '#1976d2';
+                accountTypeBadge.style.padding = '4px 12px';
+                accountTypeBadge.style.borderRadius = '20px';
+                accountTypeBadge.style.fontSize = '0.85rem';
+                accountTypeBadge.style.fontWeight = '500';
+                accountTypeBadge.style.display = 'inline-flex';
+                accountTypeBadge.style.alignItems = 'center';
+                accountTypeBadge.style.marginLeft = '8px';
                 
                 userHeader.appendChild(username);
                 userHeader.appendChild(accountTypeBadge);
