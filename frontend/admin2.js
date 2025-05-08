@@ -2652,12 +2652,7 @@ export class Admin2Dashboard {
     async resetQuizProgress(username, quizType) {
         try {
             // Use apiService instead of direct fetch
-            const response = await this.apiService.fetchWithAdminAuth(`${this.apiService.baseUrl}/admin/users/${username}/quiz/${quizType}/reset`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                }
-            });
+            const response = await this.apiService.resetQuizProgress(username, quizType);
 
             if (!response.success) {
                 throw new Error(response.message || 'Failed to reset quiz progress');
