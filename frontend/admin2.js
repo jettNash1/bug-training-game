@@ -683,7 +683,14 @@ export class Admin2Dashboard {
                 
                 const progressBar = document.createElement('div');
                 progressBar.className = 'progress-bar';
-                progressBar.style.width = `${overallProgress}%`;
+                progressBar.style.backgroundColor = '#e9ecef'; // Light gray background
+                
+                const progressFill = document.createElement('div');
+                progressFill.className = 'progress-fill';
+                progressFill.style.width = `${overallProgress}%`;
+                progressFill.style.backgroundColor = '#28a745'; // Green fill color
+                
+                progressBar.appendChild(progressFill);
                 
                 const progressText = document.createElement('span');
                 progressText.className = 'progress-text';
