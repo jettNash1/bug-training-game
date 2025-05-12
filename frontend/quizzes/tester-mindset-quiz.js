@@ -35,6 +35,9 @@ export class TesterMindsetQuiz extends BaseQuiz {
             questionHistory: []
         };
 
+        // Bind event handlers to prevent duplicates
+        this.handleAnswerBound = this.handleAnswer.bind(this);
+
         // Initialize API service
         this.apiService = new APIService();
 
@@ -740,6 +743,16 @@ export class TesterMindsetQuiz extends BaseQuiz {
             if (hasProgress) {
                 console.log(`[Quiz] Resuming from question ${this.player.questionHistory.length + 1} of ${this.totalQuestions}`);
                 console.log(`[Quiz] Current experience: ${this.player.experience}, tools: ${this.player.tools.length}`);
+                console.log(`[Quiz] Current scenario index: ${this.player.currentScenario}`);
+                
+                // Ensure the loaded progress is properly set
+                if (this.player.questionHistory && Array.isArray(this.player.questionHistory)) {
+                    // If we have a history but no currentScenario, set it based on history length
+                    if (this.player.currentScenario === undefined || this.player.currentScenario === null) {
+                        this.player.currentScenario = this.player.questionHistory.length;
+                        console.log(`[Quiz] Setting currentScenario to match history length: ${this.player.currentScenario}`);
+                    }
+                }
             } else {
                 // Reset player state if no valid progress exists
                 console.log('[Quiz] No valid progress found, starting from beginning');
@@ -764,6 +777,11 @@ export class TesterMindsetQuiz extends BaseQuiz {
                 clearInterval(this.questionTimer);
             }
             
+            // Make sure UI screens are properly set up
+            this.gameScreen.classList.remove('hidden');
+            this.outcomeScreen.classList.add('hidden');
+            this.endScreen.classList.add('hidden');
+            
             await this.displayScenario();
         } catch (error) {
             console.error('Failed to start game:', error);
@@ -779,22 +797,36 @@ export class TesterMindsetQuiz extends BaseQuiz {
     }
 
     initializeEventListeners() {
-        // Add event listeners for the continue and restart buttons
-        document.getElementById('continue-btn')?.addEventListener('click', () => this.nextScenario());
-        document.getElementById('restart-btn')?.addEventListener('click', () => this.restartGame());
+        // Remove existing event listeners first
+        const continueBtn = document.getElementById('continue-btn');
+        const restartBtn = document.getElementById('restart-btn');
+        const optionsForm = document.getElementById('options-form');
+        
+        if (continueBtn) {
+            continueBtn.removeEventListener('click', this.nextScenarioBound);
+            this.nextScenarioBound = this.nextScenario.bind(this);
+            continueBtn.addEventListener('click', this.nextScenarioBound);
+        }
+        
+        if (restartBtn) {
+            restartBtn.removeEventListener('click', this.restartGameBound);
+            this.restartGameBound = this.restartGame.bind(this);
+            restartBtn.addEventListener('click', this.restartGameBound);
+        }
 
-        // Add form submission handler
-        document.getElementById('options-form')?.addEventListener('submit', (e) => {
-            e.preventDefault();
-            this.handleAnswer();
-        });
-
+        // Options form is handled separately in displayScenario
+        
+        // Remove global keydown handler if it exists
+        document.removeEventListener('keydown', this.keydownHandlerBound);
+        
         // Add keyboard navigation
-        document.addEventListener('keydown', (e) => {
+        this.keydownHandlerBound = (e) => {
             if (e.key === 'Enter' && e.target.type === 'radio') {
                 this.handleAnswer();
             }
-        });
+        };
+        
+        document.addEventListener('keydown', this.keydownHandlerBound);
     }
 
     displayScenario() {
@@ -812,7 +844,7 @@ export class TesterMindsetQuiz extends BaseQuiz {
         let scenario;
         const questionCount = this.player.questionHistory.length;
         
-        console.log(`[Quiz] Displaying scenario. Question history length: ${questionCount}, current scenario value: ${this.player.currentScenario}`);
+        console.log(`[Quiz] Displaying scenario. Question history length: ${questionCount}, currentScenario index: ${this.player.currentScenario}`);
         
         // Determine which level we're in and set the correct index
         let currentLevelIndex;
@@ -887,6 +919,7 @@ export class TesterMindsetQuiz extends BaseQuiz {
         if (descriptionElement) descriptionElement.textContent = scenario.description;
         
         if (optionsContainer) {
+            // Clear any existing content to prevent duplicate form elements
             optionsContainer.innerHTML = '';
             
             // Create the form element
@@ -937,11 +970,9 @@ export class TesterMindsetQuiz extends BaseQuiz {
             // Add the form to the options container
             optionsContainer.appendChild(form);
             
-            // Re-attach form handler
-            form.addEventListener('submit', (e) => {
-                e.preventDefault();
-                this.handleAnswer();
-            });
+            // Re-attach form handler (use removeEventListener first to prevent duplicates)
+            form.removeEventListener('submit', this.handleAnswerBound);
+            form.addEventListener('submit', this.handleAnswerBound);
         }
 
         // Update progress display
@@ -1063,7 +1094,9 @@ export class TesterMindsetQuiz extends BaseQuiz {
                 // Add event listener to the continue button
                 const continueBtn = outcomeContent.querySelector('#continue-btn');
                 if (continueBtn) {
-                    continueBtn.addEventListener('click', () => this.nextScenario());
+                    continueBtn.removeEventListener('click', this.nextScenarioBound);
+                    this.nextScenarioBound = this.nextScenario.bind(this);
+                    continueBtn.addEventListener('click', this.nextScenarioBound);
                 }
             }
 

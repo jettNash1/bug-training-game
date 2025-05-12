@@ -1791,70 +1791,48 @@ export class BaseQuiz {
                 progress = {
                     experience: savedProgress.data.experience || 0,
                     tools: savedProgress.data.tools || [],
-                    questionHistory: Array.isArray(savedProgress.data.questionHistory) ? savedProgress.data.questionHistory.slice(0, this.totalQuestions) : [],
+                    questionHistory: savedProgress.data.questionHistory || [],
                     currentScenario: savedProgress.data.currentScenario || 0,
-                    status: savedProgress.data.status || 'in-progress',
-                    scorePercentage: savedProgress.data.scorePercentage || 0,
-                    randomizedScenarios: savedProgress.data.randomizedScenarios || {}
+                    status: savedProgress.data.status || 'in-progress'
                 };
-                console.log('[BaseQuiz][loadProgress] Normalized progress data:', progress);
-            } else {
-                const localData = localStorage.getItem(storageKey);
-                if (localData) {
-                    try {
-                        const parsed = JSON.parse(localData);
-                        progress = parsed.data || parsed;
-                        if (progress && Array.isArray(progress.questionHistory)) {
-                            progress.questionHistory = progress.questionHistory.slice(0, this.totalQuestions);
-                        }
-                        console.log('[BaseQuiz][loadProgress] Loaded progress from localStorage:', progress);
-                    } catch (e) {
-                        console.error('[BaseQuiz][loadProgress] Error parsing localStorage data:', e);
-                    }
-                }
-            }
-            if (progress) {
-                // Check if quiz is already completed or failed
-                if ((progress.status === 'failed' || progress.status === 'passed' || progress.status === 'completed') && 
-                    (progress.questionHistory.length >= this.totalQuestions)) {
-                    if (progress.status === 'failed') {
-                        this.endGame(true);
-                        return true;
-                    } else {
-                        this.endGame(false);
-                        return true;
-                    }
+                
+                // Make sure question history is valid
+                if (!Array.isArray(progress.questionHistory)) {
+                    progress.questionHistory = [];
                 }
                 
-                // Set player state from loaded progress
-                this.player.experience = progress.experience || 0;
-                this.player.tools = progress.tools || [];
-                
-                // Ensure the question history array is properly loaded
-                if (Array.isArray(progress.questionHistory)) {
-                    this.player.questionHistory = progress.questionHistory.slice(0, this.totalQuestions);
-                } else {
-                    this.player.questionHistory = [];
+                // If currentScenario is missing but we have questions answered, set it to match 
+                // the number of questions answered to ensure proper resuming
+                if ((progress.currentScenario === undefined || progress.currentScenario === null) 
+                    && progress.questionHistory.length > 0) {
+                    progress.currentScenario = progress.questionHistory.length;
+                    console.log(`[BaseQuiz] Fixing missing currentScenario to match history length: ${progress.currentScenario}`);
                 }
                 
-                // Set currentScenario to match the number of questions already answered
-                // This ensures we pick up where the user left off
-                this.player.currentScenario = this.player.questionHistory.length;
+                // Log what we're loading
+                console.log(`[BaseQuiz] Loaded progress: ${progress.questionHistory.length} questions answered, ` + 
+                           `currentScenario: ${progress.currentScenario}, status: ${progress.status}`);
                 
-                console.log(`[BaseQuiz][loadProgress] Resuming quiz at question ${this.player.currentScenario + 1} (${this.player.questionHistory.length} questions answered)`);
+                // Update the player state with the loaded data
+                this.player.experience = progress.experience;
+                this.player.tools = progress.tools;
+                this.player.questionHistory = progress.questionHistory;
+                this.player.currentScenario = progress.currentScenario;
                 
-                // Load randomized scenarios if available
-                if (progress.randomizedScenarios) {
-                    this.randomizedScenarios = progress.randomizedScenarios;
+                // If the quiz is already completed, handle appropriately
+                if (progress.status === 'passed' || progress.status === 'failed') {
+                    console.log(`[BaseQuiz] Quiz already ${progress.status}, should show end screen`);
+                    // Optionally navigate to end screen or handle completed quiz
                 }
                 
-                // Update UI to reflect current progress
-                this.updateProgress();
+                console.log('[Quiz] Previous progress loaded:', true);
                 return true;
+            } else {
+                console.log('[Quiz] No saved progress found');
+                return false;
             }
-            return false;
         } catch (error) {
-            console.error('[Quiz] Failed to load progress:', error);
+            console.error('[Quiz] Error loading progress:', error);
             return false;
         }
     }
