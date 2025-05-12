@@ -159,6 +159,24 @@ class IndexPage {
             
             console.log('Quiz progress from user data:', quizProgress);
             console.log('Quiz results from user data:', quizResults);
+
+            // --- Robust progress sync for legacy users ---
+            for (const result of quizResults) {
+                const quizName = result.quizName;
+                const progress = quizProgress[quizName];
+                // If no progress or not completed, reconstruct and save
+                if (!progress || progress.status !== 'completed') {
+                    await this.apiService.saveQuizProgress(quizName, {
+                        experience: result.experience,
+                        questionsAnswered: result.questionsAnswered,
+                        status: 'completed',
+                        scorePercentage: result.score,
+                        questionHistory: result.questionHistory || [],
+                        lastUpdated: result.completedAt || new Date().toISOString()
+                    });
+                }
+            }
+            // --- End robust sync ---
             
             // Process all visible quizzes using the already fetched data
             this.quizScores = Array.from(this.quizItems)
