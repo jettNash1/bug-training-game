@@ -74,6 +74,10 @@ export class QuizUser {
     }
 
     normalizeQuizName(quizName) {
+        // Always return 'tester-mindset' for any variant
+        if (typeof quizName === 'string' && quizName.toLowerCase().replace(/[_\s]/g, '-').includes('tester')) {
+            return 'tester-mindset';
+        }
         return quizName.replace(/-([a-z])/g, g => g[1].toUpperCase());
     }
 
@@ -96,6 +100,7 @@ export class QuizUser {
     }
 
     async saveQuizResult(quizName, score, experience = 0, tools = [], questionHistory = [], questionsAnswered = null) {
+        quizName = this.normalizeQuizName(quizName);
         const quizData = {
             quizName,
             score: Math.round(score),
@@ -159,6 +164,7 @@ export class QuizUser {
     }
 
     getQuizResult(quizName) {
+        quizName = this.normalizeQuizName(quizName);
         const result = this.quizResults.find(result => 
             result.quizName === quizName || 
             result.quizName === this.normalizeQuizName(quizName)
@@ -168,6 +174,7 @@ export class QuizUser {
     }
 
     async saveQuizProgress(quizName, progress) {
+        quizName = this.normalizeQuizName(quizName);
         try {
             // Add retry logic for important saves
             const maxRetries = 3;
@@ -208,6 +215,7 @@ export class QuizUser {
     }
 
     saveProgressToLocalStorage(quizName, progress) {
+        quizName = this.normalizeQuizName(quizName);
         try {
             this.quizProgress[quizName] = progress;
             localStorage.setItem(`quizProgress_${this.username}`, JSON.stringify(this.quizProgress));
@@ -217,6 +225,7 @@ export class QuizUser {
     }
 
     async getQuizProgress(quizName) {
+        quizName = this.normalizeQuizName(quizName);
         try {
             // Use the apiService method instead of direct fetch to benefit from all token handling and error management
             const response = await this.api.getQuizProgress(quizName);
@@ -232,6 +241,7 @@ export class QuizUser {
     }
 
     async updateQuizScore(quizName, score, experience = 0, tools = [], questionHistory = [], questionsAnswered = null, status = 'in-progress') {
+        quizName = this.normalizeQuizName(quizName);
         try {
             if (!this.api) {
                 throw new Error('API service not initialized');

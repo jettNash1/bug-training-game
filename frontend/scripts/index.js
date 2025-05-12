@@ -154,11 +154,24 @@ class IndexPage {
             }
 
             // Extract quiz progress from user data
-            const quizProgress = userData.data.quizProgress || {};
-            const quizResults = userData.data.quizResults || [];
-            
-            console.log('Quiz progress from user data:', quizProgress);
-            console.log('Quiz results from user data:', quizResults);
+            let quizProgress = userData.data.quizProgress || {};
+            let quizResults = userData.data.quizResults || [];
+
+            // --- MIGRATION: Move any legacy tester-mindset keys to kebab-case ---
+            const legacyKeys = Object.keys(quizProgress).filter(k => k.toLowerCase().replace(/[_\s]/g, '-').includes('tester') && k !== 'tester-mindset');
+            legacyKeys.forEach(legacyKey => {
+                if (!quizProgress['tester-mindset']) {
+                    quizProgress['tester-mindset'] = quizProgress[legacyKey];
+                }
+                delete quizProgress[legacyKey];
+            });
+            quizResults = quizResults.map(result => {
+                if (typeof result.quizName === 'string' && result.quizName.toLowerCase().replace(/[_\s]/g, '-').includes('tester') && result.quizName !== 'tester-mindset') {
+                    return { ...result, quizName: 'tester-mindset' };
+                }
+                return result;
+            });
+            // --- END MIGRATION ---
 
             // --- Robust progress sync for legacy users ---
             for (const result of quizResults) {
@@ -184,15 +197,18 @@ class IndexPage {
                     const quizId = item.dataset.quiz;
                     if (!quizId) return null;
                     
+                    // Always use kebab-case for tester-mindset
+                    const lookupId = (quizId.toLowerCase().replace(/[_\s]/g, '-').includes('tester')) ? 'tester-mindset' : quizId;
+                    
                     // First check for quiz progress
-                    const progress = quizProgress[quizId];
+                    const progress = quizProgress[lookupId];
                     
                     // Then check for quiz results
-                    const result = quizResults.find(r => r.quizName === quizId);
+                    const result = quizResults.find(r => r.quizName === lookupId);
                     
                     // Combine data from both sources, with progress taking precedence
                     const combinedData = {
-                        quizName: quizId,
+                        quizName: lookupId,
                         score: 0,
                         questionsAnswered: 0,
                         status: 'not-started',
@@ -222,7 +238,7 @@ class IndexPage {
                         }
                     }
                     
-                    console.log(`Processed data for quiz ${quizId}:`, combinedData);
+                    console.log(`Processed data for quiz ${lookupId}:`, combinedData);
                     return combinedData;
                 })
                 .filter(Boolean);

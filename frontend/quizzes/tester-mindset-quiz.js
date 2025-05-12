@@ -675,7 +675,17 @@ export class TesterMindsetQuiz extends BaseQuiz {
         return totalQuestionsAnswered >= this.totalQuestions;
     }
 
+    normalizeQuizName(quizName) {
+        // Always return 'tester-mindset' for any variant
+        if (typeof quizName === 'string' && quizName.toLowerCase().replace(/[_\s]/g, '-').includes('tester')) {
+            return 'tester-mindset';
+        }
+        return quizName;
+    }
+
     async saveProgress() {
+        let quizName = this.quizName;
+        quizName = this.normalizeQuizName(quizName);
         // First determine the status based on quiz completion and score
         let status = 'in-progress';
         let scorePercentage = 0;
@@ -712,17 +722,19 @@ export class TesterMindsetQuiz extends BaseQuiz {
             }
             
             // Use user-specific key for localStorage
-            const storageKey = `quiz_progress_${username}_${this.quizName}`;
+            const storageKey = `quiz_progress_${username}_${quizName}`;
             localStorage.setItem(storageKey, JSON.stringify(progress));
             
             console.log('Saving progress with status:', status, 'and score:', scorePercentage);
-            await this.apiService.saveQuizProgress(this.quizName, progress.data);
+            await this.apiService.saveQuizProgress(quizName, progress.data);
         } catch (error) {
             console.error('Failed to save progress:', error);
         }
     }
 
     async loadProgress() {
+        let quizName = this.quizName;
+        quizName = this.normalizeQuizName(quizName);
         try {
             const username = localStorage.getItem('username');
             if (!username) {
@@ -731,8 +743,8 @@ export class TesterMindsetQuiz extends BaseQuiz {
             }
 
             // Use user-specific key for localStorage
-            const storageKey = `quiz_progress_${username}_${this.quizName}`;
-            const savedProgress = await this.apiService.getQuizProgress(this.quizName);
+            const storageKey = `quiz_progress_${username}_${quizName}`;
+            const savedProgress = await this.apiService.getQuizProgress(quizName);
             console.log('Raw API Response:', savedProgress);
             let progress = null;
             
@@ -1622,7 +1634,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     
     // Create a new instance and keep a global reference
-    const quiz = new TesterMindsetQuiz();
+    const quiz = new TesterMindsetQuiz(); 
     window.currentQuiz = quiz;
     
     // Add a specific property to identify this quiz

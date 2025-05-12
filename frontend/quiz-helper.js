@@ -958,8 +958,11 @@ export class BaseQuiz {
                 return;
             }
             
+            let quizName = this.quizName;
+            quizName = this.normalizeQuizName(quizName);
+            
             // Use user-specific key for localStorage
-            const storageKey = `quiz_progress_${username}_${this.quizName}`;
+            const storageKey = `quiz_progress_${username}_${quizName}`;
             localStorage.setItem(storageKey, JSON.stringify({ data: progressData }));
             
             console.log('[BaseQuiz] Saving progress with status:', status);
@@ -971,7 +974,7 @@ export class BaseQuiz {
                 console.warn('[BaseQuiz] Warning: Progress data is very large (>100KB)');
             }
             
-            await this.apiService.saveQuizProgress(this.quizName, progressData);
+            await this.apiService.saveQuizProgress(quizName, progressData);
         } catch (error) {
             console.error('[BaseQuiz] Failed to save progress:', error);
             // Save minimal data to localStorage as a fallback
@@ -1321,6 +1324,10 @@ export class BaseQuiz {
     }
 
     normalizeQuizName(quizName) {
+        // Always return 'tester-mindset' for any variant
+        if (typeof quizName === 'string' && quizName.toLowerCase().replace(/[_\s]/g, '-').includes('tester')) {
+            return 'tester-mindset';
+        }
         return quizName.replace(/-([a-z])/g, g => g[1].toUpperCase());
     }
 
@@ -1763,9 +1770,12 @@ export class BaseQuiz {
                 return false;
             }
 
+            let quizName = this.quizName;
+            quizName = this.normalizeQuizName(quizName);
+            
             // Use user-specific key for localStorage
-            const storageKey = `quiz_progress_${username}_${this.quizName}`;
-            const savedProgress = await this.apiService.getQuizProgress(this.quizName);
+            const storageKey = `quiz_progress_${username}_${quizName}`;
+            const savedProgress = await this.apiService.getQuizProgress(quizName);
             console.log('[Quiz] Raw API Response:', savedProgress);
             let progress = null;
             
