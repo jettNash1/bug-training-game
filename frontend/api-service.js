@@ -1,6 +1,6 @@
 import { config } from './config.js';
 import { getAuthToken, setAuthToken, clearTokens } from './auth.js';
-import { QuizList } from './quiz-list.js';
+import { QUIZ_TYPES } from './quiz-list.js';
 
 export class APIService {
     constructor() {
@@ -1282,9 +1282,8 @@ export class APIService {
             const allowedQuizzes = user.allowedQuizzes || [];
             const hiddenQuizzes = user.hiddenQuizzes || [];
             const quizProgress = user.quizProgress || {};
-            // Get master list of all quizzes
-            const quizList = new QuizList();
-            const allQuizzes = quizList.quizTypes.map(q => q.toLowerCase());
+            // Use QUIZ_TYPES as the master list of all quizzes
+            const allQuizzes = QUIZ_TYPES.map(q => q.toLowerCase());
             // Determine visible quizzes for this user
             let visibleQuizzes;
             if (allowedQuizzes.length > 0) {
