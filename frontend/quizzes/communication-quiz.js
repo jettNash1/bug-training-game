@@ -1140,7 +1140,7 @@ export class CommunicationQuiz extends BaseQuiz {
             this.initializeEventListeners();
 
             // Load previous progress
-            const hasProgress = await this.loadProgress();
+            let hasProgress = await this.loadProgress();
             console.log('[CommunicationQuiz] Previous progress loaded:', hasProgress, 'Current scenario:', this.player.currentScenario);
             
             // Get the API progress directly to inspect it
