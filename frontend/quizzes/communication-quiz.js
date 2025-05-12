@@ -1431,7 +1431,7 @@ export class CommunicationQuiz extends BaseQuiz {
                 experience: this.player.experience,
                 questionHistory: this.player.questionHistory,
                 questionsAnswered: this.player.questionHistory.length,
-                lastUpdated: new Date().toISOString()
+                lastActive: new Date().toISOString()
             };
             
             // Save quiz result
@@ -1863,6 +1863,90 @@ export class CommunicationQuiz extends BaseQuiz {
             localStorage.removeItem(`quiz_progress_${username}_${variant}`);
             localStorage.removeItem(`quizResults_${username}_${variant}`);
         });
+    }
+
+    async saveProgress() {
+        // Determine status
+        let status = 'in-progress';
+        if (this.player.questionHistory.length >= this.totalQuestions) {
+            const correctAnswers = this.player.questionHistory.filter(q => 
+                q.selectedAnswer && (q.selectedAnswer.isCorrect || 
+                q.selectedAnswer.experience === Math.max(...q.scenario.options.map(o => o.experience || 0)))
+            ).length;
+            const scorePercentage = Math.round((correctAnswers / this.totalQuestions) * 100);
+            status = scorePercentage >= this.passPercentage ? 'passed' : 'failed';
+        }
+        const progress = {
+            data: {
+                experience: this.player.experience,
+                tools: this.player.tools,
+                currentScenario: this.player.currentScenario,
+                questionHistory: this.player.questionHistory,
+                lastUpdated: new Date().toISOString(),
+                questionsAnswered: this.player.questionHistory.length,
+                status: status,
+                scorePercentage: this.calculateScorePercentage()
+            }
+        };
+        try {
+            const username = localStorage.getItem('username');
+            if (!username) {
+                console.error('No user found, cannot save progress');
+                return;
+            }
+            const storageKey = `quiz_progress_${username}_${this.quizName}`;
+            localStorage.setItem(storageKey, JSON.stringify(progress));
+            await this.apiService.saveQuizProgress(this.quizName, progress.data);
+        } catch (error) {
+            console.error('Failed to save progress:', error);
+        }
+    }
+
+    async loadProgress() {
+        try {
+            const username = localStorage.getItem('username');
+            if (!username) {
+                console.error('No user found, cannot load progress');
+                return false;
+            }
+            const storageKey = `quiz_progress_${username}_${this.quizName}`;
+            const savedProgress = await this.apiService.getQuizProgress(this.quizName);
+            let progress = null;
+            if (savedProgress && savedProgress.data) {
+                progress = {
+                    experience: savedProgress.data.experience || 0,
+                    tools: savedProgress.data.tools || [],
+                    questionHistory: savedProgress.data.questionHistory || [],
+                    currentScenario: savedProgress.data.currentScenario || 0,
+                    status: savedProgress.data.status || 'in-progress'
+                };
+            } else {
+                const localData = localStorage.getItem(storageKey);
+                if (localData) {
+                    const parsed = JSON.parse(localData);
+                    progress = parsed;
+                }
+            }
+            if (progress) {
+                this.player.experience = progress.experience || 0;
+                this.player.tools = progress.tools || [];
+                this.player.questionHistory = progress.questionHistory || [];
+                this.player.currentScenario = progress.currentScenario || 0;
+                this.updateProgress();
+                if (progress.status === 'failed') {
+                    this.endGame(true);
+                    return true;
+                } else if (progress.status === 'completed') {
+                    this.endGame(false);
+                    return true;
+                }
+                return true;
+            }
+            return false;
+        } catch (error) {
+            console.error('Failed to load progress:', error);
+            return false;
+        }
     }
 }
 
