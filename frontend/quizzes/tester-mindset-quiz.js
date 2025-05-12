@@ -960,7 +960,7 @@ export class TesterMindsetQuiz extends BaseQuiz {
                 return;
             }
 
-            // Always use question history length to determine the current question
+            // Get the current question based solely on the length of questionHistory
             const questionCount = this.player.questionHistory.length;
             let scenario;
             
@@ -977,7 +977,7 @@ export class TesterMindsetQuiz extends BaseQuiz {
             }
             
             if (!scenario) {
-                console.error('No scenario found for current question count:', questionCount);
+                console.error(`[TesterMindsetQuiz] No scenario found for question ${questionCount}`);
                 return;
             }
             
@@ -1008,9 +1008,12 @@ export class TesterMindsetQuiz extends BaseQuiz {
                 timedOut: false
             });
 
+            // CRITICAL: Set currentScenario to equal the length of questionHistory
+            this.player.currentScenario = this.player.questionHistory.length;
+
             // Save progress immediately after adding to question history
             await this.saveProgress();
-            console.log(`[Quiz] Question ${questionCount + 1} answered. Total answered: ${this.player.questionHistory.length}`);
+            console.log(`[TesterMindsetQuiz] Question ${questionCount + 1} answered. Total answered: ${this.player.questionHistory.length}`);
 
             // Calculate the score percentage
             const scorePercentage = this.calculateScorePercentage();
@@ -1071,7 +1074,7 @@ export class TesterMindsetQuiz extends BaseQuiz {
                 await this.endGame(false);
             }
         } catch (error) {
-            console.error('Failed to handle answer:', error);
+            console.error('[TesterMindsetQuiz] Failed to handle answer:', error);
             this.showError('Failed to save your answer. Please try again.');
         } finally {
             this.isLoading = false;
@@ -1453,55 +1456,51 @@ export class TesterMindsetQuiz extends BaseQuiz {
     async saveProgress() {
         // First determine the status based on clear conditions
         let status = 'in-progress';
+        
+        // Check for completion (all 15 questions answered)
         if (this.player.questionHistory.length >= this.totalQuestions) {
             // Calculate pass/fail based on correct answers
             const correctAnswers = this.player.questionHistory.filter(q => q.isCorrect).length;
             const scorePercentage = Math.round((correctAnswers / this.totalQuestions) * 100);
             status = scorePercentage >= this.passPercentage ? 'passed' : 'failed';
         }
-        
-        // Create a complete progress object with all necessary data
-        let progressData = {
-            questionsAnswered: this.player.questionHistory.length,
-            questionHistory: this.player.questionHistory,
-            experience: this.player.experience || 0,
-            tools: this.player.tools || [],
-            status: status,
-            // Explicitly calculate the current scenario index based on questions answered
-            currentScenario: this.player.questionHistory.length,
-            lastUpdated: new Date().toISOString()
+
+        // Create a complete progress object with consistent structure
+        const progress = {
+            data: {
+                experience: this.player.experience || 0,
+                tools: this.player.tools || [],
+                currentScenario: this.player.questionHistory.length, // IMPORTANT: Always use question count
+                questionHistory: this.player.questionHistory || [],
+                lastUpdated: new Date().toISOString(),
+                questionsAnswered: this.player.questionHistory.length,
+                status: status,
+                scorePercentage: this.calculateScorePercentage()
+            }
         };
-        
-        // Calculate score percentage if we have questions answered
-        if (this.player.questionHistory.length > 0) {
-            // Use our helper method for consistency
-            progressData.scorePercentage = this.calculateScorePercentage();
-        } else {
-            progressData.scorePercentage = 0;
-        }
-        
+
         try {
             const username = localStorage.getItem('username');
             if (!username) {
-                console.error('No user found, cannot save progress');
-                return;
+                console.error('[TesterMindsetQuiz] No user found, cannot save progress');
+                return false;
             }
             
-            // Normalize quiz name to ensure consistency
-            const quizName = this.normalizeQuizName(this.quizName);
-            console.log(`[Quiz] Saving progress for ${quizName}: ${progressData.questionsAnswered} questions answered`);
+            // Always normalize to 'tester-mindset'
+            const quizName = 'tester-mindset';
+            console.log(`[TesterMindsetQuiz] Saving progress for ${quizName}: ${progress.data.questionsAnswered} questions answered, currentScenario: ${progress.data.currentScenario}`);
             
-            // Also save to localStorage as a backup
+            // Save to localStorage as primary source of truth
             const storageKey = `quiz_progress_${username}_${quizName}`;
-            localStorage.setItem(storageKey, JSON.stringify({data: progressData}));
+            localStorage.setItem(storageKey, JSON.stringify(progress));
             
-            // Save using API service
-            await this.apiService.saveQuizProgress(quizName, progressData);
+            // Then save to API
+            await this.apiService.saveQuizProgress(quizName, progress.data);
             
-            console.log(`[Quiz] Progress saved successfully for ${quizName}`);
+            console.log(`[TesterMindsetQuiz] Progress saved successfully - ${progress.data.questionsAnswered} questions answered`);
             return true;
         } catch (error) {
-            console.error('Error saving progress:', error);
+            console.error('[TesterMindsetQuiz] Error saving progress:', error);
             return false;
         }
     }
@@ -1510,58 +1509,69 @@ export class TesterMindsetQuiz extends BaseQuiz {
         try {
             const username = localStorage.getItem('username');
             if (!username) {
-                console.error('No user found, cannot load progress');
+                console.error('[TesterMindsetQuiz] No username found, cannot load progress');
                 return false;
             }
-
-            // Use the quizName from the constructor (tester-mindset)
-            const quizName = this.normalizeQuizName(this.quizName);
-            const savedProgress = await this.apiService.getQuizProgress(quizName);
-            console.log('Raw API Response:', savedProgress);
             
-            if (savedProgress && savedProgress.data) {
-                // Extract data from the API response
-                const progress = savedProgress.data;
+            // Always use tester-mindset as the quiz name
+            const quizName = 'tester-mindset';
+            const storageKey = `quiz_progress_${username}_${quizName}`;
+            
+            // Try to get from localStorage first
+            let progress = null;
+            const localData = localStorage.getItem(storageKey);
+            
+            if (localData) {
+                try {
+                    const parsed = JSON.parse(localData);
+                    if (parsed && parsed.data) {
+                        progress = parsed.data;
+                        console.log('[TesterMindsetQuiz] Found progress in localStorage:', progress.questionsAnswered, 'questions answered');
+                    }
+                } catch (e) {
+                    console.error('[TesterMindsetQuiz] Error parsing localStorage data:', e);
+                }
+            }
+            
+            // If not in localStorage, try API
+            if (!progress) {
+                const savedProgress = await this.apiService.getQuizProgress(quizName);
+                console.log('[TesterMindsetQuiz] API Response:', savedProgress);
                 
-                // Log what we found
-                console.log(`Loaded progress for ${quizName}: ${progress.questionsAnswered} questions answered`);
-                
-                // Update player state
+                if (savedProgress && savedProgress.data) {
+                    progress = savedProgress.data;
+                    console.log('[TesterMindsetQuiz] Found progress in API:', progress.questionsAnswered, 'questions answered');
+                    
+                    // Save to localStorage for future use
+                    localStorage.setItem(storageKey, JSON.stringify({data: progress}));
+                }
+            }
+
+            if (progress) {
+                // Ensure consistent data structure 
                 this.player.experience = progress.experience || 0;
                 this.player.tools = progress.tools || [];
                 this.player.questionHistory = Array.isArray(progress.questionHistory) ? progress.questionHistory : [];
                 
-                // If player has answered questions, make sure currentScenario is set correctly
-                if (this.player.questionHistory.length > 0) {
-                    // Use the question count to determine the currentScenario
-                    const questionCount = this.player.questionHistory.length;
-                    if (questionCount < 5) {
-                        // Basic level (0-4)
-                        this.player.currentScenario = questionCount;
-                    } else if (questionCount < 10) {
-                        // Intermediate level (5-9)
-                        this.player.currentScenario = questionCount - 5;
-                    } else {
-                        // Advanced level (10-14)
-                        this.player.currentScenario = questionCount - 10;
-                    }
-                } else {
-                    // If no questions answered, start from the beginning
-                    this.player.currentScenario = 0;
-                }
+                // IMPORTANT: Set currentScenario based on questions answered
+                const questionCount = this.player.questionHistory.length;
+                this.player.currentScenario = questionCount;
+                
+                console.log(`[TesterMindsetQuiz] Loaded progress: ${questionCount} questions answered`);
                 
                 // Check if quiz is already completed
                 if (progress.status === 'passed' || progress.status === 'failed' || 
-                    this.player.questionHistory.length >= this.totalQuestions) {
-                    console.log(`Quiz already ${progress.status}, should show end screen`);
+                    questionCount >= this.totalQuestions) {
+                    console.log(`[TesterMindsetQuiz] Quiz already ${progress.status}, should show end screen`);
                 }
                 
                 return true;
             }
             
+            console.log('[TesterMindsetQuiz] No saved progress found');
             return false;
         } catch (error) {
-            console.error('Failed to load progress:', error);
+            console.error('[TesterMindsetQuiz] Failed to load progress:', error);
             return false;
         }
     }
