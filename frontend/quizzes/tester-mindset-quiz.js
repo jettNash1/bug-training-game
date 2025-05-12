@@ -771,7 +771,23 @@ export class TesterMindsetQuiz extends BaseQuiz {
             }
 
             if (progress) {
-                // Restore randomized scenarios if available
+                // Only show end screen if quiz is actually finished
+                if ((progress.status === 'failed' || progress.status === 'passed' || progress.status === 'completed') && (progress.questionHistory.length >= this.totalQuestions)) {
+                    if (progress.status === 'failed') {
+                        this.endGame(true);
+                        return true;
+                    } else {
+                        this.endGame(false);
+                        return true;
+                    }
+                }
+                // Otherwise, resume quiz at the correct question
+                this.player.experience = progress.experience || 0;
+                this.player.tools = progress.tools || [];
+                this.player.questionHistory = progress.questionHistory || [];
+                this.player.currentScenario = progress.currentScenario || 0;
+                
+                // Restore randomized scenarios
                 if (progress.randomizedScenarios) {
                     this.randomizedScenarios = progress.randomizedScenarios;
                     console.log('Restored randomized scenarios:', this.randomizedScenarios);
@@ -809,24 +825,9 @@ export class TesterMindsetQuiz extends BaseQuiz {
                     }
                 }
                 
-                // Set the player state from progress
-                this.player.experience = progress.experience || 0;
-                this.player.tools = progress.tools || [];
-                this.player.questionHistory = progress.questionHistory || [];
-                this.player.currentScenario = progress.currentScenario || 0;
-
                 // Ensure we're updating the UI correctly
                 this.updateProgress();
                 
-                // Check quiz status and show appropriate screen
-                if (progress.status === 'failed') {
-                    this.endGame(true);
-                    return true;
-                } else if (progress.status === 'passed' || progress.status === 'completed') {
-                    this.endGame(false);
-                    return true;
-                }
-
                 return true;
             }
             return false;
