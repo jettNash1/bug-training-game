@@ -2,10 +2,19 @@ import { APIService } from '../api-service.js';
 import { QuizUser } from '../QuizUser.js';
 
 function normalizeQuizName(quizName) {
+    if (!quizName) return '';
+    
+    // Special case for tester-mindset variations
     if (typeof quizName === 'string' && quizName.toLowerCase().replace(/[_\s]/g, '-').includes('tester')) {
         return 'tester-mindset';
     }
-    // Standardize to kebab-case
+    
+    // If already kebab case, return as is
+    if (typeof quizName === 'string' && quizName === quizName.toLowerCase() && quizName.includes('-')) {
+        return quizName;
+    }
+    
+    // Otherwise, standardize to kebab-case consistently
     return quizName
         .toLowerCase()
         .replace(/([A-Z])/g, '-$1')
@@ -111,6 +120,9 @@ class IndexPage {
 
     async initialize() {
         try {
+            // Log debug info about quiz IDs for troubleshooting
+            console.log('[Index] Initializing with quiz items:', this.quizItems.length);
+            
             // Load user progress first
             await this.loadUserProgress();
             
@@ -118,6 +130,9 @@ class IndexPage {
             this.updateQuizProgress();
             this.updateCategoryProgress();
             this.addBadgesNavLink();
+            
+            // Debug quiz name normalization
+            this.logQuizNameNormalization();
             
             // Load guide settings in a non-blocking way
             this.loadGuideSettingsAndAddButtons().catch(err => {
@@ -188,7 +203,7 @@ class IndexPage {
 
             // --- Robust progress sync for legacy users ---
             for (const result of quizResults) {
-                const quizName = result.quizName;
+                const quizName = normalizeQuizName(result.quizName);
                 const progress = quizProgress[quizName];
                 // If no progress or not completed, reconstruct and save
                 if (!progress || progress.status !== 'completed') {
@@ -209,12 +224,16 @@ class IndexPage {
                 .map(item => {
                     const quizId = item.dataset.quiz;
                     if (!quizId) return null;
-                    // Use normalizeQuizName for all quizzes
+                    
+                    // Normalize the quizId consistently
                     const lookupId = normalizeQuizName(quizId);
+                    
                     // First check for quiz progress
                     const progress = quizProgress[lookupId];
+                    
                     // Then check for quiz results
                     const result = quizResults.find(r => normalizeQuizName(r.quizName) === lookupId);
+                    
                     // Combine data from both sources, with progress taking precedence
                     const combinedData = {
                         quizName: lookupId,
@@ -266,7 +285,10 @@ class IndexPage {
             const progressElement = document.getElementById(`${quizId}-progress`);
             if (!progressElement) return;
             
-            const quizScore = this.quizScores.find(score => score.quizName === quizId);
+            // Use normalized quiz name for comparison
+            const normalizedQuizId = normalizeQuizName(quizId);
+            const quizScore = this.quizScores.find(score => normalizeQuizName(score.quizName) === normalizedQuizId);
+            
             if (!quizScore) {
                 // No score data - white background
                 item.setAttribute('style', 'background-color: #FFFFFF !important; border: none !important;');
@@ -343,7 +365,9 @@ class IndexPage {
 
             const categoryStats = visibleQuizItems.reduce((stats, item) => {
                 const quizId = item.dataset.quiz;
-                const quizScore = this.quizScores.find(score => score.quizName === quizId);
+                // Use normalized quiz ID consistently
+                const normalizedQuizId = normalizeQuizName(quizId);
+                const quizScore = this.quizScores.find(score => normalizeQuizName(score.quizName) === normalizedQuizId);
                 
                 // Count as completed if all 15 questions are answered, regardless of status
                 const isCompleted = quizScore && quizScore.questionsAnswered >= 15;
@@ -740,6 +764,31 @@ class IndexPage {
         
         // Add the button container at the end of the quiz item
         quizItem.appendChild(buttonContainer);
+    }
+
+    // Debug helper method to check quiz name normalization
+    logQuizNameNormalization() {
+        console.group('Quiz Name Normalization Check');
+        
+        // Log all quiz items in the DOM
+        this.quizItems.forEach(item => {
+            const quizId = item.dataset.quiz;
+            if (!quizId) return;
+            
+            const normalized = normalizeQuizName(quizId);
+            console.log(`Quiz ID: "${quizId}" → Normalized: "${normalized}"`);
+        });
+        
+        if (this.quizScores) {
+            console.log('----- Quiz Scores in Memory -----');
+            this.quizScores.forEach(score => {
+                const quizName = score.quizName;
+                const normalized = normalizeQuizName(quizName);
+                console.log(`Score name: "${quizName}" → Normalized: "${normalized}" (Questions: ${score.questionsAnswered})`);
+            });
+        }
+        
+        console.groupEnd();
     }
 }
 
