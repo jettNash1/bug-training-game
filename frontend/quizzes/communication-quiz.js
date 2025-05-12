@@ -1766,12 +1766,8 @@ export class CommunicationQuiz extends BaseQuiz {
             progressCard.style.display = 'none';
         }
 
-        // Calculate final score based on correct answers
-        const correctAnswers = this.player.questionHistory.filter(q => 
-            q.selectedAnswer && (q.selectedAnswer.isCorrect || 
-            q.selectedAnswer.experience === Math.max(...q.scenario.options.map(o => o.experience || 0)))
-        ).length;
-        const scorePercentage = Math.round((correctAnswers / 15) * 100);
+        // Calculate final score percentage based on correct answers
+        const scorePercentage = this.calculateScorePercentage();
         const hasPassed = !failed && scorePercentage >= this.passPercentage;
         
         // Save the final quiz result with pass/fail status
@@ -1818,14 +1814,13 @@ export class CommunicationQuiz extends BaseQuiz {
                 
                 // Clear any local storage for this quiz
                 this.clearQuizLocalStorage(username, this.quizName);
-                
             } catch (error) {
                 console.error('Error saving final quiz score:', error);
             }
         }
 
         document.getElementById('final-score').textContent = `Final Score: ${scorePercentage}%`;
-
+        
         // Update the quiz complete header based on status
         const quizCompleteHeader = document.querySelector('#end-screen h2');
         if (quizCompleteHeader) {
@@ -1881,13 +1876,115 @@ export class CommunicationQuiz extends BaseQuiz {
 
         this.generateRecommendations();
     }
+
+    // Helper method to calculate the score percentage based on correct answers
+    calculateScorePercentage() {
+        const correctAnswers = this.player.questionHistory.filter(q => 
+            q.selectedAnswer && (q.selectedAnswer.isCorrect || 
+            q.selectedAnswer.experience === Math.max(...q.scenario.options.map(o => o.experience || 0)))
+        ).length;
+        
+        // Calculate percentage based on completed questions (cap at max questions)
+        const totalAnswered = Math.min(this.player.questionHistory.length, this.totalQuestions);
+        return totalAnswered > 0 ? Math.round((correctAnswers / totalAnswered) * 100) : 0;
+    }
+
+    clearQuizLocalStorage(username, quizName) {
+        const variations = [
+            quizName,                                              // original
+            quizName.toLowerCase(),                               // lowercase
+            quizName.toUpperCase(),                               // uppercase
+            quizName.replace(/-/g, ''),                           // no hyphens
+            quizName.replace(/([A-Z])/g, '-$1').toLowerCase(),    // kebab-case
+            quizName.replace(/-([a-z])/g, (_, c) => c.toUpperCase()), // camelCase
+            quizName.replace(/-/g, '_'),                          // snake_case
+        ];
+
+        // Add sanity-smoke specific variations
+        if (quizName.toLowerCase().includes('sanity-smoke')) {
+            variations.push(
+                'Communication',
+                'communication',
+                'communicationTest',
+                'Communication_',
+                'communication_'
+            );
+        }
+
+        variations.forEach(variant => {
+            localStorage.removeItem(`quiz_progress_${username}_${variant}`);
+            localStorage.removeItem(`quizResults_${username}_${variant}`);
+        });
+    }
 }
 
-// Initialize quiz when the page loads
+// Start the quiz when the page loads
 document.addEventListener('DOMContentLoaded', () => {
-    // Clear any existing quiz instances before starting this quiz
-    BaseQuiz.clearQuizInstances('communication');
+    console.log('[CommunicationQuiz] Initializing quiz');
     
+    // Force clean any existing quiz references that might be in memory
+    if (window.currentQuiz) {
+        console.log('[CommunicationQuiz] Cleaning up existing quiz instance:', window.currentQuiz.quizName);
+        // Clear any timers or other resources
+        if (window.currentQuiz.questionTimer) {
+            clearInterval(window.currentQuiz.questionTimer);
+        }
+    }
+    
+    // Clear any conflicting localStorage entries
+    const username = localStorage.getItem('username');
+    if (username) {
+        // List all quiz names that might conflict
+        const potentialConflicts = [
+            'script-metrics-troubleshooting',
+            'standard-script-testing',
+            'fully-scripted',
+            'exploratory'
+        ];
+        
+        // Clean localStorage to prevent cross-contamination
+        potentialConflicts.forEach(quizName => {
+            const key = `quiz_progress_${username}_${quizName}`;
+            const data = localStorage.getItem(key);
+            if (data) {
+                console.log(`[CommunicationQuiz] Found potential conflicting quiz data: ${quizName}`);
+                try {
+                    const parsed = JSON.parse(data);
+                    if (parsed && parsed.data && parsed.data.randomizedScenarios) {
+                        console.log(`[CommunicationQuiz] Cleaning randomized scenarios from ${quizName}`);
+                        delete parsed.data.randomizedScenarios;
+                        localStorage.setItem(key, JSON.stringify(parsed));
+                    }
+                } catch (e) {
+                    console.error(`[CommunicationQuiz] Error cleaning scenarios:`, e);
+                }
+            }
+        });
+    }
+    
+    // Create a new instance and keep a global reference
     const quiz = new CommunicationQuiz();
+    window.currentQuiz = quiz;
+    
+    // Add a specific property to identify this quiz
+    Object.defineProperty(window, 'ACTIVE_QUIZ_NAME', {
+        value: 'communication',
+        writable: true,
+        configurable: true
+    });
+    
+    // Force clear any unrelated randomized scenarios
+    if (quiz.randomizedScenarios) {
+        // Keep only keys specific to this quiz
+        Object.keys(quiz.randomizedScenarios).forEach(key => {
+            if (!key.startsWith('communication_')) {
+                console.log(`[CommunicationQuiz] Removing unrelated randomized scenario: ${key}`);
+                delete quiz.randomizedScenarios[key];
+            }
+        });
+    }
+    
+    // Start the quiz
+    console.log('[CommunicationQuiz] Starting quiz');
     quiz.startGame();
 }); 
