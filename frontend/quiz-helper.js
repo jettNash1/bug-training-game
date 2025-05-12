@@ -866,9 +866,9 @@ export class BaseQuiz {
         try {
             // Create a deep copy to avoid modifying the original object
             const optimized = JSON.parse(JSON.stringify(progressData));
-            
-            // If there's question history, optimize it
+            // Only keep as many questionHistory entries as questions answered
             if (optimized.questionHistory && Array.isArray(optimized.questionHistory)) {
+                optimized.questionHistory = optimized.questionHistory.slice(0, optimized.questionsAnswered);
                 optimized.questionHistory = optimized.questionHistory.map(item => {
                     // Extract only essential scenario data
                     const scenarioData = item.scenario ? {
@@ -876,7 +876,6 @@ export class BaseQuiz {
                         level: item.scenario.level,
                         title: item.scenario.title
                     } : (item.scenarioId ? { id: item.scenarioId } : { id: 0 });
-                    
                     // Extract only essential answer data
                     const answerData = item.selectedAnswer ? {
                         text: item.selectedAnswer.text ? item.selectedAnswer.text.substring(0, 50) : 'Answer',
@@ -884,7 +883,6 @@ export class BaseQuiz {
                         isCorrect: item.selectedAnswer.isCorrect || (item.selectedAnswer.experience > 0),
                         outcome: item.selectedAnswer.outcome ? item.selectedAnswer.outcome.substring(0, 100) : ''
                     } : { experience: 0, isCorrect: false };
-                    
                     // Return a slim record with only the essential data
                     return {
                         scenarioId: scenarioData.id,
@@ -898,20 +896,18 @@ export class BaseQuiz {
                     };
                 });
             }
-            
             // Save randomized scenarios to preserve state across sessions
             if (this.randomizedScenarios) {
                 const optimizedScenarios = {};
                 Object.keys(this.randomizedScenarios).forEach(level => {
                     if (Array.isArray(this.randomizedScenarios[level])) {
-                        optimizedScenarios[level] = this.randomizedScenarios[level].map(s => 
+                        optimizedScenarios[level] = this.randomizedScenarios[level].map(s =>
                             typeof s === 'object' ? s.id : s
                         );
                     }
                 });
                 optimized.randomizedScenarios = optimizedScenarios;
             }
-            
             console.log(`[Quiz] Optimized progress data: ${JSON.stringify(optimized).length} bytes`);
             return optimized;
         } catch (error) {
@@ -1781,7 +1777,7 @@ export class BaseQuiz {
                 progress = {
                     experience: savedProgress.data.experience || 0,
                     tools: savedProgress.data.tools || [],
-                    questionHistory: savedProgress.data.questionHistory || [],
+                    questionHistory: Array.isArray(savedProgress.data.questionHistory) ? savedProgress.data.questionHistory.slice(0, this.totalQuestions) : [],
                     currentScenario: savedProgress.data.currentScenario || 0,
                     status: savedProgress.data.status || 'in-progress',
                     scorePercentage: savedProgress.data.scorePercentage || 0,
@@ -1794,6 +1790,9 @@ export class BaseQuiz {
                 if (localData) {
                     const parsed = JSON.parse(localData);
                     progress = parsed.data || parsed;
+                    if (progress && Array.isArray(progress.questionHistory)) {
+                        progress.questionHistory = progress.questionHistory.slice(0, this.totalQuestions);
+                    }
                     console.log('[Quiz] Loaded progress from localStorage:', progress);
                 }
             }
@@ -1811,11 +1810,11 @@ export class BaseQuiz {
                 // Otherwise, resume quiz at the correct question
                 this.player.experience = progress.experience || 0;
                 this.player.tools = progress.tools || [];
-                this.player.questionHistory = progress.questionHistory || [];
-                this.player.currentScenario = progress.currentScenario || 0;
+                this.player.questionHistory = Array.isArray(progress.questionHistory) ? progress.questionHistory.slice(0, this.totalQuestions) : [];
+                this.player.currentScenario = progress.currentScenario || this.player.questionHistory.length || 0;
                 // Restore randomized scenarios
                 if (progress.randomizedScenarios) {
-                    // ... existing code ...
+                    this.randomizedScenarios = progress.randomizedScenarios;
                 }
                 this.updateProgress();
                 return true;
