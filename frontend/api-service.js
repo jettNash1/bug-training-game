@@ -431,8 +431,7 @@ export class APIService {
                             headers: {
                                 'Authorization': `Bearer ${token}`,
                                 'Accept': 'application/json',
-                                'Content-Type': 'application/json',
-                                'X-Quiz-Optimization': 'true' // Signal to backend that we want optimized response
+                                'Content-Type': 'application/json'
                             },
                             mode: 'cors',
                             signal: signal
@@ -612,8 +611,7 @@ export class APIService {
                             headers: {
                                 'Authorization': `Bearer ${token}`,
                                 'Accept': 'application/json',
-                                'Content-Type': 'application/json',
-                                'X-Quiz-Optimization': 'true' // Signal to backend that we want optimized handling
+                                'Content-Type': 'application/json'
                             },
                             body: JSON.stringify({
                                 quizName: quizName,
