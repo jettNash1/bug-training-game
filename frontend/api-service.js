@@ -1288,10 +1288,8 @@ export class APIService {
             // --- Normalize data structure ---
             let quizProgress = {};
             const data = userProgressResponse.data;
-            console.log('[Badges] userProgressResponse.data:', data);
             if (data.quizProgress && typeof data.quizProgress === 'object') {
                 quizProgress = data.quizProgress;
-                console.log('[Badges] Found quiz progress in data.quizProgress');
             } else if (typeof data === 'object' && Object.keys(data).length > 0) {
                 // Legacy or fallback structure
                 const possibleQuizzes = Object.keys(data)
@@ -1301,20 +1299,16 @@ export class APIService {
                          data[key].questionHistory !== undefined));
                 if (possibleQuizzes.length > 0) {
                     quizProgress = data;
-                    console.log('[Badges] Found quiz progress directly in data object');
                 }
             }
-            // Defensive: ensure quizProgress is always an object
             if (!quizProgress || typeof quizProgress !== 'object') {
                 quizProgress = {};
             }
-            console.log('[Badges] Quiz progress extracted:', quizProgress);
-            // Get all quizzes from the progress data
+            // --- Use the same badge extraction logic as BadgeService.getUserBadges ---
             const allQuizzes = Object.keys(quizProgress).map(quizId => ({
                 id: quizId,
                 name: this.formatQuizName(quizId)
             }));
-            console.log(`[Badges] Found ${allQuizzes.length} quizzes for user ${username}:`, allQuizzes);
             if (allQuizzes.length === 0) {
                 return {
                     success: true,
@@ -1325,37 +1319,30 @@ export class APIService {
                     }
                 };
             }
-            // Process quiz completion status
             const badges = allQuizzes.map(quiz => {
                 const progress = quizProgress[quiz.id] || {};
-                console.log(`[Badges] Processing quiz ${quiz.id}:`, progress);
-                // Check if quiz is complete based on status or progress
+                // Use the same completion logic as BadgeService
                 const isCompleted = progress && (
                     progress.status === 'completed' ||
                     progress.status === 'passed' ||
-                    (progress.questionHistory && progress.questionHistory.length >= 15) ||
+                    (progress.questionHistory && progress.questionHistory.length === 15) ||
                     (typeof progress.questionsAnswered === 'number' && progress.questionsAnswered >= 15)
                 );
-                console.log(`[Badges] Quiz ${quiz.id} completion status:`, isCompleted);
                 return {
                     id: `quiz-${quiz.id}`,
                     name: `${quiz.name} Master`,
                     description: `Complete the ${quiz.name} quiz`,
                     icon: 'fa-solid fa-check-circle',
                     earned: isCompleted,
-                    completionDate: isCompleted ? (progress.lastUpdated || progress.completedAt || null) : null,
+                    completionDate: isCompleted ? (progress.lastUpdated || progress.completedAt || new Date().toISOString()) : null,
                     quizId: quiz.id
                 };
             });
-            // Sort badges: completed first, then alphabetically by name
             badges.sort((a, b) => {
-                // First sort by completion status
                 if (a.earned && !b.earned) return -1;
                 if (!a.earned && b.earned) return 1;
-                // Then sort alphabetically by name
                 return a.name.localeCompare(b.name);
             });
-            // Count completed badges
             const completedCount = badges.filter(badge => badge.earned).length;
             const result = {
                 success: true,
@@ -1365,7 +1352,6 @@ export class APIService {
                     earnedCount: completedCount
                 }
             };
-            console.log('[Badges] Final badges result:', result);
             return result;
         } catch (error) {
             console.error(`[Badges] Error getting badges for user ${username}:`, error);
