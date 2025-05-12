@@ -678,45 +678,11 @@ export class TesterMindsetQuiz extends BaseQuiz {
         return totalQuestionsAnswered >= this.totalQuestions;
     }
 
-    normalizeQuizName(quizName) {
-        // Always return 'tester-mindset' for any variant
-        if (typeof quizName === 'string' && quizName.toLowerCase().replace(/[_\s]/g, '-').includes('tester')) {
-            return 'tester-mindset';
-        }
-        return quizName;
-    }
-
     async startGame() {
         if (this.isLoading) return;
         
         try {
             this.isLoading = true;
-            
-            // ADDITIONAL DEBUGGING: Log all localStorage keys related to progress
-            console.group('[TesterMindsetQuiz] DEBUGGING ALL RELATED LOCALSTORAGE');
-            const username = localStorage.getItem('username');
-            if (username) {
-                console.log('Current username:', username);
-                Object.keys(localStorage).forEach(key => {
-                    if (key.includes('quiz') || key.includes('tester') || key.includes(username)) {
-                        const value = localStorage.getItem(key);
-                        console.log(`${key}: ${value.length > 100 ? value.substring(0, 100) + '...' : value}`);
-                        try {
-                            const parsed = JSON.parse(value);
-                            if (parsed && parsed.data) {
-                                console.log(`  Parsed data: currentScenario=${parsed.data.currentScenario}, questionsAnswered=${parsed.data.questionsAnswered}`);
-                                if (parsed.data.questionHistory) {
-                                    console.log(`  History length: ${parsed.data.questionHistory.length}`);
-                                }
-                            }
-                        } catch (e) {
-                            // Ignore parsing errors
-                        }
-                    }
-                });
-            }
-            console.groupEnd();
-            
             // Show loading indicator
             const loadingIndicator = document.getElementById('loading-indicator');
             if (loadingIndicator) {
@@ -729,43 +695,50 @@ export class TesterMindsetQuiz extends BaseQuiz {
                 window.location.href = '/login.html';
                 return;
             }
-
-            // Reset player state before loading progress
-            this.player.experience = 0;
-            this.player.tools = [];
-            this.player.currentScenario = 0;
-            this.player.questionHistory = [];
-
-            // Run diagnostics to help troubleshoot
-            await this.logQuizProgressDiagnostics();
+            
+            // Clear any conflicting randomized scenarios
+            const username = localStorage.getItem('username');
+            if (username) {
+                // Clear any leftover randomized scenarios from other quizzes
+                // to prevent cross-contamination
+                const quizzes = ['script-metrics-troubleshooting', 'standard-script-testing'];
+                quizzes.forEach(quizName => {
+                    if (quizName !== this.quizName) {
+                        const key = `quiz_progress_${username}_${quizName}`;
+                        const data = localStorage.getItem(key);
+                        if (data) {
+                            try {
+                                console.log(`[Quiz] Clearing potential conflicting scenarios from ${quizName}`);
+                                const parsed = JSON.parse(data);
+                                if (parsed && parsed.data && parsed.data.randomizedScenarios) {
+                                    delete parsed.data.randomizedScenarios;
+                                    localStorage.setItem(key, JSON.stringify(parsed));
+                                }
+                            } catch (e) {
+                                console.error(`[Quiz] Error clearing scenarios from ${quizName}:`, e);
+                            }
+                        }
+                    }
+                });
+            }
 
             // Initialize event listeners
             this.initializeEventListeners();
 
             // Load previous progress
             const hasProgress = await this.loadProgress();
-            console.log('[TesterMindsetQuiz] Previous progress loaded:', hasProgress, 'Questions answered:', this.player.questionHistory.length);
+            console.log('Previous progress loaded:', hasProgress);
             
-            // STATE CHECK: Verify currentScenario matches question history length
-            if (this.player.currentScenario !== this.player.questionHistory.length) {
-                console.error(`[TesterMindsetQuiz] CRITICAL: After loading progress, currentScenario (${this.player.currentScenario}) doesn't match questionHistory.length (${this.player.questionHistory.length})`);
-                // Force alignment
-                this.player.currentScenario = this.player.questionHistory.length;
-                console.log(`[TesterMindsetQuiz] Forced alignment: currentScenario = ${this.player.currentScenario}`);
-            } else {
-                console.log(`[TesterMindsetQuiz] GOOD: currentScenario (${this.player.currentScenario}) matches questionHistory.length (${this.player.questionHistory.length})`);
+            if (!hasProgress) {
+                // Reset player state if no valid progress exists
+                this.player.experience = 0;
+                this.player.tools = [];
+                this.player.currentScenario = 0;
+                this.player.questionHistory = [];
+                
+                // Clear any existing randomized scenarios
+                this.randomizedScenarios = {};
             }
-            
-            // Force a special localStorage entry for debugging 
-            const debugKey = `tester_mindset_debug_${Date.now()}`;
-            localStorage.setItem(debugKey, JSON.stringify({
-                timestamp: new Date().toISOString(),
-                hasProgress: hasProgress,
-                questionsAnswered: this.player.questionHistory.length,
-                currentScenario: this.player.currentScenario
-            }));
-            
-            console.log('[TesterMindsetQuiz] Debug info saved to localStorage key:', debugKey);
             
             // Clear any existing transition messages
             const transitionContainer = document.getElementById('level-transition-container');
@@ -779,18 +752,9 @@ export class TesterMindsetQuiz extends BaseQuiz {
                 clearInterval(this.questionTimer);
             }
             
-            // Initialize UI - use HIDDEN class rather than style.display
-            this.gameScreen.classList.remove('hidden');
-            this.outcomeScreen.classList.add('hidden');
-            this.endScreen.classList.add('hidden');
-            
-            // Save current state BEFORE displaying first scenario
-            await this.saveProgress();
-            
-            // Display the first scenario (or resume from current position)
-            this.displayScenario();
+            await this.displayScenario();
         } catch (error) {
-            console.error('[TesterMindsetQuiz] Failed to start game:', error);
+            console.error('Failed to start game:', error);
             this.showError('Failed to start the quiz. Please try refreshing the page.');
         } finally {
             this.isLoading = false;
@@ -803,80 +767,57 @@ export class TesterMindsetQuiz extends BaseQuiz {
     }
 
     initializeEventListeners() {
-        // Remove existing event listeners first
-        const continueBtn = document.getElementById('continue-btn');
-        const restartBtn = document.getElementById('restart-btn');
-        const optionsForm = document.getElementById('options-form');
-        
-        if (continueBtn) {
-            continueBtn.removeEventListener('click', this.nextScenarioBound);
-            this.nextScenarioBound = this.nextScenario.bind(this);
-            continueBtn.addEventListener('click', this.nextScenarioBound);
-        }
-        
-        if (restartBtn) {
-            restartBtn.removeEventListener('click', this.restartGameBound);
-            this.restartGameBound = this.restartGame.bind(this);
-            restartBtn.addEventListener('click', this.restartGameBound);
-        }
+        // Add event listeners for the continue and restart buttons
+        document.getElementById('continue-btn')?.addEventListener('click', () => this.nextScenario());
+        document.getElementById('restart-btn')?.addEventListener('click', () => this.restartGame());
 
-        // Options form is handled separately in displayScenario
-        
-        // Remove global keydown handler if it exists
-        document.removeEventListener('keydown', this.keydownHandlerBound);
-        
+        // Add form submission handler
+        document.getElementById('options-form')?.addEventListener('submit', (e) => {
+            e.preventDefault();
+            this.handleAnswer();
+        });
+
         // Add keyboard navigation
-        this.keydownHandlerBound = (e) => {
+        document.addEventListener('keydown', (e) => {
             if (e.key === 'Enter' && e.target.type === 'radio') {
                 this.handleAnswer();
             }
-        };
-        
-        document.addEventListener('keydown', this.keydownHandlerBound);
+        });
     }
 
     displayScenario() {
         // Check if we've answered all questions
         if (this.player.questionHistory.length >= this.totalQuestions) {
-            console.log('[TesterMindsetQuiz] All questions answered, ending game');
+            console.log('All questions answered, ending game');
             this.endGame(false);
             return;
         }
         
-        // ALWAYS use questionHistory.length to determine current question position
+        // Get the randomized scenarios for the current level
+        const currentScenarios = this.getCurrentScenarios();
+        
+        // Get the next scenario based on current progress within level
+        let scenario;
         const questionCount = this.player.questionHistory.length;
-        console.log(`[TesterMindsetQuiz] Displaying scenario for question ${questionCount + 1}. History length: ${questionCount}`);
         
-        // Debug check for consistency and force alignment if needed
-        if (this.player.currentScenario !== questionCount) {
-            console.warn(`[TesterMindsetQuiz] INCONSISTENCY: currentScenario (${this.player.currentScenario}) doesn't match questionHistory length (${questionCount}). Fixing...`);
-            this.player.currentScenario = questionCount;
-        }
-        
-        // Find which scenario set to use based on the current progress
-        let scenarioSet, scenarioIndex;
+        // Determine which level we're in and set the correct index
+        let currentLevelIndex;
         if (questionCount < 5) {
             // Basic questions (0-4)
-            scenarioSet = this.basicScenarios;
-            scenarioIndex = questionCount;
+            currentLevelIndex = questionCount;
         } else if (questionCount < 10) {
             // Intermediate questions (5-9)
-            scenarioSet = this.intermediateScenarios;
-            scenarioIndex = questionCount - 5;
+            currentLevelIndex = questionCount - 5;
         } else {
             // Advanced questions (10-14)
-            scenarioSet = this.advancedScenarios;
-            scenarioIndex = questionCount - 10;
+            currentLevelIndex = questionCount - 10;
         }
         
-        // Ensure we have a valid scenario - use the ID-based lookup
-        const scenario = scenarioSet[scenarioIndex];
+        // Get the scenario from the current randomized scenarios
+        scenario = currentScenarios[currentLevelIndex];
         
-        console.log(`[TesterMindsetQuiz] Using scenario: ${scenarioSet === this.basicScenarios ? 'Basic' : 
-            scenarioSet === this.intermediateScenarios ? 'Intermediate' : 'Advanced'} [${scenarioIndex}], ID: ${scenario?.id}`);
-
         if (!scenario) {
-            console.error(`[TesterMindsetQuiz] No scenario found for question ${questionCount+1}. Level: ${this.getCurrentLevel()}, Index: ${scenarioIndex}`);
+            console.error('No scenario found for current progress. Question count:', questionCount);
             this.endGame(true);
             return;
         }
@@ -926,88 +867,60 @@ export class TesterMindsetQuiz extends BaseQuiz {
         const descriptionElement = document.getElementById('scenario-description');
         const optionsContainer = document.getElementById('options-container');
 
-        if (titleElement) titleElement.textContent = scenario.title;
-        if (descriptionElement) descriptionElement.textContent = scenario.description;
-        
-        if (optionsContainer) {
-            // Clear any existing content to prevent duplicate form elements
-            optionsContainer.innerHTML = '';
-            
-            // Get the existing form instead of creating a new one
-            const form = document.getElementById('options-form');
-            if (!form) {
-                console.error('[TesterMindsetQuiz] Options form not found');
-                return;
-            }
-            
-            // Clear any existing options
-            form.innerHTML = '';
-            
-            // Create a fresh copy of options with their original indices
-            const optionsCopy = JSON.parse(JSON.stringify(scenario.options));
-            const shuffledOptions = optionsCopy.map((option, index) => ({
-                ...option,
-                originalIndex: index
-            }));
-            
-            // Shuffle the options
-            for (let i = shuffledOptions.length - 1; i > 0; i--) {
-                const j = Math.floor(Math.random() * (i + 1));
-                [shuffledOptions[i], shuffledOptions[j]] = [shuffledOptions[j], shuffledOptions[i]];
-            }
-            
-            // Log the options to debug
-            console.log(`[TesterMindsetQuiz] Options for scenario ${scenario.id}:`, 
-                shuffledOptions.map(o => o.text.substring(0, 20) + '...'));
-            
-            // Create option elements
-            shuffledOptions.forEach((option, index) => {
-                const optionElement = document.createElement('div');
-                optionElement.className = 'option';
-                optionElement.innerHTML = `
-                    <input type="radio" 
-                        name="option" 
-                        value="${option.originalIndex}" 
-                        id="option${index}" 
-                        tabindex="0"
-                        aria-label="${option.text}">
-                    <label for="option${index}">${option.text}</label>
-                `;
-                form.appendChild(optionElement);
-            });
-            
-            // Add submit button (using existing one to avoid duplicates)
-            const submitButton = document.getElementById('submit-btn');
-            if (!submitButton) {
-                const newSubmitButton = document.createElement('button');
-                newSubmitButton.id = 'submit-btn';
-                newSubmitButton.type = 'submit';
-                newSubmitButton.className = 'submit-button';
-                newSubmitButton.textContent = 'Submit';
-                form.appendChild(newSubmitButton);
-            }
-            
-            // Re-attach form handler (use removeEventListener first to prevent duplicates)
-            form.removeEventListener('submit', this.handleAnswerBound);
-            // Create a bound function for the event handler if not already created
-            if (!this.handleAnswerBound) {
-                this.handleAnswerBound = this.handleAnswer.bind(this);
-            }
-            form.addEventListener('submit', this.handleAnswerBound);
+        if (!titleElement || !descriptionElement || !optionsContainer) {
+            console.error('Required elements not found');
+            return;
         }
-        
-        // Update progress indicators
+
+        titleElement.textContent = scenario.title;
+        descriptionElement.textContent = scenario.description;
+
+        // Update question counter immediately
+        const questionProgress = document.getElementById('question-progress');
+        if (questionProgress) {
+            questionProgress.textContent = `Question: ${this.currentQuestionNumber}/${this.totalQuestions}`;
+        }
+
+        // Create a copy of options with their original indices
+        const shuffledOptions = scenario.options.map((option, index) => ({
+            ...option,
+            originalIndex: index
+        }));
+
+        // Shuffle the options
+        for (let i = shuffledOptions.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [shuffledOptions[i], shuffledOptions[j]] = [shuffledOptions[j], shuffledOptions[i]];
+        }
+
+        optionsContainer.innerHTML = '';
+
+        shuffledOptions.forEach((option, index) => {
+            const optionElement = document.createElement('div');
+            optionElement.className = 'option';
+            optionElement.innerHTML = `
+                <input type="radio" 
+                    name="option" 
+                    value="${option.originalIndex}" 
+                    id="option${index}"
+                    tabindex="0"
+                    aria-label="${option.text}"
+                    role="radio">
+                <label for="option${index}">${option.text}</label>
+            `;
+            optionsContainer.appendChild(optionElement);
+        });
+
         this.updateProgress();
+
+        // Initialize timer for the new question
+        this.initializeTimer();
     }
 
-    async handleAnswer(event) {
-        if (event) {
-            event.preventDefault();
-        }
-        
+    async handleAnswer() {
         if (this.isLoading) return;
         
-        const submitButton = document.getElementById('submit-btn');
+        const submitButton = document.querySelector('.submit-button');
         if (submitButton) {
             submitButton.disabled = true;
         }
@@ -1020,42 +933,29 @@ export class TesterMindsetQuiz extends BaseQuiz {
         try {
             this.isLoading = true;
             const selectedOption = document.querySelector('input[name="option"]:checked');
-            if (!selectedOption) {
-                alert('Please select an answer before submitting.');
-                return;
-            }
+            if (!selectedOption) return;
 
-            // Get the current question based solely on the length of questionHistory
-            const questionCount = this.player.questionHistory.length;
+            const currentScenarios = this.getCurrentScenarios();
             
-            // Find which scenario set to use based on the current progress
-            let scenarioSet, scenarioIndex;
+            // Determine which level we're in and set the correct index
+            const questionCount = this.player.questionHistory.length;
+            let currentLevelIndex;
+            
             if (questionCount < 5) {
                 // Basic questions (0-4)
-                scenarioSet = this.basicScenarios;
-                scenarioIndex = questionCount;
+                currentLevelIndex = questionCount;
             } else if (questionCount < 10) {
                 // Intermediate questions (5-9)
-                scenarioSet = this.intermediateScenarios;
-                scenarioIndex = questionCount - 5;
+                currentLevelIndex = questionCount - 5;
             } else {
                 // Advanced questions (10-14)
-                scenarioSet = this.advancedScenarios;
-                scenarioIndex = questionCount - 10;
+                currentLevelIndex = questionCount - 10;
             }
             
-            // Get the correct scenario from the appropriate set
-            const scenario = scenarioSet[scenarioIndex];
+            const scenario = currentScenarios[currentLevelIndex];
+            const originalIndex = parseInt(selectedOption.value);
             
-            if (!scenario) {
-                console.error(`[TesterMindsetQuiz] No scenario found for question ${questionCount} in handleAnswer`);
-                return;
-            }
-            
-            console.log(`[TesterMindsetQuiz] Processing answer for scenario ${scenario.id}: ${scenario.title}`);
-            
-            const selectedIndex = parseInt(selectedOption.value);
-            const selectedAnswer = scenario.options[selectedIndex];
+            const selectedAnswer = scenario.options[originalIndex];
 
             // Find the correct answer (option with highest experience)
             const correctAnswer = scenario.options.reduce((prev, current) => 
@@ -1081,12 +981,11 @@ export class TesterMindsetQuiz extends BaseQuiz {
                 timedOut: false
             });
 
-            // CRITICAL: Set currentScenario to equal the length of questionHistory
-            this.player.currentScenario = this.player.questionHistory.length;
+            // Increment current scenario
+            this.player.currentScenario++;
 
-            // Save progress immediately after adding to question history
+            // Save progress
             await this.saveProgress();
-            console.log(`[TesterMindsetQuiz] Question ${questionCount + 1} answered. Total answered: ${this.player.questionHistory.length}`);
 
             // Calculate the score percentage
             const scorePercentage = this.calculateScorePercentage();
@@ -1100,7 +999,7 @@ export class TesterMindsetQuiz extends BaseQuiz {
                 lastUpdated: new Date().toISOString()
             };
             
-            // Save quiz result to update index progress
+            // Save quiz result
             const username = localStorage.getItem('username');
             if (username) {
                 const quizUser = new QuizUser(username);
@@ -1133,13 +1032,10 @@ export class TesterMindsetQuiz extends BaseQuiz {
                 // Add event listener to the continue button
                 const continueBtn = outcomeContent.querySelector('#continue-btn');
                 if (continueBtn) {
-                    continueBtn.removeEventListener('click', this.nextScenarioBound);
-                    this.nextScenarioBound = this.nextScenario.bind(this);
-                    continueBtn.addEventListener('click', this.nextScenarioBound);
+                    continueBtn.addEventListener('click', () => this.nextScenario());
                 }
             }
 
-            // Update progress indicators
             this.updateProgress();
 
             // Check if all questions have been answered
@@ -1147,7 +1043,7 @@ export class TesterMindsetQuiz extends BaseQuiz {
                 await this.endGame(false);
             }
         } catch (error) {
-            console.error('[TesterMindsetQuiz] Failed to handle answer:', error);
+            console.error('Failed to handle answer:', error);
             this.showError('Failed to save your answer. Please try again.');
         } finally {
             this.isLoading = false;
@@ -1172,7 +1068,7 @@ export class TesterMindsetQuiz extends BaseQuiz {
         // Get current level and question count
         const currentLevel = this.getCurrentLevel();
         const totalAnswered = this.player.questionHistory.length;
-        const questionNumber = totalAnswered >= 15 ? 15 : totalAnswered + 1;
+        const questionNumber = totalAnswered + 1;
         
         // Update the existing progress card elements
         const levelInfoElement = document.querySelector('.level-info');
@@ -1183,7 +1079,7 @@ export class TesterMindsetQuiz extends BaseQuiz {
         }
         
         if (questionInfoElement) {
-            questionInfoElement.textContent = `Question: ${questionNumber}/15`;
+            questionInfoElement.textContent = `Question: ${questionNumber}/${this.totalQuestions}`;
         }
         
         // Ensure the card is visible
@@ -1202,11 +1098,11 @@ export class TesterMindsetQuiz extends BaseQuiz {
         }
         
         if (questionProgress) {
-            questionProgress.textContent = `Question: ${questionNumber}/${this.totalQuestions || 15}`;
+            questionProgress.textContent = `Question: ${questionNumber}/${this.totalQuestions}`;
         }
         
         if (progressFill) {
-            const progressPercentage = Math.min(100, (totalAnswered / (this.totalQuestions || 15)) * 100);
+            const progressPercentage = (totalAnswered / this.totalQuestions) * 100;
             progressFill.style.width = `${progressPercentage}%`;
         }
     }
@@ -1242,20 +1138,524 @@ export class TesterMindsetQuiz extends BaseQuiz {
 
     getCurrentScenarios() {
         const totalAnswered = this.player.questionHistory.length;
+        let level;
+        let scenarios;
         
-        // Log the current state for debugging
-        console.log(`[TesterMindsetQuiz] Getting scenarios for question position: ${totalAnswered}`);
+        if (totalAnswered >= 10) {
+            level = 'advanced';
+            scenarios = this.advancedScenarios;
+        } else if (totalAnswered >= 5) {
+            level = 'intermediate';
+            scenarios = this.intermediateScenarios;
+        } else {
+            level = 'basic';
+            scenarios = this.basicScenarios;
+        }
+        
+        // Use the getRandomizedScenarios method to get or create random scenarios
+        return this.getRandomizedScenarios(level, scenarios);
+    }
+
+    getCurrentLevel() {
+        const totalAnswered = this.player.questionHistory.length;
         
         // Progress through levels based only on question count
         if (totalAnswered >= 10) {
-            console.log(`[TesterMindsetQuiz] Using Advanced scenarios (${this.advancedScenarios.length} scenarios)`);
-            return this.advancedScenarios;
+            return 'Advanced';
         } else if (totalAnswered >= 5) {
-            console.log(`[TesterMindsetQuiz] Using Intermediate scenarios (${this.intermediateScenarios.length} scenarios)`);
-            return this.intermediateScenarios;
+            return 'Intermediate';
         }
-        console.log(`[TesterMindsetQuiz] Using Basic scenarios (${this.basicScenarios.length} scenarios)`);
-        return this.basicScenarios;
+        return 'Basic';
+    }    showError(message) {
+        const errorDiv = document.createElement('div');
+        errorDiv.className = 'error-notification';
+        errorDiv.setAttribute('role', 'alert');
+        errorDiv.textContent = message;
+        document.body.appendChild(errorDiv);
+        setTimeout(() => errorDiv.remove(), 5000);
+    }
+
+    shouldEndGame(totalQuestionsAnswered, currentXP) {
+        // End game when all questions are answered
+        return totalQuestionsAnswered >= this.totalQuestions;
+    }
+
+    async startGame() {
+        if (this.isLoading) return;
+        
+        try {
+            this.isLoading = true;
+            // Show loading indicator
+            const loadingIndicator = document.getElementById('loading-indicator');
+            if (loadingIndicator) {
+                loadingIndicator.classList.remove('hidden');
+            }
+
+            // Set player name from localStorage
+            this.player.name = localStorage.getItem('username');
+            if (!this.player.name) {
+                window.location.href = '/login.html';
+                return;
+            }
+            
+            // Clear any conflicting randomized scenarios
+            const username = localStorage.getItem('username');
+            if (username) {
+                // Clear any leftover randomized scenarios from other quizzes
+                // to prevent cross-contamination
+                const quizzes = ['script-metrics-troubleshooting', 'standard-script-testing'];
+                quizzes.forEach(quizName => {
+                    if (quizName !== this.quizName) {
+                        const key = `quiz_progress_${username}_${quizName}`;
+                        const data = localStorage.getItem(key);
+                        if (data) {
+                            try {
+                                console.log(`[Quiz] Clearing potential conflicting scenarios from ${quizName}`);
+                                const parsed = JSON.parse(data);
+                                if (parsed && parsed.data && parsed.data.randomizedScenarios) {
+                                    delete parsed.data.randomizedScenarios;
+                                    localStorage.setItem(key, JSON.stringify(parsed));
+                                }
+                            } catch (e) {
+                                console.error(`[Quiz] Error clearing scenarios from ${quizName}:`, e);
+                            }
+                        }
+                    }
+                });
+            }
+
+            // Initialize event listeners
+            this.initializeEventListeners();
+
+            // Load previous progress
+            const hasProgress = await this.loadProgress();
+            console.log('Previous progress loaded:', hasProgress);
+            
+            if (!hasProgress) {
+                // Reset player state if no valid progress exists
+                this.player.experience = 0;
+                this.player.tools = [];
+                this.player.currentScenario = 0;
+                this.player.questionHistory = [];
+                
+                // Clear any existing randomized scenarios
+                this.randomizedScenarios = {};
+            }
+            
+            // Clear any existing transition messages
+            const transitionContainer = document.getElementById('level-transition-container');
+            if (transitionContainer) {
+                transitionContainer.innerHTML = '';
+                transitionContainer.classList.remove('active');
+            }
+
+            // Clear any existing timer
+            if (this.questionTimer) {
+                clearInterval(this.questionTimer);
+            }
+            
+            await this.displayScenario();
+        } catch (error) {
+            console.error('Failed to start game:', error);
+            this.showError('Failed to start the quiz. Please try refreshing the page.');
+        } finally {
+            this.isLoading = false;
+            // Hide loading state
+            const loadingIndicator = document.getElementById('loading-indicator');
+            if (loadingIndicator) {
+                loadingIndicator.classList.add('hidden');
+            }
+        }
+    }
+
+    initializeEventListeners() {
+        // Add event listeners for the continue and restart buttons
+        document.getElementById('continue-btn')?.addEventListener('click', () => this.nextScenario());
+        document.getElementById('restart-btn')?.addEventListener('click', () => this.restartGame());
+
+        // Add form submission handler
+        document.getElementById('options-form')?.addEventListener('submit', (e) => {
+            e.preventDefault();
+            this.handleAnswer();
+        });
+
+        // Add keyboard navigation
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' && e.target.type === 'radio') {
+                this.handleAnswer();
+            }
+        });
+    }
+
+    displayScenario() {
+        // Check if we've answered all questions
+        if (this.player.questionHistory.length >= this.totalQuestions) {
+            console.log('All questions answered, ending game');
+            this.endGame(false);
+            return;
+        }
+        
+        // Get the randomized scenarios for the current level
+        const currentScenarios = this.getCurrentScenarios();
+        
+        // Get the next scenario based on current progress within level
+        let scenario;
+        const questionCount = this.player.questionHistory.length;
+        
+        // Determine which level we're in and set the correct index
+        let currentLevelIndex;
+        if (questionCount < 5) {
+            // Basic questions (0-4)
+            currentLevelIndex = questionCount;
+        } else if (questionCount < 10) {
+            // Intermediate questions (5-9)
+            currentLevelIndex = questionCount - 5;
+        } else {
+            // Advanced questions (10-14)
+            currentLevelIndex = questionCount - 10;
+        }
+        
+        // Get the scenario from the current randomized scenarios
+        scenario = currentScenarios[currentLevelIndex];
+        
+        if (!scenario) {
+            console.error('No scenario found for current progress. Question count:', questionCount);
+            this.endGame(true);
+            return;
+        }
+
+        // Store current question number for consistency
+        this.currentQuestionNumber = questionCount + 1;
+        
+        // Show level transition message at the start of each level or when level changes
+        const currentLevel = this.getCurrentLevel();
+        const previousLevel = questionCount > 0 ? 
+            (questionCount < 5 ? 'Basic' : 
+             questionCount < 10 ? 'Intermediate' : 'Advanced') : null;
+            
+        if (questionCount === 0 || 
+            (questionCount === 5 && currentLevel === 'Intermediate') || 
+            (questionCount === 10 && currentLevel === 'Advanced')) {
+            const transitionContainer = document.getElementById('level-transition-container');
+            if (transitionContainer) {
+                transitionContainer.innerHTML = ''; // Clear any existing messages
+                
+                const levelMessage = document.createElement('div');
+                levelMessage.className = 'level-transition';
+                levelMessage.setAttribute('role', 'alert');
+                levelMessage.textContent = `Starting ${currentLevel} Questions`;
+                
+                transitionContainer.appendChild(levelMessage);
+                transitionContainer.classList.add('active');
+                
+                // Update the level indicator
+                const levelIndicator = document.getElementById('level-indicator');
+                if (levelIndicator) {
+                    levelIndicator.textContent = `Level: ${currentLevel}`;
+                }
+                
+                // Remove the message and container height after animation
+                setTimeout(() => {
+                    transitionContainer.classList.remove('active');
+                    setTimeout(() => {
+                        transitionContainer.innerHTML = '';
+                    }, 300); // Wait for height transition to complete
+                }, 3000);
+            }
+        }
+
+        // Update scenario display
+        const titleElement = document.getElementById('scenario-title');
+        const descriptionElement = document.getElementById('scenario-description');
+        const optionsContainer = document.getElementById('options-container');
+
+        if (!titleElement || !descriptionElement || !optionsContainer) {
+            console.error('Required elements not found');
+            return;
+        }
+
+        titleElement.textContent = scenario.title;
+        descriptionElement.textContent = scenario.description;
+
+        // Update question counter immediately
+        const questionProgress = document.getElementById('question-progress');
+        if (questionProgress) {
+            questionProgress.textContent = `Question: ${this.currentQuestionNumber}/${this.totalQuestions}`;
+        }
+
+        // Create a copy of options with their original indices
+        const shuffledOptions = scenario.options.map((option, index) => ({
+            ...option,
+            originalIndex: index
+        }));
+
+        // Shuffle the options
+        for (let i = shuffledOptions.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [shuffledOptions[i], shuffledOptions[j]] = [shuffledOptions[j], shuffledOptions[i]];
+        }
+
+        optionsContainer.innerHTML = '';
+
+        shuffledOptions.forEach((option, index) => {
+            const optionElement = document.createElement('div');
+            optionElement.className = 'option';
+            optionElement.innerHTML = `
+                <input type="radio" 
+                    name="option" 
+                    value="${option.originalIndex}" 
+                    id="option${index}"
+                    tabindex="0"
+                    aria-label="${option.text}"
+                    role="radio">
+                <label for="option${index}">${option.text}</label>
+            `;
+            optionsContainer.appendChild(optionElement);
+        });
+
+        this.updateProgress();
+
+        // Initialize timer for the new question
+        this.initializeTimer();
+    }
+
+    async handleAnswer() {
+        if (this.isLoading) return;
+        
+        const submitButton = document.querySelector('.submit-button');
+        if (submitButton) {
+            submitButton.disabled = true;
+        }
+
+        // Clear any existing timer
+        if (this.questionTimer) {
+            clearInterval(this.questionTimer);
+        }
+        
+        try {
+            this.isLoading = true;
+            const selectedOption = document.querySelector('input[name="option"]:checked');
+            if (!selectedOption) return;
+
+            const currentScenarios = this.getCurrentScenarios();
+            
+            // Determine which level we're in and set the correct index
+            const questionCount = this.player.questionHistory.length;
+            let currentLevelIndex;
+            
+            if (questionCount < 5) {
+                // Basic questions (0-4)
+                currentLevelIndex = questionCount;
+            } else if (questionCount < 10) {
+                // Intermediate questions (5-9)
+                currentLevelIndex = questionCount - 5;
+            } else {
+                // Advanced questions (10-14)
+                currentLevelIndex = questionCount - 10;
+            }
+            
+            const scenario = currentScenarios[currentLevelIndex];
+            const originalIndex = parseInt(selectedOption.value);
+            
+            const selectedAnswer = scenario.options[originalIndex];
+
+            // Find the correct answer (option with highest experience)
+            const correctAnswer = scenario.options.reduce((prev, current) => 
+                (prev.experience > current.experience) ? prev : current
+            );
+
+            // Mark selected answer as correct or incorrect
+            selectedAnswer.isCorrect = selectedAnswer === correctAnswer;
+
+            // Update player experience with bounds
+            this.player.experience = Math.max(0, Math.min(this.maxXP, this.player.experience + selectedAnswer.experience));
+            
+            // Calculate time spent on this question
+            const timeSpent = this.questionStartTime ? Date.now() - this.questionStartTime : null;
+
+            // Add to question history
+            this.player.questionHistory.push({
+                scenario: scenario,
+                selectedAnswer: selectedAnswer,
+                isCorrect: selectedAnswer.isCorrect,
+                maxPossibleXP: Math.max(...scenario.options.map(o => o.experience)),
+                timeSpent: timeSpent,
+                timedOut: false
+            });
+
+            // Increment current scenario
+            this.player.currentScenario++;
+
+            // Save progress
+            await this.saveProgress();
+
+            // Calculate the score percentage
+            const scorePercentage = this.calculateScorePercentage();
+            
+            const score = {
+                quizName: this.quizName,
+                score: scorePercentage,
+                experience: this.player.experience,
+                questionHistory: this.player.questionHistory,
+                questionsAnswered: this.player.questionHistory.length,
+                lastUpdated: new Date().toISOString()
+            };
+            
+            // Save quiz result
+            const username = localStorage.getItem('username');
+            if (username) {
+                const quizUser = new QuizUser(username);
+                await quizUser.updateQuizScore(
+                    this.quizName,
+                    score.score,
+                    score.experience,
+                    this.player.tools,
+                    score.questionHistory,
+                    score.questionsAnswered
+                );
+            }
+
+            // Show outcome screen
+            if (this.gameScreen && this.outcomeScreen) {
+                this.gameScreen.classList.add('hidden');
+                this.outcomeScreen.classList.remove('hidden');
+            }
+            
+            // Set content directly in the outcome screen
+            const outcomeContent = this.outcomeScreen.querySelector('.outcome-content');
+            if (outcomeContent) {
+                outcomeContent.innerHTML = `
+                    <h3>${selectedAnswer.isCorrect ? 'Correct!' : 'Incorrect'}</h3>
+                    <p>${selectedAnswer.outcome || ''}</p>
+                    <p class="result">${selectedAnswer.isCorrect ? 'Correct answer!' : 'Try again next time.'}</p>
+                    <button id="continue-btn" class="submit-button">Continue</button>
+                `;
+                
+                // Add event listener to the continue button
+                const continueBtn = outcomeContent.querySelector('#continue-btn');
+                if (continueBtn) {
+                    continueBtn.addEventListener('click', () => this.nextScenario());
+                }
+            }
+
+            this.updateProgress();
+
+            // Check if all questions have been answered
+            if (this.shouldEndGame(this.player.questionHistory.length, this.player.experience)) {
+                await this.endGame(false);
+            }
+        } catch (error) {
+            console.error('Failed to handle answer:', error);
+            this.showError('Failed to save your answer. Please try again.');
+        } finally {
+            this.isLoading = false;
+            if (submitButton) {
+                submitButton.disabled = false;
+            }
+        }
+    }
+
+    nextScenario() {
+        // Hide outcome screen and show game screen
+        if (this.outcomeScreen && this.gameScreen) {
+            this.outcomeScreen.classList.add('hidden');
+            this.gameScreen.classList.remove('hidden');
+        }
+        
+        // Display next scenario
+        this.displayScenario();
+    }
+
+    updateProgress() {
+        // Get current level and question count
+        const currentLevel = this.getCurrentLevel();
+        const totalAnswered = this.player.questionHistory.length;
+        const questionNumber = totalAnswered + 1;
+        
+        // Update the existing progress card elements
+        const levelInfoElement = document.querySelector('.level-info');
+        const questionInfoElement = document.querySelector('.question-info');
+        
+        if (levelInfoElement) {
+            levelInfoElement.textContent = `Level: ${currentLevel}`;
+        }
+        
+        if (questionInfoElement) {
+            questionInfoElement.textContent = `Question: ${questionNumber}/${this.totalQuestions}`;
+        }
+        
+        // Ensure the card is visible
+        const progressCard = document.querySelector('.quiz-header-progress');
+        if (progressCard) {
+            progressCard.style.display = 'block';
+        }
+        
+        // Update legacy progress elements if they exist
+        const levelIndicator = document.getElementById('level-indicator');
+        const questionProgress = document.getElementById('question-progress');
+        const progressFill = document.getElementById('progress-fill');
+        
+        if (levelIndicator) {
+            levelIndicator.textContent = `Level: ${currentLevel}`;
+        }
+        
+        if (questionProgress) {
+            questionProgress.textContent = `Question: ${questionNumber}/${this.totalQuestions}`;
+        }
+        
+        if (progressFill) {
+            const progressPercentage = (totalAnswered / this.totalQuestions) * 100;
+            progressFill.style.width = `${progressPercentage}%`;
+        }
+    }
+
+    restartGame() {
+        // Reset player state
+        this.player = {
+            name: localStorage.getItem('username'),
+            experience: 0,
+            tools: [],
+            currentScenario: 0,
+            questionHistory: []
+        };
+
+        // Reset UI
+        this.gameScreen.classList.remove('hidden');
+        this.outcomeScreen.classList.add('hidden');
+        this.endScreen.classList.add('hidden');
+
+        // Clear any existing transition messages
+        const transitionContainer = document.getElementById('level-transition-container');
+        if (transitionContainer) {
+            transitionContainer.innerHTML = '';
+            transitionContainer.classList.remove('active');
+        }
+
+        // Update progress display
+        this.updateProgress();
+
+        // Start from first scenario
+        this.displayScenario();
+    }
+
+    getCurrentScenarios() {
+        const totalAnswered = this.player.questionHistory.length;
+        let level;
+        let scenarios;
+        
+        if (totalAnswered >= 10) {
+            level = 'advanced';
+            scenarios = this.advancedScenarios;
+        } else if (totalAnswered >= 5) {
+            level = 'intermediate';
+            scenarios = this.intermediateScenarios;
+        } else {
+            level = 'basic';
+            scenarios = this.basicScenarios;
+        }
+        
+        // Use the getRandomizedScenarios method to get or create random scenarios
+        return this.getRandomizedScenarios(level, scenarios);
     }
 
     getCurrentLevel() {
@@ -1515,7 +1915,7 @@ export class TesterMindsetQuiz extends BaseQuiz {
             quizName.replace(/-/g, '_'),                          // snake_case
         ];
 
-        // Add tester-mindset specific variations
+        // Add sanity-smoke specific variations
         if (quizName.toLowerCase().includes('tester-mindset')) {
             variations.push(
                 'Tester-Mindset',
@@ -1531,245 +1931,75 @@ export class TesterMindsetQuiz extends BaseQuiz {
             localStorage.removeItem(`quizResults_${username}_${variant}`);
         });
     }
-
-    async saveProgress() {
-        // First determine the status based on clear conditions
-        let status = 'in-progress';
-        
-        // Check for completion (all 15 questions answered)
-        if (this.player.questionHistory.length >= this.totalQuestions) {
-            // Calculate pass/fail based on correct answers
-            const correctAnswers = this.player.questionHistory.filter(q => q.isCorrect).length;
-            const scorePercentage = Math.round((correctAnswers / this.totalQuestions) * 100);
-            status = scorePercentage >= this.passPercentage ? 'passed' : 'failed';
-        }
-
-        // CRITICAL: Ensure currentScenario matches question history length for consistency
-        this.player.currentScenario = this.player.questionHistory.length;
-
-        // Create a clean version of question history with minimal data
-        // This helps prevent circular references and duplicate data
-        const cleanHistory = this.player.questionHistory.map(item => {
-            // Extract only what we need for reporting and progress tracking
-            return {
-                isCorrect: item.isCorrect || false,
-                selectedAnswer: item.selectedAnswer ? {
-                    text: item.selectedAnswer.text,
-                    experience: item.selectedAnswer.experience,
-                    outcome: item.selectedAnswer.outcome,
-                    isCorrect: item.selectedAnswer.isCorrect
-                } : null,
-                timeSpent: item.timeSpent || 0,
-                timedOut: item.timedOut || false
-            };
-        });
-
-        // Create a complete progress object with consistent structure
-        const progress = {
-            data: {
-                experience: this.player.experience || 0,
-                tools: this.player.tools || [],
-                currentScenario: this.player.questionHistory.length, // IMPORTANT: Always use question count
-                questionHistory: cleanHistory,
-                lastUpdated: new Date().toISOString(),
-                questionsAnswered: this.player.questionHistory.length,
-                status: status,
-                scorePercentage: this.calculateScorePercentage()
-            }
-        };
-
-        try {
-            const username = localStorage.getItem('username');
-            if (!username) {
-                console.error('[TesterMindsetQuiz] No user found, cannot save progress');
-                return false;
-            }
-            
-            // Always normalize to 'tester-mindset'
-            const quizName = 'tester-mindset';
-            console.log(`[TesterMindsetQuiz] Saving progress for ${quizName}: ${progress.data.questionsAnswered} questions answered, currentScenario: ${progress.data.currentScenario}`);
-            
-            // Save to localStorage as primary source of truth
-            const storageKey = `quiz_progress_${username}_${quizName}`;
-            localStorage.setItem(storageKey, JSON.stringify(progress));
-            
-            // Then save to API
-            await this.apiService.saveQuizProgress(quizName, progress.data);
-            
-            console.log(`[TesterMindsetQuiz] Progress saved successfully - ${progress.data.questionsAnswered} questions answered`);
-            return true;
-        } catch (error) {
-            console.error('[TesterMindsetQuiz] Error saving progress:', error);
-            return false;
-        }
-    }
-
-    async loadProgress() {
-        try {
-            const username = localStorage.getItem('username');
-            if (!username) {
-                console.error('[TesterMindsetQuiz] No username found, cannot load progress');
-                return false;
-            }
-            
-            // Always use tester-mindset as the normalized quiz name
-            const quizName = 'tester-mindset';
-            const storageKey = `quiz_progress_${username}_${quizName}`;
-            
-            // Debug all localStorage keys
-            console.log('[TesterMindsetQuiz] DEBUG - All localStorage keys:');
-            Object.keys(localStorage).forEach(key => {
-                if (key.includes('quiz') || key.includes('tester')) {
-                    console.log(`  - ${key}: ${localStorage.getItem(key).substring(0, 50)}...`);
-                }
-            });
-            
-            // Try to get from localStorage first since it's more reliable
-            let progress = null;
-            const localData = localStorage.getItem(storageKey);
-            
-            if (localData) {
-                try {
-                    const parsed = JSON.parse(localData);
-                    console.log('[TesterMindsetQuiz] Raw localStorage data:', parsed);
-                    
-                    if (parsed && parsed.data) {
-                        progress = parsed.data;
-                        console.log('[TesterMindsetQuiz] Found progress in localStorage:', progress);
-                    }
-                } catch (e) {
-                    console.error('[TesterMindsetQuiz] Error parsing localStorage data:', e);
-                }
-            }
-            
-            // If not in localStorage or data is invalid, try API
-            if (!progress) {
-                console.log('[TesterMindsetQuiz] No valid localStorage data, trying API');
-                const savedProgress = await this.apiService.getQuizProgress(quizName);
-                console.log('[TesterMindsetQuiz] API Response:', savedProgress);
-                
-                if (savedProgress && savedProgress.data) {
-                    progress = savedProgress.data;
-                    console.log('[TesterMindsetQuiz] Found progress in API:', progress);
-                    
-                    // Save to localStorage for future use
-                    localStorage.setItem(storageKey, JSON.stringify({data: progress}));
-                }
-            }
-
-            if (progress) {
-                // Ensure consistent data structure 
-                this.player.experience = progress.experience || 0;
-                this.player.tools = progress.tools || [];
-                
-                // IMPORTANT: Handle question history carefully
-                if (progress.questionHistory && Array.isArray(progress.questionHistory)) {
-                    // Check if the question history contains complete scenario data
-                    // or if it needs to be reconstructed
-                    const hasCompleteData = progress.questionHistory.every(item => 
-                        item.scenario && 
-                        item.scenario.id && 
-                        item.scenario.options && 
-                        Array.isArray(item.scenario.options)
-                    );
-                    
-                    if (hasCompleteData) {
-                        console.log('[TesterMindsetQuiz] Question history has complete scenario data');
-                        this.player.questionHistory = progress.questionHistory;
-                    } else {
-                        console.warn('[TesterMindsetQuiz] Question history missing complete scenario data, reconstructing...');
-                        
-                        // Create a clean history with minimal necessary data
-                        this.player.questionHistory = progress.questionHistory.map(item => {
-                            // We'll keep minimal data to properly count questions
-                            // The full scenarios will be loaded from our predefined arrays
-                            return {
-                                isCorrect: item.isCorrect || false,
-                                timeSpent: item.timeSpent || 0,
-                                timedOut: item.timedOut || false
-                            };
-                        });
-                    }
-                    
-                    // Log the reconstructed history
-                    console.log(`[TesterMindsetQuiz] Question history contains ${this.player.questionHistory.length} items`);
-                } else {
-                    console.warn('[TesterMindsetQuiz] No valid question history found, initializing empty array');
-                    this.player.questionHistory = [];
-                }
-                
-                // CRITICAL: Set currentScenario based on question history length
-                const questionCount = this.player.questionHistory.length;
-                this.player.currentScenario = questionCount;
-                
-                console.log(`[TesterMindsetQuiz] Loaded progress: ${questionCount} questions answered, currentScenario set to ${this.player.currentScenario}`);
-                
-                // Check if quiz is already completed
-                if (progress.status === 'passed' || progress.status === 'failed' || 
-                    questionCount >= this.totalQuestions) {
-                    console.log(`[TesterMindsetQuiz] Quiz already ${progress.status}, should show end screen`);
-                    // Don't end the game here; let displayScenario handle it
-                }
-                
-                return true;
-            }
-            
-            console.log('[TesterMindsetQuiz] No saved progress found');
-            return false;
-        } catch (error) {
-            console.error('[TesterMindsetQuiz] Failed to load progress:', error);
-            return false;
-        }
-    }
-
-    async logQuizProgressDiagnostics() {
-        // Implementation of logQuizProgressDiagnostics method
-        // This method is not provided in the original file or the new code block
-        // It's assumed to exist as it's called in the startGame method
-    }
 }
 
 // Start the quiz when the page loads
 document.addEventListener('DOMContentLoaded', () => {
     console.log('[TesterMindsetQuiz] Initializing quiz');
     
-    // Clear any localStorage entries with potentially corrupted data for the current user
+    // Force clean any existing quiz references that might be in memory
+    if (window.currentQuiz) {
+        console.log('[TesterMindsetQuiz] Cleaning up existing quiz instance:', window.currentQuiz.quizName);
+        // Clear any timers or other resources
+        if (window.currentQuiz.questionTimer) {
+            clearInterval(window.currentQuiz.questionTimer);
+        }
+    }
+    
+    // Clear any conflicting localStorage entries
     const username = localStorage.getItem('username');
     if (username) {
-        // Remove any temporary debug entries that might have accumulated
-        Object.keys(localStorage).forEach(key => {
-            if (key.includes('tester_mindset_debug_')) {
-                console.log(`[TesterMindsetQuiz] Removing debug entry: ${key}`);
-                localStorage.removeItem(key);
+        // List all quiz names that might conflict
+        const potentialConflicts = [
+            'script-metrics-troubleshooting',
+            'standard-script-testing',
+            'fully-scripted',
+            'exploratory'
+        ];
+        
+        // Clean localStorage to prevent cross-contamination
+        potentialConflicts.forEach(quizName => {
+            const key = `quiz_progress_${username}_${quizName}`;
+            const data = localStorage.getItem(key);
+            if (data) {
+                console.log(`[TesterMindsetQuiz] Found potential conflicting quiz data: ${quizName}`);
+                try {
+                    const parsed = JSON.parse(data);
+                    if (parsed && parsed.data && parsed.data.randomizedScenarios) {
+                        console.log(`[TesterMindsetQuiz] Cleaning randomized scenarios from ${quizName}`);
+                        delete parsed.data.randomizedScenarios;
+                        localStorage.setItem(key, JSON.stringify(parsed));
+                    }
+                } catch (e) {
+                    console.error(`[TesterMindsetQuiz] Error cleaning scenarios:`, e);
+                }
             }
         });
-        
-        // Set a debug flag to indicate fresh load
-        localStorage.setItem('tester_mindset_fresh_load', Date.now().toString());
     }
     
-    // Clear any existing quiz instances before starting this quiz
-    BaseQuiz.clearQuizInstances('tester-mindset');
+    // Create a new instance and keep a global reference
+    const quiz = new TesterMindsetQuiz();
+    window.currentQuiz = quiz;
     
-    // Create a fresh instance of the quiz
-    try {
-        window.currentQuiz = new TesterMindsetQuiz();
-        
-        // Clear any possible global listeners
-        if (window.currentQuiz.initializeEventListeners) {
-            window.currentQuiz.initializeEventListeners();
-        }
-        
-        // Start the quiz
-        window.currentQuiz.startGame();
-    } catch (error) {
-        console.error('[TesterMindsetQuiz] Error initializing quiz:', error);
-        
-        // Display error to user
-        const errorDiv = document.createElement('div');
-        errorDiv.className = 'error-notification';
-        errorDiv.setAttribute('role', 'alert');
-        errorDiv.textContent = 'Failed to initialize quiz. Please refresh the page.';
-        document.body.appendChild(errorDiv);
+    // Add a specific property to identify this quiz
+    Object.defineProperty(window, 'ACTIVE_QUIZ_NAME', {
+        value: 'tester-mindset',
+        writable: true,
+        configurable: true
+    });
+    
+    // Force clear any unrelated randomized scenarios
+    if (quiz.randomizedScenarios) {
+        // Keep only keys specific to this quiz
+        Object.keys(quiz.randomizedScenarios).forEach(key => {
+            if (!key.startsWith('tester-mindset_')) {
+                console.log(`[TesterMindsetQuiz] Removing unrelated randomized scenario: ${key}`);
+                delete quiz.randomizedScenarios[key];
+            }
+        });
     }
+    
+    // Start the quiz
+    console.log('[TesterMindsetQuiz] Starting quiz');
+    quiz.startGame();
 }); 
