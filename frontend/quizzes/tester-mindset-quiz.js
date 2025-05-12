@@ -732,9 +732,15 @@ export class TesterMindsetQuiz extends BaseQuiz {
 
             // Load previous progress
             const hasProgress = await this.loadProgress();
-            console.log('Previous progress loaded:', hasProgress);
+            console.log('[TesterMindsetQuiz] Previous progress loaded:', hasProgress, 'Current scenario:', this.player.currentScenario);
             
-            if (!hasProgress) {
+            if (hasProgress) {
+                // Ensure currentScenario is properly initialized and log it
+                if (this.player.currentScenario === undefined || this.player.currentScenario === null) {
+                    this.player.currentScenario = this.player.questionHistory.length;
+                    console.log('[TesterMindsetQuiz] Fixed missing currentScenario value to:', this.player.currentScenario);
+                }
+            } else {
                 // Reset player state if no valid progress exists
                 this.player.experience = 0;
                 this.player.tools = [];
@@ -743,44 +749,6 @@ export class TesterMindsetQuiz extends BaseQuiz {
                 
                 // Clear any existing randomized scenarios
                 this.randomizedScenarios = {};
-            } else {
-                // If we have progress, check if we have randomized scenarios
-                // Check for loaded progress directly via API
-                try {
-                    const apiProgress = await this.apiService.getQuizProgress(this.quizName);
-                    if (apiProgress && apiProgress.data && apiProgress.data.randomizedScenarios) {
-                        console.log('[Quiz] Loaded randomized scenarios from API:', apiProgress.data.randomizedScenarios);
-                        
-                        // Convert the loaded randomizedScenarios back to full scenario objects
-                        // This is necessary because when saved, only IDs may be stored
-                        const loadedScenarios = apiProgress.data.randomizedScenarios;
-                        Object.keys(loadedScenarios).forEach(key => {
-                            // Determine which scenario set to use based on the key
-                            let scenarioSet;
-                            if (key.includes('basic')) {
-                                scenarioSet = this.basicScenarios;
-                            } else if (key.includes('intermediate')) {
-                                scenarioSet = this.intermediateScenarios;
-                            } else if (key.includes('advanced')) {
-                                scenarioSet = this.advancedScenarios;
-                            }
-                            
-                            if (scenarioSet && Array.isArray(loadedScenarios[key])) {
-                                // Convert scenario IDs back to full scenario objects
-                                this.randomizedScenarios[key] = loadedScenarios[key].map(scenarioId => {
-                                    if (typeof scenarioId === 'number') {
-                                        return scenarioSet.find(s => s.id === scenarioId) || scenarioId;
-                                    }
-                                    return scenarioId;
-                                }).filter(Boolean);
-                                
-                                console.log(`[Quiz] Restored ${this.randomizedScenarios[key].length} scenarios for ${key}`);
-                            }
-                        });
-                    }
-                } catch (error) {
-                    console.error('[Quiz] Error loading randomized scenarios from API:', error);
-                }
             }
             
             // Clear any existing transition messages
@@ -839,9 +807,9 @@ export class TesterMindsetQuiz extends BaseQuiz {
         // Get the randomized scenarios for the current level
         const currentScenarios = this.getCurrentScenarios();
         
-        // Get the next scenario based on current progress within level
-        let scenario;
-        const questionCount = this.player.questionHistory.length;
+        // Use player.currentScenario to determine level and index
+        const questionCount = this.player.currentScenario;
+        console.log(`[TesterMindsetQuiz] Displaying scenario for position: ${questionCount}`);
         
         // Determine which level we're in and set the correct index
         let currentLevelIndex;
@@ -857,7 +825,7 @@ export class TesterMindsetQuiz extends BaseQuiz {
         }
         
         // Get the scenario from the current randomized scenarios
-        scenario = currentScenarios[currentLevelIndex];
+        const scenario = currentScenarios[currentLevelIndex];
         
         if (!scenario) {
             console.error('No scenario found for current progress. Question count:', questionCount);
@@ -981,7 +949,7 @@ export class TesterMindsetQuiz extends BaseQuiz {
             const currentScenarios = this.getCurrentScenarios();
             
             // Determine which level we're in and set the correct index
-            const questionCount = this.player.questionHistory.length;
+            const questionCount = this.player.currentScenario;
             let currentLevelIndex;
             
             if (questionCount < 5) {
