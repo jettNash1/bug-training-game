@@ -1,5 +1,6 @@
 import { config } from './config.js';
 import { getAuthToken, setAuthToken, clearTokens } from './auth.js';
+import { QuizList } from './quiz-list.js';
 
 export class APIService {
     constructor() {
@@ -1267,33 +1268,32 @@ export class APIService {
     async getUserBadgesByAdmin(username) {
         try {
             console.log(`[Badges] Getting badges for user: ${username}`);
-            
             // Get all users data which we already have
             const usersResponse = await this.getAllUsers();
             if (!usersResponse.success) {
                 throw new Error('Failed to get users data');
             }
-            
             // Find the specific user
             const user = usersResponse.data.find(u => u.username === username);
             if (!user) {
                 throw new Error('User not found');
             }
-            
-            // Use allowedQuizzes as the source of truth for visible quizzes
+            // Get quiz visibility info
             const allowedQuizzes = user.allowedQuizzes || [];
+            const hiddenQuizzes = user.hiddenQuizzes || [];
             const quizProgress = user.quizProgress || {};
-            
-            // If allowedQuizzes is empty, fallback to all quizzes in quizProgress
-            const quizIds = allowedQuizzes.length > 0
-                ? allowedQuizzes
-                : Object.keys(quizProgress);
-            
-            // Remove duplicates and normalize
-            const uniqueQuizIds = Array.from(new Set(quizIds.map(q => q.toLowerCase())));
-            
+            // Get master list of all quizzes
+            const quizList = new QuizList();
+            const allQuizzes = quizList.quizTypes.map(q => q.toLowerCase());
+            // Determine visible quizzes for this user
+            let visibleQuizzes;
+            if (allowedQuizzes.length > 0) {
+                visibleQuizzes = allQuizzes.filter(q => allowedQuizzes.includes(q));
+            } else {
+                visibleQuizzes = allQuizzes.filter(q => !hiddenQuizzes.includes(q));
+            }
             // Generate badges for all visible quizzes
-            const badges = uniqueQuizIds.map(quizId => {
+            const badges = visibleQuizzes.map(quizId => {
                 const progress = quizProgress[quizId] || {};
                 const isCompleted = progress && (
                     progress.status === 'completed' ||
@@ -1311,16 +1311,13 @@ export class APIService {
                     quizId: quizId
                 };
             });
-            
             // Sort badges: earned first, then alphabetically
             badges.sort((a, b) => {
                 if (a.earned && !b.earned) return -1;
                 if (!a.earned && b.earned) return 1;
                 return a.name.localeCompare(b.name);
             });
-            
             const completedCount = badges.filter(badge => badge.earned).length;
-            
             return {
                 success: true,
                 data: {

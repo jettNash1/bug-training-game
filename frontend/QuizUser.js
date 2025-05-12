@@ -605,6 +605,32 @@ export class QuizUser {
             }
         });
     }
+
+    /**
+     * Sync all quiz progress to backend after login (for legacy users and badge accuracy)
+     */
+    async syncAllQuizProgressOnLogin() {
+        try {
+            // Load from localStorage (if any)
+            this.loadFromLocalStorage();
+            const quizProgress = this.quizProgress || {};
+            const quizNames = Object.keys(quizProgress);
+            if (quizNames.length === 0) {
+                console.log('[Sync] No local quiz progress to sync.');
+                return;
+            }
+            console.log('[Sync] Syncing quiz progress for quizzes:', quizNames);
+            for (const quizName of quizNames) {
+                const progress = quizProgress[quizName];
+                if (progress) {
+                    await this.api.saveQuizProgress(quizName, progress);
+                }
+            }
+            console.log('[Sync] Quiz progress sync complete.');
+        } catch (error) {
+            console.error('[Sync] Error syncing quiz progress on login:', error);
+        }
+    }
 }
 
 // Make QuizUser available globally for legacy support

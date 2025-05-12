@@ -106,6 +106,15 @@ document.addEventListener('DOMContentLoaded', () => {
                     // Small delay to ensure tokens are stored
                     await new Promise(resolve => setTimeout(resolve, 100));
                     
+                    // Sync all quiz progress for legacy users (badges)
+                    try {
+                        const { QuizUser } = await import('./QuizUser.js');
+                        const user = new QuizUser(username);
+                        await user.syncAllQuizProgressOnLogin();
+                    } catch (syncError) {
+                        console.warn('Progress sync on login failed:', syncError);
+                    }
+                    
                     // Then redirect
                     console.log('Tokens stored, redirecting to index...');
                     window.location.replace('/');
