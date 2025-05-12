@@ -828,14 +828,14 @@ export class Admin2Dashboard {
                 <div class="form-row">
                     <label>Default seconds per question (0-300):</label>
                     <div class="input-button-group">
-                    <input type="number" 
+                        <input type="number" 
                             id="default-timer" 
-                            value="${defaultSeconds}" 
-                        min="0" 
-                        max="300"
+                            value="${defaultSeconds}"
+                            min="0" 
+                            max="300"
                             class="timer-seconds-input">
                         <button class="save-default-btn action-button">Save Default</button>
-                </div>
+                    </div>
                 </div>
                 <small>Set to 0 to disable the timer completely.</small>
             </div>
@@ -860,7 +860,7 @@ export class Admin2Dashboard {
                         <div class="input-button-group">
                             <input type="number" 
                                 id="quiz-timer" 
-                                value="${defaultSeconds}" 
+                                value="${defaultSeconds}"
                                 min="0" 
                                 max="300"
                                 class="timer-seconds-input settings-input">
@@ -965,27 +965,23 @@ export class Admin2Dashboard {
             }
             
             try {
-                // Use the apiService to directly update the timer
                 const response = await this.apiService.updateSingleQuizTimer(selectedQuiz, seconds);
                 
                 if (response.success) {
-                    // Update local data
                     this.timerSettings = response.data;
-                    
-                    // Show success message
                     this.showInfo(`Timer for ${selectedQuiz} set to ${seconds} seconds`);
                     
-                    // Refresh the current settings display
+                    // Update the quiz timers list
                     const timersList = container.querySelector('#quiz-timers-list');
                     if (timersList) {
                         timersList.innerHTML = this.generateQuizTimersList(this.timerSettings.quizTimers);
                     }
                 } else {
-                    throw new Error(response.message || 'Failed to save quiz timer');
+                    throw new Error(response.message || 'Failed to set quiz timer');
                 }
             } catch (error) {
-                console.error('Failed to save quiz timer:', error);
-                this.showInfo(`Failed to save quiz timer: ${error.message}`, 'error');
+                console.error('Failed to set quiz timer:', error);
+                this.showInfo(`Failed to set quiz timer: ${error.message}`, 'error');
             }
         });
 
@@ -6005,19 +6001,23 @@ export class Admin2Dashboard {
                     localStorage.setItem('quizTimerValue', timerValue.toString());
                 }
                 
-                this.timerSettings.secondsPerQuestion = timerValue;
+                this.timerSettings.defaultSeconds = timerValue;
                 console.log('Using timer settings from localStorage:', timerValue);
             }
             
             // Try to get settings from API (but don't block on failure)
             try {
                 const settings = await this.apiService.getQuizTimerSettings();
-                if (settings.success && settings.data && settings.data.secondsPerQuestion !== undefined) {
-                    this.timerSettings.secondsPerQuestion = settings.data.secondsPerQuestion;
-                    
-                    // Save to localStorage for quizzes to use
-                    localStorage.setItem('quizTimerValue', settings.data.secondsPerQuestion.toString());
-                    console.log('Preloaded timer settings from API:', settings.data.secondsPerQuestion);
+                if (settings.success && settings.data) {
+                    // Use defaultSeconds consistently
+                    const defaultSeconds = settings.data.defaultSeconds;
+                    if (defaultSeconds !== undefined) {
+                        this.timerSettings.defaultSeconds = defaultSeconds;
+                        
+                        // Save to localStorage for quizzes to use
+                        localStorage.setItem('quizTimerValue', defaultSeconds.toString());
+                        console.log('Preloaded timer settings from API:', defaultSeconds);
+                    }
                 }
             } catch (apiError) {
                 console.warn('Failed to get timer settings from API, using localStorage value', apiError);
@@ -6025,7 +6025,7 @@ export class Admin2Dashboard {
                 // Ensure there's always a value in localStorage
                 if (localStorage.getItem('quizTimerValue') === null) {
                     localStorage.setItem('quizTimerValue', '60'); // Default to 60 seconds
-                    this.timerSettings.secondsPerQuestion = 60;
+                    this.timerSettings.defaultSeconds = 60;
                 }
             }
         } catch (error) {
@@ -6034,7 +6034,7 @@ export class Admin2Dashboard {
             // Make sure we have a default value as fallback
             if (localStorage.getItem('quizTimerValue') === null) {
                 localStorage.setItem('quizTimerValue', '60');
-                this.timerSettings.secondsPerQuestion = 60;
+                this.timerSettings.defaultSeconds = 60;
             }
         }
     }
