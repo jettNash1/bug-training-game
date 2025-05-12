@@ -1266,16 +1266,16 @@ export class APIService {
 
     async getUserBadgesByAdmin(username) {
         try {
-            console.log(`Getting badges for user: ${username}`);
+            console.log(`[Badges] Getting badges for user: ${username}`);
             // Use the fallback method for admin badge view
             const userProgressResponse = await this.getUserProgressWithFallback(username);
-            console.log('User progress response for badges:', userProgressResponse);
+            console.log('[Badges] Raw user progress response for badges:', userProgressResponse);
             if (!userProgressResponse.success) {
-                console.error('Failed to get user progress for badges (success false):', userProgressResponse);
+                console.error('[Badges] Failed to get user progress for badges (success false):', userProgressResponse);
                 throw new Error('Failed to get user progress data');
             }
             if (!userProgressResponse.data) {
-                console.error('Failed to get user progress data (no data):', userProgressResponse);
+                console.error('[Badges] Failed to get user progress data (no data):', userProgressResponse);
                 return {
                     success: true,
                     data: {
@@ -1285,31 +1285,36 @@ export class APIService {
                     }
                 };
             }
-            // Handle different possible response structures
+            // --- Normalize data structure ---
             let quizProgress = {};
-            if (userProgressResponse.data.quizProgress) {
-                // New structure with nested quizProgress
-                quizProgress = userProgressResponse.data.quizProgress;
-                console.log('Found quiz progress in data.quizProgress');
-            } else if (typeof userProgressResponse.data === 'object' && Object.keys(userProgressResponse.data).length > 0) {
-                // Legacy structure where the data itself might be quizProgress
-                const possibleQuizzes = Object.keys(userProgressResponse.data)
-                    .filter(key => typeof userProgressResponse.data[key] === 'object' && 
-                           (userProgressResponse.data[key].questionsAnswered !== undefined ||
-                            userProgressResponse.data[key].status !== undefined ||
-                            userProgressResponse.data[key].questionHistory !== undefined));
+            const data = userProgressResponse.data;
+            console.log('[Badges] userProgressResponse.data:', data);
+            if (data.quizProgress && typeof data.quizProgress === 'object') {
+                quizProgress = data.quizProgress;
+                console.log('[Badges] Found quiz progress in data.quizProgress');
+            } else if (typeof data === 'object' && Object.keys(data).length > 0) {
+                // Legacy or fallback structure
+                const possibleQuizzes = Object.keys(data)
+                    .filter(key => typeof data[key] === 'object' &&
+                        (data[key].questionsAnswered !== undefined ||
+                         data[key].status !== undefined ||
+                         data[key].questionHistory !== undefined));
                 if (possibleQuizzes.length > 0) {
-                    quizProgress = userProgressResponse.data;
-                    console.log('Found quiz progress directly in data object');
+                    quizProgress = data;
+                    console.log('[Badges] Found quiz progress directly in data object');
                 }
             }
-            console.log('Quiz progress extracted:', quizProgress);
+            // Defensive: ensure quizProgress is always an object
+            if (!quizProgress || typeof quizProgress !== 'object') {
+                quizProgress = {};
+            }
+            console.log('[Badges] Quiz progress extracted:', quizProgress);
             // Get all quizzes from the progress data
             const allQuizzes = Object.keys(quizProgress).map(quizId => ({
                 id: quizId,
                 name: this.formatQuizName(quizId)
             }));
-            console.log(`Found ${allQuizzes.length} quizzes for user ${username}:`, allQuizzes);
+            console.log(`[Badges] Found ${allQuizzes.length} quizzes for user ${username}:`, allQuizzes);
             if (allQuizzes.length === 0) {
                 return {
                     success: true,
@@ -1323,7 +1328,7 @@ export class APIService {
             // Process quiz completion status
             const badges = allQuizzes.map(quiz => {
                 const progress = quizProgress[quiz.id] || {};
-                console.log(`Processing quiz ${quiz.id}:`, progress);
+                console.log(`[Badges] Processing quiz ${quiz.id}:`, progress);
                 // Check if quiz is complete based on status or progress
                 const isCompleted = progress && (
                     progress.status === 'completed' ||
@@ -1331,7 +1336,7 @@ export class APIService {
                     (progress.questionHistory && progress.questionHistory.length >= 15) ||
                     (typeof progress.questionsAnswered === 'number' && progress.questionsAnswered >= 15)
                 );
-                console.log(`Quiz ${quiz.id} completion status:`, isCompleted);
+                console.log(`[Badges] Quiz ${quiz.id} completion status:`, isCompleted);
                 return {
                     id: `quiz-${quiz.id}`,
                     name: `${quiz.name} Master`,
@@ -1360,10 +1365,10 @@ export class APIService {
                     earnedCount: completedCount
                 }
             };
-            console.log('Final badges result:', result);
+            console.log('[Badges] Final badges result:', result);
             return result;
         } catch (error) {
-            console.error(`Error getting badges for user ${username}:`, error);
+            console.error(`[Badges] Error getting badges for user ${username}:`, error);
             return {
                 success: false,
                 message: error.message || 'Failed to load badges',
