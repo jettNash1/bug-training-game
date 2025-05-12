@@ -2830,43 +2830,52 @@ export class APIService {
         try {
             console.log(`[API] Trying admin endpoint for user progress: /admin/users/${username}/progress`);
             const adminResult = await this.getUserProgress(username);
-            if (adminResult && adminResult.success && adminResult.data && (Object.keys(adminResult.data.quizProgress || {}).length > 0 || (adminResult.data.quizResults && adminResult.data.quizResults.length > 0))) {
-                console.log('[API] Used admin endpoint for user progress');
+            const hasQuizProgress = adminResult && adminResult.success && adminResult.data && Object.keys(adminResult.data.quizProgress || {}).length > 0;
+            const hasQuizResults = adminResult && adminResult.success && adminResult.data && Array.isArray(adminResult.data.quizResults) && adminResult.data.quizResults.length > 0;
+            if (hasQuizProgress || hasQuizResults) {
+                console.log('[API] Used admin endpoint for user progress (data found)');
                 adminResult._source = 'admin';
                 return adminResult;
             } else {
-                throw new Error('Admin endpoint returned no data');
+                console.warn('[API] Admin endpoint returned empty data, falling back to user endpoint');
+                // Fall through to user endpoint
             }
         } catch (adminError) {
             console.warn(`[API] Admin endpoint failed for user progress: ${adminError.message}`);
             // Fallback to user endpoint
-            try {
-                console.log(`[API] Trying fallback user endpoint for user progress: /users/${username}/data?includeQuizDetails=true`);
-                const userResult = await this.fetchWithAdminAuth(`${this.baseUrl}/users/${username}/data?includeQuizDetails=true`, {
-                    method: 'GET',
-                    headers: { 'Content-Type': 'application/json' }
-                });
-                if (userResult && userResult.data) {
-                    console.log('[API] Used fallback user endpoint for user progress');
-                    return {
-                        success: true,
-                        data: {
-                            quizProgress: userResult.data.quizProgress || {},
-                            quizResults: userResult.data.quizResults || []
-                        },
-                        _source: 'user-fallback'
-                    };
-                } else {
-                    throw new Error('User endpoint returned no data');
-                }
-            } catch (userError) {
-                console.error(`[API] Both admin and user endpoints failed for user progress: ${userError.message}`);
+        }
+        // Fallback to user endpoint
+        try {
+            console.log(`[API] Trying fallback user endpoint for user progress: /users/${username}/data?includeQuizDetails=true`);
+            const userResult = await this.fetchWithAdminAuth(`${this.baseUrl}/users/${username}/data?includeQuizDetails=true`, {
+                method: 'GET',
+                headers: { 'Content-Type': 'application/json' }
+            });
+            if (userResult && userResult.data && (Object.keys(userResult.data.quizProgress || {}).length > 0 || (userResult.data.quizResults && userResult.data.quizResults.length > 0))) {
+                console.log('[API] Used fallback user endpoint for user progress (data found)');
                 return {
-                    success: false,
-                    message: 'Both admin and user endpoints failed',
-                    data: { quizProgress: {}, quizResults: [] }
+                    success: true,
+                    data: {
+                        quizProgress: userResult.data.quizProgress || {},
+                        quizResults: userResult.data.quizResults || []
+                    },
+                    _source: 'user-fallback'
+                };
+            } else {
+                console.warn('[API] User endpoint also returned empty data');
+                return {
+                    success: true,
+                    data: { quizProgress: {}, quizResults: [] },
+                    _source: 'user-fallback-empty'
                 };
             }
+        } catch (userError) {
+            console.error(`[API] Both admin and user endpoints failed for user progress: ${userError.message}`);
+            return {
+                success: false,
+                message: 'Both admin and user endpoints failed',
+                data: { quizProgress: {}, quizResults: [] }
+            };
         }
     }
 } 
