@@ -1,6 +1,19 @@
 import { APIService } from '../api-service.js';
 import { QuizUser } from '../QuizUser.js';
 
+function normalizeQuizName(quizName) {
+    if (typeof quizName === 'string' && quizName.toLowerCase().replace(/[_\s]/g, '-').includes('tester')) {
+        return 'tester-mindset';
+    }
+    // Standardize to kebab-case
+    return quizName
+        .toLowerCase()
+        .replace(/([A-Z])/g, '-$1')
+        .replace(/_{1,}/g, '-')
+        .replace(/--+/g, '-')
+        .replace(/^-+|-+$/g, '');
+}
+
 class IndexPage {
     constructor() {
         try {
