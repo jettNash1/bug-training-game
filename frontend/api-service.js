@@ -1280,44 +1280,35 @@ export class APIService {
                 throw new Error('User not found');
             }
             
-            // Extract quiz progress from user data
+            // Use allowedQuizzes as the source of truth for visible quizzes
+            const allowedQuizzes = user.allowedQuizzes || [];
             const quizProgress = user.quizProgress || {};
             
-            // Get all quizzes from progress
-            const allQuizzes = Object.keys(quizProgress).map(quizId => ({
-                id: quizId,
-                name: this.formatQuizName(quizId)
-            }));
+            // If allowedQuizzes is empty, fallback to all quizzes in quizProgress
+            const quizIds = allowedQuizzes.length > 0
+                ? allowedQuizzes
+                : Object.keys(quizProgress);
             
-            if (allQuizzes.length === 0) {
-                return {
-                    success: true,
-                    data: {
-                        badges: [],
-                        totalBadges: 0,
-                        earnedCount: 0
-                    }
-                };
-            }
+            // Remove duplicates and normalize
+            const uniqueQuizIds = Array.from(new Set(quizIds.map(q => q.toLowerCase())));
             
-            // Generate badges based on quiz completion
-            const badges = allQuizzes.map(quiz => {
-                const progress = quizProgress[quiz.id] || {};
+            // Generate badges for all visible quizzes
+            const badges = uniqueQuizIds.map(quizId => {
+                const progress = quizProgress[quizId] || {};
                 const isCompleted = progress && (
                     progress.status === 'completed' ||
                     progress.status === 'passed' ||
                     (progress.questionHistory && progress.questionHistory.length === 15) ||
                     (typeof progress.questionsAnswered === 'number' && progress.questionsAnswered >= 15)
                 );
-                
                 return {
-                    id: `quiz-${quiz.id}`,
-                    name: `${quiz.name} Master`,
-                    description: `Complete the ${quiz.name} quiz`,
+                    id: `quiz-${quizId}`,
+                    name: this.formatQuizName(quizId) + ' Master',
+                    description: `Complete the ${this.formatQuizName(quizId)} quiz`,
                     icon: 'fa-solid fa-check-circle',
                     earned: isCompleted,
                     completionDate: isCompleted ? (progress.lastUpdated || progress.completedAt || new Date().toISOString()) : null,
-                    quizId: quiz.id
+                    quizId: quizId
                 };
             });
             
