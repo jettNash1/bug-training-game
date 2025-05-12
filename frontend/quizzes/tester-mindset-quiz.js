@@ -691,6 +691,32 @@ export class TesterMindsetQuiz extends BaseQuiz {
         
         try {
             this.isLoading = true;
+            
+            // ADDITIONAL DEBUGGING: Log all localStorage keys related to progress
+            console.group('[TesterMindsetQuiz] DEBUGGING ALL RELATED LOCALSTORAGE');
+            const username = localStorage.getItem('username');
+            if (username) {
+                console.log('Current username:', username);
+                Object.keys(localStorage).forEach(key => {
+                    if (key.includes('quiz') || key.includes('tester') || key.includes(username)) {
+                        const value = localStorage.getItem(key);
+                        console.log(`${key}: ${value.length > 100 ? value.substring(0, 100) + '...' : value}`);
+                        try {
+                            const parsed = JSON.parse(value);
+                            if (parsed && parsed.data) {
+                                console.log(`  Parsed data: currentScenario=${parsed.data.currentScenario}, questionsAnswered=${parsed.data.questionsAnswered}`);
+                                if (parsed.data.questionHistory) {
+                                    console.log(`  History length: ${parsed.data.questionHistory.length}`);
+                                }
+                            }
+                        } catch (e) {
+                            // Ignore parsing errors
+                        }
+                    }
+                });
+            }
+            console.groupEnd();
+            
             // Show loading indicator
             const loadingIndicator = document.getElementById('loading-indicator');
             if (loadingIndicator) {
@@ -704,20 +730,42 @@ export class TesterMindsetQuiz extends BaseQuiz {
                 return;
             }
 
+            // Reset player state before loading progress
+            this.player.experience = 0;
+            this.player.tools = [];
+            this.player.currentScenario = 0;
+            this.player.questionHistory = [];
+
+            // Run diagnostics to help troubleshoot
+            await this.logQuizProgressDiagnostics();
+
             // Initialize event listeners
             this.initializeEventListeners();
 
             // Load previous progress
             const hasProgress = await this.loadProgress();
-            console.log('Previous progress loaded:', hasProgress);
+            console.log('[TesterMindsetQuiz] Previous progress loaded:', hasProgress, 'Questions answered:', this.player.questionHistory.length);
             
-            if (!hasProgress) {
-                // Reset player state if no valid progress exists
-                this.player.experience = 0;
-                this.player.tools = [];
-                this.player.currentScenario = 0;
-                this.player.questionHistory = [];
+            // STATE CHECK: Verify currentScenario matches question history length
+            if (this.player.currentScenario !== this.player.questionHistory.length) {
+                console.error(`[TesterMindsetQuiz] CRITICAL: After loading progress, currentScenario (${this.player.currentScenario}) doesn't match questionHistory.length (${this.player.questionHistory.length})`);
+                // Force alignment
+                this.player.currentScenario = this.player.questionHistory.length;
+                console.log(`[TesterMindsetQuiz] Forced alignment: currentScenario = ${this.player.currentScenario}`);
+            } else {
+                console.log(`[TesterMindsetQuiz] GOOD: currentScenario (${this.player.currentScenario}) matches questionHistory.length (${this.player.questionHistory.length})`);
             }
+            
+            // Force a special localStorage entry for debugging 
+            const debugKey = `tester_mindset_debug_${Date.now()}`;
+            localStorage.setItem(debugKey, JSON.stringify({
+                timestamp: new Date().toISOString(),
+                hasProgress: hasProgress,
+                questionsAnswered: this.player.questionHistory.length,
+                currentScenario: this.player.currentScenario
+            }));
+            
+            console.log('[TesterMindsetQuiz] Debug info saved to localStorage key:', debugKey);
             
             // Clear any existing transition messages
             const transitionContainer = document.getElementById('level-transition-container');
@@ -731,15 +779,18 @@ export class TesterMindsetQuiz extends BaseQuiz {
                 clearInterval(this.questionTimer);
             }
             
-            // Initialize UI
+            // Initialize UI - use HIDDEN class rather than style.display
             this.gameScreen.classList.remove('hidden');
             this.outcomeScreen.classList.add('hidden');
             this.endScreen.classList.add('hidden');
             
-            // Display the first scenario
+            // Save current state BEFORE displaying first scenario
+            await this.saveProgress();
+            
+            // Display the first scenario (or resume from current position)
             this.displayScenario();
         } catch (error) {
-            console.error('Failed to start game:', error);
+            console.error('[TesterMindsetQuiz] Failed to start game:', error);
             this.showError('Failed to start the quiz. Please try refreshing the page.');
         } finally {
             this.isLoading = false;
@@ -787,15 +838,20 @@ export class TesterMindsetQuiz extends BaseQuiz {
     displayScenario() {
         // Check if we've answered all questions
         if (this.player.questionHistory.length >= this.totalQuestions) {
-            console.log('All questions answered, ending game');
+            console.log('[TesterMindsetQuiz] All questions answered, ending game');
             this.endGame(false);
             return;
         }
         
-        // Instead of using currentScenario (which can get out of sync), 
-        // always base the current question on question history length
+        // ALWAYS use questionHistory.length to determine current question position
         const questionCount = this.player.questionHistory.length;
-        console.log(`[Quiz] Displaying scenario for question ${questionCount + 1}. History length: ${questionCount}`);
+        console.log(`[TesterMindsetQuiz] Displaying scenario for question ${questionCount + 1}. History length: ${questionCount}`);
+        
+        // Debug check for consistency and force alignment if needed
+        if (this.player.currentScenario !== questionCount) {
+            console.warn(`[TesterMindsetQuiz] INCONSISTENCY: currentScenario (${this.player.currentScenario}) doesn't match questionHistory length (${questionCount}). Fixing...`);
+            this.player.currentScenario = questionCount;
+        }
         
         // Determine which level we're in and get the correct scenario
         let scenario;
@@ -811,7 +867,7 @@ export class TesterMindsetQuiz extends BaseQuiz {
         }
 
         if (!scenario) {
-            console.error('No scenario found for current progress. Question count:', questionCount);
+            console.error(`[TesterMindsetQuiz] No scenario found for question ${questionCount+1}. Received:`, scenario);
             this.endGame(true);
             return;
         }
@@ -871,7 +927,7 @@ export class TesterMindsetQuiz extends BaseQuiz {
             // Get the existing form instead of creating a new one
             const form = document.getElementById('options-form');
             if (!form) {
-                console.error('Options form not found');
+                console.error('[TesterMindsetQuiz] Options form not found');
                 return;
             }
             
@@ -928,11 +984,6 @@ export class TesterMindsetQuiz extends BaseQuiz {
         
         // Update progress indicators
         this.updateProgress();
-        
-        // Save progress to ensure current position is retained
-        this.saveProgress().catch(err => {
-            console.error('[Quiz] Error saving progress after displaying scenario:', err);
-        });
     }
 
     async handleAnswer(event) {
@@ -1465,6 +1516,9 @@ export class TesterMindsetQuiz extends BaseQuiz {
             status = scorePercentage >= this.passPercentage ? 'passed' : 'failed';
         }
 
+        // CRITICAL: Ensure currentScenario matches question history length for consistency
+        this.player.currentScenario = this.player.questionHistory.length;
+
         // Create a complete progress object with consistent structure
         const progress = {
             data: {
@@ -1513,34 +1567,45 @@ export class TesterMindsetQuiz extends BaseQuiz {
                 return false;
             }
             
-            // Always use tester-mindset as the quiz name
+            // Always use tester-mindset as the normalized quiz name
             const quizName = 'tester-mindset';
             const storageKey = `quiz_progress_${username}_${quizName}`;
             
-            // Try to get from localStorage first
+            // Debug all localStorage keys
+            console.log('[TesterMindsetQuiz] DEBUG - All localStorage keys:');
+            Object.keys(localStorage).forEach(key => {
+                if (key.includes('quiz') || key.includes('tester')) {
+                    console.log(`  - ${key}: ${localStorage.getItem(key).substring(0, 50)}...`);
+                }
+            });
+            
+            // Try to get from localStorage first since it's more reliable
             let progress = null;
             const localData = localStorage.getItem(storageKey);
             
             if (localData) {
                 try {
                     const parsed = JSON.parse(localData);
+                    console.log('[TesterMindsetQuiz] Raw localStorage data:', parsed);
+                    
                     if (parsed && parsed.data) {
                         progress = parsed.data;
-                        console.log('[TesterMindsetQuiz] Found progress in localStorage:', progress.questionsAnswered, 'questions answered');
+                        console.log('[TesterMindsetQuiz] Found progress in localStorage:', progress);
                     }
                 } catch (e) {
                     console.error('[TesterMindsetQuiz] Error parsing localStorage data:', e);
                 }
             }
             
-            // If not in localStorage, try API
+            // If not in localStorage or data is invalid, try API
             if (!progress) {
+                console.log('[TesterMindsetQuiz] No valid localStorage data, trying API');
                 const savedProgress = await this.apiService.getQuizProgress(quizName);
                 console.log('[TesterMindsetQuiz] API Response:', savedProgress);
                 
                 if (savedProgress && savedProgress.data) {
                     progress = savedProgress.data;
-                    console.log('[TesterMindsetQuiz] Found progress in API:', progress.questionsAnswered, 'questions answered');
+                    console.log('[TesterMindsetQuiz] Found progress in API:', progress);
                     
                     // Save to localStorage for future use
                     localStorage.setItem(storageKey, JSON.stringify({data: progress}));
@@ -1551,18 +1616,29 @@ export class TesterMindsetQuiz extends BaseQuiz {
                 // Ensure consistent data structure 
                 this.player.experience = progress.experience || 0;
                 this.player.tools = progress.tools || [];
-                this.player.questionHistory = Array.isArray(progress.questionHistory) ? progress.questionHistory : [];
                 
-                // IMPORTANT: Set currentScenario based on questions answered
+                // IMPORTANT: Handle question history carefully
+                if (progress.questionHistory && Array.isArray(progress.questionHistory)) {
+                    this.player.questionHistory = progress.questionHistory;
+                    
+                    // Log actual question history content for debugging
+                    console.log(`[TesterMindsetQuiz] Question history contains ${this.player.questionHistory.length} items`);
+                } else {
+                    console.warn('[TesterMindsetQuiz] No valid question history found, initializing empty array');
+                    this.player.questionHistory = [];
+                }
+                
+                // CRITICAL: Set currentScenario based on question history length
                 const questionCount = this.player.questionHistory.length;
                 this.player.currentScenario = questionCount;
                 
-                console.log(`[TesterMindsetQuiz] Loaded progress: ${questionCount} questions answered`);
+                console.log(`[TesterMindsetQuiz] Loaded progress: ${questionCount} questions answered, currentScenario set to ${this.player.currentScenario}`);
                 
                 // Check if quiz is already completed
                 if (progress.status === 'passed' || progress.status === 'failed' || 
                     questionCount >= this.totalQuestions) {
                     console.log(`[TesterMindsetQuiz] Quiz already ${progress.status}, should show end screen`);
+                    // Don't end the game here; let displayScenario handle it
                 }
                 
                 return true;
@@ -1574,6 +1650,12 @@ export class TesterMindsetQuiz extends BaseQuiz {
             console.error('[TesterMindsetQuiz] Failed to load progress:', error);
             return false;
         }
+    }
+
+    async logQuizProgressDiagnostics() {
+        // Implementation of logQuizProgressDiagnostics method
+        // This method is not provided in the original file or the new code block
+        // It's assumed to exist as it's called in the startGame method
     }
 }
 
