@@ -566,7 +566,6 @@ export class APIService {
     async saveQuizProgress(quizName, progress) {
         try {
             console.log(`[API] Saving progress for quiz ${quizName}:`, progress);
-            
             // Ensure all required fields are present
             const progressData = {
                 experience: progress.experience || 0,
@@ -577,34 +576,26 @@ export class APIService {
                 questionHistory: progress.questionHistory || [],
                 lastUpdated: new Date().toISOString()
             };
-
             console.log(`[API] Processed progress data:`, progressData);
-
             // Special case for tester-mindset quiz which may have timeout issues
             if (quizName === 'tester-mindset') {
                 // Maximum retry attempts
                 const MAX_RETRIES = 3;
-                
                 for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
                     try {
                         console.log(`[API] Using optimized save for tester-mindset quiz - attempt ${attempt+1}/${MAX_RETRIES}`);
-                        
                         // Increase timeout for each retry attempt
                         const timeoutDuration = 25000 + (attempt * 10000); // 25s, 35s, 45s
-                        
                         // Create a specific AbortController with longer timeout just for this quiz
                         const controller = new AbortController();
                         const signal = controller.signal;
                         const longTimeoutId = setTimeout(() => controller.abort(), timeoutDuration);
-                        
                         // Custom fetch with longer timeout
                         const token = getAuthToken();
                         const fullUrl = `${this.baseUrl}/users/quiz-progress`;
-                        
                         // Add cache-busting parameter
                         const cacheBuster = new Date().getTime();
                         const urlWithCache = `${fullUrl}?_cb=${cacheBuster}`;
-                        
                         const fetchOptions = {
                             method: 'POST',
                             credentials: 'include',
@@ -620,23 +611,18 @@ export class APIService {
                             mode: 'cors',
                             signal: signal
                         };
-                        
                         const response = await fetch(urlWithCache, fetchOptions);
                         clearTimeout(longTimeoutId);
-                        
                         if (!response.ok) {
                             throw new Error(`Failed to save progress: ${response.status} ${response.statusText}`);
                         }
-                        
                         // First try to get response as text to avoid JSON parsing errors
                         const responseText = await response.text();
-                        
                         // Check for empty response
                         if (!responseText || responseText.trim() === '') {
                             console.warn('[API] Empty response received from server');
                             throw new Error('Empty response from server');
                         }
-                        
                         // Only try to parse if there's content
                         let responseData;
                         try {
@@ -645,21 +631,28 @@ export class APIService {
                             console.warn('[API] JSON parse error:', parseError, 'Raw response:', responseText.substring(0, 100));
                             // Continue anyway since we don't need the response data
                         }
-                        
-                        console.log(`[API] Successfully saved tester-mindset progress with optimized method`);
-                        
+                        console.log(`[API] Successfully saved tester-mindset progress with optimized method`, responseData);
                         return {
                             success: true,
                             data: progressData
                         };
                     } catch (retryError) {
                         console.warn(`[API] Save attempt ${attempt+1}/${MAX_RETRIES} failed:`, retryError);
-                        
                         // If this was the last attempt, throw the error to be caught by the outer catch
                         if (attempt === MAX_RETRIES - 1) {
+                            // Fallback to localStorage
+                            try {
+                                const username = localStorage.getItem('username');
+                                if (username) {
+                                    const storageKey = `quiz_progress_${username}_tester-mindset`;
+                                    localStorage.setItem(storageKey, JSON.stringify({ data: progressData }));
+                                    console.warn('[API] Fallback: Saved tester-mindset progress to localStorage due to backend failure.');
+                                }
+                            } catch (localError) {
+                                console.error('[API] Fallback: Failed to save tester-mindset progress to localStorage:', localError);
+                            }
                             throw retryError;
                         }
-                        
                         // Wait before retrying with exponential backoff
                         const waitTime = 1000 * Math.pow(2, attempt); // 1s, 2s, 4s
                         console.log(`[API] Waiting ${waitTime}ms before retry...`);
