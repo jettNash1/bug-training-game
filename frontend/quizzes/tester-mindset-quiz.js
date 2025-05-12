@@ -922,11 +922,7 @@ export class TesterMindsetQuiz extends BaseQuiz {
             // Clear any existing content to prevent duplicate form elements
             optionsContainer.innerHTML = '';
             
-            // Create the form element
-            const form = document.createElement('form');
-            form.id = 'options-form';
-            form.setAttribute('action', '#');
-            
+            // Add options directly to the options container (not creating a new form)
             scenario.options.forEach((option, index) => {
                 const optionDiv = document.createElement('div');
                 optionDiv.className = 'option';
@@ -951,26 +947,20 @@ export class TesterMindsetQuiz extends BaseQuiz {
                 optionDiv.appendChild(radio);
                 optionDiv.appendChild(label);
                 
-                // Add to form
-                form.appendChild(optionDiv);
+                // Add to options container
+                optionsContainer.appendChild(optionDiv);
             });
+        }
+
+        // Find the existing form and ensure event handler is attached properly
+        const form = document.getElementById('options-form');
+        if (form) {
+            // Make sure we have a bound event handler
+            if (!this.handleAnswerBound) {
+                this.handleAnswerBound = this.handleAnswer.bind(this);
+            }
             
-            // Add submit button
-            const submitDiv = document.createElement('div');
-            submitDiv.className = 'submit-container';
-            
-            const submitButton = document.createElement('button');
-            submitButton.type = 'submit';
-            submitButton.className = 'submit-button';
-            submitButton.textContent = 'Submit';
-            
-            submitDiv.appendChild(submitButton);
-            form.appendChild(submitDiv);
-            
-            // Add the form to the options container
-            optionsContainer.appendChild(form);
-            
-            // Re-attach form handler (use removeEventListener first to prevent duplicates)
+            // Remove any existing handlers and attach the bound handler
             form.removeEventListener('submit', this.handleAnswerBound);
             form.addEventListener('submit', this.handleAnswerBound);
         }
@@ -979,10 +969,14 @@ export class TesterMindsetQuiz extends BaseQuiz {
         this.updateProgress();
     }
 
-    async handleAnswer() {
+    async handleAnswer(event) {
+        if (event) {
+            event.preventDefault();
+        }
+        
         if (this.isLoading) return;
         
-        const submitButton = document.querySelector('.submit-button');
+        const submitButton = document.getElementById('submit-btn');
         if (submitButton) {
             submitButton.disabled = true;
         }
