@@ -691,6 +691,7 @@ export class TesterMindsetQuiz extends BaseQuiz {
         
         try {
             this.isLoading = true;
+            
             // Show loading indicator
             const loadingIndicator = document.getElementById('loading-indicator');
             if (loadingIndicator) {
@@ -704,77 +705,56 @@ export class TesterMindsetQuiz extends BaseQuiz {
                 return;
             }
             
+            // Initialize event listeners
+            this.initializeEventListeners();
+            
+            // Get quiz name if not already set
+            if (!this.quizName) {
+                this.quizName = this.detectQuizNameFromPage();
+                console.log('[Quiz] Setting quiz name in startGame:', this.quizName);
+            }
+            
+            // Initialize the guideSettings (non-blocking)
+            this.initializeGuideSettings().catch(error => {
+                console.error('Error initializing guide settings:', error);
+            });
+            
+            // Clear existing elements to avoid duplication
+            const optionsContainer = document.getElementById('quiz-options');
+            if (optionsContainer) {
+                optionsContainer.innerHTML = '';
+            }
+            
+            const explanationContainer = document.getElementById('explanation-content');
+            if (explanationContainer) {
+                explanationContainer.innerHTML = '';
+            }
+            
+            // Try to load progress first
+            console.log('[TesterMindsetQuiz] Attempting to load saved progress...');
+            const progressLoaded = await this.loadProgress();
+            console.log(`[TesterMindsetQuiz] Progress loaded: ${progressLoaded}`);
+            
             // Run diagnostics to help troubleshoot any issues
             await this.logQuizProgressDiagnostics();
             
-            // Initialize event listeners
-            this.initializeEventListeners();
-
-            // Load previous progress
-            const hasProgress = await this.loadProgress();
-            console.log('[Quiz] Previous progress loaded:', hasProgress);
-            
-            if (hasProgress) {
-                console.log(`[Quiz] Resuming from question ${this.player.questionHistory.length + 1} of ${this.totalQuestions}`);
-                console.log(`[Quiz] Current experience: ${this.player.experience}, tools: ${this.player.tools.length}`);
-                console.log(`[Quiz] Current scenario index: ${this.player.currentScenario}`);
-                
-                // Ensure the loaded progress is properly set
-                if (this.player.questionHistory && Array.isArray(this.player.questionHistory)) {
-                    // If we have a history but no currentScenario, set it based on history length
-                    if (this.player.currentScenario === undefined || this.player.currentScenario === null) {
-                        this.player.currentScenario = this.player.questionHistory.length;
-                        console.log(`[Quiz] Setting currentScenario to match history length: ${this.player.currentScenario}`);
-                    }
-                }
-                
-                // Check for restored randomized scenarios
-                if (this.randomizedScenarios) {
-                    console.log('[Quiz] Randomized scenarios restored from progress:', this.randomizedScenarios);
-                }
-            } else {
-                // Reset player state if no valid progress exists
-                console.log('[Quiz] No valid progress found, starting from beginning');
-                this.player.experience = 0;
-                this.player.tools = [];
-                this.player.currentScenario = 0;
-                this.player.questionHistory = [];
-                
-                // Clear any existing randomized scenarios
-                this.randomizedScenarios = {};
-                
-                // Ensure initial random scenarios are generated for each level
-                this.getRandomizedScenarios('basic', this.basicScenarios);
-                this.getRandomizedScenarios('intermediate', this.intermediateScenarios);
-                this.getRandomizedScenarios('advanced', this.advancedScenarios);
-                
-                console.log('[Quiz] Initial randomized scenarios created:', this.randomizedScenarios);
-            }
-            
-            // Clear any existing transition messages
-            const transitionContainer = document.getElementById('level-transition-container');
-            if (transitionContainer) {
-                transitionContainer.innerHTML = '';
-                transitionContainer.classList.remove('active');
-            }
-
-            // Clear any existing timer
-            if (this.questionTimer) {
-                clearInterval(this.questionTimer);
-            }
-            
-            // Make sure UI screens are properly set up
+            // Initialize UI
             this.gameScreen.classList.remove('hidden');
             this.outcomeScreen.classList.add('hidden');
             this.endScreen.classList.add('hidden');
             
-            await this.displayScenario();
+            // Update progress display
+            this.updateProgress();
+            
+            // Display the correct scenario based on current progress
+            console.log(`[TesterMindsetQuiz] About to display scenario. Current position: ${this.player.currentScenario}, questions answered: ${this.player.questionHistory.length}`);
+            this.displayScenario();
         } catch (error) {
-            console.error('Failed to start game:', error);
-            this.showError('Failed to start the quiz. Please try refreshing the page.');
+            console.error('[TesterMindsetQuiz] Error starting game:', error);
         } finally {
             this.isLoading = false;
-            // Hide loading state
+            
+            // Hide loading indicator
             const loadingIndicator = document.getElementById('loading-indicator');
             if (loadingIndicator) {
                 loadingIndicator.classList.add('hidden');
@@ -1526,53 +1506,146 @@ export class TesterMindsetQuiz extends BaseQuiz {
             questionHistory: this.player.questionHistory,
             experience: this.player.experience || 0,
             tools: this.player.tools || [],
-            currentScenario: this.player.currentScenario || 0,
-            lastUpdated: new Date().toISOString(),
             status: status,
-            scorePercentage: Math.round((this.player.questionHistory.filter(q => q.isCorrect).length / this.totalQuestions) * 100),
-            randomizedScenarios: this.randomizedScenarios || {}
+            currentScenario: this.player.currentScenario,
+            randomizedScenarios: this.randomizedScenarios || {},
+            lastUpdated: new Date().toISOString()
         };
         
-        console.log('[TesterMindsetQuiz] Saving progress with currentScenario:', this.player.currentScenario);
-        console.log('[TesterMindsetQuiz] Saving randomizedScenarios:', this.randomizedScenarios);
+        // Calculate score percentage if we have questions answered
+        if (this.player.questionHistory.length > 0) {
+            const correctAnswers = this.player.questionHistory.filter(q => q.isCorrect).length;
+            progressData.scorePercentage = Math.round((correctAnswers / Math.max(this.player.questionHistory.length, 1)) * 100);
+        } else {
+            progressData.scorePercentage = 0;
+        }
         
+        // Log progress data
+        console.log('[TesterMindsetQuiz] Saving progress:', {
+            questionCount: progressData.questionsAnswered,
+            currentScenario: progressData.currentScenario,
+            status: progressData.status,
+            hasRandomizedScenarios: Object.keys(progressData.randomizedScenarios || {}).length > 0
+        });
+        
+        // Save the progress to the API
+        const username = localStorage.getItem('username');
+        if (username) {
+            try {
+                // Normalize quiz name to ensure consistency
+                const quizName = this.normalizeQuizName(this.quizName);
+                console.log(`[TesterMindsetQuiz] Saving progress for quiz: ${quizName}`);
+                
+                // Save using API service
+                await this.apiService.saveQuizProgress(quizName, progressData);
+            } catch (error) {
+                console.error('[TesterMindsetQuiz] Error saving progress:', error);
+            }
+        }
+    }
+
+    async loadProgress() {
         try {
             const username = localStorage.getItem('username');
             if (!username) {
-                console.error('No user found, cannot save progress');
+                console.error('[TesterMindsetQuiz] No username found, cannot load progress');
                 return false;
             }
             
-            // Save directly via API to ensure progress is stored
-            console.log('[TesterMindsetQuiz] Saving to API with quizName:', this.quizName);
-            const response = await this.apiService.saveQuizProgress(this.quizName, progressData);
+            console.log('[TesterMindsetQuiz] Loading progress for:', username);
             
-            if (!response.success) {
-                console.error('[TesterMindsetQuiz] API save failed, falling back to localStorage');
-                // Save to localStorage as backup if API fails
-                const storageKey = `quiz_progress_${username}_${this.quizName}`;
-                localStorage.setItem(storageKey, JSON.stringify({ data: progressData }));
+            // Get progress from API service
+            const quizName = this.normalizeQuizName(this.quizName);
+            const progressResult = await this.apiService.getQuizProgress(quizName);
+            
+            if (!progressResult.success || !progressResult.data) {
+                console.error('[TesterMindsetQuiz] Failed to load progress from API');
+                return false;
             }
+            
+            const progress = progressResult.data;
+            
+            // Log exactly what we received
+            console.log('[TesterMindsetQuiz] Loaded progress:', {
+                questionsAnswered: progress.questionsAnswered,
+                currentScenario: progress.currentScenario,
+                hasRandomizedScenarios: !!progress.randomizedScenarios,
+                source: progress.source || 'api'
+            });
+            
+            // Make sure we have valid data
+            if (!progress || !progress.questionHistory || progress.questionHistory.length === 0) {
+                console.log('[TesterMindsetQuiz] No valid progress found');
+                return false;
+            }
+            
+            // Restore player state
+            this.player.experience = progress.experience || 0;
+            this.player.tools = progress.tools || [];
+            this.player.questionHistory = Array.isArray(progress.questionHistory) ? progress.questionHistory : [];
+            
+            // Make sure we restore the correct current scenario
+            if (typeof progress.currentScenario === 'number') {
+                this.player.currentScenario = progress.currentScenario;
+            } else {
+                // Fall back to using question history length
+                this.player.currentScenario = this.player.questionHistory.length;
+            }
+            
+            console.log(`[TesterMindsetQuiz] Restored currentScenario to ${this.player.currentScenario}`);
+            
+            // Restore randomized scenarios if available
+            if (progress.randomizedScenarios && Object.keys(progress.randomizedScenarios).length > 0) {
+                this.randomizedScenarios = progress.randomizedScenarios;
+                console.log('[TesterMindsetQuiz] Restored randomized scenarios:', Object.keys(this.randomizedScenarios));
+            } else {
+                // If no randomized scenarios in progress, create them
+                console.log('[TesterMindsetQuiz] No randomized scenarios found, creating new ones');
+                this.getRandomizedScenarios('basic', this.basicScenarios);
+                this.getRandomizedScenarios('intermediate', this.intermediateScenarios);
+                this.getRandomizedScenarios('advanced', this.advancedScenarios);
+            }
+            
+            // Force save progress to ensure proper synchronization
+            await this.saveProgress();
             
             return true;
         } catch (error) {
-            console.error('[TesterMindsetQuiz] Failed to save progress:', error);
-            
-            // Try localStorage as fallback
-            try {
-                const username = localStorage.getItem('username');
-                if (username) {
-                    const storageKey = `quiz_progress_${username}_${this.quizName}`;
-                    localStorage.setItem(storageKey, JSON.stringify({ data: progressData }));
-                    console.log('[TesterMindsetQuiz] Saved progress to localStorage as fallback');
-                    return true;
-                }
-            } catch (fallbackError) {
-                console.error('[TesterMindsetQuiz] Failed to save fallback progress:', fallbackError);
-            }
-            
+            console.error('[TesterMindsetQuiz] Error loading progress:', error);
             return false;
         }
+    }
+
+    getRandomizedScenarios(level, scenarios) {
+        if (!this.randomizedScenarios) {
+            this.randomizedScenarios = {};
+        }
+        
+        // If we already have randomized scenarios for this level, reuse them
+        if (this.randomizedScenarios[level]) {
+            console.log(`[Quiz] Using existing randomized ${level} scenarios:`, this.randomizedScenarios[level].length);
+            return this.randomizedScenarios[level];
+        }
+        
+        console.log(`[Quiz] Generating new randomized ${level} scenarios from ${scenarios.length} scenarios`);
+        
+        // Create a shuffled copy of the scenarios
+        const shuffledScenarios = [...scenarios];
+        
+        // Fisher-Yates shuffle algorithm
+        for (let i = shuffledScenarios.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [shuffledScenarios[i], shuffledScenarios[j]] = [shuffledScenarios[j], shuffledScenarios[i]];
+        }
+        
+        // Store the randomized scenarios for this level
+        this.randomizedScenarios[level] = shuffledScenarios;
+        
+        // After generating new randomized scenarios, make sure to save progress
+        // to ensure we don't lose the order if user refreshes
+        setTimeout(() => this.saveProgress(), 100);
+        
+        return shuffledScenarios;
     }
 }
 

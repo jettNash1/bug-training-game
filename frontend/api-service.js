@@ -397,11 +397,42 @@ export class APIService {
     async getQuizProgress(quizName) {
         try {
             console.log(`[API] Getting progress for quiz: ${quizName}`);
-            // Standard fetch process for all quizzes (remove tester-mindset special case)
+            // First try to get from the API
             const response = await this.fetchWithAuth(`${this.baseUrl}/users/quiz-progress/${quizName}`);
-            console.log(`[API] Raw quiz progress response:`, response);
-            // If no data found, return default structure
-            if (!response || !response.data) {
+            console.log(`[API] Raw quiz progress response for ${quizName}:`, response);
+            
+            // If no data found, check localStorage
+            if (!response || !response.data || Object.keys(response.data).length === 0) {
+                console.log(`[API] No progress found for quiz ${quizName} in API, checking localStorage`);
+                
+                // Try to get from localStorage
+                const username = localStorage.getItem('username');
+                if (username) {
+                    const storageKey = `quiz_progress_${username}_${quizName}`;
+                    const localData = localStorage.getItem(storageKey);
+                    
+                    if (localData) {
+                        try {
+                            const parsed = JSON.parse(localData);
+                            console.log(`[API] Found progress in localStorage for ${quizName}:`, parsed);
+                            
+                            if (parsed && parsed.data) {
+                                // Return the localStorage data
+                                return {
+                                    success: true,
+                                    data: {
+                                        ...parsed.data,
+                                        source: 'localStorage'
+                                    }
+                                };
+                            }
+                        } catch (e) {
+                            console.error(`[API] Error parsing localStorage data:`, e);
+                        }
+                    }
+                }
+                
+                // If nothing found, return default
                 console.log(`[API] No progress found for quiz ${quizName}, returning default`);
                 return {
                     success: true,
@@ -410,11 +441,13 @@ export class APIService {
                         questionsAnswered: 0,
                         status: 'not-started',
                         scorePercentage: 0,
+                        currentScenario: 0,
                         tools: [],
                         questionHistory: []
                     }
                 };
             }
+            
             // Ensure all required fields are present
             const progress = {
                 ...response.data,
@@ -422,16 +455,56 @@ export class APIService {
                 questionsAnswered: response.data.questionsAnswered || 0,
                 status: response.data.status || 'not-started',
                 scorePercentage: typeof response.data.scorePercentage === 'number' ? response.data.scorePercentage : 0,
+                currentScenario: response.data.currentScenario || response.data.questionsAnswered || 0,
                 tools: response.data.tools || [],
-                questionHistory: response.data.questionHistory || []
+                questionHistory: response.data.questionHistory || [],
+                randomizedScenarios: response.data.randomizedScenarios || {}
             };
-            console.log(`[API] Processed quiz progress:`, progress);
+            
+            console.log(`[API] Processed quiz progress for ${quizName}:`, {
+                currentScenario: progress.currentScenario,
+                questionsAnswered: progress.questionsAnswered,
+                hasRandomizedScenarios: !!progress.randomizedScenarios
+            });
+            
             return {
                 success: true,
                 data: progress
             };
         } catch (error) {
             console.error(`[API] Error getting quiz progress for ${quizName}:`, error);
+            
+            // Try localStorage as fallback
+            try {
+                const username = localStorage.getItem('username');
+                if (username) {
+                    const storageKey = `quiz_progress_${username}_${quizName}`;
+                    const localData = localStorage.getItem(storageKey);
+                    
+                    if (localData) {
+                        try {
+                            const parsed = JSON.parse(localData);
+                            console.log(`[API] Found progress in localStorage fallback for ${quizName}:`, parsed);
+                            
+                            if (parsed && parsed.data) {
+                                // Return the localStorage data
+                                return {
+                                    success: true,
+                                    data: {
+                                        ...parsed.data,
+                                        source: 'localStorage_fallback'
+                                    }
+                                };
+                            }
+                        } catch (e) {
+                            console.error(`[API] Error parsing localStorage fallback data:`, e);
+                        }
+                    }
+                }
+            } catch (e) {
+                console.error(`[API] Error checking localStorage fallback:`, e);
+            }
+            
             return {
                 success: false,
                 error: error.message,
@@ -440,6 +513,7 @@ export class APIService {
                     questionsAnswered: 0,
                     status: 'not-started',
                     scorePercentage: 0,
+                    currentScenario: 0,
                     tools: [],
                     questionHistory: []
                 }
@@ -458,10 +532,16 @@ export class APIService {
                 scorePercentage: typeof progress.scorePercentage === 'number' ? progress.scorePercentage : 0,
                 tools: progress.tools || [],
                 questionHistory: progress.questionHistory || [],
+                currentScenario: progress.currentScenario || 0,
+                randomizedScenarios: progress.randomizedScenarios || {},
                 lastUpdated: new Date().toISOString()
             };
-            console.log(`[API] Processed progress data:`, progressData);
-            // Standard fetch process for all quizzes (remove tester-mindset special case)
+            console.log(`[API] Processed progress data for ${quizName}:`, {
+                currentScenario: progressData.currentScenario,
+                questionsAnswered: progressData.questionsAnswered,
+                hasRandomizedScenarios: !!progressData.randomizedScenarios
+            });
+            // Standard fetch process for all quizzes
             const response = await this.fetchWithAuth(
                 `${this.baseUrl}/users/quiz-progress`,
                 {
@@ -479,12 +559,44 @@ export class APIService {
                 throw new Error(response.message || 'Failed to save quiz progress');
             }
             console.log(`[API] Successfully saved progress for quiz ${quizName}`);
+            
+            // Save to localStorage as backup
+            try {
+                const username = localStorage.getItem('username');
+                if (username) {
+                    const storageKey = `quiz_progress_${username}_${quizName}`;
+                    localStorage.setItem(storageKey, JSON.stringify({ 
+                        data: progressData,
+                        timestamp: new Date().toISOString()
+                    }));
+                    console.log(`[API] Saved backup to localStorage: ${storageKey}`);
+                }
+            } catch (e) {
+                console.warn('[API] Failed to save localStorage backup:', e);
+            }
+            
             return {
                 success: true,
                 data: progressData
             };
         } catch (error) {
             console.error(`[API] Error saving quiz progress:`, error);
+            
+            // Try to save to localStorage as fallback
+            try {
+                const username = localStorage.getItem('username');
+                if (username) {
+                    const storageKey = `quiz_progress_${username}_${quizName}`;
+                    localStorage.setItem(storageKey, JSON.stringify({ 
+                        data: progress,
+                        timestamp: new Date().toISOString() 
+                    }));
+                    console.log(`[API] Saved fallback to localStorage: ${storageKey}`);
+                }
+            } catch (e) {
+                console.error('[API] Failed to save localStorage fallback:', e);
+            }
+            
             return {
                 success: false,
                 message: error.message || 'Failed to save quiz progress',
