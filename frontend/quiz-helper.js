@@ -1328,7 +1328,13 @@ export class BaseQuiz {
         if (typeof quizName === 'string' && quizName.toLowerCase().replace(/[_\s]/g, '-').includes('tester')) {
             return 'tester-mindset';
         }
-        return quizName.replace(/-([a-z])/g, g => g[1].toUpperCase());
+        // Convert to kebab-case
+        return quizName
+            .toLowerCase()
+            .replace(/([A-Z])/g, '-$1')
+            .replace(/_{1,}/g, '-')
+            .replace(/--+/g, '-')
+            .replace(/^-+|-+$/g, '');
     }
 
     calculateScore() {
