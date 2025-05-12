@@ -1267,48 +1267,28 @@ export class APIService {
     async getUserBadgesByAdmin(username) {
         try {
             console.log(`[Badges] Getting badges for user: ${username}`);
-            // Use the fallback method for admin badge view
-            const userProgressResponse = await this.getUserProgressWithFallback(username);
-            console.log('[Badges] Raw user progress response for badges:', userProgressResponse);
-            if (!userProgressResponse.success) {
-                console.error('[Badges] Failed to get user progress for badges (success false):', userProgressResponse);
-                throw new Error('Failed to get user progress data');
+            
+            // Get all users data which we already have
+            const usersResponse = await this.getAllUsers();
+            if (!usersResponse.success) {
+                throw new Error('Failed to get users data');
             }
-            if (!userProgressResponse.data) {
-                console.error('[Badges] Failed to get user progress data (no data):', userProgressResponse);
-                return {
-                    success: true,
-                    data: {
-                        badges: [],
-                        totalBadges: 0,
-                        earnedCount: 0
-                    }
-                };
+            
+            // Find the specific user
+            const user = usersResponse.data.find(u => u.username === username);
+            if (!user) {
+                throw new Error('User not found');
             }
-            // --- Normalize data structure ---
-            let quizProgress = {};
-            const data = userProgressResponse.data;
-            if (data.quizProgress && typeof data.quizProgress === 'object') {
-                quizProgress = data.quizProgress;
-            } else if (typeof data === 'object' && Object.keys(data).length > 0) {
-                // Legacy or fallback structure
-                const possibleQuizzes = Object.keys(data)
-                    .filter(key => typeof data[key] === 'object' &&
-                        (data[key].questionsAnswered !== undefined ||
-                         data[key].status !== undefined ||
-                         data[key].questionHistory !== undefined));
-                if (possibleQuizzes.length > 0) {
-                    quizProgress = data;
-                }
-            }
-            if (!quizProgress || typeof quizProgress !== 'object') {
-                quizProgress = {};
-            }
-            // --- Use the same badge extraction logic as BadgeService.getUserBadges ---
+            
+            // Extract quiz progress from user data
+            const quizProgress = user.quizProgress || {};
+            
+            // Get all quizzes from progress
             const allQuizzes = Object.keys(quizProgress).map(quizId => ({
                 id: quizId,
                 name: this.formatQuizName(quizId)
             }));
+            
             if (allQuizzes.length === 0) {
                 return {
                     success: true,
@@ -1319,15 +1299,17 @@ export class APIService {
                     }
                 };
             }
+            
+            // Generate badges based on quiz completion
             const badges = allQuizzes.map(quiz => {
                 const progress = quizProgress[quiz.id] || {};
-                // Use the same completion logic as BadgeService
                 const isCompleted = progress && (
                     progress.status === 'completed' ||
                     progress.status === 'passed' ||
                     (progress.questionHistory && progress.questionHistory.length === 15) ||
                     (typeof progress.questionsAnswered === 'number' && progress.questionsAnswered >= 15)
                 );
+                
                 return {
                     id: `quiz-${quiz.id}`,
                     name: `${quiz.name} Master`,
@@ -1338,13 +1320,17 @@ export class APIService {
                     quizId: quiz.id
                 };
             });
+            
+            // Sort badges: earned first, then alphabetically
             badges.sort((a, b) => {
                 if (a.earned && !b.earned) return -1;
                 if (!a.earned && b.earned) return 1;
                 return a.name.localeCompare(b.name);
             });
+            
             const completedCount = badges.filter(badge => badge.earned).length;
-            const result = {
+            
+            return {
                 success: true,
                 data: {
                     badges,
@@ -1352,7 +1338,6 @@ export class APIService {
                     earnedCount: completedCount
                 }
             };
-            return result;
         } catch (error) {
             console.error(`[Badges] Error getting badges for user ${username}:`, error);
             return {
