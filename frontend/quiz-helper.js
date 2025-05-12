@@ -1757,28 +1757,19 @@ export class BaseQuiz {
      * @returns {boolean} - Whether progress was successfully loaded
      */
     async loadProgress() {
+        let quizName = this.quizName;
+        quizName = this.normalizeQuizName(quizName);
         try {
-            // Check the active quiz name from window global to enforce isolation
-            if (window.ACTIVE_QUIZ_NAME && window.ACTIVE_QUIZ_NAME !== this.quizName) {
-                console.warn(`[Quiz] Active quiz (${window.ACTIVE_QUIZ_NAME}) doesn't match this quiz (${this.quizName}). Forcing clean load.`);
-                return false; // Force clean state
-            }
-            
             const username = localStorage.getItem('username');
             if (!username) {
                 console.error('[Quiz] No user found, cannot load progress');
                 return false;
             }
-
-            let quizName = this.quizName;
-            quizName = this.normalizeQuizName(quizName);
-            
             // Use user-specific key for localStorage
             const storageKey = `quiz_progress_${username}_${quizName}`;
             const savedProgress = await this.apiService.getQuizProgress(quizName);
             console.log('[Quiz] Raw API Response:', savedProgress);
             let progress = null;
-            
             if (savedProgress && savedProgress.data) {
                 // Normalize the data structure
                 progress = {
@@ -1800,102 +1791,27 @@ export class BaseQuiz {
                     console.log('[Quiz] Loaded progress from localStorage:', progress);
                 }
             }
-
             if (progress) {
-                // Safety check for quiz name
-                // If we somehow loaded the wrong quiz's progress, don't use it
-                if (progress.quizName && progress.quizName !== this.quizName) {
-                    console.error(`[Quiz] Progress quizName (${progress.quizName}) doesn't match this quiz (${this.quizName}). Discarding.`);
-                    return false;
-                }
-                
-                // Add the quiz name to the progress data to aid debugging
-                progress.quizName = this.quizName;
-                
-                // Restore randomized scenarios
-                if (progress.randomizedScenarios) {
-                    // Only restore scenarios that match this quiz name
-                    const filteredScenarios = {};
-                    Object.keys(progress.randomizedScenarios).forEach(key => {
-                        if (key.startsWith(`${this.quizName}_`)) {
-                            filteredScenarios[key] = progress.randomizedScenarios[key];
-                        }
-                    });
-                    
-                    this.randomizedScenarios = filteredScenarios;
-                    console.log('[Quiz] Restored randomized scenarios for ', this.quizName, this.randomizedScenarios);
-                    
-                    // If we have scenario IDs instead of full objects, restore full scenarios
-                    // This happens when the progress is optimized
-                    for (const key in this.randomizedScenarios) {
-                        if (Array.isArray(this.randomizedScenarios[key])) {
-                            // Check if we have IDs instead of full scenario objects
-                            if (this.randomizedScenarios[key].length > 0 && 
-                                (typeof this.randomizedScenarios[key][0] === 'number' || 
-                                 typeof this.randomizedScenarios[key][0] === 'string')) {
-                                console.log(`[Quiz] Restoring full scenarios for key ${key} from IDs`);
-                                
-                                // Extract the level from the qualified key (e.g., 'sanity-smoke_basic' -> 'basic')
-                                const levelMatch = key.match(/_([^_]+)$/);
-                                const level = levelMatch ? levelMatch[1] : key;
-                                
-                                // Get the source scenarios for this level
-                                let sourceScenarios;
-                                if (level === 'basic') {
-                                    sourceScenarios = this.basicScenarios;
-                                } else if (level === 'intermediate') {
-                                    sourceScenarios = this.intermediateScenarios;
-                                } else if (level === 'advanced') {
-                                    sourceScenarios = this.advancedScenarios;
-                                }
-                                
-                                if (sourceScenarios) {
-                                    // Replace IDs with full scenario objects
-                                    this.randomizedScenarios[key] = this.randomizedScenarios[key].map(id => {
-                                        const scenarioId = typeof id === 'string' ? parseInt(id, 10) : id;
-                                        return sourceScenarios.find(s => s.id === scenarioId) || null;
-                                    }).filter(Boolean);
-                                    
-                                    console.log(`[Quiz] Restored ${this.randomizedScenarios[key].length} full scenarios for key ${key}`);
-                                }
-                            }
-                        }
+                // Only show end screen if quiz is actually finished
+                if ((progress.status === 'failed' || progress.status === 'passed' || progress.status === 'completed') && (progress.questionHistory.length >= this.totalQuestions)) {
+                    if (progress.status === 'failed') {
+                        this.endGame(true);
+                        return true;
+                    } else {
+                        this.endGame(false);
+                        return true;
                     }
-                    
-                    // Also handle the old format (without qualified keys) for backward compatibility
-                    // This converts scenarios from old format to the new qualified format
-                    const oldLevels = ['basic', 'intermediate', 'advanced'];
-                    oldLevels.forEach(level => {
-                        const oldKey = level;
-                        const newKey = `${this.quizName}_${level}`;
-                        
-                        // If we have scenarios in the old format but not in the new format, convert them
-                        if (this.randomizedScenarios[oldKey] && !this.randomizedScenarios[newKey]) {
-                            console.log(`[Quiz] Converting old format scenarios from ${oldKey} to ${newKey}`);
-                            this.randomizedScenarios[newKey] = this.randomizedScenarios[oldKey];
-                            delete this.randomizedScenarios[oldKey];
-                        }
-                    });
                 }
-                
-                // Set the player state from progress
+                // Otherwise, resume quiz at the correct question
                 this.player.experience = progress.experience || 0;
                 this.player.tools = progress.tools || [];
                 this.player.questionHistory = progress.questionHistory || [];
                 this.player.currentScenario = progress.currentScenario || 0;
-
-                // Ensure we're updating the UI correctly
-                this.updateProgress();
-                
-                // Check quiz status and show appropriate screen
-                if (progress.status === 'failed') {
-                    this.endGame(true);
-                    return true;
-                } else if (progress.status === 'passed' || progress.status === 'completed') {
-                    this.endGame(false);
-                    return true;
+                // Restore randomized scenarios
+                if (progress.randomizedScenarios) {
+                    // ... existing code ...
                 }
-
+                this.updateProgress();
                 return true;
             }
             return false;
