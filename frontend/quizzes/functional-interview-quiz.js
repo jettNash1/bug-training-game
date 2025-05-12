@@ -593,42 +593,6 @@ export class FunctionalInterviewQuiz extends BaseQuiz {
         return this.player.questionHistory.length >= this.totalQuestions;
     }
 
-    saveProgress() {
-        const progress = {
-            level: this.player.level,
-            experience: this.player.experience,
-            questionHistory: this.player.questionHistory,
-            scorePercentage: this.calculateScorePercentage(),
-            status: this.calculateScorePercentage() >= this.passPercentage ? 'passed' : 'failed'
-        };
-        localStorage.setItem(`quiz_progress_${this.username}_${this.quizName}`, JSON.stringify(progress));
-    }
-
-    loadProgress() {
-        const savedProgress = localStorage.getItem(`quiz_progress_${this.username}_${this.quizName}`);
-        if (savedProgress) {
-            const progress = JSON.parse(savedProgress);
-            
-            // Handle different data structures
-            if (progress.questionHistory) {
-                this.player.questionHistory = progress.questionHistory;
-            }
-            
-            if (progress.level) {
-                this.player.level = progress.level;
-            }
-            
-            if (progress.experience) {
-                this.player.experience = progress.experience;
-            }
-            
-            // Normalize progress
-            if (this.player.questionHistory.length >= this.totalQuestions) {
-                this.player.questionHistory = this.player.questionHistory.slice(0, this.totalQuestions);
-            }
-        }
-    }
-
     async startGame() {
         if (this.isLoading) return;
         
@@ -906,9 +870,6 @@ export class FunctionalInterviewQuiz extends BaseQuiz {
 
             // Increment current scenario
             this.player.currentScenario++;
-
-            // Save progress
-            await this.saveProgress();
 
             // Calculate the score and experience
             const totalQuestions = 15;
@@ -1247,9 +1208,6 @@ export class FunctionalInterviewQuiz extends BaseQuiz {
         resultsContainer.appendChild(retryButton);
         
         this.quizContainer.appendChild(resultsContainer);
-        
-        // Save final progress
-        this.saveProgress();
     }
 
     getFeedbackMessage(scorePercentage) {
