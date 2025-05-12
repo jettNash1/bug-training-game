@@ -1666,6 +1666,9 @@ export class CommunicationQuiz extends BaseQuiz {
             if (!validScenarios) {
                 console.warn(`[CommunicationQuiz] Found invalid scenarios for ${level}, regenerating...`);
                 this.randomizedScenarios[quizLevelKey] = this.getRandomizedScenarios(level, scenarios);
+                
+                // Save the updated randomized scenarios immediately
+                this.saveRandomizedScenarios();
             }
             
             return this.randomizedScenarios[quizLevelKey];
@@ -1674,7 +1677,52 @@ export class CommunicationQuiz extends BaseQuiz {
         // Otherwise generate random scenarios for this level
         console.log(`[CommunicationQuiz] Generating new randomized scenarios for ${this.quizName} - ${level}`);
         this.randomizedScenarios[quizLevelKey] = this.getRandomizedScenarios(level, scenarios);
+        
+        // Save the new randomized scenarios immediately
+        this.saveRandomizedScenarios();
+        
         return this.randomizedScenarios[quizLevelKey];
+    }
+    
+    // Helper method to save randomized scenarios independently
+    async saveRandomizedScenarios() {
+        try {
+            console.log('[CommunicationQuiz] Saving randomized scenarios...');
+            const username = localStorage.getItem('username');
+            if (!username) return;
+            
+            // Get current progress and update only the randomizedScenarios property
+            const apiProgress = await this.apiService.getQuizProgress(this.quizName);
+            
+            if (apiProgress && apiProgress.data) {
+                // Create a modified version of the progress data to save back
+                const updatedData = { ...apiProgress.data };
+                
+                // Create a simplified version of randomizedScenarios
+                const simplifiedScenarios = {};
+                Object.keys(this.randomizedScenarios).forEach(key => {
+                    if (Array.isArray(this.randomizedScenarios[key])) {
+                        simplifiedScenarios[key] = this.randomizedScenarios[key].map(s => {
+                            // Just save the ID and essential properties
+                            return {
+                                id: s.id,
+                                level: s.level,
+                                title: s.title
+                            };
+                        });
+                    }
+                });
+                
+                updatedData.randomizedScenarios = simplifiedScenarios;
+                console.log('[CommunicationQuiz] Saving simplified scenarios:', simplifiedScenarios);
+                
+                // Save back to API
+                await this.apiService.saveQuizProgress(this.quizName, updatedData);
+                console.log('[CommunicationQuiz] Randomized scenarios saved successfully');
+            }
+        } catch (error) {
+            console.error('[CommunicationQuiz] Error saving randomized scenarios:', error);
+        }
     }
 
     getCurrentLevel() {
@@ -1949,6 +1997,110 @@ export class CommunicationQuiz extends BaseQuiz {
             localStorage.removeItem(`quiz_progress_${username}_${variant}`);
             localStorage.removeItem(`quizResults_${username}_${variant}`);
         });
+    }
+
+    async loadProgress() {
+        // Call the parent class loadProgress method
+        const result = await super.loadProgress();
+        
+        console.log('[CommunicationQuiz] Load progress result:', result);
+        console.log('[CommunicationQuiz] Player state after load:', 
+                   'currentScenario:', this.player.currentScenario,
+                   'questionHistory.length:', this.player.questionHistory.length);
+                   
+        // Verify against raw API data
+        const apiProgress = await this.apiService.getQuizProgress(this.quizName);
+        if (apiProgress?.data) {
+            console.log('[CommunicationQuiz] Raw API data:', 
+                       'currentScenario:', apiProgress.data.currentScenario,
+                       'questionsAnswered:', apiProgress.data.questionsAnswered,
+                       'status:', apiProgress.data.status);
+                       
+            // Check if we need to restore randomized scenarios from API
+            if (apiProgress.data.randomizedScenarios) {
+                console.log('[CommunicationQuiz] Found stored randomized scenarios, restoring...');
+                
+                // First ensure we have the local container initialized
+                if (!this.randomizedScenarios) {
+                    this.randomizedScenarios = {};
+                }
+                
+                // Try to restore each level's scenarios
+                const storedScenarios = apiProgress.data.randomizedScenarios;
+                
+                // Process each stored level
+                Object.keys(storedScenarios).forEach(levelKey => {
+                    // Skip if this isn't an array or is empty
+                    if (!Array.isArray(storedScenarios[levelKey]) || storedScenarios[levelKey].length === 0) {
+                        return;
+                    }
+                    
+                    console.log(`[CommunicationQuiz] Restoring ${levelKey} scenarios: ${storedScenarios[levelKey].length} items`);
+                    
+                    // For each level, determine which scenarios to use
+                    let sourceScenarios;
+                    if (levelKey.includes('basic')) {
+                        sourceScenarios = this.basicScenarios;
+                    } else if (levelKey.includes('intermediate')) {
+                        sourceScenarios = this.intermediateScenarios;
+                    } else if (levelKey.includes('advanced')) {
+                        sourceScenarios = this.advancedScenarios;
+                    } else {
+                        console.warn(`[CommunicationQuiz] Unknown level key: ${levelKey}, skipping restoration`);
+                        return;
+                    }
+                    
+                    // Reconstruct full scenarios from the stored IDs or partial objects
+                    this.randomizedScenarios[levelKey] = storedScenarios[levelKey].map(storedItem => {
+                        // If stored item is an ID
+                        const itemId = typeof storedItem === 'object' ? storedItem.id : storedItem;
+                        
+                        // Find the full scenario in the source scenarios
+                        const fullScenario = sourceScenarios.find(s => s.id === itemId);
+                        if (fullScenario) {
+                            return fullScenario;
+                        }
+                        
+                        // If we couldn't find an exact match by ID, we'll rebuild from what we have
+                        if (typeof storedItem === 'object' && storedItem.title) {
+                            // Try to find by title if we couldn't find by ID
+                            const scenarioByTitle = sourceScenarios.find(s => s.title === storedItem.title);
+                            if (scenarioByTitle) {
+                                return scenarioByTitle;
+                            }
+                            
+                            // If still not found, use a full random scenario as fallback
+                            console.warn(`[CommunicationQuiz] Could not find scenario with ID ${itemId} or title ${storedItem.title}, using random`);
+                        } else {
+                            console.warn(`[CommunicationQuiz] Could not find scenario with ID ${itemId}, using random`);
+                        }
+                        
+                        // Pick random if we couldn't find the exact one
+                        return sourceScenarios[Math.floor(Math.random() * sourceScenarios.length)];
+                    });
+                    
+                    console.log(`[CommunicationQuiz] Restored ${this.randomizedScenarios[levelKey].length} scenarios for ${levelKey}`);
+                });
+            }
+            
+            // Critical check: ensure currentScenario is properly set
+            if (apiProgress.data.currentScenario !== this.player.currentScenario) {
+                console.warn(`[CommunicationQuiz] Mismatch in currentScenario value: API=${apiProgress.data.currentScenario}, player=${this.player.currentScenario}`);
+                
+                // Use API value if it exists and is greater than local value
+                if (apiProgress.data.currentScenario && apiProgress.data.currentScenario > 0) {
+                    this.player.currentScenario = apiProgress.data.currentScenario;
+                    console.log(`[CommunicationQuiz] Corrected player.currentScenario to ${this.player.currentScenario}`);
+                }
+            }
+            
+            // Save this progress in case we made corrections
+            if (this.player.currentScenario > 0) {
+                await this.saveProgress();
+            }
+        }
+        
+        return result;
     }
 }
 
