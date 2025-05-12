@@ -1,4 +1,4 @@
-class QuizList {
+export class QuizList {
     constructor() {
         this.apiService = new APIService();
         this.quizTypes = [
