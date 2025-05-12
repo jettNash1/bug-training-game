@@ -1,3 +1,5 @@
+import { APIService } from './api-service.js';
+
 export class QuizList {
     constructor() {
         this.apiService = new APIService();
