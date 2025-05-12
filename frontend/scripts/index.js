@@ -209,16 +209,12 @@ class IndexPage {
                 .map(item => {
                     const quizId = item.dataset.quiz;
                     if (!quizId) return null;
-                    
-                    // Always use kebab-case for tester-mindset
-                    const lookupId = (quizId.toLowerCase().replace(/[_\s]/g, '-').includes('tester')) ? 'tester-mindset' : quizId;
-                    
+                    // Use normalizeQuizName for all quizzes
+                    const lookupId = normalizeQuizName(quizId);
                     // First check for quiz progress
                     const progress = quizProgress[lookupId];
-                    
                     // Then check for quiz results
-                    const result = quizResults.find(r => r.quizName === lookupId);
-                    
+                    const result = quizResults.find(r => normalizeQuizName(r.quizName) === lookupId);
                     // Combine data from both sources, with progress taking precedence
                     const combinedData = {
                         quizName: lookupId,
@@ -227,22 +223,18 @@ class IndexPage {
                         status: 'not-started',
                         scorePercentage: 0
                     };
-                    
                     // Apply result data if available
                     if (result) {
                         combinedData.score = result.score || 0;
                         combinedData.scorePercentage = result.scorePercentage || result.score || 0;
                         combinedData.experience = result.experience || 0;
                     }
-                    
                     // Apply progress data if available (overrides result data)
                     if (progress) {
                         combinedData.questionsAnswered = progress.questionsAnswered || 0;
                         combinedData.status = progress.status || 'not-started';
                         combinedData.tools = progress.tools || [];
                         combinedData.questionHistory = progress.questionHistory || [];
-                        
-                        // If progress has scorePercentage or experience, use it
                         if (progress.scorePercentage !== undefined) {
                             combinedData.scorePercentage = progress.scorePercentage;
                         }
@@ -250,7 +242,6 @@ class IndexPage {
                             combinedData.experience = progress.experience;
                         }
                     }
-                    
                     console.log(`Processed data for quiz ${lookupId}:`, combinedData);
                     return combinedData;
                 })

@@ -922,16 +922,11 @@ export class BaseQuiz {
     async saveProgress() {
         // First determine the status based on clear conditions
         let status = 'in-progress';
-        
-        // Check for completion (all questions answered)
         if (this.player.questionHistory.length >= this.totalQuestions) {
-            // Calculate pass/fail based on correct answers
             const correctAnswers = this.player.questionHistory.filter(q => q.isCorrect).length;
             const scorePercentage = Math.round((correctAnswers / this.totalQuestions) * 100);
             status = scorePercentage >= this.passPercentage ? 'passed' : 'failed';
         }
-
-        // Create the progress data object
         let progressData = {
             questionsAnswered: this.player.questionHistory.length,
             questionHistory: this.player.questionHistory,
@@ -941,39 +936,27 @@ export class BaseQuiz {
             lastUpdated: new Date().toISOString(),
             status: status,
             scorePercentage: Math.round((this.player.questionHistory.filter(q => q.isCorrect).length / this.totalQuestions) * 100),
-            randomizedScenarios: this.randomizedScenarios || {} // Save randomized scenarios
+            randomizedScenarios: this.randomizedScenarios || {}
         };
-
-        // Optimize the data to reduce size
         progressData = this.optimizeProgressData(progressData);
-
         try {
             const username = localStorage.getItem('username');
             if (!username) {
                 console.error('No user found, cannot save progress');
                 return;
             }
-            
             let quizName = this.quizName;
             quizName = this.normalizeQuizName(quizName);
-            
-            // Use user-specific key for localStorage
             const storageKey = `quiz_progress_${username}_${quizName}`;
+            console.log('[BaseQuiz][saveProgress] Saving to key:', storageKey, 'Data:', progressData);
             localStorage.setItem(storageKey, JSON.stringify({ data: progressData }));
-            
-            console.log('[BaseQuiz] Saving progress with status:', status);
             const size = JSON.stringify(progressData).length;
-            console.log(`[BaseQuiz] Progress data size: ${size} bytes`);
-            
-            // Check if data is too large (over 100KB) and warn
             if (size > 100000) {
                 console.warn('[BaseQuiz] Warning: Progress data is very large (>100KB)');
             }
-            
             await this.apiService.saveQuizProgress(quizName, progressData);
         } catch (error) {
             console.error('[BaseQuiz] Failed to save progress:', error);
-            // Save minimal data to localStorage as a fallback
             try {
                 const username = localStorage.getItem('username');
                 if (username) {
@@ -982,10 +965,10 @@ export class BaseQuiz {
                         questionsAnswered: progressData.questionsAnswered,
                         experience: progressData.experience,
                         status: progressData.status,
-                        randomizedScenarios: progressData.randomizedScenarios // Include randomized scenarios even in minimal save
+                        randomizedScenarios: progressData.randomizedScenarios
                     };
                     localStorage.setItem(storageKey, JSON.stringify({ data: minimalProgress }));
-                    console.log('[BaseQuiz] Saved minimal progress to localStorage as fallback');
+                    console.log('[BaseQuiz][saveProgress] Saved minimal progress to localStorage as fallback:', storageKey, minimalProgress);
                 }
             } catch (fallbackError) {
                 console.error('[BaseQuiz] Failed to save fallback progress:', fallbackError);
@@ -1767,13 +1750,11 @@ export class BaseQuiz {
                 console.error('[Quiz] No user found, cannot load progress');
                 return false;
             }
-            // Use user-specific key for localStorage
             const storageKey = `quiz_progress_${username}_${quizName}`;
             const savedProgress = await this.apiService.getQuizProgress(quizName);
-            console.log('[Quiz] Raw API Response:', savedProgress);
+            console.log('[BaseQuiz][loadProgress] Loading from key:', storageKey, 'API Response:', savedProgress);
             let progress = null;
             if (savedProgress && savedProgress.data) {
-                // Normalize the data structure
                 progress = {
                     experience: savedProgress.data.experience || 0,
                     tools: savedProgress.data.tools || [],
@@ -1783,9 +1764,8 @@ export class BaseQuiz {
                     scorePercentage: savedProgress.data.scorePercentage || 0,
                     randomizedScenarios: savedProgress.data.randomizedScenarios || {}
                 };
-                console.log('[Quiz] Normalized progress data:', progress);
+                console.log('[BaseQuiz][loadProgress] Normalized progress data:', progress);
             } else {
-                // Try loading from localStorage as fallback
                 const localData = localStorage.getItem(storageKey);
                 if (localData) {
                     const parsed = JSON.parse(localData);
@@ -1793,11 +1773,10 @@ export class BaseQuiz {
                     if (progress && Array.isArray(progress.questionHistory)) {
                         progress.questionHistory = progress.questionHistory.slice(0, this.totalQuestions);
                     }
-                    console.log('[Quiz] Loaded progress from localStorage:', progress);
+                    console.log('[BaseQuiz][loadProgress] Loaded progress from localStorage:', progress);
                 }
             }
             if (progress) {
-                // Only show end screen if quiz is actually finished
                 if ((progress.status === 'failed' || progress.status === 'passed' || progress.status === 'completed') && (progress.questionHistory.length >= this.totalQuestions)) {
                     if (progress.status === 'failed') {
                         this.endGame(true);
@@ -1807,12 +1786,10 @@ export class BaseQuiz {
                         return true;
                     }
                 }
-                // Otherwise, resume quiz at the correct question
                 this.player.experience = progress.experience || 0;
                 this.player.tools = progress.tools || [];
                 this.player.questionHistory = Array.isArray(progress.questionHistory) ? progress.questionHistory.slice(0, this.totalQuestions) : [];
                 this.player.currentScenario = progress.currentScenario || this.player.questionHistory.length || 0;
-                // Restore randomized scenarios
                 if (progress.randomizedScenarios) {
                     this.randomizedScenarios = progress.randomizedScenarios;
                 }
