@@ -853,21 +853,30 @@ export class TesterMindsetQuiz extends BaseQuiz {
             this.player.currentScenario = questionCount;
         }
         
-        // Determine which level we're in and get the correct scenario
-        let scenario;
+        // Find which scenario set to use based on the current progress
+        let scenarioSet, scenarioIndex;
         if (questionCount < 5) {
             // Basic questions (0-4)
-            scenario = this.basicScenarios[questionCount];
+            scenarioSet = this.basicScenarios;
+            scenarioIndex = questionCount;
         } else if (questionCount < 10) {
             // Intermediate questions (5-9)
-            scenario = this.intermediateScenarios[questionCount - 5];
+            scenarioSet = this.intermediateScenarios;
+            scenarioIndex = questionCount - 5;
         } else {
             // Advanced questions (10-14)
-            scenario = this.advancedScenarios[questionCount - 10];
+            scenarioSet = this.advancedScenarios;
+            scenarioIndex = questionCount - 10;
         }
+        
+        // Ensure we have a valid scenario - use the ID-based lookup
+        const scenario = scenarioSet[scenarioIndex];
+        
+        console.log(`[TesterMindsetQuiz] Using scenario: ${scenarioSet === this.basicScenarios ? 'Basic' : 
+            scenarioSet === this.intermediateScenarios ? 'Intermediate' : 'Advanced'} [${scenarioIndex}], ID: ${scenario?.id}`);
 
         if (!scenario) {
-            console.error(`[TesterMindsetQuiz] No scenario found for question ${questionCount+1}. Received:`, scenario);
+            console.error(`[TesterMindsetQuiz] No scenario found for question ${questionCount+1}. Level: ${this.getCurrentLevel()}, Index: ${scenarioIndex}`);
             this.endGame(true);
             return;
         }
@@ -934,8 +943,9 @@ export class TesterMindsetQuiz extends BaseQuiz {
             // Clear any existing options
             form.innerHTML = '';
             
-            // Create a copy of options with their original indices
-            const shuffledOptions = scenario.options.map((option, index) => ({
+            // Create a fresh copy of options with their original indices
+            const optionsCopy = JSON.parse(JSON.stringify(scenario.options));
+            const shuffledOptions = optionsCopy.map((option, index) => ({
                 ...option,
                 originalIndex: index
             }));
@@ -945,6 +955,10 @@ export class TesterMindsetQuiz extends BaseQuiz {
                 const j = Math.floor(Math.random() * (i + 1));
                 [shuffledOptions[i], shuffledOptions[j]] = [shuffledOptions[j], shuffledOptions[i]];
             }
+            
+            // Log the options to debug
+            console.log(`[TesterMindsetQuiz] Options for scenario ${scenario.id}:`, 
+                shuffledOptions.map(o => o.text.substring(0, 20) + '...'));
             
             // Create option elements
             shuffledOptions.forEach((option, index) => {
@@ -1013,24 +1027,32 @@ export class TesterMindsetQuiz extends BaseQuiz {
 
             // Get the current question based solely on the length of questionHistory
             const questionCount = this.player.questionHistory.length;
-            let scenario;
             
-            // Get correct scenario based on current progress through the quiz
+            // Find which scenario set to use based on the current progress
+            let scenarioSet, scenarioIndex;
             if (questionCount < 5) {
                 // Basic questions (0-4)
-                scenario = this.basicScenarios[questionCount];
+                scenarioSet = this.basicScenarios;
+                scenarioIndex = questionCount;
             } else if (questionCount < 10) {
                 // Intermediate questions (5-9)
-                scenario = this.intermediateScenarios[questionCount - 5];
+                scenarioSet = this.intermediateScenarios;
+                scenarioIndex = questionCount - 5;
             } else {
                 // Advanced questions (10-14)
-                scenario = this.advancedScenarios[questionCount - 10];
+                scenarioSet = this.advancedScenarios;
+                scenarioIndex = questionCount - 10;
             }
             
+            // Get the correct scenario from the appropriate set
+            const scenario = scenarioSet[scenarioIndex];
+            
             if (!scenario) {
-                console.error(`[TesterMindsetQuiz] No scenario found for question ${questionCount}`);
+                console.error(`[TesterMindsetQuiz] No scenario found for question ${questionCount} in handleAnswer`);
                 return;
             }
+            
+            console.log(`[TesterMindsetQuiz] Processing answer for scenario ${scenario.id}: ${scenario.title}`);
             
             const selectedIndex = parseInt(selectedOption.value);
             const selectedAnswer = scenario.options[selectedIndex];
@@ -1221,12 +1243,18 @@ export class TesterMindsetQuiz extends BaseQuiz {
     getCurrentScenarios() {
         const totalAnswered = this.player.questionHistory.length;
         
+        // Log the current state for debugging
+        console.log(`[TesterMindsetQuiz] Getting scenarios for question position: ${totalAnswered}`);
+        
         // Progress through levels based only on question count
         if (totalAnswered >= 10) {
+            console.log(`[TesterMindsetQuiz] Using Advanced scenarios (${this.advancedScenarios.length} scenarios)`);
             return this.advancedScenarios;
         } else if (totalAnswered >= 5) {
+            console.log(`[TesterMindsetQuiz] Using Intermediate scenarios (${this.intermediateScenarios.length} scenarios)`);
             return this.intermediateScenarios;
         }
+        console.log(`[TesterMindsetQuiz] Using Basic scenarios (${this.basicScenarios.length} scenarios)`);
         return this.basicScenarios;
     }
 
@@ -1519,13 +1547,30 @@ export class TesterMindsetQuiz extends BaseQuiz {
         // CRITICAL: Ensure currentScenario matches question history length for consistency
         this.player.currentScenario = this.player.questionHistory.length;
 
+        // Create a clean version of question history with minimal data
+        // This helps prevent circular references and duplicate data
+        const cleanHistory = this.player.questionHistory.map(item => {
+            // Extract only what we need for reporting and progress tracking
+            return {
+                isCorrect: item.isCorrect || false,
+                selectedAnswer: item.selectedAnswer ? {
+                    text: item.selectedAnswer.text,
+                    experience: item.selectedAnswer.experience,
+                    outcome: item.selectedAnswer.outcome,
+                    isCorrect: item.selectedAnswer.isCorrect
+                } : null,
+                timeSpent: item.timeSpent || 0,
+                timedOut: item.timedOut || false
+            };
+        });
+
         // Create a complete progress object with consistent structure
         const progress = {
             data: {
                 experience: this.player.experience || 0,
                 tools: this.player.tools || [],
                 currentScenario: this.player.questionHistory.length, // IMPORTANT: Always use question count
-                questionHistory: this.player.questionHistory || [],
+                questionHistory: cleanHistory,
                 lastUpdated: new Date().toISOString(),
                 questionsAnswered: this.player.questionHistory.length,
                 status: status,
@@ -1619,9 +1664,34 @@ export class TesterMindsetQuiz extends BaseQuiz {
                 
                 // IMPORTANT: Handle question history carefully
                 if (progress.questionHistory && Array.isArray(progress.questionHistory)) {
-                    this.player.questionHistory = progress.questionHistory;
+                    // Check if the question history contains complete scenario data
+                    // or if it needs to be reconstructed
+                    const hasCompleteData = progress.questionHistory.every(item => 
+                        item.scenario && 
+                        item.scenario.id && 
+                        item.scenario.options && 
+                        Array.isArray(item.scenario.options)
+                    );
                     
-                    // Log actual question history content for debugging
+                    if (hasCompleteData) {
+                        console.log('[TesterMindsetQuiz] Question history has complete scenario data');
+                        this.player.questionHistory = progress.questionHistory;
+                    } else {
+                        console.warn('[TesterMindsetQuiz] Question history missing complete scenario data, reconstructing...');
+                        
+                        // Create a clean history with minimal necessary data
+                        this.player.questionHistory = progress.questionHistory.map(item => {
+                            // We'll keep minimal data to properly count questions
+                            // The full scenarios will be loaded from our predefined arrays
+                            return {
+                                isCorrect: item.isCorrect || false,
+                                timeSpent: item.timeSpent || 0,
+                                timedOut: item.timedOut || false
+                            };
+                        });
+                    }
+                    
+                    // Log the reconstructed history
                     console.log(`[TesterMindsetQuiz] Question history contains ${this.player.questionHistory.length} items`);
                 } else {
                     console.warn('[TesterMindsetQuiz] No valid question history found, initializing empty array');
@@ -1661,14 +1731,45 @@ export class TesterMindsetQuiz extends BaseQuiz {
 
 // Start the quiz when the page loads
 document.addEventListener('DOMContentLoaded', () => {
-    console.log('Initializing quiz');
+    console.log('[TesterMindsetQuiz] Initializing quiz');
+    
+    // Clear any localStorage entries with potentially corrupted data for the current user
+    const username = localStorage.getItem('username');
+    if (username) {
+        // Remove any temporary debug entries that might have accumulated
+        Object.keys(localStorage).forEach(key => {
+            if (key.includes('tester_mindset_debug_')) {
+                console.log(`[TesterMindsetQuiz] Removing debug entry: ${key}`);
+                localStorage.removeItem(key);
+            }
+        });
+        
+        // Set a debug flag to indicate fresh load
+        localStorage.setItem('tester_mindset_fresh_load', Date.now().toString());
+    }
     
     // Clear any existing quiz instances before starting this quiz
     BaseQuiz.clearQuizInstances('tester-mindset');
     
-    // Create a new instance of the quiz
-    const quiz = new TesterMindsetQuiz();
-    
-    // Start the quiz
-    quiz.startGame();
+    // Create a fresh instance of the quiz
+    try {
+        window.currentQuiz = new TesterMindsetQuiz();
+        
+        // Clear any possible global listeners
+        if (window.currentQuiz.initializeEventListeners) {
+            window.currentQuiz.initializeEventListeners();
+        }
+        
+        // Start the quiz
+        window.currentQuiz.startGame();
+    } catch (error) {
+        console.error('[TesterMindsetQuiz] Error initializing quiz:', error);
+        
+        // Display error to user
+        const errorDiv = document.createElement('div');
+        errorDiv.className = 'error-notification';
+        errorDiv.setAttribute('role', 'alert');
+        errorDiv.textContent = 'Failed to initialize quiz. Please refresh the page.';
+        document.body.appendChild(errorDiv);
+    }
 }); 
