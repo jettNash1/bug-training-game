@@ -5509,7 +5509,6 @@ export class Admin2Dashboard {
                         <button id="retry-badges-btn" class="btn btn-primary mt-3" style="margin-top: 15px; padding: 8px 16px; background-color: #4e73df; color: white; border: none; border-radius: 4px; cursor: pointer;">Retry Loading</button>
                     </div>
                 `;
-                
                 // Add event listener to retry button
                 document.getElementById('retry-badges-btn')?.addEventListener('click', () => {
                     this.loadUserBadges(username);
@@ -5534,7 +5533,6 @@ export class Admin2Dashboard {
             // Generate badges HTML
             let badgesHTML = '';
             
-            // If no badges, show a message
             if (!badgesData.badges || badgesData.badges.length === 0) {
                 badgesHTML = `
                     <div style="text-align: center; padding: 40px 20px;">
@@ -5546,7 +5544,6 @@ export class Admin2Dashboard {
                     </div>
                 `;
             } else {
-                // Add badges summary
                 badgesHTML = `
                     <div class="badges-summary">
                         <div class="progress-container">
@@ -5561,7 +5558,6 @@ export class Admin2Dashboard {
                     </div>
                     <div class="badges-grid">
                 `;
-                
                 // Add each badge card
                 badgesData.badges.forEach(badge => {
                     badgesHTML += `
@@ -5578,13 +5574,11 @@ export class Admin2Dashboard {
                         </div>
                     `;
                 });
-                
                 badgesHTML += '</div>'; // Close badges-grid
             }
             
             // Update the container
             badgesContainer.innerHTML = badgesHTML;
-            
         } catch (error) {
             console.error('Error loading badges:', error);
             const badgesContainer = document.getElementById('userBadgesContainer');
@@ -5598,7 +5592,6 @@ export class Admin2Dashboard {
                     <button id="retry-badges-btn" class="btn btn-danger mt-3" style="margin-top: 15px; padding: 8px 16px; background-color: #dc3545; color: white; border: none; border-radius: 4px; cursor: pointer;">Retry</button>
                 </div>
             `;
-            
             // Add event listener to retry button
             document.getElementById('retry-badges-btn')?.addEventListener('click', () => {
                 this.loadUserBadges(username);
