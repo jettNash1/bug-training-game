@@ -5485,6 +5485,46 @@ export class Admin2Dashboard {
     
     async loadUserBadges(username) {
         try {
+            // Validate username
+            if (!username || typeof username !== 'string' || !username.trim()) {
+                console.error('[Badges] Invalid username provided:', username);
+                const badgesContainer = document.getElementById('userBadgesContainer');
+                badgesContainer.innerHTML = `
+                    <div style="text-align: center; padding: 40px 20px; color: #dc3545;">
+                        <div style="font-size: 60px; margin-bottom: 20px;"><i class="fa-solid fa-exclamation-circle"></i></div>
+                        <h3 style="margin-bottom: 10px;">Invalid User</h3>
+                        <p>No user selected or invalid username.</p>
+                    </div>
+                `;
+                return;
+            }
+            // Ensure users are loaded
+            if (!this.users || !Array.isArray(this.users) || this.users.length === 0) {
+                console.error('[Badges] Users not loaded yet.');
+                const badgesContainer = document.getElementById('userBadgesContainer');
+                badgesContainer.innerHTML = `
+                    <div style="text-align: center; padding: 40px 20px; color: #dc3545;">
+                        <div style="font-size: 60px; margin-bottom: 20px;"><i class="fa-solid fa-exclamation-circle"></i></div>
+                        <h3 style="margin-bottom: 10px;">Users Not Loaded</h3>
+                        <p>User data is not available yet. Please wait or refresh the page.</p>
+                    </div>
+                `;
+                return;
+            }
+            // Check if username exists in loaded users
+            const userExists = this.users.some(u => u.username === username);
+            if (!userExists) {
+                console.error('[Badges] Username not found in loaded users:', username);
+                const badgesContainer = document.getElementById('userBadgesContainer');
+                badgesContainer.innerHTML = `
+                    <div style="text-align: center; padding: 40px 20px; color: #dc3545;">
+                        <div style="font-size: 60px; margin-bottom: 20px;"><i class="fa-solid fa-exclamation-circle"></i></div>
+                        <h3 style="margin-bottom: 10px;">User Not Found</h3>
+                        <p>The selected user does not exist in the loaded user list.</p>
+                    </div>
+                `;
+                return;
+            }
             // Show loading state
             const badgesContainer = document.getElementById('userBadgesContainer');
             badgesContainer.innerHTML = `
@@ -5495,7 +5535,6 @@ export class Admin2Dashboard {
                     <p style="margin-top: 15px;">Loading badges for ${username}...</p>
                 </div>
             `;
-            
             // Set a timeout to show an error message if it takes too long
             const timeoutId = setTimeout(() => {
                 console.warn('Badge loading is taking too long, showing timeout message');
@@ -5509,30 +5548,23 @@ export class Admin2Dashboard {
                         <button id="retry-badges-btn" class="btn btn-primary mt-3" style="margin-top: 15px; padding: 8px 16px; background-color: #4e73df; color: white; border: none; border-radius: 4px; cursor: pointer;">Retry Loading</button>
                     </div>
                 `;
-                // Add event listener to retry button
                 document.getElementById('retry-badges-btn')?.addEventListener('click', () => {
                     this.loadUserBadges(username);
                 });
             }, 15000); // 15 seconds timeout
-            
             // Call API to get user badges
-            console.log(`Requesting badges for user: ${username}`);
+            console.log(`[Badges] Requesting badges for user: '${username}'`);
             const response = await this.apiService.getUserBadgesByAdmin(username);
-            console.log(`Received badges response for ${username}:`, response);
-            
+            console.log(`[Badges] Received badges response for '${username}':`, response);
             // Clear the timeout as we got a response
             clearTimeout(timeoutId);
-            
             if (!response.success) {
                 throw new Error(response.message || 'Failed to load badges');
             }
-            
             const badgesData = response.data;
-            console.log('Badges data received:', badgesData);
-            
+            console.log('[Badges] Badges data received:', badgesData);
             // Generate badges HTML
             let badgesHTML = '';
-            
             if (!badgesData.badges || badgesData.badges.length === 0) {
                 badgesHTML = `
                     <div style="text-align: center; padding: 40px 20px;">
@@ -5576,11 +5608,10 @@ export class Admin2Dashboard {
                 });
                 badgesHTML += '</div>'; // Close badges-grid
             }
-            
             // Update the container
             badgesContainer.innerHTML = badgesHTML;
         } catch (error) {
-            console.error('Error loading badges:', error);
+            console.error('[Badges] Error loading badges:', error);
             const badgesContainer = document.getElementById('userBadgesContainer');
             badgesContainer.innerHTML = `
                 <div style="text-align: center; padding: 40px 20px; color: #dc3545;">
@@ -5592,7 +5623,6 @@ export class Admin2Dashboard {
                     <button id="retry-badges-btn" class="btn btn-danger mt-3" style="margin-top: 15px; padding: 8px 16px; background-color: #dc3545; color: white; border: none; border-radius: 4px; cursor: pointer;">Retry</button>
                 </div>
             `;
-            // Add event listener to retry button
             document.getElementById('retry-badges-btn')?.addEventListener('click', () => {
                 this.loadUserBadges(username);
             });
