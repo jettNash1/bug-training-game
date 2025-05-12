@@ -792,23 +792,22 @@ export class TesterMindsetQuiz extends BaseQuiz {
             return;
         }
         
-        // Get the next scenario based on current progress
-        let scenario;
+        // Instead of using currentScenario (which can get out of sync), 
+        // always base the current question on question history length
         const questionCount = this.player.questionHistory.length;
+        console.log(`[Quiz] Displaying scenario for question ${questionCount + 1}. History length: ${questionCount}`);
         
         // Determine which level we're in and get the correct scenario
+        let scenario;
         if (questionCount < 5) {
             // Basic questions (0-4)
             scenario = this.basicScenarios[questionCount];
-            this.player.currentScenario = questionCount;
         } else if (questionCount < 10) {
             // Intermediate questions (5-9)
             scenario = this.intermediateScenarios[questionCount - 5];
-            this.player.currentScenario = questionCount - 5;
         } else {
             // Advanced questions (10-14)
             scenario = this.advancedScenarios[questionCount - 10];
-            this.player.currentScenario = questionCount - 10;
         }
 
         if (!scenario) {
@@ -869,53 +868,68 @@ export class TesterMindsetQuiz extends BaseQuiz {
             // Clear any existing content to prevent duplicate form elements
             optionsContainer.innerHTML = '';
             
-            // Add options directly to the options container (not creating a new form)
-            scenario.options.forEach((option, index) => {
-                const optionDiv = document.createElement('div');
-                optionDiv.className = 'option';
-                
-                const inputId = `option${index}`;
-                
-                // Create radio button
-                const radio = document.createElement('input');
-                radio.type = 'radio';
-                radio.name = 'option';
-                radio.value = index;
-                radio.id = inputId;
-                radio.setAttribute('aria-label', option.text);
-                radio.tabIndex = 0;
-                
-                // Create label
-                const label = document.createElement('label');
-                label.setAttribute('for', inputId);
-                label.textContent = option.text;
-                
-                // Add to option div
-                optionDiv.appendChild(radio);
-                optionDiv.appendChild(label);
-                
-                // Add to options container
-                optionsContainer.appendChild(optionDiv);
+            // Get the existing form instead of creating a new one
+            const form = document.getElementById('options-form');
+            if (!form) {
+                console.error('Options form not found');
+                return;
+            }
+            
+            // Clear any existing options
+            form.innerHTML = '';
+            
+            // Create a copy of options with their original indices
+            const shuffledOptions = scenario.options.map((option, index) => ({
+                ...option,
+                originalIndex: index
+            }));
+            
+            // Shuffle the options
+            for (let i = shuffledOptions.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [shuffledOptions[i], shuffledOptions[j]] = [shuffledOptions[j], shuffledOptions[i]];
+            }
+            
+            // Create option elements
+            shuffledOptions.forEach((option, index) => {
+                const optionElement = document.createElement('div');
+                optionElement.className = 'option';
+                optionElement.innerHTML = `
+                    <input type="radio" 
+                        name="option" 
+                        value="${option.originalIndex}" 
+                        id="option${index}" 
+                        tabindex="0"
+                        aria-label="${option.text}">
+                    <label for="option${index}">${option.text}</label>
+                `;
+                form.appendChild(optionElement);
             });
-        }
-
-        // Find the existing form and ensure event handler is attached properly
-        const form = document.getElementById('options-form');
-        if (form) {
-            // Make sure we have a bound event handler
+            
+            // Add submit button (using existing one to avoid duplicates)
+            const submitButton = document.getElementById('submit-btn');
+            if (!submitButton) {
+                const newSubmitButton = document.createElement('button');
+                newSubmitButton.id = 'submit-btn';
+                newSubmitButton.type = 'submit';
+                newSubmitButton.className = 'submit-button';
+                newSubmitButton.textContent = 'Submit';
+                form.appendChild(newSubmitButton);
+            }
+            
+            // Re-attach form handler (use removeEventListener first to prevent duplicates)
+            form.removeEventListener('submit', this.handleAnswerBound);
+            // Create a bound function for the event handler if not already created
             if (!this.handleAnswerBound) {
                 this.handleAnswerBound = this.handleAnswer.bind(this);
             }
-            
-            // Remove any existing handlers and attach the bound handler
-            form.removeEventListener('submit', this.handleAnswerBound);
             form.addEventListener('submit', this.handleAnswerBound);
         }
-
-        // Update progress display
+        
+        // Update progress indicators
         this.updateProgress();
-
-        // Save progress after displaying the scenario 
+        
+        // Save progress to ensure current position is retained
         this.saveProgress().catch(err => {
             console.error('[Quiz] Error saving progress after displaying scenario:', err);
         });
@@ -941,29 +955,34 @@ export class TesterMindsetQuiz extends BaseQuiz {
         try {
             this.isLoading = true;
             const selectedOption = document.querySelector('input[name="option"]:checked');
-            if (!selectedOption) return;
+            if (!selectedOption) {
+                alert('Please select an answer before submitting.');
+                return;
+            }
 
-            const currentScenarios = this.getCurrentScenarios();
-            
-            // Determine which level we're in and set the correct index
+            // Always use question history length to determine the current question
             const questionCount = this.player.questionHistory.length;
-            let currentLevelIndex;
+            let scenario;
             
+            // Get correct scenario based on current progress through the quiz
             if (questionCount < 5) {
                 // Basic questions (0-4)
-                currentLevelIndex = questionCount;
+                scenario = this.basicScenarios[questionCount];
             } else if (questionCount < 10) {
                 // Intermediate questions (5-9)
-                currentLevelIndex = questionCount - 5;
+                scenario = this.intermediateScenarios[questionCount - 5];
             } else {
                 // Advanced questions (10-14)
-                currentLevelIndex = questionCount - 10;
+                scenario = this.advancedScenarios[questionCount - 10];
             }
             
-            const scenario = currentScenarios[currentLevelIndex];
-            const originalIndex = parseInt(selectedOption.value);
+            if (!scenario) {
+                console.error('No scenario found for current question count:', questionCount);
+                return;
+            }
             
-            const selectedAnswer = scenario.options[originalIndex];
+            const selectedIndex = parseInt(selectedOption.value);
+            const selectedAnswer = scenario.options[selectedIndex];
 
             // Find the correct answer (option with highest experience)
             const correctAnswer = scenario.options.reduce((prev, current) => 
@@ -989,11 +1008,9 @@ export class TesterMindsetQuiz extends BaseQuiz {
                 timedOut: false
             });
 
-            // Increment current scenario
-            this.player.currentScenario++;
-
-            // Save progress
+            // Save progress immediately after adding to question history
             await this.saveProgress();
+            console.log(`[Quiz] Question ${questionCount + 1} answered. Total answered: ${this.player.questionHistory.length}`);
 
             // Calculate the score percentage
             const scorePercentage = this.calculateScorePercentage();
@@ -1007,7 +1024,7 @@ export class TesterMindsetQuiz extends BaseQuiz {
                 lastUpdated: new Date().toISOString()
             };
             
-            // Save quiz result
+            // Save quiz result to update index progress
             const username = localStorage.getItem('username');
             if (username) {
                 const quizUser = new QuizUser(username);
@@ -1046,6 +1063,7 @@ export class TesterMindsetQuiz extends BaseQuiz {
                 }
             }
 
+            // Update progress indicators
             this.updateProgress();
 
             // Check if all questions have been answered
@@ -1436,6 +1454,7 @@ export class TesterMindsetQuiz extends BaseQuiz {
         // First determine the status based on clear conditions
         let status = 'in-progress';
         if (this.player.questionHistory.length >= this.totalQuestions) {
+            // Calculate pass/fail based on correct answers
             const correctAnswers = this.player.questionHistory.filter(q => q.isCorrect).length;
             const scorePercentage = Math.round((correctAnswers / this.totalQuestions) * 100);
             status = scorePercentage >= this.passPercentage ? 'passed' : 'failed';
@@ -1448,31 +1467,42 @@ export class TesterMindsetQuiz extends BaseQuiz {
             experience: this.player.experience || 0,
             tools: this.player.tools || [],
             status: status,
-            currentScenario: this.player.currentScenario,
+            // Explicitly calculate the current scenario index based on questions answered
+            currentScenario: this.player.questionHistory.length,
             lastUpdated: new Date().toISOString()
         };
         
         // Calculate score percentage if we have questions answered
         if (this.player.questionHistory.length > 0) {
-            const correctAnswers = this.player.questionHistory.filter(q => q.isCorrect).length;
-            progressData.scorePercentage = Math.round((correctAnswers / Math.max(this.player.questionHistory.length, 1)) * 100);
+            // Use our helper method for consistency
+            progressData.scorePercentage = this.calculateScorePercentage();
         } else {
             progressData.scorePercentage = 0;
         }
         
-        // Save the progress to the API
         try {
             const username = localStorage.getItem('username');
-            if (username) {
-                // Normalize quiz name to ensure consistency
-                const quizName = this.normalizeQuizName(this.quizName);
-                console.log(`Saving progress for quiz: ${quizName}`);
-                
-                // Save using API service
-                await this.apiService.saveQuizProgress(quizName, progressData);
+            if (!username) {
+                console.error('No user found, cannot save progress');
+                return;
             }
+            
+            // Normalize quiz name to ensure consistency
+            const quizName = this.normalizeQuizName(this.quizName);
+            console.log(`[Quiz] Saving progress for ${quizName}: ${progressData.questionsAnswered} questions answered`);
+            
+            // Also save to localStorage as a backup
+            const storageKey = `quiz_progress_${username}_${quizName}`;
+            localStorage.setItem(storageKey, JSON.stringify({data: progressData}));
+            
+            // Save using API service
+            await this.apiService.saveQuizProgress(quizName, progressData);
+            
+            console.log(`[Quiz] Progress saved successfully for ${quizName}`);
+            return true;
         } catch (error) {
             console.error('Error saving progress:', error);
+            return false;
         }
     }
 
