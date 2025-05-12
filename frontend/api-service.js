@@ -1267,16 +1267,13 @@ export class APIService {
     async getUserBadgesByAdmin(username) {
         try {
             console.log(`Getting badges for user: ${username}`);
-            
-            // Get user progress data first
-            const userProgressResponse = await this.getUserProgress(username);
+            // Use the fallback method for admin badge view
+            const userProgressResponse = await this.getUserProgressWithFallback(username);
             console.log('User progress response for badges:', userProgressResponse);
-            
             if (!userProgressResponse.success) {
                 console.error('Failed to get user progress for badges (success false):', userProgressResponse);
                 throw new Error('Failed to get user progress data');
             }
-            
             if (!userProgressResponse.data) {
                 console.error('Failed to get user progress data (no data):', userProgressResponse);
                 return {
@@ -1288,10 +1285,8 @@ export class APIService {
                     }
                 };
             }
-            
             // Handle different possible response structures
             let quizProgress = {};
-            
             if (userProgressResponse.data.quizProgress) {
                 // New structure with nested quizProgress
                 quizProgress = userProgressResponse.data.quizProgress;
@@ -1303,23 +1298,18 @@ export class APIService {
                            (userProgressResponse.data[key].questionsAnswered !== undefined ||
                             userProgressResponse.data[key].status !== undefined ||
                             userProgressResponse.data[key].questionHistory !== undefined));
-                
                 if (possibleQuizzes.length > 0) {
                     quizProgress = userProgressResponse.data;
                     console.log('Found quiz progress directly in data object');
                 }
             }
-            
             console.log('Quiz progress extracted:', quizProgress);
-            
             // Get all quizzes from the progress data
             const allQuizzes = Object.keys(quizProgress).map(quizId => ({
                 id: quizId,
                 name: this.formatQuizName(quizId)
             }));
-            
             console.log(`Found ${allQuizzes.length} quizzes for user ${username}:`, allQuizzes);
-            
             if (allQuizzes.length === 0) {
                 return {
                     success: true,
@@ -1330,12 +1320,10 @@ export class APIService {
                     }
                 };
             }
-            
             // Process quiz completion status
             const badges = allQuizzes.map(quiz => {
                 const progress = quizProgress[quiz.id] || {};
                 console.log(`Processing quiz ${quiz.id}:`, progress);
-                
                 // Check if quiz is complete based on status or progress
                 const isCompleted = progress && (
                     progress.status === 'completed' ||
@@ -1343,9 +1331,7 @@ export class APIService {
                     (progress.questionHistory && progress.questionHistory.length >= 15) ||
                     (typeof progress.questionsAnswered === 'number' && progress.questionsAnswered >= 15)
                 );
-                
                 console.log(`Quiz ${quiz.id} completion status:`, isCompleted);
-                
                 return {
                     id: `quiz-${quiz.id}`,
                     name: `${quiz.name} Master`,
@@ -1356,20 +1342,16 @@ export class APIService {
                     quizId: quiz.id
                 };
             });
-            
             // Sort badges: completed first, then alphabetically by name
             badges.sort((a, b) => {
                 // First sort by completion status
                 if (a.earned && !b.earned) return -1;
                 if (!a.earned && b.earned) return 1;
-                
                 // Then sort alphabetically by name
                 return a.name.localeCompare(b.name);
             });
-            
             // Count completed badges
             const completedCount = badges.filter(badge => badge.earned).length;
-            
             const result = {
                 success: true,
                 data: {
@@ -1378,7 +1360,6 @@ export class APIService {
                     earnedCount: completedCount
                 }
             };
-            
             console.log('Final badges result:', result);
             return result;
         } catch (error) {
@@ -2841,5 +2822,51 @@ export class APIService {
                 headers: { 'Content-Type': 'application/json' }
             }
         );
+    }
+
+    // Graceful fallback: try admin endpoint, then fallback to user endpoint for badges only
+    async getUserProgressWithFallback(username) {
+        // Try admin endpoint first
+        try {
+            console.log(`[API] Trying admin endpoint for user progress: /admin/users/${username}/progress`);
+            const adminResult = await this.getUserProgress(username);
+            if (adminResult && adminResult.success && adminResult.data && (Object.keys(adminResult.data.quizProgress || {}).length > 0 || (adminResult.data.quizResults && adminResult.data.quizResults.length > 0))) {
+                console.log('[API] Used admin endpoint for user progress');
+                adminResult._source = 'admin';
+                return adminResult;
+            } else {
+                throw new Error('Admin endpoint returned no data');
+            }
+        } catch (adminError) {
+            console.warn(`[API] Admin endpoint failed for user progress: ${adminError.message}`);
+            // Fallback to user endpoint
+            try {
+                console.log(`[API] Trying fallback user endpoint for user progress: /users/${username}/data?includeQuizDetails=true`);
+                const userResult = await this.fetchWithAdminAuth(`${this.baseUrl}/users/${username}/data?includeQuizDetails=true`, {
+                    method: 'GET',
+                    headers: { 'Content-Type': 'application/json' }
+                });
+                if (userResult && userResult.data) {
+                    console.log('[API] Used fallback user endpoint for user progress');
+                    return {
+                        success: true,
+                        data: {
+                            quizProgress: userResult.data.quizProgress || {},
+                            quizResults: userResult.data.quizResults || []
+                        },
+                        _source: 'user-fallback'
+                    };
+                } else {
+                    throw new Error('User endpoint returned no data');
+                }
+            } catch (userError) {
+                console.error(`[API] Both admin and user endpoints failed for user progress: ${userError.message}`);
+                return {
+                    success: false,
+                    message: 'Both admin and user endpoints failed',
+                    data: { quizProgress: {}, quizResults: [] }
+                };
+            }
+        }
     }
 } 
