@@ -1124,6 +1124,11 @@ export class CommunicationQuiz extends BaseQuiz {
                 loadingIndicator.classList.remove('hidden');
             }
 
+            // Initialize randomizedScenarios if not already
+            if (!this.randomizedScenarios) {
+                this.randomizedScenarios = {};
+            }
+
             // Set player name from localStorage
             this.player.name = localStorage.getItem('username');
             if (!this.player.name) {
@@ -1173,6 +1178,44 @@ export class CommunicationQuiz extends BaseQuiz {
                 
                 // Clear any existing randomized scenarios
                 this.randomizedScenarios = {};
+            } else {
+                // If we have progress, check if we have randomized scenarios
+                // Check for loaded progress directly via API
+                try {
+                    const apiProgress = await this.apiService.getQuizProgress(this.quizName);
+                    if (apiProgress && apiProgress.data && apiProgress.data.randomizedScenarios) {
+                        console.log('[Quiz] Loaded randomized scenarios from API:', apiProgress.data.randomizedScenarios);
+                        
+                        // Convert the loaded randomizedScenarios back to full scenario objects
+                        // This is necessary because when saved, only IDs may be stored
+                        const loadedScenarios = apiProgress.data.randomizedScenarios;
+                        Object.keys(loadedScenarios).forEach(key => {
+                            // Determine which scenario set to use based on the key
+                            let scenarioSet;
+                            if (key.includes('basic')) {
+                                scenarioSet = this.basicScenarios;
+                            } else if (key.includes('intermediate')) {
+                                scenarioSet = this.intermediateScenarios;
+                            } else if (key.includes('advanced')) {
+                                scenarioSet = this.advancedScenarios;
+                            }
+                            
+                            if (scenarioSet && Array.isArray(loadedScenarios[key])) {
+                                // Convert scenario IDs back to full scenario objects
+                                this.randomizedScenarios[key] = loadedScenarios[key].map(scenarioId => {
+                                    if (typeof scenarioId === 'number') {
+                                        return scenarioSet.find(s => s.id === scenarioId) || scenarioId;
+                                    }
+                                    return scenarioId;
+                                }).filter(Boolean);
+                                
+                                console.log(`[Quiz] Restored ${this.randomizedScenarios[key].length} scenarios for ${key}`);
+                            }
+                        });
+                    }
+                } catch (error) {
+                    console.error('[Quiz] Error loading randomized scenarios from API:', error);
+                }
             }
             
             // Clear any existing transition messages
@@ -1587,7 +1630,23 @@ export class CommunicationQuiz extends BaseQuiz {
             scenarios = this.basicScenarios;
         }
         
+        // Initialize randomizedScenarios if not already done
+        if (!this.randomizedScenarios) {
+            this.randomizedScenarios = {};
+        }
+        
         // Use the getRandomizedScenarios method to get or create random scenarios
+        // Add the quiz name to make sure the key is unique
+        const quizLevelKey = `${this.quizName}_${level}`;
+        
+        // Check if we already have stored scenarios for this level
+        if (this.randomizedScenarios[quizLevelKey] && this.randomizedScenarios[quizLevelKey].length > 0) {
+            console.log(`[Quiz] Using existing randomized scenarios for ${this.quizName} - ${level}: ${this.randomizedScenarios[quizLevelKey].length} scenarios`);
+            return this.randomizedScenarios[quizLevelKey];
+        }
+        
+        // Otherwise generate random scenarios for this level
+        console.log(`[Quiz] Generating new randomized scenarios for ${this.quizName} - ${level}`);
         return this.getRandomizedScenarios(level, scenarios);
     }
 
