@@ -544,15 +544,19 @@ export class BaseQuiz {
         }
         
         try {
-        // Initialize or reinitialize guide settings
-        if (this.quizName) {
-            console.log('[Quiz] Initializing guide settings in startGame');
+            // Log diagnostics information
+            console.log('[Quiz] Running diagnostics for quiz:', this.quizName);
+            await this.logQuizProgressDiagnostics();
+            
+            // Initialize or reinitialize guide settings
+            if (this.quizName) {
+                console.log('[Quiz] Initializing guide settings in startGame');
                 await this.initializeGuideSettings();
-        }
-        
-        // Create a global reference for debugging
-        window.quizHelper = this;
-        
+            }
+            
+            // Create a global reference for debugging
+            window.quizHelper = this;
+            
             // Wait for timer settings to be initialized before showing the question
             // This ensures the correct timer value is used for the first question
             console.log('[Quiz] Initializing timer settings before starting game...');
@@ -560,7 +564,7 @@ export class BaseQuiz {
             console.log('[Quiz] Timer settings initialized in startGame, timePerQuestion:', this.timePerQuestion);
             
             // Now it's safe to start the quiz with the correct timer value
-        this.showQuestion();
+            this.showQuestion();
         } catch (error) {
             console.error('[Quiz] Error in startGame:', error);
             this.showError('Failed to start the quiz. Please refresh the page and try again.');
@@ -836,7 +840,7 @@ export class BaseQuiz {
             return [];
         }
         
-        const totalAnswered = this.player.questionHistory ? this.player.questionHistory.length : 0;
+        const totalAnswered = this.player.questionHistory.length;
         
         // Progress through levels based on question count
         let levelScenarios;
@@ -945,22 +949,43 @@ export class BaseQuiz {
                 console.error('No user found, cannot save progress');
                 return;
             }
+            
+            // Normalize quiz name consistently
             let quizName = this.quizName;
+            if (!quizName) {
+                console.error('[BaseQuiz][saveProgress] No quiz name found');
+                return;
+            }
+            
             quizName = this.normalizeQuizName(quizName);
+            console.log(`[BaseQuiz][saveProgress] Normalized quizName from ${this.quizName} to ${quizName}`);
+            
+            // Save both to localStorage (for backup) and to API
             const storageKey = `quiz_progress_${username}_${quizName}`;
             console.log('[BaseQuiz][saveProgress] Saving to key:', storageKey, 'Data:', progressData);
-            localStorage.setItem(storageKey, JSON.stringify({ data: progressData }));
-            const size = JSON.stringify(progressData).length;
-            if (size > 100000) {
-                console.warn('[BaseQuiz] Warning: Progress data is very large (>100KB)');
+            
+            // Save to localStorage first as backup
+            try {
+                localStorage.setItem(storageKey, JSON.stringify({ data: progressData }));
+                const size = JSON.stringify(progressData).length;
+                if (size > 100000) {
+                    console.warn('[BaseQuiz] Warning: Progress data is very large (>100KB)');
+                }
+            } catch (localStorageError) {
+                console.error('[BaseQuiz] Failed to save to localStorage:', localStorageError);
             }
+            
+            // Then save to API
+            console.log(`[BaseQuiz][saveProgress] Saving to API with quizName: ${quizName}`);
             await this.apiService.saveQuizProgress(quizName, progressData);
         } catch (error) {
             console.error('[BaseQuiz] Failed to save progress:', error);
             try {
                 const username = localStorage.getItem('username');
                 if (username) {
-                    const storageKey = `quiz_progress_${username}_${this.quizName}`;
+                    // Use normalized quiz name in fallback too
+                    const quizName = this.normalizeQuizName(this.quizName);
+                    const storageKey = `quiz_progress_${username}_${quizName}`;
                     const minimalProgress = {
                         questionsAnswered: progressData.questionsAnswered,
                         experience: progressData.experience,
@@ -1303,11 +1328,19 @@ export class BaseQuiz {
     }
 
     normalizeQuizName(quizName) {
-        // Always return 'tester-mindset' for any variant
+        if (!quizName) return '';
+        
+        // Special case for tester-mindset variations
         if (typeof quizName === 'string' && quizName.toLowerCase().replace(/[_\s]/g, '-').includes('tester')) {
             return 'tester-mindset';
         }
-        // Convert to kebab-case
+        
+        // If already kebab case, return as is
+        if (typeof quizName === 'string' && quizName === quizName.toLowerCase() && quizName.includes('-')) {
+            return quizName;
+        }
+        
+        // Otherwise, standardize to kebab-case consistently
         return quizName
             .toLowerCase()
             .replace(/([A-Z])/g, '-$1')
@@ -1768,12 +1801,16 @@ export class BaseQuiz {
             } else {
                 const localData = localStorage.getItem(storageKey);
                 if (localData) {
-                    const parsed = JSON.parse(localData);
-                    progress = parsed.data || parsed;
-                    if (progress && Array.isArray(progress.questionHistory)) {
-                        progress.questionHistory = progress.questionHistory.slice(0, this.totalQuestions);
+                    try {
+                        const parsed = JSON.parse(localData);
+                        progress = parsed.data || parsed;
+                        if (progress && Array.isArray(progress.questionHistory)) {
+                            progress.questionHistory = progress.questionHistory.slice(0, this.totalQuestions);
+                        }
+                        console.log('[BaseQuiz][loadProgress] Loaded progress from localStorage:', progress);
+                    } catch (e) {
+                        console.error('[BaseQuiz][loadProgress] Error parsing localStorage data:', e);
                     }
-                    console.log('[BaseQuiz][loadProgress] Loaded progress from localStorage:', progress);
                 }
             }
             if (progress) {
@@ -1860,6 +1897,50 @@ export class BaseQuiz {
                     }
                 });
             }
+        }
+    }
+
+    // Add a diagnostic function after loadProgress
+    async logQuizProgressDiagnostics() {
+        try {
+            const username = localStorage.getItem('username');
+            if (!username) {
+                console.error('[Quiz][Diagnostics] No username found');
+                return;
+            }
+
+            const quizName = this.quizName;
+            const normalizedQuizName = this.normalizeQuizName(quizName);
+            
+            console.group(`[Quiz][Diagnostics] Quiz Progress for: ${quizName}`);
+            console.log(`Normalized quiz name: ${normalizedQuizName}`);
+            
+            // Check localStorage
+            const storageKey = `quiz_progress_${username}_${normalizedQuizName}`;
+            const localStorageData = localStorage.getItem(storageKey);
+            console.log(`LocalStorage key: ${storageKey}`);
+            console.log(`LocalStorage data exists: ${!!localStorageData}`);
+            
+            if (localStorageData) {
+                try {
+                    const parsed = JSON.parse(localStorageData);
+                    console.log('LocalStorage data:', parsed);
+                } catch (e) {
+                    console.error('Failed to parse localStorage data:', e);
+                }
+            }
+            
+            // Check API data
+            try {
+                const apiProgress = await this.apiService.getQuizProgress(normalizedQuizName);
+                console.log('API quiz progress:', apiProgress);
+            } catch (e) {
+                console.error('Failed to fetch API progress:', e);
+            }
+            
+            console.groupEnd();
+        } catch (e) {
+            console.error('[Quiz][Diagnostics] Error in diagnostics:', e);
         }
     }
 }
