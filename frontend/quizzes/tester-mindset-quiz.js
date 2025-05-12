@@ -701,6 +701,9 @@ export class TesterMindsetQuiz extends BaseQuiz {
                 return;
             }
             
+            // Run diagnostics to help troubleshoot any issues
+            await this.logQuizProgressDiagnostics();
+            
             // Clear any conflicting randomized scenarios
             const username = localStorage.getItem('username');
             if (username) {
@@ -732,10 +735,14 @@ export class TesterMindsetQuiz extends BaseQuiz {
 
             // Load previous progress
             const hasProgress = await this.loadProgress();
-            console.log('Previous progress loaded:', hasProgress);
+            console.log('[Quiz] Previous progress loaded:', hasProgress);
             
-            if (!hasProgress) {
+            if (hasProgress) {
+                console.log(`[Quiz] Resuming from question ${this.player.questionHistory.length + 1} of ${this.totalQuestions}`);
+                console.log(`[Quiz] Current experience: ${this.player.experience}, tools: ${this.player.tools.length}`);
+            } else {
                 // Reset player state if no valid progress exists
+                console.log('[Quiz] No valid progress found, starting from beginning');
                 this.player.experience = 0;
                 this.player.tools = [];
                 this.player.currentScenario = 0;
@@ -805,6 +812,8 @@ export class TesterMindsetQuiz extends BaseQuiz {
         let scenario;
         const questionCount = this.player.questionHistory.length;
         
+        console.log(`[Quiz] Displaying scenario. Question history length: ${questionCount}, current scenario value: ${this.player.currentScenario}`);
+        
         // Determine which level we're in and set the correct index
         let currentLevelIndex;
         if (questionCount < 5) {
@@ -823,6 +832,8 @@ export class TesterMindsetQuiz extends BaseQuiz {
         
         if (!scenario) {
             console.error('No scenario found for current progress. Question count:', questionCount);
+            console.error('Current level index:', currentLevelIndex);
+            console.error('Available scenarios:', currentScenarios);
             this.endGame(true);
             return;
         }
@@ -872,54 +883,69 @@ export class TesterMindsetQuiz extends BaseQuiz {
         const descriptionElement = document.getElementById('scenario-description');
         const optionsContainer = document.getElementById('options-container');
 
-        if (!titleElement || !descriptionElement || !optionsContainer) {
-            console.error('Required elements not found');
-            return;
+        if (titleElement) titleElement.textContent = scenario.title;
+        if (descriptionElement) descriptionElement.textContent = scenario.description;
+        
+        if (optionsContainer) {
+            optionsContainer.innerHTML = '';
+            
+            // Create the form element
+            const form = document.createElement('form');
+            form.id = 'options-form';
+            form.setAttribute('action', '#');
+            
+            scenario.options.forEach((option, index) => {
+                const optionDiv = document.createElement('div');
+                optionDiv.className = 'option';
+                
+                const inputId = `option${index}`;
+                
+                // Create radio button
+                const radio = document.createElement('input');
+                radio.type = 'radio';
+                radio.name = 'option';
+                radio.value = index;
+                radio.id = inputId;
+                radio.setAttribute('aria-label', option.text);
+                radio.tabIndex = 0;
+                
+                // Create label
+                const label = document.createElement('label');
+                label.setAttribute('for', inputId);
+                label.textContent = option.text;
+                
+                // Add to option div
+                optionDiv.appendChild(radio);
+                optionDiv.appendChild(label);
+                
+                // Add to form
+                form.appendChild(optionDiv);
+            });
+            
+            // Add submit button
+            const submitDiv = document.createElement('div');
+            submitDiv.className = 'submit-container';
+            
+            const submitButton = document.createElement('button');
+            submitButton.type = 'submit';
+            submitButton.className = 'submit-button';
+            submitButton.textContent = 'Submit';
+            
+            submitDiv.appendChild(submitButton);
+            form.appendChild(submitDiv);
+            
+            // Add the form to the options container
+            optionsContainer.appendChild(form);
+            
+            // Re-attach form handler
+            form.addEventListener('submit', (e) => {
+                e.preventDefault();
+                this.handleAnswer();
+            });
         }
 
-        titleElement.textContent = scenario.title;
-        descriptionElement.textContent = scenario.description;
-
-        // Update question counter immediately
-        const questionProgress = document.getElementById('question-progress');
-        if (questionProgress) {
-            questionProgress.textContent = `Question: ${this.currentQuestionNumber}/${this.totalQuestions}`;
-        }
-
-        // Create a copy of options with their original indices
-        const shuffledOptions = scenario.options.map((option, index) => ({
-            ...option,
-            originalIndex: index
-        }));
-
-        // Shuffle the options
-        for (let i = shuffledOptions.length - 1; i > 0; i--) {
-            const j = Math.floor(Math.random() * (i + 1));
-            [shuffledOptions[i], shuffledOptions[j]] = [shuffledOptions[j], shuffledOptions[i]];
-        }
-
-        optionsContainer.innerHTML = '';
-
-        shuffledOptions.forEach((option, index) => {
-            const optionElement = document.createElement('div');
-            optionElement.className = 'option';
-            optionElement.innerHTML = `
-                <input type="radio" 
-                    name="option" 
-                    value="${option.originalIndex}" 
-                    id="option${index}"
-                    tabindex="0"
-                    aria-label="${option.text}"
-                    role="radio">
-                <label for="option${index}">${option.text}</label>
-            `;
-            optionsContainer.appendChild(optionElement);
-        });
-
+        // Update progress display
         this.updateProgress();
-
-        // Initialize timer for the new question
-        this.initializeTimer();
     }
 
     async handleAnswer() {

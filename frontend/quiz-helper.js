@@ -1814,7 +1814,9 @@ export class BaseQuiz {
                 }
             }
             if (progress) {
-                if ((progress.status === 'failed' || progress.status === 'passed' || progress.status === 'completed') && (progress.questionHistory.length >= this.totalQuestions)) {
+                // Check if quiz is already completed or failed
+                if ((progress.status === 'failed' || progress.status === 'passed' || progress.status === 'completed') && 
+                    (progress.questionHistory.length >= this.totalQuestions)) {
                     if (progress.status === 'failed') {
                         this.endGame(true);
                         return true;
@@ -1823,13 +1825,30 @@ export class BaseQuiz {
                         return true;
                     }
                 }
+                
+                // Set player state from loaded progress
                 this.player.experience = progress.experience || 0;
                 this.player.tools = progress.tools || [];
-                this.player.questionHistory = Array.isArray(progress.questionHistory) ? progress.questionHistory.slice(0, this.totalQuestions) : [];
-                this.player.currentScenario = progress.currentScenario || this.player.questionHistory.length || 0;
+                
+                // Ensure the question history array is properly loaded
+                if (Array.isArray(progress.questionHistory)) {
+                    this.player.questionHistory = progress.questionHistory.slice(0, this.totalQuestions);
+                } else {
+                    this.player.questionHistory = [];
+                }
+                
+                // Set currentScenario to match the number of questions already answered
+                // This ensures we pick up where the user left off
+                this.player.currentScenario = this.player.questionHistory.length;
+                
+                console.log(`[BaseQuiz][loadProgress] Resuming quiz at question ${this.player.currentScenario + 1} (${this.player.questionHistory.length} questions answered)`);
+                
+                // Load randomized scenarios if available
                 if (progress.randomizedScenarios) {
                     this.randomizedScenarios = progress.randomizedScenarios;
                 }
+                
+                // Update UI to reflect current progress
                 this.updateProgress();
                 return true;
             }
