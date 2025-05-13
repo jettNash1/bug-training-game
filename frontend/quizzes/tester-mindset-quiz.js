@@ -1533,31 +1533,40 @@ export class TesterMindsetQuiz extends BaseQuiz {
     }
 
     clearQuizLocalStorage(username, quizName) {
-        const variations = [
-            quizName,                                              // original
-            quizName.toLowerCase(),                               // lowercase
-            quizName.toUpperCase(),                               // uppercase
-            quizName.replace(/-/g, ''),                           // no hyphens
-            quizName.replace(/([A-Z])/g, '-$1').toLowerCase(),    // kebab-case
-            quizName.replace(/-([a-z])/g, (_, c) => c.toUpperCase()), // camelCase
-            quizName.replace(/-/g, '_'),                          // snake_case
-        ];
+        // Use the API service's implementation instead of a custom one
+        try {
+            console.log(`[TesterMindsetQuiz] Clearing localStorage for quiz: ${quizName}`);
+            if (this.apiService && typeof this.apiService.clearQuizLocalStorage === 'function') {
+                // Call API service method which has more complete implementation
+                this.apiService.clearQuizLocalStorage(username, quizName);
+            } else {
+                console.warn('[TesterMindsetQuiz] API service not available, using fallback clear method');
+                
+                // Fallback implementation
+                const variations = [
+                    quizName,                                              // original
+                    quizName.toLowerCase(),                               // lowercase
+                    quizName.toUpperCase(),                               // uppercase
+                    quizName.replace(/-/g, ''),                           // no hyphens
+                    quizName.replace(/([A-Z])/g, '-$1').toLowerCase(),    // kebab-case
+                    quizName.replace(/-([a-z])/g, (_, c) => c.toUpperCase()), // camelCase
+                    quizName.replace(/-/g, '_'),                          // snake_case
+                    'tester-mindset',
+                    'TesterMindset',
+                    'testerMindset',
+                    'Tester-Mindset',
+                    'tester_mindset',
+                    'Tester_Mindset'
+                ];
 
-        // Add sanity-smoke specific variations
-        if (quizName.toLowerCase().includes('tester-mindset')) {
-            variations.push(
-                'Tester-Mindset',
-                'tester-mindset',
-                'testerMindsetTest',
-                'Tester_Mindset',
-                'tester_mindset'
-            );
+                variations.forEach(variant => {
+                    localStorage.removeItem(`quiz_progress_${username}_${variant}`);
+                    localStorage.removeItem(`quizResults_${username}_${variant}`);
+                });
+            }
+        } catch (error) {
+            console.error('[TesterMindsetQuiz] Error clearing localStorage:', error);
         }
-
-        variations.forEach(variant => {
-            localStorage.removeItem(`quiz_progress_${username}_${variant}`);
-            localStorage.removeItem(`quizResults_${username}_${variant}`);
-        });
     }
 
     async saveProgress() {
@@ -1791,6 +1800,66 @@ export class TesterMindsetQuiz extends BaseQuiz {
             }
         } catch (error) {
             console.error('[TesterMindsetQuiz] Error saving randomized scenarios:', error);
+        }
+    }
+
+    // Add debugging method to diagnose quiz progress issues
+    async debugQuizProgress() {
+        try {
+            const username = localStorage.getItem('username');
+            if (!username) {
+                console.error('No username found, cannot debug quiz progress');
+                return;
+            }
+
+            console.group('Tester Mindset Quiz Progress Debugging');
+            console.log('Quiz name:', this.quizName);
+            
+            // Check localStorage directly
+            console.group('LocalStorage entries:');
+            const possibleKeys = [
+                `quiz_progress_${username}_tester-mindset`,
+                `quiz_progress_${username}_TesterMindset`,
+                `quiz_progress_${username}_testerMindset`,
+                `quiz_progress_${username}_tester_mindset`
+            ];
+            
+            for (const key of possibleKeys) {
+                const value = localStorage.getItem(key);
+                console.log(`${key}: ${value ? 'EXISTS' : 'not found'}`);
+                if (value) {
+                    try {
+                        const parsed = JSON.parse(value);
+                        console.log('Value:', parsed);
+                    } catch (e) {
+                        console.log('Error parsing value:', e);
+                    }
+                }
+            }
+            console.groupEnd();
+            
+            // Check API data
+            console.group('API quiz progress:');
+            try {
+                const apiProgress = await this.apiService.getQuizProgress(this.quizName);
+                console.log('API Response:', apiProgress);
+            } catch (e) {
+                console.log('Error getting API progress:', e);
+            }
+            console.groupEnd();
+            
+            // Check normalizedQuizName
+            console.group('Quiz name normalization:');
+            console.log('Original quiz name:', this.quizName);
+            const normalizedName = this.apiService.normalizeQuizName(this.quizName);
+            console.log('Normalized quiz name:', normalizedName);
+            const variations = this.apiService.getQuizNameVariations(normalizedName);
+            console.log('Variations:', variations);
+            console.groupEnd();
+            
+            console.groupEnd();
+        } catch (e) {
+            console.error('Error in debugQuizProgress:', e);
         }
     }
 }

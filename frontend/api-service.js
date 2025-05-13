@@ -418,6 +418,11 @@ export class APIService {
             return 'communication';
         }
         
+        // Handle initiative quiz variants
+        if (lowerName === 'initiative' || lowerName.includes('initiative-quiz')) {
+            return 'initiative';
+        }
+        
         // Handle cms-testing variants
         if (lowerName.includes('cms')) {
             return 'cms-testing';
@@ -489,6 +494,16 @@ export class APIService {
             variations.add('communicationQuiz');
             variations.add('CommunicationQuiz');
             variations.add('communication_quiz');
+        }
+        
+        // Expanded patterns for initiative quiz
+        if (quizName.toLowerCase() === 'initiative' || quizName.toLowerCase().includes('initiative')) {
+            variations.add('initiative');
+            variations.add('Initiative');
+            variations.add('initiative-quiz');
+            variations.add('initiativeQuiz');
+            variations.add('InitiativeQuiz');
+            variations.add('initiative_quiz');
         }
         
         if (quizName.toLowerCase().includes('tester') && quizName.toLowerCase().includes('mindset')) {

@@ -1172,14 +1172,19 @@ export class CommunicationQuiz extends BaseQuiz {
         try {
             const username = localStorage.getItem('username');
             if (!username) {
-                console.error('No user found, cannot load progress');
+                console.error('[CommunicationQuiz] No user found, cannot load progress');
                 return false;
             }
 
+            // Normalize quiz name first
+            const normalizedQuizName = this.normalizeQuizName(this.quizName);
+            console.log(`[CommunicationQuiz] Using normalized quiz name: ${normalizedQuizName}`);
+            
             // Use user-specific key for localStorage
-            const storageKey = `quiz_progress_${username}_${this.quizName}`;
-            const savedProgress = await this.apiService.getQuizProgress(this.quizName);
-            console.log('Raw API Response:', savedProgress);
+            const storageKey = `quiz_progress_${username}_${normalizedQuizName}`;
+            const savedProgress = await this.apiService.getQuizProgress(normalizedQuizName);
+            console.log('[CommunicationQuiz] Raw API Response:', savedProgress);
+            
             let progress = null;
             
             if (savedProgress && savedProgress.data) {
@@ -1191,18 +1196,50 @@ export class CommunicationQuiz extends BaseQuiz {
                     currentScenario: savedProgress.data.currentScenario || 0,
                     status: savedProgress.data.status || 'in-progress'
                 };
-                console.log('Normalized progress data:', progress);
+                console.log('[CommunicationQuiz] Normalized progress data:', progress);
+                
+                // Critical fix: If we have question history but currentScenario is wrong, fix it
+                if (progress.questionHistory && progress.questionHistory.length > 0) {
+                    // If currentScenario is less than question history length, sync them
+                    if (progress.currentScenario < progress.questionHistory.length) {
+                        console.log(`[CommunicationQuiz] Fixing inconsistent scenario count - ` +
+                            `currentScenario (${progress.currentScenario}) < questionHistory.length (${progress.questionHistory.length})`);
+                        progress.currentScenario = progress.questionHistory.length;
+                    }
+                    
+                    // If zero, set to question history length
+                    if (progress.currentScenario === 0) {
+                        console.log(`[CommunicationQuiz] currentScenario is 0 but has question history - fixing`);
+                        progress.currentScenario = progress.questionHistory.length;
+                    }
+                } else if (progress.currentScenario > 0 && progress.status === 'in-progress') {
+                    // If we somehow have currentScenario but no question history, reset it
+                    console.log(`[CommunicationQuiz] Warning: currentScenario (${progress.currentScenario}) > 0 but no question history`);
+                    progress.currentScenario = 0;
+                }
             } else {
                 // Try loading from localStorage as fallback
                 const localData = localStorage.getItem(storageKey);
                 if (localData) {
-                    const parsed = JSON.parse(localData);
-                    progress = parsed;
-                    console.log('Loaded progress from localStorage:', progress);
+                    try {
+                        const parsed = JSON.parse(localData);
+                        progress = parsed.data || parsed;
+                        console.log('[CommunicationQuiz] Loaded progress from localStorage:', progress);
+                    } catch (e) {
+                        console.error('[CommunicationQuiz] Error parsing localStorage data:', e);
+                    }
                 }
             }
 
             if (progress) {
+                // Ensure the arrays exist
+                if (!Array.isArray(progress.questionHistory)) {
+                    progress.questionHistory = [];
+                }
+                if (!Array.isArray(progress.tools)) {
+                    progress.tools = [];
+                }
+                
                 // Set the player state from progress
                 this.player.experience = progress.experience || 0;
                 this.player.tools = progress.tools || [];
@@ -1214,9 +1251,11 @@ export class CommunicationQuiz extends BaseQuiz {
                 
                 // Check quiz status and show appropriate screen
                 if (progress.status === 'failed') {
+                    console.log('[CommunicationQuiz] Quiz already failed, going to end screen');
                     this.endGame(true);
                     return true;
-                } else if (progress.status === 'completed') {
+                } else if (progress.status === 'completed' || progress.status === 'passed') {
+                    console.log('[CommunicationQuiz] Quiz already completed/passed, going to end screen');
                     this.endGame(false);
                     return true;
                 }
@@ -1225,7 +1264,7 @@ export class CommunicationQuiz extends BaseQuiz {
             }
             return false;
         } catch (error) {
-            console.error('Failed to load progress:', error);
+            console.error('[CommunicationQuiz] Failed to load progress:', error);
             return false;
         }
     }
@@ -1774,48 +1813,19 @@ export class CommunicationQuiz extends BaseQuiz {
         const username = localStorage.getItem('username');
         if (username) {
             try {
-                const user = new QuizUser(username);
-                const status = hasPassed ? 'passed' : 'failed';
-                console.log('Setting final quiz status:', { status, score: scorePercentage });
-                
-                const result = {
-                    score: scorePercentage,
-                    status: status,
-                    experience: this.player.experience,
-                    questionHistory: this.player.questionHistory,
-                    questionsAnswered: this.player.questionHistory.length,
-                    lastUpdated: new Date().toISOString(),
-                    scorePercentage: scorePercentage
-                };
-
-                // Save to QuizUser
-                await user.updateQuizScore(
-                    this.quizName,
-                    result.score,
-                    result.experience,
-                    this.player.tools,
-                    result.questionHistory,
-                    result.questionsAnswered,
-                    status
-                );
-
-                // Save to API with proper structure
-                const apiProgress = {
-                    data: {
-                        ...result,
-                        tools: this.player.tools,
-                        currentScenario: this.player.currentScenario
-                    }
-                };
-
-                // Save directly via API to ensure status is updated
-                console.log('Saving final progress to API:', apiProgress);
-                await this.apiService.saveQuizProgress(this.quizName, apiProgress.data);
-                
-                // Clear any local storage for this quiz
                 this.clearQuizLocalStorage(username, this.quizName);
+                
+                // Try to save the final result through API
+                await this.apiService.saveQuizProgress(this.quizName, {
+                    experience: this.player.experience,
+                    questionsAnswered: this.player.questionHistory.length,
+                    status: hasPassed ? 'passed' : 'failed',
+                    scorePercentage: scorePercentage,
+                    questionHistory: this.player.questionHistory,
+                    lastUpdated: new Date().toISOString()
+                });
             } catch (error) {
-                console.error('Error saving final quiz score:', error);
+                console.error('[CommunicationQuiz] Error saving final quiz result:', error);
             }
         }
 
@@ -1875,6 +1885,74 @@ export class CommunicationQuiz extends BaseQuiz {
         }
 
         this.generateRecommendations();
+    }
+
+    // Normalize quiz name for consistent storage and retrieval
+    normalizeQuizName(quizName) {
+        // Use API service if available
+        if (this.apiService && typeof this.apiService.normalizeQuizName === 'function') {
+            return this.apiService.normalizeQuizName(quizName);
+        }
+        
+        // Fallback implementation
+        if (!quizName) return '';
+        
+        // First standardize to lowercase
+        const lowerName = quizName.toLowerCase();
+        
+        // Handle communication quiz variants
+        if (lowerName === 'communication' || lowerName.includes('communic') || lowerName.includes('communication-quiz')) {
+            return 'communication';
+        }
+        
+        // Standard normalized format (kebab-case)
+        const normalized = lowerName
+            .replace(/([A-Z])/g, '-$1')  // Convert camelCase to kebab-case
+            .replace(/_/g, '-')          // Convert snake_case to kebab-case
+            .replace(/\s+/g, '-')        // Convert spaces to hyphens
+            .replace(/-+/g, '-')         // Remove duplicate hyphens
+            .replace(/^-|-$/g, '')       // Remove leading/trailing hyphens
+            .toLowerCase();              // Ensure lowercase
+            
+        return normalized;
+    }
+
+    // Clear quiz progress from localStorage
+    clearQuizLocalStorage(username, quizName) {
+        // Use the API service's implementation instead of a custom one
+        try {
+            console.log(`[CommunicationQuiz] Clearing localStorage for quiz: ${quizName}`);
+            if (this.apiService && typeof this.apiService.clearQuizLocalStorage === 'function') {
+                // Call API service method which has more complete implementation
+                this.apiService.clearQuizLocalStorage(username, quizName);
+            } else {
+                console.warn('[CommunicationQuiz] API service not available, using fallback clear method');
+                
+                // Fallback implementation
+                const variations = [
+                    quizName,                                              // original
+                    quizName.toLowerCase(),                               // lowercase
+                    quizName.toUpperCase(),                               // uppercase
+                    quizName.replace(/-/g, ''),                           // no hyphens
+                    quizName.replace(/([A-Z])/g, '-$1').toLowerCase(),    // kebab-case
+                    quizName.replace(/-([a-z])/g, (_, c) => c.toUpperCase()), // camelCase
+                    quizName.replace(/-/g, '_'),                          // snake_case
+                    'communication',
+                    'Communication',
+                    'communication-quiz',
+                    'communicationQuiz',
+                    'CommunicationQuiz',
+                    'communication_quiz'
+                ];
+
+                variations.forEach(variant => {
+                    localStorage.removeItem(`quiz_progress_${username}_${variant}`);
+                    localStorage.removeItem(`quizResults_${username}_${variant}`);
+                });
+            }
+        } catch (error) {
+            console.error('[CommunicationQuiz] Error clearing localStorage:', error);
+        }
     }
 }
 

@@ -1253,31 +1253,220 @@ export class InitiativeQuiz extends BaseQuiz {
     }
 
     clearQuizLocalStorage(username, quizName) {
-        const variations = [
-            quizName,                                              // original
-            quizName.toLowerCase(),                               // lowercase
-            quizName.toUpperCase(),                               // uppercase
-            quizName.replace(/-/g, ''),                           // no hyphens
-            quizName.replace(/([A-Z])/g, '-$1').toLowerCase(),    // kebab-case
-            quizName.replace(/-([a-z])/g, (_, c) => c.toUpperCase()), // camelCase
-            quizName.replace(/-/g, '_'),                          // snake_case
-        ];
+        // Use the API service's implementation instead of a custom one
+        try {
+            console.log(`[InitiativeQuiz] Clearing localStorage for quiz: ${quizName}`);
+            if (this.apiService && typeof this.apiService.clearQuizLocalStorage === 'function') {
+                // Call API service method which has more complete implementation
+                this.apiService.clearQuizLocalStorage(username, quizName);
+            } else {
+                console.warn('[InitiativeQuiz] API service not available, using fallback clear method');
+                
+                // Fallback implementation
+                const variations = [
+                    quizName,                                              // original
+                    quizName.toLowerCase(),                               // lowercase
+                    quizName.toUpperCase(),                               // uppercase
+                    quizName.replace(/-/g, ''),                           // no hyphens
+                    quizName.replace(/([A-Z])/g, '-$1').toLowerCase(),    // kebab-case
+                    quizName.replace(/-([a-z])/g, (_, c) => c.toUpperCase()), // camelCase
+                    quizName.replace(/-/g, '_'),                          // snake_case
+                    'initiative',
+                    'Initiative',
+                    'initiative-quiz',
+                    'initiativeQuiz',
+                    'InitiativeQuiz',
+                    'initiative_quiz'
+                ];
 
-        // Add initiative specific variations
-        if (quizName.toLowerCase().includes('initiative')) {
-            variations.push(
-                'initiative',
-                'initiative',
-                'initiativeTest',
-                'initiative_',
-                'initiative'
-            );
+                variations.forEach(variant => {
+                    localStorage.removeItem(`quiz_progress_${username}_${variant}`);
+                    localStorage.removeItem(`quizResults_${username}_${variant}`);
+                });
+            }
+        } catch (error) {
+            console.error('[InitiativeQuiz] Error clearing localStorage:', error);
         }
+    }
 
-        variations.forEach(variant => {
-            localStorage.removeItem(`quiz_progress_${username}_${variant}`);
-            localStorage.removeItem(`quizResults_${username}_${variant}`);
-        });
+    // Add debugging method to diagnose quiz progress issues
+    async debugQuizProgress() {
+        try {
+            const username = localStorage.getItem('username');
+            if (!username) {
+                console.error('No username found, cannot debug quiz progress');
+                return;
+            }
+
+            console.group('Initiative Quiz Progress Debugging');
+            console.log('Quiz name:', this.quizName);
+            
+            // Check localStorage directly
+            console.group('LocalStorage entries:');
+            const possibleKeys = [
+                `quiz_progress_${username}_initiative`,
+                `quiz_progress_${username}_Initiative`,
+                `quiz_progress_${username}_initiative-quiz`,
+                `quiz_progress_${username}_initiativeQuiz`
+            ];
+            
+            for (const key of possibleKeys) {
+                const value = localStorage.getItem(key);
+                console.log(`${key}: ${value ? 'EXISTS' : 'not found'}`);
+                if (value) {
+                    try {
+                        const parsed = JSON.parse(value);
+                        console.log('Value:', parsed);
+                    } catch (e) {
+                        console.log('Error parsing value:', e);
+                    }
+                }
+            }
+            console.groupEnd();
+            
+            // Check API data
+            console.group('API quiz progress:');
+            try {
+                const apiProgress = await this.apiService.getQuizProgress(this.quizName);
+                console.log('API Response:', apiProgress);
+            } catch (e) {
+                console.log('Error getting API progress:', e);
+            }
+            console.groupEnd();
+            
+            // Check normalizedQuizName
+            console.group('Quiz name normalization:');
+            console.log('Original quiz name:', this.quizName);
+            const normalizedName = this.apiService.normalizeQuizName(this.quizName);
+            console.log('Normalized quiz name:', normalizedName);
+            const variations = this.apiService.getQuizNameVariations(normalizedName);
+            console.log('Variations:', variations);
+            console.groupEnd();
+            
+            console.groupEnd();
+        } catch (e) {
+            console.error('Error in debugQuizProgress:', e);
+        }
+    }
+
+    // Replace the loadProgress method with a more robust implementation
+    async loadProgress() {
+        try {
+            // Normalize quiz name
+            let quizName = this.quizName;
+            quizName = this.normalizeQuizName(quizName);
+            
+            const username = localStorage.getItem('username');
+            if (!username) {
+                console.error('[InitiativeQuiz] No user found, cannot load progress');
+                return false;
+            }
+            
+            const storageKey = `quiz_progress_${username}_${quizName}`;
+            const savedProgress = await this.apiService.getQuizProgress(quizName);
+            console.log('[InitiativeQuiz] Loading from key:', storageKey, 'API Response:', savedProgress);
+            
+            if (savedProgress && savedProgress.data) {
+                const progress = {
+                    experience: savedProgress.data.experience || 0,
+                    tools: savedProgress.data.tools || [],
+                    questionHistory: savedProgress.data.questionHistory || [],
+                    currentScenario: savedProgress.data.currentScenario || 0,
+                    status: savedProgress.data.status || 'in-progress',
+                    randomizedScenarios: savedProgress.data.randomizedScenarios || {}
+                };
+                
+                // Make sure question history is valid
+                if (!Array.isArray(progress.questionHistory)) {
+                    progress.questionHistory = [];
+                }
+                
+                // Critical fix: If we have question history but currentScenario is wrong, fix it
+                if (progress.questionHistory.length > 0) {
+                    // If currentScenario is less than question history length, sync them
+                    if (progress.currentScenario < progress.questionHistory.length) {
+                        console.log(`[InitiativeQuiz] Fixing inconsistent scenario count - ` +
+                            `currentScenario (${progress.currentScenario}) < questionHistory.length (${progress.questionHistory.length})`);
+                        progress.currentScenario = progress.questionHistory.length;
+                    }
+                    
+                    // If zero, set to question history length
+                    if (progress.currentScenario === 0) {
+                        console.log(`[InitiativeQuiz] currentScenario is 0 but has question history - fixing`);
+                        progress.currentScenario = progress.questionHistory.length;
+                    }
+                } else if (progress.currentScenario > 0) {
+                    // If we somehow have currentScenario but no question history, reset it
+                    console.log(`[InitiativeQuiz] Warning: currentScenario (${progress.currentScenario}) > 0 but no question history`);
+                    
+                    if (progress.status === 'in-progress') {
+                        // Only reset if status is in-progress
+                        console.log('[InitiativeQuiz] Resetting currentScenario to 0 to match empty question history');
+                        progress.currentScenario = 0;
+                    }
+                }
+                
+                // Log what we're loading
+                console.log(`[InitiativeQuiz] Loaded progress: ${progress.questionHistory.length} questions answered, ` + 
+                           `currentScenario: ${progress.currentScenario}, status: ${progress.status}`);
+                
+                // Update the player state with the loaded data
+                this.player.experience = progress.experience;
+                this.player.tools = progress.tools;
+                this.player.questionHistory = progress.questionHistory;
+                this.player.currentScenario = progress.currentScenario;
+                
+                // Load randomized scenarios if available
+                if (progress.randomizedScenarios && Object.keys(progress.randomizedScenarios).length > 0) {
+                    console.log('[InitiativeQuiz] Loading randomized scenarios from progress');
+                    this.randomizedScenarios = progress.randomizedScenarios;
+                }
+
+                // Check if quiz is already completed
+                if (['completed', 'passed', 'failed'].includes(progress.status)) {
+                    console.log(`[InitiativeQuiz] Quiz already ${progress.status}, going to end screen`);
+                    this.endGame(progress.status === 'failed');
+                    return true;
+                }
+
+                return true;
+            }
+            
+            return false;
+        } catch (error) {
+            console.error('[InitiativeQuiz] Error loading progress:', error);
+            return false;
+        }
+    }
+
+    // Normalize quiz name for consistent storage and retrieval
+    normalizeQuizName(quizName) {
+        // Use API service if available
+        if (this.apiService && typeof this.apiService.normalizeQuizName === 'function') {
+            return this.apiService.normalizeQuizName(quizName);
+        }
+        
+        // Fallback implementation
+        if (!quizName) return '';
+        
+        // First standardize to lowercase
+        const lowerName = quizName.toLowerCase();
+        
+        // Handle initiative quiz variants
+        if (lowerName === 'initiative' || lowerName.includes('initiative-quiz')) {
+            return 'initiative';
+        }
+        
+        // Standard normalized format (kebab-case)
+        const normalized = lowerName
+            .replace(/([A-Z])/g, '-$1')  // Convert camelCase to kebab-case
+            .replace(/_/g, '-')          // Convert snake_case to kebab-case
+            .replace(/\s+/g, '-')        // Convert spaces to hyphens
+            .replace(/-+/g, '-')         // Remove duplicate hyphens
+            .replace(/^-|-$/g, '')       // Remove leading/trailing hyphens
+            .toLowerCase();              // Ensure lowercase
+            
+        return normalized;
     }
 }
 
