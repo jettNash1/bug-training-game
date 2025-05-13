@@ -413,13 +413,13 @@ export class APIService {
             return 'script-metrics-troubleshooting';
         }
         
-        // Handle communication quiz variants (expanded patterns)
-        if (lowerName === 'communication' || lowerName.includes('communic') || lowerName.includes('communication-quiz')) {
+        // Handle communication quiz variants
+        if (lowerName === 'communication' || lowerName.includes('communic')) {
             return 'communication';
         }
         
         // Handle initiative quiz variants
-        if (lowerName === 'initiative' || lowerName.includes('initiative-quiz')) {
+        if (lowerName === 'initiative' || lowerName.includes('initiative')) {
             return 'initiative';
         }
         
@@ -441,90 +441,18 @@ export class APIService {
     }
 
     // Generate common variations of quiz names to try with API/localStorage
+    // NOTE: This method is now deprecated and should no longer be used
+    // We are standardizing on a single normalizeQuizName result for all operations
     getQuizNameVariations(quizName) {
-        if (!quizName) return [];
-        
-        const variations = new Set(); // Use Set to avoid duplicates
-        
-        // Original version
-        variations.add(quizName);
-        
-        // lowercase version
-        variations.add(quizName.toLowerCase());
-        
-        // camelCase version
-        const camelCase = quizName.replace(/-([a-z])/g, (_, letter) => letter.toUpperCase());
-        variations.add(camelCase);
-        variations.add(camelCase.toLowerCase());
-        
-        // PascalCase version
-        const pascalCase = quizName.replace(/(^|-)([a-z])/g, (_, sep, letter) => letter.toUpperCase());
-        variations.add(pascalCase);
-        
-        // No hyphens version
-        const noHyphens = quizName.replace(/-/g, '');
-        variations.add(noHyphens);
-        variations.add(noHyphens.toLowerCase());
-        
-        // snake_case version
-        const snakeCase = quizName.replace(/-/g, '_');
-        variations.add(snakeCase);
-        variations.add(snakeCase.toLowerCase());
-        
-        // Special cases for common quiz names
-        if (quizName.toLowerCase().includes('cms')) {
-            variations.add('CMS-Testing');
-            variations.add('cms-testing');
-            variations.add('cmsTesting');
-            variations.add('cms_testing');
-        }
-        
-        if (quizName.toLowerCase().includes('script') && quizName.toLowerCase().includes('metric')) {
-            variations.add('script-metrics-troubleshooting');
-            variations.add('scriptMetricsTroubleshooting');
-            variations.add('ScriptMetricsTroubleshooting');
-            variations.add('script_metrics_troubleshooting');
-        }
-        
-        // Expanded patterns for communication quiz
-        if (quizName.toLowerCase() === 'communication' || quizName.toLowerCase().includes('communic')) {
-            variations.add('communication');
-            variations.add('Communication');
-            variations.add('communication-quiz');
-            variations.add('communicationQuiz');
-            variations.add('CommunicationQuiz');
-            variations.add('communication_quiz');
-        }
-        
-        // Expanded patterns for initiative quiz
-        if (quizName.toLowerCase() === 'initiative' || quizName.toLowerCase().includes('initiative')) {
-            variations.add('initiative');
-            variations.add('Initiative');
-            variations.add('initiative-quiz');
-            variations.add('initiativeQuiz');
-            variations.add('InitiativeQuiz');
-            variations.add('initiative_quiz');
-        }
-        
-        if (quizName.toLowerCase().includes('tester') && quizName.toLowerCase().includes('mindset')) {
-            variations.add('tester-mindset');
-            variations.add('testerMindset');
-            variations.add('TesterMindset');
-            variations.add('tester_mindset');
-        }
-        
-        // Return array of unique variations
-        return [...variations];
+        console.warn('[API] getQuizNameVariations is deprecated, using normalized quiz name only');
+        return [this.normalizeQuizName(quizName)];
     }
 
     async getQuizProgress(quizName) {
         try {
             console.log(`[API] Getting progress for quiz: ${quizName}`);
             
-            // Store the original quiz name for diagnostics
-            const originalQuizName = quizName;
-            
-            // Normalize the quiz name - use only the primary normalized version
+            // Normalize the quiz name - always use the standard normalized version
             const normalizedQuizName = this.normalizeQuizName(quizName);
             
             console.log(`[API] Using normalized quiz name: ${normalizedQuizName}`);
@@ -2611,7 +2539,7 @@ export class APIService {
         try {
             console.log(`[API Debug] Raw experience value type: ${typeof progress.experience}, value: ${progress.experience}, isNaN: ${isNaN(progress.experience)}`);
             
-            // Normalize the quiz name for consistency
+            // Normalize the quiz name for consistency - always use standard normalized name
             const normalizedQuizName = this.normalizeQuizName(quizName);
             
             // Additional debug information
@@ -2645,9 +2573,18 @@ export class APIService {
             // Get the experience from the selected answer if it exists in history and experience is zero
             if (sanitizedProgress.experience === 0 && sanitizedProgress.questionHistory && sanitizedProgress.questionHistory.length > 0) {
                 const lastQuestion = sanitizedProgress.questionHistory[sanitizedProgress.questionHistory.length - 1];
-                if (lastQuestion && lastQuestion.selectedAnswer && typeof lastQuestion.selectedAnswer.experience === 'number') {
-                    console.log(`[API Debug] Using experience from last question: ${lastQuestion.selectedAnswer.experience}`);
-                    sanitizedProgress.experience = lastQuestion.selectedAnswer.experience;
+                if (lastQuestion) {
+                    // Check different locations where experience may be stored
+                    if (lastQuestion.selectedAnswer && typeof lastQuestion.selectedAnswer.experience === 'number') {
+                        console.log(`[API Debug] Using experience from lastQuestion.selectedAnswer: ${lastQuestion.selectedAnswer.experience}`);
+                        sanitizedProgress.experience = lastQuestion.selectedAnswer.experience;
+                    } else if (lastQuestion.selectedOption && typeof lastQuestion.selectedOption.experience === 'number') {
+                        console.log(`[API Debug] Using experience from lastQuestion.selectedOption: ${lastQuestion.selectedOption.experience}`);
+                        sanitizedProgress.experience = lastQuestion.selectedOption.experience;
+                    } else if (typeof lastQuestion.experience === 'number') {
+                        console.log(`[API Debug] Using experience from lastQuestion itself: ${lastQuestion.experience}`);
+                        sanitizedProgress.experience = lastQuestion.experience;
+                    }
                 }
             }
             
@@ -2790,6 +2727,24 @@ export class APIService {
                     }));
                     
                     console.log(`[API] Saved emergency fallback to localStorage for ${normalizedQuizName}`);
+                    
+                    // For communication quiz, save to additional variations in localStorage as fallback
+                    const isCommunicationQuiz = normalizedQuizName === 'communication' || 
+                                               quizName === 'communication' ||
+                                               quizName.toLowerCase().includes('communic');
+                                               
+                    if (isCommunicationQuiz) {
+                        const variations = ['Communication', 'communication-quiz', 'communicationQuiz'];
+                        for (const variant of variations) {
+                            const variantKey = `quiz_progress_${username}_${variant}`;
+                            localStorage.setItem(variantKey, JSON.stringify({ 
+                                data: fallbackProgress,
+                                timestamp: new Date().toISOString()
+                            }));
+                            console.log(`[API] Also saved emergency fallback to localStorage variant: ${variant}`);
+                        }
+                    }
+                    
                     return {
                         success: true,
                         message: 'Saved to localStorage only (API failed)',
@@ -2829,25 +2784,15 @@ export class APIService {
             console.log(`[API] Clearing localStorage data for quiz: ${quizName}, user: ${username}`);
             
             const normalizedQuizName = this.normalizeQuizName(quizName);
-            const quizNameVariations = this.getQuizNameVariations(normalizedQuizName);
-            let clearedCount = 0;
+            const storageKey = `quiz_progress_${username}_${normalizedQuizName}`;
             
-            // Clear all variations of the quiz name
-            for (const variation of quizNameVariations) {
-                const storageKey = `quiz_progress_${username}_${variation}`;
-                const hasData = localStorage.getItem(storageKey) !== null;
-                
-                if (hasData) {
-                    localStorage.removeItem(storageKey);
-                    clearedCount++;
-                }
-            }
-            
-            if (clearedCount > 0) {
-                console.log(`[API] Cleared ${clearedCount} localStorage entries for quiz: ${quizName}`);
+            // Only clear the standard normalized quiz name in localStorage
+            if (localStorage.getItem(storageKey) !== null) {
+                localStorage.removeItem(storageKey);
+                console.log(`[API] Cleared localStorage entry for quiz: ${normalizedQuizName}`);
                 return true;
             } else {
-                console.log(`[API] No localStorage data found to clear for quiz: ${quizName}`);
+                console.log(`[API] No localStorage data found to clear for quiz: ${normalizedQuizName}`);
                 return false;
             }
         } catch (error) {
