@@ -521,16 +521,25 @@ export class APIService {
         try {
             console.log(`[API] Getting progress for quiz: ${quizName}`);
             
+            // Store the original quiz name for diagnostics
+            const originalQuizName = quizName;
+            
             // Normalize the quiz name and create variations
             const normalizedQuizName = this.normalizeQuizName(quizName);
             const quizNameVariations = this.getQuizNameVariations(normalizedQuizName);
             
             console.log(`[API] Will try these quiz name variations:`, quizNameVariations);
             
+            // Force checking all variations for the communication quiz to diagnose issues
+            const shouldTryAllVariations = normalizedQuizName === 'communication';
+            
             // Add retry mechanism with increasing delay for better reliability
             let retryCount = 0;
             const maxRetries = 2;
             let response = null;
+            
+            // Save all responses for debugging
+            const allResponses = [];
             
             while (retryCount <= maxRetries) {
                 let foundData = false;
@@ -542,17 +551,49 @@ export class APIService {
                         const variationResponse = await this.fetchWithAuth(`${this.baseUrl}/users/quiz-progress/${variation}`);
                         console.log(`[API] Raw quiz progress response for ${variation} (attempt ${retryCount + 1}):`, variationResponse);
                         
+                        // Save all non-empty responses for logging
+                        if (variationResponse && variationResponse.data && Object.keys(variationResponse.data).length > 0) {
+                            allResponses.push({
+                                variation, 
+                                response: variationResponse,
+                                hasExperience: typeof variationResponse.data.experience === 'number' && !isNaN(variationResponse.data.experience),
+                                experienceValue: variationResponse.data.experience
+                            });
+                        }
+                        
                         // If we got a valid response with data, store it and break the loop
+                        // unless we're forcing to try all variations
                         if (variationResponse && variationResponse.data && Object.keys(variationResponse.data).length > 0) {
                             console.log(`[API] Found data with variation: ${variation}`);
-                            response = variationResponse;
-                            foundData = true;
-                            break;
+                            
+                            // For communication quiz, prefer responses with non-zero experience
+                            if (shouldTryAllVariations) {
+                                // Only replace the response if:
+                                // 1. We don't have one yet, OR
+                                // 2. The current one has experience = 0 AND this one has experience > 0
+                                if (!response || 
+                                    (variationResponse.data.experience > 0 && 
+                                     (!response.data.experience || response.data.experience === 0))) {
+                                    response = variationResponse;
+                                    console.log(`[API Debug] Selected response from variation '${variation}' with experience: ${variationResponse.data.experience}`);
+                                    foundData = true;
+                                }
+                            } else {
+                                response = variationResponse;
+                                foundData = true;
+                                break;
+                            }
                         }
                     } catch (variationError) {
                         console.warn(`[API] Error trying variation ${variation}:`, variationError);
                         // Continue to next variation
                     }
+                }
+                
+                // If we're forcing all variations to be checked and we found data, we'll still break now
+                if (foundData && shouldTryAllVariations) {
+                    console.log(`[API] DEBUG for Communication Quiz - all responses:`, allResponses);
+                    break;
                 }
                 
                 // If we found data with any variation, break the retry loop
@@ -567,6 +608,13 @@ export class APIService {
                     // Exponential backoff: 500ms, 1000ms
                     await new Promise(resolve => setTimeout(resolve, 500 * retryCount));
                 }
+            }
+            
+            // Debug log if we didn't find anything
+            if (!response && allResponses.length > 0) {
+                console.log(`[API] No "best" response found, but had ${allResponses.length} candidates:`, allResponses);
+                // Take the first non-empty response if we have any
+                response = allResponses[0].response;
             }
             
             // Check localStorage as a potential source of truth
@@ -592,6 +640,35 @@ export class APIService {
                         }
                     }
                 }
+            }
+            
+            // Special handling for communication quiz
+            // If we have zero experience from API but non-zero from localStorage, use localStorage
+            if (normalizedQuizName === 'communication' && 
+                response && response.data && 
+                (!response.data.experience || response.data.experience === 0) && 
+                localStorageData && localStorageData.data && 
+                localStorageData.data.experience > 0) {
+                
+                console.log(`[API] Communication quiz special case: API returned zero experience but localStorage has value ${localStorageData.data.experience} - using localStorage data`);
+                
+                // Ensure experience is a valid number before returning
+                const sanitizedData = {
+                    ...localStorageData.data,
+                    experience: !isNaN(parseFloat(localStorageData.data.experience)) ? 
+                        parseFloat(localStorageData.data.experience) : 0,
+                    source: 'localStorage_communication_special'
+                };
+                
+                // Immediately try to re-save this progress to API to fix the problem
+                this.saveQuizProgress(originalQuizName, sanitizedData)
+                    .then(() => console.log('[API] Successfully re-saved communication progress from localStorage to API'))
+                    .catch(err => console.error('[API] Failed to re-save communication progress:', err));
+                
+                return {
+                    success: true,
+                    data: sanitizedData
+                };
             }
             
             // If no data found from API but found in localStorage, use localStorage
@@ -661,6 +738,18 @@ export class APIService {
                 experience: progress.experience,
                 experienceType: typeof progress.experience
             });
+            
+            // For communication quiz, do an additional check with localStorage
+            if (normalizedQuizName === 'communication' && 
+                progress.experience === 0 && 
+                localStorageData && 
+                localStorageData.data.experience > 0) {
+                
+                console.log(`[API] Communication quiz: After processing, experience is still 0 but localStorage has ${localStorageData.data.experience}. Using localStorage experience value.`);
+                
+                // Use the experience value from localStorage
+                progress.experience = parseFloat(localStorageData.data.experience) || 0;
+            }
             
             // Enhanced corruption check: look for NaN or undefined in critical fields
             let hasCorruptedData = false;
