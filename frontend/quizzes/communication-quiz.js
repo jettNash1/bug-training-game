@@ -1096,231 +1096,25 @@ export class CommunicationQuiz extends BaseQuiz {
         // Initialize UI and add event listeners
         this.initializeEventListeners();
 
+        // Expose the quiz instance on the DOM for easier debugging
+        const quizContainer = document.querySelector('.quiz-container');
+        if (quizContainer) {
+            quizContainer.__quiz = this;
+            console.log('[CommunicationQuiz] Exposed quiz instance on .quiz-container.__quiz');
+        }
+        
+        // Log initialization
+        console.log('[CommunicationQuiz] Initialized quiz instance.');
+        
         this.isLoading = false;
     }
 
     showError(message) {
-        const errorDiv = document.createElement('div');
-        errorDiv.className = 'error-notification';
-        errorDiv.setAttribute('role', 'alert');
-        errorDiv.textContent = message;
-        document.body.appendChild(errorDiv);
-        setTimeout(() => errorDiv.remove(), 5000);
-    }
-
-    shouldEndGame() {
-        // Only end the game when all 15 questions are answered
-        return (this.player?.questionHistory?.length || 0) >= 15;
-    }
-
-    // Helper method to calculate the score percentage based on correct answers
-    calculateScorePercentage() {
-        const correctAnswers = this.player.questionHistory.filter(q => 
-            q.selectedAnswer && (q.selectedAnswer.isCorrect || 
-            q.selectedAnswer.experience === Math.max(...q.scenario.options.map(o => o.experience || 0)))
-        ).length;
-        return Math.round((correctAnswers / Math.max(1, Math.min(this.player.questionHistory.length, 15))) * 100);
-    }
-
-    async saveProgress() {
-        // First determine the status based on clear conditions
-        let status = 'in-progress';
-        
-        // Check for completion (all 15 questions answered)
-        if (this.player.questionHistory.length >= 15) {
-            // Calculate pass/fail based on correct answers
-            const correctAnswers = this.player.questionHistory.filter(q => 
-                q.selectedAnswer && (q.selectedAnswer.isCorrect || 
-                q.selectedAnswer.experience === Math.max(...q.scenario.options.map(o => o.experience || 0)))
-            ).length;
-            const scorePercentage = Math.round((correctAnswers / 15) * 100);
-            status = scorePercentage >= 70 ? 'passed' : 'failed';
-        }
-
-        const progress = {
-            data: {
-                experience: this.player.experience,
-                tools: this.player.tools,
-                currentScenario: this.player.currentScenario,
-                questionHistory: this.player.questionHistory,
-                lastUpdated: new Date().toISOString(),
-                questionsAnswered: this.player.questionHistory.length,
-                status: status,
-                scorePercentage: this.calculateScorePercentage()
-            }
-        };
-
-        try {
-            const username = localStorage.getItem('username');
-            if (!username) {
-                console.error('No user found, cannot save progress');
-                return;
-            }
-            
-            // Use user-specific key for localStorage
-            const storageKey = `quiz_progress_${username}_${this.quizName}`;
-            localStorage.setItem(storageKey, JSON.stringify(progress));
-            
-            console.log('Saving progress with status:', status);
-            await this.apiService.saveQuizProgress(this.quizName, progress.data);
-        } catch (error) {
-            console.error('Failed to save progress:', error);
-        }
-    }
-
-    async loadProgress() {
-        try {
-            const username = localStorage.getItem('username');
-            if (!username) {
-                console.error('[CommunicationQuiz] No user found, cannot load progress');
-                return false;
-            }
-
-            // Normalize quiz name first
-            const normalizedQuizName = this.normalizeQuizName(this.quizName);
-            console.log(`[CommunicationQuiz] Using normalized quiz name: ${normalizedQuizName}`);
-            
-            // Use user-specific key for localStorage
-            const storageKey = `quiz_progress_${username}_${normalizedQuizName}`;
-            const savedProgress = await this.apiService.getQuizProgress(normalizedQuizName);
-            console.log('[CommunicationQuiz] Raw API Response:', savedProgress);
-            
-            let progress = null;
-            
-            if (savedProgress && savedProgress.data) {
-                // Normalize the data structure
-                progress = {
-                    experience: savedProgress.data.experience || 0,
-                    tools: savedProgress.data.tools || [],
-                    questionHistory: savedProgress.data.questionHistory || [],
-                    currentScenario: savedProgress.data.currentScenario || 0,
-                    status: savedProgress.data.status || 'in-progress'
-                };
-                console.log('[CommunicationQuiz] Normalized progress data:', progress);
-                
-                // Critical fix: If we have question history but currentScenario is wrong, fix it
-                if (progress.questionHistory && progress.questionHistory.length > 0) {
-                    // If currentScenario is less than question history length, sync them
-                    if (progress.currentScenario < progress.questionHistory.length) {
-                        console.log(`[CommunicationQuiz] Fixing inconsistent scenario count - ` +
-                            `currentScenario (${progress.currentScenario}) < questionHistory.length (${progress.questionHistory.length})`);
-                        progress.currentScenario = progress.questionHistory.length;
-                    }
-                    
-                    // If zero, set to question history length
-                    if (progress.currentScenario === 0) {
-                        console.log(`[CommunicationQuiz] currentScenario is 0 but has question history - fixing`);
-                        progress.currentScenario = progress.questionHistory.length;
-                    }
-                } else if (progress.currentScenario > 0 && progress.status === 'in-progress') {
-                    // If we somehow have currentScenario but no question history, reset it
-                    console.log(`[CommunicationQuiz] Warning: currentScenario (${progress.currentScenario}) > 0 but no question history`);
-                    progress.currentScenario = 0;
-                }
-            } else {
-                // Try loading from localStorage as fallback
-                const localData = localStorage.getItem(storageKey);
-                if (localData) {
-                    try {
-                        const parsed = JSON.parse(localData);
-                        progress = parsed.data || parsed;
-                        console.log('[CommunicationQuiz] Loaded progress from localStorage:', progress);
-                    } catch (e) {
-                        console.error('[CommunicationQuiz] Error parsing localStorage data:', e);
-                    }
-                }
-            }
-
-            if (progress) {
-                // Ensure the arrays exist
-                if (!Array.isArray(progress.questionHistory)) {
-                    progress.questionHistory = [];
-                }
-                if (!Array.isArray(progress.tools)) {
-                    progress.tools = [];
-                }
-                
-                // Set the player state from progress
-                this.player.experience = progress.experience || 0;
-                this.player.tools = progress.tools || [];
-                this.player.questionHistory = progress.questionHistory || [];
-                this.player.currentScenario = progress.currentScenario || 0;
-
-                // Ensure we're updating the UI correctly
-                this.updateProgress();
-                
-                // Check quiz status and show appropriate screen
-                if (progress.status === 'failed') {
-                    console.log('[CommunicationQuiz] Quiz already failed, going to end screen');
-                    this.endGame(true);
-                    return true;
-                } else if (progress.status === 'completed' || progress.status === 'passed') {
-                    console.log('[CommunicationQuiz] Quiz already completed/passed, going to end screen');
-                    this.endGame(false);
-                    return true;
-                }
-
-                return true;
-            }
-            return false;
-        } catch (error) {
-            console.error('[CommunicationQuiz] Failed to load progress:', error);
-            return false;
-        }
-    }
-
-    async startGame() {
-        if (this.isLoading) return;
-        
-        try {
-            this.isLoading = true;
-            // Show loading indicator
-            const loadingIndicator = document.getElementById('loading-indicator');
-            if (loadingIndicator) {
-                loadingIndicator.classList.remove('hidden');
-            }
-
-            // Set player name from localStorage
-            this.player.name = localStorage.getItem('username');
-            if (!this.player.name) {
-                window.location.href = '/login.html';
-                return;
-            }
-
-            // Initialize event listeners
-            this.initializeEventListeners();
-
-            // Load previous progress
-            const hasProgress = await this.loadProgress();
-            console.log('Previous progress loaded:', hasProgress);
-            
-            if (!hasProgress) {
-                // Reset player state if no valid progress exists
-                this.player.experience = 0;
-                this.player.tools = [];
-                this.player.currentScenario = 0;
-                this.player.questionHistory = [];
-            }
-            
-            // Clear any existing transition messages
-            const transitionContainer = document.getElementById('level-transition-container');
-            if (transitionContainer) {
-                transitionContainer.innerHTML = '';
-                transitionContainer.classList.remove('active');
-            }
-            
-            await this.displayScenario();
-        } catch (error) {
-            console.error('Failed to start game:', error);
-            this.showError('Failed to start the quiz. Please try refreshing the page.');
-        } finally {
-            this.isLoading = false;
             // Hide loading state
             const loadingIndicator = document.getElementById('loading-indicator');
             if (loadingIndicator) {
                 loadingIndicator.classList.add('hidden');
             }
-        }
     }
 
     initializeEventListeners() {
@@ -1334,6 +1128,7 @@ export class CommunicationQuiz extends BaseQuiz {
             this.handleAnswer();
         });
 
+
         // Add keyboard navigation
         document.addEventListener('keydown', (e) => {
             if (e.key === 'Enter' && e.target.type === 'radio') {
@@ -1343,143 +1138,185 @@ export class CommunicationQuiz extends BaseQuiz {
     }
 
     displayScenario() {
-        const currentScenarios = this.getCurrentScenarios();
-        
-        // Check if we've answered all 15 questions
-        if (this.player.questionHistory.length >= 15) {
-            console.log('All 15 questions answered, ending game');
-            this.endGame(false);
-            return;
-        }
-        
-        // Get the next scenario based on current progress
-        let scenario;
-        const questionCount = this.player.questionHistory.length;
-        
-        // Reset currentScenario based on the current level
-        if (questionCount < 5) {
-            // Basic questions (0-4)
-            scenario = this.basicScenarios[questionCount];
-            this.player.currentScenario = questionCount;
-        } else if (questionCount < 10) {
-            // Intermediate questions (5-9)
-            scenario = this.intermediateScenarios[questionCount - 5];
-            this.player.currentScenario = questionCount - 5;
-        } else if (questionCount < 15) {
-            // Advanced questions (10-14)
-            scenario = this.advancedScenarios[questionCount - 10];
-            this.player.currentScenario = questionCount - 10;
-        }
-
-        if (!scenario) {
-            console.error('No scenario found for current progress. Question count:', questionCount);
-            this.endGame(true);
-            return;
-        }
-
-        // Store current question number for consistency
-        this.currentQuestionNumber = questionCount + 1;
-        
-        // Show level transition message at the start of each level or when level changes
-        const currentLevel = this.getCurrentLevel();
-        const previousLevel = questionCount > 0 ? 
-            (questionCount <= 5 ? 'Basic' : 
-             questionCount <= 10 ? 'Intermediate' : 'Advanced') : null;
+        try {
+            // Check if we've answered all 15 questions
+            if (this.player.questionHistory.length >= 15) {
+                console.log('[CommunicationQuiz] All 15 questions answered, ending game');
+                this.endGame(false);
+                return;
+            }
             
-        if (questionCount === 0 || 
-            (questionCount === 5 && currentLevel === 'Intermediate') || 
-            (questionCount === 10 && currentLevel === 'Advanced')) {
-            const transitionContainer = document.getElementById('level-transition-container');
-            if (transitionContainer) {
-                transitionContainer.innerHTML = ''; // Clear any existing messages
+            // Get the current question count
+            const questionCount = this.player.questionHistory.length;
+            console.log(`[CommunicationQuiz] Displaying scenario for question ${questionCount + 1}`);
+            
+            // Get the appropriate scenarios list based on current level
+            const currentScenarios = this.getCurrentScenarios();
+            console.log(`[CommunicationQuiz] Current level: ${this.getCurrentLevel()}, Scenarios count: ${currentScenarios.length}`);
+            
+            // Get the next scenario based on current progress
+            let scenario;
+            let currentLevelIndex = 0;
+            
+            // Reset currentScenario based on the current level/question count
+            if (questionCount < 5) {
+                // Basic questions (0-4)
+                currentLevelIndex = questionCount;
+                scenario = this.basicScenarios[currentLevelIndex];
+                this.player.currentScenario = currentLevelIndex;
+                console.log(`[CommunicationQuiz] Using basic scenario ${currentLevelIndex}`);
+            } else if (questionCount < 10) {
+                // Intermediate questions (5-9)
+                currentLevelIndex = questionCount - 5;
+                scenario = this.intermediateScenarios[currentLevelIndex];
+                this.player.currentScenario = currentLevelIndex;
+                console.log(`[CommunicationQuiz] Using intermediate scenario ${currentLevelIndex}`);
+            } else if (questionCount < 15) {
+                // Advanced questions (10-14)
+                currentLevelIndex = questionCount - 10;
+                scenario = this.advancedScenarios[currentLevelIndex];
+                this.player.currentScenario = currentLevelIndex;
+                console.log(`[CommunicationQuiz] Using advanced scenario ${currentLevelIndex}`);
+            }
+
+            // Verify we have a valid scenario
+            if (!scenario) {
+                console.error('[CommunicationQuiz] No scenario found for current progress:', {
+                    questionCount, 
+                    currentLevelIndex,
+                    currentScenarioValue: this.player.currentScenario,
+                    basicLength: this.basicScenarios.length,
+                    intermediateLength: this.intermediateScenarios.length,
+                    advancedLength: this.advancedScenarios.length
+                });
                 
-                const levelMessage = document.createElement('div');
-                levelMessage.className = 'level-transition';
-                levelMessage.setAttribute('role', 'alert');
-                levelMessage.textContent = `Starting ${currentLevel} Questions`;
-                
-                transitionContainer.appendChild(levelMessage);
-                transitionContainer.classList.add('active');
-                
-                // Update the level indicator
-                const levelIndicator = document.getElementById('level-indicator');
-                if (levelIndicator) {
-                    levelIndicator.textContent = `Level: ${currentLevel}`;
+                // Try to recover by using a fallback scenario from the appropriate level
+                if (questionCount < 5 && this.basicScenarios.length > 0) {
+                    scenario = this.basicScenarios[0];
+                    console.log('[CommunicationQuiz] Falling back to first basic scenario');
+                } else if (questionCount < 10 && this.intermediateScenarios.length > 0) {
+                    scenario = this.intermediateScenarios[0];
+                    console.log('[CommunicationQuiz] Falling back to first intermediate scenario');
+                } else if (this.advancedScenarios.length > 0) {
+                    scenario = this.advancedScenarios[0];
+                    console.log('[CommunicationQuiz] Falling back to first advanced scenario');
                 }
                 
-                // Remove the message and container height after animation
-                setTimeout(() => {
-                    transitionContainer.classList.remove('active');
-                    setTimeout(() => {
-                        transitionContainer.innerHTML = '';
-                    }, 300); // Wait for height transition to complete
-                }, 3000);
+                // If we still don't have a scenario, end the game
+                if (!scenario) {
+                    console.error('[CommunicationQuiz] Unable to find any valid scenarios, ending game');
+                    this.endGame(true);
+                    return;
+                }
             }
+
+            // Store current question number for consistency
+            this.currentQuestionNumber = questionCount + 1;
+            
+            // Show level transition message at the start of each level or when level changes
+            const currentLevel = this.getCurrentLevel();
+            
+            if (questionCount === 0 || 
+                (questionCount === 5 && currentLevel === 'Intermediate') || 
+                (questionCount === 10 && currentLevel === 'Advanced')) {
+                console.log(`[CommunicationQuiz] Showing level transition for ${currentLevel}`);
+                const transitionContainer = document.getElementById('level-transition-container');
+                if (transitionContainer) {
+                    transitionContainer.innerHTML = ''; // Clear any existing messages
+                    
+                    const levelMessage = document.createElement('div');
+                    levelMessage.className = 'level-transition';
+                    levelMessage.setAttribute('role', 'alert');
+                    levelMessage.textContent = `Starting ${currentLevel} Questions`;
+                    
+                    transitionContainer.appendChild(levelMessage);
+                    transitionContainer.classList.add('active');
+                    
+                    // Update the level indicator
+                    const levelIndicator = document.getElementById('level-indicator');
+                    if (levelIndicator) {
+                        levelIndicator.textContent = `Level: ${currentLevel}`;
+                    }
+                    
+                    // Remove the message and container height after animation
+                    setTimeout(() => {
+                        transitionContainer.classList.remove('active');
+                        setTimeout(() => {
+                            transitionContainer.innerHTML = '';
+                        }, 300); // Wait for height transition to complete
+                    }, 3000);
+                }
+            }
+
+            // Update scenario display
+            const titleElement = document.getElementById('scenario-title');
+            const descriptionElement = document.getElementById('scenario-description');
+            const optionsContainer = document.getElementById('options-container');
+
+            if (!titleElement || !descriptionElement || !optionsContainer) {
+                console.error('[CommunicationQuiz] Required DOM elements not found');
+                return;
+            }
+
+            // Set content
+            titleElement.textContent = scenario.title;
+            descriptionElement.textContent = scenario.description;
+
+            // Update question counter immediately
+            const questionProgress = document.getElementById('question-progress');
+            if (questionProgress) {
+                questionProgress.textContent = `Question: ${this.currentQuestionNumber}/${this.totalQuestions || 15}`;
+            }
+
+            // Create a copy of options with their original indices
+            const shuffledOptions = scenario.options.map((option, index) => ({
+                ...option,
+                originalIndex: index
+            }));
+
+            // Shuffle the options
+            for (let i = shuffledOptions.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [shuffledOptions[i], shuffledOptions[j]] = [shuffledOptions[j], shuffledOptions[i]];
+            }
+
+            // Clear and populate options
+            optionsContainer.innerHTML = '';
+            shuffledOptions.forEach((option, index) => {
+                const optionElement = document.createElement('div');
+                optionElement.className = 'option';
+                optionElement.innerHTML = `
+                    <input type="radio" 
+                        name="option" 
+                        value="${option.originalIndex}" 
+                        id="option${index}"
+                        tabindex="0"
+                        aria-label="${option.text}"
+                        role="radio">
+                    <label for="option${index}">${option.text}</label>
+                `;
+                optionsContainer.appendChild(optionElement);
+            });
+
+            // Update progress display
+            this.updateProgress();
+
+            // Initialize timer for the new question
+            this.initializeTimer();
+            
+            console.log(`[CommunicationQuiz] Successfully displayed scenario ${this.currentQuestionNumber} - "${scenario.title}"`);
+        } catch (error) {
+            console.error('[CommunicationQuiz] Error displaying scenario:', error);
+            this.showError('Error loading question. Please try refreshing the page.');
         }
-
-        // Update scenario display
-        const titleElement = document.getElementById('scenario-title');
-        const descriptionElement = document.getElementById('scenario-description');
-        const optionsContainer = document.getElementById('options-container');
-
-        if (!titleElement || !descriptionElement || !optionsContainer) {
-            console.error('Required elements not found');
-            return;
-        }
-
-        titleElement.textContent = scenario.title;
-        descriptionElement.textContent = scenario.description;
-
-        // Update question counter immediately
-        const questionProgress = document.getElementById('question-progress');
-        if (questionProgress) {
-            questionProgress.textContent = `Question: ${this.currentQuestionNumber}/15`;
-        }
-
-        // Create a copy of options with their original indices
-        const shuffledOptions = scenario.options.map((option, index) => ({
-            ...option,
-            originalIndex: index
-        }));
-
-        // Shuffle the options
-        for (let i = shuffledOptions.length - 1; i > 0; i--) {
-            const j = Math.floor(Math.random() * (i + 1));
-            [shuffledOptions[i], shuffledOptions[j]] = [shuffledOptions[j], shuffledOptions[i]];
-        }
-
-        optionsContainer.innerHTML = '';
-
-        shuffledOptions.forEach((option, index) => {
-            const optionElement = document.createElement('div');
-            optionElement.className = 'option';
-            optionElement.innerHTML = `
-                <input type="radio" 
-                    name="option" 
-                    value="${option.originalIndex}" 
-                    id="option${index}"
-                    tabindex="0"
-                    aria-label="${option.text}"
-                    role="radio">
-                <label for="option${index}">${option.text}</label>
-            `;
-            optionsContainer.appendChild(optionElement);
-        });
-
-        this.updateProgress();
-
-        // Initialize timer for the new question
-        this.initializeTimer();
     }
 
     async handleAnswer() {
         if (this.isLoading) return;
         
         const submitButton = document.querySelector('.submit-button');
-        if (submitButton) {
-            submitButton.disabled = true;
-        }
-
+        if (submitButton) submitButton.disabled = true;
+        
         // Clear the timer when an answer is submitted
         if (this.questionTimer) {
             clearInterval(this.questionTimer);
@@ -1783,15 +1620,12 @@ export class CommunicationQuiz extends BaseQuiz {
         const recommendations = {
             'Daily Communication': 'Practice maintaining clear status updates and regular check-ins with team members.',
             'Team Collaboration': 'Focus on active listening and providing constructive feedback in team settings.',
-            'Stakeholder Management': 'Work on presenting information clearly and managing expectations effectively.',
-            'Conflict Resolution': 'Study conflict resolution techniques and practice diplomatic communication.',
-            'Remote Communication': 'Improve virtual communication skills and use of collaboration tools.',
-            'Documentation': 'Enhance documentation skills with clear, concise, and well-structured content.',
-            'Presentation Skills': 'Practice presenting technical information in a clear and engaging manner.',
-            'General Communication': 'Focus on fundamental communication principles and professional etiquette.'
+            'Technical Documentation': 'Improve documentation skills with clear, structured, and comprehensive information.',
+            'Stakeholder Communication': 'Work on adapting communication style for technical and non-technical stakeholders.',
+            'Conflict Resolution': 'Develop skills for handling disagreements professionally and constructively.'
         };
 
-        return recommendations[area] || 'Continue practicing general communication skills.';
+        return recommendations[area] || 'Continue improving your overall communication skills through practice and feedback.';
     }
 
     async endGame(failed = false) {
@@ -1954,6 +1788,161 @@ export class CommunicationQuiz extends BaseQuiz {
             console.error('[CommunicationQuiz] Error clearing localStorage:', error);
         }
     }
+
+    /**
+     * Helper method to diagnose quiz progress issues
+     * Can be called from browser console with: document.querySelector('.quiz-container').__quiz.debugQuiz()
+     */
+    async debugQuizProgress() {
+        const username = localStorage.getItem('username');
+        if (!username) {
+            console.error('No username found, cannot debug quiz progress');
+            return;
+        }
+
+        console.group('Communication Quiz Progress Debugging');
+        console.log('Quiz name:', this.quizName);
+        console.log('Current state:', {
+            experience: this.player.experience,
+            currentScenario: this.player.currentScenario,
+            questionsAnswered: this.player.questionHistory.length,
+            toolsCount: this.player.tools.length
+        });
+        
+        // Test basic API call
+        try {
+            const normalizedName = this.normalizeQuizName(this.quizName);
+            console.log('Normalized quiz name:', normalizedName);
+            
+            const progress = await this.apiService.getQuizProgress(normalizedName);
+            console.log('API Response:', progress);
+        } catch (e) {
+            console.error('Error getting API progress:', e);
+        }
+        
+        // Check direct localStorage keys
+        try {
+            const keys = ['communication', 'Communication', this.quizName];
+            for (const key of keys) {
+                const storageKey = `quiz_progress_${username}_${key}`;
+                const data = localStorage.getItem(storageKey);
+                console.log(`${storageKey}: ${data ? 'EXISTS' : 'not found'}`);
+                if (data) {
+                    try {
+                        console.log(JSON.parse(data));
+                    } catch (e) {
+                        console.log('Invalid JSON');
+                    }
+                }
+            }
+        } catch (e) {
+            console.error('Error checking localStorage:', e);
+        }
+        
+        console.groupEnd();
+    }
+
+    async loadProgress() {
+        try {
+            const username = localStorage.getItem('username');
+            if (!username) {
+                console.error('[CommunicationQuiz] No user found, cannot load progress');
+                return false;
+            }
+
+            // Use user-specific key for localStorage
+            const storageKey = `quiz_progress_${username}_${this.quizName}`;
+            const savedProgress = await this.apiService.getQuizProgress(this.quizName);
+            console.log('[CommunicationQuiz] Raw API Response:', savedProgress);
+            let progress = null;
+            
+            if (savedProgress && savedProgress.data) {
+                // Normalize the data structure
+                progress = {
+                    experience: savedProgress.data.experience || 0,
+                    tools: savedProgress.data.tools || [],
+                    questionHistory: savedProgress.data.questionHistory || [],
+                    currentScenario: savedProgress.data.currentScenario || 0,
+                    status: savedProgress.data.status || 'in-progress'
+                };
+                console.log('[CommunicationQuiz] Normalized progress data:', progress);
+            } else {
+                // Try loading from localStorage as fallback
+                const localData = localStorage.getItem(storageKey);
+                if (localData) {
+                    const parsed = JSON.parse(localData);
+                    progress = parsed.data || parsed;
+                    console.log('[CommunicationQuiz] Loaded progress from localStorage:', progress);
+                }
+            }
+
+            if (progress) {
+                // Set the player state from progress
+                this.player.experience = progress.experience || 0;
+                this.player.tools = progress.tools || [];
+                this.player.questionHistory = progress.questionHistory || [];
+                this.player.currentScenario = progress.currentScenario || 0;
+
+                // Ensure we're updating the UI correctly
+                this.updateProgress();
+                
+                // Check quiz status and show appropriate screen
+                if (progress.status === 'failed') {
+                    this.endGame(true);
+                    return true;
+                } else if (progress.status === 'completed' || progress.status === 'passed') {
+                    this.endGame(false);
+                    return true;
+                }
+
+                return true;
+            }
+            return false;
+        } catch (error) {
+            console.error('[CommunicationQuiz] Failed to load progress:', error);
+            return false;
+        }
+    }
+
+    async saveProgress() {
+        try {
+            if (!this.player) {
+                console.error('[CommunicationQuiz] Player object not initialized');
+                return false;
+            }
+
+            // Determine the current quiz status
+            let status = 'in-progress';
+            
+            // Check if all 15 questions answered (quiz complete)
+            if (this.player.questionHistory.length >= 15) {
+                const scorePercentage = this.calculateScorePercentage();
+                status = scorePercentage >= 70 ? 'passed' : 'failed';
+            }
+            
+            // Create progress object that's compatible with API
+            const progress = {
+                experience: this.player.experience || 0,
+                questionsAnswered: this.player.questionHistory.length,
+                status: status,
+                scorePercentage: this.calculateScorePercentage(),
+                currentScenario: this.player.currentScenario,
+                questionHistory: this.player.questionHistory,
+                tools: this.player.tools || []
+            };
+            
+            console.log('[CommunicationQuiz] Saving progress:', progress);
+            
+            // Save progress using API service
+            const result = await this.apiService.saveQuizProgress(this.quizName, progress);
+            console.log('[CommunicationQuiz] Save result:', result);
+            
+            return result.success;
+        } catch (error) {
+            console.error('[CommunicationQuiz] Error saving progress:', error);
+            return false;
+        }
+    }
 }
 
 // Initialize quiz when the page loads
@@ -1962,5 +1951,12 @@ document.addEventListener('DOMContentLoaded', () => {
     BaseQuiz.clearQuizInstances('communication');
     
     const quiz = new CommunicationQuiz();
+    
+    // Expose the quiz for debugging
+    const quizContainer = document.querySelector('.quiz-container');
+    if (quizContainer) {
+        quizContainer.__quiz = quiz;
+    }
+    
     quiz.startGame();
 }); 
