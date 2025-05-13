@@ -1707,6 +1707,11 @@ export class BaseQuiz {
      * @returns {boolean} - Whether progress was successfully loaded
      */
     async loadProgress() {
+        // Defensive: prevent running for CommunicationQuiz
+        if (this.quizName === 'communication') {
+            console.warn('[BaseQuiz][loadProgress] Called for communication quiz, aborting to prevent overwrite.');
+            return false;
+        }
         try {
             // Normalize quiz name
             const normalizedQuizName = this.normalizeQuizName(this.quizName);
