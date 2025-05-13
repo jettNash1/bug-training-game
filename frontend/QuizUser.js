@@ -39,33 +39,35 @@ export class QuizUser {
     }
 
     clearLocalStorageData() {
-        // Clear all quiz-related data for this user
         const quizTypes = [
-            'communication', 'initiative', 'time-management', 'tester-mindset',
-            'risk-analysis', 'risk-management', 'non-functional', 'test-support',
-            'issue-verification', 'build-verification', 'issue-tracking-tools',
-            'raising-tickets', 'reports', 'cms-testing', 'email-testing', 'content-copy',
-            'locale-testing', 'script-metrics-troubleshooting','standard-script-testing',
-            'test-types-tricks', 'exploratory', 'automation-interview', 'sanity-smoke'
+            'tester-mindset',
+            'communication',
+            'initiative',
+            'fully-scripted',
+            'exploratory',
+            'script-metrics-troubleshooting',
+            'locale-testing',
+            'test-types-tricks',
+            'test-support',
+            'build-verification',
+            'sanity-smoke',
+            'cms-testing',
+            'time-management'
         ];
 
         quizTypes.forEach(quizName => {
-            // Clear all possible variations of the quiz name
-            const variations = [
-                quizName,                                              // original (hyphenated)
-                this.normalizeQuizName(quizName),                     // camelCase
-                quizName.replace(/-/g, ''),                           // no hyphens
-                quizName.toUpperCase(),                               // uppercase
-                quizName.toLowerCase(),                               // lowercase
-                // Special handling for CMS-Testing variations
-                quizName === 'cms-testing' ? 'CMS-Testing' : null,    // historical CMS-Testing
-                quizName === 'cms-testing' ? 'cmsTesting' : null      // historical cmsTesting
-            ].filter(Boolean); // Remove null values
-
-            variations.forEach(variant => {
-                localStorage.removeItem(`quiz_progress_${this.username}_${variant}`);
-                localStorage.removeItem(`quizResults_${this.username}_${variant}`);
-            });
+            // Only use the normalized quiz name
+            const normalizedQuizName = this.normalizeQuizName(quizName);
+            console.log(`[QuizUser] Clearing quiz data for: ${quizName} → ${normalizedQuizName}`);
+            
+            // Clear quiz progress using the normalized name
+            localStorage.removeItem(`quiz_progress_${this.username}_${normalizedQuizName}`);
+            localStorage.removeItem(`quizResults_${this.username}_${normalizedQuizName}`);
+            
+            // For communication quiz, also clear any potential direct backup
+            if (normalizedQuizName === 'communication') {
+                localStorage.removeItem(`quiz_progress_${this.username}_communication_direct`);
+            }
         });
 
         // Clear general user data
@@ -77,26 +79,48 @@ export class QuizUser {
         // Null check for safety
         if (!quizName) return '';
         
-        // Always return 'tester-mindset' for any variant
-        if (typeof quizName === 'string' && quizName.toLowerCase().replace(/[_\s]/g, '-').includes('tester')) {
+        // First standardize to lowercase
+        const lowerName = typeof quizName === 'string' ? quizName.toLowerCase() : '';
+        
+        // Special case for tester-mindset variations
+        if (lowerName.includes('tester') && 
+            (lowerName.includes('mindset') || lowerName.includes('mind'))) {
             return 'tester-mindset';
         }
         
-        // Ensure we're handling the communication quiz consistently
-        if (typeof quizName === 'string' && 
-            (quizName.toLowerCase().includes('communic') || quizName.toLowerCase().includes('communi'))) {
+        // Specific handling for the communication quiz, which is particularly problematic
+        if (lowerName.includes('communic') || lowerName.includes('communi')) {
+            console.log(`[QuizUser] Normalizing "${quizName}" to "communication"`);
             return 'communication';
         }
         
-        // For script-metrics, ensure consistent name
-        if (typeof quizName === 'string' && 
-            quizName.toLowerCase().includes('script') && 
-            quizName.toLowerCase().includes('metric')) {
+        // Specific handling for the script-metrics quiz
+        if (lowerName.includes('script') && 
+            (lowerName.includes('metric') || lowerName.includes('troubleshoot'))) {
+            console.log(`[QuizUser] Normalizing "${quizName}" to "script-metrics-troubleshooting"`);
             return 'script-metrics-troubleshooting';
         }
         
-        // For all other quizzes, use the existing camelCase conversion
-        return quizName.replace(/-([a-z])/g, g => g[1].toUpperCase());
+        // Special case for CMS testing
+        if (lowerName.includes('cms') || lowerName.includes('content-management')) {
+            console.log(`[QuizUser] Normalizing "${quizName}" to "cms-testing"`);
+            return 'cms-testing';
+        }
+        
+        // If already in kebab-case format, keep it as is
+        if (lowerName === quizName && lowerName.includes('-')) {
+            return lowerName;
+        }
+        
+        // Otherwise standardize to kebab-case consistently
+        const normalized = lowerName
+            .replace(/([A-Z])/g, '-$1')
+            .replace(/_{1,}/g, '-')
+            .replace(/--+/g, '-')
+            .replace(/^-+|-+$/g, '');
+            
+        console.log(`[QuizUser] Normalized "${quizName}" to "${normalized}"`);
+        return normalized;
     }
 
     loadFromLocalStorage() {

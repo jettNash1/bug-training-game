@@ -664,14 +664,14 @@ export class APIService {
                 if (username) {
                     const normalizedQuizName = this.normalizeQuizName(quizName);
                     const storageKey = `quiz_progress_${username}_${normalizedQuizName}`;
-                    const localData = localStorage.getItem(storageKey);
-                    
-                    if (localData) {
-                        try {
-                            const parsed = JSON.parse(localData);
+                        const localData = localStorage.getItem(storageKey);
+                        
+                        if (localData) {
+                            try {
+                                const parsed = JSON.parse(localData);
                             console.log(`[API] Using emergency localStorage fallback for ${normalizedQuizName}`);
-                            
-                            if (parsed && parsed.data) {
+                                
+                                if (parsed && parsed.data) {
                                 // Ensure experience is a valid number
                                 const sanitizedData = {
                                     ...parsed.data,
@@ -680,12 +680,12 @@ export class APIService {
                                     source: 'localStorage_emergency'
                                 };
                                 
-                                return {
-                                    success: true,
+                                    return {
+                                        success: true,
                                     data: sanitizedData
-                                };
-                            }
-                        } catch (e) {
+                                    };
+                                }
+                            } catch (e) {
                             console.error(`[API] Error parsing emergency localStorage data:`, e);
                         }
                     }
@@ -2692,7 +2692,7 @@ export class APIService {
                             
                             if (retryResponse && retryResponse.success) {
                                 console.log(`[API] Special retry for communication quiz succeeded`);
-                            } else {
+                } else {
                                 console.warn(`[API] Special retry for communication quiz failed`);
                             }
                         } catch (retryError) {
@@ -2704,12 +2704,12 @@ export class APIService {
                 }
             }
             
-            return {
-                success: true,
-                data: progressData,
-                apiSaved: apiSaveSuccessful,
-                localSaved: localSaveSuccessful
-            };
+                return {
+                    success: true,
+                    data: progressData,
+                    apiSaved: apiSaveSuccessful,
+                    localSaved: localSaveSuccessful
+                };
             
         } catch (error) {
             console.error(`[API] Error saving quiz progress:`, error);
@@ -2731,10 +2731,10 @@ export class APIService {
                     
                     const normalizedQuizName = this.normalizeQuizName(quizName);
                     const storageKey = `quiz_progress_${username}_${normalizedQuizName}`;
-                    localStorage.setItem(storageKey, JSON.stringify({ 
+                        localStorage.setItem(storageKey, JSON.stringify({ 
                         data: fallbackProgress,
-                        timestamp: new Date().toISOString() 
-                    }));
+                            timestamp: new Date().toISOString() 
+                        }));
                     
                     console.log(`[API] Saved emergency fallback to localStorage for ${normalizedQuizName}`);
                     
@@ -2790,7 +2790,7 @@ export class APIService {
             
             // Only clear the standard normalized quiz name in localStorage
             if (localStorage.getItem(storageKey) !== null) {
-                localStorage.removeItem(storageKey);
+                    localStorage.removeItem(storageKey);
                 console.log(`[API] Cleared localStorage entry for quiz: ${normalizedQuizName}`);
                 return true;
             } else {
