@@ -1811,9 +1811,16 @@ export class BaseQuiz {
                 }
                 
                 // Ensure currentScenario matches question history length
-                if (progress.questionHistory.length > 0 && 
-                    (progress.currentScenario === undefined || progress.currentScenario === null)) {
-                    progress.currentScenario = progress.questionHistory.length;
+                if (progress.questionHistory.length > 0) {
+                    // If currentScenario is not set or is invalid, set it to the next unanswered question
+                    if (progress.currentScenario === undefined || 
+                        progress.currentScenario === null || 
+                        progress.currentScenario < progress.questionHistory.length) {
+                        progress.currentScenario = progress.questionHistory.length;
+                    }
+                } else {
+                    // If no questions answered, start from the beginning
+                    progress.currentScenario = 0;
                 }
                 
                 // Fix inconsistent state: if quiz is marked as completed but has no progress
@@ -1844,6 +1851,8 @@ export class BaseQuiz {
                     await this.saveProgress();
                 }
 
+                // Show the current question based on progress
+                this.displayScenario();
                 return true;
             }
             
