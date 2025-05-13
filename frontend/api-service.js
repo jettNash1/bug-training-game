@@ -2538,7 +2538,20 @@ export class APIService {
 
     async saveQuizProgress(quizName, progress) {
         try {
-            console.log(`[API] Saving progress for quiz ${quizName}:`, progress);
+            console.log(`[API Debug] Raw experience value type: ${typeof progress.experience}, value: ${progress.experience}, isNaN: ${isNaN(progress.experience)}`);
+            
+            // Type checking and sanitization
+            const sanitizedExperience = !isNaN(parseFloat(progress.experience)) ? parseFloat(progress.experience) : 0;
+            
+            // Create a sanitized copy of the progress object
+            const sanitizedProgress = {
+                ...progress,
+                experience: sanitizedExperience
+            };
+            
+            console.log(`[API Debug] Sanitized experience: ${sanitizedProgress.experience}`);
+            
+            console.log(`[API] Saving progress for quiz ${quizName}:`, sanitizedProgress);
             
             // Normalize the quiz name first
             const normalizedQuizName = this.normalizeQuizName(quizName);
@@ -2550,14 +2563,14 @@ export class APIService {
             
             // Ensure all required fields are present with defaults
             const progressData = {
-                experience: progress.experience || 0,
-                questionsAnswered: progress.questionsAnswered || 0,
-                status: progress.status || 'in-progress',
-                scorePercentage: typeof progress.scorePercentage === 'number' ? progress.scorePercentage : 0,
-                tools: progress.tools || [],
-                questionHistory: progress.questionHistory || [],
-                currentScenario: progress.currentScenario || 0,
-                randomizedScenarios: progress.randomizedScenarios || {},
+                experience: sanitizedProgress.experience || 0,
+                questionsAnswered: sanitizedProgress.questionsAnswered || 0,
+                status: sanitizedProgress.status || 'in-progress',
+                scorePercentage: typeof sanitizedProgress.scorePercentage === 'number' ? sanitizedProgress.scorePercentage : 0,
+                tools: sanitizedProgress.tools || [],
+                questionHistory: sanitizedProgress.questionHistory || [],
+                currentScenario: sanitizedProgress.currentScenario || 0,
+                randomizedScenarios: sanitizedProgress.randomizedScenarios || {},
                 lastUpdated: new Date().toISOString()
             };
             
@@ -2656,7 +2669,7 @@ export class APIService {
                     for (const variation of quizNameVariations) {
                         const storageKey = `quiz_progress_${username}_${variation}`;
                         localStorage.setItem(storageKey, JSON.stringify({ 
-                            data: progress,
+                            data: sanitizedProgress,
                             timestamp: new Date().toISOString() 
                         }));
                     }
@@ -2665,7 +2678,7 @@ export class APIService {
                     return {
                         success: true,
                         message: 'Saved to localStorage only (API failed)',
-                        data: progress,
+                        data: sanitizedProgress,
                         apiSaved: false,
                         localSaved: true
                     };
@@ -2677,7 +2690,7 @@ export class APIService {
             return {
                 success: false,
                 message: error.message || 'Failed to save quiz progress',
-                data: progress // Return original progress in case of error
+                data: sanitizedProgress // Return sanitized progress in case of error
             };
         }
     }
