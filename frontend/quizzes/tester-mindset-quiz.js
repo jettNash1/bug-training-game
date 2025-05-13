@@ -1681,10 +1681,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (username) {
         // List all quiz names that might conflict
         const potentialConflicts = [
-            'script-metrics-troubleshooting',
-            'standard-script-testing',
-            'fully-scripted',
-            'exploratory'
+
         ];
         
         // Clean localStorage to prevent cross-contamination
