@@ -1808,6 +1808,27 @@ export class BaseQuiz {
                     progress.currentScenario = progress.questionHistory.length;
                     console.log(`[BaseQuiz] Fixing missing currentScenario to match history length: ${progress.currentScenario}`);
                 }
+
+                // Fix inconsistent state: if the quiz is marked as completed but has no progress, reset status
+                const hasInconsistentState = (progress.status === 'completed' || progress.status === 'passed' || progress.status === 'failed') && 
+                                           (progress.questionHistory.length === 0 || progress.currentScenario === 0);
+                
+                if (hasInconsistentState) {
+                    console.log(`[BaseQuiz] Detected inconsistent state with status=${progress.status} but no progress. Resetting to in-progress.`);
+                    progress.status = 'in-progress';
+                    
+                    // Also update in the API to fix the inconsistency for future loads
+                    try {
+                        const fixedData = {
+                            ...savedProgress.data,
+                            status: 'in-progress'
+                        };
+                        await this.apiService.saveQuizProgress(quizName, fixedData);
+                        console.log(`[BaseQuiz] Fixed inconsistent state in API for ${quizName}`);
+                    } catch (fixError) {
+                        console.error(`[BaseQuiz] Failed to fix inconsistent state in API:`, fixError);
+                    }
+                }
                 
                 // Log what we're loading
                 console.log(`[BaseQuiz] Loaded progress: ${progress.questionHistory.length} questions answered, ` + 
