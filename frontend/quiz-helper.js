@@ -934,148 +934,40 @@ export class BaseQuiz {
             status = scorePercentage >= this.passPercentage ? 'passed' : 'failed';
         }
         
-        // Log the current experience value and validate it
-        console.log(`[BaseQuiz][saveProgress] Current experience raw value: ${this.player.experience}, type: ${typeof this.player.experience}`);
-        
-        // Parse and sanitize the experience value to ensure it's a valid number
-        let experienceValue = 0;
-        if (this.player.experience !== undefined && this.player.experience !== null) {
-            if (typeof this.player.experience === 'string') {
-                experienceValue = parseFloat(this.player.experience) || 0;
-            } else if (typeof this.player.experience === 'number') {
-                experienceValue = isNaN(this.player.experience) ? 0 : this.player.experience;
-            }
-        }
-        
-        console.log(`[BaseQuiz][saveProgress] Sanitized experience value: ${experienceValue}`);
-        
-        // For communication quiz, ensure we have a valid experience value
-        const normalizedQuizName = this.normalizeQuizName(this.quizName);
-        if (normalizedQuizName === 'communication') {
-            // If experience is still 0, try to calculate from question history
-            if (experienceValue === 0 && Array.isArray(this.player.questionHistory) && this.player.questionHistory.length > 0) {
-                console.log(`[BaseQuiz][saveProgress] Special handling for communication quiz with zero experience`);
-                
-                let calculatedExperience = 0;
-                
-                // Try to calculate from question history entries
-                this.player.questionHistory.forEach(question => {
-                    if (question.selectedAnswer && typeof question.selectedAnswer.experience === 'number') {
-                        calculatedExperience += question.selectedAnswer.experience;
-                    } else if (question.experience && typeof question.experience === 'number') {
-                        calculatedExperience += question.experience;
-                    }
-                });
-                
-                if (calculatedExperience > 0) {
-                    console.log(`[BaseQuiz][saveProgress] Calculated experience from history: ${calculatedExperience}`);
-                    experienceValue = calculatedExperience;
-                } else {
-                    // If all else fails, use a simple formula based on answered questions - approximate at 20XP per question
-                    const estimatedXP = this.player.questionHistory.length * 20;
-                    console.log(`[BaseQuiz][saveProgress] Using estimated experience for communication quiz: ${estimatedXP}`);
-                    experienceValue = estimatedXP;
-                }
-            }
-        }
-        
-        // Create the progress data object with sanitized values
-        let progressData = {
-            questionsAnswered: this.player.questionHistory.length,
-            questionHistory: this.player.questionHistory,
-            experience: experienceValue,
-            tools: Array.isArray(this.player.tools) ? this.player.tools : [],
+        // Create a standardized progress object
+        const progressData = {
+            experience: this.player.experience || 0,
+            tools: this.player.tools || [],
+            questionHistory: this.player.questionHistory || [],
             currentScenario: this.player.currentScenario || 0,
             lastUpdated: new Date().toISOString(),
+            questionsAnswered: this.player.questionHistory.length,
             status: status,
-            scorePercentage: Math.round((this.player.questionHistory.filter(q => q.isCorrect).length / this.totalQuestions) * 100),
-            randomizedScenarios: this.randomizedScenarios || {}
+            scorePercentage: this.calculateScorePercentage()
         };
-        
-        // Optimize the progress data to reduce size
-        progressData = this.optimizeProgressData(progressData);
-        
+
         try {
             const username = localStorage.getItem('username');
             if (!username) {
-                console.error('[BaseQuiz][saveProgress] No user found, cannot save progress');
-                return;
+                console.error('[BaseQuiz] No user found, cannot save progress');
+                return false;
             }
+
+            // Normalize quiz name
+            const normalizedQuizName = this.normalizeQuizName(this.quizName);
             
-            // Normalize quiz name consistently
-            const quizName = this.normalizeQuizName(this.quizName);
-            console.log(`[BaseQuiz][saveProgress] Normalized quizName from ${this.quizName} to ${quizName}`);
+            // Save to localStorage as backup
+            const storageKey = `quiz_progress_${username}_${normalizedQuizName}`;
+            localStorage.setItem(storageKey, JSON.stringify({ data: progressData }));
             
-            // Log the final progress data we're about to save
-            console.log(`[BaseQuiz][saveProgress] Final progress data for ${quizName}:`, {
-                questionsAnswered: progressData.questionsAnswered,
-                experience: progressData.experience,
-                status: progressData.status,
-                currentScenario: progressData.currentScenario
-            });
+            // Save to API
+            console.log('[BaseQuiz] Saving progress to API:', progressData);
+            await this.apiService.saveQuizProgress(normalizedQuizName, progressData);
             
-            // Save both to localStorage (for backup) and to API
-            const storageKey = `quiz_progress_${username}_${quizName}`;
-            console.log('[BaseQuiz][saveProgress] Saving to key:', storageKey);
-            
-            // Save to localStorage first as backup
-            try {
-                localStorage.setItem(storageKey, JSON.stringify({ 
-                    data: progressData,
-                    timestamp: new Date().toISOString() 
-                }));
-                const size = JSON.stringify(progressData).length;
-                if (size > 100000) {
-                    console.warn('[BaseQuiz] Warning: Progress data is very large (>100KB)');
-                }
-                
-                // For the communication quiz, create additional direct backup with simpler name
-                if (quizName === 'communication') {
-                    const directBackupKey = `quiz_progress_${username}_communication_direct`;
-                    localStorage.setItem(directBackupKey, JSON.stringify({ 
-                        data: progressData,
-                        timestamp: new Date().toISOString(),
-                        source: 'direct_backup'
-                    }));
-                    console.log(`[BaseQuiz][saveProgress] Created additional direct backup for communication quiz`);
-                }
-            } catch (localStorageError) {
-                console.error('[BaseQuiz] Failed to save to localStorage:', localStorageError);
-            }
-            
-            // Then save to API
-            console.log(`[BaseQuiz][saveProgress] Saving to API with quizName: ${quizName}`);
-            const apiResult = await this.apiService.saveQuizProgress(quizName, progressData);
-            console.log(`[BaseQuiz][saveProgress] API save result:`, apiResult);
-            
-            // Update the player's experience with the sanitized value to keep everything consistent
-            this.player.experience = experienceValue;
-            
-            return apiResult;
+            return true;
         } catch (error) {
             console.error('[BaseQuiz] Failed to save progress:', error);
-            try {
-                const username = localStorage.getItem('username');
-                if (username) {
-                    // Use normalized quiz name in fallback too
-                    const quizName = this.normalizeQuizName(this.quizName);
-                    const storageKey = `quiz_progress_${username}_${quizName}`;
-                    const minimalProgress = {
-                        questionsAnswered: progressData.questionsAnswered,
-                        experience: progressData.experience,
-                        status: progressData.status,
-                        randomizedScenarios: progressData.randomizedScenarios
-                    };
-                    localStorage.setItem(storageKey, JSON.stringify({ 
-                        data: minimalProgress,
-                        timestamp: new Date().toISOString(),
-                        source: 'error_fallback'
-                    }));
-                    console.log('[BaseQuiz][saveProgress] Saved minimal progress to localStorage as fallback:', storageKey, minimalProgress);
-                }
-            } catch (fallbackError) {
-                console.error('[BaseQuiz] Failed to save fallback progress:', fallbackError);
-            }
+            return false;
         }
     }
 
@@ -1878,85 +1770,78 @@ export class BaseQuiz {
      * @returns {boolean} - Whether progress was successfully loaded
      */
     async loadProgress() {
-        let quizName = this.quizName;
-        quizName = this.normalizeQuizName(quizName);
         try {
+            // Normalize quiz name
+            const normalizedQuizName = this.normalizeQuizName(this.quizName);
+            
             const username = localStorage.getItem('username');
             if (!username) {
-                console.error('[Quiz] No user found, cannot load progress');
+                console.error('[BaseQuiz] No user found, cannot load progress');
                 return false;
             }
-            const storageKey = `quiz_progress_${username}_${quizName}`;
-            const savedProgress = await this.apiService.getQuizProgress(quizName);
-            console.log('[BaseQuiz][loadProgress] Loading from key:', storageKey, 'API Response:', savedProgress);
+
+            const storageKey = `quiz_progress_${username}_${normalizedQuizName}`;
+            const savedProgress = await this.apiService.getQuizProgress(normalizedQuizName);
+            console.log('[BaseQuiz] Loading from key:', storageKey, 'API Response:', savedProgress);
+            
             let progress = null;
+            
             if (savedProgress && savedProgress.data) {
                 progress = {
                     experience: savedProgress.data.experience || 0,
                     tools: savedProgress.data.tools || [],
                     questionHistory: savedProgress.data.questionHistory || [],
                     currentScenario: savedProgress.data.currentScenario || 0,
-                    status: savedProgress.data.status || 'in-progress'
+                    status: savedProgress.data.status || 'in-progress',
+                    scorePercentage: savedProgress.data.scorePercentage || 0
                 };
-                
-                // Make sure question history is valid
+            } else {
+                // Try loading from localStorage as fallback
+                const localData = localStorage.getItem(storageKey);
+                if (localData) {
+                    const parsed = JSON.parse(localData);
+                    progress = parsed.data || parsed;
+                }
+            }
+
+            if (progress) {
+                // Validate and fix any inconsistencies
                 if (!Array.isArray(progress.questionHistory)) {
                     progress.questionHistory = [];
                 }
                 
-                // If currentScenario is missing but we have questions answered, set it to match 
-                // the number of questions answered to ensure proper resuming
-                if ((progress.currentScenario === undefined || progress.currentScenario === null) 
-                    && progress.questionHistory.length > 0) {
+                // Ensure currentScenario matches question history length
+                if (progress.questionHistory.length > 0 && 
+                    (progress.currentScenario === undefined || progress.currentScenario === null)) {
                     progress.currentScenario = progress.questionHistory.length;
-                    console.log(`[BaseQuiz] Fixing missing currentScenario to match history length: ${progress.currentScenario}`);
+                }
+                
+                // Fix inconsistent state: if quiz is marked as completed but has no progress
+                if ((progress.status === 'completed' || progress.status === 'passed' || progress.status === 'failed') && 
+                    (progress.questionHistory.length === 0 || progress.currentScenario === 0)) {
+                    progress.status = 'in-progress';
                 }
 
-                // Fix inconsistent state: if the quiz is marked as completed but has no progress, reset status
-                const hasInconsistentState = (progress.status === 'completed' || progress.status === 'passed' || progress.status === 'failed') && 
-                                           (progress.questionHistory.length === 0 || progress.currentScenario === 0);
-                
-                if (hasInconsistentState) {
-                    console.log(`[BaseQuiz] Detected inconsistent state with status=${progress.status} but no progress. Resetting to in-progress.`);
-                    progress.status = 'in-progress';
-                    
-                    // Also update in the API to fix the inconsistency for future loads
-                    try {
-                        const fixedData = {
-                            ...savedProgress.data,
-                            status: 'in-progress'
-                        };
-                        await this.apiService.saveQuizProgress(quizName, fixedData);
-                        console.log(`[BaseQuiz] Fixed inconsistent state in API for ${quizName}`);
-                    } catch (fixError) {
-                        console.error(`[BaseQuiz] Failed to fix inconsistent state in API:`, fixError);
-                    }
-                }
-                
-                // Log what we're loading
-                console.log(`[BaseQuiz] Loaded progress: ${progress.questionHistory.length} questions answered, ` + 
-                           `currentScenario: ${progress.currentScenario}, status: ${progress.status}`);
-                
-                // Update the player state with the loaded data
+                // Update the player state
                 this.player.experience = progress.experience;
                 this.player.tools = progress.tools;
                 this.player.questionHistory = progress.questionHistory;
                 this.player.currentScenario = progress.currentScenario;
-                
-                // If the quiz is already completed, handle appropriately
-                if (progress.status === 'passed' || progress.status === 'failed') {
-                    console.log(`[BaseQuiz] Quiz already ${progress.status}, should show end screen`);
-                    // Optionally navigate to end screen or handle completed quiz
+
+                // If any fixes were made, save back to API
+                const needsSave = progress.currentScenario !== savedProgress?.data?.currentScenario ||
+                                progress.status !== savedProgress?.data?.status;
+                if (needsSave) {
+                    console.log('[BaseQuiz] Saving fixed progress back to API');
+                    await this.saveProgress();
                 }
-                
-                console.log('[Quiz] Previous progress loaded:', true);
+
                 return true;
-            } else {
-                console.log('[Quiz] No saved progress found');
-                return false;
             }
+            
+            return false;
         } catch (error) {
-            console.error('[Quiz] Error loading progress:', error);
+            console.error('[BaseQuiz] Error loading progress:', error);
             return false;
         }
     }
