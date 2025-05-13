@@ -1172,60 +1172,77 @@ export class CommunicationQuiz extends BaseQuiz {
         try {
             const username = localStorage.getItem('username');
             if (!username) {
-                console.error('No user found, cannot load progress');
+                console.error('[CommunicationQuiz] No user found, cannot load progress');
                 return false;
             }
 
             // Use user-specific key for localStorage
             const storageKey = `quiz_progress_${username}_${this.quizName}`;
             const savedProgress = await this.apiService.getQuizProgress(this.quizName);
-            console.log('Raw API Response:', savedProgress);
+            console.log('[CommunicationQuiz] Raw API Response:', savedProgress);
             let progress = null;
-            
+
             if (savedProgress && savedProgress.data) {
                 // Normalize the data structure
                 progress = {
                     experience: savedProgress.data.experience || 0,
                     tools: savedProgress.data.tools || [],
-                    questionHistory: savedProgress.data.questionHistory || [],
-                    currentScenario: savedProgress.data.currentScenario || 0,
-                    status: savedProgress.data.status || 'in-progress'
+                    questionHistory: Array.isArray(savedProgress.data.questionHistory) ? savedProgress.data.questionHistory : [],
+                    currentScenario: typeof savedProgress.data.currentScenario === 'number' ? savedProgress.data.currentScenario : 0,
+                    status: savedProgress.data.status || 'in-progress',
+                    scorePercentage: savedProgress.data.scorePercentage || 0
                 };
-                console.log('Normalized progress data:', progress);
+                // Always set currentScenario to questionHistory.length for consistency
+                progress.currentScenario = progress.questionHistory.length;
+                console.log('[CommunicationQuiz] Normalized progress data:', progress);
             } else {
                 // Try loading from localStorage as fallback
                 const localData = localStorage.getItem(storageKey);
                 if (localData) {
                     const parsed = JSON.parse(localData);
-                    progress = parsed;
-                    console.log('Loaded progress from localStorage:', progress);
+                    progress = parsed.data || parsed;
+                    if (progress) {
+                        progress.currentScenario = Array.isArray(progress.questionHistory) ? progress.questionHistory.length : 0;
+                    }
+                    console.log('[CommunicationQuiz] Loaded progress from localStorage:', progress);
                 }
             }
 
-            if (progress) {
-                // Set the player state from progress
-                this.player.experience = progress.experience || 0;
-                this.player.tools = progress.tools || [];
-                this.player.questionHistory = progress.questionHistory || [];
-                this.player.currentScenario = progress.currentScenario || 0;
-
-                // Ensure we're updating the UI correctly
-                this.updateProgress();
-                
-                // Check quiz status and show appropriate screen
-                if (progress.status === 'failed') {
-                    this.endGame(true);
-                    return true;
-                } else if (progress.status === 'completed') {
-                    this.endGame(false);
-                    return true;
-                }
-
-                return true;
+            if (!progress) {
+                console.warn('[CommunicationQuiz] No progress found, starting fresh.');
+                this.player.currentScenario = 0;
+                this.player.questionHistory = [];
+                this.player.experience = 0;
+                this.player.tools = [];
+                return false;
             }
-            return false;
+
+            // Restore player state
+            this.player.experience = progress.experience || 0;
+            this.player.tools = progress.tools || [];
+            this.player.questionHistory = Array.isArray(progress.questionHistory) ? progress.questionHistory : [];
+            this.player.currentScenario = progress.currentScenario;
+            this.status = progress.status || 'in-progress';
+            this.scorePercentage = progress.scorePercentage || 0;
+
+            // Log restored state
+            console.log('[CommunicationQuiz] Restored player state:', {
+                currentScenario: this.player.currentScenario,
+                questionHistoryLength: this.player.questionHistory.length,
+                experience: this.player.experience,
+                tools: this.player.tools
+            });
+
+            // Display the correct scenario/question
+            if (this.player.currentScenario >= this.totalQuestions) {
+                // All questions answered, show end screen
+                this.endGame();
+            } else {
+                this.displayScenario();
+            }
+            return true;
         } catch (error) {
-            console.error('Failed to load progress:', error);
+            console.error('[CommunicationQuiz] Failed to load progress:', error);
             return false;
         }
     }
