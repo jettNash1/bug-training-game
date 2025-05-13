@@ -1881,8 +1881,74 @@ export class BaseQuiz {
                     await this.saveProgress();
                 }
 
-                // Show the current question based on progress
-                this.displayScenario();
+                // Get the current scenarios based on progress
+                const currentScenarios = this.getCurrentScenarios();
+                const questionCount = this.player.questionHistory.length;
+                
+                // Determine which level we're in and set the correct index
+                let currentLevelIndex;
+                if (questionCount < 5) {
+                    // Basic questions (0-4)
+                    currentLevelIndex = questionCount;
+                } else if (questionCount < 10) {
+                    // Intermediate questions (5-9)
+                    currentLevelIndex = questionCount - 5;
+                } else {
+                    // Advanced questions (10-14)
+                    currentLevelIndex = questionCount - 10;
+                }
+                
+                // Get the scenario from the current randomized scenarios
+                const scenario = currentScenarios[currentLevelIndex];
+                
+                if (!scenario) {
+                    console.error('[BaseQuiz] No scenario found for current progress. Question count:', questionCount);
+                    this.endGame(true);
+                    return true;
+                }
+
+                // Update UI with current scenario
+                const titleElement = document.getElementById('scenario-title');
+                const descriptionElement = document.getElementById('scenario-description');
+                const optionsContainer = document.getElementById('options-container');
+
+                if (titleElement) titleElement.textContent = scenario.title;
+                if (descriptionElement) descriptionElement.textContent = scenario.description;
+                if (optionsContainer) {
+                    optionsContainer.innerHTML = '';
+                    scenario.options.forEach((option, index) => {
+                        const optionDiv = document.createElement('div');
+                        optionDiv.className = 'option';
+                        optionDiv.innerHTML = `
+                            <input type="radio" 
+                                name="option" 
+                                value="${index}" 
+                                id="option${index}"
+                                tabindex="0"
+                                aria-label="${option.text}">
+                            <label for="option${index}">${option.text}</label>
+                        `;
+                        optionsContainer.appendChild(optionDiv);
+                    });
+                }
+
+                // Record start time for this question
+                this.questionStartTime = Date.now();
+
+                // Only check once if timer should be disabled (using already set timerDisabled flag)
+                if (this.timePerQuestion === 0 || this.timerDisabled) {
+                    console.log('[Quiz] Timer is disabled, hiding timer container');
+                    const timerContainer = document.getElementById('timer-container');
+                    if (timerContainer) {
+                        timerContainer.style.display = 'none';
+                    }
+                } else {
+                    // Initialize timer for the new question
+                    this.initializeTimer();
+                }
+
+                // Update progress display
+                this.updateProgress();
                 return true;
             }
             
