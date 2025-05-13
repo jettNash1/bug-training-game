@@ -1321,76 +1321,69 @@ export class CommunicationQuiz extends BaseQuiz {
     }
 
     displayScenario() {
-        const currentScenarios = this.getCurrentScenarios();
-        
-        // Check if we've answered all 15 questions
-        if (this.player.questionHistory.length >= 15) {
-            console.log('All 15 questions answered, ending game');
+        // Use currentScenario for all progress logic
+        const currentScenarioIndex = this.player.currentScenario;
+        const totalAnswered = this.player.questionHistory.length;
+        const totalQuestions = this.totalQuestions || 15;
+
+        // Check if we've answered all questions
+        if (currentScenarioIndex >= totalQuestions) {
+            console.log('[displayScenario] All questions answered, ending game');
             this.endGame(false);
             return;
         }
-        
-        // Get the next scenario based on current progress
+
+        // Determine level and scenario set
         let scenario;
-        const questionCount = this.player.questionHistory.length;
-        
-        // Reset currentScenario based on the current level
-        if (questionCount < 5) {
-            // Basic questions (0-4)
-            scenario = this.basicScenarios[questionCount];
-            this.player.currentScenario = questionCount;
-        } else if (questionCount < 10) {
-            // Intermediate questions (5-9)
-            scenario = this.intermediateScenarios[questionCount - 5];
-            this.player.currentScenario = questionCount - 5;
-        } else if (questionCount < 15) {
-            // Advanced questions (10-14)
-            scenario = this.advancedScenarios[questionCount - 10];
-            this.player.currentScenario = questionCount - 10;
+        let scenarioSet;
+        let scenarioLevel;
+        if (currentScenarioIndex < 5) {
+            scenarioSet = this.basicScenarios;
+            scenario = scenarioSet[currentScenarioIndex];
+            scenarioLevel = 'Basic';
+        } else if (currentScenarioIndex < 10) {
+            scenarioSet = this.intermediateScenarios;
+            scenario = scenarioSet[currentScenarioIndex - 5];
+            scenarioLevel = 'Intermediate';
+        } else if (currentScenarioIndex < 15) {
+            scenarioSet = this.advancedScenarios;
+            scenario = scenarioSet[currentScenarioIndex - 10];
+            scenarioLevel = 'Advanced';
         }
 
         if (!scenario) {
-            console.error('No scenario found for current progress. Question count:', questionCount);
+            console.error('[displayScenario] No scenario found for currentScenario:', currentScenarioIndex);
             this.endGame(true);
             return;
         }
 
         // Store current question number for consistency
-        this.currentQuestionNumber = questionCount + 1;
-        
+        this.currentQuestionNumber = currentScenarioIndex + 1;
+
         // Show level transition message at the start of each level or when level changes
-        const currentLevel = this.getCurrentLevel();
-        const previousLevel = questionCount > 0 ? 
-            (questionCount <= 5 ? 'Basic' : 
-             questionCount <= 10 ? 'Intermediate' : 'Advanced') : null;
-            
-        if (questionCount === 0 || 
-            (questionCount === 5 && currentLevel === 'Intermediate') || 
-            (questionCount === 10 && currentLevel === 'Advanced')) {
+        if (
+            currentScenarioIndex === 0 ||
+            (currentScenarioIndex === 5 && scenarioLevel === 'Intermediate') ||
+            (currentScenarioIndex === 10 && scenarioLevel === 'Advanced')
+        ) {
             const transitionContainer = document.getElementById('level-transition-container');
             if (transitionContainer) {
-                transitionContainer.innerHTML = ''; // Clear any existing messages
-                
+                transitionContainer.innerHTML = '';
                 const levelMessage = document.createElement('div');
                 levelMessage.className = 'level-transition';
                 levelMessage.setAttribute('role', 'alert');
-                levelMessage.textContent = `Starting ${currentLevel} Questions`;
-                
+                levelMessage.textContent = `Starting ${scenarioLevel} Questions`;
                 transitionContainer.appendChild(levelMessage);
                 transitionContainer.classList.add('active');
-                
-                // Update the level indicator
                 const levelIndicator = document.getElementById('level-indicator');
                 if (levelIndicator) {
-                    levelIndicator.textContent = `Level: ${currentLevel}`;
+                    levelIndicator.textContent = `Level: ${scenarioLevel}`;
                 }
-                
-                // Remove the message and container height after animation
                 setTimeout(() => {
                     transitionContainer.classList.remove('active');
                     setTimeout(() => {
                         transitionContainer.innerHTML = '';
-                    }, 300); // Wait for height transition to complete
+                    }, 300);
                 }, 3000);
             }
         }
@@ -1401,14 +1394,14 @@ export class CommunicationQuiz extends BaseQuiz {
         const optionsContainer = document.getElementById('options-container');
 
         if (!titleElement || !descriptionElement || !optionsContainer) {
-            console.error('Required elements not found');
+            console.error('[displayScenario] Required elements not found');
             return;
         }
 
         titleElement.textContent = scenario.title;
         descriptionElement.textContent = scenario.description;
 
-        // Update question counter immediately
+        // Update question counter
         const questionProgress = document.getElementById('question-progress');
         if (questionProgress) {
             questionProgress.textContent = `Question: ${this.currentQuestionNumber}/15`;
@@ -1419,15 +1412,11 @@ export class CommunicationQuiz extends BaseQuiz {
             ...option,
             originalIndex: index
         }));
-
-        // Shuffle the options
         for (let i = shuffledOptions.length - 1; i > 0; i--) {
             const j = Math.floor(Math.random() * (i + 1));
             [shuffledOptions[i], shuffledOptions[j]] = [shuffledOptions[j], shuffledOptions[i]];
         }
-
         optionsContainer.innerHTML = '';
-
         shuffledOptions.forEach((option, index) => {
             const optionElement = document.createElement('div');
             optionElement.className = 'option';
@@ -1445,9 +1434,8 @@ export class CommunicationQuiz extends BaseQuiz {
         });
 
         this.updateProgress();
-
-        // Initialize timer for the new question
         this.initializeTimer();
+        console.log('[displayScenario] Showing scenario', scenarioLevel, 'index', currentScenarioIndex, scenario.title);
     }
 
     async handleAnswer() {
@@ -1469,7 +1457,7 @@ export class CommunicationQuiz extends BaseQuiz {
             if (!selectedOption) return;
 
             const currentScenarios = this.getCurrentScenarios();
-            const scenario = currentScenarios[this.player.currentScenario];
+            const scenario = currentScenarios[this.player.currentScenario < 5 ? this.player.currentScenario : this.player.currentScenario < 10 ? this.player.currentScenario - 5 : this.player.currentScenario - 10];
             const originalIndex = parseInt(selectedOption.value);
             
             const selectedAnswer = scenario.options[originalIndex];
