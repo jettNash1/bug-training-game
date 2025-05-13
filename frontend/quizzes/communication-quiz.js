@@ -1883,8 +1883,8 @@ export class CommunicationQuiz extends BaseQuiz {
 // Initialize quiz when the page loads
 document.addEventListener('DOMContentLoaded', () => {
     // Clear any existing quiz instances before starting this quiz
-    BaseQuiz.clearQuizInstances('script-metrics-troubleshooting');
+    BaseQuiz.clearQuizInstances('communication');
     
-    const quiz = new ScriptMetricsTroubleshootingQuiz();
+    const quiz = new CommunicationQuiz();
     quiz.startGame();
 }); 
