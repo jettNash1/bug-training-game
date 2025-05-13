@@ -1285,6 +1285,8 @@ export class CommunicationQuiz extends BaseQuiz {
                 this.player.tools = [];
                 this.player.currentScenario = 0;
                 this.player.questionHistory = [];
+                // Only show scenario if no progress
+                this.displayScenario();
             }
             
             // Clear any existing transition messages
@@ -1293,8 +1295,6 @@ export class CommunicationQuiz extends BaseQuiz {
                 transitionContainer.innerHTML = '';
                 transitionContainer.classList.remove('active');
             }
-            
-            await this.displayScenario();
         } catch (error) {
             console.error('Failed to start game:', error);
             this.showError('Failed to start the quiz. Please try refreshing the page.');
