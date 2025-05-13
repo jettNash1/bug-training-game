@@ -537,34 +537,36 @@ export class BaseQuiz {
             return;
         }
         
-        // Make sure we have the quiz name set
-        if (!this.quizName) {
-            this.quizName = this.detectQuizNameFromPage();
-            console.log('[Quiz] Setting quiz name in startGame:', this.quizName);
-        }
-        
         try {
-            // Log diagnostics information
-            console.log('[Quiz] Running diagnostics for quiz:', this.quizName);
-            await this.logQuizProgressDiagnostics();
+            // Initialize settings and event listeners
+            await this.initializeSettings();
+            this.initializeEventListeners();
             
-            // Initialize or reinitialize guide settings
-            if (this.quizName) {
-                console.log('[Quiz] Initializing guide settings in startGame');
-                await this.initializeGuideSettings();
+            // Load previous progress
+            const hasProgress = await this.loadProgress();
+            console.log('[Quiz] Previous progress loaded:', hasProgress);
+            
+            if (!hasProgress) {
+                // Reset player state if no valid progress exists
+                this.player.experience = 0;
+                this.player.tools = [];
+                this.player.currentScenario = 0;
+                this.player.questionHistory = [];
+                this.randomizedScenarios = {};
             }
             
-            // Create a global reference for debugging
-            window.quizHelper = this;
+            // Ensure currentScenario is properly set based on progress
+            this.player.currentScenario = this.player.questionHistory.length;
             
-            // Wait for timer settings to be initialized before showing the question
-            // This ensures the correct timer value is used for the first question
-            console.log('[Quiz] Initializing timer settings before starting game...');
-            await this.initializeTimerSettings();
-            console.log('[Quiz] Timer settings initialized in startGame, timePerQuestion:', this.timePerQuestion);
+            console.log('[Quiz] Final player state before display:', 
+                       'currentScenario:', this.player.currentScenario,
+                       'questionHistory.length:', this.player.questionHistory.length);
             
-            // Now it's safe to start the quiz with the correct timer value
-            this.showQuestion();
+            // Clear UI state
+            this.clearUIState();
+            
+            // Display the current scenario
+            await this.displayScenario();
         } catch (error) {
             console.error('[Quiz] Error in startGame:', error);
             this.showError('Failed to start the quiz. Please refresh the page and try again.');
@@ -999,8 +1001,8 @@ export class BaseQuiz {
         });
 
         // Re-attach event listeners
-        this.initializeEventListeners();
-        
+            this.initializeEventListeners();
+            
         // Only check once if timer should be disabled (using already set timerDisabled flag)
         if (this.timePerQuestion === 0 || this.timerDisabled) {
             console.log('[Quiz] Timer is disabled in showQuestion, hiding timer container');
@@ -1992,6 +1994,46 @@ export class BaseQuiz {
             console.groupEnd();
         } catch (e) {
             console.error('[Quiz][Diagnostics] Error in diagnostics:', e);
+        }
+    }
+
+    async initializeSettings() {
+        // Make sure we have the quiz name set
+        if (!this.quizName) {
+            this.quizName = this.detectQuizNameFromPage();
+            console.log('[Quiz] Setting quiz name:', this.quizName);
+        }
+        
+        // Log diagnostics information
+        console.log('[Quiz] Running diagnostics for quiz:', this.quizName);
+        await this.logQuizProgressDiagnostics();
+        
+        // Initialize guide settings
+        if (this.quizName) {
+            console.log('[Quiz] Initializing guide settings');
+            await this.initializeGuideSettings();
+        }
+        
+        // Create a global reference for debugging
+        window.quizHelper = this;
+        
+        // Initialize timer settings
+        console.log('[Quiz] Initializing timer settings...');
+        await this.initializeTimerSettings();
+        console.log('[Quiz] Timer settings initialized, timePerQuestion:', this.timePerQuestion);
+    }
+
+    clearUIState() {
+        // Clear any existing transition messages
+        const transitionContainer = document.getElementById('level-transition-container');
+        if (transitionContainer) {
+            transitionContainer.innerHTML = '';
+            transitionContainer.classList.remove('active');
+        }
+        
+        // Clear any existing timer
+        if (this.questionTimer) {
+            clearInterval(this.questionTimer);
         }
     }
 }
