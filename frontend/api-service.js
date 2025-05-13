@@ -461,11 +461,38 @@ export class APIService {
                 randomizedScenarios: response.data.randomizedScenarios || {}
             };
             
-            console.log(`[API] Processed quiz progress for ${quizName}:`, {
+            // FIX: Check for incorrect status value for in-progress quizzes
+            // This is especially problematic for the communication quiz
+            console.log(`[API] Quiz progress details for ${quizName}:`, {
+                status: progress.status,
                 currentScenario: progress.currentScenario,
                 questionsAnswered: progress.questionsAnswered,
-                hasRandomizedScenarios: !!progress.randomizedScenarios
+                questionHistoryLength: progress.questionHistory.length
             });
+            
+            // Fix for inconsistent state: If quiz is marked as completed/passed/failed but has valid progress
+            // This happens more frequently with communication quiz but can affect others
+            const hasMismatchedState = 
+                (progress.status === 'completed' || progress.status === 'passed' || progress.status === 'failed') && 
+                progress.questionHistory.length > 0 && 
+                progress.questionHistory.length < 15;
+                
+            if (hasMismatchedState) {
+                console.log(`[API] INCONSISTENT STATE DETECTED for ${quizName}: Status=${progress.status} but only ${progress.questionHistory.length}/15 questions answered. Fixing...`);
+                // Reset the status to in-progress
+                progress.status = 'in-progress';
+                
+                // Set correct currentScenario to match question history length for proper resumption
+                if (progress.currentScenario === 0 && progress.questionHistory.length > 0) {
+                    progress.currentScenario = progress.questionHistory.length;
+                    console.log(`[API] Fixing currentScenario to match questionHistory.length: ${progress.currentScenario}`);
+                }
+                
+                // Immediately save the corrected state back to the API
+                this.saveQuizProgress(quizName, progress)
+                    .then(() => console.log(`[API] Successfully fixed inconsistent state for ${quizName}`))
+                    .catch(err => console.error(`[API] Failed to save fixed state for ${quizName}:`, err));
+            }
             
             return {
                 success: true,
