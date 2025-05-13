@@ -1143,7 +1143,7 @@ export class CommunicationQuiz extends BaseQuiz {
             if (this.player.questionHistory.length >= 15) {
                 console.log('[CommunicationQuiz] All 15 questions answered, ending game');
                 this.endGame(false);
-                return;
+                return; 
             }
             
             // Get the current question count
