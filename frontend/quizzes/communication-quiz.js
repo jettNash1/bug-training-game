@@ -1176,14 +1176,20 @@ export class CommunicationQuiz extends BaseQuiz {
                 return false;
             }
 
+            // Log quiz name and normalized quiz name
+            const quizName = this.quizName;
+            const normalizedQuizName = this.apiService.normalizeQuizName(quizName);
+            console.log('[CommunicationQuiz][loadProgress] quizName:', quizName, 'normalizedQuizName:', normalizedQuizName);
+
             // Use user-specific key for localStorage
-            const storageKey = `quiz_progress_${username}_${this.quizName}`;
-            const savedProgress = await this.apiService.getQuizProgress(this.quizName);
-            console.log('[CommunicationQuiz] Raw API Response:', savedProgress);
+            const storageKey = `quiz_progress_${username}_${normalizedQuizName}`;
+            const savedProgress = await this.apiService.getQuizProgress(normalizedQuizName);
+            console.log('[CommunicationQuiz][loadProgress] Raw API Response:', savedProgress);
             let progress = null;
 
             if (savedProgress && savedProgress.data) {
-                // Normalize the data structure
+                // Log the actual data fields
+                console.log('[CommunicationQuiz][loadProgress] API progress data:', savedProgress.data);
                 progress = {
                     experience: savedProgress.data.experience || 0,
                     tools: savedProgress.data.tools || [],
@@ -1194,22 +1200,23 @@ export class CommunicationQuiz extends BaseQuiz {
                 };
                 // Always set currentScenario to questionHistory.length for consistency
                 progress.currentScenario = progress.questionHistory.length;
-                console.log('[CommunicationQuiz] Normalized progress data:', progress);
+                console.log('[CommunicationQuiz][loadProgress] Normalized progress data:', progress);
             } else {
                 // Try loading from localStorage as fallback
                 const localData = localStorage.getItem(storageKey);
+                console.log('[CommunicationQuiz][loadProgress] localStorage raw:', localData);
                 if (localData) {
                     const parsed = JSON.parse(localData);
                     progress = parsed.data || parsed;
                     if (progress) {
                         progress.currentScenario = Array.isArray(progress.questionHistory) ? progress.questionHistory.length : 0;
                     }
-                    console.log('[CommunicationQuiz] Loaded progress from localStorage:', progress);
+                    console.log('[CommunicationQuiz][loadProgress] Loaded progress from localStorage:', progress);
                 }
             }
 
             if (!progress) {
-                console.warn('[CommunicationQuiz] No progress found, starting fresh.');
+                console.warn('[CommunicationQuiz][loadProgress] No progress found, starting fresh.');
                 this.player.currentScenario = 0;
                 this.player.questionHistory = [];
                 this.player.experience = 0;
@@ -1226,7 +1233,7 @@ export class CommunicationQuiz extends BaseQuiz {
             this.scorePercentage = progress.scorePercentage || 0;
 
             // Log restored state
-            console.log('[CommunicationQuiz] Restored player state:', {
+            console.log('[CommunicationQuiz][loadProgress] Restored player state:', {
                 currentScenario: this.player.currentScenario,
                 questionHistoryLength: this.player.questionHistory.length,
                 experience: this.player.experience,
@@ -1242,7 +1249,7 @@ export class CommunicationQuiz extends BaseQuiz {
             }
             return true;
         } catch (error) {
-            console.error('[CommunicationQuiz] Failed to load progress:', error);
+            console.error('[CommunicationQuiz][loadProgress] Failed to load progress:', error);
             return false;
         }
     }
