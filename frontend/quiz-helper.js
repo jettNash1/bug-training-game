@@ -1828,6 +1828,14 @@ export class BaseQuiz {
                 this.player.questionHistory = progress.questionHistory;
                 this.player.currentScenario = progress.currentScenario;
 
+                // Only show end screen if quiz is actually completed and has progress
+                if ((progress.status === 'completed' || progress.status === 'passed' || progress.status === 'failed') && 
+                    progress.questionHistory.length > 0 && progress.currentScenario > 0) {
+                    console.log(`[BaseQuiz] Quiz is ${progress.status} with ${progress.questionHistory.length} questions answered`);
+                    this.endGame(progress.status === 'failed');
+                    return true;
+                }
+
                 // If any fixes were made, save back to API
                 const needsSave = progress.currentScenario !== savedProgress?.data?.currentScenario ||
                                 progress.status !== savedProgress?.data?.status;
