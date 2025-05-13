@@ -964,7 +964,12 @@ export class BaseQuiz {
             
             // Save to API
             console.log('[BaseQuiz] Saving progress to API:', progressData);
-            await this.apiService.saveQuizProgress(normalizedQuizName, progressData);
+            const response = await this.apiService.saveQuizProgress(normalizedQuizName, progressData);
+            
+            if (!response || !response.success) {
+                console.error('[BaseQuiz] Failed to save progress to API:', response);
+                return false;
+            }
             
             return true;
         } catch (error) {
@@ -1404,168 +1409,70 @@ export class BaseQuiz {
 
     async handleAnswer() {
         if (this.isLoading) return;
-        
-        const submitButton = document.querySelector('.submit-button');
-        if (submitButton) {
-            submitButton.disabled = true;
-        }
-        
+
         try {
             this.isLoading = true;
-            const selectedOption = document.querySelector('input[name="option"]:checked');
-            if (!selectedOption) return;
+            const submitButton = document.querySelector('.submit-button');
+            if (submitButton) {
+                submitButton.disabled = true;
+            }
 
-            // Clear any running timer if it exists
-            this.clearTimer();
+            // Get the selected answer
+            const selectedAnswer = this.getSelectedAnswer();
+            if (!selectedAnswer) {
+                this.showError('Please select an answer');
+                return;
+            }
 
-            const currentScenarios = this.getCurrentScenarios();
-            const scenario = currentScenarios[this.player.currentScenario];
-            const originalIndex = parseInt(selectedOption.value);
-            
-            const selectedAnswer = scenario.options[originalIndex];
+            // Get the current scenario
+            const scenario = this.getCurrentScenario();
+            if (!scenario) {
+                this.showError('No scenario found');
+                return;
+            }
 
-            // Find the correct answer (option with highest experience)
-            const correctAnswer = scenario.options.reduce((prev, current) => 
-                (prev.experience > current.experience) ? prev : current
-            );
+            // Calculate time spent on this question
+            const timeSpent = this.questionStartTime ? Date.now() - this.questionStartTime : null;
 
-            // Update player state
-            this.player.experience = Math.max(0, Math.min(this.maxXP, this.player.experience + selectedAnswer.experience));
+            // Add to question history
             this.player.questionHistory.push({
                 scenario: scenario,
                 selectedAnswer: selectedAnswer,
-                maxPossibleXP: Math.max(...scenario.options.map(o => o.experience))
+                isCorrect: selectedAnswer.isCorrect,
+                maxPossibleXP: Math.max(...scenario.options.map(o => o.experience)),
+                timeSpent: timeSpent,
+                timedOut: false
             });
 
-            // Check if we're at a level transition point (question 5 or 10)
-            const totalAnswered = this.player.questionHistory.length;
-            const isTransitionPoint = totalAnswered === 5 || totalAnswered === 10;
-            const currentXP = this.player.experience;
+            // Increment current scenario
+            this.player.currentScenario++;
             
-            // Only treat it as a transition point if we meet the XP requirements
-            const isValidTransition = (totalAnswered === 5 && currentXP >= this.levelThresholds.basic.minXP) ||
-                                    (totalAnswered === 10 && currentXP >= this.levelThresholds.intermediate.minXP);
+            console.log('[BaseQuiz] After handling answer - currentScenario:', this.player.currentScenario, 
+                       'questionHistory.length:', this.player.questionHistory.length);
 
-            // Save progress with current scenario (before incrementing)
-            try {
-                await this.saveProgress();
-                
-                // If this is a valid transition point, ensure the save was successful
-                if (isValidTransition) {
-                    // Double-check the save by trying to load it back
-                    const username = localStorage.getItem('username');
-                    if (username) {
-                        const quizUser = new QuizUser(username);
-                        const progress = await quizUser.getQuizProgress(this.quizName);
-                        
-                        if (!progress || progress.questionHistory.length !== totalAnswered) {
-                            throw new Error('Progress verification failed');
-                        }
-                    }
-                }
-            } catch (error) {
-                console.error('Failed to save progress:', error);
-                if (isValidTransition) {
-                    // At transition points, we must ensure progress is saved
-                    this.showError('Failed to save your progress. Please try again.');
-                    submitButton.disabled = false;
-                    this.isLoading = false;
-                    return;
-                }
-                // For non-transition points, continue but show warning
-                this.showError('Warning: Progress may not have saved correctly');
-            }
-
-            // Also save quiz result and update display
-            const username = localStorage.getItem('username');
-            if (username) {
-                const quizUser = new QuizUser(username);
-                const score = Math.round((this.player.experience / this.maxXP) * 100);
-                
-                try {
-                    // Save both score and question history
-                    await quizUser.saveQuizResult(
-                        this.quizName,
-                        score,
-                        this.player.experience,
-                        this.player.tools,
-                        this.player.questionHistory
-                    );
-                    
-                    // For transition points, verify the save
-                    if (isValidTransition) {
-                        const savedResult = await quizUser.getQuizResult(this.quizName);
-                        if (!savedResult || savedResult.questionHistory.length !== totalAnswered) {
-                            throw new Error('Result verification failed');
-                        }
-                    }
-                } catch (error) {
-                    console.error('Failed to save quiz result:', error);
-                    if (isValidTransition) {
-                        this.showError('Failed to save your answer. Please try again.');
-                        submitButton.disabled = false;
-                        this.isLoading = false;
-                        return;
-                    }
-                    this.showError('Warning: Your progress may not have saved correctly');
-                }
-                
-                // Update progress display on index page
-                const progressElement = document.querySelector(`#${this.quizName}-progress`);
-                if (progressElement) {
-                    const totalQuestions = 15;
-                    const completedQuestions = this.player.questionHistory.length;
-                    const percentComplete = Math.round((completedQuestions / totalQuestions) * 100);
-                    
-                    // Only update if we're on the index page and this is the current user
-                    const onIndexPage = window.location.pathname.endsWith('index.html');
-                    if (onIndexPage) {
-                        progressElement.textContent = `${percentComplete}% Complete`;
-                        progressElement.classList.remove('hidden');
-                        
-                        // Update quiz item styling
-                        const quizItem = document.querySelector(`.quiz-item[data-quiz-id="${this.quizName}"]`);
-                        const progressElement = quizItem?.querySelector('.progress-indicator');
-                        
-                        if (quizItem) {
-                            console.log(`Updating quiz item style for ${this.quizName}`);
-                            console.log(`Player experience: ${this.player.experience}, isPerfectScore: ${this.player.experience >= 300}`);
-                            
-                            if (this.player.experience >= 300) {
-                                // Perfect score - Light Green with thicker, darker border
-                                console.log(`Perfect score in quiz-helper.js: experience=${this.player.experience} >= 300`);
-                                
-                                quizItem.setAttribute('style', 'background-color: #90EE90 !important; border: 2px solid #70CF70 !important; color: #000000 !important; border-radius: 12px !important;');
-                                
-                                if (progressElement) {
-                                    progressElement.setAttribute('style', 'background-color: #90EE90 !important; color: #000000 !important; display: block !important;');
-                                    progressElement.textContent = '15/15';
-                                }
-                            } else {
-                                // Not perfect - More faded Dark Yellow with thicker, darker border
-                                console.log(`Not perfect score in quiz-helper.js: experience=${this.player.experience} < 300`);
-                                
-                                quizItem.setAttribute('style', 'background-color: #F0D080 !important; border: 2px solid #E0B060 !important; color: #000000 !important; border-radius: 12px !important;');
-                                
-                                if (progressElement) {
-                                    progressElement.setAttribute('style', 'background-color: #F0D080 !important; color: #000000 !important; display: block !important;');
-                                    progressElement.textContent = '15/15';
-                                }
-                            }
-                        }
-                    }
-                }
+            // Save progress immediately after updating state
+            const saveResult = await this.saveProgress();
+            if (!saveResult) {
+                console.error('[BaseQuiz] Failed to save progress after answer');
+                this.showError('Failed to save your progress. Please try again.');
+                return;
             }
 
             // Show outcome screen and update display with answer outcome
             this.displayOutcome(selectedAnswer);
 
             this.updateProgress();
+
+            // Check if all questions have been answered
+            if (this.shouldEndGame()) {
+                await this.endGame(false);
+            }
         } catch (error) {
             console.error('Failed to handle answer:', error);
             this.showError('Failed to save your answer. Please try again.');
         } finally {
             this.isLoading = false;
+            const submitButton = document.querySelector('.submit-button');
             if (submitButton) {
                 submitButton.disabled = false;
             }
@@ -2031,6 +1938,17 @@ export class BaseQuiz {
         if (this.questionTimer) {
             clearInterval(this.questionTimer);
         }
+    }
+
+    getSelectedAnswer() {
+        const selectedOption = document.querySelector('input[name="option"]:checked');
+        if (!selectedOption) return null;
+
+        const currentScenarios = this.getCurrentScenarios();
+        const scenario = currentScenarios[this.player.currentScenario];
+        const originalIndex = parseInt(selectedOption.value);
+        
+        return scenario.options[originalIndex];
     }
 }
 
