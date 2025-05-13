@@ -1177,85 +1177,82 @@ export class CommunicationQuiz extends BaseQuiz {
                 return false;
             }
 
-            // Log quiz name and normalized quiz name
-            const quizName = this.quizName;
-            const normalizedQuizName = this.apiService.normalizeQuizName(quizName);
-            console.log('[CommunicationQuiz][loadProgress] quizName:', quizName, 'normalizedQuizName:', normalizedQuizName);
-
             // Use user-specific key for localStorage
-            const storageKey = `quiz_progress_${username}_${normalizedQuizName}`;
-            const savedProgress = await this.apiService.getQuizProgress(normalizedQuizName);
-            console.log('[CommunicationQuiz][loadProgress] Raw API Response:', savedProgress);
+            const storageKey = `quiz_progress_${username}_${this.quizName}`;
+            const savedProgress = await this.apiService.getQuizProgress(this.quizName);
+            console.log('[CommunicationQuiz] Raw API Response:', savedProgress);
             let progress = null;
 
             if (savedProgress && savedProgress.data) {
-                // Log the actual data fields
-                console.log('[CommunicationQuiz][loadProgress] API progress data:', savedProgress.data);
+                // Normalize the data structure
                 progress = {
                     experience: savedProgress.data.experience || 0,
                     tools: savedProgress.data.tools || [],
-                    questionHistory: Array.isArray(savedProgress.data.questionHistory) ? savedProgress.data.questionHistory : [],
-                    currentScenario: typeof savedProgress.data.currentScenario === 'number' ? savedProgress.data.currentScenario : 0,
+                    questionHistory: savedProgress.data.questionHistory || [],
+                    currentScenario: savedProgress.data.currentScenario || 0,
                     status: savedProgress.data.status || 'in-progress',
                     scorePercentage: savedProgress.data.scorePercentage || 0
                 };
-                // Always set currentScenario to questionHistory.length for consistency
-                progress.currentScenario = progress.questionHistory.length;
-                console.log('[CommunicationQuiz][loadProgress] Normalized progress data:', progress);
             } else {
                 // Try loading from localStorage as fallback
                 const localData = localStorage.getItem(storageKey);
-                console.log('[CommunicationQuiz][loadProgress] localStorage raw:', localData);
                 if (localData) {
                     const parsed = JSON.parse(localData);
                     progress = parsed.data || parsed;
-                    if (progress) {
-                        progress.currentScenario = Array.isArray(progress.questionHistory) ? progress.questionHistory.length : 0;
-                    }
-                    console.log('[CommunicationQuiz][loadProgress] Loaded progress from localStorage:', progress);
                 }
             }
 
-            if (!progress) {
-                console.warn('[CommunicationQuiz][loadProgress] No progress found, starting fresh.');
-                this.player.currentScenario = 0;
-                this.player.questionHistory = [];
-                this.player.experience = 0;
-                this.player.tools = [];
-                return false;
-            }
+            if (progress) {
+                // Validate and fix any inconsistencies
+                if (!Array.isArray(progress.questionHistory)) {
+                    progress.questionHistory = [];
+                }
+                
+                // Ensure currentScenario matches question history length
+                if (progress.questionHistory.length > 0) {
+                    // Set currentScenario to the next unanswered question
+                    progress.currentScenario = progress.questionHistory.length;
+                } else {
+                    // If no questions answered, start from the beginning
+                    progress.currentScenario = 0;
+                }
+                
+                // Fix inconsistent state: if quiz is marked as completed but has no progress
+                if ((progress.status === 'completed' || progress.status === 'passed' || progress.status === 'failed') && 
+                    (progress.questionHistory.length === 0 || progress.currentScenario === 0)) {
+                    progress.status = 'in-progress';
+                }
 
-            // Restore player state
-            this.player.experience = progress.experience || 0;
-            this.player.tools = progress.tools || [];
-            this.player.questionHistory = Array.isArray(progress.questionHistory) ? progress.questionHistory : [];
-            this.player.currentScenario = progress.currentScenario;
-            this.status = progress.status || 'in-progress';
-            this.scorePercentage = progress.scorePercentage || 0;
+                // Update the player state
+                this.player.experience = progress.experience;
+                this.player.tools = progress.tools;
+                this.player.questionHistory = progress.questionHistory;
+                this.player.currentScenario = progress.currentScenario;
+                
+                // Only show end screen if quiz is actually completed and has progress
+                if ((progress.status === 'completed' || progress.status === 'passed' || progress.status === 'failed') && 
+                    progress.questionHistory.length > 0 && progress.currentScenario > 0) {
+                    console.log(`[CommunicationQuiz] Quiz is ${progress.status} with ${progress.questionHistory.length} questions answered`);
+                    this.endGame(progress.status === 'failed');
+                    return true;
+                }
 
-            // Log restored state
-            console.log('[CommunicationQuiz][loadProgress] Restored player state:', {
-                currentScenario: this.player.currentScenario,
-                questionHistoryLength: this.player.questionHistory.length,
-                experience: this.player.experience,
-                tools: this.player.tools
-            });
+                // If any fixes were made, save back to API
+                const needsSave = progress.currentScenario !== savedProgress?.data?.currentScenario ||
+                                progress.status !== savedProgress?.data?.status;
+                if (needsSave) {
+                    console.log('[CommunicationQuiz] Saving fixed progress back to API');
+                    await this.saveProgress();
+                }
 
-            // Add extra log after restoring
-            setTimeout(() => {
-                console.log('[CommunicationQuiz][loadProgress][post-restore] player:', JSON.parse(JSON.stringify(this.player)));
-            }, 0);
-
-            // Display the correct scenario/question
-            if (this.player.currentScenario >= this.totalQuestions) {
-                // All questions answered, show end screen
-                this.endGame();
-            } else {
+                // Show the current question based on progress
                 this.displayScenario();
+                return true;
             }
-            return true;
+            
+            return false;
         } catch (error) {
-            console.error('[CommunicationQuiz][loadProgress] Failed to load progress:', error);
+            console.error('[CommunicationQuiz] Error loading progress:', error);
             return false;
         }
     }
