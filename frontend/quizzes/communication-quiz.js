@@ -1510,13 +1510,29 @@ export class CommunicationQuiz extends BaseQuiz {
     getCurrentScenarios() {
         const totalAnswered = this.player.questionHistory.length;
         
-        // Progress through levels based only on question count
+        // Get the appropriate scenarios list based on question count
+        let scenarios = this.basicScenarios;
+        let currentIndex = 0;
+        
         if (totalAnswered >= 10) {
-            return this.advancedScenarios;
+            scenarios = this.advancedScenarios;
+            currentIndex = totalAnswered - 10;
         } else if (totalAnswered >= 5) {
-            return this.intermediateScenarios;
+            scenarios = this.intermediateScenarios;
+            currentIndex = totalAnswered - 5;
+        } else {
+            scenarios = this.basicScenarios;
+            currentIndex = totalAnswered;
         }
-        return this.basicScenarios;
+        
+        // Make sure the index is valid
+        if (currentIndex >= 0 && currentIndex < scenarios.length) {
+            return scenarios[currentIndex];
+        }
+        
+        // Fallback to first scenario if index is out of bounds
+        console.error(`[CommunicationQuiz] Invalid scenario index: ${currentIndex}, using fallback`);
+        return scenarios[0] || this.basicScenarios[0];
     }
 
     getCurrentLevel() {
@@ -1941,6 +1957,83 @@ export class CommunicationQuiz extends BaseQuiz {
         } catch (error) {
             console.error('[CommunicationQuiz] Error saving progress:', error);
             return false;
+        }
+    }
+
+    async startGame() {
+        try {
+            console.log('[CommunicationQuiz] Starting quiz');
+            this.isLoading = true;
+            
+            // Initialize player if not already done
+            if (!this.player) {
+                this.player = {
+                    name: localStorage.getItem('username'),
+                    experience: 0,
+                    tools: [],
+                    currentScenario: 0,
+                    questionHistory: []
+                };
+            }
+            
+            // Try to load saved progress
+            const hasProgress = await this.loadProgress();
+            console.log('[CommunicationQuiz] Progress loaded:', hasProgress);
+            
+            // If quiz is already completed, show end screen
+            if (hasProgress && this.player.questionHistory.length >= 15) {
+                console.log('[CommunicationQuiz] Quiz already completed, showing end screen');
+                this.endGame(false);
+                return;
+            }
+            
+            // Start with the game screen
+            this.gameScreen.classList.remove('hidden');
+            this.outcomeScreen.classList.add('hidden');
+            this.endScreen.classList.add('hidden');
+            
+            // Display the current scenario
+            this.displayScenario();
+            
+            // Initialize event listeners
+            this.initializeEventListeners();
+            
+            console.log('[CommunicationQuiz] Quiz started successfully');
+        } catch (error) {
+            console.error('[CommunicationQuiz] Error starting game:', error);
+            this.showError('Failed to start the quiz. Please refresh the page and try again.');
+        } finally {
+            this.isLoading = false;
+        }
+    }
+
+    calculateScorePercentage() {
+        try {
+            // If we have no history, return 0
+            if (!this.player || !this.player.questionHistory || this.player.questionHistory.length === 0) {
+                return 0;
+            }
+            
+            // Calculate based on correct answers
+            const correctAnswers = this.player.questionHistory.filter(q => 
+                q.isCorrect || 
+                (q.selectedAnswer && q.selectedAnswer.experience > 0)
+            ).length;
+            
+            const totalAnswered = this.player.questionHistory.length;
+            const percentage = Math.round((correctAnswers / Math.max(totalAnswered, 1)) * 100);
+            
+            // Alternative: calculate based on XP gained
+            const xpPercentage = Math.round((this.player.experience / this.config.maxXP) * 100);
+            
+            // Log both calculations for debugging
+            console.log(`[CommunicationQuiz] Score calculations: ${percentage}% (by correct answers), ${xpPercentage}% (by experience)`);
+            
+            // Return the percentage based on correct answers
+            return percentage;
+        } catch (error) {
+            console.error('[CommunicationQuiz] Error calculating score percentage:', error);
+            return 0;
         }
     }
 }
