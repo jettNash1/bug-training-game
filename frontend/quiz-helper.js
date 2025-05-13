@@ -924,6 +924,8 @@ export class BaseQuiz {
     // Default saveProgress method that will be called by handleTimeUp
     // if the quiz implementation doesn't override it
     async saveProgress() {
+        console.log(`[BaseQuiz][saveProgress] Saving progress for quiz: ${this.quizName}`);
+        
         // First determine the status based on clear conditions
         let status = 'in-progress';
         if (this.player.questionHistory.length >= this.totalQuestions) {
@@ -931,45 +933,111 @@ export class BaseQuiz {
             const scorePercentage = Math.round((correctAnswers / this.totalQuestions) * 100);
             status = scorePercentage >= this.passPercentage ? 'passed' : 'failed';
         }
+        
+        // Log the current experience value and validate it
+        console.log(`[BaseQuiz][saveProgress] Current experience raw value: ${this.player.experience}, type: ${typeof this.player.experience}`);
+        
+        // Parse and sanitize the experience value to ensure it's a valid number
+        let experienceValue = 0;
+        if (this.player.experience !== undefined && this.player.experience !== null) {
+            if (typeof this.player.experience === 'string') {
+                experienceValue = parseFloat(this.player.experience) || 0;
+            } else if (typeof this.player.experience === 'number') {
+                experienceValue = isNaN(this.player.experience) ? 0 : this.player.experience;
+            }
+        }
+        
+        console.log(`[BaseQuiz][saveProgress] Sanitized experience value: ${experienceValue}`);
+        
+        // For communication quiz, ensure we have a valid experience value
+        const normalizedQuizName = this.normalizeQuizName(this.quizName);
+        if (normalizedQuizName === 'communication') {
+            // If experience is still 0, try to calculate from question history
+            if (experienceValue === 0 && Array.isArray(this.player.questionHistory) && this.player.questionHistory.length > 0) {
+                console.log(`[BaseQuiz][saveProgress] Special handling for communication quiz with zero experience`);
+                
+                let calculatedExperience = 0;
+                
+                // Try to calculate from question history entries
+                this.player.questionHistory.forEach(question => {
+                    if (question.selectedAnswer && typeof question.selectedAnswer.experience === 'number') {
+                        calculatedExperience += question.selectedAnswer.experience;
+                    } else if (question.experience && typeof question.experience === 'number') {
+                        calculatedExperience += question.experience;
+                    }
+                });
+                
+                if (calculatedExperience > 0) {
+                    console.log(`[BaseQuiz][saveProgress] Calculated experience from history: ${calculatedExperience}`);
+                    experienceValue = calculatedExperience;
+                } else {
+                    // If all else fails, use a simple formula based on answered questions - approximate at 20XP per question
+                    const estimatedXP = this.player.questionHistory.length * 20;
+                    console.log(`[BaseQuiz][saveProgress] Using estimated experience for communication quiz: ${estimatedXP}`);
+                    experienceValue = estimatedXP;
+                }
+            }
+        }
+        
+        // Create the progress data object with sanitized values
         let progressData = {
             questionsAnswered: this.player.questionHistory.length,
             questionHistory: this.player.questionHistory,
-            experience: this.player.experience || 0,
-            tools: this.player.tools || [],
+            experience: experienceValue,
+            tools: Array.isArray(this.player.tools) ? this.player.tools : [],
             currentScenario: this.player.currentScenario || 0,
             lastUpdated: new Date().toISOString(),
             status: status,
             scorePercentage: Math.round((this.player.questionHistory.filter(q => q.isCorrect).length / this.totalQuestions) * 100),
             randomizedScenarios: this.randomizedScenarios || {}
         };
+        
+        // Optimize the progress data to reduce size
         progressData = this.optimizeProgressData(progressData);
+        
         try {
             const username = localStorage.getItem('username');
             if (!username) {
-                console.error('No user found, cannot save progress');
+                console.error('[BaseQuiz][saveProgress] No user found, cannot save progress');
                 return;
             }
             
             // Normalize quiz name consistently
-            let quizName = this.quizName;
-            if (!quizName) {
-                console.error('[BaseQuiz][saveProgress] No quiz name found');
-                return;
-            }
-            
-            quizName = this.normalizeQuizName(quizName);
+            const quizName = this.normalizeQuizName(this.quizName);
             console.log(`[BaseQuiz][saveProgress] Normalized quizName from ${this.quizName} to ${quizName}`);
+            
+            // Log the final progress data we're about to save
+            console.log(`[BaseQuiz][saveProgress] Final progress data for ${quizName}:`, {
+                questionsAnswered: progressData.questionsAnswered,
+                experience: progressData.experience,
+                status: progressData.status,
+                currentScenario: progressData.currentScenario
+            });
             
             // Save both to localStorage (for backup) and to API
             const storageKey = `quiz_progress_${username}_${quizName}`;
-            console.log('[BaseQuiz][saveProgress] Saving to key:', storageKey, 'Data:', progressData);
+            console.log('[BaseQuiz][saveProgress] Saving to key:', storageKey);
             
             // Save to localStorage first as backup
             try {
-                localStorage.setItem(storageKey, JSON.stringify({ data: progressData }));
+                localStorage.setItem(storageKey, JSON.stringify({ 
+                    data: progressData,
+                    timestamp: new Date().toISOString() 
+                }));
                 const size = JSON.stringify(progressData).length;
                 if (size > 100000) {
                     console.warn('[BaseQuiz] Warning: Progress data is very large (>100KB)');
+                }
+                
+                // For the communication quiz, create additional direct backup with simpler name
+                if (quizName === 'communication') {
+                    const directBackupKey = `quiz_progress_${username}_communication_direct`;
+                    localStorage.setItem(directBackupKey, JSON.stringify({ 
+                        data: progressData,
+                        timestamp: new Date().toISOString(),
+                        source: 'direct_backup'
+                    }));
+                    console.log(`[BaseQuiz][saveProgress] Created additional direct backup for communication quiz`);
                 }
             } catch (localStorageError) {
                 console.error('[BaseQuiz] Failed to save to localStorage:', localStorageError);
@@ -977,7 +1045,13 @@ export class BaseQuiz {
             
             // Then save to API
             console.log(`[BaseQuiz][saveProgress] Saving to API with quizName: ${quizName}`);
-            await this.apiService.saveQuizProgress(quizName, progressData);
+            const apiResult = await this.apiService.saveQuizProgress(quizName, progressData);
+            console.log(`[BaseQuiz][saveProgress] API save result:`, apiResult);
+            
+            // Update the player's experience with the sanitized value to keep everything consistent
+            this.player.experience = experienceValue;
+            
+            return apiResult;
         } catch (error) {
             console.error('[BaseQuiz] Failed to save progress:', error);
             try {
@@ -992,7 +1066,11 @@ export class BaseQuiz {
                         status: progressData.status,
                         randomizedScenarios: progressData.randomizedScenarios
                     };
-                    localStorage.setItem(storageKey, JSON.stringify({ data: minimalProgress }));
+                    localStorage.setItem(storageKey, JSON.stringify({ 
+                        data: minimalProgress,
+                        timestamp: new Date().toISOString(),
+                        source: 'error_fallback'
+                    }));
                     console.log('[BaseQuiz][saveProgress] Saved minimal progress to localStorage as fallback:', storageKey, minimalProgress);
                 }
             } catch (fallbackError) {
@@ -1330,23 +1408,48 @@ export class BaseQuiz {
     normalizeQuizName(quizName) {
         if (!quizName) return '';
         
+        // Convert to lowercase first for consistent comparisons
+        const lowerName = typeof quizName === 'string' ? quizName.toLowerCase() : '';
+        
         // Special case for tester-mindset variations
-        if (typeof quizName === 'string' && quizName.toLowerCase().replace(/[_\s]/g, '-').includes('tester')) {
+        if (lowerName.includes('tester') && 
+            (lowerName.includes('mindset') || lowerName.includes('mind'))) {
             return 'tester-mindset';
         }
         
-        // If already kebab case, return as is
-        if (typeof quizName === 'string' && quizName === quizName.toLowerCase() && quizName.includes('-')) {
-            return quizName;
+        // Specific handling for the communication quiz, which is particularly problematic
+        if (lowerName.includes('communic') || lowerName.includes('communi')) {
+            console.log(`[BaseQuiz] Normalizing "${quizName}" to "communication"`);
+            return 'communication';
         }
         
-        // Otherwise, standardize to kebab-case consistently
-        return quizName
-            .toLowerCase()
+        // Specific handling for the script-metrics quiz
+        if (lowerName.includes('script') && 
+            (lowerName.includes('metric') || lowerName.includes('troubleshoot'))) {
+            console.log(`[BaseQuiz] Normalizing "${quizName}" to "script-metrics-troubleshooting"`);
+            return 'script-metrics-troubleshooting';
+        }
+        
+        // Special case for CMS testing
+        if (lowerName.includes('cms') || lowerName.includes('content-management')) {
+            console.log(`[BaseQuiz] Normalizing "${quizName}" to "cms-testing"`);
+            return 'cms-testing';
+        }
+        
+        // If already in kebab-case format, keep it as is
+        if (lowerName === quizName && lowerName.includes('-')) {
+            return lowerName;
+        }
+        
+        // Otherwise standardize to kebab-case consistently
+        const normalized = lowerName
             .replace(/([A-Z])/g, '-$1')
             .replace(/_{1,}/g, '-')
             .replace(/--+/g, '-')
             .replace(/^-+|-+$/g, '');
+            
+        console.log(`[BaseQuiz] Normalized "${quizName}" to "${normalized}"`);
+        return normalized;
     }
 
     calculateScore() {

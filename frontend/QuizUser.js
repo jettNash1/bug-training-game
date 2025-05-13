@@ -74,10 +74,28 @@ export class QuizUser {
     }
 
     normalizeQuizName(quizName) {
+        // Null check for safety
+        if (!quizName) return '';
+        
         // Always return 'tester-mindset' for any variant
         if (typeof quizName === 'string' && quizName.toLowerCase().replace(/[_\s]/g, '-').includes('tester')) {
             return 'tester-mindset';
         }
+        
+        // Ensure we're handling the communication quiz consistently
+        if (typeof quizName === 'string' && 
+            (quizName.toLowerCase().includes('communic') || quizName.toLowerCase().includes('communi'))) {
+            return 'communication';
+        }
+        
+        // For script-metrics, ensure consistent name
+        if (typeof quizName === 'string' && 
+            quizName.toLowerCase().includes('script') && 
+            quizName.toLowerCase().includes('metric')) {
+            return 'script-metrics-troubleshooting';
+        }
+        
+        // For all other quizzes, use the existing camelCase conversion
         return quizName.replace(/-([a-z])/g, g => g[1].toUpperCase());
     }
 
@@ -225,17 +243,96 @@ export class QuizUser {
     }
 
     async getQuizProgress(quizName) {
-        quizName = this.normalizeQuizName(quizName);
+        // Always normalize the quiz name for consistency
+        const normalizedQuizName = this.normalizeQuizName(quizName);
+        console.log(`[QuizUser] Getting progress for quiz: ${quizName} → ${normalizedQuizName}`);
+        
         try {
             // Use the apiService method instead of direct fetch to benefit from all token handling and error management
-            const response = await this.api.getQuizProgress(quizName);
+            const response = await this.api.getQuizProgress(normalizedQuizName);
+            
             if (!response || !response.success) {
-                console.warn('Quiz progress API returned unsuccessful response:', response);
+                console.warn(`[QuizUser] Quiz progress API returned unsuccessful response for ${normalizedQuizName}:`, response);
+                
+                // Try the local cached progress as a fallback
+                if (this.quizProgress && this.quizProgress[normalizedQuizName]) {
+                    console.log(`[QuizUser] Using cached progress for ${normalizedQuizName} after API failure`);
+                    return this.quizProgress[normalizedQuizName];
+                }
+                
+                // If nothing found in cache, check localStorage directly
+                try {
+                    const username = localStorage.getItem('username');
+                    if (username) {
+                        const storageKey = `quiz_progress_${username}_${normalizedQuizName}`;
+                        const localData = localStorage.getItem(storageKey);
+                        
+                        if (localData) {
+                            const parsed = JSON.parse(localData);
+                            if (parsed && parsed.data) {
+                                console.log(`[QuizUser] Using direct localStorage data for ${normalizedQuizName}`);
+                                
+                                // Cache this data in memory for future use
+                                this.quizProgress[normalizedQuizName] = parsed.data;
+                                
+                                return parsed.data;
+                            }
+                        }
+                    }
+                } catch (localError) {
+                    console.error(`[QuizUser] Error accessing localStorage:`, localError);
+                }
+                
                 return null;
             }
-            return response.data;
+            
+            // Make sure we have actual data and it's in a valid format
+            if (!response.data) {
+                console.warn(`[QuizUser] API returned success but no data for ${normalizedQuizName}`);
+                return null;
+            }
+            
+            // Data validation and cleaning
+            const progressData = response.data;
+            
+            // Critical: Ensure the experience value is a valid number and never becomes NaN
+            if (progressData.experience === undefined || progressData.experience === null || isNaN(progressData.experience)) {
+                console.warn(`[QuizUser] Quiz progress has invalid experience value: ${progressData.experience}, fixing to 0`);
+                progressData.experience = 0;
+            } else if (typeof progressData.experience === 'string') {
+                progressData.experience = parseFloat(progressData.experience) || 0;
+            }
+            
+            // Log retrieved progress for debugging
+            console.log(`[QuizUser] Successfully retrieved quiz progress for ${normalizedQuizName}:`, {
+                experience: progressData.experience,
+                questionsAnswered: progressData.questionsAnswered,
+                status: progressData.status
+            });
+            
+            // Cache the progress data in memory for future use
+            this.quizProgress[normalizedQuizName] = progressData;
+            
+            // Also update our localStorage cache (this is redundant with API's cache but serves as extra insurance)
+            try {
+                const username = localStorage.getItem('username');
+                if (username) {
+                    localStorage.setItem(`quizProgress_${this.username}`, JSON.stringify(this.quizProgress));
+                }
+            } catch (e) {
+                console.error(`[QuizUser] Failed to update localStorage cache:`, e);
+            }
+            
+            return progressData;
         } catch (error) {
-            console.error('Failed to get quiz progress:', error);
+            console.error(`[QuizUser] Failed to get quiz progress for ${normalizedQuizName}:`, error);
+            
+            // Try the local cached progress as a fallback
+            if (this.quizProgress && this.quizProgress[normalizedQuizName]) {
+                console.log(`[QuizUser] Using cached progress for ${normalizedQuizName} after error`);
+                return this.quizProgress[normalizedQuizName];
+            }
+            
             return null;
         }
     }
