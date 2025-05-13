@@ -291,8 +291,8 @@ export class APIService {
 
         // Create AbortController for timeout
         const controller = new AbortController();
-        // Increase timeout to 15 seconds (was 5 seconds) to handle large quiz data
-        const timeoutId = setTimeout(() => controller.abort(), 15000); 
+        // Increase timeout to 20 seconds (was 15 seconds) to better handle quiz progress data in slow networks
+        const timeoutId = setTimeout(() => controller.abort(), 20000); 
         
         try {
             // Ensure we have the correct URL (handle both absolute and relative URLs)
@@ -394,40 +394,161 @@ export class APIService {
         }
     }
 
+    // Add a consistent method for normalizing quiz names
+    normalizeQuizName(quizName) {
+        if (!quizName) return '';
+
+        // First standardize to lowercase
+        const lowerName = quizName.toLowerCase();
+        
+        // Special case for tester-mindset variations
+        if (lowerName.includes('tester') || lowerName.includes('mindset')) {
+            return 'tester-mindset';
+        }
+        
+        // Handle script metrics variants
+        if (lowerName.includes('script') && lowerName.includes('metric')) {
+            return 'script-metrics-troubleshooting';
+        }
+        
+        // Standard normalized format (kebab-case)
+        const normalized = lowerName
+            .replace(/([A-Z])/g, '-$1')  // Convert camelCase to kebab-case
+            .replace(/_/g, '-')          // Convert snake_case to kebab-case
+            .replace(/\s+/g, '-')        // Convert spaces to hyphens
+            .replace(/-+/g, '-')         // Remove duplicate hyphens
+            .replace(/^-|-$/g, '')       // Remove leading/trailing hyphens
+            .toLowerCase();              // Ensure lowercase
+            
+        return normalized;
+    }
+
+    // Generate common variations of quiz names to try with API/localStorage
+    getQuizNameVariations(quizName) {
+        if (!quizName) return [];
+        
+        const variations = [];
+        
+        // Original version
+        variations.push(quizName);
+        
+        // camelCase version
+        const camelCase = quizName.replace(/-([a-z])/g, (_, letter) => letter.toUpperCase());
+        if (camelCase !== quizName) variations.push(camelCase);
+        
+        // PascalCase version
+        const pascalCase = quizName.replace(/(^|-)([a-z])/g, (_, sep, letter) => letter.toUpperCase());
+        if (pascalCase !== quizName) variations.push(pascalCase);
+        
+        // No hyphens version
+        const noHyphens = quizName.replace(/-/g, '');
+        if (noHyphens !== quizName) variations.push(noHyphens);
+        
+        // snake_case version
+        const snakeCase = quizName.replace(/-/g, '_');
+        if (snakeCase !== quizName) variations.push(snakeCase);
+        
+        // Special case for CMS-Testing
+        if (quizName.toLowerCase().includes('cms')) {
+            variations.push('CMS-Testing');
+            variations.push('cms-testing');
+            variations.push('cmsTesting');
+        }
+        
+        // Return unique variations
+        return [...new Set(variations)];
+    }
+
     async getQuizProgress(quizName) {
         try {
             console.log(`[API] Getting progress for quiz: ${quizName}`);
-            // First try to get from the API
-            const response = await this.fetchWithAuth(`${this.baseUrl}/users/quiz-progress/${quizName}`);
-            console.log(`[API] Raw quiz progress response for ${quizName}:`, response);
             
-            // If no data found, check localStorage
-            if (!response || !response.data || Object.keys(response.data).length === 0) {
-                console.log(`[API] No progress found for quiz ${quizName} in API, checking localStorage`);
+            // Try multiple variations of the quiz name
+            const quizNameVariations = [
+                quizName.toLowerCase(),                           // lowercase
+                quizName.replace(/-/g, '').toLowerCase(),         // no hyphens
+                quizName.replace(/-([a-z])/g, (_, c) => c.toUpperCase()).toLowerCase(), // camelCase
+                quizName.replace(/([A-Z])/g, '-$1').toLowerCase() // convert camelCase to kebab-case
+            ];
+            
+            // Add the original name to variations if not already included
+            if (!quizNameVariations.includes(quizName)) {
+                quizNameVariations.push(quizName);
+            }
+            
+            console.log(`[API] Will try these quiz name variations:`, quizNameVariations);
+            
+            // Add retry mechanism with increasing delay for better reliability
+            let retryCount = 0;
+            const maxRetries = 2;
+            let response = null;
+            
+            while (retryCount <= maxRetries) {
+                let foundData = false;
                 
-                // Try to get from localStorage
+                // Try each variation of the quiz name
+                for (const variation of quizNameVariations) {
+                    try {
+                        // First try to get from the API
+                        const variationResponse = await this.fetchWithAuth(`${this.baseUrl}/users/quiz-progress/${variation}`);
+                        console.log(`[API] Raw quiz progress response for ${variation} (attempt ${retryCount + 1}):`, variationResponse);
+                        
+                        // If we got a valid response with data, store it and break the loop
+                        if (variationResponse && variationResponse.data && Object.keys(variationResponse.data).length > 0) {
+                            console.log(`[API] Found data with variation: ${variation}`);
+                            response = variationResponse;
+                            foundData = true;
+                            break;
+                        }
+                    } catch (variationError) {
+                        console.warn(`[API] Error trying variation ${variation}:`, variationError);
+                        // Continue to next variation
+                    }
+                }
+                
+                // If we found data with any variation, break the retry loop
+                if (foundData) {
+                    break;
+                }
+                
+                // If we get here, no variation returned data - wait and retry
+                retryCount++;
+                if (retryCount <= maxRetries) {
+                    console.log(`[API] No data found with any variation, retrying (${retryCount}/${maxRetries})...`);
+                    // Exponential backoff: 500ms, 1000ms
+                    await new Promise(resolve => setTimeout(resolve, 500 * retryCount));
+                }
+            }
+            
+            // If no data found after retries, check localStorage
+            if (!response || !response.data || Object.keys(response.data).length === 0) {
+                console.log(`[API] No progress found for quiz ${quizName} in API after ${maxRetries + 1} attempts, checking localStorage`);
+                
+                // Try to get from localStorage with all variations
                 const username = localStorage.getItem('username');
                 if (username) {
-                    const storageKey = `quiz_progress_${username}_${quizName}`;
-                    const localData = localStorage.getItem(storageKey);
-                    
-                    if (localData) {
-                        try {
-                            const parsed = JSON.parse(localData);
-                            console.log(`[API] Found progress in localStorage for ${quizName}:`, parsed);
-                            
-                            if (parsed && parsed.data) {
-                                // Return the localStorage data
-                                return {
-                                    success: true,
-                                    data: {
-                                        ...parsed.data,
-                                        source: 'localStorage'
-                                    }
-                                };
+                    for (const variation of quizNameVariations) {
+                        const storageKey = `quiz_progress_${username}_${variation}`;
+                        const localData = localStorage.getItem(storageKey);
+                        
+                        if (localData) {
+                            try {
+                                const parsed = JSON.parse(localData);
+                                console.log(`[API] Found progress in localStorage for ${variation}:`, parsed);
+                                
+                                if (parsed && parsed.data) {
+                                    // Return the localStorage data
+                                    return {
+                                        success: true,
+                                        data: {
+                                            ...parsed.data,
+                                            source: 'localStorage'
+                                        }
+                                    };
+                                }
+                            } catch (e) {
+                                console.error(`[API] Error parsing localStorage data for ${variation}:`, e);
                             }
-                        } catch (e) {
-                            console.error(`[API] Error parsing localStorage data:`, e);
                         }
                     }
                 }
@@ -448,6 +569,7 @@ export class APIService {
                 };
             }
             
+            // Rest of the function remains the same
             // Ensure all required fields are present
             const progress = {
                 ...response.data,
@@ -469,6 +591,50 @@ export class APIService {
                 questionsAnswered: progress.questionsAnswered,
                 questionHistoryLength: progress.questionHistory.length
             });
+            
+            // Check for potentially corrupted/incomplete data from API
+            const hasEmptyButCompletedState = 
+                (progress.status === 'completed' || progress.status === 'passed' || progress.status === 'failed') && 
+                (progress.questionHistory.length === 0 || progress.questionsAnswered === 0);
+                
+            if (hasEmptyButCompletedState) {
+                console.log(`[API] POTENTIALLY CORRUPTED DATA for ${quizName}: Status=${progress.status} but questionHistory is empty or questionsAnswered=0`);
+                
+                // Try to get more reliable data from localStorage as a fallback
+                const username = localStorage.getItem('username');
+                if (username) {
+                    for (const variation of quizNameVariations) {
+                        const storageKey = `quiz_progress_${username}_${variation}`;
+                        const localData = localStorage.getItem(storageKey);
+                        
+                        if (localData) {
+                            try {
+                                const parsed = JSON.parse(localData);
+                                
+                                if (parsed && parsed.data && 
+                                    ((parsed.data.questionHistory && parsed.data.questionHistory.length > 0) || 
+                                     parsed.data.questionsAnswered > 0)) {
+                                    
+                                    console.log(`[API] Using localStorage data instead of corrupted API data for ${variation}`);
+                                    return {
+                                        success: true,
+                                        data: {
+                                            ...parsed.data,
+                                            source: 'localStorage_fallback_corrupted'
+                                        }
+                                    };
+                                }
+                            } catch (e) {
+                                console.error(`[API] Error parsing localStorage data for corruption check:`, e);
+                            }
+                        }
+                    }
+                }
+                
+                // If we can't find better data, set to not-started as a safer default
+                progress.status = 'not-started';
+                console.log(`[API] Reset corrupted quiz state to not-started for ${quizName}`);
+            }
             
             // Fix for inconsistent state: If quiz is marked as completed/passed/failed but has valid progress
             // This happens more frequently with communication quiz but can affect others
@@ -501,30 +667,40 @@ export class APIService {
         } catch (error) {
             console.error(`[API] Error getting quiz progress for ${quizName}:`, error);
             
-            // Try localStorage as fallback
+            // Try localStorage as fallback with all variations
             try {
                 const username = localStorage.getItem('username');
                 if (username) {
-                    const storageKey = `quiz_progress_${username}_${quizName}`;
-                    const localData = localStorage.getItem(storageKey);
+                    const quizNameVariations = [
+                        quizName.toLowerCase(),
+                        quizName.replace(/-/g, '').toLowerCase(),
+                        quizName.replace(/-([a-z])/g, (_, c) => c.toUpperCase()).toLowerCase(),
+                        quizName.replace(/([A-Z])/g, '-$1').toLowerCase(),
+                        quizName
+                    ];
                     
-                    if (localData) {
-                        try {
-                            const parsed = JSON.parse(localData);
-                            console.log(`[API] Found progress in localStorage fallback for ${quizName}:`, parsed);
-                            
-                            if (parsed && parsed.data) {
-                                // Return the localStorage data
-                                return {
-                                    success: true,
-                                    data: {
-                                        ...parsed.data,
-                                        source: 'localStorage_fallback'
-                                    }
-                                };
+                    for (const variation of quizNameVariations) {
+                        const storageKey = `quiz_progress_${username}_${variation}`;
+                        const localData = localStorage.getItem(storageKey);
+                        
+                        if (localData) {
+                            try {
+                                const parsed = JSON.parse(localData);
+                                console.log(`[API] Found progress in localStorage fallback for ${variation}:`, parsed);
+                                
+                                if (parsed && parsed.data) {
+                                    // Return the localStorage data
+                                    return {
+                                        success: true,
+                                        data: {
+                                            ...parsed.data,
+                                            source: 'localStorage_fallback'
+                                        }
+                                    };
+                                }
+                            } catch (e) {
+                                console.error(`[API] Error parsing localStorage fallback data for ${variation}:`, e);
                             }
-                        } catch (e) {
-                            console.error(`[API] Error parsing localStorage fallback data:`, e);
                         }
                     }
                 }
@@ -543,447 +719,6 @@ export class APIService {
                     currentScenario: 0,
                     tools: [],
                     questionHistory: []
-                }
-            };
-        }
-    }
-
-    async saveQuizProgress(quizName, progress) {
-        try {
-            console.log(`[API] Saving progress for quiz ${quizName}:`, progress);
-            // Ensure all required fields are present
-            const progressData = {
-                experience: progress.experience || 0,
-                questionsAnswered: progress.questionsAnswered || 0,
-                status: progress.status || 'in-progress',
-                scorePercentage: typeof progress.scorePercentage === 'number' ? progress.scorePercentage : 0,
-                tools: progress.tools || [],
-                questionHistory: progress.questionHistory || [],
-                currentScenario: progress.currentScenario || 0,
-                randomizedScenarios: progress.randomizedScenarios || {},
-                lastUpdated: new Date().toISOString()
-            };
-            console.log(`[API] Processed progress data for ${quizName}:`, {
-                currentScenario: progressData.currentScenario,
-                questionsAnswered: progressData.questionsAnswered,
-                hasRandomizedScenarios: !!progressData.randomizedScenarios
-            });
-            // Standard fetch process for all quizzes
-            const response = await this.fetchWithAuth(
-                `${this.baseUrl}/users/quiz-progress`,
-                {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({
-                        quizName: quizName,
-                        progress: progressData
-                    })
-                }
-            );
-            if (!response.success) {
-                throw new Error(response.message || 'Failed to save quiz progress');
-            }
-            console.log(`[API] Successfully saved progress for quiz ${quizName}`);
-            
-            // Save to localStorage as backup
-            try {
-                const username = localStorage.getItem('username');
-                if (username) {
-                    const storageKey = `quiz_progress_${username}_${quizName}`;
-                    localStorage.setItem(storageKey, JSON.stringify({ 
-                        data: progressData,
-                        timestamp: new Date().toISOString()
-                    }));
-                    console.log(`[API] Saved backup to localStorage: ${storageKey}`);
-                }
-            } catch (e) {
-                console.warn('[API] Failed to save localStorage backup:', e);
-            }
-            
-            return {
-                success: true,
-                data: progressData
-            };
-        } catch (error) {
-            console.error(`[API] Error saving quiz progress:`, error);
-            
-            // Try to save to localStorage as fallback
-            try {
-                const username = localStorage.getItem('username');
-                if (username) {
-                    const storageKey = `quiz_progress_${username}_${quizName}`;
-                    localStorage.setItem(storageKey, JSON.stringify({ 
-                        data: progress,
-                        timestamp: new Date().toISOString() 
-                    }));
-                    console.log(`[API] Saved fallback to localStorage: ${storageKey}`);
-                }
-            } catch (e) {
-                console.error('[API] Failed to save localStorage fallback:', e);
-            }
-            
-            return {
-                success: false,
-                message: error.message || 'Failed to save quiz progress',
-                data: progress // Return original progress in case of error
-            };
-        }
-    }
-
-    async updateQuizScore(quizName, score) {
-        try {
-            const data = await this.fetchWithAuth(`${this.baseUrl}/users/quiz-scores`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({ quizName, score })
-            });
-
-            if (!data || !data.success) {
-                throw new Error(data?.message || 'Failed to update quiz score');
-            }
-
-            return data;
-        } catch (error) {
-            console.error('Failed to update quiz score:', error);
-            throw error;
-        }
-    }
-
-    // Admin-specific methods
-    async adminLogin(username, password) {
-        try {
-            console.log('Attempting admin login:', { username });
-            
-            // Clear any existing admin token first
-            localStorage.removeItem('adminToken');
-            
-            // Handle admin login
-            const response = await fetch(`${this.baseUrl}/admin/login`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                credentials: 'include',
-                body: JSON.stringify({ 
-                    username: username.trim(), 
-                    password: password.trim() 
-                })
-            });
-
-            // Try to read the response text first
-            const text = await response.text();
-            console.log('Admin login response text:', text);
-
-            // Then parse it as JSON if possible
-            let data;
-            try {
-                data = JSON.parse(text);
-            } catch (e) {
-                console.error('Failed to parse response as JSON:', e);
-                throw new Error('Invalid response from server');
-            }
-            
-            if (!response.ok) {
-                throw new Error(data.message || 'Admin login failed');
-            }
-
-            if (!data.token) {
-                throw new Error('No token received from server');
-            }
-
-            // Store the token
-            localStorage.setItem('adminToken', data.token);
-            console.log('Admin token stored successfully:', { token: data.token });
-
-            // Return success without immediate verification
-            return {
-                ...data,
-                success: true,
-                isAdmin: true
-            };
-        } catch (error) {
-            console.error('Admin login error:', error);
-            localStorage.removeItem('adminToken');
-            throw error;
-        }
-    }
-
-    async verifyAdminToken() {
-        try {
-            const adminToken = localStorage.getItem('adminToken');
-            console.log('Verifying admin token:', { hasToken: !!adminToken });
-            
-            if (!adminToken) {
-                console.log('No admin token found in localStorage');
-                return { valid: false, reason: 'no_token' };
-            }
-
-            console.log('Verifying admin token with server...');
-            const response = await fetch(`${this.baseUrl}/admin/verify-token`, {
-                method: 'GET',
-                headers: {
-                    'Authorization': `Bearer ${adminToken}`,
-                    'Content-Type': 'application/json'
-                },
-                credentials: 'include'
-            });
-
-            // Try to read the response text first
-            const text = await response.text();
-            console.log('Token verification response:', text);
-
-            // Then parse it as JSON if possible
-            let data;
-            try {
-                data = JSON.parse(text);
-            } catch (e) {
-                console.error('Failed to parse verification response as JSON:', e);
-                // Don't remove token on parse error, might be temporary
-                return { valid: false, reason: 'invalid_json' };
-            }
-
-            const isValid = response.ok && data.success && data.valid;
-            console.log('Token verification result:', { 
-                isValid, 
-                status: response.status,
-                success: data.success,
-                valid: data.valid 
-            });
-
-            // Only remove token if we get a clear invalid response
-            if (response.status === 401 || (response.ok && !data.valid)) {
-                console.log('Removing invalid token');
-                localStorage.removeItem('adminToken');
-            }
-
-            return { 
-                valid: isValid,
-                reason: isValid ? 'valid' : 'invalid',
-                success: data.success
-            };
-        } catch (error) {
-            console.error('Admin token verification error:', error);
-            // Don't remove token on network errors, might be temporary
-            return { 
-                valid: false, 
-                reason: 'error',
-                error: error.message 
-            };
-        }
-    }
-
-    async getAllUsers() {
-        try {
-            // Fetch real data from MongoDB through the API
-            const data = await this.fetchWithAdminAuth(`${this.baseUrl}/admin/users`);
-            console.log('Raw users response:', JSON.stringify(data, null, 2));
-
-            // Check if data is valid
-            if (!data) {
-                console.warn('No data received from server');
-                return {
-                    success: false,
-                    data: [],
-                    error: 'No data received from server'
-                };
-            }
-
-            // If we got an error response, return it directly
-            if (!data.success) {
-                return data; // This will include error message and empty data array
-            }
-
-            // At this point, we should have valid data
-            // If users array is missing, return empty array
-            if (!data.users) {
-                console.warn('No users array in response:', data);
-                return {
-                    success: true,
-                    data: [],
-                    message: 'No users found'
-                };
-            }
-
-            // Ensure users is an array
-            const users = Array.isArray(data.users) ? data.users : [];
-            console.log('Processing users array:', JSON.stringify(users, null, 2));
-
-            // Process each user's data
-            const processedUsers = users.map(user => {
-                if (!user || typeof user !== 'object') return null;
-
-                try {
-                // Ensure required fields exist
-                const processedUser = {
-                    username: user.username || 'Unknown User',
-                    quizResults: [],
-                    quizProgress: {},
-                    lastLogin: user.lastLogin || null,
-                    userType: user.userType || null,
-                    allowedQuizzes: (user.allowedQuizzes || []).map(q => q.toLowerCase()),
-                    hiddenQuizzes: (user.hiddenQuizzes || []).map(q => q.toLowerCase())
-                };
-
-                    // Safely process quiz results
-                    if (user.quizResults) {
-                        processedUser.quizResults = Array.isArray(user.quizResults) 
-                            ? user.quizResults
-                                .filter(result => result && typeof result === 'object')
-                                .map(result => ({
-                                    quizName: String(result.quizName || '').toLowerCase(),
-                            score: Number(result.score) || 0,
-                            experience: Number(result.experience) || 0,
-                            questionsAnswered: Number(result.questionsAnswered) || 0,
-                            lastActive: result.lastActive || result.completedAt || null
-                                }))
-                            : [];
-                }
-
-                    // Safely process quiz progress
-                if (user.quizProgress && typeof user.quizProgress === 'object') {
-                        processedUser.quizProgress = Object.entries(user.quizProgress)
-                            .reduce((acc, [key, value]) => {
-                        if (value && typeof value === 'object') {
-                                    acc[String(key).toLowerCase()] = {
-                                experience: Number(value.experience) || 0,
-                                questionsAnswered: Number(value.questionsAnswered) || 0,
-                                lastUpdated: value.lastUpdated || null
-                            };
-                        }
-                        return acc;
-                    }, {});
-                }
-
-                return processedUser;
-                } catch (error) {
-                    console.error('Error processing user:', user, error);
-                    return null;
-                }
-            }).filter(Boolean); // Remove null entries
-
-            console.log('Processed users:', JSON.stringify(processedUsers, null, 2));
-
-            return {
-                success: true,
-                data: processedUsers
-            };
-        } catch (error) {
-            console.error('Failed to fetch users:', error);
-            return {
-                success: false,
-                data: [],
-                error: error.message || 'Failed to fetch users'
-            };
-        }
-    }
-
-    async getUserProgress(username) {
-        try {
-            console.log(`Fetching progress for user: ${username}`);
-            
-            // Create a controller for the fetch request to implement a timeout
-            const controller = new AbortController();
-            const signal = controller.signal;
-            
-            // Increase timeout to 20 seconds (was 10 seconds) to help with slow connections
-            const timeoutId = setTimeout(() => {
-                controller.abort();
-                console.warn(`Fetch for user progress timed out after 20 seconds: ${username}`);
-            }, 20000);
-            
-            try {
-                // Add a retry mechanism
-                const maxRetries = 2;
-                let lastError = null;
-                
-                for (let attempt = 0; attempt <= maxRetries; attempt++) {
-                    try {
-                        if (attempt > 0) {
-                            console.log(`Retry attempt ${attempt} for user ${username}`);
-                        }
-                        
-                        const response = await this.fetchWithAdminAuth(
-                            `${this.baseUrl}/admin/users/${username}/progress`,
-                            {
-                                method: 'GET',
-                                headers: {
-                                    'Content-Type': 'application/json'
-                                },
-                                signal: attempt === maxRetries ? signal : undefined // Only use abort signal on final attempt
-                            }
-                        );
-                        
-                        // Clear the timeout since the request completed
-                        clearTimeout(timeoutId);
-                        
-                        console.log(`Response from getUserProgress for ${username}:`, response);
-                        
-                        if (!response) {
-                            if (attempt < maxRetries) {
-                                // Wait before retrying - exponential backoff
-                                await new Promise(resolve => setTimeout(resolve, 500 * Math.pow(2, attempt)));
-                                continue;
-                            }
-                            return {
-                                success: false,
-                                message: 'Empty response from server',
-                                data: {
-                                    quizProgress: {},
-                                    quizResults: []
-                                }
-                            };
-                        }
-                        
-                        return {
-                            success: true,
-                            data: response.progress || response || {
-                                quizProgress: {},
-                                quizResults: []
-                            }
-                        };
-                    } catch (error) {
-                        lastError = error;
-                        // If it's not the final attempt, try again
-                        if (attempt < maxRetries) {
-                            await new Promise(resolve => setTimeout(resolve, 500 * Math.pow(2, attempt)));
-                            continue;
-                        }
-                        throw error;
-                    }
-                }
-            } catch (fetchError) {
-                // Clear the timeout to prevent memory leaks
-                clearTimeout(timeoutId);
-                
-                // Check if this was an abort error
-                if (fetchError.name === 'AbortError') {
-                    console.error(`Request for user progress timed out: ${username}`);
-                    // Return a structured response with empty data instead of throwing
-                    return {
-                        success: true,
-                        message: 'Request timed out, returning empty progress data',
-                        data: {
-                            quizProgress: {},
-                            quizResults: []
-                        }
-                    };
-                }
-                
-                throw fetchError;
-            }
-        } catch (error) {
-            console.error(`Failed to fetch progress for user ${username}:`, error);
-            // Return a structured response with empty data instead of throwing
-            return {
-                success: true,
-                message: error.message || 'Failed to fetch user progress, returning empty data',
-                data: {
-                    quizProgress: {},
-                    quizResults: []
                 }
             };
         }
@@ -2767,6 +2502,128 @@ export class APIService {
                 success: false,
                 message: 'Both admin and user endpoints failed',
                 data: { quizProgress: {}, quizResults: [] }
+            };
+        }
+    }
+
+    async saveQuizProgress(quizName, progress) {
+        try {
+            console.log(`[API] Saving progress for quiz ${quizName}:`, progress);
+            
+            // Generate variations for consistent storage
+            const quizNameVariations = [
+                quizName.toLowerCase(),                           // lowercase
+                quizName.replace(/-/g, '').toLowerCase(),         // no hyphens
+                quizName.replace(/-([a-z])/g, (_, c) => c.toUpperCase()).toLowerCase(), // camelCase
+                quizName.replace(/([A-Z])/g, '-$1').toLowerCase() // convert camelCase to kebab-case
+            ];
+            
+            // Add original if not included
+            if (!quizNameVariations.includes(quizName)) {
+                quizNameVariations.push(quizName);
+            }
+            
+            console.log(`[API] Will save using quiz name variation: ${quizNameVariations[0]}`);
+            
+            // Ensure all required fields are present
+            const progressData = {
+                experience: progress.experience || 0,
+                questionsAnswered: progress.questionsAnswered || 0,
+                status: progress.status || 'in-progress',
+                scorePercentage: typeof progress.scorePercentage === 'number' ? progress.scorePercentage : 0,
+                tools: progress.tools || [],
+                questionHistory: progress.questionHistory || [],
+                currentScenario: progress.currentScenario || 0,
+                randomizedScenarios: progress.randomizedScenarios || {},
+                lastUpdated: new Date().toISOString()
+            };
+            
+            console.log(`[API] Processed progress data for ${quizName}:`, {
+                currentScenario: progressData.currentScenario,
+                questionsAnswered: progressData.questionsAnswered,
+                status: progressData.status,
+                questionHistoryLength: (progressData.questionHistory || []).length
+            });
+            
+            // Use the primary (most standard) variation to save to the API
+            const primaryVariation = quizNameVariations[0];
+            const response = await this.fetchWithAuth(
+                `${this.baseUrl}/users/quiz-progress`,
+                {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        quizName: primaryVariation,
+                        progress: progressData
+                    })
+                }
+            );
+            
+            if (!response.success) {
+                throw new Error(response.message || 'Failed to save quiz progress');
+            }
+            
+            console.log(`[API] Successfully saved progress for quiz ${primaryVariation}`);
+            
+            // Save to localStorage as backup - save to all variations for maximum compatibility
+            try {
+                const username = localStorage.getItem('username');
+                if (username) {
+                    // Save to all variations to ensure maximum compatibility
+                    for (const variation of quizNameVariations) {
+                        const storageKey = `quiz_progress_${username}_${variation}`;
+                        localStorage.setItem(storageKey, JSON.stringify({ 
+                            data: progressData,
+                            timestamp: new Date().toISOString()
+                        }));
+                    }
+                    
+                    console.log(`[API] Saved backup to localStorage with ${quizNameVariations.length} variations`);
+                }
+            } catch (e) {
+                console.warn('[API] Failed to save localStorage backup:', e);
+            }
+            
+            return {
+                success: true,
+                data: progressData
+            };
+        } catch (error) {
+            console.error(`[API] Error saving quiz progress:`, error);
+            
+            // Try to save to localStorage as fallback
+            try {
+                const username = localStorage.getItem('username');
+                if (username) {
+                    const quizNameVariations = [
+                        quizName.toLowerCase(),
+                        quizName.replace(/-/g, '').toLowerCase(),
+                        quizName.replace(/-([a-z])/g, (_, c) => c.toUpperCase()).toLowerCase(),
+                        quizName.replace(/([A-Z])/g, '-$1').toLowerCase(),
+                        quizName
+                    ];
+                    
+                    // Save to all variations to ensure maximum compatibility
+                    for (const variation of quizNameVariations) {
+                        const storageKey = `quiz_progress_${username}_${variation}`;
+                        localStorage.setItem(storageKey, JSON.stringify({ 
+                            data: progress,
+                            timestamp: new Date().toISOString() 
+                        }));
+                    }
+                    
+                    console.log(`[API] Saved fallback to localStorage with ${quizNameVariations.length} variations`);
+                }
+            } catch (e) {
+                console.error('[API] Failed to save localStorage fallback:', e);
+            }
+            
+            return {
+                success: false,
+                message: error.message || 'Failed to save quiz progress',
+                data: progress // Return original progress in case of error
             };
         }
     }
