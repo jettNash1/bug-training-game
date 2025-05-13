@@ -452,262 +452,94 @@ export class APIService {
         try {
             console.log(`[API] Getting progress for quiz: ${quizName}`);
             
-            // Normalize the quiz name - always use the standard normalized version
+            // Normalize the quiz name for consistency
             const normalizedQuizName = this.normalizeQuizName(quizName);
             
             console.log(`[API] Using normalized quiz name: ${normalizedQuizName}`);
             
-            // Add logging to help diagnose issues
-            console.log(`[API] Current user: ${localStorage.getItem('username') || 'unknown'}`);
-            
-            // Fetch both from API and localStorage in parallel for efficiency
-            const username = localStorage.getItem('username');
-            let localStorageData = null;
-            let response = null;
-            
-            // Get localStorage data first as it's faster
-            if (username) {
-                const storageKey = `quiz_progress_${username}_${normalizedQuizName}`;
-                try {
-                    const localData = localStorage.getItem(storageKey);
-                    if (localData) {
-                        localStorageData = JSON.parse(localData);
-                        console.log(`[API] Found progress in localStorage for ${normalizedQuizName}:`, localStorageData);
-                    } else {
-                        console.log(`[API] No localStorage data found for ${normalizedQuizName}`);
-                    }
-                } catch (e) {
-                    console.error(`[API] Error parsing localStorage data for ${normalizedQuizName}:`, e);
-                }
-            }
-            
-            // Now try to fetch from API
+            // CRITICAL CHANGE: ALWAYS try getUserData first (this is what the index page uses)
             try {
-                console.log(`[API] Fetching progress from API for ${normalizedQuizName}`);
+                const userData = await this.getUserData();
                 
-                // Add a clear URL log to help with debugging
-                const apiUrl = `${this.baseUrl}/users/quiz-progress/${normalizedQuizName}`;
-                console.log(`[API] Fetch URL: ${apiUrl}`);
-                
-                // Use try-catch here to isolate API errors
-                const apiResponse = await this.fetchWithAuth(apiUrl);
-                console.log(`[API] Raw API response for ${normalizedQuizName}:`, apiResponse);
-                
-                if (apiResponse && apiResponse.data && Object.keys(apiResponse.data).length > 0) {
-                    response = apiResponse;
-                    console.log(`[API] Successfully got data from API for ${normalizedQuizName}`);
-                } else {
-                    console.warn(`[API] API returned empty or invalid data for ${normalizedQuizName}`);
-                }
-            } catch (apiError) {
-                console.error(`[API] Error fetching progress from API for ${normalizedQuizName}:`, apiError);
-            }
-            
-            // If API didn't return valid data but localStorage has data, use localStorage
-            if ((!response || !response.data || Object.keys(response.data || {}).length === 0) && 
-                localStorageData && localStorageData.data) {
-                
-                console.log(`[API] Using localStorage data since API returned no valid data for ${normalizedQuizName}`);
-                
-                // Ensure experience is a valid number before returning
-                const sanitizedData = {
-                    ...localStorageData.data,
-                    experience: !isNaN(parseFloat(localStorageData.data.experience)) ? 
-                        parseFloat(localStorageData.data.experience) : 0,
-                    source: 'localStorage_primary'
-                };
-                
-                // Try to re-save this progress to API to fix the problem for next time
-                this.saveQuizProgress(normalizedQuizName, sanitizedData)
-                    .then(() => console.log('[API] Successfully re-saved localStorage data to API'))
-                    .catch(err => console.error('[API] Failed to re-save localStorage data to API:', err));
-                
-                return {
-                    success: true,
-                    data: sanitizedData
-                };
-            }
-            
-            // If API returned zero experience but localStorage has non-zero, use localStorage
-            if (response && response.data && 
-                (!response.data.experience || response.data.experience === 0) && 
-                localStorageData && localStorageData.data && 
-                localStorageData.data.experience > 0) {
-                
-                console.log(`[API] Special case: API returned zero experience but localStorage has value ${localStorageData.data.experience} - using localStorage data`);
-                
-                // Ensure experience is a valid number before returning
-                const sanitizedData = {
-                    ...response.data,
-                    experience: !isNaN(parseFloat(localStorageData.data.experience)) ? 
-                        parseFloat(localStorageData.data.experience) : 0,
-                    source: 'merged_api_localstorage'
-                };
-                
-                // Immediately try to re-save this progress to API to fix the problem
-                this.saveQuizProgress(normalizedQuizName, sanitizedData)
-                    .then(() => console.log('[API] Successfully re-saved progress with correct experience to API'))
-                    .catch(err => console.error('[API] Failed to re-save progress:', err));
+                if (userData && userData.success && userData.data && userData.data.quizProgress) {
+                    const quizProgressFromUserData = userData.data.quizProgress[normalizedQuizName];
                     
-                return {
-                    success: true,
-                    data: sanitizedData
-                };
-            }
-            
-            // If no data found anywhere, return default
-            if ((!response || !response.data || Object.keys(response.data || {}).length === 0) && 
-                (!localStorageData || !localStorageData.data)) {
-                
-                console.log(`[API] No progress found anywhere for quiz ${quizName}, returning default`);
-                return {
-                    success: true,
-                    data: {
-                        experience: 0,
-                        questionsAnswered: 0,
-                        status: 'not-started',
-                        scorePercentage: 0,
-                        currentScenario: 0,
-                        tools: [],
-                        questionHistory: []
-                    }
-                };
-            }
-            
-            // Normalize the API data to ensure all required fields
-            const apiData = response?.data || {};
-            
-            // Critical fix: Ensure experience is always a valid number
-            let experienceValue = 0;
-            if (apiData.experience !== undefined) {
-                // Convert to number, default to 0 if NaN
-                experienceValue = !isNaN(parseFloat(apiData.experience)) ? 
-                    parseFloat(apiData.experience) : 0;
-                
-                // Log important diagnostic information
-                console.log(`[API] Experience value from API: ${apiData.experience}, type: ${typeof apiData.experience}, parsed: ${experienceValue}`);
-            }
-            
-            const progress = {
-                experience: experienceValue,
-                questionsAnswered: apiData.questionsAnswered || 0,
-                status: apiData.status || 'not-started',
-                scorePercentage: typeof apiData.scorePercentage === 'number' ? apiData.scorePercentage : 0,
-                currentScenario: apiData.currentScenario || apiData.questionsAnswered || 0,
-                tools: apiData.tools || [],
-                questionHistory: apiData.questionHistory || [],
-                randomizedScenarios: apiData.randomizedScenarios || {}
-            };
-            
-            // Log the quiz state for debugging
-            console.log(`[API] Quiz progress details for ${quizName}:`, {
-                status: progress.status,
-                currentScenario: progress.currentScenario,
-                questionsAnswered: progress.questionsAnswered,
-                questionHistoryLength: progress.questionHistory.length,
-                experience: progress.experience,
-                experienceType: typeof progress.experience
-            });
-            
-            // Additional check with localStorage if API value is zero
-            if (progress.experience === 0 && 
-                localStorageData && localStorageData.data && 
-                localStorageData.data.experience > 0) {
-                
-                console.log(`[API] After processing, experience is still 0 but localStorage has ${localStorageData.data.experience}. Using localStorage experience value.`);
-                
-                // Use the experience value from localStorage
-                progress.experience = parseFloat(localStorageData.data.experience) || 0;
-            }
-            
-            // Enhanced corruption check: look for NaN or undefined in critical fields
-            let hasCorruptedData = false;
-            
-            if (isNaN(progress.experience)) {
-                console.log(`[API] CORRUPTED DATA - experience is NaN for ${quizName}, fixing to 0`);
-                progress.experience = 0;
-                hasCorruptedData = true;
-            }
-            
-            if (isNaN(progress.questionsAnswered)) {
-                console.log(`[API] CORRUPTED DATA - questionsAnswered is NaN for ${quizName}, fixing based on history length`);
-                progress.questionsAnswered = progress.questionHistory.length;
-                hasCorruptedData = true;
-            }
-            
-            // Save corrected data if needed
-            if (hasCorruptedData) {
-                console.log(`[API] Saving fixed corrupted data for ${quizName}`);
-                // Immediately save the corrected state back to the API
-                this.saveQuizProgress(normalizedQuizName, progress)
-                    .then(() => console.log(`[API] Successfully fixed corrupted state for ${quizName}`))
-                    .catch(err => console.error(`[API] Failed to save fixed state for ${quizName}:`, err));
-            }
-            
-            // If data looks valid, immediately save it again to ensure consistency
-            if (!hasCorruptedData && progress.experience > 0) {
-                this.saveQuizProgress(normalizedQuizName, progress)
-                    .then(() => console.log(`[API] Re-saved valid progress for ${quizName} to ensure consistency`))
-                    .catch(err => console.error(`[API] Failed to re-save valid progress:`, err));
-            }
-            
-            return {
-                success: true,
-                data: progress
-            };
-        } catch (error) {
-            console.error(`[API] Error getting quiz progress for ${quizName}:`, error);
-            
-            // Final localStorage fallback
-            try {
-                const username = localStorage.getItem('username');
-                if (username) {
-                    const normalizedQuizName = this.normalizeQuizName(quizName);
-                    const storageKey = `quiz_progress_${username}_${normalizedQuizName}`;
-                        const localData = localStorage.getItem(storageKey);
+                    if (quizProgressFromUserData) {
+                        console.log(`[API] Found quiz progress for ${normalizedQuizName} in user data:`, quizProgressFromUserData);
                         
-                        if (localData) {
-                            try {
-                                const parsed = JSON.parse(localData);
-                            console.log(`[API] Using emergency localStorage fallback for ${normalizedQuizName}`);
-                                
-                                if (parsed && parsed.data) {
-                                // Ensure experience is a valid number
-                                const sanitizedData = {
-                                    ...parsed.data,
-                                    experience: !isNaN(parseFloat(parsed.data.experience)) ? 
-                                        parseFloat(parsed.data.experience) : 0,
-                                    source: 'localStorage_emergency'
-                                };
-                                
-                                    return {
-                                        success: true,
-                                    data: sanitizedData
-                                    };
-                                }
-                            } catch (e) {
-                            console.error(`[API] Error parsing emergency localStorage data:`, e);
+                        return {
+                            success: true,
+                            data: quizProgressFromUserData
+                        };
+                    }
+                    
+                    console.log(`[API] Quiz ${normalizedQuizName} not found in user data`);
+                }
+            } catch (userDataError) {
+                console.warn(`[API] Error accessing user data:`, userDataError);
+                // Continue to fallback method
+            }
+            
+            // Fallback to direct quiz progress fetch if getUserData didn't succeed
+            const username = localStorage.getItem('username');
+            if (!username) {
+                console.error('[API] No username found in localStorage');
+                return { success: false, message: 'No username found' };
+            }
+            
+            const token = this.getToken();
+            if (!token) {
+                console.error('[API] No authentication token found');
+                return { success: false, message: 'No authentication token' };
+            }
+            
+            // Fetch progress from the direct endpoint
+            try {
+                const response = await fetch(`${this.apiUrl}/quiz-progress/${normalizedQuizName}`, {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+                
+                if (!response.ok) {
+                    console.warn(`[API] HTTP error fetching quiz progress: ${response.status}`);
+                    return { success: false, message: `HTTP error: ${response.status}` };
+                }
+                
+                const data = await response.json();
+                console.log(`[API] Direct fetch quiz progress response:`, data);
+                return data;
+            } catch (error) {
+                console.warn(`[API] Error fetching quiz progress for ${normalizedQuizName}:`, error);
+                
+                // Last resort: try localStorage directly if fetch failed
+                try {
+                    const storageKey = `quiz_progress_${username}_${normalizedQuizName}`;
+                    const localData = localStorage.getItem(storageKey);
+                    
+                    if (localData) {
+                        const parsed = JSON.parse(localData);
+                        console.log(`[API] Emergency fallback to localStorage for ${normalizedQuizName}:`, parsed);
+                        
+                        if (parsed && (parsed.data || parsed.quizData)) {
+                            return {
+                                success: true,
+                                data: parsed.data || parsed.quizData || parsed
+                            };
                         }
                     }
+                } catch (localStorageError) {
+                    console.error(`[API] Error accessing localStorage:`, localStorageError);
                 }
-            } catch (e) {
-                console.error(`[API] Error in emergency localStorage fallback:`, e);
+                
+                return { success: false, message: error.message };
             }
             
-            // If all else fails, return an empty default state
-            return {
-                success: true,
-                error: error.message,
-                data: {
-                    experience: 0,
-                    questionsAnswered: 0,
-                    status: 'not-started',
-                    scorePercentage: 0,
-                    currentScenario: 0,
-                    tools: [],
-                    questionHistory: []
-                }
-            };
+        } catch (error) {
+            console.error(`[API] Unexpected error in getQuizProgress:`, error);
+            return { success: false, message: error.message };
         }
     }
 
@@ -2495,275 +2327,99 @@ export class APIService {
 
     async saveQuizProgress(quizName, progress) {
         try {
-            console.log(`[API Debug] Raw experience value type: ${typeof progress.experience}, value: ${progress.experience}, isNaN: ${isNaN(progress.experience)}`);
+            console.log(`[API Debug] Saving progress for quiz: ${quizName}`);
+            console.log(`[API Debug] Raw progress data:`, progress);
             
-            // Normalize the quiz name for consistency - always use standard normalized name
+            // Normalize the quiz name for consistency
             const normalizedQuizName = this.normalizeQuizName(quizName);
             
             // Additional debug information
-            console.log(`[API Debug] Saving progress for quiz: ${quizName} → ${normalizedQuizName}`);
-            console.log(`[API Debug] Before sanitization: progress=`, progress);
+            console.log(`[API Debug] Using normalized quiz name: ${normalizedQuizName}`);
             
-            // Type checking and complete sanitization of the progress object
+            // Type checking and complete sanitization of data
             const sanitizedProgress = {
-                ...progress,
-                // Ensure experience is a valid number
-                experience: !isNaN(parseFloat(progress.experience)) ? parseFloat(progress.experience) : 0,
-                // Ensure other numeric values are also valid
-                questionsAnswered: !isNaN(parseInt(progress.questionsAnswered)) ? parseInt(progress.questionsAnswered) : 0,
-                currentScenario: !isNaN(parseInt(progress.currentScenario)) ? parseInt(progress.currentScenario) : 0,
-                scorePercentage: !isNaN(parseFloat(progress.scorePercentage)) ? parseFloat(progress.scorePercentage) : 0,
-                // Ensure arrays are always arrays
-                tools: Array.isArray(progress.tools) ? progress.tools : [],
-                questionHistory: Array.isArray(progress.questionHistory) ? progress.questionHistory : [],
-                // Ensure other fields have fallbacks
+                experience: parseInt(progress.experience) || 0,
+                questionsAnswered: parseInt(progress.questionsAnswered) || 0,
                 status: progress.status || 'in-progress',
-                randomizedScenarios: progress.randomizedScenarios || {},
+                tools: Array.isArray(progress.tools) ? progress.tools : [],
+                currentScenario: parseInt(progress.currentScenario) || 0,
+                questionHistory: Array.isArray(progress.questionHistory) ? progress.questionHistory : [],
                 lastUpdated: progress.lastUpdated || new Date().toISOString()
             };
             
-            // For the communication quiz specifically
-            if (normalizedQuizName === 'communication') {
-                console.log('[API Debug] Special handling for communication quiz');
-                
-                // Double check experience value for communication quiz
-                if (sanitizedProgress.experience === 0 && progress.experience) {
-                    // Try harder to get a valid experience value for communication quiz
-                    const rawExperience = progress.experience;
-                    if (typeof rawExperience === 'string') {
-                        sanitizedProgress.experience = parseFloat(rawExperience) || 0;
-                    } else if (typeof rawExperience === 'number') {
-                        sanitizedProgress.experience = rawExperience;
-                    }
-                    console.log(`[API Debug] Communication quiz: Recovered experience value ${sanitizedProgress.experience} from ${rawExperience}`);
-                }
-                
-                // Special check for history-based experience calculation for communication quiz
-                if (sanitizedProgress.experience === 0 && 
-                    Array.isArray(sanitizedProgress.questionHistory) && 
-                    sanitizedProgress.questionHistory.length > 0) {
-                    
-                    let calculatedExperience = 0;
-                    
-                    // Try to calculate experience from question history
-                    sanitizedProgress.questionHistory.forEach(question => {
-                        if (question.selectedAnswer && typeof question.selectedAnswer.experience === 'number') {
-                            calculatedExperience += question.selectedAnswer.experience;
-                        }
-                    });
-                    
-                    if (calculatedExperience > 0) {
-                        console.log(`[API Debug] Communication quiz: Calculated experience ${calculatedExperience} from question history`);
-                        sanitizedProgress.experience = calculatedExperience;
-                    }
-                }
+            // Make sure experience is never NaN or negative
+            if (isNaN(sanitizedProgress.experience) || sanitizedProgress.experience < 0) {
+                sanitizedProgress.experience = 0;
             }
             
-            console.log(`[API Debug] After fixes: experience=${sanitizedProgress.experience}`);
+            console.log(`[API Debug] Sanitized progress data:`, sanitizedProgress);
             
-            // Ensure all required fields are present with defaults - now using the sanitized values
-            const progressData = {
-                experience: sanitizedProgress.experience,
-                questionsAnswered: sanitizedProgress.questionsAnswered,
-                status: sanitizedProgress.status,
-                scorePercentage: sanitizedProgress.scorePercentage,
-                tools: sanitizedProgress.tools,
-                questionHistory: sanitizedProgress.questionHistory,
-                currentScenario: sanitizedProgress.currentScenario,
-                randomizedScenarios: sanitizedProgress.randomizedScenarios,
-                lastUpdated: sanitizedProgress.lastUpdated
-            };
-            
-            // Check for inconsistent states before saving
-            // If completed/passed/failed, ensure we have the right number of questions
-            if (['completed', 'passed', 'failed'].includes(progressData.status)) {
-                // If we don't have enough questions answered, revert to in-progress
-                if (progressData.questionHistory.length < 15 && progressData.questionsAnswered < 15) {
-                    console.log(`[API] Fixing inconsistent state before save: quiz marked as ${progressData.status} but has insufficient questions. Setting to in-progress.`);
-                    progressData.status = 'in-progress';
-                }
+            const username = localStorage.getItem('username');
+            if (!username) {
+                console.error('[API] No username found in localStorage');
+                return { success: false, message: 'No username found' };
             }
             
-            console.log(`[API] Processed progress data for ${normalizedQuizName}:`, {
-                currentScenario: progressData.currentScenario,
-                questionsAnswered: progressData.questionsAnswered,
-                status: progressData.status,
-                questionHistoryLength: (progressData.questionHistory || []).length,
-                experience: progressData.experience,
-                experienceType: typeof progressData.experience
+            const token = this.getToken();
+            if (!token) {
+                console.error('[API] No authentication token found');
+                return { success: false, message: 'No authentication token' };
+            }
+            
+            // Save to localStorage for immediate availability and offline fallback
+            const storageKey = `quiz_progress_${username}_${normalizedQuizName}`;
+            localStorage.setItem(storageKey, JSON.stringify({
+                data: sanitizedProgress
+            }));
+            
+            // CRITICAL: Always update the userData cache to keep index page in sync
+            try {
+                // Get existing user data
+                const userData = await this.getUserData(true); // force refresh
+                
+                if (userData && userData.data) {
+                    // Ensure quizProgress object exists
+                    if (!userData.data.quizProgress) {
+                        userData.data.quizProgress = {};
+                    }
+                    
+                    // Update this quiz's progress in the user data
+                    userData.data.quizProgress[normalizedQuizName] = sanitizedProgress;
+                    
+                    // Save updated user data back to localStorage
+                    this.saveUserDataToLocalStorage(userData.data);
+                    console.log(`[API] Updated user data cache with quiz progress for ${normalizedQuizName}`);
+                }
+            } catch (userDataError) {
+                console.warn(`[API] Error updating user data cache:`, userDataError);
+                // Continue with API save even if cache update failed
+            }
+            
+            // Save to the API
+            const response = await fetch(`${this.apiUrl}/quiz-progress/${normalizedQuizName}`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({
+                    quizName: normalizedQuizName,
+                    progress: sanitizedProgress
+                })
             });
             
-            // First save to localStorage as backup
-            let localSaveSuccessful = false;
-            try {
-                const username = localStorage.getItem('username');
-                if (username) {
-                    const storageKey = `quiz_progress_${username}_${normalizedQuizName}`;
-                    localStorage.setItem(storageKey, JSON.stringify({ 
-                        data: progressData,
-                        timestamp: new Date().toISOString()
-                    }));
-                    
-                    console.log(`[API] Saved backup to localStorage for ${normalizedQuizName}`);
-                    
-                    // For communication quiz specifically, make an additional backup
-                    if (normalizedQuizName === 'communication') {
-                        localStorage.setItem(`quiz_progress_${username}_communication_backup`, JSON.stringify({ 
-                            data: progressData,
-                            timestamp: new Date().toISOString()
-                        }));
-                        console.log(`[API] Created additional backup for communication quiz`);
-                    }
-                    
-                    localSaveSuccessful = true;
-                } else {
-                    console.warn('[API] Could not save to localStorage - no username found');
-                }
-            } catch (e) {
-                console.error('[API] Failed to save localStorage backup:', e);
+            if (!response.ok) {
+                console.error(`[API] HTTP error saving quiz progress: ${response.status}`);
+                return { success: false, message: `HTTP error: ${response.status}` };
             }
             
-            // Try to save to API with normalized quiz name
-            let apiSaveSuccessful = false;
+            const data = await response.json();
+            console.log(`[API] Quiz progress saved successfully:`, data);
             
-            try {
-                // Augment the post data with explicit metadata
-                const postData = {
-                    quizName: normalizedQuizName,
-                    progress: {
-                        ...progressData,
-                        _metaInfo: {
-                            clientTimestamp: new Date().toISOString(),
-                            originalQuizName: quizName,
-                            normalizedQuizName: normalizedQuizName,
-                            experienceType: typeof progressData.experience
-                        }
-                    }
-                };
-                
-                console.log(`[API] Saving to API: ${normalizedQuizName}`, postData);
-                
-                const apiUrl = `${this.baseUrl}/users/quiz-progress`;
-                console.log(`[API] POST URL: ${apiUrl}`);
-                
-                const response = await this.fetchWithAuth(
-                    apiUrl,
-                    {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json'
-                        },
-                        body: JSON.stringify(postData)
-                    }
-                );
-                
-                if (response && response.success) {
-                    console.log(`[API] Successfully saved progress for quiz ${normalizedQuizName}`);
-                    apiSaveSuccessful = true;
-                } else {
-                    console.warn(`[API] Failed to save progress to API: ${response?.message || 'Unknown error'}`);
-                }
-            } catch (apiError) {
-                console.error(`[API] Error saving to API:`, apiError);
-            }
-            
-            // For communication quiz, if API save failed but localStorage worked, try special retry
-            if (!apiSaveSuccessful && localSaveSuccessful && normalizedQuizName === 'communication') {
-                console.log(`[API] Communication quiz special retry after failed API save`);
-                
-                // Make one more attempt with async/await
-                try {
-                    setTimeout(async () => {
-                        try {
-                            console.log(`[API] Attempting special retry for communication quiz`);
-                            const retryResponse = await this.fetchWithAuth(
-                                `${this.baseUrl}/users/quiz-progress`,
-                                {
-                                    method: 'POST',
-                                    headers: {
-                                        'Content-Type': 'application/json'
-                                    },
-                                    body: JSON.stringify({
-                                        quizName: normalizedQuizName,
-                                        progress: progressData
-                                    })
-                                }
-                            );
-                            
-                            if (retryResponse && retryResponse.success) {
-                                console.log(`[API] Special retry for communication quiz succeeded`);
-                } else {
-                                console.warn(`[API] Special retry for communication quiz failed`);
-                            }
-                        } catch (retryError) {
-                            console.error(`[API] Special retry error:`, retryError);
-                        }
-                    }, 2000); // Wait 2 seconds before retry
-                } catch (retrySetupError) {
-                    console.error(`[API] Error setting up special retry:`, retrySetupError);
-                }
-            }
-            
-                return {
-                    success: true,
-                    data: progressData,
-                    apiSaved: apiSaveSuccessful,
-                    localSaved: localSaveSuccessful
-                };
-            
+            return data;
         } catch (error) {
             console.error(`[API] Error saving quiz progress:`, error);
-            
-            // Try to save to localStorage as last resort fallback
-            try {
-                const username = localStorage.getItem('username');
-                if (username) {
-                    // Create a sanitized copy of progress to ensure we're storing valid data
-                    const fallbackProgress = {
-                        ...progress,
-                        experience: !isNaN(parseFloat(progress.experience)) ? parseFloat(progress.experience) : 0,
-                        questionsAnswered: !isNaN(parseInt(progress.questionsAnswered)) ? parseInt(progress.questionsAnswered) : 0,
-                        currentScenario: !isNaN(parseInt(progress.currentScenario)) ? parseInt(progress.currentScenario) : 0,
-                        scorePercentage: !isNaN(parseFloat(progress.scorePercentage)) ? parseFloat(progress.scorePercentage) : 0,
-                        tools: Array.isArray(progress.tools) ? progress.tools : [],
-                        questionHistory: Array.isArray(progress.questionHistory) ? progress.questionHistory : []
-                    };
-                    
-                    const normalizedQuizName = this.normalizeQuizName(quizName);
-                    const storageKey = `quiz_progress_${username}_${normalizedQuizName}`;
-                        localStorage.setItem(storageKey, JSON.stringify({ 
-                        data: fallbackProgress,
-                            timestamp: new Date().toISOString() 
-                        }));
-                    
-                    console.log(`[API] Saved emergency fallback to localStorage for ${normalizedQuizName}`);
-                    
-                    // For communication quiz, save to additional emergency backup location
-                    if (normalizedQuizName === 'communication') {
-                        localStorage.setItem(`quiz_progress_${username}_communication_emergency`, JSON.stringify({ 
-                            data: fallbackProgress,
-                            timestamp: new Date().toISOString() 
-                        }));
-                        console.log(`[API] Created emergency backup for communication quiz`);
-                    }
-                    
-                    return {
-                        success: true,
-                        message: 'Saved to localStorage only (API failed)',
-                        data: fallbackProgress,
-                        apiSaved: false,
-                        localSaved: true
-                    };
-                }
-            } catch (e) {
-                console.error('[API] Failed to save localStorage fallback:', e);
-            }
-            
-            return {
-                success: false,
-                message: error.message || 'Failed to save quiz progress',
-                data: progress // Return original progress in case of error
-            };
+            return { success: false, message: error.message };
         }
     }
 
