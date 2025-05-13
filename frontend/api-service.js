@@ -524,144 +524,83 @@ export class APIService {
             // Store the original quiz name for diagnostics
             const originalQuizName = quizName;
             
-            // Normalize the quiz name and create variations
+            // Normalize the quiz name - use only the primary normalized version
             const normalizedQuizName = this.normalizeQuizName(quizName);
-            const quizNameVariations = this.getQuizNameVariations(normalizedQuizName);
             
-            console.log(`[API] Will try these quiz name variations:`, quizNameVariations);
+            console.log(`[API] Using normalized quiz name: ${normalizedQuizName}`);
             
             // Add retry mechanism with increasing delay for better reliability
             let retryCount = 0;
             const maxRetries = 2;
             let response = null;
             
-            // Save all responses for debugging
-            const allResponses = [];
-            
             while (retryCount <= maxRetries) {
-                let foundData = false;
-                
-                // Try each variation of the quiz name
-                for (const variation of quizNameVariations) {
-                    try {
-                        // First try to get from the API
-                        const variationResponse = await this.fetchWithAuth(`${this.baseUrl}/users/quiz-progress/${variation}`);
-                        console.log(`[API] Raw quiz progress response for ${variation} (attempt ${retryCount + 1}):`, variationResponse);
-                        
-                        // Save all non-empty responses for logging
-                        if (variationResponse && variationResponse.data && Object.keys(variationResponse.data).length > 0) {
-                            allResponses.push({
-                                variation, 
-                                response: variationResponse,
-                                hasExperience: typeof variationResponse.data.experience === 'number' && !isNaN(variationResponse.data.experience),
-                                experienceValue: variationResponse.data.experience
-                            });
-                        }
-                        
-                        // If we got a valid response with data, store it and break the loop
-                        // unless we're forcing to try all variations
-                        if (variationResponse && variationResponse.data && Object.keys(variationResponse.data).length > 0) {
-                            console.log(`[API] Found data with variation: ${variation}`);
-                            
-                            // For communication quiz, prefer responses with non-zero experience
-                            if (shouldTryAllVariations) {
-                                // Only replace the response if:
-                                // 1. We don't have one yet, OR
-                                // 2. The current one has experience = 0 AND this one has experience > 0
-                                if (!response || 
-                                    (variationResponse.data.experience > 0 && 
-                                     (!response.data.experience || response.data.experience === 0))) {
-                                    response = variationResponse;
-                                    console.log(`[API Debug] Selected response from variation '${variation}' with experience: ${variationResponse.data.experience}`);
-                                    foundData = true;
-                                }
-                            } else {
-                                response = variationResponse;
-                                foundData = true;
-                                break;
-                            }
-                        }
-                    } catch (variationError) {
-                        console.warn(`[API] Error trying variation ${variation}:`, variationError);
-                        // Continue to next variation
+                try {
+                    // Get progress using the normalized quiz name
+                    response = await this.fetchWithAuth(`${this.baseUrl}/users/quiz-progress/${normalizedQuizName}`);
+                    console.log(`[API] Raw quiz progress response for ${normalizedQuizName} (attempt ${retryCount + 1}):`, response);
+                    
+                    // If we got a valid response with data, break the retry loop
+                    if (response && response.data && Object.keys(response.data).length > 0) {
+                        console.log(`[API] Found data with normalized name: ${normalizedQuizName}`);
+                        break;
                     }
+                } catch (error) {
+                    console.warn(`[API] Error fetching quiz progress for ${normalizedQuizName}:`, error);
                 }
                 
-                // If we're forcing all variations to be checked and we found data, we'll still break now
-                if (foundData && shouldTryAllVariations) {
-                    console.log(`[API] DEBUG for Communication Quiz - all responses:`, allResponses);
-                    break;
-                }
-                
-                // If we found data with any variation, break the retry loop
-                if (foundData) {
-                    break;
-                }
-                
-                // If we get here, no variation returned data - wait and retry
+                // If we get here, no data returned - wait and retry
                 retryCount++;
                 if (retryCount <= maxRetries) {
-                    console.log(`[API] No data found with any variation, retrying (${retryCount}/${maxRetries})...`);
+                    console.log(`[API] No data found, retrying (${retryCount}/${maxRetries})...`);
                     // Exponential backoff: 500ms, 1000ms
                     await new Promise(resolve => setTimeout(resolve, 500 * retryCount));
                 }
             }
             
-            // Debug log if we didn't find anything
-            if (!response && allResponses.length > 0) {
-                console.log(`[API] No "best" response found, but had ${allResponses.length} candidates:`, allResponses);
-                // Take the first non-empty response if we have any
-                response = allResponses[0].response;
-            }
-            
-            // Check localStorage as a potential source of truth
+            // Check localStorage as a potential source of truth with the normalized key
             const username = localStorage.getItem('username');
             let localStorageData = null;
             
             if (username) {
-                for (const variation of quizNameVariations) {
-                    const storageKey = `quiz_progress_${username}_${variation}`;
-                    const localData = localStorage.getItem(storageKey);
-                    
-                    if (localData) {
-                        try {
-                            const parsed = JSON.parse(localData);
-                            console.log(`[API] Found progress in localStorage for ${variation}:`, parsed);
-                            
-                            if (parsed && parsed.data) {
-                                localStorageData = parsed;
-                                break;
-                            }
-                        } catch (e) {
-                            console.error(`[API] Error parsing localStorage data for ${variation}:`, e);
+                const storageKey = `quiz_progress_${username}_${normalizedQuizName}`;
+                const localData = localStorage.getItem(storageKey);
+                
+                if (localData) {
+                    try {
+                        const parsed = JSON.parse(localData);
+                        console.log(`[API] Found progress in localStorage for ${normalizedQuizName}:`, parsed);
+                        
+                        if (parsed && parsed.data) {
+                            localStorageData = parsed;
                         }
+                    } catch (e) {
+                        console.error(`[API] Error parsing localStorage data for ${normalizedQuizName}:`, e);
                     }
                 }
             }
             
-            // Special handling for communication quiz
-            // If we have zero experience from API but non-zero from localStorage, use localStorage
-            if (normalizedQuizName === 'communication' && 
-                response && response.data && 
+            // If API returned zero experience but localStorage has non-zero, use localStorage
+            if (response && response.data && 
                 (!response.data.experience || response.data.experience === 0) && 
                 localStorageData && localStorageData.data && 
                 localStorageData.data.experience > 0) {
                 
-                console.log(`[API] Communication quiz special case: API returned zero experience but localStorage has value ${localStorageData.data.experience} - using localStorage data`);
+                console.log(`[API] Special case: API returned zero experience but localStorage has value ${localStorageData.data.experience} - using localStorage data`);
                 
                 // Ensure experience is a valid number before returning
                 const sanitizedData = {
                     ...localStorageData.data,
                     experience: !isNaN(parseFloat(localStorageData.data.experience)) ? 
                         parseFloat(localStorageData.data.experience) : 0,
-                    source: 'localStorage_communication_special'
+                    source: 'localStorage_special'
                 };
                 
                 // Immediately try to re-save this progress to API to fix the problem
-                this.saveQuizProgress(originalQuizName, sanitizedData)
-                    .then(() => console.log('[API] Successfully re-saved communication progress from localStorage to API'))
-                    .catch(err => console.error('[API] Failed to re-save communication progress:', err));
-                
+                this.saveQuizProgress(normalizedQuizName, sanitizedData)
+                    .then(() => console.log('[API] Successfully re-saved progress from localStorage to API'))
+                    .catch(err => console.error('[API] Failed to re-save progress:', err));
+                    
                 return {
                     success: true,
                     data: sanitizedData
@@ -736,13 +675,12 @@ export class APIService {
                 experienceType: typeof progress.experience
             });
             
-            // For communication quiz, do an additional check with localStorage
-            if (normalizedQuizName === 'communication' && 
-                progress.experience === 0 && 
+            // Additional check with localStorage if API value is zero
+            if (progress.experience === 0 && 
                 localStorageData && 
                 localStorageData.data.experience > 0) {
                 
-                console.log(`[API] Communication quiz: After processing, experience is still 0 but localStorage has ${localStorageData.data.experience}. Using localStorage experience value.`);
+                console.log(`[API] After processing, experience is still 0 but localStorage has ${localStorageData.data.experience}. Using localStorage experience value.`);
                 
                 // Use the experience value from localStorage
                 progress.experience = parseFloat(localStorageData.data.experience) || 0;
@@ -821,7 +759,7 @@ export class APIService {
             if (hasCorruptedData) {
                 console.log(`[API] Saving fixed corrupted data for ${quizName}`);
                 // Immediately save the corrected state back to the API
-                this.saveQuizProgress(quizName, progress)
+                this.saveQuizProgress(normalizedQuizName, progress)
                     .then(() => console.log(`[API] Successfully fixed corrupted state for ${quizName}`))
                     .catch(err => console.error(`[API] Failed to save fixed state for ${quizName}:`, err));
             }
@@ -837,35 +775,32 @@ export class APIService {
             try {
                 const username = localStorage.getItem('username');
                 if (username) {
-                    const quizNameVariations = this.getQuizNameVariations(quizName);
+                    const normalizedQuizName = this.normalizeQuizName(quizName);
+                    const storageKey = `quiz_progress_${username}_${normalizedQuizName}`;
+                    const localData = localStorage.getItem(storageKey);
                     
-                    for (const variation of quizNameVariations) {
-                        const storageKey = `quiz_progress_${username}_${variation}`;
-                        const localData = localStorage.getItem(storageKey);
-                        
-                        if (localData) {
-                            try {
-                                const parsed = JSON.parse(localData);
-                                console.log(`[API] Found progress in localStorage fallback for ${variation}:`, parsed);
+                    if (localData) {
+                        try {
+                            const parsed = JSON.parse(localData);
+                            console.log(`[API] Found progress in localStorage fallback for ${normalizedQuizName}:`, parsed);
+                            
+                            if (parsed && parsed.data) {
+                                // Ensure experience is a valid number
+                                const sanitizedData = {
+                                    ...parsed.data,
+                                    experience: !isNaN(parseFloat(parsed.data.experience)) ? 
+                                        parseFloat(parsed.data.experience) : 0,
+                                    source: 'localStorage_fallback'
+                                };
                                 
-                                if (parsed && parsed.data) {
-                                    // Ensure experience is a valid number
-                                    const sanitizedData = {
-                                        ...parsed.data,
-                                        experience: !isNaN(parseFloat(parsed.data.experience)) ? 
-                                            parseFloat(parsed.data.experience) : 0,
-                                        source: 'localStorage_fallback'
-                                    };
-                                    
-                                    // Return the localStorage data
-                                    return {
-                                        success: true,
-                                        data: sanitizedData
-                                    };
-                                }
-                            } catch (e) {
-                                console.error(`[API] Error parsing localStorage fallback data for ${variation}:`, e);
+                                // Return the localStorage data
+                                return {
+                                    success: true,
+                                    data: sanitizedData
+                                };
                             }
+                        } catch (e) {
+                            console.error(`[API] Error parsing localStorage fallback data for ${normalizedQuizName}:`, e);
                         }
                     }
                 }
@@ -2676,14 +2611,11 @@ export class APIService {
         try {
             console.log(`[API Debug] Raw experience value type: ${typeof progress.experience}, value: ${progress.experience}, isNaN: ${isNaN(progress.experience)}`);
             
-            // Store the original quiz name for diagnostics
-            const originalQuizName = quizName;
-            const isCommunicationQuiz = quizName.toLowerCase().includes('communi');
+            // Normalize the quiz name for consistency
+            const normalizedQuizName = this.normalizeQuizName(quizName);
             
-            // Additional debug information for communication quiz
-            if (isCommunicationQuiz) {
-                console.log(`[API Communication Debug] Before sanitization: progress=`, progress);
-            }
+            // Additional debug information
+            console.log(`[API Debug] Before sanitization: progress=`, progress);
             
             // Type checking and complete sanitization of the progress object
             const sanitizedProgress = {
@@ -2703,64 +2635,47 @@ export class APIService {
                 lastUpdated: progress.lastUpdated || new Date().toISOString()
             };
             
-            // Additional check for the communication quiz
-            if (isCommunicationQuiz) {
-                // Re-check the parsed experience value
-                if (sanitizedProgress.experience === 0 && typeof progress.experience === 'number' && progress.experience > 0) {
-                    console.log(`[API Communication Debug] Fixing zero experience value from ${sanitizedProgress.experience} to ${progress.experience}`);
-                    sanitizedProgress.experience = progress.experience;
+            // Additional checks for experience value recovery
+            // Re-check the parsed experience value
+            if (sanitizedProgress.experience === 0 && typeof progress.experience === 'number' && progress.experience > 0) {
+                console.log(`[API Debug] Fixing zero experience value from ${sanitizedProgress.experience} to ${progress.experience}`);
+                sanitizedProgress.experience = progress.experience;
+            }
+            
+            // Get the experience from the selected answer if it exists in history and experience is zero
+            if (sanitizedProgress.experience === 0 && sanitizedProgress.questionHistory && sanitizedProgress.questionHistory.length > 0) {
+                const lastQuestion = sanitizedProgress.questionHistory[sanitizedProgress.questionHistory.length - 1];
+                if (lastQuestion && lastQuestion.selectedAnswer && typeof lastQuestion.selectedAnswer.experience === 'number') {
+                    console.log(`[API Debug] Using experience from last question: ${lastQuestion.selectedAnswer.experience}`);
+                    sanitizedProgress.experience = lastQuestion.selectedAnswer.experience;
                 }
-                
-                // Get the experience from the selected answer if it exists in history and experience is zero
-                if (sanitizedProgress.experience === 0 && sanitizedProgress.questionHistory && sanitizedProgress.questionHistory.length > 0) {
-                    const lastQuestion = sanitizedProgress.questionHistory[sanitizedProgress.questionHistory.length - 1];
-                    if (lastQuestion && lastQuestion.selectedAnswer && typeof lastQuestion.selectedAnswer.experience === 'number') {
-                        console.log(`[API Communication Debug] Using experience from last question: ${lastQuestion.selectedAnswer.experience}`);
-                        sanitizedProgress.experience = lastQuestion.selectedAnswer.experience;
-                    }
-                }
-                
-                // Check localStorage for better experience value as fallback
-                try {
-                    const username = localStorage.getItem('username');
-                    if (username) {
-                        const normalizedQuizName = this.normalizeQuizName(quizName);
-                        const variations = this.getQuizNameVariations(normalizedQuizName);
-                        
-                        // Check all variations for non-zero experience
-                        for (const variation of variations) {
-                            const storageKey = `quiz_progress_${username}_${variation}`;
-                            const localData = localStorage.getItem(storageKey);
-                            
-                            if (localData) {
-                                const parsed = JSON.parse(localData);
-                                if (parsed && parsed.data && typeof parsed.data.experience === 'number' && parsed.data.experience > 0) {
-                                    if (sanitizedProgress.experience === 0) {
-                                        console.log(`[API Communication Debug] Using localStorage experience: ${parsed.data.experience} from ${variation}`);
-                                        sanitizedProgress.experience = parsed.data.experience;
-                                        break;
-                                    }
-                                }
+            }
+            
+            // Check localStorage for better experience value as fallback
+            try {
+                const username = localStorage.getItem('username');
+                if (username) {
+                    const storageKey = `quiz_progress_${username}_${normalizedQuizName}`;
+                    const localData = localStorage.getItem(storageKey);
+                    
+                    if (localData) {
+                        const parsed = JSON.parse(localData);
+                        if (parsed && parsed.data && typeof parsed.data.experience === 'number' && parsed.data.experience > 0) {
+                            if (sanitizedProgress.experience === 0) {
+                                console.log(`[API Debug] Using localStorage experience: ${parsed.data.experience} from localStorage`);
+                                sanitizedProgress.experience = parsed.data.experience;
                             }
                         }
                     }
-                } catch (e) {
-                    console.warn('[API Communication Debug] Error checking localStorage for experience:', e);
                 }
-                
-                console.log(`[API Communication Debug] After fixes: experience=${sanitizedProgress.experience}`);
+            } catch (e) {
+                console.warn('[API Debug] Error checking localStorage for experience:', e);
             }
             
+            console.log(`[API Debug] After fixes: experience=${sanitizedProgress.experience}`);
+            
             console.log(`[API Debug] Sanitized experience: ${sanitizedProgress.experience}`);
-            console.log(`[API] Saving progress for quiz ${quizName}:`, sanitizedProgress);
-            
-            // Normalize the quiz name first
-            const normalizedQuizName = this.normalizeQuizName(quizName);
-            
-            // Generate variations for consistent storage
-            const quizNameVariations = this.getQuizNameVariations(normalizedQuizName);
-            
-            console.log(`[API] Will save using quiz name variation: ${quizNameVariations[0]}`);
+            console.log(`[API] Saving progress for quiz ${normalizedQuizName}:`, sanitizedProgress);
             
             // Ensure all required fields are present with defaults - now using the sanitized values
             const progressData = {
@@ -2785,7 +2700,7 @@ export class APIService {
                 }
             }
             
-            console.log(`[API] Processed progress data for ${quizName}:`, {
+            console.log(`[API] Processed progress data for ${normalizedQuizName}:`, {
                 currentScenario: progressData.currentScenario,
                 questionsAnswered: progressData.questionsAnswered,
                 status: progressData.status,
@@ -2794,73 +2709,28 @@ export class APIService {
                 experienceType: typeof progressData.experience
             });
             
-            // For communication quiz, special direct save to all variations
-            if (isCommunicationQuiz) {
-                console.log(`[API Communication Debug] Special handling: Saving to all variations directly`);
-                
-                // Always save to localStorage first for all variations
-                let localSaveSuccessful = false;
-                try {
-                    const username = localStorage.getItem('username');
-                    if (username) {
-                        // Save to all variations to ensure maximum compatibility
-                        for (const variation of quizNameVariations) {
-                            const storageKey = `quiz_progress_${username}_${variation}`;
-                            localStorage.setItem(storageKey, JSON.stringify({ 
-                                data: progressData,
-                                timestamp: new Date().toISOString()
-                            }));
-                        }
-                        
-                        console.log(`[API] Saved backup to localStorage with ${quizNameVariations.length} variations`);
-                        localSaveSuccessful = true;
-                    } else {
-                        console.warn('[API] Could not save to localStorage - no username found');
-                    }
-                } catch (e) {
-                    console.error('[API] Failed to save localStorage backup:', e);
+            // First save to localStorage as backup
+            let localSaveSuccessful = false;
+            try {
+                const username = localStorage.getItem('username');
+                if (username) {
+                    const storageKey = `quiz_progress_${username}_${normalizedQuizName}`;
+                    localStorage.setItem(storageKey, JSON.stringify({ 
+                        data: progressData,
+                        timestamp: new Date().toISOString()
+                    }));
+                    
+                    console.log(`[API] Saved backup to localStorage for ${normalizedQuizName}`);
+                    localSaveSuccessful = true;
+                } else {
+                    console.warn('[API] Could not save to localStorage - no username found');
                 }
-                
-                // Try to save to API with each variation for maximum compatibility
-                // This is an extraordinary measure just for communication quiz
-                let apiSaveSuccessful = false;
-                
-                for (const variation of quizNameVariations) {
-                    try {
-                        const response = await this.fetchWithAuth(
-                            `${this.baseUrl}/users/quiz-progress`,
-                            {
-                                method: 'POST',
-                                headers: {
-                                    'Content-Type': 'application/json'
-                                },
-                                body: JSON.stringify({
-                                    quizName: variation,
-                                    progress: progressData
-                                })
-                            }
-                        );
-                        
-                        if (response && response.success) {
-                            console.log(`[API Communication Debug] Successfully saved to variation: ${variation}`);
-                            apiSaveSuccessful = true;
-                        }
-                    } catch (varError) {
-                        console.warn(`[API Communication Debug] Failed to save to variation: ${variation}`, varError);
-                    }
-                }
-                
-                return {
-                    success: true,
-                    data: progressData,
-                    apiSaved: apiSaveSuccessful,
-                    localSaved: localSaveSuccessful
-                };
+            } catch (e) {
+                console.error('[API] Failed to save localStorage backup:', e);
             }
             
-            // Try to save to API with the primary (most normalized) variation
+            // Try to save to API with normalized quiz name
             let apiSaveSuccessful = false;
-            const primaryVariation = quizNameVariations[0];
             
             try {
                 const response = await this.fetchWithAuth(
@@ -2871,14 +2741,14 @@ export class APIService {
                             'Content-Type': 'application/json'
                         },
                         body: JSON.stringify({
-                            quizName: primaryVariation,
+                            quizName: normalizedQuizName,
                             progress: progressData
                         })
                     }
                 );
                 
                 if (response && response.success) {
-                    console.log(`[API] Successfully saved progress for quiz ${primaryVariation}`);
+                    console.log(`[API] Successfully saved progress for quiz ${normalizedQuizName}`);
                     apiSaveSuccessful = true;
                 } else {
                     console.warn(`[API] Failed to save progress to API: ${response?.message || 'Unknown error'}`);
@@ -2887,41 +2757,12 @@ export class APIService {
                 console.error(`[API] Error saving to API:`, apiError);
             }
             
-            // Always save to localStorage as backup regardless of API success
-            let localSaveSuccessful = false;
-            try {
-                const username = localStorage.getItem('username');
-                if (username) {
-                    // Save to all variations to ensure maximum compatibility
-                    for (const variation of quizNameVariations) {
-                        const storageKey = `quiz_progress_${username}_${variation}`;
-                        localStorage.setItem(storageKey, JSON.stringify({ 
-                            data: progressData,
-                            timestamp: new Date().toISOString()
-                        }));
-                    }
-                    
-                    console.log(`[API] Saved backup to localStorage with ${quizNameVariations.length} variations`);
-                    localSaveSuccessful = true;
-                } else {
-                    console.warn('[API] Could not save to localStorage - no username found');
-                }
-            } catch (e) {
-                console.error('[API] Failed to save localStorage backup:', e);
-            }
-            
-            // Return success if either save method worked
-            if (apiSaveSuccessful || localSaveSuccessful) {
-                return {
-                    success: true,
-                    data: progressData,
-                    apiSaved: apiSaveSuccessful,
-                    localSaved: localSaveSuccessful
-                };
-            }
-            
-            // Neither save method worked
-            throw new Error('Failed to save quiz progress to API and localStorage');
+            return {
+                success: true,
+                data: progressData,
+                apiSaved: apiSaveSuccessful,
+                localSaved: localSaveSuccessful
+            };
             
         } catch (error) {
             console.error(`[API] Error saving quiz progress:`, error);
@@ -2941,18 +2782,14 @@ export class APIService {
                         questionHistory: Array.isArray(progress.questionHistory) ? progress.questionHistory : []
                     };
                     
-                    const quizNameVariations = this.getQuizNameVariations(quizName);
+                    const normalizedQuizName = this.normalizeQuizName(quizName);
+                    const storageKey = `quiz_progress_${username}_${normalizedQuizName}`;
+                    localStorage.setItem(storageKey, JSON.stringify({ 
+                        data: fallbackProgress,
+                        timestamp: new Date().toISOString() 
+                    }));
                     
-                    // Save to all variations to ensure maximum compatibility
-                    for (const variation of quizNameVariations) {
-                        const storageKey = `quiz_progress_${username}_${variation}`;
-                        localStorage.setItem(storageKey, JSON.stringify({ 
-                            data: fallbackProgress,
-                            timestamp: new Date().toISOString() 
-                        }));
-                    }
-                    
-                    console.log(`[API] Saved emergency fallback to localStorage with ${quizNameVariations.length} variations`);
+                    console.log(`[API] Saved emergency fallback to localStorage for ${normalizedQuizName}`);
                     return {
                         success: true,
                         message: 'Saved to localStorage only (API failed)',
