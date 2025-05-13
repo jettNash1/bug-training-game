@@ -1121,11 +1121,39 @@ export class BaseQuiz {
     }
 
     displayScenario() {
+        // Get the current scenarios based on progress
         const currentScenarios = this.getCurrentScenarios();
-        const scenario = currentScenarios[this.player.currentScenario];
-
-        if (!scenario) {
+        const questionCount = this.player.questionHistory.length;
+        
+        // Check if we've answered all questions
+        if (questionCount >= this.totalQuestions) {
+            console.log('[BaseQuiz] All questions answered, ending game');
             this.endGame(false);
+            return;
+        }
+        
+        // Get the next scenario based on current progress
+        let scenario;
+        let currentLevelIndex;
+        
+        // Determine which level we're in and set the correct index
+        if (questionCount < 5) {
+            // Basic questions (0-4)
+            currentLevelIndex = questionCount;
+        } else if (questionCount < 10) {
+            // Intermediate questions (5-9)
+            currentLevelIndex = questionCount - 5;
+        } else {
+            // Advanced questions (10-14)
+            currentLevelIndex = questionCount - 10;
+        }
+        
+        // Get the scenario from the current randomized scenarios
+        scenario = currentScenarios[currentLevelIndex];
+        
+        if (!scenario) {
+            console.error('[BaseQuiz] No scenario found for current progress. Question count:', questionCount);
+            this.endGame(true);
             return;
         }
 
