@@ -712,34 +712,9 @@ export class TesterMindsetQuiz extends BaseQuiz {
             const apiProgress = await this.apiService.getQuizProgress(this.quizName);
             console.log('[TesterMindsetQuiz] API progress response:', apiProgress);
             
-            // Handle inconsistent completed state - if the quiz is marked as completed but has
-            // 0 questionsAnswered or currentScenario is 0, this is likely a bug, so reset it
-            const status = apiProgress?.data?.status;
-            const questionsAnswered = apiProgress?.data?.questionsAnswered || 0;
-            const currentScenario = apiProgress?.data?.currentScenario || 0;
-            const progressHasInconsistency = (status === 'completed' || status === 'passed' || status === 'failed') && 
-                                            (questionsAnswered === 0 || currentScenario === 0);
+            // The inconsistency check block has been removed to prevent unwanted resets
             
-            if (progressHasInconsistency) {
-                console.warn('[TesterMindsetQuiz] Detected inconsistent quiz state: status=' + status + 
-                            ', questionsAnswered=' + questionsAnswered + 
-                            ', currentScenario=' + currentScenario);
-                console.warn('[TesterMindsetQuiz] Resetting quiz state to avoid issues');
-                
-                // Reset the player state
-                this.player.experience = 0;
-                this.player.tools = [];
-                this.player.currentScenario = 0;
-                this.player.questionHistory = [];
-                
-                // Clear any existing randomized scenarios
-                this.randomizedScenarios = {};
-                
-                // Save this reset state to override the inconsistent state
-                await this.saveProgress();
-                
-                hasProgress = false;
-            } else if (hasProgress) {
+            if (hasProgress) {
                 // Ensure currentScenario is properly initialized and log it
                 if (this.player.currentScenario === undefined || this.player.currentScenario === null) {
                     this.player.currentScenario = this.player.questionHistory.length;
