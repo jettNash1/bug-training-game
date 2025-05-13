@@ -597,12 +597,16 @@ export class APIService {
             // If no data found from API but found in localStorage, use localStorage
             if ((!response || !response.data || Object.keys(response.data).length === 0) && localStorageData) {
                 console.log(`[API] No progress found in API, using localStorage data`);
+                // Ensure experience is a valid number before returning
+                const sanitizedData = {
+                    ...localStorageData.data,
+                    experience: !isNaN(parseFloat(localStorageData.data.experience)) ? 
+                        parseFloat(localStorageData.data.experience) : 0,
+                    source: 'localStorage'
+                };
                 return {
                     success: true,
-                    data: {
-                        ...localStorageData.data,
-                        source: 'localStorage'
-                    }
+                    data: sanitizedData
                 };
             }
             
@@ -625,8 +629,20 @@ export class APIService {
             
             // Normalize the API data to ensure all required fields
             const apiData = response?.data || {};
+            
+            // Critical fix: Ensure experience is always a valid number
+            let experienceValue = 0;
+            if (apiData.experience !== undefined) {
+                // Convert to number, default to 0 if NaN
+                experienceValue = !isNaN(parseFloat(apiData.experience)) ? 
+                    parseFloat(apiData.experience) : 0;
+                
+                // Log important diagnostic information
+                console.log(`[API] Experience value from API: ${apiData.experience}, type: ${typeof apiData.experience}, parsed: ${experienceValue}`);
+            }
+            
             const progress = {
-                experience: apiData.experience || 0,
+                experience: experienceValue,
                 questionsAnswered: apiData.questionsAnswered || 0,
                 status: apiData.status || 'not-started',
                 scorePercentage: typeof apiData.scorePercentage === 'number' ? apiData.scorePercentage : 0,
@@ -641,8 +657,25 @@ export class APIService {
                 status: progress.status,
                 currentScenario: progress.currentScenario,
                 questionsAnswered: progress.questionsAnswered,
-                questionHistoryLength: progress.questionHistory.length
+                questionHistoryLength: progress.questionHistory.length,
+                experience: progress.experience,
+                experienceType: typeof progress.experience
             });
+            
+            // Enhanced corruption check: look for NaN or undefined in critical fields
+            let hasCorruptedData = false;
+            
+            if (isNaN(progress.experience)) {
+                console.log(`[API] CORRUPTED DATA - experience is NaN for ${quizName}, fixing to 0`);
+                progress.experience = 0;
+                hasCorruptedData = true;
+            }
+            
+            if (isNaN(progress.questionsAnswered)) {
+                console.log(`[API] CORRUPTED DATA - questionsAnswered is NaN for ${quizName}, fixing based on history length`);
+                progress.questionsAnswered = progress.questionHistory.length;
+                hasCorruptedData = true;
+            }
             
             // Check for potentially corrupted/incomplete data from API
             const hasEmptyButCompletedState = 
@@ -651,6 +684,7 @@ export class APIService {
                 
             if (hasEmptyButCompletedState) {
                 console.log(`[API] POTENTIALLY CORRUPTED DATA for ${quizName}: Status=${progress.status} but questionHistory is empty or questionsAnswered=0`);
+                hasCorruptedData = true;
                 
                 // If localStorage has more complete data, use it instead
                 if (localStorageData && localStorageData.data && 
@@ -658,12 +692,18 @@ export class APIService {
                      localStorageData.data.questionsAnswered > 0)) {
                     
                     console.log(`[API] Using localStorage data instead of corrupted API data`);
+                    
+                    // Ensure experience is a number in localStorage data as well
+                    const sanitizedLocalData = {
+                        ...localStorageData.data,
+                        experience: !isNaN(parseFloat(localStorageData.data.experience)) ? 
+                            parseFloat(localStorageData.data.experience) : 0,
+                        source: 'localStorage_fallback_corrupted'
+                    };
+                    
                     return {
                         success: true,
-                        data: {
-                            ...localStorageData.data,
-                            source: 'localStorage_fallback_corrupted'
-                        }
+                        data: sanitizedLocalData
                     };
                 }
                 
@@ -682,16 +722,21 @@ export class APIService {
                 console.log(`[API] INCONSISTENT STATE DETECTED for ${quizName}: Status=${progress.status} but only ${progress.questionHistory.length}/15 questions answered. Fixing...`);
                 // Reset the status to in-progress
                 progress.status = 'in-progress';
+                hasCorruptedData = true;
                 
                 // Set correct currentScenario to match question history length for proper resumption
                 if (progress.currentScenario === 0 && progress.questionHistory.length > 0) {
                     progress.currentScenario = progress.questionHistory.length;
                     console.log(`[API] Fixing currentScenario to match questionHistory.length: ${progress.currentScenario}`);
                 }
-                
+            }
+            
+            // Save corrected data if needed
+            if (hasCorruptedData) {
+                console.log(`[API] Saving fixed corrupted data for ${quizName}`);
                 // Immediately save the corrected state back to the API
                 this.saveQuizProgress(quizName, progress)
-                    .then(() => console.log(`[API] Successfully fixed inconsistent state for ${quizName}`))
+                    .then(() => console.log(`[API] Successfully fixed corrupted state for ${quizName}`))
                     .catch(err => console.error(`[API] Failed to save fixed state for ${quizName}:`, err));
             }
             
@@ -718,13 +763,18 @@ export class APIService {
                                 console.log(`[API] Found progress in localStorage fallback for ${variation}:`, parsed);
                                 
                                 if (parsed && parsed.data) {
+                                    // Ensure experience is a valid number
+                                    const sanitizedData = {
+                                        ...parsed.data,
+                                        experience: !isNaN(parseFloat(parsed.data.experience)) ? 
+                                            parseFloat(parsed.data.experience) : 0,
+                                        source: 'localStorage_fallback'
+                                    };
+                                    
                                     // Return the localStorage data
                                     return {
                                         success: true,
-                                        data: {
-                                            ...parsed.data,
-                                            source: 'localStorage_fallback'
-                                        }
+                                        data: sanitizedData
                                     };
                                 }
                             } catch (e) {
@@ -739,7 +789,7 @@ export class APIService {
             
             // If all else fails, return an empty default state
             return {
-                success: false,
+                success: true,
                 error: error.message,
                 data: {
                     experience: 0,
@@ -2540,17 +2590,25 @@ export class APIService {
         try {
             console.log(`[API Debug] Raw experience value type: ${typeof progress.experience}, value: ${progress.experience}, isNaN: ${isNaN(progress.experience)}`);
             
-            // Type checking and sanitization
-            const sanitizedExperience = !isNaN(parseFloat(progress.experience)) ? parseFloat(progress.experience) : 0;
-            
-            // Create a sanitized copy of the progress object
+            // Type checking and complete sanitization of the progress object
             const sanitizedProgress = {
                 ...progress,
-                experience: sanitizedExperience
+                // Ensure experience is a valid number
+                experience: !isNaN(parseFloat(progress.experience)) ? parseFloat(progress.experience) : 0,
+                // Ensure other numeric values are also valid
+                questionsAnswered: !isNaN(parseInt(progress.questionsAnswered)) ? parseInt(progress.questionsAnswered) : 0,
+                currentScenario: !isNaN(parseInt(progress.currentScenario)) ? parseInt(progress.currentScenario) : 0,
+                scorePercentage: !isNaN(parseFloat(progress.scorePercentage)) ? parseFloat(progress.scorePercentage) : 0,
+                // Ensure arrays are always arrays
+                tools: Array.isArray(progress.tools) ? progress.tools : [],
+                questionHistory: Array.isArray(progress.questionHistory) ? progress.questionHistory : [],
+                // Ensure other fields have fallbacks
+                status: progress.status || 'in-progress',
+                randomizedScenarios: progress.randomizedScenarios || {},
+                lastUpdated: progress.lastUpdated || new Date().toISOString()
             };
             
             console.log(`[API Debug] Sanitized experience: ${sanitizedProgress.experience}`);
-            
             console.log(`[API] Saving progress for quiz ${quizName}:`, sanitizedProgress);
             
             // Normalize the quiz name first
@@ -2561,17 +2619,17 @@ export class APIService {
             
             console.log(`[API] Will save using quiz name variation: ${quizNameVariations[0]}`);
             
-            // Ensure all required fields are present with defaults
+            // Ensure all required fields are present with defaults - now using the sanitized values
             const progressData = {
-                experience: sanitizedProgress.experience || 0,
-                questionsAnswered: sanitizedProgress.questionsAnswered || 0,
-                status: sanitizedProgress.status || 'in-progress',
-                scorePercentage: typeof sanitizedProgress.scorePercentage === 'number' ? sanitizedProgress.scorePercentage : 0,
-                tools: sanitizedProgress.tools || [],
-                questionHistory: sanitizedProgress.questionHistory || [],
-                currentScenario: sanitizedProgress.currentScenario || 0,
-                randomizedScenarios: sanitizedProgress.randomizedScenarios || {},
-                lastUpdated: new Date().toISOString()
+                experience: sanitizedProgress.experience,
+                questionsAnswered: sanitizedProgress.questionsAnswered,
+                status: sanitizedProgress.status,
+                scorePercentage: sanitizedProgress.scorePercentage,
+                tools: sanitizedProgress.tools,
+                questionHistory: sanitizedProgress.questionHistory,
+                currentScenario: sanitizedProgress.currentScenario,
+                randomizedScenarios: sanitizedProgress.randomizedScenarios,
+                lastUpdated: sanitizedProgress.lastUpdated
             };
             
             // Check for inconsistent states before saving
@@ -2588,7 +2646,9 @@ export class APIService {
                 currentScenario: progressData.currentScenario,
                 questionsAnswered: progressData.questionsAnswered,
                 status: progressData.status,
-                questionHistoryLength: (progressData.questionHistory || []).length
+                questionHistoryLength: (progressData.questionHistory || []).length,
+                experience: progressData.experience,
+                experienceType: typeof progressData.experience
             });
             
             // Try to save to API with the primary (most normalized) variation
@@ -2663,13 +2723,24 @@ export class APIService {
             try {
                 const username = localStorage.getItem('username');
                 if (username) {
+                    // Create a sanitized copy of progress to ensure we're storing valid data
+                    const fallbackProgress = {
+                        ...progress,
+                        experience: !isNaN(parseFloat(progress.experience)) ? parseFloat(progress.experience) : 0,
+                        questionsAnswered: !isNaN(parseInt(progress.questionsAnswered)) ? parseInt(progress.questionsAnswered) : 0,
+                        currentScenario: !isNaN(parseInt(progress.currentScenario)) ? parseInt(progress.currentScenario) : 0,
+                        scorePercentage: !isNaN(parseFloat(progress.scorePercentage)) ? parseFloat(progress.scorePercentage) : 0,
+                        tools: Array.isArray(progress.tools) ? progress.tools : [],
+                        questionHistory: Array.isArray(progress.questionHistory) ? progress.questionHistory : []
+                    };
+                    
                     const quizNameVariations = this.getQuizNameVariations(quizName);
                     
                     // Save to all variations to ensure maximum compatibility
                     for (const variation of quizNameVariations) {
                         const storageKey = `quiz_progress_${username}_${variation}`;
                         localStorage.setItem(storageKey, JSON.stringify({ 
-                            data: sanitizedProgress,
+                            data: fallbackProgress,
                             timestamp: new Date().toISOString() 
                         }));
                     }
@@ -2678,7 +2749,7 @@ export class APIService {
                     return {
                         success: true,
                         message: 'Saved to localStorage only (API failed)',
-                        data: sanitizedProgress,
+                        data: fallbackProgress,
                         apiSaved: false,
                         localSaved: true
                     };
@@ -2690,7 +2761,7 @@ export class APIService {
             return {
                 success: false,
                 message: error.message || 'Failed to save quiz progress',
-                data: sanitizedProgress // Return sanitized progress in case of error
+                data: progress // Return original progress in case of error
             };
         }
     }
