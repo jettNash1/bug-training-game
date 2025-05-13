@@ -487,16 +487,15 @@ export class APIService {
                 return { success: false, message: 'No username found' };
             }
             
-            // Use getAuthToken instead of this.getToken
-            const token = getAuthToken();
+            const token = this.getToken();
             if (!token) {
                 console.error('[API] No authentication token found');
                 return { success: false, message: 'No authentication token' };
             }
             
-            // Fetch progress from the direct endpoint (use this.baseUrl)
+            // Fetch progress from the direct endpoint
             try {
-                const response = await fetch(`${this.baseUrl}/quiz-progress/${normalizedQuizName}`, {
+                const response = await fetch(`${this.apiUrl}/quiz-progress/${normalizedQuizName}`, {
                     method: 'GET',
                     headers: {
                         'Content-Type': 'application/json',
@@ -2361,8 +2360,7 @@ export class APIService {
                 return { success: false, message: 'No username found' };
             }
             
-            // Use getAuthToken instead of getToken
-            const token = getAuthToken();
+            const token = this.getToken();
             if (!token) {
                 console.error('[API] No authentication token found');
                 return { success: false, message: 'No authentication token' };
@@ -2398,7 +2396,7 @@ export class APIService {
             }
             
             // Save to the API
-            const response = await fetch(`${this.baseUrl}/quiz-progress/${normalizedQuizName}`, {
+            const response = await fetch(`${this.apiUrl}/quiz-progress/${normalizedQuizName}`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -2422,25 +2420,6 @@ export class APIService {
         } catch (error) {
             console.error(`[API] Error saving quiz progress:`, error);
             return { success: false, message: error.message };
-        }
-    }
-    
-    // Helper method to save user data to localStorage
-    saveUserDataToLocalStorage(userData) {
-        try {
-            const username = localStorage.getItem('username');
-            if (!username) {
-                console.error('[API] No username found, cannot save user data to localStorage');
-                return false;
-            }
-            
-            const storageKey = `userData_${username}`;
-            localStorage.setItem(storageKey, JSON.stringify(userData));
-            console.log('[API] Saved user data to localStorage cache');
-            return true;
-        } catch (error) {
-            console.error('[API] Error saving user data to localStorage:', error);
-            return false;
         }
     }
 
