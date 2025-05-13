@@ -496,8 +496,7 @@ export class APIService {
             
             // Fetch progress from the direct endpoint (use this.baseUrl)
             try {
-                // Use correct endpoint: /users/quiz-progress/:quizName
-                const response = await fetch(`${this.baseUrl}/users/quiz-progress/${normalizedQuizName}`, {
+                const response = await fetch(`${this.baseUrl}/quiz-progress/${normalizedQuizName}`, {
                     method: 'GET',
                     headers: {
                         'Content-Type': 'application/json',
@@ -2398,10 +2397,8 @@ export class APIService {
                 // Continue with API save even if cache update failed
             }
             
-            // Save to the API using the correct endpoint
-            console.log(`[API] Saving quiz progress to API at ${this.baseUrl}/users/quiz-progress`);
-            
-            const response = await fetch(`${this.baseUrl}/users/quiz-progress`, {
+            // Save to the API
+            const response = await fetch(`${this.baseUrl}/quiz-progress/${normalizedQuizName}`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
