@@ -857,48 +857,8 @@ export class BaseQuiz {
             levelScenarios = this.basicScenarios || [];
         }
         
-        // Important: Log quiz scenario state for debugging progress issues
-        console.log(`[BaseQuiz] getCurrentScenarios - questionCount: ${totalAnswered}, currentScenario: ${this.player.currentScenario}, level: ${level}`);
-        
         // Get randomized scenarios for this level with quiz-specific key
         return this.getRandomizedScenarios(level, levelScenarios);
-    }
-    
-    /**
-     * Gets the appropriate scenario based on current progress
-     * This function ensures quiz progress is properly respected when resuming
-     * @returns {Object} - The current scenario object
-     */
-    getCurrentScenario() {
-        const currentScenarios = this.getCurrentScenarios();
-        const questionCount = this.player.questionHistory.length;
-        
-        // Important: Check if we're resuming a saved quiz with valid currentScenario
-        if (questionCount > 0 && 
-            this.player.currentScenario >= 0 && 
-            this.player.currentScenario < currentScenarios.length) {
-            // We're continuing a quiz that was in progress
-            console.log(`[BaseQuiz] Respecting saved currentScenario: ${this.player.currentScenario}`);
-            return currentScenarios[this.player.currentScenario];
-        }
-        
-        // Fallback: Calculate based on level progression
-        let indexInLevel;
-        if (questionCount < 5) {
-            indexInLevel = questionCount;
-        } else if (questionCount < 10) {
-            indexInLevel = questionCount - 5;
-        } else {
-            indexInLevel = questionCount - 10;
-        }
-        
-        // Make sure we have a valid index
-        if (indexInLevel >= 0 && indexInLevel < currentScenarios.length) {
-            return currentScenarios[indexInLevel];
-        }
-        
-        console.error(`[BaseQuiz] Could not determine scenario: questionCount=${questionCount}, currentScenario=${this.player.currentScenario}`);
-        return null;
     }
 
     /**
@@ -1269,20 +1229,11 @@ export class BaseQuiz {
     }
 
     displayScenario() {
-        // Get the current scenario using our updated method
-        const scenario = this.getCurrentScenario();
-
-        // Check for end conditions
-        if (this.shouldEndGame(this.player.questionHistory.length, this.player.experience)) {
-            this.endGame(false);
-            return;
-        }
+        const currentScenarios = this.getCurrentScenarios();
+        const scenario = currentScenarios[this.player.currentScenario];
 
         if (!scenario) {
-            console.error('[BaseQuiz] No scenario found for current progress. Question count:', 
-                          this.player.questionHistory.length, 
-                          'Current scenario:', this.player.currentScenario);
-            this.endGame(true);
+            this.endGame(false);
             return;
         }
 
@@ -1503,6 +1454,18 @@ export class BaseQuiz {
 
     calculateScore() {
         return Math.round((this.player.experience / this.maxXP) * 100);
+    }
+
+    getCurrentScenario() {
+        const totalAnswered = this.player.questionHistory.length;
+        
+        // Progress through levels based only on question count
+        if (totalAnswered >= 10) {
+            return this.advancedScenarios;
+        } else if (totalAnswered >= 5) {
+            return this.intermediateScenarios;
+        }
+        return this.basicScenarios;
     }
 
     getCurrentLevel() {

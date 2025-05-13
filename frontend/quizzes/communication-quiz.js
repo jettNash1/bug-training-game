@@ -1317,42 +1317,23 @@ export class CommunicationQuiz extends BaseQuiz {
         let scenario;
         const questionCount = this.player.questionHistory.length;
         
-        // Important: Check if we're resuming a saved quiz or starting new questions
-        console.log(`[CommunicationQuiz] Current state - questionCount: ${questionCount}, currentScenario: ${this.player.currentScenario}`);
-        
-        if (questionCount > 0 && this.player.currentScenario > 0) {
-            // We're continuing a quiz that was in progress
-            // Use the saved currentScenario value instead of resetting it
-            console.log(`[CommunicationQuiz] Resuming from saved progress, using currentScenario: ${this.player.currentScenario}`);
-            
-            // Determine which set of scenarios to use based on the question count
-            if (questionCount < 5) {
-                scenario = this.basicScenarios[this.player.currentScenario];
-            } else if (questionCount < 10) {
-                scenario = this.intermediateScenarios[this.player.currentScenario];
-            } else if (questionCount < 15) {
-                scenario = this.advancedScenarios[this.player.currentScenario];
-            }
-        } else {
-            // Starting new questions or beginning a new level
-            // Reset currentScenario based on the current level
-            if (questionCount < 5) {
-                // Basic questions (0-4)
-                scenario = this.basicScenarios[questionCount];
-                this.player.currentScenario = questionCount;
-            } else if (questionCount < 10) {
-                // Intermediate questions (5-9)
-                scenario = this.intermediateScenarios[questionCount - 5];
-                this.player.currentScenario = questionCount - 5;
-            } else if (questionCount < 15) {
-                // Advanced questions (10-14)
-                scenario = this.advancedScenarios[questionCount - 10];
-                this.player.currentScenario = questionCount - 10;
-            }
+        // Reset currentScenario based on the current level
+        if (questionCount < 5) {
+            // Basic questions (0-4)
+            scenario = this.basicScenarios[questionCount];
+            this.player.currentScenario = questionCount;
+        } else if (questionCount < 10) {
+            // Intermediate questions (5-9)
+            scenario = this.intermediateScenarios[questionCount - 5];
+            this.player.currentScenario = questionCount - 5;
+        } else if (questionCount < 15) {
+            // Advanced questions (10-14)
+            scenario = this.advancedScenarios[questionCount - 10];
+            this.player.currentScenario = questionCount - 10;
         }
 
         if (!scenario) {
-            console.error('No scenario found for current progress. Question count:', questionCount, 'Current scenario:', this.player.currentScenario);
+            console.error('No scenario found for current progress. Question count:', questionCount);
             this.endGame(true);
             return;
         }
