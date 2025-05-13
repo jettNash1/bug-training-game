@@ -4,6 +4,7 @@ import { QuizUser } from '../QuizUser.js';
 
 export class CommunicationQuiz extends BaseQuiz {
     constructor() {
+        console.log('[CommunicationQuiz][constructor] New instance created');
         const config = {
             maxXP: 300,
             totalQuestions: 15,
@@ -1240,6 +1241,11 @@ export class CommunicationQuiz extends BaseQuiz {
                 tools: this.player.tools
             });
 
+            // Add extra log after restoring
+            setTimeout(() => {
+                console.log('[CommunicationQuiz][loadProgress][post-restore] player:', JSON.parse(JSON.stringify(this.player)));
+            }, 0);
+
             // Display the correct scenario/question
             if (this.player.currentScenario >= this.totalQuestions) {
                 // All questions answered, show end screen
@@ -1443,6 +1449,11 @@ export class CommunicationQuiz extends BaseQuiz {
         this.updateProgress();
         this.initializeTimer();
         console.log('[displayScenario] Showing scenario', scenarioLevel, 'index', currentScenarioIndex, scenario.title);
+
+        // Add extra log after showing
+        setTimeout(() => {
+            console.log('[displayScenario][post-show] player:', JSON.parse(JSON.stringify(this.player)));
+        }, 0);
     }
 
     async handleAnswer() {
@@ -1892,11 +1903,17 @@ export class CommunicationQuiz extends BaseQuiz {
     }
 }
 
+// Singleton instance for CommunicationQuiz
+let communicationQuizInstance = null;
+
 // Initialize quiz when the page loads
+// Only allow one instance
 document.addEventListener('DOMContentLoaded', () => {
-    // Clear any existing quiz instances before starting this quiz
+    if (communicationQuizInstance) {
+        console.log('[CommunicationQuiz] Instance already exists, not creating a new one.');
+        return;
+    }
     BaseQuiz.clearQuizInstances('communication');
-    
-    const quiz = new CommunicationQuiz();
-    quiz.startGame();
+    communicationQuizInstance = new CommunicationQuiz();
+    communicationQuizInstance.startGame();
 }); 
