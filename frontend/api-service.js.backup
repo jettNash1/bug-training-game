@@ -401,26 +401,14 @@ export class APIService {
         // First standardize to lowercase
         const lowerName = quizName.toLowerCase();
         
-        // Special case handling for known quiz name patterns
-        
         // Special case for tester-mindset variations
-        if (lowerName.includes('tester') && lowerName.includes('mindset')) {
+        if (lowerName.includes('tester') || lowerName.includes('mindset')) {
             return 'tester-mindset';
         }
         
         // Handle script metrics variants
         if (lowerName.includes('script') && lowerName.includes('metric')) {
             return 'script-metrics-troubleshooting';
-        }
-        
-        // Handle communication quiz variants
-        if (lowerName.includes('communic')) {
-            return 'communication';
-        }
-        
-        // Handle cms-testing variants
-        if (lowerName.includes('cms')) {
-            return 'cms-testing';
         }
         
         // Standard normalized format (kebab-case)
@@ -439,72 +427,54 @@ export class APIService {
     getQuizNameVariations(quizName) {
         if (!quizName) return [];
         
-        const variations = new Set(); // Use Set to avoid duplicates
+        const variations = [];
         
         // Original version
-        variations.add(quizName);
-        
-        // lowercase version
-        variations.add(quizName.toLowerCase());
+        variations.push(quizName);
         
         // camelCase version
         const camelCase = quizName.replace(/-([a-z])/g, (_, letter) => letter.toUpperCase());
-        variations.add(camelCase);
-        variations.add(camelCase.toLowerCase());
+        if (camelCase !== quizName) variations.push(camelCase);
         
         // PascalCase version
         const pascalCase = quizName.replace(/(^|-)([a-z])/g, (_, sep, letter) => letter.toUpperCase());
-        variations.add(pascalCase);
+        if (pascalCase !== quizName) variations.push(pascalCase);
         
         // No hyphens version
         const noHyphens = quizName.replace(/-/g, '');
-        variations.add(noHyphens);
-        variations.add(noHyphens.toLowerCase());
+        if (noHyphens !== quizName) variations.push(noHyphens);
         
         // snake_case version
         const snakeCase = quizName.replace(/-/g, '_');
-        variations.add(snakeCase);
-        variations.add(snakeCase.toLowerCase());
+        if (snakeCase !== quizName) variations.push(snakeCase);
         
-        // Special cases for common quiz names
+        // Special case for CMS-Testing
         if (quizName.toLowerCase().includes('cms')) {
-            variations.add('CMS-Testing');
-            variations.add('cms-testing');
-            variations.add('cmsTesting');
-            variations.add('cms_testing');
+            variations.push('CMS-Testing');
+            variations.push('cms-testing');
+            variations.push('cmsTesting');
         }
         
-        if (quizName.toLowerCase().includes('script') && quizName.toLowerCase().includes('metric')) {
-            variations.add('script-metrics-troubleshooting');
-            variations.add('scriptMetricsTroubleshooting');
-            variations.add('ScriptMetricsTroubleshooting');
-            variations.add('script_metrics_troubleshooting');
-        }
-        
-        if (quizName.toLowerCase().includes('communic')) {
-            variations.add('communication');
-            variations.add('Communication');
-            variations.add('communication-quiz');
-        }
-        
-        if (quizName.toLowerCase().includes('tester') && quizName.toLowerCase().includes('mindset')) {
-            variations.add('tester-mindset');
-            variations.add('testerMindset');
-            variations.add('TesterMindset');
-            variations.add('tester_mindset');
-        }
-        
-        // Return array of unique variations
-        return [...variations];
+        // Return unique variations
+        return [...new Set(variations)];
     }
 
     async getQuizProgress(quizName) {
         try {
             console.log(`[API] Getting progress for quiz: ${quizName}`);
             
-            // Normalize the quiz name and create variations
-            const normalizedQuizName = this.normalizeQuizName(quizName);
-            const quizNameVariations = this.getQuizNameVariations(normalizedQuizName);
+            // Try multiple variations of the quiz name
+            const quizNameVariations = [
+                quizName.toLowerCase(),                           // lowercase
+                quizName.replace(/-/g, '').toLowerCase(),         // no hyphens
+                quizName.replace(/-([a-z])/g, (_, c) => c.toUpperCase()).toLowerCase(), // camelCase
+                quizName.replace(/([A-Z])/g, '-$1').toLowerCase() // convert camelCase to kebab-case
+            ];
+            
+            // Add the original name to variations if not already included
+            if (!quizNameVariations.includes(quizName)) {
+                quizNameVariations.push(quizName);
+            }
             
             console.log(`[API] Will try these quiz name variations:`, quizNameVariations);
             
@@ -550,45 +520,40 @@ export class APIService {
                 }
             }
             
-            // Check localStorage as a potential source of truth
-            const username = localStorage.getItem('username');
-            let localStorageData = null;
-            
-            if (username) {
-                for (const variation of quizNameVariations) {
-                    const storageKey = `quiz_progress_${username}_${variation}`;
-                    const localData = localStorage.getItem(storageKey);
-                    
-                    if (localData) {
-                        try {
-                            const parsed = JSON.parse(localData);
-                            console.log(`[API] Found progress in localStorage for ${variation}:`, parsed);
-                            
-                            if (parsed && parsed.data) {
-                                localStorageData = parsed;
-                                break;
+            // If no data found after retries, check localStorage
+            if (!response || !response.data || Object.keys(response.data).length === 0) {
+                console.log(`[API] No progress found for quiz ${quizName} in API after ${maxRetries + 1} attempts, checking localStorage`);
+                
+                // Try to get from localStorage with all variations
+                const username = localStorage.getItem('username');
+                if (username) {
+                    for (const variation of quizNameVariations) {
+                        const storageKey = `quiz_progress_${username}_${variation}`;
+                        const localData = localStorage.getItem(storageKey);
+                        
+                        if (localData) {
+                            try {
+                                const parsed = JSON.parse(localData);
+                                console.log(`[API] Found progress in localStorage for ${variation}:`, parsed);
+                                
+                                if (parsed && parsed.data) {
+                                    // Return the localStorage data
+                                    return {
+                                        success: true,
+                                        data: {
+                                            ...parsed.data,
+                                            source: 'localStorage'
+                                        }
+                                    };
+                                }
+                            } catch (e) {
+                                console.error(`[API] Error parsing localStorage data for ${variation}:`, e);
                             }
-                        } catch (e) {
-                            console.error(`[API] Error parsing localStorage data for ${variation}:`, e);
                         }
                     }
                 }
-            }
-            
-            // If no data found from API but found in localStorage, use localStorage
-            if ((!response || !response.data || Object.keys(response.data).length === 0) && localStorageData) {
-                console.log(`[API] No progress found in API, using localStorage data`);
-                return {
-                    success: true,
-                    data: {
-                        ...localStorageData.data,
-                        source: 'localStorage'
-                    }
-                };
-            }
-            
-            // If no data found anywhere, return default
-            if ((!response || !response.data || Object.keys(response.data).length === 0) && !localStorageData) {
+                
+                // If nothing found, return default
                 console.log(`[API] No progress found for quiz ${quizName}, returning default`);
                 return {
                     success: true,
@@ -604,20 +569,22 @@ export class APIService {
                 };
             }
             
-            // Normalize the API data to ensure all required fields
-            const apiData = response?.data || {};
+            // Rest of the function remains the same
+            // Ensure all required fields are present
             const progress = {
-                experience: apiData.experience || 0,
-                questionsAnswered: apiData.questionsAnswered || 0,
-                status: apiData.status || 'not-started',
-                scorePercentage: typeof apiData.scorePercentage === 'number' ? apiData.scorePercentage : 0,
-                currentScenario: apiData.currentScenario || apiData.questionsAnswered || 0,
-                tools: apiData.tools || [],
-                questionHistory: apiData.questionHistory || [],
-                randomizedScenarios: apiData.randomizedScenarios || {}
+                ...response.data,
+                experience: response.data.experience || 0,
+                questionsAnswered: response.data.questionsAnswered || 0,
+                status: response.data.status || 'not-started',
+                scorePercentage: typeof response.data.scorePercentage === 'number' ? response.data.scorePercentage : 0,
+                currentScenario: response.data.currentScenario || response.data.questionsAnswered || 0,
+                tools: response.data.tools || [],
+                questionHistory: response.data.questionHistory || [],
+                randomizedScenarios: response.data.randomizedScenarios || {}
             };
             
-            // Log the quiz state for debugging
+            // FIX: Check for incorrect status value for in-progress quizzes
+            // This is especially problematic for the communication quiz
             console.log(`[API] Quiz progress details for ${quizName}:`, {
                 status: progress.status,
                 currentScenario: progress.currentScenario,
@@ -633,27 +600,44 @@ export class APIService {
             if (hasEmptyButCompletedState) {
                 console.log(`[API] POTENTIALLY CORRUPTED DATA for ${quizName}: Status=${progress.status} but questionHistory is empty or questionsAnswered=0`);
                 
-                // If localStorage has more complete data, use it instead
-                if (localStorageData && localStorageData.data && 
-                    ((localStorageData.data.questionHistory && localStorageData.data.questionHistory.length > 0) || 
-                     localStorageData.data.questionsAnswered > 0)) {
-                    
-                    console.log(`[API] Using localStorage data instead of corrupted API data`);
-                    return {
-                        success: true,
-                        data: {
-                            ...localStorageData.data,
-                            source: 'localStorage_fallback_corrupted'
+                // Try to get more reliable data from localStorage as a fallback
+                const username = localStorage.getItem('username');
+                if (username) {
+                    for (const variation of quizNameVariations) {
+                        const storageKey = `quiz_progress_${username}_${variation}`;
+                        const localData = localStorage.getItem(storageKey);
+                        
+                        if (localData) {
+                            try {
+                                const parsed = JSON.parse(localData);
+                                
+                                if (parsed && parsed.data && 
+                                    ((parsed.data.questionHistory && parsed.data.questionHistory.length > 0) || 
+                                     parsed.data.questionsAnswered > 0)) {
+                                    
+                                    console.log(`[API] Using localStorage data instead of corrupted API data for ${variation}`);
+                                    return {
+                                        success: true,
+                                        data: {
+                                            ...parsed.data,
+                                            source: 'localStorage_fallback_corrupted'
+                                        }
+                                    };
+                                }
+                            } catch (e) {
+                                console.error(`[API] Error parsing localStorage data for corruption check:`, e);
+                            }
                         }
-                    };
+                    }
                 }
                 
-                // If we can't find better data, reset to not-started as a safer default
+                // If we can't find better data, set to not-started as a safer default
                 progress.status = 'not-started';
                 console.log(`[API] Reset corrupted quiz state to not-started for ${quizName}`);
             }
             
-            // Fix for inconsistent state: quiz marked as completed/passed/failed but has incomplete progress
+            // Fix for inconsistent state: If quiz is marked as completed/passed/failed but has valid progress
+            // This happens more frequently with communication quiz but can affect others
             const hasMismatchedState = 
                 (progress.status === 'completed' || progress.status === 'passed' || progress.status === 'failed') && 
                 progress.questionHistory.length > 0 && 
@@ -683,11 +667,17 @@ export class APIService {
         } catch (error) {
             console.error(`[API] Error getting quiz progress for ${quizName}:`, error);
             
-            // Try localStorage as final fallback
+            // Try localStorage as fallback with all variations
             try {
                 const username = localStorage.getItem('username');
                 if (username) {
-                    const quizNameVariations = this.getQuizNameVariations(quizName);
+                    const quizNameVariations = [
+                        quizName.toLowerCase(),
+                        quizName.replace(/-/g, '').toLowerCase(),
+                        quizName.replace(/-([a-z])/g, (_, c) => c.toUpperCase()).toLowerCase(),
+                        quizName.replace(/([A-Z])/g, '-$1').toLowerCase(),
+                        quizName
+                    ];
                     
                     for (const variation of quizNameVariations) {
                         const storageKey = `quiz_progress_${username}_${variation}`;
@@ -718,7 +708,6 @@ export class APIService {
                 console.error(`[API] Error checking localStorage fallback:`, e);
             }
             
-            // If all else fails, return an empty default state
             return {
                 success: false,
                 error: error.message,
@@ -2521,15 +2510,22 @@ export class APIService {
         try {
             console.log(`[API] Saving progress for quiz ${quizName}:`, progress);
             
-            // Normalize the quiz name first
-            const normalizedQuizName = this.normalizeQuizName(quizName);
-            
             // Generate variations for consistent storage
-            const quizNameVariations = this.getQuizNameVariations(normalizedQuizName);
+            const quizNameVariations = [
+                quizName.toLowerCase(),                           // lowercase
+                quizName.replace(/-/g, '').toLowerCase(),         // no hyphens
+                quizName.replace(/-([a-z])/g, (_, c) => c.toUpperCase()).toLowerCase(), // camelCase
+                quizName.replace(/([A-Z])/g, '-$1').toLowerCase() // convert camelCase to kebab-case
+            ];
+            
+            // Add original if not included
+            if (!quizNameVariations.includes(quizName)) {
+                quizNameVariations.push(quizName);
+            }
             
             console.log(`[API] Will save using quiz name variation: ${quizNameVariations[0]}`);
             
-            // Ensure all required fields are present with defaults
+            // Ensure all required fields are present
             const progressData = {
                 experience: progress.experience || 0,
                 questionsAnswered: progress.questionsAnswered || 0,
@@ -2542,16 +2538,6 @@ export class APIService {
                 lastUpdated: new Date().toISOString()
             };
             
-            // Check for inconsistent states before saving
-            // If completed/passed/failed, ensure we have the right number of questions
-            if (['completed', 'passed', 'failed'].includes(progressData.status)) {
-                // If we don't have enough questions answered, revert to in-progress
-                if (progressData.questionHistory.length < 15 && progressData.questionsAnswered < 15) {
-                    console.log(`[API] Fixing inconsistent state before save: quiz marked as ${progressData.status} but has insufficient questions. Setting to in-progress.`);
-                    progressData.status = 'in-progress';
-                }
-            }
-            
             console.log(`[API] Processed progress data for ${quizName}:`, {
                 currentScenario: progressData.currentScenario,
                 questionsAnswered: progressData.questionsAnswered,
@@ -2559,37 +2545,29 @@ export class APIService {
                 questionHistoryLength: (progressData.questionHistory || []).length
             });
             
-            // Try to save to API with the primary (most normalized) variation
-            let apiSaveSuccessful = false;
+            // Use the primary (most standard) variation to save to the API
             const primaryVariation = quizNameVariations[0];
-            
-            try {
-                const response = await this.fetchWithAuth(
-                    `${this.baseUrl}/users/quiz-progress`,
-                    {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json'
-                        },
-                        body: JSON.stringify({
-                            quizName: primaryVariation,
-                            progress: progressData
-                        })
-                    }
-                );
-                
-                if (response && response.success) {
-                    console.log(`[API] Successfully saved progress for quiz ${primaryVariation}`);
-                    apiSaveSuccessful = true;
-                } else {
-                    console.warn(`[API] Failed to save progress to API: ${response?.message || 'Unknown error'}`);
+            const response = await this.fetchWithAuth(
+                `${this.baseUrl}/users/quiz-progress`,
+                {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        quizName: primaryVariation,
+                        progress: progressData
+                    })
                 }
-            } catch (apiError) {
-                console.error(`[API] Error saving to API:`, apiError);
+            );
+            
+            if (!response.success) {
+                throw new Error(response.message || 'Failed to save quiz progress');
             }
             
-            // Always save to localStorage as backup regardless of API success
-            let localSaveSuccessful = false;
+            console.log(`[API] Successfully saved progress for quiz ${primaryVariation}`);
+            
+            // Save to localStorage as backup - save to all variations for maximum compatibility
             try {
                 const username = localStorage.getItem('username');
                 if (username) {
@@ -2603,35 +2581,29 @@ export class APIService {
                     }
                     
                     console.log(`[API] Saved backup to localStorage with ${quizNameVariations.length} variations`);
-                    localSaveSuccessful = true;
-                } else {
-                    console.warn('[API] Could not save to localStorage - no username found');
                 }
             } catch (e) {
-                console.error('[API] Failed to save localStorage backup:', e);
+                console.warn('[API] Failed to save localStorage backup:', e);
             }
             
-            // Return success if either save method worked
-            if (apiSaveSuccessful || localSaveSuccessful) {
-                return {
-                    success: true,
-                    data: progressData,
-                    apiSaved: apiSaveSuccessful,
-                    localSaved: localSaveSuccessful
-                };
-            }
-            
-            // Neither save method worked
-            throw new Error('Failed to save quiz progress to API and localStorage');
-            
+            return {
+                success: true,
+                data: progressData
+            };
         } catch (error) {
             console.error(`[API] Error saving quiz progress:`, error);
             
-            // Try to save to localStorage as last resort fallback
+            // Try to save to localStorage as fallback
             try {
                 const username = localStorage.getItem('username');
                 if (username) {
-                    const quizNameVariations = this.getQuizNameVariations(quizName);
+                    const quizNameVariations = [
+                        quizName.toLowerCase(),
+                        quizName.replace(/-/g, '').toLowerCase(),
+                        quizName.replace(/-([a-z])/g, (_, c) => c.toUpperCase()).toLowerCase(),
+                        quizName.replace(/([A-Z])/g, '-$1').toLowerCase(),
+                        quizName
+                    ];
                     
                     // Save to all variations to ensure maximum compatibility
                     for (const variation of quizNameVariations) {
@@ -2642,14 +2614,7 @@ export class APIService {
                         }));
                     }
                     
-                    console.log(`[API] Saved emergency fallback to localStorage with ${quizNameVariations.length} variations`);
-                    return {
-                        success: true,
-                        message: 'Saved to localStorage only (API failed)',
-                        data: progress,
-                        apiSaved: false,
-                        localSaved: true
-                    };
+                    console.log(`[API] Saved fallback to localStorage with ${quizNameVariations.length} variations`);
                 }
             } catch (e) {
                 console.error('[API] Failed to save localStorage fallback:', e);
@@ -2659,140 +2624,6 @@ export class APIService {
                 success: false,
                 message: error.message || 'Failed to save quiz progress',
                 data: progress // Return original progress in case of error
-            };
-        }
-    }
-
-    /**
-     * Clears localStorage data for a specific quiz
-     * This is useful when a quiz is completed to prevent old cached data from interfering
-     * with future attempts.
-     * 
-     * @param {string} username - The username
-     * @param {string} quizName - The name of the quiz
-     * @returns {boolean} - Whether any data was cleared
-     */
-    clearQuizLocalStorage(username, quizName) {
-        try {
-            if (!username || !quizName) {
-                console.warn('[API] Cannot clear quiz localStorage: missing username or quizName');
-                return false;
-            }
-            
-            console.log(`[API] Clearing localStorage data for quiz: ${quizName}, user: ${username}`);
-            
-            const normalizedQuizName = this.normalizeQuizName(quizName);
-            const quizNameVariations = this.getQuizNameVariations(normalizedQuizName);
-            let clearedCount = 0;
-            
-            // Clear all variations of the quiz name
-            for (const variation of quizNameVariations) {
-                const storageKey = `quiz_progress_${username}_${variation}`;
-                const hasData = localStorage.getItem(storageKey) !== null;
-                
-                if (hasData) {
-                    localStorage.removeItem(storageKey);
-                    clearedCount++;
-                }
-            }
-            
-            if (clearedCount > 0) {
-                console.log(`[API] Cleared ${clearedCount} localStorage entries for quiz: ${quizName}`);
-                return true;
-            } else {
-                console.log(`[API] No localStorage data found to clear for quiz: ${quizName}`);
-                return false;
-            }
-        } catch (error) {
-            console.error(`[API] Error clearing localStorage for quiz ${quizName}:`, error);
-            return false;
-        }
-    }
-
-    /**
-     * Verifies the admin token is valid
-     * @returns {Promise<Object>} - Object with success/failure information
-     */
-    async verifyAdminToken() {
-        try {
-            const adminToken = localStorage.getItem('adminToken');
-            if (!adminToken) {
-                return { success: false, message: 'No admin token found' };
-            }
-
-            const response = await fetch(`${this.baseUrl}/admin/verify-token`, {
-                headers: {
-                    'Authorization': `Bearer ${adminToken}`,
-                    'Content-Type': 'application/json'
-                },
-                credentials: 'include'
-            });
-
-            if (!response.ok) {
-                if (response.status === 401) {
-                    localStorage.removeItem('adminToken');
-                    return { success: false, message: 'Admin token expired or invalid' };
-                }
-                return { success: false, message: `Server error: ${response.status}` };
-            }
-
-            try {
-                const data = await response.json();
-                return { success: data.valid !== false, data };
-            } catch (parseError) {
-                return { success: false, message: 'Invalid response from server' };
-            }
-        } catch (error) {
-            console.error('Error verifying admin token:', error);
-            return { success: false, message: error.message };
-        }
-    }
-
-    /**
-     * Get a user's progress for all quizzes
-     * @param {string} username - The username to get progress for
-     * @returns {Promise<Object>} - Object with quiz progress data
-     */
-    async getUserProgress(username) {
-        try {
-            if (!username) {
-                return {
-                    success: false,
-                    message: 'Username is required',
-                    data: { quizProgress: {}, quizResults: [] }
-                };
-            }
-            
-            console.log(`[API] Getting progress for user: ${username}`);
-            
-            const response = await this.fetchWithAdminAuth(`${this.baseUrl}/admin/users/${username}/progress`);
-            
-            if (!response || !response.success) {
-                console.warn(`[API] Error getting user progress: ${response?.message || 'Unknown error'}`);
-                return {
-                    success: false,
-                    message: response?.message || 'Failed to get user progress',
-                    data: { quizProgress: {}, quizResults: [] }
-                };
-            }
-            
-            // Ensure we have the expected data structure
-            const quizProgress = response.data?.quizProgress || {};
-            const quizResults = response.data?.quizResults || [];
-            
-            return {
-                success: true,
-                data: {
-                    quizProgress,
-                    quizResults
-                }
-            };
-        } catch (error) {
-            console.error(`[API] Error getting user progress:`, error);
-            return {
-                success: false,
-                message: error.message || 'Failed to get user progress',
-                data: { quizProgress: {}, quizResults: [] }
             };
         }
     }
