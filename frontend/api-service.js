@@ -413,8 +413,8 @@ export class APIService {
             return 'script-metrics-troubleshooting';
         }
         
-        // Handle communication quiz variants
-        if (lowerName.includes('communic')) {
+        // Handle communication quiz variants (expanded patterns)
+        if (lowerName === 'communication' || lowerName.includes('communic') || lowerName.includes('communication-quiz')) {
             return 'communication';
         }
         
@@ -481,10 +481,14 @@ export class APIService {
             variations.add('script_metrics_troubleshooting');
         }
         
-        if (quizName.toLowerCase().includes('communic')) {
+        // Expanded patterns for communication quiz
+        if (quizName.toLowerCase() === 'communication' || quizName.toLowerCase().includes('communic')) {
             variations.add('communication');
             variations.add('Communication');
             variations.add('communication-quiz');
+            variations.add('communicationQuiz');
+            variations.add('CommunicationQuiz');
+            variations.add('communication_quiz');
         }
         
         if (quizName.toLowerCase().includes('tester') && quizName.toLowerCase().includes('mindset')) {
