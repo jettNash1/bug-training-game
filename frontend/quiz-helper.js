@@ -1886,35 +1886,9 @@ export class BaseQuiz {
                 console.error('[Quiz] No user found, cannot load progress');
                 return false;
             }
-            
-            // First attempt: try direct quiz progress retrieval
             const storageKey = `quiz_progress_${username}_${quizName}`;
-            let savedProgress = await this.apiService.getQuizProgress(quizName);
+            const savedProgress = await this.apiService.getQuizProgress(quizName);
             console.log('[BaseQuiz][loadProgress] Loading from key:', storageKey, 'API Response:', savedProgress);
-            
-            // If direct retrieval failed, try alternative: get all user data
-            if (!savedProgress || !savedProgress.data || !savedProgress.success) {
-                console.log(`[BaseQuiz][loadProgress] Direct retrieval failed for ${quizName}, trying getUserData fallback`);
-                try {
-                    // Fetch all user data which includes all quiz progress
-                    const userData = await this.apiService.getUserData();
-                    if (userData && userData.success && userData.data && userData.data.quizProgress) {
-                        // Extract the specific quiz progress from all user data
-                        const allProgress = userData.data.quizProgress;
-                        if (allProgress[quizName]) {
-                            console.log(`[BaseQuiz][loadProgress] Found progress for ${quizName} in getUserData response`);
-                            // Structure the response like getQuizProgress would
-                            savedProgress = {
-                                success: true,
-                                data: allProgress[quizName]
-                            };
-                        }
-                    }
-                } catch (fallbackError) {
-                    console.error(`[BaseQuiz][loadProgress] Fallback retrieval also failed:`, fallbackError);
-                }
-            }
-            
             let progress = null;
             if (savedProgress && savedProgress.data) {
                 progress = {
@@ -1961,7 +1935,7 @@ export class BaseQuiz {
                 
                 // Log what we're loading
                 console.log(`[BaseQuiz] Loaded progress: ${progress.questionHistory.length} questions answered, ` + 
-                           `currentScenario: ${progress.currentScenario}, status: ${progress.status}, experience: ${progress.experience}`);
+                           `currentScenario: ${progress.currentScenario}, status: ${progress.status}`);
                 
                 // Update the player state with the loaded data
                 this.player.experience = progress.experience;
