@@ -88,6 +88,49 @@ export class CommunicationQuiz extends BaseQuiz {
             k.includes('quiz_progress') || k.includes('communication')
         );
         console.log('[CommunicationQuiz] Related localStorage keys:', relatedLocalStorage);
+        
+        // EMERGENCY FIX: Try to load progress directly in the constructor
+        const username = localStorage.getItem('username');
+        if (username) {
+            // Try to find progress in localStorage
+            const possibleKeys = [
+                `quiz_progress_${username}_${this.quizName}`,
+                `strict_quiz_progress_${username}_${this.quizName}`,
+                `quiz_progress_${this.quizName}_${username}`,
+                `${this.quizName}_quiz_progress_${username}`
+            ];
+            
+            let loadedData = null;
+            let foundKey = null;
+            
+            for (const key of possibleKeys) {
+                const data = localStorage.getItem(key);
+                if (data) {
+                    try {
+                        loadedData = JSON.parse(data);
+                        foundKey = key;
+                        console.log(`[EMERGENCY] Found quiz progress in key: ${key}`);
+                        break;
+                    } catch (e) {
+                        console.error(`[EMERGENCY] Error parsing data from ${key}:`, e);
+                    }
+                }
+            }
+            
+            if (loadedData && loadedData.questionHistory && loadedData.questionHistory.length > 0) {
+                console.log(`[EMERGENCY] Directly setting progress from ${foundKey}`);
+                this.player.questionHistory = loadedData.questionHistory;
+                this.player.currentScenario = loadedData.questionHistory.length;
+                this.player.experience = loadedData.experience || 0;
+                
+                // Log what we've set
+                console.log('[EMERGENCY] Player state set in constructor:', {
+                    currentScenario: this.player.currentScenario,
+                    questionHistory: this.player.questionHistory.length,
+                    experience: this.player.experience
+                });
+            }
+        }
     }
 
     // Helper for showing errors to the user
@@ -152,6 +195,42 @@ export class CommunicationQuiz extends BaseQuiz {
                 return;
             }
 
+            // Check the localStorage directly to debug progress retention issues
+            const username = this.player.name;
+            const storageKey = `quiz_progress_${username}_${this.quizName}`;
+            const rawSavedData = localStorage.getItem(storageKey);
+            
+            if (rawSavedData) {
+                try {
+                    const savedData = JSON.parse(rawSavedData);
+                    console.log('[CommunicationQuiz] Found direct localStorage data:', {
+                        key: storageKey,
+                        currentScenario: savedData.currentScenario,
+                        questionHistoryLength: savedData.questionHistory?.length,
+                        status: savedData.status
+                    });
+                } catch (e) {
+                    console.error('[CommunicationQuiz] Error parsing saved data:', e);
+                }
+            } else {
+                console.log('[CommunicationQuiz] No direct progress found in localStorage with key:', storageKey);
+                
+                // Check alternative keys
+                const altKeys = [
+                    `strict_quiz_progress_${username}_${this.quizName}`,
+                    `quiz_progress_${this.quizName}_${username}`,
+                    `${this.quizName}_quiz_progress_${username}`
+                ];
+                
+                for (const key of altKeys) {
+                    const altData = localStorage.getItem(key);
+                    if (altData) {
+                        console.log(`[CommunicationQuiz] Found progress in alternate key: ${key}`);
+                        break;
+                    }
+                }
+            }
+
             // Try to load scenarios from API with caching
             const scenariosLoaded = await this.loadScenariosWithCaching();
             if (!scenariosLoaded) {
@@ -206,6 +285,35 @@ export class CommunicationQuiz extends BaseQuiz {
             // Hide loading indicator
             if (loadingIndicator) {
                 loadingIndicator.classList.add('hidden');
+            }
+            
+            // EMERGENCY CHECK: Ensure we are at the correct question before displaying
+            const currentUsername = localStorage.getItem('username');
+            if (currentUsername) {
+                const progressKey = `quiz_progress_${currentUsername}_${this.quizName}`;
+                const progressData = localStorage.getItem(progressKey);
+                
+                if (progressData) {
+                    try {
+                        const parsed = JSON.parse(progressData);
+                        if (parsed.questionHistory && 
+                            Array.isArray(parsed.questionHistory) && 
+                            parsed.questionHistory.length > 0 &&
+                            this.player.questionHistory.length < parsed.questionHistory.length) {
+                            
+                            console.log('[CRITICAL FIX] Progress mismatch detected, fixing:', {
+                                currentLength: this.player.questionHistory.length,
+                                savedLength: parsed.questionHistory.length
+                            });
+                            
+                            // Force the correct progress
+                            this.player.questionHistory = parsed.questionHistory;
+                            this.player.currentScenario = parsed.questionHistory.length;
+                        }
+                    } catch (e) {
+                        console.error('[CommunicationQuiz] Error checking progress in startGame:', e);
+                    }
+                }
             }
             
             // CRITICAL: Always display scenario after loading, regardless of progress state
@@ -1407,6 +1515,40 @@ document.addEventListener('DOMContentLoaded', async () => {
     console.log('[CommunicationQuiz] DOM loaded, initializing quiz...');
     
     try {
+        // Add an emergency override timer to force displaying the correct question
+        // This will run regardless of other initialization code
+        setTimeout(() => {
+            console.log('[EMERGENCY OVERRIDE] Running emergency progress check');
+            
+            // Check for saved progress directly
+            const username = localStorage.getItem('username');
+            if (!username) return;
+            
+            const storageKey = `quiz_progress_${username}_communication`;
+            const savedData = localStorage.getItem(storageKey);
+            
+            if (savedData) {
+                try {
+                    const progressData = JSON.parse(savedData);
+                    if (progressData && progressData.questionHistory && progressData.questionHistory.length > 0) {
+                        console.log('[EMERGENCY OVERRIDE] Found saved progress with question count:', progressData.questionHistory.length);
+                        
+                        // If we have a quiz instance, force it to the correct question
+                        if (communicationQuizInstance) {
+                            communicationQuizInstance.player.questionHistory = progressData.questionHistory;
+                            communicationQuizInstance.player.currentScenario = progressData.questionHistory.length;
+                            communicationQuizInstance.player.experience = progressData.experience || 0;
+                            
+                            console.log('[EMERGENCY OVERRIDE] Forcing displayScenario() with correct state');
+                            communicationQuizInstance.displayScenario();
+                        }
+                    }
+                } catch (e) {
+                    console.error('[EMERGENCY OVERRIDE] Error in emergency progress override:', e);
+                }
+            }
+        }, 2000); // Run 2 seconds after page load
+
         // Only allow one instance
         if (communicationQuizInstance) {
             console.log('[CommunicationQuiz] Instance already exists, not creating a new one.');
@@ -1420,6 +1562,12 @@ document.addEventListener('DOMContentLoaded', async () => {
         
         // Create new instance
         communicationQuizInstance = new CommunicationQuiz();
+        
+        // CRITICAL: Run force correct question immediately to ensure proper progress
+        setTimeout(() => {
+            console.log('[CommunicationQuiz] Running force correct question immediately after creation');
+            forceCorrectQuestionDisplay();
+        }, 500);
         
         // Add storage event listener to detect changes from other tabs/windows
         window.addEventListener('storage', (event) => {
@@ -1884,4 +2032,110 @@ function forceScenarioDisplay() {
             console.error('[EMERGENCY OVERRIDE] Final fallback failed:', finalError);
         }
     }
-} 
+}
+
+// Function to forcefully ensure quiz starts at the correct question
+function forceCorrectQuestionDisplay() {
+    console.log('[FORCE QUESTION] Running forced question display check');
+    
+    if (!communicationQuizInstance) {
+        console.log('[FORCE QUESTION] No quiz instance found');
+        return;
+    }
+    
+    // Try all possible keys to find saved progress
+    const username = localStorage.getItem('username');
+    if (!username) {
+        console.log('[FORCE QUESTION] No username found in localStorage');
+        return;
+    }
+    
+    // Try all possible storage keys
+    const possibleKeys = [
+        `quiz_progress_${username}_communication`,
+        `strict_quiz_progress_${username}_communication`,
+        `quiz_progress_communication_${username}`,
+        `communication_quiz_progress_${username}`,
+        `quiz_progress_communication`
+    ];
+    
+    let highestQuestionCount = 0;
+    let bestProgressData = null;
+    
+    // Check all keys and find the one with the most progress
+    for (const key of possibleKeys) {
+        const savedData = localStorage.getItem(key);
+        if (savedData) {
+            try {
+                const parsedData = JSON.parse(savedData);
+                if (parsedData && parsedData.questionHistory && 
+                    Array.isArray(parsedData.questionHistory) && 
+                    parsedData.questionHistory.length > highestQuestionCount) {
+                    
+                    highestQuestionCount = parsedData.questionHistory.length;
+                    bestProgressData = parsedData;
+                    console.log(`[FORCE QUESTION] Found better progress in key ${key} with ${highestQuestionCount} questions`);
+                }
+            } catch (e) {
+                console.error(`[FORCE QUESTION] Error parsing data from ${key}:`, e);
+            }
+        }
+    }
+    
+    // If we found saved progress, apply it
+    if (bestProgressData && highestQuestionCount > 0) {
+        console.log(`[FORCE QUESTION] Applying progress with ${highestQuestionCount} questions answered`);
+        
+        // Update the quiz instance state
+        communicationQuizInstance.player.questionHistory = bestProgressData.questionHistory;
+        communicationQuizInstance.player.currentScenario = highestQuestionCount;
+        communicationQuizInstance.player.experience = bestProgressData.experience || 0;
+        
+        // Force display the correct scenario
+        communicationQuizInstance.displayScenario();
+        
+        // Also re-save to ensure consistent format
+        communicationQuizInstance.saveProgress('in-progress').catch(err => {
+            console.error('[FORCE QUESTION] Error saving forced progress:', err);
+        });
+        
+        return true;
+    }
+    
+    console.log('[FORCE QUESTION] No valid progress found in any storage key');
+    return false;
+}
+
+// Call our force function right after the quiz instance is created
+document.addEventListener('DOMContentLoaded', () => {
+    // Add a debug button to the UI that will force the correct question to display
+    setTimeout(() => {
+        try {
+            // Create debug button if it doesn't exist
+            if (!document.getElementById('force-question-btn')) {
+                const debugButton = document.createElement('button');
+                debugButton.id = 'force-question-btn';
+                debugButton.textContent = 'Force Correct Question';
+                debugButton.style.position = 'fixed';
+                debugButton.style.bottom = '10px';
+                debugButton.style.right = '10px';
+                debugButton.style.zIndex = '9999';
+                debugButton.style.padding = '5px 10px';
+                debugButton.style.background = '#ff9800';
+                debugButton.style.color = 'white';
+                debugButton.style.border = 'none';
+                debugButton.style.borderRadius = '4px';
+                debugButton.style.cursor = 'pointer';
+                
+                debugButton.addEventListener('click', () => {
+                    forceCorrectQuestionDisplay();
+                });
+                
+                document.body.appendChild(debugButton);
+                console.log('[DEBUG] Added force question button to UI');
+            }
+        } catch (e) {
+            console.error('[DEBUG] Error adding debug button:', e);
+        }
+    }, 3000);
+}); 
