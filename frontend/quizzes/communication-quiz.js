@@ -153,10 +153,15 @@ export class CommunicationQuiz extends BaseQuiz {
             }
 
             // Try to load scenarios from API with caching
-            await this.loadScenariosWithCaching();
+            const scenariosLoaded = await this.loadScenariosWithCaching();
+            if (!scenariosLoaded) {
+                console.error('[CommunicationQuiz] Failed to load scenarios');
+                this.showError('Failed to load quiz content. Please refresh the page and try again.');
+                return;
+            }
 
             // Debug check scenarios
-            console.log('[CommunicationQuiz] Scenarios before loading progress:', {
+            console.log('[CommunicationQuiz] Scenarios loaded successfully:', {
                 basic: this.basicScenarios?.length || 0,
                 intermediate: this.intermediateScenarios?.length || 0,
                 advanced: this.advancedScenarios?.length || 0
@@ -181,14 +186,8 @@ export class CommunicationQuiz extends BaseQuiz {
                 }
                 
                 // CRITICAL: Ensure currentScenario is set correctly based on question history
-                if (this.player.questionHistory && this.player.questionHistory.length > 0) {
-                    // If they've answered questions, currentScenario should reflect that
-                    this.player.currentScenario = this.player.questionHistory.length;
-                    console.log('[CommunicationQuiz] Set currentScenario to match question history:', this.player.currentScenario);
-                } else {
-                    // Reset currentScenario if no valid history
-                    this.player.currentScenario = 0;
-                }
+                this.player.currentScenario = this.player.questionHistory.length;
+                console.log('[CommunicationQuiz] Set currentScenario to match question history:', this.player.currentScenario);
                 
                 console.log('[CommunicationQuiz] Loaded player state:', {
                     currentScenario: this.player.currentScenario,
@@ -203,65 +202,51 @@ export class CommunicationQuiz extends BaseQuiz {
                 transitionContainer.innerHTML = '';
                 transitionContainer.classList.remove('active');
             }
-
-            // Log progress detail for debugging
-            console.log('[CommunicationQuiz] Progress status check before display:', {
-                playerState: JSON.stringify(this.player),
-                localStorageKeys: Object.keys(localStorage).filter(k => k.includes('quiz_progress')),
-                historyLength: this.player.questionHistory?.length || 0
-            });
-            
-            // Make sure all required elements are in the DOM
-            const requiredElements = [
-                'game-screen', 
-                'scenario-title', 
-                'scenario-description',
-                'options-container'
-            ];
-            
-            let missingElements = [];
-            for (const id of requiredElements) {
-                if (!document.getElementById(id)) {
-                    missingElements.push(id);
-                }
-            }
-            
-            if (missingElements.length > 0) {
-                console.error(`[CommunicationQuiz] Missing required elements: ${missingElements.join(', ')}`);
-                this.showError(`Quiz cannot start. Missing elements: ${missingElements.join(', ')}`);
-                return;
-            }
-            
-            // CRITICAL: Always display scenario, even if progress was loaded
-            // This ensures the quiz state is shown regardless of previous progress
-            await this.displayScenario();
             
             // Hide loading indicator
             if (loadingIndicator) {
                 loadingIndicator.classList.add('hidden');
             }
             
+            // CRITICAL: Always display scenario after loading, regardless of progress state
+            this.displayScenario();
+            
+            // Setup periodic save to ensure progress is never lost
+            this._setupPeriodicSave();
+            
             this.isLoading = false;
+            
+            return true;
         } catch (error) {
-            console.error('[CommunicationQuiz] Error in startGame:', error);
-            this.showError('Failed to start the quiz. Please refresh and try again.');
+            console.error('[CommunicationQuiz] Error starting game:', error);
+            
             this.isLoading = false;
+            this.showError('Failed to start the quiz. Please refresh the page and try again.');
             
-            // Hide loading indicator even on error
-            const loadingIndicator = document.getElementById('loading-indicator');
-            if (loadingIndicator) {
-                loadingIndicator.classList.add('hidden');
-            }
+            // Try emergency display to show something to the user
+            setTimeout(() => {
+                forceScenarioDisplay();
+            }, 1000);
             
-            // Try emergency recovery as a last resort
-            try {
-                setTimeout(() => {
-                    forceScenarioDisplay();
-                }, 1000);
-            } catch (recoveryError) {
-                console.error('[CommunicationQuiz] Emergency recovery failed:', recoveryError);
-            }
+            return false;
         }
+    }
+
+    // Helper method to setup periodic saves
+    _setupPeriodicSave() {
+        // Clear any existing interval
+        if (this._saveInterval) {
+            clearInterval(this._saveInterval);
+        }
+        
+        // Setup a new interval to save progress every 30 seconds
+        this._saveInterval = setInterval(() => {
+            if (this.player && this.player.questionHistory && this.player.questionHistory.length > 0) {
+                this.saveProgress('in-progress').catch(err => {
+                    console.warn('[CommunicationQuiz] Periodic save failed:', err);
+                });
+            }
+        }, 30000); // 30 seconds
     }
 
     initializeEventListeners() {
@@ -306,24 +291,49 @@ export class CommunicationQuiz extends BaseQuiz {
             this.endGame(false);
             return;
         }
-        
+
         // Get the correct scenario based on current progress
         let scenario;
         const questionCount = this.player.questionHistory.length;
+        let scenarioIndex;
+        let scenarioLevel;
+        
+        console.log('[CommunicationQuiz] Selecting scenario based on question count:', questionCount);
         
         // Make sure we're using the correct set of scenarios based on progress
         if (questionCount < 5) {
             // Basic questions (0-4)
-            scenario = this.basicScenarios[questionCount];
-            console.log('[CommunicationQuiz] Using basic scenario:', questionCount);
+            scenarioIndex = questionCount;
+            scenarioLevel = 'Basic';
+            scenario = this.basicScenarios && this.basicScenarios.length > scenarioIndex ? 
+                this.basicScenarios[scenarioIndex] : null;
+            console.log('[CommunicationQuiz] Trying to use Basic scenario:', { 
+                index: scenarioIndex, 
+                totalBasicScenarios: this.basicScenarios?.length || 0,
+                scenarioFound: !!scenario
+            });
         } else if (questionCount < 10) {
             // Intermediate questions (5-9)
-            scenario = this.intermediateScenarios[questionCount - 5];
-            console.log('[CommunicationQuiz] Using intermediate scenario:', questionCount - 5);
+            scenarioIndex = questionCount - 5;
+            scenarioLevel = 'Intermediate';
+            scenario = this.intermediateScenarios && this.intermediateScenarios.length > scenarioIndex ? 
+                this.intermediateScenarios[scenarioIndex] : null;
+            console.log('[CommunicationQuiz] Trying to use Intermediate scenario:', { 
+                index: scenarioIndex, 
+                totalIntermediateScenarios: this.intermediateScenarios?.length || 0,
+                scenarioFound: !!scenario
+            });
         } else if (questionCount < 15) {
             // Advanced questions (10-14)
-            scenario = this.advancedScenarios[questionCount - 10];
-            console.log('[CommunicationQuiz] Using advanced scenario:', questionCount - 10);
+            scenarioIndex = questionCount - 10;
+            scenarioLevel = 'Advanced';
+            scenario = this.advancedScenarios && this.advancedScenarios.length > scenarioIndex ? 
+                this.advancedScenarios[scenarioIndex] : null;
+            console.log('[CommunicationQuiz] Trying to use Advanced scenario:', { 
+                index: scenarioIndex, 
+                totalAdvancedScenarios: this.advancedScenarios?.length || 0,
+                scenarioFound: !!scenario
+            });
         }
 
         // Verify we have a valid scenario
@@ -334,30 +344,84 @@ export class CommunicationQuiz extends BaseQuiz {
                 intermediate: this.intermediateScenarios?.length || 0,
                 advanced: this.advancedScenarios?.length || 0
             });
+                
+            // Try full scan for any usable scenario
+            let foundAnyScenario = false;
             
-            // If we can't find the appropriate scenario, try an emergency recovery
+            // Try basic scenarios first
             if (this.basicScenarios && this.basicScenarios.length > 0) {
                 scenario = this.basicScenarios[0];
+                scenarioLevel = 'Basic';
+                scenarioIndex = 0;
+                foundAnyScenario = true;
                 console.log('[CommunicationQuiz] Using first basic scenario as fallback');
+            } 
+            // Then try intermediate
+            else if (this.intermediateScenarios && this.intermediateScenarios.length > 0) {
+                scenario = this.intermediateScenarios[0];
+                scenarioLevel = 'Intermediate';
+                scenarioIndex = 0;
+                foundAnyScenario = true;
+                console.log('[CommunicationQuiz] Using first intermediate scenario as fallback');
+            } 
+            // Finally try advanced
+            else if (this.advancedScenarios && this.advancedScenarios.length > 0) {
+                scenario = this.advancedScenarios[0];
+                scenarioLevel = 'Advanced';
+                scenarioIndex = 0;
+                foundAnyScenario = true;
+                console.log('[CommunicationQuiz] Using first advanced scenario as fallback');
+            }
                 
-                // Reset progress since we couldn't find the right scenario
-                this.player.questionHistory = [];
-                this.player.currentScenario = 0;
-            } else {
-                // If even that fails, end the game with an error
-                this.showError('Failed to load quiz scenarios. Please refresh the page and try again.');
-                return;
+            if (!foundAnyScenario) {
+                // If no scenarios are available, create an emergency scenario
+                console.error('[CommunicationQuiz] No scenarios found in any level, creating emergency scenario');
+                scenario = {
+                    id: 999,
+                    level: 'Basic',
+                    title: 'Emergency Scenario',
+                    description: 'The quiz system is having difficulty loading scenarios. Please answer this question to continue.',
+                    options: [
+                        {
+                            text: 'In a critical situation, providing clear and concise updates is most important',
+                            outcome: 'Good choice! Clear communication is essential in critical situations.',
+                            experience: 15,
+                            isCorrect: true
+                        },
+                        {
+                            text: 'Waiting for others to make decisions is the best approach in uncertain situations',
+                            outcome: 'Taking initiative is usually better than waiting for directions.',
+                            experience: 0
+                        },
+                        {
+                            text: 'Detailed technical explanations are always the best way to communicate issues',
+                            outcome: 'Communication should be adapted to the audience.',
+                            experience: 0
+                        },
+                        {
+                            text: 'It\'s better to delay communication until you have complete information',
+                            outcome: 'Timely updates are often more valuable than perfect information.',
+                            experience: 0
+                        }
+                    ]
+                };
+                scenarioLevel = 'Basic';
+                scenarioIndex = 0;
+                
+                // Don't reset progress in emergency mode, just provide a way forward
+                console.log('[CommunicationQuiz] Created emergency scenario to allow continuing');
             }
         }
         
         console.log('[CommunicationQuiz] Found scenario to display:', {
             title: scenario.title,
-            level: questionCount < 5 ? 'Basic' : questionCount < 10 ? 'Intermediate' : 'Advanced'
+            level: scenarioLevel,
+            index: scenarioIndex
         });
 
         // Store current question number for consistency
         this.currentQuestionNumber = questionCount + 1;
-        
+
         // Show level transition message at the start of each level or when level changes
         const currentLevel = this.getCurrentLevel();
         const previousLevel = questionCount > 0 ? 
@@ -401,7 +465,9 @@ export class CommunicationQuiz extends BaseQuiz {
         const optionsContainer = document.getElementById('options-container');
 
         if (!titleElement || !descriptionElement || !optionsContainer) {
-            console.error('[CommunicationQuiz] Required elements not found');
+            console.error('[CommunicationQuiz] Required elements not found, using emergency DOM creation');
+            // If elements don't exist, try creating them
+            forceScenarioDisplay();
             return;
         }
 
@@ -928,46 +994,62 @@ export class CommunicationQuiz extends BaseQuiz {
                 throw new Error('Scenarios not found');
             }
             
-            // Verify the structure of communicationScenarios
-            if (!Array.isArray(communicationScenarios.basic)) {
-                console.error('[CommunicationQuiz] Invalid structure: communicationScenarios.basic is not an array:', communicationScenarios.basic);
+            console.log('[CommunicationQuiz] Checking scenarios structure:', {
+                basicType: typeof communicationScenarios.basic,
+                isBasicArray: Array.isArray(communicationScenarios.basic),
+                intermediateType: typeof communicationScenarios.intermediate,
+                isIntermediateArray: Array.isArray(communicationScenarios.intermediate),
+                advancedType: typeof communicationScenarios.advanced,
+                isAdvancedArray: Array.isArray(communicationScenarios.advanced)
+            });
+            
+            // Helper function to extract scenarios from different possible structures
+            const extractScenarios = (data, level) => {
+                if (Array.isArray(data)) {
+                    return data; // Already an array
+                }
                 
-                // Try to recover - sometimes the structure might be {basic: {scenarios: [...]}}
-                if (communicationScenarios.basic && Array.isArray(communicationScenarios.basic.scenarios)) {
-                    this.basicScenarios = communicationScenarios.basic.scenarios;
-                    console.log('[CommunicationQuiz] Recovered basic scenarios from alternate structure');
-                } else {
-                    // Initialize empty arrays as a fallback
-                    this.basicScenarios = [];
-                    console.error('[CommunicationQuiz] Could not recover basic scenarios');
+                if (data && typeof data === 'object') {
+                    // Try common patterns: 
+                    // 1. { scenarios: [] }
+                    // 2. { data: [] }
+                    // 3. { questions: [] }
+                    
+                    if (Array.isArray(data.scenarios)) {
+                        console.log(`[CommunicationQuiz] Found ${level} scenarios in .scenarios property`);
+                        return data.scenarios;
+                    }
+                    
+                    if (Array.isArray(data.data)) {
+                        console.log(`[CommunicationQuiz] Found ${level} scenarios in .data property`);
+                        return data.data;
+                    }
+                    
+                    if (Array.isArray(data.questions)) {
+                        console.log(`[CommunicationQuiz] Found ${level} scenarios in .questions property`);
+                        return data.questions;
+                    }
+                    
+                    // Look for any array property that might contain scenarios
+                    for (const key in data) {
+                        if (Array.isArray(data[key]) && data[key].length > 0 && 
+                            data[key][0] && typeof data[key][0] === 'object' &&
+                            (data[key][0].title || data[key][0].description || data[key][0].options)) {
+                            console.log(`[CommunicationQuiz] Found ${level} scenarios in .${key} property`);
+                            return data[key];
+                        }
+                    }
                 }
-            } else {
-                // Load scenarios from the correctly structured import
-                this.basicScenarios = communicationScenarios.basic;
-            }
+                
+                // Return empty array if nothing found
+                console.error(`[CommunicationQuiz] Could not find ${level} scenarios in any expected format`);
+                return [];
+            };
             
-            // Repeat similar checks for intermediate and advanced
-            if (!Array.isArray(communicationScenarios.intermediate)) {
-                console.error('[CommunicationQuiz] Invalid structure: communicationScenarios.intermediate is not an array');
-                if (communicationScenarios.intermediate && Array.isArray(communicationScenarios.intermediate.scenarios)) {
-                    this.intermediateScenarios = communicationScenarios.intermediate.scenarios;
-                } else {
-                    this.intermediateScenarios = [];
-                }
-            } else {
-                this.intermediateScenarios = communicationScenarios.intermediate;
-            }
-            
-            if (!Array.isArray(communicationScenarios.advanced)) {
-                console.error('[CommunicationQuiz] Invalid structure: communicationScenarios.advanced is not an array');
-                if (communicationScenarios.advanced && Array.isArray(communicationScenarios.advanced.scenarios)) {
-                    this.advancedScenarios = communicationScenarios.advanced.scenarios;
-                } else {
-                    this.advancedScenarios = [];
-                }
-            } else {
-                this.advancedScenarios = communicationScenarios.advanced;
-            }
+            // Extract scenarios for each level
+            this.basicScenarios = extractScenarios(communicationScenarios.basic, 'basic');
+            this.intermediateScenarios = extractScenarios(communicationScenarios.intermediate, 'intermediate');
+            this.advancedScenarios = extractScenarios(communicationScenarios.advanced, 'advanced');
             
             // Log what we've loaded
             console.log('[CommunicationQuiz] Scenarios loaded from imported file:', {
@@ -976,10 +1058,40 @@ export class CommunicationQuiz extends BaseQuiz {
                 advanced: this.advancedScenarios?.length || 0
             });
             
-            // Verify we have at least basic scenarios
+            // If basic scenarios are missing, try to use emergency hard-coded scenarios
             if (!this.basicScenarios || this.basicScenarios.length === 0) {
-                console.error('[CommunicationQuiz] No basic scenarios found, quiz cannot function');
-                throw new Error('No basic scenarios');
+                console.error('[CommunicationQuiz] No basic scenarios found, creating emergency scenarios');
+                
+                // Create at least one emergency scenario
+                this.basicScenarios = [{
+                    id: 999,
+                    level: 'Basic',
+                    title: 'Emergency Communication Scenario',
+                    description: 'What is the best approach when communicating critical issues to stakeholders?',
+                    options: [
+                        {
+                            text: 'Communicate promptly with clear information about impact, cause, and resolution timeline',
+                            outcome: 'Excellent! Timely and clear communication builds trust and helps manage expectations.',
+                            experience: 15,
+                            isCorrect: true
+                        },
+                        {
+                            text: 'Wait until you have complete information before communicating',
+                            outcome: 'Timely updates are often more valuable than perfect information.',
+                            experience: 0
+                        },
+                        {
+                            text: 'Use technical jargon to ensure precision in your explanation',
+                            outcome: 'Communication should be adapted to the audience.',
+                            experience: 0
+                        },
+                        {
+                            text: 'Only communicate about critical issues in scheduled meetings',
+                            outcome: 'Critical issues should be communicated promptly, not delayed for meetings.',
+                            experience: 0
+                        }
+                    ]
+                }];
             }
             
             // Try to fetch from API (for future updates, but default to the imported scenarios)
@@ -1170,10 +1282,10 @@ export class CommunicationQuiz extends BaseQuiz {
             
             // Try multiple possible localStorage key formats
             const possibleKeys = [
+                `strict_quiz_progress_${username}_${this.quizName}`,  // Try strict key first
                 `quiz_progress_${username}_${this.quizName}`,
                 `quiz_progress_${this.quizName}_${username}`,
                 `${this.quizName}_quiz_progress_${username}`,
-                `strict_quiz_progress_${username}_${this.quizName}`,
                 `quiz_progress_${this.quizName}`
             ];
             
@@ -1187,22 +1299,42 @@ export class CommunicationQuiz extends BaseQuiz {
                         const parsed = JSON.parse(savedData);
                         console.log(`[CommunicationQuiz] Found progress in ${key}:`, parsed);
                         
-                        // Check for nested structure format (data inside data object or direct)
-                        let progressData = parsed;
-                        if (parsed.data && typeof parsed.data === 'object') {
-                            progressData = parsed.data;
-                            console.log(`[CommunicationQuiz] Found nested data structure in ${key}`);
+                        // Check for various possible data structures
+                        // First check for direct access to questionHistory
+                        if (parsed && Array.isArray(parsed.questionHistory) && parsed.questionHistory.length > 0) {
+                            loadedData = parsed;
+                            successKey = key;
+                            console.log(`[CommunicationQuiz] Found direct questionHistory in ${key}`);
+                            break;
                         }
                         
-                        // Check if this progress data is valid (has at least one required field)
-                        if (progressData && 
-                            (Array.isArray(progressData.questionHistory) || 
-                             typeof progressData.experience === 'number' || 
-                             typeof progressData.currentScenario === 'number')) {
-                            loadedData = progressData;
+                        // Then check for data.questionHistory
+                        if (parsed.data && Array.isArray(parsed.data.questionHistory) && parsed.data.questionHistory.length > 0) {
+                            loadedData = parsed.data;
                             successKey = key;
-                            console.log(`[CommunicationQuiz] Valid progress data found in ${key}`);
+                            console.log(`[CommunicationQuiz] Found questionHistory in parsed.data of ${key}`);
                             break;
+                        }
+                        
+                        // Finally check for API response data format
+                        if (parsed.data && parsed.data.progress && Array.isArray(parsed.data.progress.questionHistory) && 
+                            parsed.data.progress.questionHistory.length > 0) {
+                            loadedData = parsed.data.progress;
+                            successKey = key;
+                            console.log(`[CommunicationQuiz] Found questionHistory in parsed.data.progress of ${key}`);
+                            break;
+                        }
+                        
+                        // If not a clear match but has some data, keep it as a backup
+                        if (!loadedData && parsed && (
+                            typeof parsed.experience === 'number' || 
+                            typeof parsed.currentScenario === 'number' ||
+                            (parsed.data && typeof parsed.data.experience === 'number')
+                        )) {
+                            loadedData = parsed.data || parsed;
+                            successKey = key;
+                            console.log(`[CommunicationQuiz] Found partial progress data in ${key}`);
+                            // Don't break here, keep checking for better matches
                         }
                     } catch (e) {
                         console.error(`[CommunicationQuiz] Error parsing data from ${key}:`, e);
@@ -1217,9 +1349,9 @@ export class CommunicationQuiz extends BaseQuiz {
                 
                 // Set question history properly with careful handling of potential formats
                 if (Array.isArray(loadedData.questionHistory)) {
-                    // Make sure each history item has the correct structure
+                    // Validate each question history entry
                     const validatedHistory = loadedData.questionHistory.filter(item => 
-                        item && item.scenario && item.selectedAnswer
+                        item && (item.scenario || item.scenarioId) && (item.selectedAnswer || item.selectedOption)
                     );
                     
                     if (validatedHistory.length > 0) {
@@ -1311,6 +1443,32 @@ document.addEventListener('DOMContentLoaded', async () => {
             }
         });
         
+        // Add visibility change listener to detect when user returns to the tab
+        document.addEventListener('visibilitychange', () => {
+            if (document.visibilityState === 'visible') {
+                console.log('[CommunicationQuiz] Page became visible, checking progress state');
+                
+                // Check if we have an active quiz instance
+                if (communicationQuizInstance) {
+                    // Log the current progress state
+                    console.log('[CommunicationQuiz] Current progress state:', {
+                        currentScenario: communicationQuizInstance.player.currentScenario,
+                        questionHistoryLength: communicationQuizInstance.player.questionHistory?.length || 0,
+                        experience: communicationQuizInstance.player.experience
+                    });
+                    
+                    // Always ensure the current scenario is displayed when the page becomes visible
+                    communicationQuizInstance.player.currentScenario = communicationQuizInstance.player.questionHistory.length;
+                    communicationQuizInstance.displayScenario();
+                    
+                    // Also re-save progress to ensure consistency
+                    communicationQuizInstance.saveProgress('in-progress').catch(err => {
+                        console.error('[CommunicationQuiz] Error saving progress after visibility change:', err);
+                    });
+                }
+            }
+        });
+        
         // Run diagnostics after a short delay to ensure DOM is fully loaded
         setTimeout(() => {
             diagnoseQuizDOM();
@@ -1322,54 +1480,29 @@ document.addEventListener('DOMContentLoaded', async () => {
                 await communicationQuizInstance.startGame();
                 console.log('[CommunicationQuiz] Quiz started successfully');
                 
-                // Also set up a periodic save to ensure we don't lose progress
-                setInterval(() => {
-                    if (communicationQuizInstance && 
-                        communicationQuizInstance.player && 
-                        communicationQuizInstance.player.questionHistory &&
-                        communicationQuizInstance.player.questionHistory.length > 0) {
-                        
-                        // Only save if we have actual progress
-                        communicationQuizInstance.saveProgress('in-progress').catch(err => {
-                            console.warn('[CommunicationQuiz] Periodic save failed:', err);
-                        });
-                    }
-                }, 30000); // Every 30 seconds
-            } catch (startError) {
-                console.error('[CommunicationQuiz] Error starting quiz:', startError);
-                
-                // Try emergency override as last resort
-                setTimeout(() => {
-                    try {
-                        forceScenarioDisplay();
-                    } catch (overrideError) {
-                        console.error('[CommunicationQuiz] Emergency override failed:', overrideError);
-                    }
-                }, 1000);
+                // Ensure any debug buttons are properly initialized
+                const debugButton = document.getElementById('debug-button');
+                if (debugButton) {
+                    debugButton.addEventListener('click', () => {
+                        diagnoseQuizDOM();
+                        setTimeout(() => {
+                            forceScenarioDisplay();
+                        }, 500);
+                    });
+                }
+            } catch (e) {
+                console.error('[CommunicationQuiz] Error starting quiz:', e);
+                forceScenarioDisplay(); // Emergency fallback
             }
         }, 1500);
     } catch (error) {
-        console.error('[CommunicationQuiz] Fatal error during initialization:', error);
-        
-        // Show error to user
-        const errorElement = document.createElement('div');
-        errorElement.className = 'error-message';
-        errorElement.textContent = 'Failed to initialize quiz. Please refresh the page and try again.';
-        errorElement.style.color = 'red';
-        errorElement.style.padding = '20px';
-        errorElement.style.textAlign = 'center';
-        errorElement.style.fontWeight = 'bold';
-        
-        // Find a good place to show the error
-        const container = document.getElementById('game-screen') || 
-                          document.getElementById('quiz-container') || 
-                          document.body;
-        
-        if (container) {
-            container.appendChild(errorElement);
-        }
+        console.error('[CommunicationQuiz] Fatal error initializing quiz:', error);
+        // Try to show something to the user
+        setTimeout(() => {
+            forceScenarioDisplay();
+        }, 1000);
     }
-}); 
+});
 
 // DIAGNOSTIC FUNCTION
 // This function analyzes the DOM to find potential issues with quiz display
