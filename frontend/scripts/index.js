@@ -248,9 +248,6 @@ class IndexPage {
             // Debug quiz name normalization
             this.logQuizNameNormalization();
             
-            // Add emergency reset button
-            this.addEmergencyResetButton();
-            
             // Load guide settings in a non-blocking way
             this.loadGuideSettingsAndAddButtons().catch(err => {
                 console.error('[Index] Error loading guide settings:', err);
@@ -493,15 +490,35 @@ class IndexPage {
                     }
                     // Apply progress data if available (overrides result data)
                     if (progress) {
-                        combinedData.questionsAnswered = progress.questionsAnswered || 0;
+                        // Derive questionsAnswered from questionHistory if not directly provided
+                        if (!progress.questionsAnswered && Array.isArray(progress.questionHistory) && progress.questionHistory.length > 0) {
+                            combinedData.questionsAnswered = progress.questionHistory.length;
+                            console.log(`[Index] Derived questionsAnswered=${progress.questionHistory.length} from questionHistory for ${lookupId}`);
+                        } else {
+                            combinedData.questionsAnswered = progress.questionsAnswered || 0;
+                        }
+                        
                         combinedData.status = progress.status || 'not-started';
                         combinedData.tools = progress.tools || [];
                         combinedData.questionHistory = progress.questionHistory || [];
+                        
                         if (progress.scorePercentage !== undefined) {
                             combinedData.scorePercentage = progress.scorePercentage;
                         }
                         if (progress.experience !== undefined) {
                             combinedData.experience = progress.experience;
+                        }
+                        
+                        // If we still have questionHistory but no questionsAnswered, ensure we set it
+                        if (combinedData.questionsAnswered === 0 && Array.isArray(combinedData.questionHistory) && combinedData.questionHistory.length > 0) {
+                            combinedData.questionsAnswered = combinedData.questionHistory.length;
+                            console.log(`[Index] Fixed missing questionsAnswered by using questionHistory.length=${combinedData.questionHistory.length} for ${lookupId}`);
+                        }
+                        
+                        // If we have currentScenario but no questionsAnswered, use that
+                        if (combinedData.questionsAnswered === 0 && progress.currentScenario && progress.currentScenario > 0) {
+                            combinedData.questionsAnswered = progress.currentScenario;
+                            console.log(`[Index] Used currentScenario=${progress.currentScenario} for questionsAnswered for ${lookupId}`);
                         }
                     }
                     console.log(`[Index] Processed data for quiz ${lookupId}:`, combinedData);
@@ -1088,86 +1105,6 @@ class IndexPage {
         
         console.log('[Index] Quiz progress refresh complete');
     }
-
-    addEmergencyResetButton() {
-        try {
-            // Skip if already added
-            if (document.getElementById('emergency-reset-btn')) {
-                return;
-            }
-            
-            console.log('[Index] Adding emergency quiz progress reset button');
-            
-            // Find the header where we'll add the reset button
-            const header = document.querySelector('header');
-            const navContainer = header?.querySelector('nav') || header;
-            
-            if (!navContainer) {
-                console.warn('[Index] Cannot find header or nav to add reset button');
-                return;
-            }
-            
-            // Add a reset button with warning styling
-            const resetContainer = document.createElement('div');
-            resetContainer.className = 'emergency-reset-container';
-            resetContainer.style.cssText = 'margin-left: 20px; display: flex; align-items: center;';
-            
-            const resetButton = document.createElement('button');
-            resetButton.id = 'emergency-reset-btn';
-            resetButton.className = 'emergency-reset-btn';
-            resetButton.innerHTML = '<i class="fa fa-exclamation-triangle"></i> Reset All Quiz Progress';
-            resetButton.style.cssText = 'background-color: #ff5555; color: white; padding: 8px 12px; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; display: flex; align-items: center; gap: 6px;';
-            
-            resetButton.addEventListener('click', async () => {
-                if (confirm('WARNING: This will reset ALL quiz progress for your account.\n\nUse this if you are experiencing issues where quiz progress is being shared between different quizzes.\n\nThis action CANNOT be undone. Continue?')) {
-                    try {
-                        // Show loading overlay
-                        this.showLoadingOverlay('Resetting quiz progress...');
-                        
-                        // Call the API service method to reset all quiz progress
-                        const result = await this.apiService.resetAllQuizProgress();
-                        
-                        // Log the result
-                        console.log('[Index] Reset quiz progress result:', result);
-                        
-                        // Refresh the page to show updated progress
-                        alert(`${result.message}\n\nThe page will now reload to update your quiz progress.`);
-                        window.location.reload();
-                    } catch (error) {
-                        console.error('[Index] Error resetting quiz progress:', error);
-                        alert(`Error resetting quiz progress: ${error.message}`);
-                        this.hideLoadingOverlay();
-                    }
-                }
-            });
-            
-            resetContainer.appendChild(resetButton);
-            
-            // Add a help tooltip explaining when to use this
-            const helpText = document.createElement('div');
-            helpText.className = 'emergency-reset-help';
-            helpText.innerHTML = '<i class="fa fa-info-circle"></i>';
-            helpText.style.cssText = 'margin-left: 8px; color: #888; cursor: help; font-size: 18px;';
-            helpText.title = 'Use this button if you are experiencing issues where progress from one quiz is showing up in another quiz. This will reset ALL your progress to a clean state.';
-            
-            resetContainer.appendChild(helpText);
-            
-            // Add to the navigation container
-            navContainer.appendChild(resetContainer);
-            
-            // Add Font Awesome if not already included (for the warning icon)
-            if (!document.querySelector('link[href*="font-awesome"]')) {
-                const fontAwesome = document.createElement('link');
-                fontAwesome.rel = 'stylesheet';
-                fontAwesome.href = 'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css';
-                document.head.appendChild(fontAwesome);
-            }
-            
-            console.log('[Index] Emergency reset button added successfully');
-        } catch (error) {
-            console.error('[Index] Error adding emergency reset button:', error);
-        }
-    }
 }
 
 // Initialize the index page when the DOM is loaded
@@ -1196,7 +1133,7 @@ window.handleLogout = () => {
         localStorage.removeItem('isAdmin');
         window.location.href = '/login.html';
     }
-};
+}; 
 
 // Expose the function to the global scope for emergency use
 window.clearAllQuizProgress = clearAllQuizProgress; 

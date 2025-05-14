@@ -619,15 +619,24 @@ export class APIService {
                 console.log(`[API] Experience value from API: ${apiData.experience}, type: ${typeof apiData.experience}, parsed: ${experienceValue}`);
             }
             
-            // Get questionHistory length for validation
+            // Get questionHistory length for validation and derivation of questionsAnswered
             const questionHistoryLength = Array.isArray(apiData.questionHistory) ? apiData.questionHistory.length : 0;
+            
+            // Derive questionsAnswered from questionHistory if not provided or is zero
+            let questionsAnswered = apiData.questionsAnswered;
+            if ((!questionsAnswered || questionsAnswered === 0) && questionHistoryLength > 0) {
+                questionsAnswered = questionHistoryLength;
+                console.log(`[API] Derived questionsAnswered=${questionHistoryLength} from questionHistory.length for ${normalizedQuizName}`);
+            } else {
+                questionsAnswered = apiData.questionsAnswered || questionHistoryLength || 0;
+            }
             
             const progress = {
                 experience: experienceValue,
-                questionsAnswered: apiData.questionsAnswered || questionHistoryLength || 0,
+                questionsAnswered: questionsAnswered,
                 status: apiData.status || 'not-started',
                 scorePercentage: typeof apiData.scorePercentage === 'number' ? apiData.scorePercentage : 0,
-                currentScenario: apiData.currentScenario || apiData.questionsAnswered || questionHistoryLength || 0,
+                currentScenario: apiData.currentScenario || questionsAnswered || 0,
                 tools: apiData.tools || [],
                 questionHistory: apiData.questionHistory || [],
                 randomizedScenarios: apiData.randomizedScenarios || {}
@@ -2829,66 +2838,6 @@ export class APIService {
                 success: false,
                 message: error.message || 'Failed to get user progress',
                 data: { quizProgress: {}, quizResults: [] }
-            };
-        }
-    }
-
-    /**
-     * Clears all quiz progress from localStorage for the current user
-     * This is useful for users affected by quiz progress mixing issues
-     * 
-     * @returns {Object} - Status of the operation with a list of cleared keys
-     */
-    resetAllQuizProgress() {
-        try {
-            const username = localStorage.getItem('username');
-            if (!username) {
-                console.warn('[API] Cannot clear quiz progress: no username found');
-                return { 
-                    success: false, 
-                    message: 'No username found. Please log in first.',
-                    clearedKeys: []
-                };
-            }
-            
-            console.log(`[API] Clearing all quiz progress for user: ${username}`);
-            
-            // Get all localStorage keys
-            const allKeys = Object.keys(localStorage);
-            
-            // Filter keys related to quiz progress for this user
-            const progressKeys = allKeys.filter(key => 
-                key.includes('quiz_progress') && 
-                key.includes(username)
-            );
-            
-            console.log(`[API] Found ${progressKeys.length} quiz progress entries to clear`);
-            
-            if (progressKeys.length === 0) {
-                return {
-                    success: true,
-                    message: 'No quiz progress found to clear',
-                    clearedKeys: []
-                };
-            }
-            
-            // Clear all matching keys
-            progressKeys.forEach(key => {
-                localStorage.removeItem(key);
-                console.log(`[API] Cleared: ${key}`);
-            });
-            
-            return {
-                success: true,
-                message: `Successfully cleared ${progressKeys.length} quiz progress entries`,
-                clearedKeys: progressKeys
-            };
-        } catch (error) {
-            console.error('[API] Error clearing quiz progress:', error);
-            return {
-                success: false,
-                message: `Error clearing quiz progress: ${error.message}`,
-                clearedKeys: []
             };
         }
     }
