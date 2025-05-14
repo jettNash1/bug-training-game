@@ -853,29 +853,41 @@ export class TesterMindsetQuiz extends BaseQuiz {
         if (cachedData && cacheValid) {
             console.log('[TesterMindsetQuiz] Using cached scenarios');
             const data = JSON.parse(cachedData);
-            this.basicScenarios = data.basic || testerMindsetScenarios.basic;
-            this.intermediateScenarios = data.intermediate || testerMindsetScenarios.intermediate;
-            this.advancedScenarios = data.advanced || testerMindsetScenarios.advanced;
+            const scenarios = data.scenarios || data;
+            this.basicScenarios = scenarios.basic || [];
+            this.intermediateScenarios = scenarios.intermediate || [];
+            this.advancedScenarios = scenarios.advanced || [];
+            if (!this.basicScenarios.length) console.warn('No basic scenarios loaded!');
+            if (!this.intermediateScenarios.length) console.warn('No intermediate scenarios loaded!');
+            if (!this.advancedScenarios.length) console.warn('No advanced scenarios loaded!');
             return;
         }
         
-        // If no valid cache, try to fetch from API
+        // If no valid cache, try to fetch from API or local file
         try {
-            console.log('[TesterMindsetQuiz] Fetching scenarios from API');
+            console.log('[TesterMindsetQuiz] Fetching scenarios from API or local file');
             const data = await this.apiService.getQuizScenarios(this.quizName);
-            
+            let scenarios = null;
             if (data && data.scenarios) {
+                scenarios = data.scenarios;
+            } else if (data && (data.basic || data.intermediate || data.advanced)) {
+                scenarios = data;
+            }
+            if (scenarios) {
                 // Cache the result
-                localStorage.setItem(`quiz_scenarios_${this.quizName}`, JSON.stringify(data.scenarios));
+                localStorage.setItem(`quiz_scenarios_${this.quizName}`, JSON.stringify({ scenarios }));
                 localStorage.setItem(`quiz_scenarios_${this.quizName}_timestamp`, Date.now().toString());
-                
-                // Update scenarios
-                this.basicScenarios = data.scenarios.basic || testerMindsetScenarios.basic;
-                this.intermediateScenarios = data.scenarios.intermediate || testerMindsetScenarios.intermediate;
-                this.advancedScenarios = data.scenarios.advanced || testerMindsetScenarios.advanced;
+                this.basicScenarios = scenarios.basic || [];
+                this.intermediateScenarios = scenarios.intermediate || [];
+                this.advancedScenarios = scenarios.advanced || [];
+                if (!this.basicScenarios.length) console.warn('No basic scenarios loaded!');
+                if (!this.intermediateScenarios.length) console.warn('No intermediate scenarios loaded!');
+                if (!this.advancedScenarios.length) console.warn('No advanced scenarios loaded!');
+            } else {
+                console.error('No scenarios loaded!');
             }
         } catch (error) {
-            console.error('[TesterMindsetQuiz] Failed to load scenarios from API:', error);
+            console.error('[TesterMindsetQuiz] Failed to load scenarios from API or local file:', error);
             console.log('[TesterMindsetQuiz] Falling back to default scenarios');
             // Already loaded default scenarios in constructor
         }

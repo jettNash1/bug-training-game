@@ -837,18 +837,17 @@ export class APIService {
     async getQuizScenarios(quizName) {
         // Map quiz names to their local scenario file paths
         const localScenarioMap = {
-            'tester-mindset': '../data/testerMindset-scenarios.js',
-            'communication': '../data/communication-scenarios.js',
+            'tester-mindset': '/frontend/data/testerMindset-scenarios.js',
+            'communication': '/frontend/data/communication-scenarios.js',
             // Add more mappings as needed
         };
 
         if (localScenarioMap[quizName]) {
             try {
-                // Dynamic import of the local scenario file
                 const module = await import(localScenarioMap[quizName]);
-                // The exported object should be named consistently
-                // e.g., testerMindsetScenarios or communicationScenarios
+                console.log('Loaded scenario module:', module);
                 const scenarios = module.testerMindsetScenarios || module.communicationScenarios || module.default;
+                console.log('Loaded scenarios:', scenarios);
                 return { scenarios };
             } catch (error) {
                 console.error(`Error loading local scenarios for ${quizName}:`, error);
