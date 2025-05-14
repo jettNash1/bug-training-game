@@ -1,6 +1,6 @@
 import { APIService } from '../frontend/api-service.js';
 
-class QuizSyncService {
+export class QuizSyncService {
     constructor() {
         this.syncQueue = [];
         this.apiService = new APIService();
