@@ -31,12 +31,15 @@
     <main class="main-container">
         <div class="quiz-container">
             <h1 class="quiz-title">Test Quiz</h1>
-            <p class="quiz-description">A simple test quiz with 3 scenarios.</p>
+            <p class="quiz-description">A simple test quiz with 3 scenarios - one for each difficulty level.</p>
             
             <div id="loading-indicator" class="loading-indicator">
                 <div class="spinner"></div>
                 <p>Loading...</p>
             </div>
+            
+            <!-- Level transition messages container -->
+            <div id="level-transition-container" class="level-transition-container"></div>
             
             <!-- Quiz Header Progress Info -->
             <div class="quiz-header-progress">
@@ -82,6 +85,7 @@
             <!-- End Screen - Shown at quiz completion -->
             <div id="end-screen" class="screen hidden">
                 <h2>Quiz Complete!</h2>
+                
                 <div class="results-summary">
                     <div id="score-display" class="score-display">
                         <div class="score-value">0%</div>
@@ -92,15 +96,25 @@
                         <div class="experience-label">XP</div>
                     </div>
                 </div>
+                
                 <div id="pass-fail-message" class="pass-fail-message">
                     <!-- Dynamically filled based on pass/fail -->
                 </div>
+                
+                <div class="review-section">
+                    <h3>Question Review:</h3>
+                    <div id="review-list" class="review-list">
+                        <!-- Dynamically filled with questions and answers -->
+                    </div>
+                </div>
+                
                 <div class="recommendations-section">
                     <h3>Areas to Focus On:</h3>
                     <ul id="recommendations-list">
                         <!-- Dynamically filled -->
                     </ul>
                 </div>
+                
                 <div class="end-buttons">
                     <button id="restart-btn" class="action-button">Restart Quiz</button>
                     <button id="home-btn" class="action-button" onclick="window.location.href='../index.html'">Return Home</button>

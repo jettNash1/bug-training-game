@@ -32,6 +32,68 @@
     100% { transform: rotate(360deg); }
 }
 
+/* Level transition container styles */
+.level-transition-container {
+    height: 0;
+    overflow: hidden;
+    transition: height 0.3s ease;
+    margin-bottom: 0;
+}
+
+.level-transition-container.active {
+    height: 60px;
+    margin-bottom: 1rem;
+}
+
+.level-transition {
+    background-color: #4dabf7;
+    color: white;
+    padding: 1rem;
+    text-align: center;
+    border-radius: 8px;
+    font-weight: bold;
+    font-size: 1.2rem;
+    animation: fadeIn 0.5s ease;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+/* Progress indicators */
+.quiz-header-progress {
+    background: #f8f9fa;
+    border-radius: 8px;
+    padding: 0.8rem;
+    margin-bottom: 1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.progress-info {
+    display: flex;
+    justify-content: space-between;
+    font-weight: bold;
+    color: #2c3e50;
+}
+
+.progress-bar {
+    height: 8px;
+    background: #dee2e6;
+    border-radius: 4px;
+    overflow: hidden;
+}
+
+.progress-fill {
+    height: 100%;
+    background: #4dabf7;
+    border-radius: 4px;
+    width: 0;
+    transition: width 0.3s ease;
+}
+
 #timer-container {
     position: fixed;
     top: 20px;
@@ -99,6 +161,31 @@
     margin-bottom: 1.5rem;
 }
 
+.option {
+    background: #f8f9fa;
+    border: 2px solid #dee2e6;
+    border-radius: 8px;
+    padding: 1rem;
+    margin-bottom: 0.5rem;
+    transition: all 0.2s ease;
+}
+
+.option:hover {
+    border-color: #adb5bd;
+    background: #e9ecef;
+}
+
+.option input[type="radio"] {
+    margin-right: 10px;
+}
+
+.option label {
+    font-size: 1rem;
+    color: #343a40;
+    cursor: pointer;
+    flex: 1;
+}
+
 .quiz-option {
     background: #f8f9fa;
     border: 2px solid #dee2e6;
@@ -130,6 +217,8 @@
     cursor: pointer;
     transition: background-color 0.2s ease;
     align-self: center;
+    margin: 1rem auto;
+    display: block;
 }
 
 .submit-button:hover {
@@ -143,11 +232,39 @@
 
 .outcome-content {
     text-align: center;
+    padding: 2rem;
+    background: #f8f9fa;
+    border-radius: 12px;
+    margin: 1rem 0;
 }
 
 .outcome-content h3 {
     color: #2c3e50;
     margin-bottom: 1rem;
+    font-size: 1.5rem;
+}
+
+.outcome-content p {
+    font-size: 1.1rem;
+    line-height: 1.6;
+    color: #34495e;
+    margin-bottom: 1.5rem;
+}
+
+.outcome-content .result {
+    font-weight: bold;
+    font-size: 1.2rem;
+    margin: 1rem 0;
+}
+
+.tool-gained {
+    background: #e9f7fe;
+    padding: 10px;
+    border-radius: 5px;
+    border-left: 4px solid #4dabf7;
+    margin: 10px 0;
+    font-weight: bold;
+    color: #2980b9;
 }
 
 #outcome-text {
@@ -180,10 +297,42 @@
 /* End screen styles */
 .review-section, .recommendations-section {
     margin-top: 2rem;
+    padding: 1rem;
+    background: #f8f9fa;
+    border-radius: 8px;
 }
 
 .review-list {
     margin-top: 1rem;
+}
+
+.review-item {
+    background: #f8f9fa;
+    border-radius: 8px;
+    padding: 1rem;
+    margin-bottom: 1rem;
+    border-left: 4px solid #adb5bd;
+}
+
+.review-item.correct {
+    border-left-color: #2ecc71;
+}
+
+.review-item.incorrect {
+    border-left-color: #e74c3c;
+}
+
+#recommendations-list li {
+    margin-bottom: 10px;
+    line-height: 1.5;
+}
+
+.passed {
+    color: #2ecc71;
+}
+
+.failed {
+    color: #e74c3c;
 }
 
 #final-score {
@@ -198,4 +347,57 @@
     line-height: 1.6;
     color: #34495e;
     margin-bottom: 2rem;
+}
+
+.results-summary {
+    display: flex;
+    justify-content: center;
+    gap: 2rem;
+    margin: 2rem 0;
+}
+
+.score-display, .experience-display {
+    text-align: center;
+    background: #f8f9fa;
+    padding: 1rem;
+    border-radius: 8px;
+    min-width: 100px;
+}
+
+.score-value, .experience-value {
+    font-size: 2rem;
+    font-weight: bold;
+    color: #2c3e50;
+}
+
+.end-buttons {
+    display: flex;
+    justify-content: center;
+    gap: 1rem;
+    margin-top: 2rem;
+}
+
+.action-button {
+    background: #4dabf7;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    padding: 0.8rem 2rem;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+}
+
+.action-button:hover {
+    background: #339af0;
+}
+
+/* Error message styling */
+.error-message {
+    background-color: #fee;
+    border-left: 4px solid #e74c3c;
+    padding: 15px;
+    margin: 20px 0;
+    border-radius: 4px;
+    color: #c0392b;
 } 
