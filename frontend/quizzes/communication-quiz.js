@@ -6,10 +6,6 @@ import { communicationScenarios } from '../data/communication-scenarios.js';
 export class CommunicationQuiz extends BaseQuiz {
     constructor() {
         console.log('[CommunicationQuiz][constructor] New instance created');
-        
-        // Debug progress state before constructor initialization
-        debugProgressState('BEFORE_CONSTRUCTOR');
-        
         const config = {
             maxXP: 300,
             totalQuestions: 15,
@@ -135,9 +131,6 @@ export class CommunicationQuiz extends BaseQuiz {
                 });
             }
         }
-
-        // Debug progress again after constructor finishes basic initialization
-        debugProgressState('AFTER_CONSTRUCTOR_INIT');
     }
 
     // Helper for showing errors to the user
@@ -186,9 +179,6 @@ export class CommunicationQuiz extends BaseQuiz {
 
     async startGame() {
         if (this.isLoading) return;
-        
-        // Debug before starting the game
-        debugProgressState('BEFORE_START_GAME');
         
         try {
             this.isLoading = true;
@@ -257,10 +247,8 @@ export class CommunicationQuiz extends BaseQuiz {
             });
 
             // Load previous progress using our own implementation
-            debugProgressState('BEFORE_LOAD_PROGRESS');
             const hasProgress = await this.loadProgress();  // Use this.loadProgress, not super.loadProgress
             console.log('[CommunicationQuiz] Previous progress loaded:', hasProgress);
-            debugProgressState('AFTER_LOAD_PROGRESS');
             
             if (!hasProgress) {
                 // Reset player state if no valid progress exists
@@ -329,9 +317,7 @@ export class CommunicationQuiz extends BaseQuiz {
             }
             
             // CRITICAL: Always display scenario after loading, regardless of progress state
-            debugProgressState('BEFORE_DISPLAY_SCENARIO');
             this.displayScenario();
-            debugProgressState('AFTER_DISPLAY_SCENARIO');
             
             // Setup periodic save to ensure progress is never lost
             this._setupPeriodicSave();
@@ -721,9 +707,6 @@ export class CommunicationQuiz extends BaseQuiz {
             // Save progress using our own implementation instead of super
             await this.saveProgress();
             console.log('[CommunicationQuiz] Progress saved after answer with history length:', this.player.questionHistory.length);
-            
-            // EMERGENCY BACKUP: Also directly preserve progress to ensure it's not lost
-            preserveProgressDirectly();
 
             // Calculate the score percentage
             const scorePercentage = this.calculateScorePercentage();
@@ -1371,47 +1354,10 @@ export class CommunicationQuiz extends BaseQuiz {
     async loadProgress() {
         console.log('[CommunicationQuiz] Loading progress...');
         
-        debugProgressState('START_LOAD_PROGRESS');
-        
-        // Analyze potential storage key issues
-        if (typeof BaseQuiz !== 'undefined') {
-            try {
-                // Compare how keys are formed
-                const username = localStorage.getItem('username') || '';
-                
-                // Get key format from BaseQuiz
-                let baseQuizKey = '';
-                if (BaseQuiz.prototype.getStorageKey) {
-                    baseQuizKey = BaseQuiz.prototype.getStorageKey.call(this, username, this.quizName);
-                    console.log('[KEY ANALYSIS] BaseQuiz storage key format:', baseQuizKey);
-                }
-                
-                // Our key format
-                const ourKey = `quiz_progress_${username}_${this.quizName}`;
-                console.log('[KEY ANALYSIS] CommunicationQuiz storage key format:', ourKey);
-                
-                // Check if they match
-                if (baseQuizKey && baseQuizKey !== ourKey) {
-                    console.log('[KEY ANALYSIS] KEY MISMATCH DETECTED! Base:', baseQuizKey, 'Ours:', ourKey);
-                    
-                    // Check both keys in localStorage
-                    const baseData = localStorage.getItem(baseQuizKey);
-                    const ourData = localStorage.getItem(ourKey);
-                    
-                    console.log('[KEY ANALYSIS] BaseQuiz key has data:', !!baseData);
-                    console.log('[KEY ANALYSIS] Our key has data:', !!ourData);
-                }
-            } catch (e) {
-                console.error('[KEY ANALYSIS] Error analyzing key formats:', e);
-            }
-        }
-        
         try {
             // First try to load progress using the BaseQuiz implementation
-            debugProgressState('BEFORE_PARENT_LOAD_PROGRESS');
             const hasProgress = await super.loadProgress();
             console.log('[CommunicationQuiz] Parent loadProgress result:', hasProgress);
-            debugProgressState('AFTER_PARENT_LOAD_PROGRESS');
             
             // Log what was loaded by the parent class
             console.log('[CommunicationQuiz] Player state after parent loadProgress:', {
@@ -1566,61 +1512,40 @@ let communicationQuizInstance = null;
 
 // Initialize quiz when the page loads
 document.addEventListener('DOMContentLoaded', async () => {
-    // Setup inspection of BaseQuiz methods
-    inspectBaseQuizLoadProgress();
-    
-    // Start monitoring for progress resets
-    monitorProgressReset();
-    
     console.log('[CommunicationQuiz] DOM loaded, initializing quiz...');
-    
-    // Debug progress immediately at page load
-    debugProgressState('PAGE_LOAD');
     
     try {
         // Add an emergency override timer to force displaying the correct question
         // This will run regardless of other initialization code
         setTimeout(() => {
-            try {
-                console.log('[EMERGENCY OVERRIDE] Running emergency progress check');
-                
-                // First try to restore from emergency backup
-                const restored = restoreProgressFromBackup();
-                if (restored) {
-                    console.log('[EMERGENCY OVERRIDE] Successfully restored from emergency backup');
-                    return; // Skip the rest of the emergency process if we restored
-                }
-                
-                // If backup failed, try the direct localStorage approach
-                // Check for saved progress directly
-                const username = localStorage.getItem('username');
-                if (!username) return;
-                
-                const storageKey = `quiz_progress_${username}_communication`;
-                const savedData = localStorage.getItem(storageKey);
-                
-                if (savedData) {
-                    try {
-                        const progressData = JSON.parse(savedData);
-                        if (progressData && progressData.questionHistory && progressData.questionHistory.length > 0) {
-                            console.log('[EMERGENCY OVERRIDE] Found saved progress with question count:', progressData.questionHistory.length);
+            console.log('[EMERGENCY OVERRIDE] Running emergency progress check');
+            
+            // Check for saved progress directly
+            const username = localStorage.getItem('username');
+            if (!username) return;
+            
+            const storageKey = `quiz_progress_${username}_communication`;
+            const savedData = localStorage.getItem(storageKey);
+            
+            if (savedData) {
+                try {
+                    const progressData = JSON.parse(savedData);
+                    if (progressData && progressData.questionHistory && progressData.questionHistory.length > 0) {
+                        console.log('[EMERGENCY OVERRIDE] Found saved progress with question count:', progressData.questionHistory.length);
+                        
+                        // If we have a quiz instance, force it to the correct question
+                        if (communicationQuizInstance) {
+                            communicationQuizInstance.player.questionHistory = progressData.questionHistory;
+                            communicationQuizInstance.player.currentScenario = progressData.questionHistory.length;
+                            communicationQuizInstance.player.experience = progressData.experience || 0;
                             
-                            // If we have a quiz instance, force it to the correct question
-                            if (communicationQuizInstance) {
-                                communicationQuizInstance.player.questionHistory = progressData.questionHistory;
-                                communicationQuizInstance.player.currentScenario = progressData.questionHistory.length;
-                                communicationQuizInstance.player.experience = progressData.experience || 0;
-                                
-                                console.log('[EMERGENCY OVERRIDE] Forcing displayScenario() with correct state');
-                                communicationQuizInstance.displayScenario();
-                            }
+                            console.log('[EMERGENCY OVERRIDE] Forcing displayScenario() with correct state');
+                            communicationQuizInstance.displayScenario();
                         }
-                    } catch (e) {
-                        console.error('[EMERGENCY OVERRIDE] Error in emergency progress override:', e);
                     }
+                } catch (e) {
+                    console.error('[EMERGENCY OVERRIDE] Error in emergency progress override:', e);
                 }
-            } catch (e) {
-                console.error('[EMERGENCY OVERRIDE] Error in emergency progress override:', e);
             }
         }, 2000); // Run 2 seconds after page load
 
@@ -1638,324 +1563,579 @@ document.addEventListener('DOMContentLoaded', async () => {
         // Create new instance
         communicationQuizInstance = new CommunicationQuiz();
         
-        // First attempt emergency backup restoration
-        setTimeout(() => {
-            console.log('[CommunicationQuiz] Checking for emergency backup progress');
-            const restored = restoreProgressFromBackup();
-            if (restored) {
-                console.log('[CommunicationQuiz] Successfully restored from emergency backup');
-            } else {
-                console.log('[CommunicationQuiz] No emergency backup found or restoration failed, proceeding with normal flow');
-                
-                // If backup restoration failed, run force correct question
-                setTimeout(() => {
-                    console.log('[CommunicationQuiz] Running force correct question as fallback');
-                    forceCorrectQuestionDisplay();
-                }, 500);
-            }
-        }, 1000);
-        
         // CRITICAL: Run force correct question immediately to ensure proper progress
         setTimeout(() => {
-            try {
-                // Create debug button if it doesn't exist
-                if (!document.getElementById('force-question-btn')) {
-                    const debugButton = document.createElement('button');
-                    debugButton.id = 'force-question-btn';
-                    debugButton.textContent = 'Force Correct Question';
-                    debugButton.style.position = 'fixed';
-                    debugButton.style.bottom = '10px';
-                    debugButton.style.right = '10px';
-                    debugButton.style.zIndex = '9999';
-                    debugButton.style.padding = '5px 10px';
-                    debugButton.style.background = '#ff9800';
-                    debugButton.style.color = 'white';
-                    debugButton.style.border = 'none';
-                    debugButton.style.borderRadius = '4px';
-                    debugButton.style.cursor = 'pointer';
-                    
-                    debugButton.addEventListener('click', () => {
-                        forceCorrectQuestionDisplay();
+            console.log('[CommunicationQuiz] Running force correct question immediately after creation');
+            forceCorrectQuestionDisplay();
+        }, 500);
+        
+        // Add storage event listener to detect changes from other tabs/windows
+        window.addEventListener('storage', (event) => {
+            // Check if the changed key relates to our quiz progress
+            if (event.key && event.key.includes('quiz_progress') && event.key.includes('communication')) {
+                console.log('[CommunicationQuiz] Detected localStorage change in quiz progress:', event.key);
+                
+                // Handle the change - reload progress or restart if needed
+                if (communicationQuizInstance) {
+                    // Only reload if we have an active instance
+                    setTimeout(async () => {
+                        try {
+                            await communicationQuizInstance.loadProgress();
+                            communicationQuizInstance.displayScenario();
+                            console.log('[CommunicationQuiz] Reloaded progress after external change');
+                        } catch (error) {
+                            console.error('[CommunicationQuiz] Failed to reload progress after storage change:', error);
+                        }
+                    }, 500);
+                }
+            }
+        });
+        
+        // Add visibility change listener to detect when user returns to the tab
+        document.addEventListener('visibilitychange', () => {
+            if (document.visibilityState === 'visible') {
+                console.log('[CommunicationQuiz] Page became visible, checking progress state');
+                
+                // Check if we have an active quiz instance
+                if (communicationQuizInstance) {
+                    // Log the current progress state
+                    console.log('[CommunicationQuiz] Current progress state:', {
+                        currentScenario: communicationQuizInstance.player.currentScenario,
+                        questionHistoryLength: communicationQuizInstance.player.questionHistory?.length || 0,
+                        experience: communicationQuizInstance.player.experience
                     });
                     
-                    document.body.appendChild(debugButton);
-                    console.log('[DEBUG] Added force question button to UI');
+                    // Always ensure the current scenario is displayed when the page becomes visible
+                    communicationQuizInstance.player.currentScenario = communicationQuizInstance.player.questionHistory.length;
+                    communicationQuizInstance.displayScenario();
+                    
+                    // Also re-save progress to ensure consistency
+                    communicationQuizInstance.saveProgress('in-progress').catch(err => {
+                        console.error('[CommunicationQuiz] Error saving progress after visibility change:', err);
+                    });
+                }
+            }
+        });
+        
+        // Run diagnostics after a short delay to ensure DOM is fully loaded
+        setTimeout(() => {
+            diagnoseQuizDOM();
+        }, 1000);
+        
+        // Start the game after diagnostics complete
+        setTimeout(async () => {
+            try {
+                await communicationQuizInstance.startGame();
+                console.log('[CommunicationQuiz] Quiz started successfully');
+                
+                // Ensure any debug buttons are properly initialized
+                const debugButton = document.getElementById('debug-button');
+                if (debugButton) {
+                    debugButton.addEventListener('click', () => {
+                        diagnoseQuizDOM();
+                        setTimeout(() => {
+                            forceScenarioDisplay();
+                        }, 500);
+                    });
                 }
             } catch (e) {
-                console.error('[DEBUG] Error adding debug button:', e);
+                console.error('[CommunicationQuiz] Error starting quiz:', e);
+                forceScenarioDisplay(); // Emergency fallback
             }
-        }, 3000);
-    } catch (e) {
-        console.error('[CommunicationQuiz] Error initializing quiz:', e);
+        }, 1500);
+    } catch (error) {
+        console.error('[CommunicationQuiz] Fatal error initializing quiz:', error);
+        // Try to show something to the user
+        setTimeout(() => {
+            forceScenarioDisplay();
+        }, 1000);
     }
-}); 
-
-// Add a function to check and log all progress-related localStorage at any point
-function debugProgressState(label) {
-    console.log(`[DEBUG PROGRESS][${label}] Checking all progress state`);
-    
-    // Check all localStorage keys related to progress
-    const allKeys = Object.keys(localStorage);
-    const progressKeys = allKeys.filter(k => 
-        k.includes('quiz_progress') || 
-        k.includes('communication') ||
-        k.includes('_progress_')
-    );
-    
-    console.log(`[DEBUG PROGRESS][${label}] Found ${progressKeys.length} related localStorage keys:`, progressKeys);
-    
-    // Log the content of each key
-    progressKeys.forEach(key => {
-        try {
-            const value = localStorage.getItem(key);
-            const parsed = JSON.parse(value);
-            console.log(`[DEBUG PROGRESS][${label}] Key: ${key}`, {
-                questionHistoryLength: parsed.questionHistory?.length || 0,
-                currentScenario: parsed.currentScenario,
-                lastSeen: new Date().toISOString()
-            });
-        } catch (e) {
-            console.log(`[DEBUG PROGRESS][${label}] Key: ${key} - Could not parse: ${e.message}`);
-        }
-    });
-    
-    // Also log the current quiz instance state if it exists
-    if (communicationQuizInstance) {
-        console.log(`[DEBUG PROGRESS][${label}] Quiz instance state:`, {
-            questionHistoryLength: communicationQuizInstance.player?.questionHistory?.length || 0,
-            currentScenario: communicationQuizInstance.player?.currentScenario,
-            experience: communicationQuizInstance.player?.experience
-        });
-    } else {
-        console.log(`[DEBUG PROGRESS][${label}] No quiz instance exists yet`);
-    }
-}
-
-// Add function to check what's happening in BaseQuiz.loadProgress
-function inspectBaseQuizLoadProgress() {
-    if (typeof BaseQuiz === 'undefined' || !BaseQuiz.prototype) {
-        console.log('[INSPECT] BaseQuiz not available for inspection');
-        return;
-    }
-    
-    // Original method
-    const originalLoadProgress = BaseQuiz.prototype.loadProgress;
-    
-    // Override with our debugging version
-    BaseQuiz.prototype.loadProgress = async function() {
-        console.log('[INSPECT] BaseQuiz.loadProgress called on quiz:', this.quizName);
-        debugProgressState('INSIDE_BASEQUIZ_LOAD_PROGRESS_BEFORE');
-        
-        // Call original
-        const result = await originalLoadProgress.apply(this, arguments);
-        
-        console.log('[INSPECT] BaseQuiz.loadProgress result:', result);
-        debugProgressState('INSIDE_BASEQUIZ_LOAD_PROGRESS_AFTER');
-        
-        return result;
-    };
-    
-    console.log('[INSPECT] BaseQuiz.loadProgress method overridden for debugging');
-}
-
-// Call our inspection setup at the beginning of DOMContentLoaded
-document.addEventListener('DOMContentLoaded', async () => {
-    // Setup inspection of BaseQuiz methods
-    inspectBaseQuizLoadProgress();
-    
-    console.log('[CommunicationQuiz] DOM loaded, initializing quiz...');
 });
 
-// Function to directly preserve progress between page loads
-function preserveProgressDirectly() {
-    console.log('[PRESERVE] Starting direct progress preservation');
+// DIAGNOSTIC FUNCTION
+// This function analyzes the DOM to find potential issues with quiz display
+function diagnoseQuizDOM() {
+    console.log('[DIAGNOSTIC] Starting DOM analysis');
     
-    // Only proceed if we have a quiz instance and username
-    if (!communicationQuizInstance || !localStorage.getItem('username')) {
-        console.log('[PRESERVE] Cannot preserve progress - missing instance or username');
-        return;
-    }
-    
-    // Get our current progress
-    const player = communicationQuizInstance.player;
-    
-    if (!player || !player.questionHistory || player.questionHistory.length === 0) {
-        console.log('[PRESERVE] No progress to preserve');
-        return;
-    }
-    
-    // Store in a special key that won't be touched by other code
-    const data = {
-        questionHistory: player.questionHistory,
-        currentScenario: player.questionHistory.length,
-        experience: player.experience,
-        lastSaved: new Date().toISOString()
+    // Check key quiz elements
+    const elements = {
+        'game-screen': document.getElementById('game-screen'),
+        'scenario-title': document.getElementById('scenario-title'),
+        'scenario-description': document.getElementById('scenario-description'),
+        'options-container': document.getElementById('options-container'),
+        'submit-btn': document.getElementById('submit-btn'),
+        'options-form': document.getElementById('options-form'),
+        'level-indicator': document.getElementById('level-indicator'),
+        'question-progress': document.getElementById('question-progress'),
+        'progress-fill': document.getElementById('progress-fill')
     };
     
-    const backupKey = `emergency_communication_progress_${localStorage.getItem('username')}`;
-    localStorage.setItem(backupKey, JSON.stringify(data));
+    // Log the state of each element
+    console.log('[DIAGNOSTIC] Key quiz elements:');
+    Object.entries(elements).forEach(([id, element]) => {
+        if (element) {
+            const displayStyle = window.getComputedStyle(element).display;
+            const visibility = window.getComputedStyle(element).visibility;
+            const isHidden = element.classList.contains('hidden');
+            
+            console.log(`[DIAGNOSTIC] #${id}: Found | Display: ${displayStyle} | Visibility: ${visibility} | Hidden class: ${isHidden}`);
+            
+            // Look at inner content for key elements
+            if (id === 'scenario-title' || id === 'scenario-description') {
+                console.log(`[DIAGNOSTIC] #${id} text content: "${element.textContent}"`);
+            }
+            if (id === 'options-container') {
+                console.log(`[DIAGNOSTIC] #${id} has ${element.children.length} options`);
+            }
+        } else {
+            console.log(`[DIAGNOSTIC] #${id}: NOT FOUND in DOM`);
+        }
+    });
     
-    console.log(`[PRESERVE] Progress backed up to ${backupKey}:`, {
-        questionCount: data.questionHistory.length,
-        lastSaved: data.lastSaved
+    // Check quiz layout structure
+    const quizContainer = document.querySelector('.quiz-container');
+    if (quizContainer) {
+        console.log('[DIAGNOSTIC] Quiz container structure:');
+        logElementTree(quizContainer, 0);
+    } else {
+        console.log('[DIAGNOSTIC] Quiz container not found!');
+    }
+    
+    // Check imported scenario data
+    try {
+        const basicScenariosLength = communicationScenarios.basic.length;
+        const intermediateScenariosLength = communicationScenarios.intermediate.length;
+        const advancedScenariosLength = communicationScenarios.advanced.length;
+        
+        console.log('[DIAGNOSTIC] Scenario data:', {
+            basic: basicScenariosLength,
+            intermediate: intermediateScenariosLength,
+            advanced: advancedScenariosLength
+        });
+        
+        // Check first scenario
+        if (basicScenariosLength > 0) {
+            const firstScenario = communicationScenarios.basic[0];
+            console.log('[DIAGNOSTIC] First scenario title:', firstScenario.title);
+            console.log('[DIAGNOSTIC] First scenario options count:', firstScenario.options.length);
+        }
+    } catch (error) {
+        console.error('[DIAGNOSTIC] Error accessing scenario data:', error);
+    }
+    
+    console.log('[DIAGNOSTIC] DOM analysis complete');
+}
+
+// Helper to log DOM tree structure
+function logElementTree(element, depth) {
+    if (depth > 3) return; // Limit depth to prevent too much output
+    
+    const indent = '  '.repeat(depth);
+    const classes = Array.from(element.classList).join('.');
+    const id = element.id ? `#${element.id}` : '';
+    const display = window.getComputedStyle(element).display;
+    const hidden = element.classList.contains('hidden') ? ' (HIDDEN)' : '';
+    
+    console.log(`${indent}${element.tagName.toLowerCase()}${id}${classes ? `.${classes}` : ''} | display: ${display}${hidden}`);
+    
+    Array.from(element.children).forEach(child => {
+        logElementTree(child, depth + 1);
     });
 }
 
-// Function to restore progress from our emergency backup
-function restoreProgressFromBackup() {
-    console.log('[RESTORE] Checking for emergency backup progress');
-    
-    // Get username
-    const username = localStorage.getItem('username');
-    if (!username) {
-        console.log('[RESTORE] No username found, cannot restore');
-        return false;
-    }
-    
-    // Check for our emergency backup
-    const backupKey = `emergency_communication_progress_${username}`;
-    const backupData = localStorage.getItem(backupKey);
-    
-    if (!backupData) {
-        console.log('[RESTORE] No backup data found');
-        return false;
-    }
+// EMERGENCY OVERRIDE FUNCTION
+// This function directly manipulates the DOM to display the first scenario
+// completely bypassing all the normal quiz flow
+function forceScenarioDisplay() {
+    console.log('[EMERGENCY OVERRIDE] Forcing scenario display directly');
     
     try {
-        // Parse backup data
-        const data = JSON.parse(backupData);
+        // Get the scenario data directly from the imported module
+        let firstScenario = null;
         
-        if (!data.questionHistory || data.questionHistory.length === 0) {
-            console.log('[RESTORE] Backup exists but contains no question history');
-            return false;
+        if (communicationQuizInstance?.basicScenarios?.length > 0) {
+            firstScenario = communicationQuizInstance.basicScenarios[0];
+            console.log('[EMERGENCY OVERRIDE] Using quiz instance basic scenarios');
+        } else if (communicationScenarios?.basic?.length > 0) {
+            firstScenario = communicationScenarios.basic[0];
+            console.log('[EMERGENCY OVERRIDE] Using imported module basic scenarios');
+        } else if (communicationScenarios?.basic?.scenarios?.length > 0) {
+            // Try alternate structure
+            firstScenario = communicationScenarios.basic.scenarios[0];
+            console.log('[EMERGENCY OVERRIDE] Using alternate structure for scenarios');
         }
         
-        console.log('[RESTORE] Found valid backup with question count:', data.questionHistory.length);
+        if (!firstScenario) {
+            console.error('[EMERGENCY OVERRIDE] No scenario data found!');
+            // Create a fallback scenario if we can't find one
+            firstScenario = {
+                id: 1,
+                level: 'Basic',
+                title: 'Emergency Scenario',
+                description: 'This is an emergency fallback scenario. Please refresh the page and try again.',
+                options: [
+                    {
+                        text: 'Restart the quiz',
+                        outcome: 'The quiz will restart.',
+                        experience: 0
+                    },
+                    {
+                        text: 'Go back to the main page',
+                        outcome: 'You will be redirected to the main page.',
+                        experience: 0
+                    },
+                    {
+                        text: 'Try again',
+                        outcome: 'The quiz will restart.',
+                        experience: 0
+                    },
+                    {
+                        text: 'Contact support',
+                        outcome: 'Please contact the support team for assistance.',
+                        experience: 0
+                    }
+                ]
+            };
+            console.log('[EMERGENCY OVERRIDE] Created fallback scenario');
+        }
         
-        // Apply to quiz instance if it exists
-        if (communicationQuizInstance) {
-            communicationQuizInstance.player.questionHistory = data.questionHistory;
-            communicationQuizInstance.player.currentScenario = data.questionHistory.length;
-            communicationQuizInstance.player.experience = data.experience || 0;
+        console.log('[EMERGENCY OVERRIDE] First scenario:', firstScenario);
+        
+        // Direct access to HTML elements
+        const titleElement = document.getElementById('scenario-title');
+        const descriptionElement = document.getElementById('scenario-description');
+        const optionsContainer = document.getElementById('options-container');
+        
+        // Force show the game screen
+        const gameScreen = document.getElementById('game-screen');
+        if (gameScreen) {
+            gameScreen.classList.remove('hidden');
+            gameScreen.style.display = 'block';
+        } else {
+            console.error('[EMERGENCY OVERRIDE] Game screen not found!');
+            // Try to find any container we can use
+            const quizContainer = document.querySelector('.quiz-container');
+            if (quizContainer) {
+                quizContainer.innerHTML = '<div id="game-screen" style="display:block;"></div>';
+                console.log('[EMERGENCY OVERRIDE] Created new game screen');
+            }
+        }
+        
+        // Force set the title
+        if (titleElement) {
+            titleElement.textContent = firstScenario.title;
+            titleElement.style.display = 'block';
+            console.log('[EMERGENCY OVERRIDE] Set title to:', firstScenario.title);
+        } else {
+            console.error('[EMERGENCY OVERRIDE] No title element found!');
             
-            console.log('[RESTORE] Progress restored from backup', {
-                questionCount: data.questionHistory.length,
-                currentScenario: data.questionHistory.length,
-                lastSaved: data.lastSaved
+            // Try to insert a title anyway
+            const questionSection = document.querySelector('.question-section');
+            if (questionSection) {
+                const newTitle = document.createElement('h2');
+                newTitle.id = 'scenario-title';
+                newTitle.textContent = firstScenario.title;
+                questionSection.prepend(newTitle);
+                console.log('[EMERGENCY OVERRIDE] Created new title element');
+            } else {
+                // If no question section, try to create everything from scratch
+                const gameScreen = document.getElementById('game-screen') || document.querySelector('.quiz-container');
+                if (gameScreen) {
+                    const newQuestionSection = document.createElement('div');
+                    newQuestionSection.className = 'question-section';
+                    
+                    const newTitle = document.createElement('h2');
+                    newTitle.id = 'scenario-title';
+                    newTitle.textContent = firstScenario.title;
+                    
+                    newQuestionSection.appendChild(newTitle);
+                    gameScreen.appendChild(newQuestionSection);
+                    console.log('[EMERGENCY OVERRIDE] Created new question section and title');
+                }
+            }
+        }
+        
+        // Force set the description
+        if (descriptionElement) {
+            descriptionElement.textContent = firstScenario.description;
+            descriptionElement.style.display = 'block';
+            console.log('[EMERGENCY OVERRIDE] Set description to:', firstScenario.description);
+        } else {
+            console.error('[EMERGENCY OVERRIDE] No description element found!');
+            
+            // Try to insert a description anyway
+            const questionSection = document.querySelector('.question-section');
+            if (questionSection) {
+                const newDesc = document.createElement('p');
+                newDesc.id = 'scenario-description';
+                newDesc.textContent = firstScenario.description;
+                const existingTitle = questionSection.querySelector('#scenario-title');
+                if (existingTitle) {
+                    existingTitle.after(newDesc);
+                } else {
+                    questionSection.appendChild(newDesc);
+                }
+                console.log('[EMERGENCY OVERRIDE] Created new description element');
+            }
+        }
+        
+        // Force set the options
+        if (optionsContainer) {
+            optionsContainer.innerHTML = ''; // Clear existing
+            
+            firstScenario.options.forEach((option, idx) => {
+                const optionDiv = document.createElement('div');
+                optionDiv.className = 'option';
+                optionDiv.innerHTML = `
+                    <input type="radio"
+                        name="option"
+                        value="${idx}"
+                        id="option${idx}"
+                        tabindex="0"
+                        aria-label="${option.text}"
+                        role="radio">
+                    <label for="option${idx}">${option.text}</label>
+                `;
+                optionsContainer.appendChild(optionDiv);
             });
             
-            // Also save to regular storage
-            const storageKey = `quiz_progress_${username}_communication`;
-            localStorage.setItem(storageKey, JSON.stringify({
-                questionHistory: data.questionHistory,
-                currentScenario: data.questionHistory.length,
-                experience: data.experience,
-                lastUpdated: new Date().toISOString()
-            }));
-            
-            // Force display the right scenario
-            communicationQuizInstance.displayScenario();
-            
-            return true;
+            console.log('[EMERGENCY OVERRIDE] Set options');
         } else {
-            console.log('[RESTORE] Quiz instance not available yet');
-            return false;
+            console.error('[EMERGENCY OVERRIDE] No options container found!');
+            
+            // Try to find the form
+            const optionsForm = document.getElementById('options-form');
+            if (optionsForm) {
+                const newOptionsContainer = document.createElement('div');
+                newOptionsContainer.id = 'options-container';
+                
+                firstScenario.options.forEach((option, idx) => {
+                    const optionDiv = document.createElement('div');
+                    optionDiv.className = 'option';
+                    optionDiv.innerHTML = `
+                        <input type="radio"
+                            name="option"
+                            value="${idx}"
+                            id="option${idx}"
+                            tabindex="0"
+                            aria-label="${option.text}"
+                            role="radio">
+                        <label for="option${idx}">${option.text}</label>
+                    `;
+                    newOptionsContainer.appendChild(optionDiv);
+                });
+                
+                optionsForm.prepend(newOptionsContainer);
+                console.log('[EMERGENCY OVERRIDE] Created new options container');
+            } else {
+                // If no options form, create one
+                const questionSection = document.querySelector('.question-section');
+                if (questionSection) {
+                    const newForm = document.createElement('form');
+                    newForm.id = 'options-form';
+                    
+                    const newOptionsContainer = document.createElement('div');
+                    newOptionsContainer.id = 'options-container';
+                    
+                    firstScenario.options.forEach((option, idx) => {
+                        const optionDiv = document.createElement('div');
+                        optionDiv.className = 'option';
+                        optionDiv.innerHTML = `
+                            <input type="radio"
+                                name="option"
+                                value="${idx}"
+                                id="option${idx}"
+                                tabindex="0"
+                                aria-label="${option.text}"
+                                role="radio">
+                            <label for="option${idx}">${option.text}</label>
+                        `;
+                        newOptionsContainer.appendChild(optionDiv);
+                    });
+                    
+                    newForm.appendChild(newOptionsContainer);
+                    
+                    const submitBtn = document.createElement('button');
+                    submitBtn.id = 'submit-btn';
+                    submitBtn.className = 'submit-button';
+                    submitBtn.textContent = 'Submit';
+                    submitBtn.type = 'button';
+                    newForm.appendChild(submitBtn);
+                    
+                    questionSection.appendChild(newForm);
+                    console.log('[EMERGENCY OVERRIDE] Created new options form');
+                }
+            }
         }
-    } catch (e) {
-        console.error('[RESTORE] Error restoring backup:', e);
-        return false;
+        
+        // Make sure submit button is visible
+        const submitButton = document.getElementById('submit-btn');
+        if (submitButton) {
+            submitButton.style.display = 'block';
+        } else {
+            // Create a submit button if it doesn't exist
+            const optionsForm = document.getElementById('options-form');
+            if (optionsForm) {
+                const newButton = document.createElement('button');
+                newButton.id = 'submit-btn';
+                newButton.className = 'submit-button';
+                newButton.textContent = 'Submit';
+                newButton.type = 'button';
+                optionsForm.appendChild(newButton);
+                console.log('[EMERGENCY OVERRIDE] Created new submit button');
+            }
+        }
+        
+        // Make sure progress is showing
+        document.querySelectorAll('.quiz-header-progress, #level-indicator, #question-progress').forEach(el => {
+            if (el) el.style.display = 'block';
+        });
+        
+        console.log('[EMERGENCY OVERRIDE] Force display complete!');
+        
+        // Add an emergency click handler to the submit button
+        const submitBtn = document.getElementById('submit-btn');
+        if (submitBtn) {
+            submitBtn.addEventListener('click', () => {
+                console.log('[EMERGENCY OVERRIDE] Submit button clicked, reloading page');
+                window.location.reload();
+            });
+        }
+    } catch (error) {
+        console.error('[EMERGENCY OVERRIDE] Error forcing scenario display:', error);
+        
+        // Last resort - show a completely rebuilt interface
+        try {
+            const body = document.body;
+            const errorDiv = document.createElement('div');
+            errorDiv.style.padding = '20px';
+            errorDiv.style.margin = '20px auto';
+            errorDiv.style.maxWidth = '600px';
+            errorDiv.style.border = '1px solid red';
+            errorDiv.style.borderRadius = '5px';
+            errorDiv.style.backgroundColor = '#fff4f4';
+            errorDiv.style.textAlign = 'center';
+            
+            errorDiv.innerHTML = `
+                <h2 style="color:red;">Quiz Error</h2>
+                <p>There was a problem loading the Communication Quiz.</p>
+                <p>Please try refreshing the page or return to the main menu.</p>
+                <button onclick="window.location.reload()" style="padding:10px 20px; margin:10px; background:#3498db; color:white; border:none; border-radius:5px; cursor:pointer;">Refresh Page</button>
+                <button onclick="window.location.href='/index.html'" style="padding:10px 20px; margin:10px; background:#2ecc71; color:white; border:none; border-radius:5px; cursor:pointer;">Return to Main Menu</button>
+            `;
+            
+            // Clear body and add error div
+            body.innerHTML = '';
+            body.appendChild(errorDiv);
+            console.log('[EMERGENCY OVERRIDE] Created emergency error interface');
+        } catch (finalError) {
+            console.error('[EMERGENCY OVERRIDE] Final fallback failed:', finalError);
+        }
     }
 }
 
-// Function to monitor localStorage changes to detect resets
-function monitorProgressReset() {
-    // Keep track of what we've seen
-    const knownProgressKeys = {};
+// Function to forcefully ensure quiz starts at the correct question
+function forceCorrectQuestionDisplay() {
+    console.log('[FORCE QUESTION] Running forced question display check');
     
-    // Get initial state of all progress keys
-    const keys = Object.keys(localStorage).filter(k => k.includes('quiz_progress') || k.includes('communication'));
+    if (!communicationQuizInstance) {
+        console.log('[FORCE QUESTION] No quiz instance found');
+        return;
+    }
     
-    keys.forEach(key => {
-        try {
-            const value = localStorage.getItem(key);
-            if (value) {
-                const parsed = JSON.parse(value);
-                knownProgressKeys[key] = {
-                    questionHistoryLength: parsed.questionHistory?.length || 0,
-                    currentScenario: parsed.currentScenario,
-                    lastSeen: new Date().toISOString()
-                };
-            }
-        } catch (e) {}
-    });
+    // Try all possible keys to find saved progress
+    const username = localStorage.getItem('username');
+    if (!username) {
+        console.log('[FORCE QUESTION] No username found in localStorage');
+        return;
+    }
     
-    // Log what we found initially
-    console.log('[MONITOR] Initial progress keys:', knownProgressKeys);
+    // Try all possible storage keys
+    const possibleKeys = [
+        `quiz_progress_${username}_communication`,
+        `strict_quiz_progress_${username}_communication`,
+        `quiz_progress_communication_${username}`,
+        `communication_quiz_progress_${username}`,
+        `quiz_progress_communication`
+    ];
     
-    // Set up storage event listener to detect changes
-    window.addEventListener('storage', event => {
-        // Only care about progress keys
-        if (event.key && (event.key.includes('quiz_progress') || event.key.includes('communication'))) {
-            const oldValue = event.oldValue ? JSON.parse(event.oldValue) : null;
-            const newValue = event.newValue ? JSON.parse(event.newValue) : null;
-            
-            const oldLength = oldValue?.questionHistory?.length || 0;
-            const newLength = newValue?.questionHistory?.length || 0;
-            
-            // Log the change
-            console.log(`[MONITOR] Storage event for ${event.key}:`, {
-                oldQuestionHistoryLength: oldLength,
-                newQuestionHistoryLength: newLength,
-                change: newLength - oldLength
-            });
-            
-            // Detect resets
-            if (oldLength > 0 && newLength === 0) {
-                console.error(`[MONITOR] DETECTED RESET OF PROGRESS in ${event.key}! Old length: ${oldLength}, New length: 0`);
-                
-                // Try to restore immediately from our emergency backup
-                restoreProgressFromBackup();
-            }
-            
-            // Update our tracking
-            if (newValue) {
-                knownProgressKeys[event.key] = {
-                    questionHistoryLength: newLength,
-                    currentScenario: newValue.currentScenario,
-                    lastSeen: new Date().toISOString()
-                };
-            } else {
-                delete knownProgressKeys[event.key];
+    let highestQuestionCount = 0;
+    let bestProgressData = null;
+    
+    // Check all keys and find the one with the most progress
+    for (const key of possibleKeys) {
+        const savedData = localStorage.getItem(key);
+        if (savedData) {
+            try {
+                const parsedData = JSON.parse(savedData);
+                if (parsedData && parsedData.questionHistory && 
+                    Array.isArray(parsedData.questionHistory) && 
+                    parsedData.questionHistory.length > highestQuestionCount) {
+                    
+                    highestQuestionCount = parsedData.questionHistory.length;
+                    bestProgressData = parsedData;
+                    console.log(`[FORCE QUESTION] Found better progress in key ${key} with ${highestQuestionCount} questions`);
+                }
+            } catch (e) {
+                console.error(`[FORCE QUESTION] Error parsing data from ${key}:`, e);
             }
         }
-    });
+    }
     
-    // Also poll for changes every second
-    setInterval(() => {
-        keys.forEach(key => {
-            try {
-                const value = localStorage.getItem(key);
-                if (value) {
-                    const parsed = JSON.parse(value);
-                    const oldLength = knownProgressKeys[key]?.questionHistoryLength || 0;
-                    const newLength = parsed.questionHistory?.length || 0;
-                    
-                    if (oldLength > 0 && newLength === 0) {
-                        console.error(`[MONITOR] DETECTED RESET OF PROGRESS in ${key}! Old length: ${oldLength}, New length: 0`);
-                        
-                        // Try to restore immediately from our emergency backup
-                        restoreProgressFromBackup();
-                    }
-                    
-                    knownProgressKeys[key] = {
-                        questionHistoryLength: newLength,
-                        currentScenario: parsed.currentScenario,
-                        lastSeen: new Date().toISOString()
-                    };
-                }
-            } catch (e) {}
+    // If we found saved progress, apply it
+    if (bestProgressData && highestQuestionCount > 0) {
+        console.log(`[FORCE QUESTION] Applying progress with ${highestQuestionCount} questions answered`);
+        
+        // Update the quiz instance state
+        communicationQuizInstance.player.questionHistory = bestProgressData.questionHistory;
+        communicationQuizInstance.player.currentScenario = highestQuestionCount;
+        communicationQuizInstance.player.experience = bestProgressData.experience || 0;
+        
+        // Force display the correct scenario
+        communicationQuizInstance.displayScenario();
+        
+        // Also re-save to ensure consistent format
+        communicationQuizInstance.saveProgress('in-progress').catch(err => {
+            console.error('[FORCE QUESTION] Error saving forced progress:', err);
         });
-    }, 1000);
+        
+        return true;
+    }
     
-    console.log('[MONITOR] Progress reset monitoring activated');
+    console.log('[FORCE QUESTION] No valid progress found in any storage key');
+    return false;
 }
+
+// Call our force function right after the quiz instance is created
+document.addEventListener('DOMContentLoaded', () => {
+    // Add a debug button to the UI that will force the correct question to display
+    setTimeout(() => {
+        try {
+            // Create debug button if it doesn't exist
+            if (!document.getElementById('force-question-btn')) {
+                const debugButton = document.createElement('button');
+                debugButton.id = 'force-question-btn';
+                debugButton.textContent = 'Force Correct Question';
+                debugButton.style.position = 'fixed';
+                debugButton.style.bottom = '10px';
+                debugButton.style.right = '10px';
+                debugButton.style.zIndex = '9999';
+                debugButton.style.padding = '5px 10px';
+                debugButton.style.background = '#ff9800';
+                debugButton.style.color = 'white';
+                debugButton.style.border = 'none';
+                debugButton.style.borderRadius = '4px';
+                debugButton.style.cursor = 'pointer';
+                
+                debugButton.addEventListener('click', () => {
+                    forceCorrectQuestionDisplay();
+                });
+                
+                document.body.appendChild(debugButton);
+                console.log('[DEBUG] Added force question button to UI');
+            }
+        } catch (e) {
+            console.error('[DEBUG] Error adding debug button:', e);
+        }
+    }, 3000);
+}); 
