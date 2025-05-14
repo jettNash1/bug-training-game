@@ -4,23 +4,59 @@ import { QuizUser } from '../QuizUser.js';
 function normalizeQuizName(quizName) {
     if (!quizName) return '';
     
-    // Special case for tester-mindset variations
-    if (typeof quizName === 'string' && quizName.toLowerCase().replace(/[_\s]/g, '-').includes('tester')) {
-        return 'tester-mindset';
+    // Normalize to lowercase and trim
+    const lowerName = typeof quizName === 'string' ? quizName.toLowerCase().trim() : '';
+    
+    // List of known quiz names for exact matching
+    const knownQuizNames = [
+        'communication', 
+        'initiative', 
+        'time-management', 
+        'tester-mindset',
+        'risk-analysis', 
+        'risk-management', 
+        'non-functional', 
+        'test-support',
+        'issue-verification', 
+        'build-verification', 
+        'issue-tracking-tools',
+        'raising-tickets', 
+        'reports', 
+        'cms-testing', 
+        'email-testing', 
+        'content-copy',
+        'locale-testing', 
+        'script-metrics-troubleshooting', 
+        'standard-script-testing',
+        'test-types-tricks', 
+        'automation-interview', 
+        'fully-scripted', 
+        'exploratory',
+        'sanity-smoke', 
+        'functional-interview'
+    ];
+    
+    // If it's an exact match with our known list, return it directly
+    if (knownQuizNames.includes(lowerName)) {
+        return lowerName;
     }
     
-    // If already kebab case, return as is
-    if (typeof quizName === 'string' && quizName === quizName.toLowerCase() && quizName.includes('-')) {
-        return quizName;
+    // Normalize to kebab-case
+    const normalized = lowerName
+        .replace(/([A-Z])/g, '-$1')  // Convert camelCase to kebab-case
+        .replace(/_/g, '-')          // Convert snake_case to kebab-case
+        .replace(/\s+/g, '-')        // Convert spaces to hyphens
+        .replace(/-+/g, '-')         // Remove duplicate hyphens
+        .replace(/^-|-$/g, '')       // Remove leading/trailing hyphens
+        .toLowerCase();              // Ensure lowercase
+    
+    // Check if normalized version is in known list
+    if (knownQuizNames.includes(normalized)) {
+        return normalized;
     }
     
-    // Otherwise, standardize to kebab-case consistently
-    return quizName
-        .toLowerCase()
-        .replace(/([A-Z])/g, '-$1')
-        .replace(/_{1,}/g, '-')
-        .replace(/--+/g, '-')
-        .replace(/^-+|-+$/g, '');
+    // Return the normalized version for consistency
+    return normalized;
 }
 
 function autoRefreshIndexOnFocus() {
@@ -58,6 +94,47 @@ function autoRefreshIndexOnFocus() {
     window.addEventListener('blur', () => {
         wasInactive = true;
     });
+}
+
+function clearAllQuizProgress() {
+    const username = localStorage.getItem('username');
+    if (!username) return false;
+    
+    console.log('[Index] Clearing all quiz progress for emergency reset');
+    
+    // Get all localStorage keys related to quiz progress
+    const progressKeys = Object.keys(localStorage).filter(key => 
+        key.includes('quiz_progress') && key.includes(username)
+    );
+    
+    // Log the keys we're about to clear
+    console.log('[Index] Found these quiz progress keys to clear:', progressKeys);
+    
+    // Clear all quiz progress keys
+    progressKeys.forEach(key => {
+        localStorage.removeItem(key);
+        console.log(`[Index] Cleared localStorage key: ${key}`);
+    });
+    
+    // Also clear session storage
+    try {
+        const sessionKeys = Object.keys(sessionStorage).filter(key => 
+            key.includes('quiz_progress') && key.includes(username)
+        );
+        
+        sessionKeys.forEach(key => {
+            sessionStorage.removeItem(key);
+            console.log(`[Index] Cleared sessionStorage key: ${key}`);
+        });
+    } catch (e) {
+        console.error('[Index] Error clearing sessionStorage:', e);
+    }
+    
+    console.log('[Index] All quiz progress cleared. Page will reload.');
+    
+    // Add a reload to refresh all data
+    setTimeout(() => window.location.reload(), 500);
+    return true;
 }
 
 class IndexPage {
@@ -170,6 +247,9 @@ class IndexPage {
             
             // Debug quiz name normalization
             this.logQuizNameNormalization();
+            
+            // Add emergency reset button
+            this.addEmergencyResetButton();
             
             // Load guide settings in a non-blocking way
             this.loadGuideSettingsAndAddButtons().catch(err => {
@@ -1008,6 +1088,86 @@ class IndexPage {
         
         console.log('[Index] Quiz progress refresh complete');
     }
+
+    addEmergencyResetButton() {
+        try {
+            // Skip if already added
+            if (document.getElementById('emergency-reset-btn')) {
+                return;
+            }
+            
+            console.log('[Index] Adding emergency quiz progress reset button');
+            
+            // Find the header where we'll add the reset button
+            const header = document.querySelector('header');
+            const navContainer = header?.querySelector('nav') || header;
+            
+            if (!navContainer) {
+                console.warn('[Index] Cannot find header or nav to add reset button');
+                return;
+            }
+            
+            // Add a reset button with warning styling
+            const resetContainer = document.createElement('div');
+            resetContainer.className = 'emergency-reset-container';
+            resetContainer.style.cssText = 'margin-left: 20px; display: flex; align-items: center;';
+            
+            const resetButton = document.createElement('button');
+            resetButton.id = 'emergency-reset-btn';
+            resetButton.className = 'emergency-reset-btn';
+            resetButton.innerHTML = '<i class="fa fa-exclamation-triangle"></i> Reset All Quiz Progress';
+            resetButton.style.cssText = 'background-color: #ff5555; color: white; padding: 8px 12px; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; display: flex; align-items: center; gap: 6px;';
+            
+            resetButton.addEventListener('click', async () => {
+                if (confirm('WARNING: This will reset ALL quiz progress for your account.\n\nUse this if you are experiencing issues where quiz progress is being shared between different quizzes.\n\nThis action CANNOT be undone. Continue?')) {
+                    try {
+                        // Show loading overlay
+                        this.showLoadingOverlay('Resetting quiz progress...');
+                        
+                        // Call the API service method to reset all quiz progress
+                        const result = await this.apiService.resetAllQuizProgress();
+                        
+                        // Log the result
+                        console.log('[Index] Reset quiz progress result:', result);
+                        
+                        // Refresh the page to show updated progress
+                        alert(`${result.message}\n\nThe page will now reload to update your quiz progress.`);
+                        window.location.reload();
+                    } catch (error) {
+                        console.error('[Index] Error resetting quiz progress:', error);
+                        alert(`Error resetting quiz progress: ${error.message}`);
+                        this.hideLoadingOverlay();
+                    }
+                }
+            });
+            
+            resetContainer.appendChild(resetButton);
+            
+            // Add a help tooltip explaining when to use this
+            const helpText = document.createElement('div');
+            helpText.className = 'emergency-reset-help';
+            helpText.innerHTML = '<i class="fa fa-info-circle"></i>';
+            helpText.style.cssText = 'margin-left: 8px; color: #888; cursor: help; font-size: 18px;';
+            helpText.title = 'Use this button if you are experiencing issues where progress from one quiz is showing up in another quiz. This will reset ALL your progress to a clean state.';
+            
+            resetContainer.appendChild(helpText);
+            
+            // Add to the navigation container
+            navContainer.appendChild(resetContainer);
+            
+            // Add Font Awesome if not already included (for the warning icon)
+            if (!document.querySelector('link[href*="font-awesome"]')) {
+                const fontAwesome = document.createElement('link');
+                fontAwesome.rel = 'stylesheet';
+                fontAwesome.href = 'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css';
+                document.head.appendChild(fontAwesome);
+            }
+            
+            console.log('[Index] Emergency reset button added successfully');
+        } catch (error) {
+            console.error('[Index] Error adding emergency reset button:', error);
+        }
+    }
 }
 
 // Initialize the index page when the DOM is loaded
@@ -1036,4 +1196,7 @@ window.handleLogout = () => {
         localStorage.removeItem('isAdmin');
         window.location.href = '/login.html';
     }
-}; 
+};
+
+// Expose the function to the global scope for emergency use
+window.clearAllQuizProgress = clearAllQuizProgress; 

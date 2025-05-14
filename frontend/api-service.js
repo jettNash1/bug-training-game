@@ -398,37 +398,45 @@ export class APIService {
     normalizeQuizName(quizName) {
         if (!quizName) return '';
 
-        // First standardize to lowercase
-        const lowerName = quizName.toLowerCase();
+        // First standardize to lowercase and trim
+        const lowerName = typeof quizName === 'string' ? quizName.toLowerCase().trim() : '';
         
-        // Special case handling for known quiz name patterns
+        // For quiz names with exact matches, just return the exact normalized name
+        // Use this list of known quiz names (from the list provided) for guaranteed unique matching
+        const knownQuizNames = [
+            'communication', 
+            'initiative', 
+            'time-management', 
+            'tester-mindset',
+            'risk-analysis', 
+            'risk-management', 
+            'non-functional', 
+            'test-support',
+            'issue-verification', 
+            'build-verification', 
+            'issue-tracking-tools',
+            'raising-tickets', 
+            'reports', 
+            'cms-testing', 
+            'email-testing', 
+            'content-copy',
+            'locale-testing', 
+            'script-metrics-troubleshooting', 
+            'standard-script-testing',
+            'test-types-tricks', 
+            'automation-interview', 
+            'fully-scripted', 
+            'exploratory',
+            'sanity-smoke', 
+            'functional-interview'
+        ];
         
-        // Special case for tester-mindset variations
-        if (lowerName.includes('tester') && lowerName.includes('mindset')) {
-            return 'tester-mindset';
+        // If it's an exact match with our known list, return it directly
+        if (knownQuizNames.includes(lowerName)) {
+            return lowerName;
         }
         
-        // Handle script metrics variants
-        if (lowerName.includes('script') && lowerName.includes('metric')) {
-            return 'script-metrics-troubleshooting';
-        }
-        
-        // Handle communication quiz variants
-        if (lowerName === 'communication' || lowerName.includes('communic')) {
-            return 'communication';
-        }
-        
-        // Handle initiative quiz variants
-        if (lowerName === 'initiative' || lowerName.includes('initiative')) {
-            return 'initiative';
-        }
-        
-        // Handle cms-testing variants
-        if (lowerName.includes('cms')) {
-            return 'cms-testing';
-        }
-        
-        // Standard normalized format (kebab-case)
+        // If it's just a simple variant with different casing, normalize and return if it matches known quiz
         const normalized = lowerName
             .replace(/([A-Z])/g, '-$1')  // Convert camelCase to kebab-case
             .replace(/_/g, '-')          // Convert snake_case to kebab-case
@@ -436,7 +444,43 @@ export class APIService {
             .replace(/-+/g, '-')         // Remove duplicate hyphens
             .replace(/^-|-$/g, '')       // Remove leading/trailing hyphens
             .toLowerCase();              // Ensure lowercase
-            
+        
+        if (knownQuizNames.includes(normalized)) {
+            return normalized;
+        }
+        
+        // For quiz names that might need more complex matching, use exact property matching
+        // IMPORTANT: Each condition must result in a UNIQUE quiz name
+        
+        // Specific case matching for quiz names that might have variations
+        if (lowerName.includes('tester') && lowerName.includes('mindset')) {
+            return 'tester-mindset';
+        }
+        
+        if (lowerName.includes('script') && lowerName.includes('metric') && lowerName.includes('troubleshoot')) {
+            return 'script-metrics-troubleshooting';
+        }
+        
+        if ((lowerName === 'communication' || lowerName === 'communications') && 
+            !lowerName.includes('initiative')) {
+            return 'communication';
+        }
+        
+        if (lowerName === 'initiative' && !lowerName.includes('communic')) {
+            return 'initiative';
+        }
+        
+        if (lowerName.includes('cms-testing') || 
+            (lowerName.includes('cms') && lowerName.includes('test') && 
+             !lowerName.includes('initiative') && !lowerName.includes('communic'))) {
+            return 'cms-testing';
+        }
+        
+        if (lowerName.includes('email') && lowerName.includes('test')) {
+            return 'email-testing';
+        }
+        
+        // If we don't have specific handling, use the normalized version we calculated earlier
         return normalized;
     }
 
@@ -2785,6 +2829,66 @@ export class APIService {
                 success: false,
                 message: error.message || 'Failed to get user progress',
                 data: { quizProgress: {}, quizResults: [] }
+            };
+        }
+    }
+
+    /**
+     * Clears all quiz progress from localStorage for the current user
+     * This is useful for users affected by quiz progress mixing issues
+     * 
+     * @returns {Object} - Status of the operation with a list of cleared keys
+     */
+    resetAllQuizProgress() {
+        try {
+            const username = localStorage.getItem('username');
+            if (!username) {
+                console.warn('[API] Cannot clear quiz progress: no username found');
+                return { 
+                    success: false, 
+                    message: 'No username found. Please log in first.',
+                    clearedKeys: []
+                };
+            }
+            
+            console.log(`[API] Clearing all quiz progress for user: ${username}`);
+            
+            // Get all localStorage keys
+            const allKeys = Object.keys(localStorage);
+            
+            // Filter keys related to quiz progress for this user
+            const progressKeys = allKeys.filter(key => 
+                key.includes('quiz_progress') && 
+                key.includes(username)
+            );
+            
+            console.log(`[API] Found ${progressKeys.length} quiz progress entries to clear`);
+            
+            if (progressKeys.length === 0) {
+                return {
+                    success: true,
+                    message: 'No quiz progress found to clear',
+                    clearedKeys: []
+                };
+            }
+            
+            // Clear all matching keys
+            progressKeys.forEach(key => {
+                localStorage.removeItem(key);
+                console.log(`[API] Cleared: ${key}`);
+            });
+            
+            return {
+                success: true,
+                message: `Successfully cleared ${progressKeys.length} quiz progress entries`,
+                clearedKeys: progressKeys
+            };
+        } catch (error) {
+            console.error('[API] Error clearing quiz progress:', error);
+            return {
+                success: false,
+                message: `Error clearing quiz progress: ${error.message}`,
+                clearedKeys: []
             };
         }
     }

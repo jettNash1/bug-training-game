@@ -525,7 +525,7 @@ export class TesterMindsetQuiz extends BaseQuiz {
                 }
 
                 // Force save progress back to ensure consistency
-                await this.saveProgress();
+                    await this.saveProgress();
                 
                 // Show the current question based on progress
                 this.displayScenario();
@@ -654,10 +654,10 @@ export class TesterMindsetQuiz extends BaseQuiz {
         // Check if we've answered all questions
         if (currentScenarioIndex >= totalQuestions) {
             console.log('[TesterMindsetQuiz][displayScenario] All questions answered, ending game');
-            this.endGame(false);
-            return;
-        }
-
+                this.endGame(false);
+                return;
+            }
+            
         // Determine level and scenario set
         let scenario;
         let scenarioSet;
@@ -700,92 +700,92 @@ export class TesterMindsetQuiz extends BaseQuiz {
                     this.recoverProgress().then(success => {
                         if (!success) {
                             // If recovery fails, show end game as last resort
-                            this.endGame(true);
+                this.endGame(true);
                         }
                     }).catch(() => this.endGame(true));
-                    return;
-                }
+                return;
             }
+        }
 
-            // Store current question number for consistency
+        // Store current question number for consistency
             this.currentQuestionNumber = currentScenarioIndex + 1;
-
-            // Show level transition message at the start of each level or when level changes
+        
+        // Show level transition message at the start of each level or when level changes
             if (
                 currentScenarioIndex === 0 ||
                 (currentScenarioIndex === 5 && scenarioLevel === 'Intermediate') ||
                 (currentScenarioIndex === 10 && scenarioLevel === 'Advanced')
             ) {
-                const transitionContainer = document.getElementById('level-transition-container');
-                if (transitionContainer) {
+            const transitionContainer = document.getElementById('level-transition-container');
+            if (transitionContainer) {
                     transitionContainer.innerHTML = '';
-                    const levelMessage = document.createElement('div');
-                    levelMessage.className = 'level-transition';
-                    levelMessage.setAttribute('role', 'alert');
+                const levelMessage = document.createElement('div');
+                levelMessage.className = 'level-transition';
+                levelMessage.setAttribute('role', 'alert');
                     levelMessage.textContent = `Starting ${scenarioLevel} Questions`;
-                    transitionContainer.appendChild(levelMessage);
-                    transitionContainer.classList.add('active');
-                    const levelIndicator = document.getElementById('level-indicator');
-                    if (levelIndicator) {
+                transitionContainer.appendChild(levelMessage);
+                transitionContainer.classList.add('active');
+                const levelIndicator = document.getElementById('level-indicator');
+                if (levelIndicator) {
                         levelIndicator.textContent = `Level: ${scenarioLevel}`;
-                    }
-                    setTimeout(() => {
-                        transitionContainer.classList.remove('active');
-                        setTimeout(() => {
-                            transitionContainer.innerHTML = '';
-                        }, 300);
-                    }, 3000);
                 }
+                setTimeout(() => {
+                    transitionContainer.classList.remove('active');
+                    setTimeout(() => {
+                        transitionContainer.innerHTML = '';
+                        }, 300);
+                }, 3000);
             }
+        }
 
-            // Update scenario display
-            const titleElement = document.getElementById('scenario-title');
-            const descriptionElement = document.getElementById('scenario-description');
-            const optionsContainer = document.getElementById('options-container');
+        // Update scenario display
+        const titleElement = document.getElementById('scenario-title');
+        const descriptionElement = document.getElementById('scenario-description');
+        const optionsContainer = document.getElementById('options-container');
 
-            if (!titleElement || !descriptionElement || !optionsContainer) {
+        if (!titleElement || !descriptionElement || !optionsContainer) {
                 console.error('[TesterMindsetQuiz][displayScenario] Required elements not found');
-                return;
-            }
+            return;
+        }
 
             titleElement.textContent = scenario.title;
             descriptionElement.textContent = scenario.description;
 
             // Update question counter
-            const questionProgress = document.getElementById('question-progress');
-            if (questionProgress) {
+        const questionProgress = document.getElementById('question-progress');
+        if (questionProgress) {
                 questionProgress.textContent = `Question: ${this.currentQuestionNumber}/15`;
-            }
+        }
 
-            // Create a copy of options with their original indices
+        // Create a copy of options with their original indices
             const shuffledOptions = scenario.options.map((option, index) => ({
-                ...option,
-                originalIndex: index
-            }));
-            for (let i = shuffledOptions.length - 1; i > 0; i--) {
-                const j = Math.floor(Math.random() * (i + 1));
-                [shuffledOptions[i], shuffledOptions[j]] = [shuffledOptions[j], shuffledOptions[i]];
-            }
-            optionsContainer.innerHTML = '';
-            
-            shuffledOptions.forEach((option, index) => {
-                const optionElement = document.createElement('div');
-                optionElement.className = 'option';
-                optionElement.innerHTML = `
-                    <input type="radio" 
-                        name="option" 
-                        value="${option.originalIndex}" 
-                        id="option${index}"
-                        tabindex="0"
-                        aria-label="${option.text}"
-                        role="radio">
-                    <label for="option${index}">${option.text}</label>
-                `;
-                optionsContainer.appendChild(optionElement);
-            });
+            ...option,
+            originalIndex: index
+        }));
+        for (let i = shuffledOptions.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [shuffledOptions[i], shuffledOptions[j]] = [shuffledOptions[j], shuffledOptions[i]];
+        }
+        optionsContainer.innerHTML = '';
 
-            this.updateProgress();
-            this.initializeTimer();
+        shuffledOptions.forEach((option, index) => {
+            const optionElement = document.createElement('div');
+            optionElement.className = 'option';
+            optionElement.innerHTML = `
+                <input type="radio" 
+                    name="option" 
+                    value="${option.originalIndex}" 
+                    id="option${index}"
+                    tabindex="0"
+                    aria-label="${option.text}"
+                    role="radio">
+                <label for="option${index}">${option.text}</label>
+            `;
+            optionsContainer.appendChild(optionElement);
+        });
+
+        this.updateProgress();
+        this.initializeTimer();
             console.log('[TesterMindsetQuiz][displayScenario] Showing scenario', scenarioLevel, 'index', currentScenarioIndex, scenario.title);
 
             // Make scenario screen visible if not already
@@ -1214,7 +1214,7 @@ export class TesterMindsetQuiz extends BaseQuiz {
         }
 
         document.getElementById('final-score').textContent = `Final Score: ${scorePercentage}%`;
-
+        
         // Update the quiz complete header based on status
         const quizCompleteHeader = document.querySelector('#end-screen h2');
         if (quizCompleteHeader) {
@@ -1313,13 +1313,13 @@ export class TesterMindsetQuiz extends BaseQuiz {
     // New recovery method for handling emergency recovery situations
     async recoverProgress() {
         console.log('[TesterMindsetQuiz] Entering emergency recovery mode');
-        try {
-            const username = localStorage.getItem('username');
-            if (!username) {
+            try {
+                const username = localStorage.getItem('username');
+                if (!username) {
                 console.error('[TesterMindsetQuiz] No username found, cannot recover progress');
-                return false;
-            }
-            
+                    return false;
+                }
+                
             // Make sure we have access to the QuizSyncService
             if (typeof window.quizSyncService === 'undefined' && typeof quizSyncService === 'undefined') {
                 console.error('[TesterMindsetQuiz] QuizSyncService not available, cannot perform recovery');
@@ -1383,15 +1383,15 @@ export class TesterMindsetQuiz extends BaseQuiz {
             
             // Save the recovered data to ensure it's persistently stored
             try {
-                await this.saveProgress();
+                    await this.saveProgress();
                 console.log('[TesterMindsetQuiz] Saved recovered progress to all storage locations');
             } catch (saveError) {
                 console.warn('[TesterMindsetQuiz] Failed to save recovered progress:', saveError);
-            }
-            
+                }
+                
             // Show the current scenario
             this.displayScenario();
-            return true;
+                return true;
         } catch (error) {
             console.error('[TesterMindsetQuiz] Recovery attempt failed:', error);
             return false;
@@ -1407,8 +1407,8 @@ let testerMindsetQuizInstance = null;
 document.addEventListener('DOMContentLoaded', () => {
     if (testerMindsetQuizInstance) {
         console.log('[TesterMindsetQuiz] Instance already exists, not creating a new one.');
-        return;
-    }
+                return;
+            }
     BaseQuiz.clearQuizInstances('tester-mindset');
     testerMindsetQuizInstance = new TesterMindsetQuiz();
     testerMindsetQuizInstance.startGame();
