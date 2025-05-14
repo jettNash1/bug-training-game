@@ -512,18 +512,30 @@ export class APIService {
             
             // Get localStorage data first as it's faster
             if (username) {
-                // Try multiple storage keys to maximize chances of finding data
+                // First try the new strict key format
+                const strictStorageKey = this.getUniqueQuizStorageKey(username, normalizedQuizName);
+                
+                // Then try fallback keys in order of preference
                 const storageKeys = [
-                    `quiz_progress_${username}_${normalizedQuizName}`,
-                    `quiz_progress_${username}_${normalizedQuizName}_backup`,
-                    `quiz_progress_${username}_communication` // Legacy/fallback format
+                    strictStorageKey, // New strict format key (preferred)
+                    `quiz_progress_${username}_${normalizedQuizName}`, // Old format 
+                    `quiz_progress_${username}_${normalizedQuizName}_backup` // Backup key
                 ];
+                
+                console.log(`[API] Will try these localStorage keys in order:`, storageKeys);
                 
                 for (const storageKey of storageKeys) {
                     try {
                         const localData = localStorage.getItem(storageKey);
                         if (localData) {
                             const parsed = JSON.parse(localData);
+                            
+                            // Verify this data actually belongs to the correct quiz
+                            // This double-check prevents cross-contamination
+                            if (parsed && parsed.quizName && parsed.quizName !== normalizedQuizName) {
+                                console.warn(`[API] Skipping localStorage data from key ${storageKey} because it belongs to ${parsed.quizName}, not ${normalizedQuizName}`);
+                                continue;
+                            }
                             
                             // Verify data has some valid content
                             if (parsed && (parsed.data || parsed)) {
@@ -2588,24 +2600,29 @@ export class APIService {
             try {
                 const username = localStorage.getItem('username');
                 if (username) {
-                    const storageKey = `quiz_progress_${username}_${normalizedQuizName}`;
+                    // Use the new unique storage key method
+                    const storageKey = this.getUniqueQuizStorageKey(username, normalizedQuizName);
+                    
+                    // Save with the new key format
                     localStorage.setItem(storageKey, JSON.stringify({ 
                         data: progressData,
-                        timestamp: new Date().toISOString()
+                        timestamp: new Date().toISOString(),
+                        quizName: normalizedQuizName // Explicitly add quiz name to data for verification
                     }));
                     
-                    console.log(`[API] Saved backup to localStorage for ${normalizedQuizName}`);
+                    console.log(`[API] Saved backup to localStorage with strict key for ${normalizedQuizName}: ${storageKey}`);
                     
-                    // For communication quiz specifically, make an additional backup
-                    if (normalizedQuizName === 'communication') {
-                        localStorage.setItem(`quiz_progress_${username}_communication_backup`, JSON.stringify({ 
-                            data: progressData,
-                            timestamp: new Date().toISOString()
-                        }));
-                        console.log(`[API] Created additional backup for communication quiz`);
-                    }
-                    
+                    // Set success flag
                     localSaveSuccessful = true;
+                    
+                    // Also save to old format for backward compatibility during transition
+                    const oldStorageKey = `quiz_progress_${username}_${normalizedQuizName}`;
+                    localStorage.setItem(oldStorageKey, JSON.stringify({ 
+                        data: progressData,
+                        timestamp: new Date().toISOString(),
+                        quizName: normalizedQuizName // Add quiz name for verification
+                    }));
+                    console.log(`[API] Also saved to old format key for backward compatibility: ${oldStorageKey}`);
                 } else {
                     console.warn('[API] Could not save to localStorage - no username found');
                 }
@@ -2736,18 +2753,29 @@ export class APIService {
             
             console.log(`[API] Clearing localStorage data for quiz: ${quizName}, user: ${username}`);
             
+            // Get the unique storage key for this quiz
             const normalizedQuizName = this.normalizeQuizName(quizName);
-            const storageKey = `quiz_progress_${username}_${normalizedQuizName}`;
+            const storageKey = this.getUniqueQuizStorageKey(username, normalizedQuizName);
             
-            // Only clear the standard normalized quiz name in localStorage
+            // Clear old format key too for backward compatibility
+            const oldStorageKey = `quiz_progress_${username}_${normalizedQuizName}`;
+            
+            let cleared = false;
+            
+            // Clear both new and old format keys
             if (localStorage.getItem(storageKey) !== null) {
-                    localStorage.removeItem(storageKey);
-                console.log(`[API] Cleared localStorage entry for quiz: ${normalizedQuizName}`);
-                return true;
-            } else {
-                console.log(`[API] No localStorage data found to clear for quiz: ${normalizedQuizName}`);
-                return false;
+                localStorage.removeItem(storageKey);
+                console.log(`[API] Cleared localStorage entry for quiz: ${normalizedQuizName} (new format)`);
+                cleared = true;
             }
+            
+            if (localStorage.getItem(oldStorageKey) !== null) {
+                localStorage.removeItem(oldStorageKey);
+                console.log(`[API] Cleared localStorage entry for quiz: ${normalizedQuizName} (old format)`);
+                cleared = true;
+            }
+            
+            return cleared;
         } catch (error) {
             console.error(`[API] Error clearing localStorage for quiz ${quizName}:`, error);
             return false;
@@ -2840,5 +2868,19 @@ export class APIService {
                 data: { quizProgress: {}, quizResults: [] }
             };
         }
+    }
+
+    // Add this new method to get a completely unique and consistent storage key for each quiz
+    getUniqueQuizStorageKey(username, quizName) {
+        if (!username || !quizName) {
+            console.warn('[API] Missing username or quizName for storage key generation');
+            return null;
+        }
+        
+        // Normalize the quiz name to ensure consistency
+        const normalizedQuizName = this.normalizeQuizName(quizName);
+        
+        // Create the storage key with a prefix to avoid collisions with other data
+        return `strict_quiz_progress_${username}_${normalizedQuizName}`;
     }
 } 

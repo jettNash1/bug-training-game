@@ -237,6 +237,9 @@ class IndexPage {
             // Log debug info about quiz IDs for troubleshooting
             console.log('[Index] Initializing with quiz items:', this.quizItems.length);
             
+            // Check for and clean up contaminated quiz data
+            await this.checkAndCleanContaminatedData();
+            
             // Load user progress first
             await this.loadUserProgress();
             
@@ -259,6 +262,68 @@ class IndexPage {
         // Always hide the loading overlay after initializing core functionality
         // even if guide buttons are still loading
         this.hideLoadingOverlay();
+    }
+
+    async checkAndCleanContaminatedData() {
+        try {
+            const username = localStorage.getItem('username');
+            if (!username) return;
+            
+            console.log('[Index] Checking for contaminated quiz data...');
+            
+            // Get list of quiz IDs from quiz items 
+            const quizItems = Array.from(this.quizItems || []);
+            const quizIds = quizItems
+                .map(item => item.dataset.quiz)
+                .filter(Boolean)
+                .map(id => normalizeQuizName(id));
+                
+            // For each quiz ID, check if it has correct data in localStorage
+            let contaminationFound = false;
+            
+            for (const quizId of quizIds) {
+                // Check both old and new format keys
+                const oldKey = `quiz_progress_${username}_${quizId}`;
+                const newKey = `strict_quiz_progress_${username}_${quizId}`;
+                
+                try {
+                    // Check old key format
+                    const oldData = localStorage.getItem(oldKey);
+                    if (oldData) {
+                        const parsed = JSON.parse(oldData);
+                        if (parsed && parsed.quizName && parsed.quizName !== quizId) {
+                            console.warn(`[Index] Found contaminated data! Key ${oldKey} contains data for quiz ${parsed.quizName}`);
+                            localStorage.removeItem(oldKey);
+                            contaminationFound = true;
+                        }
+                    }
+                    
+                    // Check new key format
+                    const newData = localStorage.getItem(newKey);
+                    if (newData) {
+                        const parsed = JSON.parse(newData);
+                        if (parsed && parsed.quizName && parsed.quizName !== quizId) {
+                            console.warn(`[Index] Found contaminated data! Key ${newKey} contains data for quiz ${parsed.quizName}`);
+                            localStorage.removeItem(newKey);
+                            contaminationFound = true;
+                        }
+                    }
+                } catch (e) {
+                    console.warn(`[Index] Error checking quiz ${quizId} data:`, e);
+                }
+            }
+            
+            if (contaminationFound) {
+                console.log('[Index] Cleared contaminated quiz data');
+            } else {
+                console.log('[Index] No contaminated quiz data found');
+            }
+            
+            return contaminationFound;
+        } catch (error) {
+            console.error('[Index] Error checking for contaminated data:', error);
+            return false;
+        }
     }
 
     handleLogout() {
@@ -323,20 +388,39 @@ class IndexPage {
                 console.log('[Index] Scanning ALL localStorage for quiz progress items');
                 
                 // Get all keys that match the quiz progress pattern
-                const progressPattern = `quiz_progress_${username}_`;
+                // Look for both old and new format keys
+                const progressPatterns = [
+                    `strict_quiz_progress_${username}_`, // New format
+                    `quiz_progress_${username}_`        // Old format
+                ];
+                
                 const allKeys = Object.keys(localStorage);
-                const progressKeys = allKeys.filter(key => key.startsWith(progressPattern));
+                const progressKeys = allKeys.filter(key => {
+                    return progressPatterns.some(pattern => key.startsWith(pattern));
+                });
                 
                 console.log(`[Index] Found ${progressKeys.length} potential quiz progress items in localStorage`);
                 
                 // Process each key to extract quiz progress
                 progressKeys.forEach(key => {
                     try {
-                        // Extract the quiz name from the key
-                        const quizNameMatch = key.match(new RegExp(`${progressPattern}([^_]+)`));
-                        if (!quizNameMatch || !quizNameMatch[1]) return;
+                        // Extract the quiz name from the key based on which pattern it matches
+                        let quizId = null;
+                        let isNewFormat = false;
                         
-                        let quizId = quizNameMatch[1];
+                        for (const pattern of progressPatterns) {
+                            if (key.startsWith(pattern)) {
+                                const quizNameMatch = key.match(new RegExp(`${pattern}([^_]+)`));
+                                if (quizNameMatch && quizNameMatch[1]) {
+                                    quizId = quizNameMatch[1];
+                                    isNewFormat = pattern.includes('strict');
+                                    break;
+                                }
+                            }
+                        }
+                        
+                        if (!quizId) return;
+                        
                         if (key.includes('_backup') || key.includes('_emergency')) {
                             // Skip backup/emergency keys as we'll process the main one
                             return;
@@ -351,6 +435,12 @@ class IndexPage {
                         
                         const parsedData = JSON.parse(localStorageData);
                         if (!parsedData || !parsedData.data) return;
+                        
+                        // Verify this data actually belongs to the correct quiz - only for new format
+                        if (isNewFormat && parsedData.quizName && parsedData.quizName !== normalizedQuizId) {
+                            console.warn(`[Index] Skipping localStorage data from key ${key} because it belongs to ${parsedData.quizName}, not ${normalizedQuizId}`);
+                            return;
+                        }
                         
                         const localProgress = parsedData.data;
                         const apiProgress = quizProgress[normalizedQuizId];
