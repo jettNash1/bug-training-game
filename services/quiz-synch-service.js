@@ -7,27 +7,36 @@ export class QuizSyncService {
         console.log('[QuizSyncService] Initialized');
     }
     
-    addToSyncQueue(username, quizName, progressData) {
+    async addToSyncQueue(username, quizName, progressData) {
         console.log(`[QuizSyncService] Adding to queue: ${quizName} for ${username}`);
         
-        // Simply try to save directly
+        // Save to localStorage first as an immediate backup
         try {
-            this.apiService.saveQuizProgress(quizName, progressData);
-            console.log(`[QuizSyncService] Directly saved progress for ${quizName}`);
+            const storageKey = `quiz_progress_${username}_${quizName}`;
+            localStorage.setItem(storageKey, JSON.stringify({
+                data: progressData,
+                timestamp: Date.now()
+            }));
+            // Also make a backup copy
+            const backupKey = `quiz_progress_${username}_${quizName}_backup`;
+            localStorage.setItem(backupKey, JSON.stringify({
+                data: progressData,
+                timestamp: Date.now()
+            }));
+            console.log(`[QuizSyncService] Saved immediate backup to localStorage for ${quizName}`);
+        } catch (storageError) {
+            console.error(`[QuizSyncService] Failed to save local backup:`, storageError);
+        }
+        
+        // Now try to save to API
+        try {
+            // Properly await the API call
+            await this.apiService.saveQuizProgress(quizName, progressData);
+            console.log(`[QuizSyncService] Successfully saved progress to API for ${quizName}`);
+            return true;
         } catch (error) {
-            console.error(`[QuizSyncService] Failed to save progress for ${quizName}:`, error);
-            
-            // Save to localStorage as backup in case of failure
-            try {
-                const storageKey = `quiz_progress_${username}_${quizName}_backup`;
-                localStorage.setItem(storageKey, JSON.stringify({
-                    data: progressData,
-                    timestamp: Date.now()
-                }));
-                console.log(`[QuizSyncService] Saved backup to localStorage for ${quizName}`);
-            } catch (storageError) {
-                console.error(`[QuizSyncService] Failed to save backup:`, storageError);
-            }
+            console.error(`[QuizSyncService] Failed to save progress to API for ${quizName}:`, error);
+            return false;
         }
     }
 }

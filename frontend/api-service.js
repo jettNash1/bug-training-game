@@ -458,26 +458,45 @@ export class APIService {
             console.log(`[API] Using normalized quiz name: ${normalizedQuizName}`);
             
             // Add logging to help diagnose issues
-            console.log(`[API] Current user: ${localStorage.getItem('username') || 'unknown'}`);
+            const username = localStorage.getItem('username');
+            console.log(`[API] Current user: ${username || 'unknown'}`);
             
             // Fetch both from API and localStorage in parallel for efficiency
-            const username = localStorage.getItem('username');
             let localStorageData = null;
             let response = null;
+            let localStorageDataFound = false;
             
             // Get localStorage data first as it's faster
             if (username) {
-                const storageKey = `quiz_progress_${username}_${normalizedQuizName}`;
-                try {
-                    const localData = localStorage.getItem(storageKey);
-                    if (localData) {
-                        localStorageData = JSON.parse(localData);
-                        console.log(`[API] Found progress in localStorage for ${normalizedQuizName}:`, localStorageData);
-                    } else {
-                        console.log(`[API] No localStorage data found for ${normalizedQuizName}`);
+                // Try multiple storage keys to maximize chances of finding data
+                const storageKeys = [
+                    `quiz_progress_${username}_${normalizedQuizName}`,
+                    `quiz_progress_${username}_${normalizedQuizName}_backup`,
+                    `quiz_progress_${username}_communication` // Legacy/fallback format
+                ];
+                
+                for (const storageKey of storageKeys) {
+                    try {
+                        const localData = localStorage.getItem(storageKey);
+                        if (localData) {
+                            const parsed = JSON.parse(localData);
+                            
+                            // Verify data has some valid content
+                            if (parsed && (parsed.data || parsed)) {
+                                localStorageData = parsed;
+                                localStorageDataFound = true;
+                                console.log(`[API] Found progress in localStorage for ${normalizedQuizName} in key: ${storageKey}`);
+                                // Break after finding first valid data
+                                break;
+                            }
+                        }
+                    } catch (e) {
+                        console.error(`[API] Error parsing localStorage data for key ${storageKey}:`, e);
                     }
-                } catch (e) {
-                    console.error(`[API] Error parsing localStorage data for ${normalizedQuizName}:`, e);
+                }
+                
+                if (!localStorageDataFound) {
+                    console.log(`[API] No localStorage data found for ${normalizedQuizName}`);
                 }
             }
             
@@ -494,8 +513,17 @@ export class APIService {
                 console.log(`[API] Raw API response for ${normalizedQuizName}:`, apiResponse);
                 
                 if (apiResponse && apiResponse.data && Object.keys(apiResponse.data).length > 0) {
-                    response = apiResponse;
-                    console.log(`[API] Successfully got data from API for ${normalizedQuizName}`);
+                    // Verify API data has actual content
+                    const apiHasProgress = 
+                        (apiResponse.data.questionHistory && apiResponse.data.questionHistory.length > 0) ||
+                        (apiResponse.data.questionsAnswered && apiResponse.data.questionsAnswered > 0);
+                    
+                    if (apiHasProgress) {
+                        response = apiResponse;
+                        console.log(`[API] Successfully got populated data from API for ${normalizedQuizName}`);
+                    } else {
+                        console.warn(`[API] API returned data but without any progress for ${normalizedQuizName}`);
+                    }
                 } else {
                     console.warn(`[API] API returned empty or invalid data for ${normalizedQuizName}`);
                 }
@@ -503,9 +531,20 @@ export class APIService {
                 console.error(`[API] Error fetching progress from API for ${normalizedQuizName}:`, apiError);
             }
             
+            // If we have localStorage data but no valid API data, prefer localStorage
+            if (localStorageDataFound && (!response || !response.data || Object.keys(response.data || {}).length === 0)) {
+                console.log(`[API] Using localStorage data since API data is unavailable or empty for ${normalizedQuizName}`);
+                
+                const localProgressData = localStorageData.data || localStorageData;
+                response = {
+                    success: true,
+                    data: localProgressData
+                };
+            }
+            
             // If no data found anywhere, return default
             if ((!response || !response.data || Object.keys(response.data || {}).length === 0) && 
-                (!localStorageData || !localStorageData.data)) {
+                (!localStorageData || !(localStorageData.data || localStorageData))) {
                 
                 console.log(`[API] No progress found anywhere for quiz ${quizName}, returning default`);
                 return {
@@ -536,12 +575,15 @@ export class APIService {
                 console.log(`[API] Experience value from API: ${apiData.experience}, type: ${typeof apiData.experience}, parsed: ${experienceValue}`);
             }
             
+            // Get questionHistory length for validation
+            const questionHistoryLength = Array.isArray(apiData.questionHistory) ? apiData.questionHistory.length : 0;
+            
             const progress = {
                 experience: experienceValue,
-                questionsAnswered: apiData.questionsAnswered || 0,
+                questionsAnswered: apiData.questionsAnswered || questionHistoryLength || 0,
                 status: apiData.status || 'not-started',
                 scorePercentage: typeof apiData.scorePercentage === 'number' ? apiData.scorePercentage : 0,
-                currentScenario: apiData.currentScenario || apiData.questionsAnswered || 0,
+                currentScenario: apiData.currentScenario || apiData.questionsAnswered || questionHistoryLength || 0,
                 tools: apiData.tools || [],
                 questionHistory: apiData.questionHistory || [],
                 randomizedScenarios: apiData.randomizedScenarios || {}
@@ -557,15 +599,39 @@ export class APIService {
                 experienceType: typeof progress.experience
             });
             
-            // Additional check with localStorage if API value is zero
-            if (progress.experience === 0 && 
-                localStorageData && localStorageData.data && 
-                localStorageData.data.experience > 0) {
+            // Check localStorage data for better values if API data is suspicious
+            if ((progress.experience === 0 || progress.questionHistory.length === 0) && 
+                localStorageDataFound) {
                 
-                console.log(`[API] After processing, experience is still 0 but localStorage has ${localStorageData.data.experience}. Using localStorage experience value.`);
+                const localData = localStorageData.data || localStorageData;
                 
-                // Use the experience value from localStorage
-                progress.experience = parseFloat(localStorageData.data.experience) || 0;
+                // Use localStorage experience if available and higher
+                if (progress.experience === 0 && localData.experience > 0) {
+                    console.log(`[API] Using localStorage experience ${localData.experience} instead of API value 0`);
+                    progress.experience = parseFloat(localData.experience) || 0;
+                }
+                
+                // Use localStorage question history if available and longer
+                if (progress.questionHistory.length === 0 && 
+                    Array.isArray(localData.questionHistory) && 
+                    localData.questionHistory.length > 0) {
+                    
+                    console.log(`[API] Using localStorage questionHistory (${localData.questionHistory.length} items) instead of empty API history`);
+                    progress.questionHistory = localData.questionHistory;
+                    
+                    // Also update related fields to be consistent
+                    progress.questionsAnswered = localData.questionHistory.length;
+                    progress.currentScenario = localData.questionHistory.length;
+                    
+                    if (localData.status && 
+                       (localData.status === 'completed' || 
+                        localData.status === 'passed' || 
+                        localData.status === 'failed')) {
+                        progress.status = localData.status;
+                    } else if (localData.questionHistory.length > 0) {
+                        progress.status = 'in-progress';
+                    }
+                }
             }
             
             // Enhanced corruption check: look for NaN or undefined in critical fields
@@ -577,21 +643,6 @@ export class APIService {
                     console.warn(`[API] Found corrupted data in ${field}: ${progress[field]}`);
                     hasCorruptedData = true;
                     progress[field] = 0; // Reset to safe default
-                }
-            }
-            
-            // If we found corrupted data, try to recover from localStorage
-            if (hasCorruptedData && localStorageData && localStorageData.data) {
-                console.log(`[API] Attempting to recover corrupted data from localStorage`);
-                
-                for (const field of criticalFields) {
-                    if (isNaN(progress[field]) || progress[field] === undefined) {
-                        const localValue = localStorageData.data[field];
-                        if (localValue !== undefined && !isNaN(localValue)) {
-                            console.log(`[API] Recovered ${field} from localStorage: ${localValue}`);
-                            progress[field] = localValue;
-                        }
-                    }
                 }
             }
             
@@ -607,8 +658,23 @@ export class APIService {
             }
             
             // Ensure currentScenario is valid based on question history
-            if (progress.questionHistory.length > 0) {
+            if (progress.questionHistory.length > 0 && progress.currentScenario === 0) {
+                console.log(`[API] Fixing inconsistency: has ${progress.questionHistory.length} questions but currentScenario is 0`);
                 progress.currentScenario = progress.questionHistory.length;
+            }
+            
+            // If data was updated, save it back to localStorage for future consistency
+            if (username && (hasCorruptedData || progress.experience > 0 || progress.questionHistory.length > 0)) {
+                const storageKey = `quiz_progress_${username}_${normalizedQuizName}`;
+                try {
+                    localStorage.setItem(storageKey, JSON.stringify({ 
+                        data: progress,
+                        timestamp: Date.now() 
+                    }));
+                    console.log(`[API] Updated localStorage with consistent progress data for ${normalizedQuizName}`);
+                } catch (e) {
+                    console.error(`[API] Error saving progress to localStorage:`, e);
+                }
             }
             
             return {

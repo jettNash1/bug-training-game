@@ -188,6 +188,7 @@ export class CommunicationQuiz extends BaseQuiz {
             ];
             
             let progressData = null;
+            let dataSource = '';
             
             // Try to get progress from API first
             try {
@@ -195,21 +196,31 @@ export class CommunicationQuiz extends BaseQuiz {
                 const apiProgress = await this.apiService.getQuizProgress(this.quizName);
                 
                 if (apiProgress && apiProgress.data) {
-                    console.log('[CommunicationQuiz] Successfully loaded progress from API:', apiProgress.data);
-                    progressData = apiProgress.data;
+                    // Verify API data has actual content (not just empty structures)
+                    const apiHasProgress = 
+                        (apiProgress.data.questionHistory && apiProgress.data.questionHistory.length > 0) ||
+                        (apiProgress.data.questionsAnswered && apiProgress.data.questionsAnswered > 0);
                     
-                    // Also update localStorage with the latest data for future use
-                    localStorage.setItem(storageKeys[0], JSON.stringify({ 
-                        data: progressData,
-                        timestamp: Date.now() 
-                    }));
+                    if (apiHasProgress) {
+                        console.log('[CommunicationQuiz] Successfully loaded progress from API:', apiProgress.data);
+                        progressData = apiProgress.data;
+                        dataSource = 'API';
+                        
+                        // Also update localStorage with the latest data for future use
+                        localStorage.setItem(storageKeys[0], JSON.stringify({ 
+                            data: progressData,
+                            timestamp: Date.now() 
+                        }));
+                    } else {
+                        console.warn('[CommunicationQuiz] API returned data but without actual progress.');
+                    }
                 }
             } catch (apiError) {
                 console.warn('[CommunicationQuiz] Failed to load progress from API:', apiError);
             }
             
-            // If API failed, try all localStorage options
-            if (!progressData) {
+            // If API failed or returned no progress, try all localStorage options
+            if (!progressData || (progressData.questionHistory && progressData.questionHistory.length === 0)) {
                 console.log('[CommunicationQuiz] Trying to load progress from localStorage');
                 
                 // Try each storage key in order
@@ -221,11 +232,12 @@ export class CommunicationQuiz extends BaseQuiz {
                             const parsed = JSON.parse(localData);
                             const candidateData = parsed.data || parsed;
                             
-                            // Check if this data has any history
+                            // Check if this data has any question history
                             if (candidateData && Array.isArray(candidateData.questionHistory) && 
                                 candidateData.questionHistory.length > 0) {
                                 
                                 progressData = candidateData;
+                                dataSource = `localStorage (${key})`;
                                 console.log(`[CommunicationQuiz] Successfully loaded progress from localStorage key: ${key}`);
                                 break; // Found valid data, stop looking
                             }
@@ -237,7 +249,7 @@ export class CommunicationQuiz extends BaseQuiz {
             }
 
             if (progressData) {
-                console.log('[CommunicationQuiz] Processing loaded progress data');
+                console.log(`[CommunicationQuiz] Processing loaded progress data from ${dataSource}`);
                 
                 // Sanitize and validate data
                 progressData.experience = !isNaN(parseFloat(progressData.experience)) ? parseFloat(progressData.experience) : 0;
@@ -273,7 +285,8 @@ export class CommunicationQuiz extends BaseQuiz {
                     experience: this.player.experience,
                     questionHistory: this.player.questionHistory.length,
                     currentScenario: this.player.currentScenario,
-                    status: progressData.status
+                    status: progressData.status,
+                    source: dataSource
                 });
                 
                 // Only show end screen if quiz is actually completed and has progress
@@ -287,9 +300,12 @@ export class CommunicationQuiz extends BaseQuiz {
                     return true;
                 }
 
-                // If data was loaded from localStorage or had any fixes applied, save it back
+                // If data was loaded from localStorage or had any fixes applied, save it back to API
                 // to ensure consistency with our sanitized values
-                await this.saveProgress();
+                if (dataSource !== 'API' && progressData.questionHistory.length > 0) {
+                    console.log('[CommunicationQuiz] Synchronizing localStorage progress with API');
+                    await this.saveProgress();
+                }
                 
                 // Show the current question based on progress
                 this.displayScenario();
