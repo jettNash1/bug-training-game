@@ -173,17 +173,20 @@ class IndexPage {
                 throw new Error('Failed to load user data');
             }
 
-            console.log('Raw user data:', userData);
+            console.log('[Index] Raw user data:', userData);
             
             // Ensure we have the user data object
             if (!userData.data) {
-                console.error('User data is missing');
-                return;
+                console.error('[Index] User data is missing');
+                return false;
             }
 
             // Extract quiz progress from user data
             let quizProgress = userData.data.quizProgress || {};
             let quizResults = userData.data.quizResults || [];
+            
+            console.log('[Index] Original quiz progress from API:', quizProgress);
+            console.log('[Index] Original quiz results from API:', quizResults);
 
             // --- MIGRATION: Move any legacy tester-mindset keys to kebab-case ---
             const legacyKeys = Object.keys(quizProgress).filter(k => k.toLowerCase().replace(/[_\s]/g, '-').includes('tester') && k !== 'tester-mindset');
@@ -200,6 +203,42 @@ class IndexPage {
                 return result;
             });
             // --- END MIGRATION ---
+
+            // --- Check localStorage for any more recent/complete quiz progress ---
+            // This helps ensure we have the latest progress even if the API data is stale
+            try {
+                console.log('[Index] Checking localStorage for more recent quiz progress');
+                this.quizItems.forEach(item => {
+                    const quizId = item.dataset.quiz;
+                    if (!quizId) return;
+                    
+                    const normalizedQuizId = normalizeQuizName(quizId);
+                    const storageKey = `quiz_progress_${username}_${normalizedQuizId}`;
+                    
+                    try {
+                        const localStorageData = localStorage.getItem(storageKey);
+                        if (localStorageData) {
+                            const parsedData = JSON.parse(localStorageData);
+                            if (parsedData && parsedData.data) {
+                                const localProgress = parsedData.data;
+                                const apiProgress = quizProgress[normalizedQuizId];
+                                
+                                // Compare the two and use the one with more progress
+                                if (!apiProgress || 
+                                    (localProgress.questionsAnswered > apiProgress.questionsAnswered) || 
+                                    (localProgress.lastUpdated && apiProgress.lastUpdated && new Date(localProgress.lastUpdated) > new Date(apiProgress.lastUpdated))) {
+                                    console.log(`[Index] Using localStorage progress for ${normalizedQuizId} (more recent/complete than API)`);
+                                    quizProgress[normalizedQuizId] = localProgress;
+                                }
+                            }
+                        }
+                    } catch (localError) {
+                        console.warn(`[Index] Error checking localStorage for ${normalizedQuizId}:`, localError);
+                    }
+                });
+            } catch (localError) {
+                console.warn('[Index] Error checking localStorage for quiz progress:', localError);
+            }
 
             // --- Robust progress sync for legacy users ---
             for (const result of quizResults) {
@@ -218,6 +257,8 @@ class IndexPage {
                 }
             }
             // --- End robust sync ---
+            
+            console.log('[Index] Final quiz progress after all checks:', quizProgress);
             
             // Process all visible quizzes using the already fetched data
             this.quizScores = Array.from(this.quizItems)
@@ -261,42 +302,60 @@ class IndexPage {
                             combinedData.experience = progress.experience;
                         }
                     }
-                    console.log(`Processed data for quiz ${lookupId}:`, combinedData);
+                    console.log(`[Index] Processed data for quiz ${lookupId}:`, combinedData);
                     return combinedData;
                 })
                 .filter(Boolean);
 
-            console.log('Processed quiz scores:', this.quizScores);
+            console.log('[Index] All processed quiz scores:', this.quizScores);
             return true;
         } catch (error) {
-            console.error('Error loading user progress:', error);
+            console.error('[Index] Error loading user progress:', error);
             this.quizScores = [];
             return false;
         }
     }
 
     async updateQuizProgress() {
-        if (!this.quizScores) return;
+        if (!this.quizScores || !Array.isArray(this.quizScores) || this.quizScores.length === 0) {
+            console.warn('[Index] No quiz scores available for updating progress');
+            return;
+        }
+        
+        console.log(`[Index] Updating UI for ${this.quizItems.length} quiz items with ${this.quizScores.length} quiz scores`);
                 
         this.quizItems.forEach(item => {
             const quizId = item.dataset.quiz;
-            if (!quizId) return;
+            if (!quizId) {
+                console.warn('[Index] Quiz item missing data-quiz attribute');
+                return;
+            }
             
             const progressElement = document.getElementById(`${quizId}-progress`);
-            if (!progressElement) return;
+            if (!progressElement) {
+                console.warn(`[Index] Progress element not found for quiz: ${quizId}`);
+                return;
+            }
             
             // Use normalized quiz name for comparison
             const normalizedQuizId = normalizeQuizName(quizId);
-            const quizScore = this.quizScores.find(score => normalizeQuizName(score.quizName) === normalizedQuizId);
+            console.log(`[Index] Looking for quiz score for ${normalizedQuizId}`);
+            
+            // Find score with case insensitive matching to be extra safe
+            const quizScore = this.quizScores.find(score => 
+                normalizeQuizName(score.quizName) === normalizedQuizId || 
+                score.quizName?.toLowerCase() === normalizedQuizId.toLowerCase()
+            );
             
             if (!quizScore) {
                 // No score data - white background
+                console.log(`[Index] No score found for quiz: ${normalizedQuizId}`);
                 item.setAttribute('style', 'background-color: #FFFFFF !important; border: none !important;');
                 progressElement.setAttribute('style', 'display: none !important;');
                 return;
             }
             
-            console.log(`Quiz ${quizId}: status=${quizScore.status}, questions=${quizScore.questionsAnswered}, scorePercentage=${quizScore.scorePercentage}, experience=${quizScore.experience}`);
+            console.log(`[Index] Quiz ${quizId}: status=${quizScore.status}, questions=${quizScore.questionsAnswered}, scorePercentage=${quizScore.scorePercentage}, experience=${quizScore.experience}`);
             
             // Get the score percentage from the API response data
             // Make sure we're using the actual scorePercentage value, not defaulting to 0
@@ -339,13 +398,16 @@ class IndexPage {
                 progressElement.textContent = '';
             }
         });
+        console.log('[Index] Quiz progress display updated');
     }
 
     updateCategoryProgress() {
-        if (!this.quizScores) return;
+        if (!this.quizScores || !Array.isArray(this.quizScores) || this.quizScores.length === 0) {
+            console.warn('[Index] No quiz scores available for updating category progress');
+            return;
+        }
 
-        // Prepare all category updates
-        const updates = new Map();
+        console.log('[Index] Updating category progress displays');
         
         document.querySelectorAll('.category-card').forEach(category => {
             const quizItems = category.querySelectorAll('.quiz-item:not(.locked-quiz)');
@@ -353,24 +415,43 @@ class IndexPage {
             const progressBar = category.querySelector('.progress-fill');
             const progressText = category.querySelector('.progress-text');
             
+            // Get category name for logging
+            const categoryName = category.querySelector('.category-header')?.textContent?.trim() || 'Unknown Category';
+            
             // Hide the category if there are no visible quizzes
             if (visibleQuizItems.length === 0) {
+                console.log(`[Index] Hiding empty category: ${categoryName}`);
                 category.style.display = 'none';
                 return;
             } else {
+                console.log(`[Index] Showing category: ${categoryName} with ${visibleQuizItems.length} visible quizzes`);
                 category.style.display = '';
             }
 
-            if (!progressBar || !progressText) return;
+            if (!progressBar || !progressText) {
+                console.warn(`[Index] Missing progress elements for category: ${categoryName}`);
+                return;
+            }
 
             const categoryStats = visibleQuizItems.reduce((stats, item) => {
                 const quizId = item.dataset.quiz;
+                if (!quizId) return stats;
+                
                 // Use normalized quiz ID consistently
                 const normalizedQuizId = normalizeQuizName(quizId);
-                const quizScore = this.quizScores.find(score => normalizeQuizName(score.quizName) === normalizedQuizId);
+                
+                // Find with case insensitive matching to be extra safe
+                const quizScore = this.quizScores.find(score => 
+                    normalizeQuizName(score.quizName) === normalizedQuizId ||
+                    score.quizName?.toLowerCase() === normalizedQuizId.toLowerCase()
+                );
                 
                 // Count as completed if all 15 questions are answered, regardless of status
                 const isCompleted = quizScore && quizScore.questionsAnswered >= 15;
+                
+                if (isCompleted) {
+                    console.log(`[Index] Quiz ${normalizedQuizId} is completed (${quizScore.questionsAnswered}/15)`);
+                }
                 
                 return {
                     completedQuizzes: stats.completedQuizzes + (isCompleted ? 1 : 0),
@@ -381,6 +462,8 @@ class IndexPage {
             const totalQuizzes = visibleQuizItems.length;
             // Calculate percentage based on completed quizzes instead of total progress
             const categoryPercentage = Math.round((categoryStats.completedQuizzes / totalQuizzes) * 100);
+
+            console.log(`[Index] Category ${categoryName}: ${categoryStats.completedQuizzes}/${totalQuizzes} completed (${categoryPercentage}%)`);
 
             // Update the category progress text and bar
             const progressTextElement = progressText.closest('.category-progress');
@@ -393,6 +476,8 @@ class IndexPage {
                 `;
             }
         });
+        
+        console.log('[Index] Category progress display updated');
     }
 
     addBadgesNavLink() {
