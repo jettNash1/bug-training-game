@@ -104,7 +104,7 @@ export class QuizSyncService {
             }
             
             console.log(`[QuizSyncService] Saved immediate backups to storage for ${quizName}`);
-        } catch (storageError) {
+            } catch (storageError) {
             console.error(`[QuizSyncService] Failed to save local backups:`, storageError);
         }
         

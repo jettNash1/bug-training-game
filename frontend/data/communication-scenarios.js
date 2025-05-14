@@ -1,5 +1,3 @@
-// Basic Scenarios (IDs 1-5)
-
 export const communicationScenarios = {
         basic: [
             {

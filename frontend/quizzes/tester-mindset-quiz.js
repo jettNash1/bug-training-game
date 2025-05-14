@@ -1,6 +1,8 @@
 import { APIService } from '../api-service.js';
 import { BaseQuiz } from '../quiz-helper.js';
 import { QuizUser } from '../QuizUser.js';
+import { testerMindsetScenarios } from '../data/testerMindset-scenarios.js';
+import quizSyncService from '../services/quiz-synch-service.js';
 
 export class TesterMindsetQuiz extends BaseQuiz {
     constructor() {
@@ -13,7 +15,8 @@ export class TesterMindsetQuiz extends BaseQuiz {
                 { threshold: 80, message: '👏 Great job! You\'ve shown strong testing instincts!' },
                 { threshold: 70, message: '👍 Good work! You\'ve passed the quiz!' },
                 { threshold: 0, message: '📚 Consider reviewing testing mindset best practices and try again!' }
-            ]
+            ],
+            quizName: 'tester-mindset',
         };
         
         super(config);
@@ -35,11 +38,13 @@ export class TesterMindsetQuiz extends BaseQuiz {
             questionHistory: []
         };
 
-        // Bind event handlers to prevent duplicates
-        this.handleAnswerBound = this.handleAnswer.bind(this);
-
         // Initialize API service
         this.apiService = new APIService();
+        
+        // Load scenarios from external data file
+        this.basicScenarios = testerMindsetScenarios.basic;
+        this.intermediateScenarios = testerMindsetScenarios.intermediate;
+        this.advancedScenarios = testerMindsetScenarios.advanced;
 
         // Initialize all screen elements
         this.gameScreen = document.getElementById('game-screen');
@@ -65,617 +70,482 @@ export class TesterMindsetQuiz extends BaseQuiz {
             return;
         }
 
-        // Basic Scenarios (Focus on Fundamental Mindset Concepts)
-        this.basicScenarios = [
-            {
-                id: 1,
-                level: 'Basic',
-                title: 'Project Context',
-                description: "You're starting a new testing project. What's your first priority?",
-                options: [
-                    {
-                        text: 'Review all the requirements for the project provided by the client',
-                        outcome: 'Excellent! Understanding context is crucial for effective testing.',
-                        experience: 15,
-                        tool: 'Context Analysis Framework'
-                    },
-                    {
-                        text: 'Begin extensive exploratory testing sessions to identify potential issues and document findings for immediate stakeholder review',
-                        outcome: 'Without understanding context first, testing straight away may miss critical issues.',
-                        experience: -5
-                    },
-                    {
-                        text: 'Create comprehensive test cases based on industry best practices and previous project experience',
-                        outcome: 'Test cases should be based on project context and requirements.',
-                        experience: -5
-                    },
-                    {
-                        text: 'Analyse historical test results of older releases of the same project',
-                        outcome: 'While helpful, previous results don\'t replace understanding of current project context.',
-                        experience: 5
-                    }
-                ]
-            },
-            {
-                id: 2,
-                level: 'Basic',
-                title: 'Understanding the Audience',
-                description: 'How do you approach understanding the target audience for a new project?',
-                options: [
-                    {
-                        text: 'Research user needs to gather information on target audiences',
-                        outcome: 'Perfect! User-centric thinking is essential for effective testing.',
-                        experience: 15,
-                        tool: 'User Persona Template'
-                    },
-                    {
-                        text: 'Apply personal usage patterns and preferences to determine the most likely user behaviours and testing scenarios',
-                        outcome: 'Users have diverse needs and characteristics that must be considered and not just that of a testers own usage pattern.',
-                        experience: -5
-                    },
-                    {
-                        text: 'Conduct detailed technical analysis of system architecture and performance metrics to establish testing priorities',
-                        outcome: 'Technical aspects are important but user needs are crucial for understanding of a target audience.',
-                        experience: -5
-                    },
-                    {
-                        text: 'Wait for post-release feedback to gather user trends and behaviour',
-                        outcome: 'Understanding users before testing begins, can help prevent issues in the testing process.',
-                        experience: 0
-                    }
-                ]
-            },
-            {
-                id: 3,
-                level: 'Basic',
-                title: 'Test Environment Setup',
-                description: "The test environment is different from production. What's your approach?",
-                options: [
-                    {
-                        text: 'Document the environment differences to be taken into consideration for test results',
-                        outcome: 'Excellent! Understanding environment differences is crucial for testing and can be factored into any results.',
-                        experience: 15,
-                        tool: 'Environment Comparison Tool'
-                    },
-                    {
-                        text: 'Proceed with testing while monitoring for any potential environmental impact on test results.',
-                        outcome: 'Environment differences can affect testing activities and result in missed issues if not documented for reference first.',
-                        experience: -5
-                    },
-                    {
-                        text: 'Execute test cases in the production environment to ensure accurate results',
-                        outcome: 'Testing in production without correct user control can lead to unwarranted risks within the system.',
-                        experience: -10
-                    },
-                    {
-                        text: 'Request environment replication to safely conduct testing activities.',
-                        outcome: 'Good thinking, but first, the current differences must be documented.',
-                        experience: 10
-                    }
-                ]
-            },
-            {
-                id: 4,
-                level: 'Basic',
-                title: 'Test Documentation',
-                description: "You've found several issues. How do you document them?",
-                options: [
-                    {
-                        text: 'Document the issues with steps and results for ease of replication',
-                        outcome: 'Perfect! Clear documentation helps developers fix issues efficiently.',
-                        experience: 15,
-                        tool: 'Issue Documentation Template'
-                    },
-                    {
-                        text: 'Initiate multiple communication channels including chat messages, emails, and verbal discussions for each discovered issue.',
-                        outcome: 'Informal communication isn\'t sufficient for tracking issues, as important information can become lost.',
-                        experience: -5
-                    },
-                    {
-                        text: 'Capture and archive comprehensive visual documentation through multiple screenshot angles and screen recordings',
-                        outcome: 'Screenshots alone don\'t provide enough context and more detail is required such as steps and results.',
-                        experience: -10
-                    },
-                    {
-                        text: 'Create brief descriptions for all the issues raised to make sure project time management can be met.',
-                        outcome: 'More detail would help developers understand and fix issues.',
-                        experience: 5
-                    }
-                ]
-            },
-            {
-                id: 5,
-                level: 'Basic',
-                title: 'Test Planning',
-                description: 'How do you prepare for a new testing project?',
-                options: [
-                    {
-                        text: 'Review requirements, create test strategy, and identify risks',
-                        outcome: 'Excellent! Thorough preparation leads to effective testing.',
-                        experience: 15,
-                        tool: 'Test Planning Framework'
-                    },
-                    {
-                        text: 'Start testing straight away to meet project timeline and deliverables',
-                        outcome: 'A lack of planning can lead to inefficient testing.',
-                        experience: -5
-                    },
-                    {
-                        text: 'Copy a test plan from previous project for efficiency',
-                        outcome: 'Each project needs its own test approach and the need for specific testing tailored to each project is essential.',
-                        experience: -5
-                    },
-                    {
-                        text: 'Ask developers what and which areas to test within the project',
-                        outcome: 'Developer input helps but thorough planning is required as a developer mindset is not always the same as an end user.',
-                        experience: 5
-                    }
-                ]
-            },
-            // Additional Basic Scenarios from Guide - Tester Mindset Additional Questions
-            {
-                id: 16,
-                level: 'Basic',
-                title: 'Issue Verification Mindset',
-                description: 'When adopting a tester mindset for Issue Verification (IV), which is not a characteristic of the process?',
-                options: [
-                    {
-                        text: 'Being competitive is not a characteristic of an Issue Verifcation tester mindset',
-                        outcome: 'Correct! being detailed, timely, observant, investigative, impartial, and quality-driven are all characteristics of a tester mindset during Issue Verification not being competitive.',
-                        experience: 15,
-                        tool: 'Issue Verification Mindset'
-                    },
-                    {
-                        text: 'Being detailed is not a characteristic of an Issue Verifcation tester mindset',
-                        outcome: 'Being detailed is a characteristic for Issue Verification, aiming to provide the client with valuable information to aid them in fixing outstanding issues.',
-                        experience: -5
-                    },
-                    {
-                        text: 'Being investigative is not a characteristic of an Issue Verifcation tester mindset',
-                        outcome: 'Being investigative is a characteristic of Issue Verifcation, actively looking for ways to discover new issues.',
-                        experience: -10
-                    },
-                    {
-                        text: 'Being impartial is not a characteristic of an Issue Verifcation tester mindset',
-                        outcome: 'Being impartial is a characteristic of Issue Verification, we may observe an issue differently from a client and must be objective in our feedback.',
-                        experience: 0
-                    }
-                ]
-            },
-            {
-                id: 17,
-                level: 'Basic',
-                title: 'Mindset Risk',
-                description: 'What is a risk of applying the same mindset to every testing project?',
-                options: [
-                    {
-                        text: 'It provides maximum test coverage',
-                        outcome: 'Tailoring the mindset to each project leads to better coverage and finding more relevant issues.',
-                        experience: -5
-                    },
-                    {
-                        text: 'It increases testing speed',
-                        outcome: 'While this may increase speed through familiarisation. A tailored approach makes better use of time and results as each project has its own specific requirements.',
-                        experience: -10
-                    },
-                    {
-                        text: 'It yields mediocre results and less value to clients',
-                        outcome: 'Correct! Applying the same mindset to every project and approaching testing in the same manner, no matter the test approach, will likely yield mediocre results and provide less value to clients.',
-                        experience: 15,
-                        tool: 'Mindset Risk'
-                    },
-                    {
-                        text: 'It standardizes the testing approach',
-                        outcome: 'While this might be true, standardisation without adaptation is a disadvantage, not an advantage.',
-                        experience: 0
-                    }
-                ]
-            },
-            {
-                id: 18,
-                level: 'Basic',
-                title: 'Exploratory Testing Mindset',
-                description: 'For an exploratory testing approach, which is not a characteristic of a tester mindset approach',
-                options: [
-                    {
-                        text: 'Being destructive is a characteristic of tester mindset towards exploratory testing',
-                        outcome: 'Being destructive is a characteristic of exploratory testing, aiming to break the app/site and reveal issues.',
-                        experience: -5
-                    },
-                    {
-                        text: 'Adopting a free to explore approach is a characteristic of tester mindset towards exploratory testing',
-                        outcome: 'Being free to explore is a characteristic of exploratory testing, as to not get held back by restrictive test cases.', 
-                        experience: -10
-                    },
-                    {
-                        text: 'Adopting process driven approach is a characteristic of tester mindset towards exploratory testing',
-                        outcome: 'Correct! The exploratory approach is characterised by being less process-driven and more free-form than scripted approaches.',
-                        experience: 15,
-                        tool: 'Exploratory Testing Mindset'
-                    },
-                    {
-                        text: 'Being risk aware is a characteristic of a tester mindset towards exploratory testing',
-                        outcome: 'Being risk-aware is as a characteristic of exploratory testing, being conscious of scope, timings and ability to deliver tasks on time.',
-                        experience: 0
-                    }
-                ]
-            },
-            {
-                id: 19,
-                level: 'Basic',
-                title: 'Project Context',
-                description: 'When considering the context for a new testing project, what is not a factor to be considered?',
-                options: [
-                    {
-                        text: 'The client\'s competitors is not a factor to be considered for a new project',
-                        outcome: 'Correct! focus should be on understanding the specific project rather than market positioning or competitive analysis.',
-                        experience: 15,
-                        tool: 'Project Context'
-                    },
-                    {
-                        text: 'Project scope is not a factor to be considered for a new project',
-                        outcome: 'Scope is a context factor to consider, including questions about unique functionalities and areas of concern.',
-                        experience: -10
-                    },
-                    {
-                        text: 'Test approach is not a factor to be considered for a new project',
-                        outcome: 'Test approach is a context factor to consider, including understanding why the client chose a particular approach for their project.',
-                        experience: -5
-                    },
-                    {
-                        text: 'Development life cycle is not a factor to be considered for a new project',
-                        outcome: 'The development life cycle is as a context factor to consider, to determine how far into development the project is.',
-                        experience: 0
-                    }
-                ]
-            },
-            {
-                id: 20,
-                level: 'Basic',
-                title: 'Project Mindset',
-                description: 'What is recommended when a tester is unsure about what mindset might be required for a particular project?',
-                options: [
-                    {
-                        text: 'The project stand up should be utilised to ask questions and discuss the project with the project manager',
-                        outcome: 'Correct! If you are unsure what mindset might be required for a particular project, utilise the project stand up to ask questions and discuss the mindset with the project manager and test team.',
-                        experience: 15,
-                        tool: 'Project Mindset'
-                    },
-                    {
-                        text: 'The last projects mindset approach should be followed',
-                        outcome: 'This contradicts the emphasis on tailoring a mindset to each specific project.',
-                        experience: -10
-                    },
-                    {
-                        text: 'Creating a survey for the client to complete should be the approach',
-                        outcome: 'This would be time consuming for both tester and client.',
-                        experience: -5
-                    },
-                    {
-                        text: 'You should always default to the exploratory approach',
-                        outcome: 'An appropriate mindset for each project should be undertaken rather than defaulting to any particular approach.',
-                        experience: 0
-                    }
-                ]
-            }
-        ];
-
-        // Intermediate Scenarios (Different Testing Approaches)
-        this.intermediateScenarios = [
-            {
-                id: 6,
-                level: 'Intermediate',
-                title: 'Exploratory Testing',
-                description: "You're conducting exploratory testing. What's your mindset?",
-                options: [
-                    {
-                        text: 'Be curious, investigative, and think outside the box',
-                        outcome: 'Perfect! Exploratory testing requires creative thinking.',
-                        experience: 20,
-                        tool: 'Exploratory Testing Guide'
-                    },
-                    {
-                        text: 'Follow a strictly set out test script to gain the best coverage',
-                        outcome: 'Exploratory testing requires flexibility and creativity to think outside the box of a specified testing route.',
-                        experience: -10
-                    },
-                    {
-                        text: 'Test only happy paths to check the desired outcome',
-                        outcome: 'Exploratory testing should cover various scenarios, including unhappy paths.',
-                        experience: -10
-                    },
-                    {
-                        text: 'Focus only on finding bugs within the required scope of the project',
-                        outcome: 'Understanding the system and user journey paths are also important in exploratory testing.',
-                        experience: 5
-                    }
-                ]
-            },
-            {
-                id: 7,
-                level: 'Intermediate',
-                title: 'Scripted Testing',
-                description: 'During scripted testing, you notice an issue outside the test cases. What do you do?',
-                options: [
-                    {
-                        text: 'Document the issue for client consideration and continue with test cases',
-                        outcome: 'Excellent! Balance following scripts while noting other issues.',
-                        experience: 20,
-                        tool: 'Test Case Management'
-                    },
-                    {
-                        text: 'Continue with testing as the particular focus is not documented to be covered within the test cases',
-                        outcome: 'All issues should be documented, even if outside of stated test cases.',
-                        experience: -15
-                    },
-                    {
-                        text: 'Stop scripted testing to investigate and find the root cause',
-                        outcome: 'The issue should be documented although, planned testing should be continued with.',
-                        experience: 0
-                    },
-                    {
-                        text: 'Add new test cases immediately to address the areas that return the issue',
-                        outcome: 'Whilst adding new test cases is required as testing evolves on a project. The issues should be document first and test case updates can be performed after the current execution.',
-                        experience: 10
-                    }
-                ]
-            },
-            {
-                id: 8,
-                level: 'Intermediate',
-                title: 'Test Support Approach',
-                description: 'You\'re providing ongoing test support. How do you maintain effectiveness?',
-                options: [
-                    {
-                        text: 'Stay adaptable and maintain clear communication with the team',
-                        outcome: 'Perfect! Flexibility and communication are key for support.',
-                        experience: 20,
-                        tool: 'Support Communication Template'
-                    },
-                    {
-                        text: 'Stick to the initial test plan throughout test activities only',
-                        outcome: 'Test support requires adapting to clients changing needs.',
-                        experience: -10
-                    },
-                    {
-                        text: 'Wait for the client to assign you tasks to stay within scope of the project',
-                        outcome: 'Proactive support is more valuable than reactive support.',
-                        experience: -5
-                    },
-                    {
-                        text: 'Focus only on new features within a release to keep testing activities current',
-                        outcome: 'Support should include both new and existing functionality testing.',
-                        experience: 5
-                    }
-                ]
-            },
-            {
-                id: 9,
-                level: 'Intermediate',
-                title: 'Risk Assessment',
-                description: 'You identify a potential risk in the project. How do you handle it?',
-                options: [
-                    {
-                        text: 'Document the risk and communicate it to stakeholders promptly',
-                        outcome: 'Excellent! Early risk communication allows better mitigation.',
-                        experience: 20,
-                        tool: 'Risk Assessment Matrix'
-                    },
-                    {
-                        text: 'Wait to see the risk identified becomes an issue that could affect the system under test',
-                        outcome: 'Early risk identification helps prevent issues with test activities further along into the process.',
-                        experience: -15
-                    },
-                    {
-                        text: 'Research a solution for the risk yourself and present this to developers',
-                        outcome: 'Risks should be communicated to appropriate stakeholders for an appropriate outcome to be confirmed.',
-                        experience: -5
-                    },
-                    {
-                        text: 'Mention the identified risk in the next meeting or stand up for the project',
-                        outcome: 'Risks need prompt communication to mitigate an issue early, rather than having delayed reporting.',
-                        experience: 0
-                    }
-                ]
-            },
-            {
-                id: 10,
-                level: 'Intermediate',
-                title: 'Test Coverage',
-                description: 'How do you ensure adequate test coverage for a feature?',
-                options: [
-                    {
-                        text: 'Implement comprehensive testing methodologies across all possible test scenarios and edge cases with detailed documentation',
-                        outcome: 'This is too broad an approach and can be an inefficient way of testing.',
-                        experience: -5
-                    },
-                    {
-                        text: 'Use risk-based testing to prioritise areas that are of the most importance to the user and client',
-                        outcome: 'Perfect! Prioritising tests based on risk is one of the most efficient approaches.',
-                        experience: 20,
-                        tool: 'Risk Assessment Matrix'
-                    },
-                    {
-                        text: 'Execute extensive regression testing protocols while maintaining detailed coverage metrics and trend analysis',
-                        outcome: 'Regression testing alone doesn\'t ensure the most sufficient coverage.',
-                        experience: -10
-                    },
-                    {
-                        text: 'Conduct thorough analysis of all system components and their interconnected dependencies',
-                        outcome: 'System analysis is important but should be guided by risk assessment.',
-                        experience: 5
-                    }
-                ]
-            }
-        ];
-
-        // Advanced Scenarios (Complex situations)
-        this.advancedScenarios = [
-            {
-                id: 11,
-                level: 'Advanced',
-                title: 'Critical Production Issue',
-                description: 'A critical bug is reported in production affecting user data. What\'s your immediate response?',
-                options: [
-                    {
-                        text: 'Alert the incident team with evidence and begin systematic investigation',
-                        outcome: 'Excellent! Quick escalation and a systematic approach is crucial.',
-                        experience: 25,
-                        tool: 'Incident Response Protocol'
-                    },
-                    {
-                        text: 'Start researching a fix for the bug immediately',
-                        outcome: 'Incident response process should be followed before attempting to find a route cause for developers to investigate and fix.',
-                        experience: -15
-                    },
-                    {
-                        text: 'Document the issue to be included in the next sprint for developer attention',
-                        outcome: 'Critical issues within the production environment require immediate attention.',
-                        experience: -15
-                    },
-                    {
-                        text: 'Start investigating the root cause of the bug immediately',
-                        outcome: 'Incident response process should be followed before attempting to find the cause so all interested parties are aware of the issue.',
-                        experience: 5
-                    }
-                ]
-            },
-            {
-                id: 12,
-                level: 'Advanced',
-                title: 'Test Strategy Evolution',
-                description: 'The project scope has significantly changed mid-way. How do you adapt your test strategy?',
-                options: [
-                    {
-                        text: 'Review changes, update strategy, and communicate any impact on the project',
-                        outcome: 'Perfect! Systematic adaptation ensures continued effectiveness.',
-                        experience: 25,
-                        tool: 'Strategy Adaptation Framework'
-                    },
-                    {
-                        text: 'Continue the testing activities outlined in the original strategy to stay in line with initial client expectation',
-                        outcome: 'The strategy must evolve with project changes as important features could missed.',
-                        experience: -20
-                    },
-                    {
-                        text: 'Create an entirely new strategy to come into line with the new requirements',
-                        outcome: 'Modifying the existing strategy is the preferred approach to time management and constraints.',
-                        experience: -10
-                    },
-                    {
-                        text: 'Focus only on the new requirements set out in the updated scope',
-                        outcome: 'Both new and existing requirements need to be taken into consideration as issues could be missed if existing requirements are ignored.',
-                        experience: 0
-                    }
-                ]
-            },
-            {
-                id: 13,
-                level: 'Advanced',
-                title: 'Resource Constraints',
-                description: 'You have limited time and resources for testing. How do you proceed?',
-                options: [
-                    {
-                        text: 'Prioritise critical functionality and communicate constraints',
-                        outcome: 'Excellent! Risk-based prioritisation maximizes testing value.',
-                        experience: 25,
-                        tool: 'Test Prioritization Matrix'
-                    },
-                    {
-                        text: 'Test everything as quick as possible to meet project timeframe deliverables',
-                        outcome: 'Rushed testing may miss critical issues.',
-                        experience: -20
-                    },
-                    {
-                        text: 'Leave lower priority items to meet project timeframe deliverables',
-                        outcome: 'Scope reduction needs to be communicated and agreed upon with stakeholders first.',
-                        experience: -10
-                    },
-                    {
-                        text: 'Request a deadline extension to achieve the required test coverage',
-                        outcome: 'Test case and scope prioritisation is required first, even with an extended deadline.',
-                        experience: 0
-                    }
-                ]
-            },
-            {
-                id: 14,
-                level: 'Advanced',
-                title: 'Team Collaboration',
-                description: 'Different team members have conflicting test approaches. How do you handle this?',
-                options: [
-                    {
-                        text: 'Facilitate discussion to align on best practices and document any agreements',
-                        outcome: 'Perfect! Collaborative alignment improves team effectiveness.',
-                        experience: 25,
-                        tool: 'Test Approach Alignment Guide'
-                    },
-                    {
-                        text: 'Let each person use their preferred approach to aid in meeting deliverables',
-                        outcome: 'Inconsistent approaches can affect testing quality.',
-                        experience: -20
-                    },
-                    {
-                        text: 'Enforce your preferred approach to be able to manage progress more efficiently',
-                        outcome: 'Collaboration is better than enforcement as each colleague brings a different skill set.',
-                        experience: -15
-                    },
-                    {
-                        text: 'Escalate to management immediately so they can set a company wide approach',
-                        outcome: 'It is preferred to initiate a team discussion first to potentially come to a collaborative agreement before escalation.',
-                        experience: -5
-                    }
-                ]
-            },
-            {
-                id: 15,
-                level: 'Advanced',
-                title: 'Quality Advocacy',
-                description: 'The team is pressured to reduce testing time. How do you respond?',
-                options: [
-                    {
-                        text: 'Present data-driven analysis of risks and quality impacts',
-                        outcome: 'Excellent! Data-driven advocacy helps maintain quality.',
-                        experience: 25,
-                        tool: 'Quality Impact Analysis'
-                    },
-                    {
-                        text: 'Accept the reduced timeline and continue with testing activities',
-                        outcome: 'Quality concerns should be raised professionally as issues could be missed with reduced coverage.',
-                        experience: -30
-                    },
-                    {
-                        text: 'Refuse to reduce the testing time as this will affect testing coverage and quality',
-                        outcome: 'It is preferred and professional to collaborate with stakeholders to find balanced solutions.',
-                        experience: -20
-                    },
-                    {
-                        text: 'Reduce test coverage without any risk analysis',
-                        outcome: 'Impact analysis is required and should be communicated with stakeholders before reducing coverage.',
-                        experience: -15
-                    }
-                ]
-            }
-        ];
-
         // Initialize UI and event listeners
         this.initializeEventListeners();
 
         this.isLoading = false;
+
+        // Add this debugging check to the constructor
+        console.log('[TesterMindsetQuiz] Quiz name being used:', this.quizName);
+        const relatedLocalStorage = Object.keys(localStorage).filter(k => 
+            k.includes('quiz_progress') || k.includes('tester-mindset')
+        );
+        console.log('[TesterMindsetQuiz] Related localStorage keys:', relatedLocalStorage);
+    
     }
 
-    showError(message) {
-        const errorDiv = document.createElement('div');
-        errorDiv.className = 'error-notification';
-        errorDiv.setAttribute('role', 'alert');
-        errorDiv.textContent = message;
-        document.body.appendChild(errorDiv);
-        setTimeout(() => errorDiv.remove(), 5000);
+ // Helper for showing errors to the user
+ showError(message) {
+    try {
+        const errorElement = document.createElement('div');
+        errorElement.className = 'error-message';
+        errorElement.textContent = message;
+        errorElement.style.color = 'red';
+        errorElement.style.padding = '20px';
+        errorElement.style.textAlign = 'center';
+        errorElement.style.fontWeight = 'bold';
+        
+        // Find a good place to show the error
+        const container = document.getElementById('game-screen') || 
+                          document.getElementById('quiz-container') || 
+                          document.body;
+        
+        if (container) {
+            // Clear container if not body
+            if (container !== document.body) {
+                container.innerHTML = '';
+            }
+            
+            container.appendChild(errorElement);
+            console.error('[TesterMindsetQuiz] Displayed error to user:', message);
+        }
+    } catch (e) {
+            console.error('[TesterMindsetQuiz] Failed to show error to user:', e);
+        }
     }
 
-    shouldEndGame(totalQuestionsAnswered, currentXP) {
-        // End game when all questions are answered
-        return totalQuestionsAnswered >= this.totalQuestions;
+    shouldEndGame() {
+        // Only end the game when all 15 questions are answered
+        return (this.player?.questionHistory?.length || 0) >= 15;
+    }
+
+    // Helper method to calculate the score percentage based on correct answers
+    calculateScorePercentage() {
+        const correctAnswers = this.player.questionHistory.filter(q => 
+            q.selectedAnswer && (q.selectedAnswer.isCorrect || 
+            q.selectedAnswer.experience === Math.max(...q.scenario.options.map(o => o.experience || 0)))
+        ).length;
+        return Math.round((correctAnswers / Math.max(1, Math.min(this.player.questionHistory.length, 15))) * 100);
+    }
+    async saveProgress() {
+        // First determine the status based on clear conditions
+        let status = 'in-progress';
+        
+        // Check for completion (all 15 questions answered)
+        if (this.player.questionHistory.length >= 15) {
+            // Calculate pass/fail based on correct answers
+            const correctAnswers = this.player.questionHistory.filter(q => 
+                q.selectedAnswer && (q.selectedAnswer.isCorrect || 
+                q.selectedAnswer.experience === Math.max(...q.scenario.options.map(o => o.experience || 0)))
+            ).length;
+            const scorePercentage = Math.round((correctAnswers / 15) * 100);
+            status = scorePercentage >= 70 ? 'passed' : 'failed';
+        }
+    
+        const progressData = {
+            experience: this.player.experience,
+            tools: this.player.tools,
+            currentScenario: this.player.currentScenario,
+            questionHistory: this.player.questionHistory,
+            lastUpdated: new Date().toISOString(),
+            questionsAnswered: this.player.questionHistory.length,
+            status: status,
+            scorePercentage: this.calculateScorePercentage()
+        };
+    
+        try {
+            const username = localStorage.getItem('username');
+            if (!username) {
+                console.error('No user found, cannot save progress');
+                return false;
+            }
+            
+            // Use user-specific key for localStorage
+            const storageKey = `quiz_progress_${username}_${this.quizName}`;
+            localStorage.setItem(storageKey, JSON.stringify({ data: progressData }));
+            
+            // ADDITIONAL FAILSAFE: Also save to sessionStorage which persists for the current session
+            try {
+                sessionStorage.setItem(storageKey, JSON.stringify({ 
+                    data: progressData,
+                    timestamp: Date.now()
+                }));
+                console.log('[TesterMindsetQuiz] Backed up progress to sessionStorage');
+                
+                // Create an emergency backup with a timestamp
+                const emergencyKey = `${storageKey}_emergency_${Date.now()}`;
+                sessionStorage.setItem(emergencyKey, JSON.stringify({ 
+                    data: progressData,
+                    timestamp: Date.now()
+                }));
+            } catch (sessionError) {
+                console.warn('[TesterMindsetQuiz] Failed to save to sessionStorage:', sessionError);
+            }
+            
+            // Try to use sync service, but have a direct API fallback
+            try {
+                if (typeof quizSyncService !== 'undefined') {
+                    quizSyncService.addToSyncQueue(username, this.quizName, progressData);
+                    console.log('[TesterMindsetQuiz] Added to sync queue');
+                } else {
+                    throw new Error('Sync service not available');
+                }
+            } catch (syncError) {
+                // Direct API saving as fallback
+                console.warn('[TesterMindsetQuiz] Sync service failed, trying direct API save:', syncError);
+                
+                try {
+                    await this.apiService.saveQuizProgress(this.quizName, progressData);
+                    console.log('[TesterMindsetQuiz] Saved progress directly to API');
+                } catch (apiError) {
+                    console.error('[TesterMindsetQuiz] Failed to save to API:', apiError);
+                    // Already saved to localStorage above, so we have a backup
+                }
+            }
+            
+            return true;
+        } catch (error) {
+            console.error('[TesterMindsetQuiz] Failed to save progress:', error);
+            
+            // EMERGENCY FALLBACK: Attempt to save to sessionStorage as last resort
+            try {
+                const username = localStorage.getItem('username') || 'anonymous';
+                const emergencyKey = `quiz_progress_${username}_${this.quizName}_emergency`;
+                sessionStorage.setItem(emergencyKey, JSON.stringify({ 
+                    data: progressData,
+                    timestamp: Date.now()
+                }));
+                console.log('[TesterMindsetQuiz] Saved emergency backup to sessionStorage');
+            } catch (sessionError) {
+                console.error('[TesterMindsetQuiz] All storage methods failed:', sessionError);
+            }
+            
+            return false;
+        }
+    }
+
+    async loadProgress() {
+        try {
+            const username = localStorage.getItem('username');
+            if (!username) {
+                console.error('[TesterMindsetQuiz] No user found, cannot load progress');
+                return false;
+            }
+
+            // Important diagnostic: log ALL quiz progress localStorage keys for this user
+            const allStorageKeys = Object.keys(localStorage).filter(key => 
+                key.includes('quiz_progress') && key.includes(username)
+            );
+            console.log('[TesterMindsetQuiz] ALL localStorage quiz progress keys for this user:', allStorageKeys);
+
+            // Define all possible storage keys in priority order
+            const storageKeys = [
+                `quiz_progress_${username}_${this.quizName}`,
+                `quiz_progress_${username}_${this.quizName}_backup`,
+                `quiz_progress_${username}_tester-mindset`,  // Fallback for standardized name
+                `quiz_progress_${username}_tester-mindset_backup`,
+                `quiz_progress_${username}_tester-mindset_emergency`
+            ];
+            
+            // Log which keys we will try
+            console.log('[TesterMindsetQuiz] Will try these localStorage keys in order:', storageKeys);
+            
+            let progressData = null;
+            let dataSource = '';
+            let apiProgress = null;
+            
+            // First collect ALL possible progress data sources before deciding which to use
+            
+            // Check sessionStorage first as an additional data source
+            let sessionStorageData = null;
+            try {
+                // Get all sessionStorage keys for this user
+                const sessionKeys = Object.keys(sessionStorage).filter(key => 
+                    key.includes('quiz_progress') && key.includes(username)
+                );
+                console.log('[TesterMindsetQuiz] SessionStorage keys found:', sessionKeys);
+                
+                // Get the most recent session storage data
+                if (sessionKeys.length > 0) {
+                    let mostRecentKey = sessionKeys[0];
+                    let mostRecentTime = 0;
+                    
+                    // Find most recent by looking at the keys with timestamps or data timestamps
+                    for (const key of sessionKeys) {
+                        try {
+                            const sessionData = JSON.parse(sessionStorage.getItem(key));
+                            // Check if key contains timestamp or data has timestamp
+                            const keyTimestamp = key.includes('emergency_') ? 
+                                parseInt(key.split('emergency_')[1]) : 0;
+                            const dataTimestamp = sessionData.timestamp ? 
+                                parseInt(sessionData.timestamp) : 0;
+                            
+                            const timestamp = Math.max(keyTimestamp, dataTimestamp);
+                            
+                            if (timestamp > mostRecentTime) {
+                                mostRecentTime = timestamp;
+                                mostRecentKey = key;
+                            }
+                        } catch (e) {}
+                    }
+                    
+                    // Load the most recent session data
+                    try {
+                        const sessionData = JSON.parse(sessionStorage.getItem(mostRecentKey));
+                        sessionStorageData = sessionData.data || sessionData;
+                        console.log('[TesterMindsetQuiz] Loaded most recent sessionStorage data from key:', 
+                            mostRecentKey, 'with question count:', 
+                            sessionStorageData.questionHistory?.length || 0);
+                    } catch (e) {
+                        console.warn('[TesterMindsetQuiz] Failed to parse session storage data:', e);
+                    }
+                }
+            } catch (sessionError) {
+                console.warn('[TesterMindsetQuiz] Error accessing sessionStorage:', sessionError);
+            }
+            
+            // Try to get progress from API
+            try {
+                console.log('[TesterMindsetQuiz] Attempting to load progress from API');
+                apiProgress = await this.apiService.getQuizProgress(this.quizName);
+                console.log('[TesterMindsetQuiz] API progress response:', apiProgress);
+                
+                if (apiProgress && apiProgress.data) {
+                    // Verify API data has actual content (not just empty structures)
+                    const apiHasProgress = 
+                        (apiProgress.data.questionHistory && apiProgress.data.questionHistory.length > 0) &&
+                        (apiProgress.data.currentScenario && apiProgress.data.currentScenario > 0);
+                    
+                    if (apiHasProgress) {
+                        console.log('[TesterMindsetQuiz] API data contains valid progress with questions:', 
+                            apiProgress.data.questionHistory.length);
+                    } else {
+                        console.warn('[TesterMindsetQuiz] API returned data but without valid questions or progress');
+                    }
+                } else {
+                    console.warn('[TesterMindsetQuiz] API returned no valid data');
+                }
+            } catch (apiError) {
+                console.warn('[TesterMindsetQuiz] Failed to load progress from API:', apiError);
+            }
+            
+            // Collect all localStorage data
+            const localStorageData = {};
+            let bestLocalStorageData = null;
+            let bestQuestionCount = 0;
+            
+            for (const key of storageKeys) {
+                const localData = localStorage.getItem(key);
+                
+                if (localData) {
+                    try {
+                        const parsed = JSON.parse(localData);
+                        const candidateData = parsed.data || parsed;
+                        
+                        // Store all parsed data for reference
+                        localStorageData[key] = candidateData;
+                        
+                        // Check if this data has any question history
+                        if (candidateData && Array.isArray(candidateData.questionHistory)) {
+                            const questionCount = candidateData.questionHistory.length;
+                            console.log(`[TesterMindsetQuiz] Found localStorage data in ${key} with ${questionCount} questions`);
+                            
+                            // Keep track of the best localStorage data (most questions)
+                            if (questionCount > bestQuestionCount) {
+                                bestLocalStorageData = candidateData;
+                                bestQuestionCount = questionCount;
+                                console.log(`[TesterMindsetQuiz] This is now the best local storage data (${questionCount} questions)`);
+                            }
+                        }
+                    } catch (parseError) {
+                        console.error(`[TesterMindsetQuiz] Failed to parse localStorage data for key ${key}:`, parseError);
+                    }
+                }
+            }
+            
+            // Now choose the best data source based on which has the most questions
+            
+            // Track the best data and its source
+            let bestData = null;
+            let bestSource = '';
+            let bestCount = 0;
+            
+            // Check API data
+            if (apiProgress && apiProgress.data && 
+                apiProgress.data.questionHistory && 
+                apiProgress.data.questionHistory.length > 0) {
+                
+                bestData = apiProgress.data;
+                bestSource = 'API';
+                bestCount = apiProgress.data.questionHistory.length;
+                console.log(`[TesterMindsetQuiz] API data has ${bestCount} questions`);
+            }
+            
+            // Check localStorage data
+            if (bestLocalStorageData && 
+                bestLocalStorageData.questionHistory && 
+                bestLocalStorageData.questionHistory.length > bestCount) {
+                
+                bestData = bestLocalStorageData;
+                bestSource = 'localStorage';
+                bestCount = bestLocalStorageData.questionHistory.length;
+                console.log(`[TesterMindsetQuiz] localStorage data has ${bestCount} questions, better than current best`);
+            }
+            
+            // Check sessionStorage data
+            if (sessionStorageData && 
+                sessionStorageData.questionHistory && 
+                sessionStorageData.questionHistory.length > bestCount) {
+                
+                bestData = sessionStorageData;
+                bestSource = 'sessionStorage';
+                bestCount = sessionStorageData.questionHistory.length;
+                console.log(`[TesterMindsetQuiz] sessionStorage data has ${bestCount} questions, better than current best`);
+            }
+            
+            // Use the best data we've found
+            if (bestData) {
+                console.log(`[TesterMindsetQuiz] Using best progress data from ${bestSource} with ${bestCount} questions`);
+                progressData = bestData;
+                dataSource = bestSource;
+                
+                // If the best data wasn't from the API, sync it back to the API
+                if (bestSource !== 'API' && bestCount > 0) {
+                    try {
+                        console.log('[TesterMindsetQuiz] Syncing best progress data to API and localStorage');
+                        
+                        // Update localStorage with the best data
+                        localStorage.setItem(storageKeys[0], JSON.stringify({ 
+                            data: progressData,
+                            timestamp: Date.now() 
+                        }));
+                        
+                        // Update API with the best data
+                        await this.apiService.saveQuizProgress(this.quizName, progressData);
+                    } catch (syncError) {
+                        console.warn('[TesterMindsetQuiz] Failed to sync best progress data:', syncError);
+                    }
+                }
+            } else {
+                console.log('[TesterMindsetQuiz] No valid progress data found from any source, trying recovery...');
+                
+                // Try to recover from the sync service as last resort
+                try {
+                    // Get QuizSyncService if available
+                    if (typeof window.quizSyncService !== 'undefined' || typeof quizSyncService !== 'undefined') {
+                        const syncService = window.quizSyncService || quizSyncService;
+                        const recoveredData = await syncService.recoverProgressData(username, this.quizName);
+                        
+                        if (recoveredData) {
+                            console.log('[TesterMindsetQuiz] Successfully recovered data from QuizSyncService');
+                            progressData = recoveredData;
+                            dataSource = 'recovered';
+                        } else {
+                            console.warn('[TesterMindsetQuiz] No data could be recovered, returning false');
+                            return false;
+                        }
+                    } else {
+                        console.warn('[TesterMindsetQuiz] QuizSyncService not available, cannot recover');
+                        return false;
+                    }
+                } catch (recoveryError) {
+                    console.error('[TesterMindsetQuiz] Error during data recovery:', recoveryError);
+                    return false;
+                }
+            }
+
+            if (progressData) {
+                console.log(`[TesterMindsetQuiz] Processing loaded progress data from ${dataSource}`);
+                
+                // Sanitize and validate data to prevent invalid values
+                progressData.experience = !isNaN(parseFloat(progressData.experience)) ? parseFloat(progressData.experience) : 0;
+                progressData.tools = Array.isArray(progressData.tools) ? progressData.tools : [];
+                progressData.questionHistory = Array.isArray(progressData.questionHistory) ? 
+                    progressData.questionHistory : [];
+                
+                // CRITICAL: Ensure currentScenario is consistent with question history
+                // This is a key point of failure
+                if (progressData.questionHistory.length > 0) {
+                    console.log('[TesterMindsetQuiz] Setting currentScenario to match questionHistory.length:', 
+                        progressData.questionHistory.length);
+                    
+                    // ALWAYS set currentScenario to match the question history length
+                    // This ensures we go to the next unanswered question
+                    progressData.currentScenario = progressData.questionHistory.length;
+                } else {
+                    console.log('[TesterMindsetQuiz] No questions in history, starting from beginning');
+                    progressData.currentScenario = 0;
+                }
+                
+                // Fix inconsistent state: if quiz is marked as completed but has no progress
+                if ((progressData.status === 'completed' || 
+                     progressData.status === 'passed' || 
+                     progressData.status === 'failed') && 
+                    (progressData.questionHistory.length === 0 || 
+                     progressData.currentScenario === 0)) {
+                    console.log('[TesterMindsetQuiz] Fixing inconsistent state: quiz marked as completed but has no progress');
+                    progressData.status = 'in-progress';
+                }
+
+                // Update the player state with the loaded progress data
+                this.player.experience = progressData.experience;
+                this.player.tools = progressData.tools;
+                this.player.questionHistory = progressData.questionHistory;
+                this.player.currentScenario = progressData.currentScenario;
+                
+                console.log('[TesterMindsetQuiz] Player state updated:', {
+                    experience: this.player.experience,
+                    questionHistory: this.player.questionHistory.length,
+                    currentScenario: this.player.currentScenario,
+                    status: progressData.status,
+                    source: dataSource
+                });
+                
+                // Only show end screen if quiz is actually completed and has progress
+                if ((progressData.status === 'completed' || 
+                     progressData.status === 'passed' || 
+                     progressData.status === 'failed') && 
+                    progressData.questionHistory.length > 0 && 
+                    progressData.currentScenario > 0) {
+                    console.log(`[TesterMindsetQuiz] Quiz is ${progressData.status} with ${progressData.questionHistory.length} questions answered`);
+                    this.endGame(progressData.status === 'failed');
+                    return true;
+                }
+
+                // Additional guard: verify that progress was loaded correctly
+                if (this.player.questionHistory.length === 0 && progressData.questionHistory.length > 0) {
+                    console.error('[TesterMindsetQuiz] CRITICAL ERROR: Failed to load question history properly!');
+                    // Forced retry with direct assignment
+                    this.player.questionHistory = [...progressData.questionHistory];
+                    this.player.currentScenario = this.player.questionHistory.length;
+                    console.log('[TesterMindsetQuiz] Forced player state update after error:', {
+                        questionHistory: this.player.questionHistory.length,
+                        currentScenario: this.player.currentScenario
+                    });
+                }
+
+                // Force save progress back to ensure consistency
+                await this.saveProgress();
+                
+                // Show the current question based on progress
+                this.displayScenario();
+                return true;
+            }
+            
+            console.log('[TesterMindsetQuiz] No existing progress found');
+            return false;
+        } catch (error) {
+            console.error('[TesterMindsetQuiz] Error loading progress:', error);
+            
+            // As a last resort, try to recover progress data using the QuizSyncService
+            try {
+                console.log('[TesterMindsetQuiz] Attempting emergency progress recovery after error');
+                return await this.recoverProgress();
+            } catch (recoveryError) {
+                console.error('[TesterMindsetQuiz] Emergency recovery also failed:', recoveryError);
+                return false;
+            }
+        }
     }
 
     async startGame() {
@@ -689,11 +559,6 @@ export class TesterMindsetQuiz extends BaseQuiz {
                 loadingIndicator.classList.remove('hidden');
             }
 
-            // Initialize randomizedScenarios if not already
-            if (!this.randomizedScenarios) {
-                this.randomizedScenarios = {};
-            }
-
             // Set player name from localStorage
             this.player.name = localStorage.getItem('username');
             if (!this.player.name) {
@@ -701,85 +566,22 @@ export class TesterMindsetQuiz extends BaseQuiz {
                 return;
             }
 
-            // Initialize event listeners
-            this.initializeEventListeners();
+            // Try to load scenarios from API with caching
+            await this.loadScenariosWithCaching();
 
             // Load previous progress
-            let hasProgress = await this.loadProgress();
-            console.log('[TesterMindsetQuiz] Previous progress loaded:', hasProgress, 'Current scenario:', this.player.currentScenario);
+            const hasProgress = await this.loadProgress();
+            console.log('Previous progress loaded:', hasProgress);
             
-            // Get the API progress directly to inspect it
-            const apiProgress = await this.apiService.getQuizProgress(this.quizName);
-            console.log('[TesterMindsetQuiz] API progress response:', apiProgress);
-            
-            // We've removed the inconsistency check block that was causing the reset
-            
-            if (hasProgress) {
-                // Ensure currentScenario is properly initialized and log it
-                if (this.player.currentScenario === undefined || this.player.currentScenario === null) {
-                    this.player.currentScenario = this.player.questionHistory.length;
-                    console.log('[TesterMindsetQuiz] Fixed missing currentScenario value to:', this.player.currentScenario);
-                }
-                
-                // Apply specific fix for reloading tester-mindset quiz:
-                // If we have question history but currentScenario is 0, fix it
-                if (this.player.questionHistory && this.player.questionHistory.length > 0 && 
-                    (this.player.currentScenario === 0 || this.player.currentScenario < this.player.questionHistory.length)) {
-                    console.log('[TesterMindsetQuiz] Fixing inconsistent state - setting currentScenario to match question history');
-                    this.player.currentScenario = this.player.questionHistory.length;
-                    // Save this fix immediately
-                    await this.saveProgress();
-                }
-                
-                // If we have progress, try to load randomized scenarios
-                if (apiProgress && apiProgress.data && apiProgress.data.randomizedScenarios) {
-                    console.log('[TesterMindsetQuiz] Loaded randomized scenarios from API:', apiProgress.data.randomizedScenarios);
-                    
-                    // Convert the loaded randomizedScenarios back to full scenario objects
-                    // This is necessary because when saved, only IDs may be stored
-                    const loadedScenarios = apiProgress.data.randomizedScenarios;
-                    Object.keys(loadedScenarios).forEach(key => {
-                        // Determine which scenario set to use based on the key
-                        let scenarioSet;
-                        if (key.includes('basic')) {
-                            scenarioSet = this.basicScenarios;
-                        } else if (key.includes('intermediate')) {
-                            scenarioSet = this.intermediateScenarios;
-                        } else if (key.includes('advanced')) {
-                            scenarioSet = this.advancedScenarios;
-                        }
-                        
-                        if (scenarioSet && Array.isArray(loadedScenarios[key])) {
-                            // Convert scenario IDs back to full scenario objects
-                            this.randomizedScenarios[key] = loadedScenarios[key].map(scenarioIdOrObj => {
-                                // Handle both ID number and object with ID property
-                                const scenarioId = typeof scenarioIdOrObj === 'object' ? scenarioIdOrObj.id : scenarioIdOrObj;
-                                return scenarioSet.find(s => s.id === scenarioId) || scenarioSet[0]; // Fallback to first scenario if not found
-                            }).filter(Boolean);
-                            
-                            console.log(`[TesterMindsetQuiz] Restored ${this.randomizedScenarios[key].length} scenarios for ${key}`);
-                        }
-                    });
-                }
-            } else {
+            if (!hasProgress) {
                 // Reset player state if no valid progress exists
                 this.player.experience = 0;
                 this.player.tools = [];
                 this.player.currentScenario = 0;
                 this.player.questionHistory = [];
-                
-                // Clear any existing randomized scenarios
-                this.randomizedScenarios = {};
+                // Only show scenario if no progress
+                this.displayScenario();
             }
-            
-            // Double-check if player.currentScenario is properly set
-            if (this.player.currentScenario === undefined || this.player.currentScenario === null) {
-                this.player.currentScenario = this.player.questionHistory.length;
-            }
-            
-            console.log('[TesterMindsetQuiz] Final player state before display:', 
-                       'currentScenario:', this.player.currentScenario,
-                       'questionHistory.length:', this.player.questionHistory.length);
             
             // Clear any existing transition messages
             const transitionContainer = document.getElementById('level-transition-container');
@@ -788,12 +590,11 @@ export class TesterMindsetQuiz extends BaseQuiz {
                 transitionContainer.classList.remove('active');
             }
 
-            // Clear any existing timer
-            if (this.questionTimer) {
-                clearInterval(this.questionTimer);
-            }
-            
-            await this.displayScenario();
+            // Add this to the startGame method after loading progress
+            console.log('[TesterMindsetQuiz] Progress status check:', {
+                playerState: this.player,
+                localStorageKeys: Object.keys(localStorage).filter(k => k.includes('quiz_progress'))
+            });
         } catch (error) {
             console.error('Failed to start game:', error);
             this.showError('Failed to start the quiz. Please try refreshing the page.');
@@ -827,182 +628,197 @@ export class TesterMindsetQuiz extends BaseQuiz {
     }
 
     displayScenario() {
-        // First check if we've answered all questions
-        if (this.player.questionHistory.length >= this.totalQuestions || this.player.currentScenario >= this.totalQuestions) {
-            console.log('[TesterMindsetQuiz] All questions completed, ending game');
+        // Use currentScenario for all progress logic
+        const currentScenarioIndex = this.player.currentScenario;
+        const totalAnswered = this.player.questionHistory.length;
+        const totalQuestions = this.totalQuestions || 15;
+
+        console.log('[TesterMindsetQuiz][displayScenario] Showing scenario:', {
+            currentScenarioIndex,
+            totalAnswered,
+            totalQuestions
+        });
+
+        // Debug: verify currentScenario and questionHistory are aligned correctly
+        if (currentScenarioIndex !== totalAnswered) {
+            console.warn('[TesterMindsetQuiz][displayScenario] Misalignment detected! currentScenario and questionHistory.length don\'t match:',
+                `currentScenario=${currentScenarioIndex}, questionHistory.length=${totalAnswered}`);
+            
+            // Auto-fix if there's a mismatch - this is critical for proper quiz flow
+            if (totalAnswered > 0 && currentScenarioIndex === 0) {
+                console.log('[TesterMindsetQuiz][displayScenario] Auto-fixing: Setting currentScenario to match questionHistory.length');
+                this.player.currentScenario = totalAnswered;
+            }
+        }
+
+        // Check if we've answered all questions
+        if (currentScenarioIndex >= totalQuestions) {
+            console.log('[TesterMindsetQuiz][displayScenario] All questions answered, ending game');
             this.endGame(false);
             return;
         }
-        
-        // Get the randomized scenarios for the current level
-        const currentScenarios = this.getCurrentScenarios();
-        
-        // Use player.currentScenario to determine level and index
-        const questionCount = this.player.currentScenario;
-        console.log(`[TesterMindsetQuiz] Displaying scenario for position: ${questionCount}`);
-        
-        // Determine which level we're in and set the correct index
-        let currentLevelIndex;
-        if (questionCount < 5) {
-            // Basic questions (0-4)
-            currentLevelIndex = questionCount;
-        } else if (questionCount < 10) {
-            // Intermediate questions (5-9)
-            currentLevelIndex = questionCount - 5;
-        } else {
-            // Advanced questions (10-14)
-            currentLevelIndex = questionCount - 10;
-        }
-        
-        // Get the scenario from the current randomized scenarios
-        const scenario = currentScenarios[currentLevelIndex];
-        
-        if (!scenario) {
-            console.error('[TesterMindsetQuiz] No scenario found for current progress. Question count:', questionCount, 'Level index:', currentLevelIndex);
-            console.error('[TesterMindsetQuiz] Available scenarios:', currentScenarios);
-            
-            // Safety check - if we're close to the end, just end the game
-            if (questionCount >= 10) {
-                console.log('[TesterMindsetQuiz] Near completion but no scenario found, ending game');
-                this.endGame(false);
-                return;
-            }
-            
-            // Otherwise, try to repair the state
-            console.log('[TesterMindsetQuiz] Attempting to recover by regenerating scenarios');
-            
-            // Force regenerate the scenarios for the current level
-            let level;
-            if (questionCount < 5) {
-                level = 'basic';
-                this.randomizedScenarios[`${this.quizName}_${level}`] = this.getRandomizedScenarios(level, this.basicScenarios);
-            } else if (questionCount < 10) {
-                level = 'intermediate';
-                this.randomizedScenarios[`${this.quizName}_${level}`] = this.getRandomizedScenarios(level, this.intermediateScenarios);
-            } else {
-                level = 'advanced';
-                this.randomizedScenarios[`${this.quizName}_${level}`] = this.getRandomizedScenarios(level, this.advancedScenarios);
-            }
-            
-            // Try again to get the scenario
-            const newScenarios = this.getCurrentScenarios();
-            const newScenario = newScenarios[currentLevelIndex];
-            
-            if (!newScenario) {
-                console.error('[TesterMindsetQuiz] Recovery failed, ending game with error');
-                this.endGame(true);
-                return;
-            }
-            
-            console.log('[TesterMindsetQuiz] Recovery successful, continuing with new scenario');
-        }
-        
-        // Now we have a valid scenario, continue as normal
-        const validScenario = scenario || currentScenarios[currentLevelIndex];
 
-        // Store current question number for consistency
-        this.currentQuestionNumber = questionCount + 1;
+        // Determine level and scenario set
+        let scenario;
+        let scenarioSet;
+        let scenarioLevel;
         
-        // Show level transition message at the start of each level or when level changes
-        const currentLevel = this.getCurrentLevel();
-        const previousLevel = questionCount > 0 ? 
-            (questionCount < 5 ? 'Basic' : 
-             questionCount < 10 ? 'Intermediate' : 'Advanced') : null;
-            
-        if (questionCount === 0 || 
-            (questionCount === 5 && currentLevel === 'Intermediate') || 
-            (questionCount === 10 && currentLevel === 'Advanced')) {
-            const transitionContainer = document.getElementById('level-transition-container');
-            if (transitionContainer) {
-                transitionContainer.innerHTML = ''; // Clear any existing messages
+        try {
+            // Calculate which level we're on and get the appropriate scenario set
+            if (currentScenarioIndex < 5) {
+                scenarioSet = this.basicScenarios;
+                scenarioLevel = 'Basic';
+                scenario = scenarioSet[currentScenarioIndex];
+            } else if (currentScenarioIndex < 10) {
+                scenarioSet = this.intermediateScenarios;
+                scenarioLevel = 'Intermediate';
+                scenario = scenarioSet[currentScenarioIndex - 5];
+            } else if (currentScenarioIndex < 15) {
+                scenarioSet = this.advancedScenarios;
+                scenarioLevel = 'Advanced';
+                scenario = scenarioSet[currentScenarioIndex - 10];
+            }
+
+            if (!scenario) {
+                console.error('[TesterMindsetQuiz][displayScenario] No scenario found for currentScenario:', currentScenarioIndex);
+                console.log('[TesterMindsetQuiz][displayScenario] Scenario sets:', {
+                    basic: this.basicScenarios?.length || 0,
+                    intermediate: this.intermediateScenarios?.length || 0,
+                    advanced: this.advancedScenarios?.length || 0
+                });
                 
-                const levelMessage = document.createElement('div');
-                levelMessage.className = 'level-transition';
-                levelMessage.setAttribute('role', 'alert');
-                levelMessage.textContent = `Starting ${currentLevel} Questions`;
-                
-                transitionContainer.appendChild(levelMessage);
-                transitionContainer.classList.add('active');
-                
-                // Update the level indicator
-                const levelIndicator = document.getElementById('level-indicator');
-                if (levelIndicator) {
-                    levelIndicator.textContent = `Level: ${currentLevel}`;
+                // Emergency fallback - try to recover by moving to next question or resetting
+                if (totalAnswered > 0 && totalAnswered < totalQuestions) {
+                    console.log('[TesterMindsetQuiz][displayScenario] Attempting recovery by moving to next available scenario');
+                    this.player.currentScenario = totalAnswered;
+                    // Try recursively one more time with the fixed index
+                    this.displayScenario();
+                    return;
+                } else {
+                    // If we still can't recover, try the emergency recovery method
+                    console.log('[TesterMindsetQuiz][displayScenario] Attempting emergency data recovery');
+                    this.recoverProgress().then(success => {
+                        if (!success) {
+                            // If recovery fails, show end game as last resort
+                            this.endGame(true);
+                        }
+                    }).catch(() => this.endGame(true));
+                    return;
                 }
-                
-                // Remove the message and container height after animation
-                setTimeout(() => {
-                    transitionContainer.classList.remove('active');
-                    setTimeout(() => {
-                        transitionContainer.innerHTML = '';
-                    }, 300); // Wait for height transition to complete
-                }, 3000);
             }
-        }
 
-        // Update scenario display
-        const titleElement = document.getElementById('scenario-title');
-        const descriptionElement = document.getElementById('scenario-description');
-        const optionsContainer = document.getElementById('options-container');
+            // Store current question number for consistency
+            this.currentQuestionNumber = currentScenarioIndex + 1;
 
-        if (!titleElement || !descriptionElement || !optionsContainer) {
-            console.error('Required elements not found');
-            return;
-        }
+            // Show level transition message at the start of each level or when level changes
+            if (
+                currentScenarioIndex === 0 ||
+                (currentScenarioIndex === 5 && scenarioLevel === 'Intermediate') ||
+                (currentScenarioIndex === 10 && scenarioLevel === 'Advanced')
+            ) {
+                const transitionContainer = document.getElementById('level-transition-container');
+                if (transitionContainer) {
+                    transitionContainer.innerHTML = '';
+                    const levelMessage = document.createElement('div');
+                    levelMessage.className = 'level-transition';
+                    levelMessage.setAttribute('role', 'alert');
+                    levelMessage.textContent = `Starting ${scenarioLevel} Questions`;
+                    transitionContainer.appendChild(levelMessage);
+                    transitionContainer.classList.add('active');
+                    const levelIndicator = document.getElementById('level-indicator');
+                    if (levelIndicator) {
+                        levelIndicator.textContent = `Level: ${scenarioLevel}`;
+                    }
+                    setTimeout(() => {
+                        transitionContainer.classList.remove('active');
+                        setTimeout(() => {
+                            transitionContainer.innerHTML = '';
+                        }, 300);
+                    }, 3000);
+                }
+            }
 
-        titleElement.textContent = validScenario.title;
-        descriptionElement.textContent = validScenario.description;
+            // Update scenario display
+            const titleElement = document.getElementById('scenario-title');
+            const descriptionElement = document.getElementById('scenario-description');
+            const optionsContainer = document.getElementById('options-container');
 
-        // Update question counter immediately
-        const questionProgress = document.getElementById('question-progress');
-        if (questionProgress) {
-            questionProgress.textContent = `Question: ${this.currentQuestionNumber}/${this.totalQuestions}`;
-        }
+            if (!titleElement || !descriptionElement || !optionsContainer) {
+                console.error('[TesterMindsetQuiz][displayScenario] Required elements not found');
+                return;
+            }
 
-        // Create a copy of options with their original indices
-        const shuffledOptions = validScenario.options.map((option, index) => ({
-            ...option,
-            originalIndex: index
-        }));
+            titleElement.textContent = scenario.title;
+            descriptionElement.textContent = scenario.description;
 
-        // Shuffle the options
-        for (let i = shuffledOptions.length - 1; i > 0; i--) {
-            const j = Math.floor(Math.random() * (i + 1));
-            [shuffledOptions[i], shuffledOptions[j]] = [shuffledOptions[j], shuffledOptions[i]];
-        }
+            // Update question counter
+            const questionProgress = document.getElementById('question-progress');
+            if (questionProgress) {
+                questionProgress.textContent = `Question: ${this.currentQuestionNumber}/15`;
+            }
 
-        optionsContainer.innerHTML = '';
+            // Create a copy of options with their original indices
+            const shuffledOptions = scenario.options.map((option, index) => ({
+                ...option,
+                originalIndex: index
+            }));
+            for (let i = shuffledOptions.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [shuffledOptions[i], shuffledOptions[j]] = [shuffledOptions[j], shuffledOptions[i]];
+            }
+            optionsContainer.innerHTML = '';
+            
+            shuffledOptions.forEach((option, index) => {
+                const optionElement = document.createElement('div');
+                optionElement.className = 'option';
+                optionElement.innerHTML = `
+                    <input type="radio" 
+                        name="option" 
+                        value="${option.originalIndex}" 
+                        id="option${index}"
+                        tabindex="0"
+                        aria-label="${option.text}"
+                        role="radio">
+                    <label for="option${index}">${option.text}</label>
+                `;
+                optionsContainer.appendChild(optionElement);
+            });
 
-        shuffledOptions.forEach((option, index) => {
-            const optionElement = document.createElement('div');
-            optionElement.className = 'option';
-            optionElement.innerHTML = `
-                <input type="radio" 
-                    name="option" 
-                    value="${option.originalIndex}" 
-                    id="option${index}"
-                    tabindex="0"
-                    aria-label="${option.text}"
-                    role="radio">
-                <label for="option${index}">${option.text}</label>
-            `;
-            optionsContainer.appendChild(optionElement);
-        });
+            this.updateProgress();
+            this.initializeTimer();
+            console.log('[TesterMindsetQuiz][displayScenario] Showing scenario', scenarioLevel, 'index', currentScenarioIndex, scenario.title);
 
-        this.updateProgress();
+            // Make scenario screen visible if not already
+            const gameScreen = document.getElementById('game-screen');
+            if (gameScreen && gameScreen.classList.contains('hidden')) {
+                console.log('[TesterMindsetQuiz][displayScenario] Making game screen visible');
+                gameScreen.classList.remove('hidden');
+            }
 
-        // Initialize timer for the new question
-        this.initializeTimer();
-        
-        // Make sure this scenario is displayed in the game screen, not on outcome or end screen
-        if (this.gameScreen) {
-            this.gameScreen.classList.remove('hidden');
-        }
-        if (this.outcomeScreen) {
-            this.outcomeScreen.classList.add('hidden');
-        }
-        if (this.endScreen) {
-            this.endScreen.classList.add('hidden');
+            // Add extra log after showing
+            setTimeout(() => {
+                console.log('[TesterMindsetQuiz][displayScenario][post-show] player state:', {
+                    experience: this.player.experience,
+                    questionHistory: this.player.questionHistory.length,
+                    currentScenario: this.player.currentScenario
+                });
+            }, 0);
+        } catch (error) {
+            console.error('[TesterMindsetQuiz][displayScenario] Error showing scenario:', error);
+            // Emergency recovery if an error occurs
+            const gameScreen = document.getElementById('game-screen');
+            if (gameScreen) gameScreen.classList.remove('hidden');
+            
+            // Try to recover progress data in case of display error
+            console.log('[TesterMindsetQuiz][displayScenario] Attempting emergency recovery after display error');
+            this.recoverProgress().then(success => {
+                if (!success) {
+                    // If recovery fails, show error message
+                    this.showError('An error occurred loading the quiz. Try refreshing the page.');
+                }
+            }).catch(() => {
+                this.showError('An error occurred loading the quiz. Try refreshing the page.');
+            });
         }
     }
 
@@ -1014,7 +830,7 @@ export class TesterMindsetQuiz extends BaseQuiz {
             submitButton.disabled = true;
         }
 
-        // Clear any existing timer
+        // Clear the timer when an answer is submitted
         if (this.questionTimer) {
             clearInterval(this.questionTimer);
         }
@@ -1025,23 +841,7 @@ export class TesterMindsetQuiz extends BaseQuiz {
             if (!selectedOption) return;
 
             const currentScenarios = this.getCurrentScenarios();
-            
-            // Determine which level we're in and set the correct index
-            const questionCount = this.player.currentScenario;
-            let currentLevelIndex;
-            
-            if (questionCount < 5) {
-                // Basic questions (0-4)
-                currentLevelIndex = questionCount;
-            } else if (questionCount < 10) {
-                // Intermediate questions (5-9)
-                currentLevelIndex = questionCount - 5;
-            } else {
-                // Advanced questions (10-14)
-                currentLevelIndex = questionCount - 10;
-            }
-            
-            const scenario = currentScenarios[currentLevelIndex];
+            const scenario = currentScenarios[this.player.currentScenario < 5 ? this.player.currentScenario : this.player.currentScenario < 10 ? this.player.currentScenario - 5 : this.player.currentScenario - 10];
             const originalIndex = parseInt(selectedOption.value);
             
             const selectedAnswer = scenario.options[originalIndex];
@@ -1072,9 +872,6 @@ export class TesterMindsetQuiz extends BaseQuiz {
 
             // Increment current scenario
             this.player.currentScenario++;
-            
-            console.log('[TesterMindsetQuiz] After handling answer - currentScenario:', this.player.currentScenario, 
-                       'questionHistory.length:', this.player.questionHistory.length);
 
             // Save progress
             await this.saveProgress();
@@ -1088,7 +885,7 @@ export class TesterMindsetQuiz extends BaseQuiz {
                 experience: this.player.experience,
                 questionHistory: this.player.questionHistory,
                 questionsAnswered: this.player.questionHistory.length,
-                lastUpdated: new Date().toISOString()
+                lastActive: new Date().toISOString()
             };
             
             // Save quiz result
@@ -1129,11 +926,6 @@ export class TesterMindsetQuiz extends BaseQuiz {
             }
 
             this.updateProgress();
-
-            // Check if all questions have been answered
-            if (this.shouldEndGame(this.player.questionHistory.length, this.player.experience)) {
-                await this.endGame(false);
-            }
         } catch (error) {
             console.error('Failed to handle answer:', error);
             this.showError('Failed to save your answer. Please try again.');
@@ -1229,61 +1021,15 @@ export class TesterMindsetQuiz extends BaseQuiz {
     }
 
     getCurrentScenarios() {
-        const totalAnswered = this.player.currentScenario || 0;
-        console.log(`[TesterMindsetQuiz] Getting scenarios for question ${totalAnswered}`);
+        const totalAnswered = this.player.questionHistory.length;
         
-        let level;
-        let scenarios;
-        
+        // Progress through levels based only on question count
         if (totalAnswered >= 10) {
-            level = 'advanced';
-            scenarios = this.advancedScenarios;
+            return this.advancedScenarios;
         } else if (totalAnswered >= 5) {
-            level = 'intermediate';
-            scenarios = this.intermediateScenarios;
-        } else {
-            level = 'basic';
-            scenarios = this.basicScenarios;
+            return this.intermediateScenarios;
         }
-        
-        // Initialize randomizedScenarios if not already done
-        if (!this.randomizedScenarios) {
-            console.log('[TesterMindsetQuiz] Initializing empty randomizedScenarios');
-            this.randomizedScenarios = {};
-        }
-        
-        // Use the getRandomizedScenarios method to get or create random scenarios
-        // Add the quiz name to make sure the key is unique
-        const quizLevelKey = `${this.quizName}_${level}`;
-        console.log(`[TesterMindsetQuiz] Checking for scenarios with key: ${quizLevelKey}`);
-        
-        // Check if we already have stored scenarios for this level
-        if (this.randomizedScenarios[quizLevelKey] && this.randomizedScenarios[quizLevelKey].length > 0) {
-            console.log(`[TesterMindsetQuiz] Using existing randomized scenarios for ${this.quizName} - ${level}: ${this.randomizedScenarios[quizLevelKey].length} scenarios`);
-            
-            // Additional check to ensure the scenarios have the necessary properties
-            const validScenarios = this.randomizedScenarios[quizLevelKey].every(s => 
-                s && typeof s === 'object' && s.options && Array.isArray(s.options));
-                
-            if (!validScenarios) {
-                console.warn(`[TesterMindsetQuiz] Found invalid scenarios for ${level}, regenerating...`);
-                this.randomizedScenarios[quizLevelKey] = this.getRandomizedScenarios(level, scenarios);
-                
-                // Save the updated randomized scenarios immediately
-                this.saveRandomizedScenarios();
-            }
-            
-            return this.randomizedScenarios[quizLevelKey];
-        }
-        
-        // Otherwise generate random scenarios for this level
-        console.log(`[TesterMindsetQuiz] Generating new randomized scenarios for ${this.quizName} - ${level}`);
-        this.randomizedScenarios[quizLevelKey] = this.getRandomizedScenarios(level, scenarios);
-        
-        // Save the new randomized scenarios immediately
-        this.saveRandomizedScenarios();
-        
-        return this.randomizedScenarios[quizLevelKey];
+        return this.basicScenarios;
     }
 
     getCurrentLevel() {
@@ -1409,8 +1155,12 @@ export class TesterMindsetQuiz extends BaseQuiz {
             progressCard.style.display = 'none';
         }
 
-        // Calculate final score percentage based on correct answers
-        const scorePercentage = this.calculateScorePercentage();
+        // Calculate final score based on correct answers
+        const correctAnswers = this.player.questionHistory.filter(q => 
+            q.selectedAnswer && (q.selectedAnswer.isCorrect || 
+            q.selectedAnswer.experience === Math.max(...q.scenario.options.map(o => o.experience || 0)))
+        ).length;
+        const scorePercentage = Math.round((correctAnswers / 15) * 100);
         const hasPassed = !failed && scorePercentage >= this.passPercentage;
         
         // Save the final quiz result with pass/fail status
@@ -1457,13 +1207,14 @@ export class TesterMindsetQuiz extends BaseQuiz {
                 
                 // Clear any local storage for this quiz
                 this.clearQuizLocalStorage(username, this.quizName);
+                
             } catch (error) {
                 console.error('Error saving final quiz score:', error);
             }
         }
 
         document.getElementById('final-score').textContent = `Final Score: ${scorePercentage}%`;
-        
+
         // Update the quiz complete header based on status
         const quizCompleteHeader = document.querySelector('#end-screen h2');
         if (quizCompleteHeader) {
@@ -1520,417 +1271,145 @@ export class TesterMindsetQuiz extends BaseQuiz {
         this.generateRecommendations();
     }
 
-    // Helper method to calculate the score percentage based on correct answers
-    calculateScorePercentage() {
-        const correctAnswers = this.player.questionHistory.filter(q => 
-            q.selectedAnswer && (q.selectedAnswer.isCorrect || 
-            q.selectedAnswer.experience === Math.max(...q.scenario.options.map(o => o.experience || 0)))
-        ).length;
+    async loadScenariosWithCaching() {
+        // Try to load from cache first
+        const cachedData = localStorage.getItem(`quiz_scenarios_${this.quizName}`);
+        const cacheTimestamp = localStorage.getItem(`quiz_scenarios_${this.quizName}_timestamp`);
         
-        // Calculate percentage based on completed questions (cap at max questions)
-        const totalAnswered = Math.min(this.player.questionHistory.length, this.totalQuestions);
-        return totalAnswered > 0 ? Math.round((correctAnswers / totalAnswered) * 100) : 0;
-    }
-
-    clearQuizLocalStorage(username, quizName) {
-        // Use the API service's implementation instead of a custom one
+        // Check if cache is valid (less than 1 day old)
+        const cacheValid = cacheTimestamp && (Date.now() - parseInt(cacheTimestamp)) < 86400000;
+        
+        if (cachedData && cacheValid) {
+            console.log('[TesterMindsetQuiz] Using cached scenarios');
+            const data = JSON.parse(cachedData);
+            this.basicScenarios = data.basic || communicationScenarios.basic;
+            this.intermediateScenarios = data.intermediate || communicationScenarios.intermediate;
+            this.advancedScenarios = data.advanced || communicationScenarios.advanced;
+            return;
+        }
+        
+        // If no valid cache, try to fetch from API
         try {
-            console.log(`[TesterMindsetQuiz] Clearing localStorage for quiz: ${quizName}`);
-            if (this.apiService && typeof this.apiService.clearQuizLocalStorage === 'function') {
-                // Call API service method which has more complete implementation
-                this.apiService.clearQuizLocalStorage(username, quizName);
-            } else {
-                console.warn('[TesterMindsetQuiz] API service not available, using fallback clear method');
+            console.log('[TesterMindsetQuiz] Fetching scenarios from API');
+            const data = await this.apiService.getQuizScenarios(this.quizName);
+            
+            if (data && data.scenarios) {
+                // Cache the result
+                localStorage.setItem(`quiz_scenarios_${this.quizName}`, JSON.stringify(data.scenarios));
+                localStorage.setItem(`quiz_scenarios_${this.quizName}_timestamp`, Date.now().toString());
                 
-                // Fallback implementation
-                const variations = [
-                    quizName,                                              // original
-                    quizName.toLowerCase(),                               // lowercase
-                    quizName.toUpperCase(),                               // uppercase
-                    quizName.replace(/-/g, ''),                           // no hyphens
-                    quizName.replace(/([A-Z])/g, '-$1').toLowerCase(),    // kebab-case
-                    quizName.replace(/-([a-z])/g, (_, c) => c.toUpperCase()), // camelCase
-                    quizName.replace(/-/g, '_'),                          // snake_case
-                    'tester-mindset',
-                    'TesterMindset',
-                    'testerMindset',
-                    'Tester-Mindset',
-                    'tester_mindset',
-                    'Tester_Mindset'
-                ];
-
-                variations.forEach(variant => {
-                    localStorage.removeItem(`quiz_progress_${username}_${variant}`);
-                    localStorage.removeItem(`quizResults_${username}_${variant}`);
-                });
+                // Update scenarios
+                this.basicScenarios = data.scenarios.basic || communicationScenarios.basic;
+                this.intermediateScenarios = data.scenarios.intermediate || communicationScenarios.intermediate;
+                this.advancedScenarios = data.scenarios.advanced || communicationScenarios.advanced;
             }
         } catch (error) {
-            console.error('[TesterMindsetQuiz] Error clearing localStorage:', error);
+            console.error('[TesterMindsetQuiz] Failed to load scenarios from API:', error);
+            console.log('[TesterMindsetQuiz] Falling back to default scenarios');
+            // Already loaded default scenarios in constructor
         }
     }
 
-    async saveProgress() {
+    // New recovery method for handling emergency recovery situations
+    async recoverProgress() {
+        console.log('[TesterMindsetQuiz] Entering emergency recovery mode');
         try {
-            console.log('[TesterMindsetQuiz] Saving progress - currentScenario:', this.player.currentScenario, 
-                    'questionHistory.length:', this.player.questionHistory.length);
-            
-            // First determine the status based on clear conditions
-            let status = 'in-progress';
-            if (this.player.questionHistory.length >= this.totalQuestions) {
-                const correctAnswers = this.player.questionHistory.filter(q => q.isCorrect).length;
-                const scorePercentage = Math.round((correctAnswers / this.totalQuestions) * 100);
-                status = scorePercentage >= this.passPercentage ? 'passed' : 'failed';
+            const username = localStorage.getItem('username');
+            if (!username) {
+                console.error('[TesterMindsetQuiz] No username found, cannot recover progress');
+                return false;
             }
             
-            // Ensure the question history and currentScenario are in sync
-            if (this.player.questionHistory.length > this.player.currentScenario) {
-                console.log('[TesterMindsetQuiz] Warning: questionHistory.length > currentScenario, fixing');
-                this.player.currentScenario = this.player.questionHistory.length;
+            // Make sure we have access to the QuizSyncService
+            if (typeof window.quizSyncService === 'undefined' && typeof quizSyncService === 'undefined') {
+                console.error('[TesterMindsetQuiz] QuizSyncService not available, cannot perform recovery');
+                return false;
             }
             
-            // Create a clean copy of randomized scenarios with just IDs to reduce save size
-            const simplifiedScenarios = {};
-            if (this.randomizedScenarios) {
-                Object.keys(this.randomizedScenarios).forEach(key => {
-                    if (Array.isArray(this.randomizedScenarios[key])) {
-                        simplifiedScenarios[key] = this.randomizedScenarios[key].map(s => {
-                            return typeof s === 'object' ? { id: s.id, level: s.level } : s;
-                        });
-                    }
-                });
+            const syncService = window.quizSyncService || quizSyncService;
+            console.log('[TesterMindsetQuiz] Using QuizSyncService to recover progress data');
+            
+            // Try to recover progress data
+            const recoveredData = await syncService.recoverProgressData(username, this.quizName);
+            
+            if (!recoveredData) {
+                console.warn('[TesterMindsetQuiz] No data could be recovered, recovery failed');
+                return false;
             }
             
-            // Create the progress object
+            console.log('[TesterMindsetQuiz] Successfully recovered data:', {
+                questionCount: recoveredData.questionHistory?.length || 0,
+                experience: recoveredData.experience || 0,
+                status: recoveredData.status || 'unknown'
+            });
+            
+            // Sanitize the recovered data
             const progressData = {
-                questionsAnswered: this.player.questionHistory.length,
-                questionHistory: this.player.questionHistory,
-                experience: this.player.experience || 0,
-                tools: this.player.tools || [],
-                currentScenario: this.player.currentScenario || 0,
-                lastUpdated: new Date().toISOString(),
-                status: status,
-                scorePercentage: this.calculateScorePercentage(),
-                randomizedScenarios: simplifiedScenarios
+                experience: !isNaN(parseFloat(recoveredData.experience)) ? parseFloat(recoveredData.experience) : 0,
+                tools: Array.isArray(recoveredData.tools) ? recoveredData.tools : [],
+                questionHistory: Array.isArray(recoveredData.questionHistory) ? recoveredData.questionHistory : [],
+                currentScenario: 0, // Will be set correctly below
+                status: recoveredData.status || 'in-progress',
+                questionsAnswered: Array.isArray(recoveredData.questionHistory) ? recoveredData.questionHistory.length : 0,
+                scorePercentage: !isNaN(parseFloat(recoveredData.scorePercentage)) ? parseFloat(recoveredData.scorePercentage) : 0
             };
             
-            try {
-                const username = localStorage.getItem('username');
-                if (!username) {
-                    console.error('[TesterMindsetQuiz] No user found, cannot save progress');
-                    return false;
-                }
-                
-                // Normalize quiz name
-                let quizName = this.quizName;
-                quizName = this.normalizeQuizName(quizName);
-                
-                // Save to localStorage first as backup
-                const storageKey = `quiz_progress_${username}_${quizName}`;
-                console.log('[TesterMindsetQuiz] Saving to localStorage key:', storageKey);
-                localStorage.setItem(storageKey, JSON.stringify({ data: progressData }));
-                
-                // Then save to API
-                console.log('[TesterMindsetQuiz] Saving to API:', quizName);
-                await this.apiService.saveQuizProgress(quizName, progressData);
-                
+            // Set currentScenario based on question history
+            if (progressData.questionHistory.length > 0) {
+                progressData.currentScenario = progressData.questionHistory.length;
+            }
+            
+            // Update player state
+            this.player.experience = progressData.experience;
+            this.player.tools = progressData.tools;
+            this.player.questionHistory = progressData.questionHistory;
+            this.player.currentScenario = progressData.currentScenario;
+            
+            console.log('[TesterMindsetQuiz] Player state updated from recovered data:', {
+                experience: this.player.experience,
+                questionHistory: this.player.questionHistory.length,
+                currentScenario: this.player.currentScenario
+            });
+            
+            // If quiz is completed, show end game screen
+            if ((progressData.status === 'completed' || 
+                 progressData.status === 'passed' || 
+                 progressData.status === 'failed') && 
+                progressData.questionHistory.length > 0) {
+                console.log(`[TesterMindsetQuiz] Quiz is ${progressData.status}, showing end screen`);
+                this.endGame(progressData.status === 'failed');
                 return true;
-            } catch (error) {
-                console.error('[TesterMindsetQuiz] Failed to save progress:', error);
-                return false;
-            }
-        } catch (error) {
-            console.error('[TesterMindsetQuiz] Error in saveProgress:', error);
-            return false;
-        }
-    }
-    
-    // Replace the loadProgress method with a more robust implementation
-    async loadProgress() {
-        try {
-            // Normalize quiz name
-            let quizName = this.quizName;
-            quizName = this.normalizeQuizName(quizName);
-            
-            const username = localStorage.getItem('username');
-            if (!username) {
-                console.error('[TesterMindsetQuiz] No user found, cannot load progress');
-                return false;
             }
             
-            const storageKey = `quiz_progress_${username}_${quizName}`;
-            const savedProgress = await this.apiService.getQuizProgress(quizName);
-            console.log('[TesterMindsetQuiz] Loading from key:', storageKey, 'API Response:', savedProgress);
-            
-            if (savedProgress && savedProgress.data) {
-                const progress = {
-                    experience: savedProgress.data.experience || 0,
-                    tools: savedProgress.data.tools || [],
-                    questionHistory: savedProgress.data.questionHistory || [],
-                    currentScenario: savedProgress.data.currentScenario || 0,
-                    status: savedProgress.data.status || 'in-progress',
-                    randomizedScenarios: savedProgress.data.randomizedScenarios || {}
-                };
-                
-                // Make sure question history is valid
-                if (!Array.isArray(progress.questionHistory)) {
-                    progress.questionHistory = [];
-                }
-                
-                // === FIX FOR TESTER-MINDSET QUIZ: SYNCING PROGRESS ===
-                // Critical fix: If we have question history but currentScenario is wrong, fix it
-                if (progress.questionHistory.length > 0) {
-                    // If currentScenario is less than question history length, sync them
-                    if (progress.currentScenario < progress.questionHistory.length) {
-                        console.log(`[TesterMindsetQuiz] Fixing inconsistent scenario count - ` +
-                            `currentScenario (${progress.currentScenario}) < questionHistory.length (${progress.questionHistory.length})`);
-                        progress.currentScenario = progress.questionHistory.length;
-                    }
-                    
-                    // If zero, set to question history length
-                    if (progress.currentScenario === 0) {
-                        console.log(`[TesterMindsetQuiz] currentScenario is 0 but has question history - fixing`);
-                        progress.currentScenario = progress.questionHistory.length;
-                    }
-                } else if (progress.currentScenario > 0) {
-                    // If we somehow have currentScenario but no question history, reset it
-                    console.log(`[TesterMindsetQuiz] Warning: currentScenario (${progress.currentScenario}) > 0 but no question history`);
-                    
-                    if (progress.status === 'in-progress') {
-                        // Only reset if status is in-progress
-                        console.log('[TesterMindsetQuiz] Resetting currentScenario to 0 to match empty question history');
-                        progress.currentScenario = 0;
-                    }
-                }
-                
-                // Log what we're loading
-                console.log(`[TesterMindsetQuiz] Loaded progress: ${progress.questionHistory.length} questions answered, ` + 
-                           `currentScenario: ${progress.currentScenario}, status: ${progress.status}`);
-                
-                // Update the player state with the loaded data
-                this.player.experience = progress.experience;
-                this.player.tools = progress.tools;
-                this.player.questionHistory = progress.questionHistory;
-                this.player.currentScenario = progress.currentScenario;
-                
-                // Load randomized scenarios if available
-                if (progress.randomizedScenarios && Object.keys(progress.randomizedScenarios).length > 0) {
-                    console.log('[TesterMindsetQuiz] Loading randomized scenarios from progress');
-                    this.randomizedScenarios = progress.randomizedScenarios;
-                    
-                    // Convert IDs to full scenarios where needed
-                    Object.keys(this.randomizedScenarios).forEach(key => {
-                        if (!Array.isArray(this.randomizedScenarios[key])) return;
-                        
-                        // Determine which source scenario set to use
-                        let sourceScenarios;
-                        if (key.includes('basic')) {
-                            sourceScenarios = this.basicScenarios;
-                        } else if (key.includes('intermediate')) {
-                            sourceScenarios = this.intermediateScenarios;
-                        } else if (key.includes('advanced')) {
-                            sourceScenarios = this.advancedScenarios;
-                        } else {
-                            return; // Skip unknown levels
-                        }
-                        
-                        // Convert IDs to full scenarios
-                        this.randomizedScenarios[key] = this.randomizedScenarios[key].map(item => {
-                            const id = typeof item === 'object' ? item.id : item;
-                            const fullScenario = sourceScenarios.find(s => s.id === id);
-                            return fullScenario || sourceScenarios[0]; // Fallback to first scenario if not found
-                        });
-                        
-                        console.log(`[TesterMindsetQuiz] Loaded ${this.randomizedScenarios[key].length} scenarios for ${key}`);
-                    });
-                }
-                
-                // If any fixes were made, save back to API immediately
-                const needsSave = progress.currentScenario !== savedProgress.data.currentScenario;
-                if (needsSave) {
-                    console.log('[TesterMindsetQuiz] Saving fixed progress back to API');
-                    await this.saveProgress();
-                }
-                
-                return true;
-            } else {
-                console.log('[TesterMindsetQuiz] No saved progress found');
-                return false;
-            }
-        } catch (error) {
-            console.error('[TesterMindsetQuiz] Error loading progress:', error);
-            return false;
-        }
-    }
-
-    // Helper method to save randomized scenarios independently
-    async saveRandomizedScenarios() {
-        try {
-            console.log('[TesterMindsetQuiz] Saving randomized scenarios...');
-            const username = localStorage.getItem('username');
-            if (!username) return;
-            
-            // Get current progress and update only the randomizedScenarios property
-            const apiProgress = await this.apiService.getQuizProgress(this.quizName);
-            
-            if (apiProgress && apiProgress.data) {
-                // Create a modified version of the progress data to save back
-                const updatedData = { ...apiProgress.data };
-                
-                // Create a simplified version of randomizedScenarios
-                const simplifiedScenarios = {};
-                Object.keys(this.randomizedScenarios).forEach(key => {
-                    if (Array.isArray(this.randomizedScenarios[key])) {
-                        simplifiedScenarios[key] = this.randomizedScenarios[key].map(s => {
-                            // Just save the ID and essential properties
-                            return {
-                                id: s.id,
-                                level: s.level,
-                                title: s.title
-                            };
-                        });
-                    }
-                });
-                
-                updatedData.randomizedScenarios = simplifiedScenarios;
-                console.log('[TesterMindsetQuiz] Saving simplified scenarios:', simplifiedScenarios);
-                
-                // Save back to API
-                await this.apiService.saveQuizProgress(this.quizName, updatedData);
-                console.log('[TesterMindsetQuiz] Randomized scenarios saved successfully');
-            }
-        } catch (error) {
-            console.error('[TesterMindsetQuiz] Error saving randomized scenarios:', error);
-        }
-    }
-
-    // Add debugging method to diagnose quiz progress issues
-    async debugQuizProgress() {
-        try {
-            const username = localStorage.getItem('username');
-            if (!username) {
-                console.error('No username found, cannot debug quiz progress');
-                return;
-            }
-
-            console.group('Tester Mindset Quiz Progress Debugging');
-            console.log('Quiz name:', this.quizName);
-            
-            // Check localStorage directly
-            console.group('LocalStorage entries:');
-            const possibleKeys = [
-                `quiz_progress_${username}_tester-mindset`,
-                `quiz_progress_${username}_TesterMindset`,
-                `quiz_progress_${username}_testerMindset`,
-                `quiz_progress_${username}_tester_mindset`
-            ];
-            
-            for (const key of possibleKeys) {
-                const value = localStorage.getItem(key);
-                console.log(`${key}: ${value ? 'EXISTS' : 'not found'}`);
-                if (value) {
-                    try {
-                        const parsed = JSON.parse(value);
-                        console.log('Value:', parsed);
-                    } catch (e) {
-                        console.log('Error parsing value:', e);
-                    }
-                }
-            }
-            console.groupEnd();
-            
-            // Check API data
-            console.group('API quiz progress:');
+            // Save the recovered data to ensure it's persistently stored
             try {
-                const apiProgress = await this.apiService.getQuizProgress(this.quizName);
-                console.log('API Response:', apiProgress);
-            } catch (e) {
-                console.log('Error getting API progress:', e);
+                await this.saveProgress();
+                console.log('[TesterMindsetQuiz] Saved recovered progress to all storage locations');
+            } catch (saveError) {
+                console.warn('[TesterMindsetQuiz] Failed to save recovered progress:', saveError);
             }
-            console.groupEnd();
             
-            // Check normalizedQuizName
-            console.group('Quiz name normalization:');
-            console.log('Original quiz name:', this.quizName);
-            const normalizedName = this.apiService.normalizeQuizName(this.quizName);
-            console.log('Normalized quiz name:', normalizedName);
-            const variations = this.apiService.getQuizNameVariations(normalizedName);
-            console.log('Variations:', variations);
-            console.groupEnd();
-            
-            console.groupEnd();
-        } catch (e) {
-            console.error('Error in debugQuizProgress:', e);
+            // Show the current scenario
+            this.displayScenario();
+            return true;
+        } catch (error) {
+            console.error('[TesterMindsetQuiz] Recovery attempt failed:', error);
+            return false;
         }
     }
 }
 
-// Start the quiz when the page loads
+// Singleton instance for TesterMindsetQuiz
+let testerMindsetQuizInstance = null;
+
+// Initialize quiz when the page loads
+// Only allow one instance
 document.addEventListener('DOMContentLoaded', () => {
-    console.log('[TesterMindsetQuiz] Initializing quiz');
-    
-    // Force clean any existing quiz references that might be in memory
-    if (window.currentQuiz) {
-        console.log('[TesterMindsetQuiz] Cleaning up existing quiz instance:', window.currentQuiz.quizName);
-        // Clear any timers or other resources
-        if (window.currentQuiz.questionTimer) {
-            clearInterval(window.currentQuiz.questionTimer);
-        }
+    if (testerMindsetQuizInstance) {
+        console.log('[TesterMindsetQuiz] Instance already exists, not creating a new one.');
+        return;
     }
-    
-    // Clear any conflicting localStorage entries
-    const username = localStorage.getItem('username');
-    if (username) {
-        // List all quiz names that might conflict
-        const potentialConflicts = [
-            'script-metrics-troubleshooting',
-            'standard-script-testing',
-            'fully-scripted',
-            'exploratory'
-        ];
-        
-        // Clean localStorage to prevent cross-contamination
-        potentialConflicts.forEach(quizName => {
-            const key = `quiz_progress_${username}_${quizName}`;
-            const data = localStorage.getItem(key);
-            if (data) {
-                console.log(`[TesterMindsetQuiz] Found potential conflicting quiz data: ${quizName}`);
-                try {
-                    const parsed = JSON.parse(data);
-                    if (parsed && parsed.data && parsed.data.randomizedScenarios) {
-                        console.log(`[TesterMindsetQuiz] Cleaning randomized scenarios from ${quizName}`);
-                        delete parsed.data.randomizedScenarios;
-                        localStorage.setItem(key, JSON.stringify(parsed));
-                    }
-                } catch (e) {
-                    console.error(`[TesterMindsetQuiz] Error cleaning scenarios:`, e);
-                }
-            }
-        });
-    }
-    
-    // Create a new instance and keep a global reference
-    const quiz = new TesterMindsetQuiz();
-    window.currentQuiz = quiz;
-    
-    // Add a specific property to identify this quiz
-    Object.defineProperty(window, 'ACTIVE_QUIZ_NAME', {
-        value: 'tester-mindset',
-        writable: true,
-        configurable: true
-    });
-    
-    // Force clear any unrelated randomized scenarios
-    if (quiz.randomizedScenarios) {
-        // Keep only keys specific to this quiz
-        Object.keys(quiz.randomizedScenarios).forEach(key => {
-            if (!key.startsWith('tester-mindset_')) {
-                console.log(`[TesterMindsetQuiz] Removing unrelated randomized scenario: ${key}`);
-                delete quiz.randomizedScenarios[key];
-            }
-        });
-    }
-    
-    // Start the quiz
-    console.log('[TesterMindsetQuiz] Starting quiz');
-    quiz.startGame();
+    BaseQuiz.clearQuizInstances('tester-mindset');
+    testerMindsetQuizInstance = new TesterMindsetQuiz();
+    testerMindsetQuizInstance.startGame();
 }); 
