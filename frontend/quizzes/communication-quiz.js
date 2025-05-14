@@ -839,6 +839,13 @@ export class CommunicationQuiz extends BaseQuiz {
         this.generateRecommendations();
     }
 
+    // Helper to extract scenario arrays from different formats
+    extractScenarioArray(obj, key) {
+        if (Array.isArray(obj[key])) return obj[key];
+        if (obj[key] && Array.isArray(obj[key].scenarios)) return obj[key].scenarios;
+        return [];
+    }
+
     async loadScenariosWithCaching() {
         // Try to load from cache first
         const cachedData = localStorage.getItem(`quiz_scenarios_${this.quizName}`);
@@ -851,12 +858,12 @@ export class CommunicationQuiz extends BaseQuiz {
             console.log('[CommunicationQuiz] Using cached scenarios');
             const data = JSON.parse(cachedData);
             const scenarios = data.scenarios || data;
-            this.basicScenarios = scenarios.basic || [];
-            this.intermediateScenarios = scenarios.intermediate || [];
-            this.advancedScenarios = scenarios.advanced || [];
-            if (!this.basicScenarios.length) console.warn('No basic scenarios loaded!');
-            if (!this.intermediateScenarios.length) console.warn('No intermediate scenarios loaded!');
-            if (!this.advancedScenarios.length) console.warn('No advanced scenarios loaded!');
+            this.basicScenarios = this.extractScenarioArray(scenarios, 'basic');
+            this.intermediateScenarios = this.extractScenarioArray(scenarios, 'intermediate');
+            this.advancedScenarios = this.extractScenarioArray(scenarios, 'advanced');
+            if (!this.basicScenarios.length) console.error('No valid basic scenarios loaded!');
+            if (!this.intermediateScenarios.length) console.error('No valid intermediate scenarios loaded!');
+            if (!this.advancedScenarios.length) console.error('No valid advanced scenarios loaded!');
             return;
         }
         
@@ -874,12 +881,12 @@ export class CommunicationQuiz extends BaseQuiz {
                 // Cache the result
                 localStorage.setItem(`quiz_scenarios_${this.quizName}`, JSON.stringify({ scenarios }));
                 localStorage.setItem(`quiz_scenarios_${this.quizName}_timestamp`, Date.now().toString());
-                this.basicScenarios = scenarios.basic || [];
-                this.intermediateScenarios = scenarios.intermediate || [];
-                this.advancedScenarios = scenarios.advanced || [];
-                if (!this.basicScenarios.length) console.warn('No basic scenarios loaded!');
-                if (!this.intermediateScenarios.length) console.warn('No intermediate scenarios loaded!');
-                if (!this.advancedScenarios.length) console.warn('No advanced scenarios loaded!');
+                this.basicScenarios = this.extractScenarioArray(scenarios, 'basic');
+                this.intermediateScenarios = this.extractScenarioArray(scenarios, 'intermediate');
+                this.advancedScenarios = this.extractScenarioArray(scenarios, 'advanced');
+                if (!this.basicScenarios.length) console.error('No valid basic scenarios loaded!');
+                if (!this.intermediateScenarios.length) console.error('No valid intermediate scenarios loaded!');
+                if (!this.advancedScenarios.length) console.error('No valid advanced scenarios loaded!');
             } else {
                 console.error('No scenarios loaded!');
             }
