@@ -165,8 +165,12 @@ export class CommunicationQuiz extends BaseQuiz {
                 this.player.tools = [];
                 this.player.currentScenario = 0;
                 this.player.questionHistory = [];
-                // Only show scenario if no progress
-                this.displayScenario();
+            } else {
+                console.log('Loaded player state:', {
+                    currentScenario: this.player.currentScenario,
+                    questionsAnswered: this.player.questionHistory.length,
+                    experience: this.player.experience
+                });
             }
             
             // Clear any existing transition messages
@@ -181,6 +185,19 @@ export class CommunicationQuiz extends BaseQuiz {
                 playerState: this.player,
                 localStorageKeys: Object.keys(localStorage).filter(k => k.includes('quiz_progress'))
             });
+            
+            // CRITICAL: Always display scenario, even if progress was loaded
+            // This ensures the quiz state is shown regardless of previous progress
+            this.displayScenario();
+            
+            // Make sure the game screen is visible
+            const gameScreen = document.getElementById('game-screen');
+            if (gameScreen) {
+                gameScreen.classList.remove('hidden');
+            }
+            
+            // Update progress indicators
+            this.updateProgress();
         } catch (error) {
             console.error('Failed to start game:', error);
             this.showError('Failed to start the quiz. Please try refreshing the page.');
@@ -404,8 +421,9 @@ export class CommunicationQuiz extends BaseQuiz {
             // Increment current scenario
             this.player.currentScenario++;
 
-            // Save progress using BaseQuiz implementation
-            await super.saveProgress();
+            // Save progress using our own implementation instead of super
+            await this.saveProgress();
+            console.log('[CommunicationQuiz] Progress saved after answer with history length:', this.player.questionHistory.length);
 
             // Calculate the score percentage
             const scorePercentage = this.calculateScorePercentage();
@@ -860,6 +878,113 @@ export class CommunicationQuiz extends BaseQuiz {
             return false;
         }
     }
+
+    // Fix the saveProgress method to ensure it properly saves state
+    async saveProgress(status = null) {
+        console.log('[CommunicationQuiz] Saving progress with status:', status);
+        
+        // Ensure we're saving valid data
+        const progressData = {
+            experience: this.player.experience || 0,
+            tools: this.player.tools || [],
+            currentScenario: this.player.currentScenario || 0,
+            questionHistory: this.player.questionHistory || [],
+            status: status || 'in-progress'
+        };
+        
+        // Log what we're saving
+        console.log('[CommunicationQuiz] Saving progress data:', progressData);
+        
+        try {
+            // Use the parent class implementation
+            const saveResult = await super.saveProgress(status);
+            
+            // Also ensure we save to localStorage directly for backup
+            if (this.quizName) {
+                const username = localStorage.getItem('username');
+                if (username) {
+                    const storageKey = `quiz_progress_${username}_${this.quizName}`;
+                    localStorage.setItem(storageKey, JSON.stringify(progressData));
+                    console.log('[CommunicationQuiz] Progress saved to localStorage:', storageKey);
+                }
+            }
+            
+            return saveResult;
+        } catch (error) {
+            console.error('[CommunicationQuiz] Error saving progress:', error);
+            return false;
+        }
+    }
+
+    // Override loadProgress to ensure it correctly loads saved progress
+    async loadProgress() {
+        console.log('[CommunicationQuiz] Loading progress...');
+        
+        try {
+            // Use the parent class implementation first
+            const hasProgress = await super.loadProgress();
+            console.log('[CommunicationQuiz] Parent loadProgress result:', hasProgress);
+            
+            // If that didn't work, try our own localStorage fallback
+            if (!hasProgress) {
+                console.log('[CommunicationQuiz] No progress from parent method, trying direct localStorage');
+                const username = localStorage.getItem('username');
+                if (username) {
+                    // Try multiple possible key formats
+                    const possibleKeys = [
+                        `quiz_progress_${username}_${this.quizName}`,
+                        `strict_quiz_progress_${username}_${this.quizName}`,
+                        `quiz_progress_${this.quizName}`
+                    ];
+                    
+                    let loadedData = null;
+                    for (const key of possibleKeys) {
+                        const savedData = localStorage.getItem(key);
+                        if (savedData) {
+                            try {
+                                loadedData = JSON.parse(savedData);
+                                console.log(`[CommunicationQuiz] Found progress in ${key}:`, loadedData);
+                                break;
+                            } catch (e) {
+                                console.error(`[CommunicationQuiz] Error parsing data from ${key}:`, e);
+                            }
+                        }
+                    }
+                    
+                    if (loadedData) {
+                        // Apply the loaded data to our player state
+                        this.player.experience = loadedData.experience || 0;
+                        this.player.tools = loadedData.tools || [];
+                        this.player.currentScenario = loadedData.currentScenario || 0;
+                        this.player.questionHistory = loadedData.questionHistory || [];
+                        
+                        console.log('[CommunicationQuiz] Successfully loaded progress from localStorage:', {
+                            experience: this.player.experience,
+                            questionHistory: this.player.questionHistory.length,
+                            currentScenario: this.player.currentScenario
+                        });
+                        
+                        return true;
+                    }
+                }
+            } else {
+                // Double check that we have valid data in the player state
+                if (!Array.isArray(this.player.questionHistory)) {
+                    this.player.questionHistory = [];
+                }
+                if (typeof this.player.currentScenario !== 'number') {
+                    this.player.currentScenario = this.player.questionHistory.length || 0;
+                }
+                
+                return true;
+            }
+            
+            return false;
+        } catch (error) {
+            console.error('[CommunicationQuiz] Error loading progress:', error);
+            return false;
+        }
+    }
 }
 
 // Singleton instance for CommunicationQuiz
@@ -876,10 +1001,10 @@ document.addEventListener('DOMContentLoaded', () => {
     communicationQuizInstance = new CommunicationQuiz();
     communicationQuizInstance.startGame();
     
-    // FORCE EMERGENCY OVERRIDE - Direct DOM manipulation after 2 seconds
+    // Run diagnostics but disable emergency override since we fixed the core issues
     setTimeout(() => {
         diagnoseQuizDOM();
-        forceScenarioDisplay();
+        // forceScenarioDisplay(); // Disabled since we fixed the core issue
     }, 2000);
 }); 
 
