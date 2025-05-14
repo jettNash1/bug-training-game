@@ -525,9 +525,9 @@ export class APIService {
                 console.log(`[API] Will try these localStorage keys in order:`, storageKeys);
                 
                 for (const storageKey of storageKeys) {
-                    try {
-                        const localData = localStorage.getItem(storageKey);
-                        if (localData) {
+                try {
+                    const localData = localStorage.getItem(storageKey);
+                    if (localData) {
                             const parsed = JSON.parse(localData);
                             
                             // Verify this data actually belongs to the correct quiz
@@ -545,8 +545,8 @@ export class APIService {
                                 // Break after finding first valid data
                                 break;
                             }
-                        }
-                    } catch (e) {
+                    }
+                } catch (e) {
                         console.error(`[API] Error parsing localStorage data for key ${storageKey}:`, e);
                     }
                 }
@@ -575,7 +575,7 @@ export class APIService {
                         (apiResponse.data.questionsAnswered && apiResponse.data.questionsAnswered > 0);
                     
                     if (apiHasProgress) {
-                        response = apiResponse;
+                    response = apiResponse;
                         console.log(`[API] Successfully got populated data from API for ${normalizedQuizName}`);
                     } else {
                         console.warn(`[API] API returned data but without any progress for ${normalizedQuizName}`);
@@ -837,8 +837,8 @@ export class APIService {
     async getQuizScenarios(quizName) {
         try {
             const response = await fetch(`/api/quizzes/${quizName}/scenarios`, {
-                method: 'GET',
-                headers: {
+                        method: 'GET',
+                        headers: {
                     'Content-Type': 'application/json',
                     'Authorization': `Bearer ${localStorage.getItem('token')}`
                 }
@@ -2618,10 +2618,10 @@ export class APIService {
                     // Also save to old format for backward compatibility during transition
                     const oldStorageKey = `quiz_progress_${username}_${normalizedQuizName}`;
                     localStorage.setItem(oldStorageKey, JSON.stringify({ 
-                        data: progressData,
+                            data: progressData,
                         timestamp: new Date().toISOString(),
                         quizName: normalizedQuizName // Add quiz name for verification
-                    }));
+                        }));
                     console.log(`[API] Also saved to old format key for backward compatibility: ${oldStorageKey}`);
                 } else {
                     console.warn('[API] Could not save to localStorage - no username found');
@@ -2764,7 +2764,7 @@ export class APIService {
             
             // Clear both new and old format keys
             if (localStorage.getItem(storageKey) !== null) {
-                localStorage.removeItem(storageKey);
+                    localStorage.removeItem(storageKey);
                 console.log(`[API] Cleared localStorage entry for quiz: ${normalizedQuizName} (new format)`);
                 cleared = true;
             }

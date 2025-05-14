@@ -2,7 +2,6 @@ import { APIService } from '../api-service.js';
 import { BaseQuiz } from '../quiz-helper.js';
 import { QuizUser } from '../QuizUser.js';
 import { testerMindsetScenarios } from '../data/testerMindset-scenarios.js';
-import quizSyncService from '../services/quiz-synch-service.js';
 
 export class TesterMindsetQuiz extends BaseQuiz {
     constructor() {
@@ -84,32 +83,32 @@ export class TesterMindsetQuiz extends BaseQuiz {
     
     }
 
- // Helper for showing errors to the user
- showError(message) {
-    try {
-        const errorElement = document.createElement('div');
-        errorElement.className = 'error-message';
-        errorElement.textContent = message;
-        errorElement.style.color = 'red';
-        errorElement.style.padding = '20px';
-        errorElement.style.textAlign = 'center';
-        errorElement.style.fontWeight = 'bold';
-        
-        // Find a good place to show the error
-        const container = document.getElementById('game-screen') || 
-                          document.getElementById('quiz-container') || 
-                          document.body;
-        
-        if (container) {
-            // Clear container if not body
-            if (container !== document.body) {
-                container.innerHTML = '';
-            }
+    // Helper for showing errors to the user
+    showError(message) {
+        try {
+            const errorElement = document.createElement('div');
+            errorElement.className = 'error-message';
+            errorElement.textContent = message;
+            errorElement.style.color = 'red';
+            errorElement.style.padding = '20px';
+            errorElement.style.textAlign = 'center';
+            errorElement.style.fontWeight = 'bold';
             
-            container.appendChild(errorElement);
-            console.error('[TesterMindsetQuiz] Displayed error to user:', message);
-        }
-    } catch (e) {
+            // Find a good place to show the error
+            const container = document.getElementById('game-screen') || 
+                              document.getElementById('quiz-container') || 
+                              document.body;
+            
+            if (container) {
+                // Clear container if not body
+                if (container !== document.body) {
+                    container.innerHTML = '';
+                }
+                
+                container.appendChild(errorElement);
+                console.error('[TesterMindsetQuiz] Displayed error to user:', message);
+            }
+        } catch (e) {
             console.error('[TesterMindsetQuiz] Failed to show error to user:', e);
         }
     }
@@ -126,426 +125,6 @@ export class TesterMindsetQuiz extends BaseQuiz {
             q.selectedAnswer.experience === Math.max(...q.scenario.options.map(o => o.experience || 0)))
         ).length;
         return Math.round((correctAnswers / Math.max(1, Math.min(this.player.questionHistory.length, 15))) * 100);
-    }
-    async saveProgress() {
-        // First determine the status based on clear conditions
-        let status = 'in-progress';
-        
-        // Check for completion (all 15 questions answered)
-        if (this.player.questionHistory.length >= 15) {
-            // Calculate pass/fail based on correct answers
-            const correctAnswers = this.player.questionHistory.filter(q => 
-                q.selectedAnswer && (q.selectedAnswer.isCorrect || 
-                q.selectedAnswer.experience === Math.max(...q.scenario.options.map(o => o.experience || 0)))
-            ).length;
-            const scorePercentage = Math.round((correctAnswers / 15) * 100);
-            status = scorePercentage >= 70 ? 'passed' : 'failed';
-        }
-    
-        const progressData = {
-            experience: this.player.experience,
-            tools: this.player.tools,
-            currentScenario: this.player.currentScenario,
-            questionHistory: this.player.questionHistory,
-            lastUpdated: new Date().toISOString(),
-            questionsAnswered: this.player.questionHistory.length,
-            status: status,
-            scorePercentage: this.calculateScorePercentage()
-        };
-    
-        try {
-            const username = localStorage.getItem('username');
-            if (!username) {
-                console.error('No user found, cannot save progress');
-                return false;
-            }
-            
-            // Use user-specific key for localStorage
-            const storageKey = `quiz_progress_${username}_${this.quizName}`;
-            localStorage.setItem(storageKey, JSON.stringify({ data: progressData }));
-            
-            // ADDITIONAL FAILSAFE: Also save to sessionStorage which persists for the current session
-            try {
-                sessionStorage.setItem(storageKey, JSON.stringify({ 
-                    data: progressData,
-                    timestamp: Date.now()
-                }));
-                console.log('[TesterMindsetQuiz] Backed up progress to sessionStorage');
-                
-                // Create an emergency backup with a timestamp
-                const emergencyKey = `${storageKey}_emergency_${Date.now()}`;
-                sessionStorage.setItem(emergencyKey, JSON.stringify({ 
-                    data: progressData,
-                    timestamp: Date.now()
-                }));
-            } catch (sessionError) {
-                console.warn('[TesterMindsetQuiz] Failed to save to sessionStorage:', sessionError);
-            }
-            
-            // Try to use sync service, but have a direct API fallback
-            try {
-                if (typeof quizSyncService !== 'undefined') {
-                    quizSyncService.addToSyncQueue(username, this.quizName, progressData);
-                    console.log('[TesterMindsetQuiz] Added to sync queue');
-                } else {
-                    throw new Error('Sync service not available');
-                }
-            } catch (syncError) {
-                // Direct API saving as fallback
-                console.warn('[TesterMindsetQuiz] Sync service failed, trying direct API save:', syncError);
-                
-                try {
-                    await this.apiService.saveQuizProgress(this.quizName, progressData);
-                    console.log('[TesterMindsetQuiz] Saved progress directly to API');
-                } catch (apiError) {
-                    console.error('[TesterMindsetQuiz] Failed to save to API:', apiError);
-                    // Already saved to localStorage above, so we have a backup
-                }
-            }
-            
-            return true;
-        } catch (error) {
-            console.error('[TesterMindsetQuiz] Failed to save progress:', error);
-            
-            // EMERGENCY FALLBACK: Attempt to save to sessionStorage as last resort
-            try {
-                const username = localStorage.getItem('username') || 'anonymous';
-                const emergencyKey = `quiz_progress_${username}_${this.quizName}_emergency`;
-                sessionStorage.setItem(emergencyKey, JSON.stringify({ 
-                    data: progressData,
-                    timestamp: Date.now()
-                }));
-                console.log('[TesterMindsetQuiz] Saved emergency backup to sessionStorage');
-            } catch (sessionError) {
-                console.error('[TesterMindsetQuiz] All storage methods failed:', sessionError);
-            }
-            
-            return false;
-        }
-    }
-
-    async loadProgress() {
-        try {
-            const username = localStorage.getItem('username');
-            if (!username) {
-                console.error('[TesterMindsetQuiz] No user found, cannot load progress');
-                return false;
-            }
-
-            // Important diagnostic: log ALL quiz progress localStorage keys for this user
-            const allStorageKeys = Object.keys(localStorage).filter(key => 
-                key.includes('quiz_progress') && key.includes(username)
-            );
-            console.log('[TesterMindsetQuiz] ALL localStorage quiz progress keys for this user:', allStorageKeys);
-
-            // Define all possible storage keys in priority order
-            const storageKeys = [
-                `quiz_progress_${username}_${this.quizName}`,
-                `quiz_progress_${username}_${this.quizName}_backup`,
-                `quiz_progress_${username}_tester-mindset`,  // Fallback for standardized name
-                `quiz_progress_${username}_tester-mindset_backup`,
-                `quiz_progress_${username}_tester-mindset_emergency`
-            ];
-            
-            // Log which keys we will try
-            console.log('[TesterMindsetQuiz] Will try these localStorage keys in order:', storageKeys);
-            
-            let progressData = null;
-            let dataSource = '';
-            let apiProgress = null;
-            
-            // First collect ALL possible progress data sources before deciding which to use
-            
-            // Check sessionStorage first as an additional data source
-            let sessionStorageData = null;
-            try {
-                // Get all sessionStorage keys for this user
-                const sessionKeys = Object.keys(sessionStorage).filter(key => 
-                    key.includes('quiz_progress') && key.includes(username)
-                );
-                console.log('[TesterMindsetQuiz] SessionStorage keys found:', sessionKeys);
-                
-                // Get the most recent session storage data
-                if (sessionKeys.length > 0) {
-                    let mostRecentKey = sessionKeys[0];
-                    let mostRecentTime = 0;
-                    
-                    // Find most recent by looking at the keys with timestamps or data timestamps
-                    for (const key of sessionKeys) {
-                        try {
-                            const sessionData = JSON.parse(sessionStorage.getItem(key));
-                            // Check if key contains timestamp or data has timestamp
-                            const keyTimestamp = key.includes('emergency_') ? 
-                                parseInt(key.split('emergency_')[1]) : 0;
-                            const dataTimestamp = sessionData.timestamp ? 
-                                parseInt(sessionData.timestamp) : 0;
-                            
-                            const timestamp = Math.max(keyTimestamp, dataTimestamp);
-                            
-                            if (timestamp > mostRecentTime) {
-                                mostRecentTime = timestamp;
-                                mostRecentKey = key;
-                            }
-                        } catch (e) {}
-                    }
-                    
-                    // Load the most recent session data
-                    try {
-                        const sessionData = JSON.parse(sessionStorage.getItem(mostRecentKey));
-                        sessionStorageData = sessionData.data || sessionData;
-                        console.log('[TesterMindsetQuiz] Loaded most recent sessionStorage data from key:', 
-                            mostRecentKey, 'with question count:', 
-                            sessionStorageData.questionHistory?.length || 0);
-                    } catch (e) {
-                        console.warn('[TesterMindsetQuiz] Failed to parse session storage data:', e);
-                    }
-                }
-            } catch (sessionError) {
-                console.warn('[TesterMindsetQuiz] Error accessing sessionStorage:', sessionError);
-            }
-            
-            // Try to get progress from API
-            try {
-                console.log('[TesterMindsetQuiz] Attempting to load progress from API');
-                apiProgress = await this.apiService.getQuizProgress(this.quizName);
-                console.log('[TesterMindsetQuiz] API progress response:', apiProgress);
-                
-                if (apiProgress && apiProgress.data) {
-                    // Verify API data has actual content (not just empty structures)
-                    const apiHasProgress = 
-                        (apiProgress.data.questionHistory && apiProgress.data.questionHistory.length > 0) &&
-                        (apiProgress.data.currentScenario && apiProgress.data.currentScenario > 0);
-                    
-                    if (apiHasProgress) {
-                        console.log('[TesterMindsetQuiz] API data contains valid progress with questions:', 
-                            apiProgress.data.questionHistory.length);
-                    } else {
-                        console.warn('[TesterMindsetQuiz] API returned data but without valid questions or progress');
-                    }
-                } else {
-                    console.warn('[TesterMindsetQuiz] API returned no valid data');
-                }
-            } catch (apiError) {
-                console.warn('[TesterMindsetQuiz] Failed to load progress from API:', apiError);
-            }
-            
-            // Collect all localStorage data
-            const localStorageData = {};
-            let bestLocalStorageData = null;
-            let bestQuestionCount = 0;
-            
-            for (const key of storageKeys) {
-                const localData = localStorage.getItem(key);
-                
-                if (localData) {
-                    try {
-                        const parsed = JSON.parse(localData);
-                        const candidateData = parsed.data || parsed;
-                        
-                        // Store all parsed data for reference
-                        localStorageData[key] = candidateData;
-                        
-                        // Check if this data has any question history
-                        if (candidateData && Array.isArray(candidateData.questionHistory)) {
-                            const questionCount = candidateData.questionHistory.length;
-                            console.log(`[TesterMindsetQuiz] Found localStorage data in ${key} with ${questionCount} questions`);
-                            
-                            // Keep track of the best localStorage data (most questions)
-                            if (questionCount > bestQuestionCount) {
-                                bestLocalStorageData = candidateData;
-                                bestQuestionCount = questionCount;
-                                console.log(`[TesterMindsetQuiz] This is now the best local storage data (${questionCount} questions)`);
-                            }
-                        }
-                    } catch (parseError) {
-                        console.error(`[TesterMindsetQuiz] Failed to parse localStorage data for key ${key}:`, parseError);
-                    }
-                }
-            }
-            
-            // Now choose the best data source based on which has the most questions
-            
-            // Track the best data and its source
-            let bestData = null;
-            let bestSource = '';
-            let bestCount = 0;
-            
-            // Check API data
-            if (apiProgress && apiProgress.data && 
-                apiProgress.data.questionHistory && 
-                apiProgress.data.questionHistory.length > 0) {
-                
-                bestData = apiProgress.data;
-                bestSource = 'API';
-                bestCount = apiProgress.data.questionHistory.length;
-                console.log(`[TesterMindsetQuiz] API data has ${bestCount} questions`);
-            }
-            
-            // Check localStorage data
-            if (bestLocalStorageData && 
-                bestLocalStorageData.questionHistory && 
-                bestLocalStorageData.questionHistory.length > bestCount) {
-                
-                bestData = bestLocalStorageData;
-                bestSource = 'localStorage';
-                bestCount = bestLocalStorageData.questionHistory.length;
-                console.log(`[TesterMindsetQuiz] localStorage data has ${bestCount} questions, better than current best`);
-            }
-            
-            // Check sessionStorage data
-            if (sessionStorageData && 
-                sessionStorageData.questionHistory && 
-                sessionStorageData.questionHistory.length > bestCount) {
-                
-                bestData = sessionStorageData;
-                bestSource = 'sessionStorage';
-                bestCount = sessionStorageData.questionHistory.length;
-                console.log(`[TesterMindsetQuiz] sessionStorage data has ${bestCount} questions, better than current best`);
-            }
-            
-            // Use the best data we've found
-            if (bestData) {
-                console.log(`[TesterMindsetQuiz] Using best progress data from ${bestSource} with ${bestCount} questions`);
-                progressData = bestData;
-                dataSource = bestSource;
-                
-                // If the best data wasn't from the API, sync it back to the API
-                if (bestSource !== 'API' && bestCount > 0) {
-                    try {
-                        console.log('[TesterMindsetQuiz] Syncing best progress data to API and localStorage');
-                        
-                        // Update localStorage with the best data
-                        localStorage.setItem(storageKeys[0], JSON.stringify({ 
-                            data: progressData,
-                            timestamp: Date.now() 
-                        }));
-                        
-                        // Update API with the best data
-                        await this.apiService.saveQuizProgress(this.quizName, progressData);
-                    } catch (syncError) {
-                        console.warn('[TesterMindsetQuiz] Failed to sync best progress data:', syncError);
-                    }
-                }
-            } else {
-                console.log('[TesterMindsetQuiz] No valid progress data found from any source, trying recovery...');
-                
-                // Try to recover from the sync service as last resort
-                try {
-                    // Get QuizSyncService if available
-                    if (typeof window.quizSyncService !== 'undefined' || typeof quizSyncService !== 'undefined') {
-                        const syncService = window.quizSyncService || quizSyncService;
-                        const recoveredData = await syncService.recoverProgressData(username, this.quizName);
-                        
-                        if (recoveredData) {
-                            console.log('[TesterMindsetQuiz] Successfully recovered data from QuizSyncService');
-                            progressData = recoveredData;
-                            dataSource = 'recovered';
-                        } else {
-                            console.warn('[TesterMindsetQuiz] No data could be recovered, returning false');
-                            return false;
-                        }
-                    } else {
-                        console.warn('[TesterMindsetQuiz] QuizSyncService not available, cannot recover');
-                        return false;
-                    }
-                } catch (recoveryError) {
-                    console.error('[TesterMindsetQuiz] Error during data recovery:', recoveryError);
-                    return false;
-                }
-            }
-
-            if (progressData) {
-                console.log(`[TesterMindsetQuiz] Processing loaded progress data from ${dataSource}`);
-                
-                // Sanitize and validate data to prevent invalid values
-                progressData.experience = !isNaN(parseFloat(progressData.experience)) ? parseFloat(progressData.experience) : 0;
-                progressData.tools = Array.isArray(progressData.tools) ? progressData.tools : [];
-                progressData.questionHistory = Array.isArray(progressData.questionHistory) ? 
-                    progressData.questionHistory : [];
-                
-                // CRITICAL: Ensure currentScenario is consistent with question history
-                // This is a key point of failure
-                if (progressData.questionHistory.length > 0) {
-                    console.log('[TesterMindsetQuiz] Setting currentScenario to match questionHistory.length:', 
-                        progressData.questionHistory.length);
-                    
-                    // ALWAYS set currentScenario to match the question history length
-                    // This ensures we go to the next unanswered question
-                    progressData.currentScenario = progressData.questionHistory.length;
-                } else {
-                    console.log('[TesterMindsetQuiz] No questions in history, starting from beginning');
-                    progressData.currentScenario = 0;
-                }
-                
-                // Fix inconsistent state: if quiz is marked as completed but has no progress
-                if ((progressData.status === 'completed' || 
-                     progressData.status === 'passed' || 
-                     progressData.status === 'failed') && 
-                    (progressData.questionHistory.length === 0 || 
-                     progressData.currentScenario === 0)) {
-                    console.log('[TesterMindsetQuiz] Fixing inconsistent state: quiz marked as completed but has no progress');
-                    progressData.status = 'in-progress';
-                }
-
-                // Update the player state with the loaded progress data
-                this.player.experience = progressData.experience;
-                this.player.tools = progressData.tools;
-                this.player.questionHistory = progressData.questionHistory;
-                this.player.currentScenario = progressData.currentScenario;
-                
-                console.log('[TesterMindsetQuiz] Player state updated:', {
-                    experience: this.player.experience,
-                    questionHistory: this.player.questionHistory.length,
-                    currentScenario: this.player.currentScenario,
-                    status: progressData.status,
-                    source: dataSource
-                });
-                
-                // Only show end screen if quiz is actually completed and has progress
-                if ((progressData.status === 'completed' || 
-                     progressData.status === 'passed' || 
-                     progressData.status === 'failed') && 
-                    progressData.questionHistory.length > 0 && 
-                    progressData.currentScenario > 0) {
-                    console.log(`[TesterMindsetQuiz] Quiz is ${progressData.status} with ${progressData.questionHistory.length} questions answered`);
-                    this.endGame(progressData.status === 'failed');
-                    return true;
-                }
-
-                // Additional guard: verify that progress was loaded correctly
-                if (this.player.questionHistory.length === 0 && progressData.questionHistory.length > 0) {
-                    console.error('[TesterMindsetQuiz] CRITICAL ERROR: Failed to load question history properly!');
-                    // Forced retry with direct assignment
-                    this.player.questionHistory = [...progressData.questionHistory];
-                    this.player.currentScenario = this.player.questionHistory.length;
-                    console.log('[TesterMindsetQuiz] Forced player state update after error:', {
-                        questionHistory: this.player.questionHistory.length,
-                        currentScenario: this.player.currentScenario
-                    });
-                }
-
-                // Force save progress back to ensure consistency
-                    await this.saveProgress();
-                
-                // Show the current question based on progress
-                this.displayScenario();
-                return true;
-            }
-            
-            console.log('[TesterMindsetQuiz] No existing progress found');
-            return false;
-        } catch (error) {
-            console.error('[TesterMindsetQuiz] Error loading progress:', error);
-            
-            // As a last resort, try to recover progress data using the QuizSyncService
-            try {
-                console.log('[TesterMindsetQuiz] Attempting emergency progress recovery after error');
-                return await this.recoverProgress();
-            } catch (recoveryError) {
-                console.error('[TesterMindsetQuiz] Emergency recovery also failed:', recoveryError);
-                return false;
-            }
-        }
     }
 
     async startGame() {
@@ -569,8 +148,8 @@ export class TesterMindsetQuiz extends BaseQuiz {
             // Try to load scenarios from API with caching
             await this.loadScenariosWithCaching();
 
-            // Load previous progress
-            const hasProgress = await this.loadProgress();
+            // Load previous progress using BaseQuiz implementation
+            const hasProgress = await super.loadProgress();
             console.log('Previous progress loaded:', hasProgress);
             
             if (!hasProgress) {
@@ -873,8 +452,8 @@ export class TesterMindsetQuiz extends BaseQuiz {
             // Increment current scenario
             this.player.currentScenario++;
 
-            // Save progress
-            await this.saveProgress();
+            // Save progress using BaseQuiz implementation
+            await super.saveProgress();
 
             // Calculate the score percentage
             const scorePercentage = this.calculateScorePercentage();
@@ -1192,21 +771,13 @@ export class TesterMindsetQuiz extends BaseQuiz {
                     status
                 );
 
-                // Save to API with proper structure
-                const apiProgress = {
-                    data: {
-                        ...result,
-                        tools: this.player.tools,
-                        currentScenario: this.player.currentScenario
-                    }
-                };
-
-                // Save directly via API to ensure status is updated
-                console.log('Saving final progress to API:', apiProgress);
-                await this.apiService.saveQuizProgress(this.quizName, apiProgress.data);
+                // Save to our quiz progress service
+                await super.saveProgress(status);
                 
-                // Clear any local storage for this quiz
-                this.clearQuizLocalStorage(username, this.quizName);
+                // Clear any local storage for this quiz - now handled by BaseQuiz
+                if (this.quizProgressService) {
+                    this.quizProgressService.clearQuizLocalStorage(this.quizName);
+                }
                 
             } catch (error) {
                 console.error('Error saving final quiz score:', error);
@@ -1310,60 +881,29 @@ export class TesterMindsetQuiz extends BaseQuiz {
         }
     }
 
-    // New recovery method for handling emergency recovery situations
+    // Emergency recovery method now simplified
     async recoverProgress() {
         console.log('[TesterMindsetQuiz] Entering emergency recovery mode');
-            try {
-                const username = localStorage.getItem('username');
-                if (!username) {
-                console.error('[TesterMindsetQuiz] No username found, cannot recover progress');
-                    return false;
-                }
-                
-            // Make sure we have access to the QuizSyncService
-            if (typeof window.quizSyncService === 'undefined' && typeof quizSyncService === 'undefined') {
-                console.error('[TesterMindsetQuiz] QuizSyncService not available, cannot perform recovery');
-                return false;
-            }
+        try {
+            // Use the QuizProgressService directly for recovery
+            const progressResult = await this.quizProgressService.getQuizProgress(this.quizName);
             
-            const syncService = window.quizSyncService || quizSyncService;
-            console.log('[TesterMindsetQuiz] Using QuizSyncService to recover progress data');
-            
-            // Try to recover progress data
-            const recoveredData = await syncService.recoverProgressData(username, this.quizName);
-            
-            if (!recoveredData) {
+            if (!progressResult.success || !progressResult.data) {
                 console.warn('[TesterMindsetQuiz] No data could be recovered, recovery failed');
                 return false;
             }
             
-            console.log('[TesterMindsetQuiz] Successfully recovered data:', {
-                questionCount: recoveredData.questionHistory?.length || 0,
-                experience: recoveredData.experience || 0,
-                status: recoveredData.status || 'unknown'
-            });
-            
-            // Sanitize the recovered data
-            const progressData = {
-                experience: !isNaN(parseFloat(recoveredData.experience)) ? parseFloat(recoveredData.experience) : 0,
-                tools: Array.isArray(recoveredData.tools) ? recoveredData.tools : [],
-                questionHistory: Array.isArray(recoveredData.questionHistory) ? recoveredData.questionHistory : [],
-                currentScenario: 0, // Will be set correctly below
-                status: recoveredData.status || 'in-progress',
-                questionsAnswered: Array.isArray(recoveredData.questionHistory) ? recoveredData.questionHistory.length : 0,
-                scorePercentage: !isNaN(parseFloat(recoveredData.scorePercentage)) ? parseFloat(recoveredData.scorePercentage) : 0
-            };
-            
-            // Set currentScenario based on question history
-            if (progressData.questionHistory.length > 0) {
-                progressData.currentScenario = progressData.questionHistory.length;
-            }
+            const progressData = progressResult.data;
             
             // Update player state
-            this.player.experience = progressData.experience;
-            this.player.tools = progressData.tools;
-            this.player.questionHistory = progressData.questionHistory;
-            this.player.currentScenario = progressData.currentScenario;
+            this.player.experience = progressData.experience || 0;
+            this.player.tools = progressData.tools || [];
+            this.player.questionHistory = progressData.questionHistory || [];
+            this.player.currentScenario = progressData.currentScenario || 0;
+            
+            if (progressData.questionHistory && progressData.questionHistory.length > 0) {
+                this.player.currentScenario = progressData.questionHistory.length;
+            }
             
             console.log('[TesterMindsetQuiz] Player state updated from recovered data:', {
                 experience: this.player.experience,
@@ -1371,27 +911,12 @@ export class TesterMindsetQuiz extends BaseQuiz {
                 currentScenario: this.player.currentScenario
             });
             
-            // If quiz is completed, show end game screen
-            if ((progressData.status === 'completed' || 
-                 progressData.status === 'passed' || 
-                 progressData.status === 'failed') && 
-                progressData.questionHistory.length > 0) {
-                console.log(`[TesterMindsetQuiz] Quiz is ${progressData.status}, showing end screen`);
-                this.endGame(progressData.status === 'failed');
-                return true;
-            }
+            // Save the recovered data
+            await super.saveProgress();
             
-            // Save the recovered data to ensure it's persistently stored
-            try {
-                    await this.saveProgress();
-                console.log('[TesterMindsetQuiz] Saved recovered progress to all storage locations');
-            } catch (saveError) {
-                console.warn('[TesterMindsetQuiz] Failed to save recovered progress:', saveError);
-                }
-                
             // Show the current scenario
             this.displayScenario();
-                return true;
+            return true;
         } catch (error) {
             console.error('[TesterMindsetQuiz] Recovery attempt failed:', error);
             return false;

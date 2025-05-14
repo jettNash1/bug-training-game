@@ -1,6 +1,8 @@
 import { APIService } from '../api-service.js';
 import { BaseQuiz } from '../quiz-helper.js';
 import { QuizUser } from '../QuizUser.js';
+import { buildVerificationScenarios } from '../data/buildVerification-scenarios.js';
+import quizSyncService from '../services/quiz-synch-service.js';
 
 export class BuildVerificationQuiz extends BaseQuiz {
     constructor() {
@@ -13,7 +15,8 @@ export class BuildVerificationQuiz extends BaseQuiz {
                 { threshold: 80, message: '👏 Great job! You\'ve shown strong understanding of BVT!' },
                 { threshold: 70, message: '👍 Good work! You\'ve passed the quiz!' },
                 { threshold: 0, message: '📚 Consider reviewing BVT best practices and try again!' }
-            ]
+            ],
+            quizName: 'build-verification'
         };
         
         super(config);
@@ -37,6 +40,11 @@ export class BuildVerificationQuiz extends BaseQuiz {
 
         // Initialize API service
         this.apiService = new APIService();
+
+            // Load scenarios from external data file
+        this.basicScenarios = buildVerificationScenarios.basic;
+        this.intermediateScenarios = buildVerificationScenarios.intermediate;
+        this.advancedScenarios = buildVerificationScenarios.advanced;
 
         // Initialize all screen elements
         this.gameScreen = document.getElementById('game-screen');
@@ -62,616 +70,482 @@ export class BuildVerificationQuiz extends BaseQuiz {
             return;
         }
 
-        // Basic Scenarios (IDs 1-5)
-        this.basicScenarios = [
-            {
-                id: 1,
-                level: 'Basic',
-                title: 'Understanding BVT',
-                description: 'What is the primary purpose of Build Verification Testing?',
-                options: [
-                    {
-                        text: 'To ensure core functionality and stability remain intact in each new build before further testing',
-                        outcome: 'Perfect! BVT validates build stability and readiness.',
-                        experience: 15,
-                        tool: 'Build Verification Framework'
-                    },
-                    {
-                        text: 'To find all possible bugs related to the release',
-                        outcome: 'BVT focuses on core functionality, not exhaustive testing.',
-                        experience: -5
-                    },
-                    {
-                        text: 'To test new features for upcoming sprints',
-                        outcome: 'BVT checks existing core functionality.',
-                        experience: -10
-                    },
-                    {
-                        text: 'To document all issues relating to functionality',
-                        outcome: 'BVT primarily validates build stability.',
-                        experience: 0
-                    }
-                ]
-            },
-            {
-                id: 2,
-                level: 'Basic',
-                title: 'Test Case Development',
-                description: 'How should you develop BVT test cases?',
-                options: [
-                    {
-                        text: 'Create repeatable tests focusing on critical functionality with well-defined expected results',
-                        outcome: 'Excellent! Well-defined test cases ensure consistent verification.',
-                        experience: 15,
-                        tool: 'Test Case Template'
-                    },
-                    {
-                        text: 'Test everything possible for each release',
-                        outcome: 'BVT needs focused, critical test cases and exhaustive testing is generally not possible.',
-                        experience: -5
-                    },
-                    {
-                        text: 'Create test cases based on tester experience and preference',
-                        outcome: 'Test cases must be structured and repeatable.',
-                        experience: -10
-                    },
-                    {
-                        text: 'Leave test case documentation in favour of test execution',
-                        outcome: 'Documentation is crucial for consistency.',
-                        experience: 0
-                    }
-                ]
-            },
-            {
-                id: 3,
-                level: 'Basic',
-                title: 'Core Functionality',
-                description: 'What should you verify first in BVT?',
-                options: [
-                    {
-                        text: 'Key areas like installation, login, and main navigation that are critical to basic operation',
-                        outcome: 'Perfect! Core functionality must be verified first.',
-                        experience: 15,
-                        tool: 'Core Function Checklist'
-                    },
-                    {
-                        text: 'Multiple minor visual issues should be reported thoroughly',
-                        outcome: 'Focus on critical functionality must be the first priority.',
-                        experience: -10
-                    },
-                    {
-                        text: 'New features should be the focus of any new release',
-                        outcome: 'Core functionality needs verification as focusing on just new features can miss issues in other areas.',
-                        experience: -5
-                    },
-                    {
-                        text: 'Documentation errors should take priority, as this can lead to blocking issues with testing activities',
-                        outcome: 'Critical operations should take priority as testing can be carried out if core functionality of the application behaves as intended.',
-                        experience: 0
-                    }
-                ]
-            },
-            {
-                id: 4,
-                level: 'Basic',
-                title: 'Environment Setup',
-                description: 'How do you prepare for BVT across different environments?',
-                options: [
-                    {
-                        text: 'Include test suites for each environment type with appropriate environment-specific checks',
-                        outcome: 'Excellent! Environment-specific testing ensures comprehensive coverage.',
-                        experience: 15,
-                        tool: 'Environment Matrix'
-                    },
-                    {
-                        text: 'Test one primary environment as all other environments should follow the same functionality',
-                        outcome: 'All relevant supported environments need verification.',
-                        experience: -10
-                    },
-                    {
-                        text: 'Leave environment planning until all other priority documentation and execution has been completed',
-                        outcome: 'Environment planning is crucial for coverage within set out time constraints.',
-                        experience: -5
-                    },
-                    {
-                        text: 'Use the same tests for all environments that are supported for the project',
-                        outcome: 'Environment-specific tests are required as not all perform the same functionality.',
-                        experience: 0
-                    }
-                ]
-            },
-            {
-                id: 5,
-                level: 'Basic',
-                title: 'Issue Handling',
-                description: 'How should you handle issues found during BVT?',
-                options: [
-                    {
-                        text: 'Report major functional issues immediately and request a new build for critical failures',
-                        outcome: 'Perfect! Quick reporting of critical issues is essential.',
-                        experience: 15,
-                        tool: 'Issue Tracker'
-                    },
-                    {
-                        text: 'Continue with the tests set out in project planning',
-                        outcome: 'Critical issues need immediate attention and documenting.',
-                        experience: -10
-                    },
-                    {
-                        text: 'Attempt to look for a fix resolution to the issues yourself',
-                        outcome: 'Issues must be reported for full and proper resolution so the tester can continue with testing activities.',
-                        experience: -5
-                    },
-                    {
-                        text: 'Document all minor issues found during build verification testing',
-                        outcome: 'While minor issues need documenting, major issues need priority attention.',
-                        experience: 0
-                    }
-                ]
-            },
-            {
-                id: 16,
-                level: 'Basic',
-                title: 'Build Verification Test Suites',
-                description: 'How are test suites typically organised in Build Verification Testing at Zoonou?',
-                options: [
-                    {
-                        text: 'Test suites are organised by environment type',
-                        outcome: 'Correct! Build Verification Test suites are broken down by environment, rather than focus areas. This means the same or a very similar set of tests can be executed for each suite, aside from any key areas that may differ between environments.',
-                        experience: 15,
-                        tool: 'Build Verification Test Suites'
-                    },
-                    {
-                        text: 'Test suites are organised by feature complexity',
-                        outcome: 'Test suites are organised by environment type and not feature complexity.',
-                        experience: -5
-                    },
-                    {
-                        text: 'Test suites are organised by the development team',
-                        outcome: 'Test suites are organised by environment type and not by the development team.',
-                        experience: -10
-                    },
-                    {
-                        text: 'Test suites are organised by the expected execution time',
-                        outcome: 'Test suites are organised by environment type and not by expected execution time.',
-                        experience: 0
-                    }
-                ]
-            },
-            {
-                id: 17,
-                level: 'Basic',
-                title: 'Build Verification Characteristics',
-                description: 'Which of the following is not considered a characteristic of Build Verification Testing according to the guide?',
-                options: [
-                    {
-                        text: 'Acceptance is a characteristic of build verification testing',
-                        outcome: 'Acceptance is a characteristic and is defined as establishing approval that the software has met specifications.',
-                        experience: -5
-                    },
-                    {
-                        text: 'Validation is a characteristic of build verification testing',
-                        outcome: 'Validation is a characteristic and is defined as checking software integrity ahead of further testing.',
-                        experience: -10
-                    },
-                    {
-                        text: 'Customisation is a characteristic of build verification testing',
-                        outcome: 'Correct! this is not a characteristic of build verification testing such as Acceptance, Validation, Regression, and Efficiency.',
-                        experience: 15,
-                        tool: 'Build Verification Characteristics'
-                    },
-                    {
-                        text: 'Regression is a characteristic of build verification testing',
-                        outcome: 'Regression is a characteristic and is defined as developing a set of test cases to check critical functionality and that no new bugs have been introduced as a result of development activities.',
-                        experience: 0
-                    }
-                ]
-            },
-            {
-                id: 18,
-                level: 'Basic',
-                title: 'Build Verification Issue Types',
-                description: 'What type of issues are primarily focused on during Build Verification Testing?',
-                options: [
-                    {
-                        text: 'Minor visual inconsistencies should be the main focus.',
-                        outcome: 'Minor visual inconsistencies would fall under less severe issues which are not the focus of BVT.',
-                        experience: -5
-                    },
-                    {
-                        text: 'Documentation errors should be the main focus',
-                        outcome: 'Documentation errors would fall under less severe issues which are not the focus of BVT.', 
-                        experience: -10
-                    },
-                    {
-                        text: 'Critical functionality issues should be the main focus',
-                        outcome: 'Correct! Build Verification Testing does not focus on the less severe issues that may be present and looks mostly at critical functionality.',
-                        experience: 15,
-                        tool: 'Build Verification Issue Types'
-                    },
-                    {
-                        text: 'Performance under heavy load should be the main focus',
-                        outcome: 'While performance could be considered important, the focus of BVT should be on core functionality rather than performance testing specifically.',
-                        experience: 0
-                    }
-                ]
-            },
-            {
-                id: 19,
-                level: 'Basic',
-                title: 'Build Verification Risks',
-                description: 'What is one of the risks associated with Build Verification Testing?',
-                options: [
-                    {
-                        text: 'Test cases need to be kept up to date throughout development',
-                        outcome: 'Correct! Build Verification Testing test cases must be kept up to date throughout the development process, to include any new features developed. Failing to keep tests updated may lead to under-tested areas or bugs going undetected.',
-                        experience: 15,
-                        tool: 'Build Verification Risks'
-                    },
-                    {
-                        text: 'It takes too long to execute compared to other testing methods',
-                        outcome: 'BVT is efficient and can save time by identifying issues early, not that the testing takes too long.',
-                        experience: -10
-                    },
-                    {
-                        text: 'It requires too many testing resources to be practical',
-                        outcome: 'Build verification testing can actually save time & money by finding bugs early.',
-                        experience: -5
-                    },
-                    {
-                        text: 'Build verification testing cannot be automated',
-                        outcome: 'Build verification testing may be automated even though Zoonou currently conducts it manually.',
-                        experience: 0
-                    }
-                ]
-            },
-            {
-                id: 20,
-                level: 'Basic',
-                title: 'Build Verification Advantages',
-                description: 'Which of the following is not mentioned as an advantage of Build Verification Testing?',
-                options: [
-                    {
-                        text: 'Eliminating the need for further testing is an advantage of build verification testing',
-                        outcome: 'Correct! BVT does not eliminate the need for further testing. On the contrary, it emphasises that BVT ensures the software is ready for further testing and integration.',
-                        experience: 15,
-                        tool: 'Build Verification Advantages'
-                    },
-                    {
-                        text: 'Increasing confidence in builds is an advantage of build verification testing',
-                        outcome: 'Build verification testing increases confidence in builds, resolving bugs early in the development lifecycle, therefore is an advantage.',
-                        experience: -10
-                    },
-                    {
-                        text: 'Saving time and money by finding bugs early is an advantage of build verification testing',
-                        outcome: 'Build verification testing can save time & money, picking up bugs early, before they potentially become more costly or time consuming to fix, therefore is an advantage.',
-                        experience: -5
-                    },
-                    {
-                        text: 'Helping establish software stability is an advantage of build verification testing',
-                        outcome: 'Build verification testing establishes the stability of the software, therefore is an advantage.',
-                        experience: 0
-                    }
-                ]
-            }
-        ];
-
-        // Intermediate Scenarios (IDs 6-10)
-        this.intermediateScenarios = [
-            {
-                id: 6,
-                level: 'Intermediate',
-                title: 'Test Case Maintenance',
-                description: 'How do you maintain BVT test cases over time?',
-                options: [
-                    {
-                        text: 'Regularly update test cases to include new core features and maintain accuracy',
-                        outcome: 'Excellent! Test case maintenance ensures continued effectiveness.',
-                        experience: 20,
-                        tool: 'Test Case Manager'
-                    },
-                    {
-                        text: 'Keep and execute original test cases only',
-                        outcome: 'Test cases need regular updates as there are constant changes to build process and features.',
-                        experience: -15
-                    },
-                    {
-                        text: 'Remove old test cases from the test script as new features should be the sole focus',
-                        outcome: 'Updating existing test cases is required, as the removal of old test cases can result in missed feature processes.',
-                        experience: -10
-                    },
-                    {
-                        text: 'Reduce new feature update test cases to save on time management for new releases',
-                        outcome: 'New core features are essential and require coverage.',
-                        experience: -5
-                    }
-                ]
-            },
-            {
-                id: 7,
-                level: 'Intermediate',
-                title: 'Regression Prevention',
-                description: 'How does BVT help prevent regression issues?',
-                options: [
-                    {
-                        text: 'It verifies critical functionality in each build to catch issues before they affect other modules',
-                        outcome: 'Perfect! Early detection prevents regression spread.',
-                        experience: 20,
-                        tool: 'Regression Checker'
-                    },
-                    {
-                        text: 'It focuses on testing new code only',
-                        outcome: 'Existing functionality also needs verification through existing test cases.',
-                        experience: -15
-                    },
-                    {
-                        text: 'It can be a factor in skipping more regular testing activities',
-                        outcome: 'Consistent testing does not skip the need for regular testing activities, although can help to prevent the need for full regression testing.',
-                        experience: -10
-                    },
-                    {
-                        text: 'It can be a factor in preventing verification testing of previous issues',
-                        outcome: 'This is untrue as all previous fixes need verification testing.',
-                        experience: -5
-                    }
-                ]
-            },
-            {
-                id: 8,
-                level: 'Intermediate',
-                title: 'Resource Management',
-                description: 'How do you manage resources efficiently during BVT?',
-                options: [
-                    {
-                        text: 'Allocate appropriate time and testers based on build scope and complexity',
-                        outcome: 'Excellent! Proper resource allocation ensures thorough verification.',
-                        experience: 20,
-                        tool: 'Resource Planner'
-                    },
-                    {
-                        text: 'Use minimal resources regardless of project size',
-                        outcome: 'Adequate resources are needed for coverage.',
-                        experience: -15
-                    },
-                    {
-                        text: 'Over allocate resources to complete build verification testing under the agreed time frame',
-                        outcome: 'While over allocation can help in complex projects, efficient resource usage is most important for BVT testing.',
-                        experience: -10
-                    },
-                    {
-                        text: 'Spend the least time regarding testing activities on resource planning',
-                        outcome: 'Resource planning ensures efficiency and mistakes in this area can have a knock-on effect further on into the testing process.',
-                        experience: -5
-                    }
-                ]
-            },
-            {
-                id: 9,
-                level: 'Intermediate',
-                title: 'Build Acceptance',
-                description: 'When should a build be accepted for further testing?',
-                options: [
-                    {
-                        text: 'When all critical functionality passes testing and no blocking issues are found',
-                        outcome: 'Perfect! Build stability is crucial for further testing.',
-                        experience: 20,
-                        tool: 'Acceptance Criteria'
-                    },
-                    {
-                        text: 'All builds should be accepted for further testing activities',
-                        outcome: 'Builds must meet stability criteria before being submitted.',
-                        experience: -15
-                    },
-                    {
-                        text: 'Builds should be accepted if any minor issues are still present',
-                        outcome: 'Critical functionality must work and this includes minor issues if they affect functionality.',
-                        experience: -10
-                    },
-                    {
-                        text: 'When build verification is 80% complete according to what set out in the planning stages',
-                        outcome: 'Verification ensures build quality and any missed areas can result in major issues.',
-                        experience: -5
-                    }
-                ]
-            },
-            {
-                id: 10,
-                level: 'Intermediate',
-                title: 'Documentation Review',
-                description: 'How should you handle BVT documentation?',
-                options: [
-                    {
-                        text: 'Maintain clear test cases, expected results, and execution records for each build',
-                        outcome: 'Excellent! Documentation ensures consistency and traceability.',
-                        experience: 20,
-                        tool: 'Documentation Template'
-                    },
-                    {
-                        text: 'Minimal documentation is required to be able to focus on test execution',
-                        outcome: 'Documentation is crucial for BVT to maintain consistency and traceability.',
-                        experience: -15
-                    },
-                    {
-                        text: 'Document failures only as this is the main concern of build verification testing',
-                        outcome: 'All results require documentation for traceability.',
-                        experience: -10
-                    },
-                    {
-                        text: 'Use informal notes and submit these regularly to speed up the process',
-                        outcome: 'Structured documentation is always required for consistency.',
-                        experience: -5
-                    }
-                ]
-            }
-        ];
-
-        // Advanced Scenarios (IDs 11-15)
-        this.advancedScenarios = [
-            {
-                id: 11,
-                level: 'Advanced',
-                title: 'Process Improvement',
-                description: 'How do you improve BVT processes over time?',
-                options: [
-                    {
-                        text: 'Analyse effectiveness, gather feedback, and update processes based on project needs',
-                        outcome: 'Perfect! Continuous improvement enhances BVT effectiveness.',
-                        experience: 25,
-                        tool: 'Process Analyser'
-                    },
-                    {
-                        text: 'Keep the existing processes as this will promote familiarity and speed up the process',
-                        outcome: 'Processes need regular updates to keep up to date with new features and requirements changes.',
-                        experience: -15
-                    },
-                    {
-                        text: 'Change processes on tester experience and preference basis',
-                        outcome: 'Changes need proper analysis and not by tester preference.',
-                        experience: -10
-                    },
-                    {
-                        text: 'Take into consideration feedback on a minimal basis',
-                        outcome: 'Feedback is essential and drives improvement.',
-                        experience: -5
-                    }
-                ]
-            },
-            {
-                id: 12,
-                level: 'Advanced',
-                title: 'Integration Planning',
-                description: 'How do you plan BVT for module integration?',
-                options: [
-                    {
-                        text: 'Verify individual modules and their interactions with comprehensive integration tests',
-                        outcome: 'Excellent! Integration testing ensures module compatibility.',
-                        experience: 25,
-                        tool: 'Integration Planner'
-                    },
-                    {
-                        text: 'Test one module for integration, as once one is verified other connected modules should follow suit',
-                        outcome: 'All modules need verification at the risk of missing major issues.',
-                        experience: -15
-                    },
-                    {
-                        text: 'Leave integration testing in favour of making up time for functionality testing',
-                        outcome: 'Integration testing is crucial to the BVT process and if missed can cause major issues with compatibility.',
-                        experience: -10
-                    },
-                    {
-                        text: 'Assume compatibility for all modules once one interaction is completed successfully',
-                        outcome: 'All module interaction tests require completing for optimal coverage.',
-                        experience: -5
-                    }
-                ]
-            },
-            {
-                id: 13,
-                level: 'Advanced',
-                title: 'Team Communication',
-                description: 'How do you manage communication during BVT?',
-                options: [
-                    {
-                        text: 'Maintain clear channels with development team and stakeholders for quick issue resolution',
-                        outcome: 'Perfect! Effective communication ensures quick resolution.',
-                        experience: 25,
-                        tool: 'Communication Plan'
-                    },
-                    {
-                        text: 'Work in isolation until build verification is complete and a test report can be submitted',
-                        outcome: 'Team communication is essential for quick resolution to potential issues.',
-                        experience: -15
-                    },
-                    {
-                        text: 'Delay issue reporting in favour test coverage',
-                        outcome: 'Quick communication is needed and issues can sometimes be mitigated quickly.',
-                        experience: -10
-                    },
-                    {
-                        text: 'Report to one person within the project development team',
-                        outcome: 'All stakeholders require updates on progress and issues to form action plans going forward.',
-                        experience: -5
-                    }
-                ]
-            },
-            {
-                id: 14,
-                level: 'Advanced',
-                title: 'Risk Management',
-                description: 'How do you manage risks in BVT?',
-                options: [
-                    {
-                        text: 'Identify potential risks, prioritise critical areas, and maintain contingency plans',
-                        outcome: 'Excellent! Risk management ensures BVT effectiveness.',
-                        experience: 25,
-                        tool: 'Risk Assessment'
-                    },
-                    {
-                        text: 'Attention to risk management should only be pursued when all functional tasks have been completed',
-                        outcome: 'Risk management is crucial and should be set out in the planning stages.',
-                        experience: -15
-                    },
-                    {
-                        text: 'Handle issues as they occur throughout the functional build verification process',
-                        outcome: 'Proactive risk management is required in planning stages to mitigate any potential project risks.',
-                        experience: -10
-                    },
-                    {
-                        text: 'Focus on multiple minor risks during the testing process',
-                        outcome: 'Critical risks should be prioritised first and decisions can be made by stakeholders on minor risks taking time constraints and user impact into consideration.',
-                        experience: -5
-                    }
-                ]
-            },
-            {
-                id: 15,
-                level: 'Advanced',
-                title: 'Quality Metrics',
-                description: 'How do you measure BVT effectiveness?',
-                options: [
-                    {
-                        text: 'Track pass rates, issue detection, and prevention of critical defects in later testing',
-                        outcome: 'Perfect! Metrics help evaluate and improve BVT.',
-                        experience: 25,
-                        tool: 'Quality Dashboard'
-                    },
-                    {
-                        text: 'Count total test completion only for test coverage reporting',
-                        outcome: 'Multiple metrics are required for a measured outcome. Including pass and failure rates.',
-                        experience: -15
-                    },
-                    {
-                        text: 'By minimal tracking of measurements, as functional testing takes priority',
-                        outcome: 'Metrics and measurements are equally as important as they guide future improvement.',
-                        experience: -10
-                    },
-                    {
-                        text: 'Track time only to make sure project time lines are met',
-                        outcome: 'Quality metrics are also crucial for a measured and affective outcome on improvement.',
-                        experience: -5
-                    }
-                ]
-            }
-        ];
-
         // Initialize UI and add event listeners
         this.initializeEventListeners();
 
         this.isLoading = false;
+
+        // Add this debugging check to the constructor
+        console.log('[BuildVerificationQuiz] Quiz name being used:', this.quizName);
+        const relatedLocalStorage = Object.keys(localStorage).filter(k => 
+            k.includes('quiz_progress') || k.includes('build-verification')
+        );
+        console.log('[BuildVerificationQuiz] Related localStorage keys:', relatedLocalStorage);
     }
 
+    // Helper for showing errors to the user
     showError(message) {
-        const errorDiv = document.createElement('div');
-        errorDiv.className = 'error-notification';
-        errorDiv.setAttribute('role', 'alert');
-        errorDiv.textContent = message;
-        document.body.appendChild(errorDiv);
-        setTimeout(() => errorDiv.remove(), 5000);
+        try {
+            const errorElement = document.createElement('div');
+            errorElement.className = 'error-message';
+            errorElement.textContent = message;
+            errorElement.style.color = 'red';
+            errorElement.style.padding = '20px';
+            errorElement.style.textAlign = 'center';
+            errorElement.style.fontWeight = 'bold';
+            
+            // Find a good place to show the error
+            const container = document.getElementById('game-screen') || 
+                              document.getElementById('quiz-container') || 
+                              document.body;
+            
+            if (container) {
+                // Clear container if not body
+                if (container !== document.body) {
+                    container.innerHTML = '';
+                }
+                
+                container.appendChild(errorElement);
+                console.error('[BuildVerificationQuiz] Displayed error to user:', message);
+            }
+        } catch (e) {
+            console.error('[BuildVerificationQuiz] Failed to show error to user:', e);
+        }
     }
 
-    shouldEndGame(totalQuestionsAnswered, currentXP) {
+    shouldEndGame() {
         // Only end the game when all 15 questions are answered
         return (this.player?.questionHistory?.length || 0) >= 15;
+    }
+
+    // Helper method to calculate the score percentage based on correct answers
+    calculateScorePercentage() {
+        const correctAnswers = this.player.questionHistory.filter(q => 
+            q.selectedAnswer && (q.selectedAnswer.isCorrect || 
+            q.selectedAnswer.experience === Math.max(...q.scenario.options.map(o => o.experience || 0)))
+        ).length;
+        return Math.round((correctAnswers / Math.max(1, Math.min(this.player.questionHistory.length, 15))) * 100);
+    }
+
+    async saveProgress() {
+        // First determine the status based on clear conditions
+        let status = 'in-progress';
+        
+        // Check for completion (all 15 questions answered)
+        if (this.player.questionHistory.length >= 15) {
+            // Calculate pass/fail based on correct answers
+            const correctAnswers = this.player.questionHistory.filter(q => 
+                q.selectedAnswer && (q.selectedAnswer.isCorrect || 
+                q.selectedAnswer.experience === Math.max(...q.scenario.options.map(o => o.experience || 0)))
+            ).length;
+            const scorePercentage = Math.round((correctAnswers / 15) * 100);
+            status = scorePercentage >= 70 ? 'passed' : 'failed';
+        }
+    
+        const progressData = {
+            experience: this.player.experience,
+            tools: this.player.tools,
+            currentScenario: this.player.currentScenario,
+            questionHistory: this.player.questionHistory,
+            lastUpdated: new Date().toISOString(),
+            questionsAnswered: this.player.questionHistory.length,
+            status: status,
+            scorePercentage: this.calculateScorePercentage()
+        };
+    
+        try {
+            const username = localStorage.getItem('username');
+            if (!username) {
+                console.error('No user found, cannot save progress');
+                return false;
+            }
+            
+            // Use user-specific key for localStorage
+            const storageKey = `quiz_progress_${username}_${this.quizName}`;
+            localStorage.setItem(storageKey, JSON.stringify({ data: progressData }));
+            
+            // ADDITIONAL FAILSAFE: Also save to sessionStorage which persists for the current session
+            try {
+                sessionStorage.setItem(storageKey, JSON.stringify({ 
+                    data: progressData,
+                    timestamp: Date.now()
+                }));
+                console.log('[BuildVerificationQuiz] Backed up progress to sessionStorage');
+                
+                // Create an emergency backup with a timestamp
+                const emergencyKey = `${storageKey}_emergency_${Date.now()}`;
+                sessionStorage.setItem(emergencyKey, JSON.stringify({ 
+                    data: progressData,
+                    timestamp: Date.now()
+                }));
+            } catch (sessionError) {
+                console.warn('[BuildVerificationQuiz] Failed to save to sessionStorage:', sessionError);
+            }
+            
+            // Try to use sync service, but have a direct API fallback
+            try {
+                if (typeof quizSyncService !== 'undefined') {
+                    quizSyncService.addToSyncQueue(username, this.quizName, progressData);
+                    console.log('[BuildVerificationQuiz] Added to sync queue');
+                } else {
+                    throw new Error('Sync service not available');
+                }
+            } catch (syncError) {
+                // Direct API saving as fallback
+                console.warn('[BuildVerificationQuiz] Sync service failed, trying direct API save:', syncError);
+                
+                try {
+                    await this.apiService.saveQuizProgress(this.quizName, progressData);
+                    console.log('[BuildVerificationQuiz] Saved progress directly to API');
+                } catch (apiError) {
+                    console.error('[BuildVerificationQuiz] Failed to save to API:', apiError);
+                    // Already saved to localStorage above, so we have a backup
+                }
+            }
+            
+            return true;
+        } catch (error) {
+            console.error('[BuildVerificationQuiz] Failed to save progress:', error);
+            
+            // EMERGENCY FALLBACK: Attempt to save to sessionStorage as last resort
+            try {
+                const username = localStorage.getItem('username') || 'anonymous';
+                const emergencyKey = `quiz_progress_${username}_${this.quizName}_emergency`;
+                sessionStorage.setItem(emergencyKey, JSON.stringify({ 
+                    data: progressData,
+                    timestamp: Date.now()
+                }));
+                console.log('[BuildVerificationQuiz] Saved emergency backup to sessionStorage');
+            } catch (sessionError) {
+                console.error('[BuildVerificationQuiz] All storage methods failed:', sessionError);
+            }
+            
+            return false;
+        }
+    }
+
+    async loadProgress() {
+        try {
+            const username = localStorage.getItem('username');
+            if (!username) {
+                console.error('[BuildVerificationQuiz] No user found, cannot load progress');
+                return false;
+            }
+
+            // Important diagnostic: log ALL quiz progress localStorage keys for this user
+            const allStorageKeys = Object.keys(localStorage).filter(key => 
+                key.includes('quiz_progress') && key.includes(username)
+            );
+            console.log('[BuildVerificationQuiz] ALL localStorage quiz progress keys for this user:', allStorageKeys);
+
+            // Define all possible storage keys in priority order
+            const storageKeys = [
+                `quiz_progress_${username}_${this.quizName}`,
+                `quiz_progress_${username}_${this.quizName}_backup`,
+                `quiz_progress_${username}_build-verification`,  // Fallback for standardized name
+                `quiz_progress_${username}_build-verification_backup`,
+                `quiz_progress_${username}_build-verification_emergency`
+            ];
+            
+            // Log which keys we will try
+            console.log('[BuildVerificationQuiz] Will try these localStorage keys in order:', storageKeys);
+            
+            let progressData = null;
+            let dataSource = '';
+            let apiProgress = null;
+            
+            // First collect ALL possible progress data sources before deciding which to use
+            
+            // Check sessionStorage first as an additional data source
+            let sessionStorageData = null;
+            try {
+                // Get all sessionStorage keys for this user
+                const sessionKeys = Object.keys(sessionStorage).filter(key => 
+                    key.includes('quiz_progress') && key.includes(username)
+                );
+                console.log('[BuildVerificationQuiz] SessionStorage keys found:', sessionKeys);
+                
+                // Get the most recent session storage data
+                if (sessionKeys.length > 0) {
+                    let mostRecentKey = sessionKeys[0];
+                    let mostRecentTime = 0;
+                    
+                    // Find most recent by looking at the keys with timestamps or data timestamps
+                    for (const key of sessionKeys) {
+                        try {
+                            const sessionData = JSON.parse(sessionStorage.getItem(key));
+                            // Check if key contains timestamp or data has timestamp
+                            const keyTimestamp = key.includes('emergency_') ? 
+                                parseInt(key.split('emergency_')[1]) : 0;
+                            const dataTimestamp = sessionData.timestamp ? 
+                                parseInt(sessionData.timestamp) : 0;
+                            
+                            const timestamp = Math.max(keyTimestamp, dataTimestamp);
+                            
+                            if (timestamp > mostRecentTime) {
+                                mostRecentTime = timestamp;
+                                mostRecentKey = key;
+                            }
+                        } catch (e) {}
+                    }
+                    
+                    // Load the most recent session data
+                    try {
+                        const sessionData = JSON.parse(sessionStorage.getItem(mostRecentKey));
+                        sessionStorageData = sessionData.data || sessionData;
+                        console.log('[BuildVerificationQuiz] Loaded most recent sessionStorage data from key:', 
+                            mostRecentKey, 'with question count:', 
+                            sessionStorageData.questionHistory?.length || 0);
+                    } catch (e) {
+                        console.warn('[BuildVerificationQuiz] Failed to parse session storage data:', e);
+                    }
+                }
+            } catch (sessionError) {
+                console.warn('[BuildVerificationQuiz] Error accessing sessionStorage:', sessionError);
+            }
+            
+            // Try to get progress from API
+            try {
+                console.log('[BuildVerificationQuiz] Attempting to load progress from API');
+                apiProgress = await this.apiService.getQuizProgress(this.quizName);
+                console.log('[BuildVerificationQuiz] API progress response:', apiProgress);
+                
+                if (apiProgress && apiProgress.data) {
+                    // Verify API data has actual content (not just empty structures)
+                    const apiHasProgress = 
+                        (apiProgress.data.questionHistory && apiProgress.data.questionHistory.length > 0) &&
+                        (apiProgress.data.currentScenario && apiProgress.data.currentScenario > 0);
+                    
+                    if (apiHasProgress) {
+                        console.log('[BuildVerificationQuiz] API data contains valid progress with questions:', 
+                            apiProgress.data.questionHistory.length);
+                    } else {
+                        console.warn('[BuildVerificationQuiz] API returned data but without valid questions or progress');
+                    }
+                } else {
+                    console.warn('[BuildVerificationQuiz] API returned no valid data');
+                }
+            } catch (apiError) {
+                console.warn('[BuildVerificationQuiz] Failed to load progress from API:', apiError);
+            }
+            
+            // Collect all localStorage data
+            const localStorageData = {};
+            let bestLocalStorageData = null;
+            let bestQuestionCount = 0;
+            
+            for (const key of storageKeys) {
+                const localData = localStorage.getItem(key);
+                
+                if (localData) {
+                    try {
+                        const parsed = JSON.parse(localData);
+                        const candidateData = parsed.data || parsed;
+                        
+                        // Store all parsed data for reference
+                        localStorageData[key] = candidateData;
+                        
+                        // Check if this data has any question history
+                        if (candidateData && Array.isArray(candidateData.questionHistory)) {
+                            const questionCount = candidateData.questionHistory.length;
+                            console.log(`[BuildVerificationQuiz] Found localStorage data in ${key} with ${questionCount} questions`);
+                            
+                            // Keep track of the best localStorage data (most questions)
+                            if (questionCount > bestQuestionCount) {
+                                bestLocalStorageData = candidateData;
+                                bestQuestionCount = questionCount;
+                                console.log(`[BuildVerificationQuiz] This is now the best local storage data (${questionCount} questions)`);
+                            }
+                        }
+                    } catch (parseError) {
+                        console.error(`[BuildVerificationQuiz] Failed to parse localStorage data for key ${key}:`, parseError);
+                    }
+                }
+            }
+            
+            // Now choose the best data source based on which has the most questions
+            
+            // Track the best data and its source
+            let bestData = null;
+            let bestSource = '';
+            let bestCount = 0;
+            
+            // Check API data
+            if (apiProgress && apiProgress.data && 
+                apiProgress.data.questionHistory && 
+                apiProgress.data.questionHistory.length > 0) {
+                
+                bestData = apiProgress.data;
+                bestSource = 'API';
+                bestCount = apiProgress.data.questionHistory.length;
+                console.log(`[BuildVerificationQuiz] API data has ${bestCount} questions`);
+            }
+            
+            // Check localStorage data
+            if (bestLocalStorageData && 
+                bestLocalStorageData.questionHistory && 
+                bestLocalStorageData.questionHistory.length > bestCount) {
+                
+                bestData = bestLocalStorageData;
+                bestSource = 'localStorage';
+                bestCount = bestLocalStorageData.questionHistory.length;
+                console.log(`[BuildVerificationQuiz] localStorage data has ${bestCount} questions, better than current best`);
+            }
+            
+            // Check sessionStorage data
+            if (sessionStorageData && 
+                sessionStorageData.questionHistory && 
+                sessionStorageData.questionHistory.length > bestCount) {
+                
+                bestData = sessionStorageData;
+                bestSource = 'sessionStorage';
+                bestCount = sessionStorageData.questionHistory.length;
+                console.log(`[BuildVerificationQuiz] sessionStorage data has ${bestCount} questions, better than current best`);
+            }
+            
+            // Use the best data we've found
+            if (bestData) {
+                console.log(`[BuildVerificationQuiz] Using best progress data from ${bestSource} with ${bestCount} questions`);
+                progressData = bestData;
+                dataSource = bestSource;
+                
+                // If the best data wasn't from the API, sync it back to the API
+                if (bestSource !== 'API' && bestCount > 0) {
+                    try {
+                        console.log('[BuildVerificationQuiz] Syncing best progress data to API and localStorage');
+                        
+                        // Update localStorage with the best data
+                        localStorage.setItem(storageKeys[0], JSON.stringify({ 
+                            data: progressData,
+                            timestamp: Date.now() 
+                        }));
+                        
+                        // Update API with the best data
+                        await this.apiService.saveQuizProgress(this.quizName, progressData);
+                    } catch (syncError) {
+                        console.warn('[BuildVerificationQuiz] Failed to sync best progress data:', syncError);
+                    }
+                }
+            } else {
+                console.log('[BuildVerificationQuiz] No valid progress data found from any source, trying recovery...');
+                
+                // Try to recover from the sync service as last resort
+                try {
+                    // Get QuizSyncService if available
+                    if (typeof window.quizSyncService !== 'undefined' || typeof quizSyncService !== 'undefined') {
+                        const syncService = window.quizSyncService || quizSyncService;
+                        const recoveredData = await syncService.recoverProgressData(username, this.quizName);
+                        
+                        if (recoveredData) {
+                            console.log('[BuildVerificationQuiz] Successfully recovered data from QuizSyncService');
+                            progressData = recoveredData;
+                            dataSource = 'recovered';
+                        } else {
+                            console.warn('[BuildVerificationQuiz] No data could be recovered, returning false');
+                            return false;
+                        }
+                    } else {
+                        console.warn('[BuildVerificationQuiz] QuizSyncService not available, cannot recover');
+                        return false;
+                    }
+                } catch (recoveryError) {
+                    console.error('[BuildVerificationQuiz] Error during data recovery:', recoveryError);
+                    return false;
+                }
+            }
+
+            if (progressData) {
+                console.log(`[BuildVerificationQuiz] Processing loaded progress data from ${dataSource}`);
+                
+                // Sanitize and validate data to prevent invalid values
+                progressData.experience = !isNaN(parseFloat(progressData.experience)) ? parseFloat(progressData.experience) : 0;
+                progressData.tools = Array.isArray(progressData.tools) ? progressData.tools : [];
+                progressData.questionHistory = Array.isArray(progressData.questionHistory) ? 
+                    progressData.questionHistory : [];
+                
+                // CRITICAL: Ensure currentScenario is consistent with question history
+                // This is a key point of failure
+                if (progressData.questionHistory.length > 0) {
+                    console.log('[BuildVerificationQuiz] Setting currentScenario to match questionHistory.length:', 
+                        progressData.questionHistory.length);
+                    
+                    // ALWAYS set currentScenario to match the question history length
+                    // This ensures we go to the next unanswered question
+                    progressData.currentScenario = progressData.questionHistory.length;
+                } else {
+                    console.log('[BuildVerificationQuiz] No questions in history, starting from beginning');
+                    progressData.currentScenario = 0;
+                }
+                
+                // Fix inconsistent state: if quiz is marked as completed but has no progress
+                if ((progressData.status === 'completed' || 
+                     progressData.status === 'passed' || 
+                     progressData.status === 'failed') && 
+                    (progressData.questionHistory.length === 0 || 
+                     progressData.currentScenario === 0)) {
+                    console.log('[BuildVerificationQuiz] Fixing inconsistent state: quiz marked as completed but has no progress');
+                    progressData.status = 'in-progress';
+                }
+
+                // Update the player state with the loaded progress data
+                this.player.experience = progressData.experience;
+                this.player.tools = progressData.tools;
+                this.player.questionHistory = progressData.questionHistory;
+                this.player.currentScenario = progressData.currentScenario;
+                
+                console.log('[BuildVerificationQuiz] Player state updated:', {
+                    experience: this.player.experience,
+                    questionHistory: this.player.questionHistory.length,
+                    currentScenario: this.player.currentScenario,
+                    status: progressData.status,
+                    source: dataSource
+                });
+                
+                // Only show end screen if quiz is actually completed and has progress
+                if ((progressData.status === 'completed' || 
+                     progressData.status === 'passed' || 
+                     progressData.status === 'failed') && 
+                    progressData.questionHistory.length > 0 && 
+                    progressData.currentScenario > 0) {
+                    console.log(`[BuildVerificationQuiz] Quiz is ${progressData.status} with ${progressData.questionHistory.length} questions answered`);
+                    this.endGame(progressData.status === 'failed');
+                    return true;
+                }
+
+                // Additional guard: verify that progress was loaded correctly
+                if (this.player.questionHistory.length === 0 && progressData.questionHistory.length > 0) {
+                    console.error('[BuildVerificationQuiz] CRITICAL ERROR: Failed to load question history properly!');
+                    // Forced retry with direct assignment
+                    this.player.questionHistory = [...progressData.questionHistory];
+                    this.player.currentScenario = this.player.questionHistory.length;
+                    console.log('[BuildVerificationQuiz] Forced player state update after error:', {
+                        questionHistory: this.player.questionHistory.length,
+                        currentScenario: this.player.currentScenario
+                    });
+                }
+
+                // Force save progress back to ensure consistency
+                await this.saveProgress();
+                
+                // Show the current question based on progress
+                this.displayScenario();
+                return true;
+            }
+            
+            console.log('[BuildVerificationQuiz] No existing progress found');
+            return false;
+        } catch (error) {
+            console.error('[BuildVerificationQuiz] Error loading progress:', error);
+            
+            // As a last resort, try to recover progress data using the QuizSyncService
+            try {
+                console.log('[BuildVerificationQuiz] Attempting emergency progress recovery after error');
+                return await this.recoverProgress();
+            } catch (recoveryError) {
+                console.error('[BuildVerificationQuiz] Emergency recovery also failed:', recoveryError);
+                return false;
+            }
+        }
     }
 
     async startGame() {
@@ -692,8 +566,8 @@ export class BuildVerificationQuiz extends BaseQuiz {
                 return;
             }
 
-            // Initialize event listeners
-            this.initializeEventListeners();
+            // Try to load scenarios from API with caching
+            await this.loadScenariosWithCaching();
 
             // Load previous progress
             const hasProgress = await this.loadProgress();
@@ -705,6 +579,8 @@ export class BuildVerificationQuiz extends BaseQuiz {
                 this.player.tools = [];
                 this.player.currentScenario = 0;
                 this.player.questionHistory = [];
+                // Only show scenario if no progress
+                this.displayScenario();
             }
             
             // Clear any existing transition messages
@@ -713,13 +589,12 @@ export class BuildVerificationQuiz extends BaseQuiz {
                 transitionContainer.innerHTML = '';
                 transitionContainer.classList.remove('active');
             }
-            
-            // Clear any existing timer
-            if (this.questionTimer) {
-                clearInterval(this.questionTimer);
-            }
-            
-            await this.displayScenario();
+
+            // Add this to the startGame method after loading progress
+            console.log('[BuildVerificationQuiz] Progress status check:', {
+                playerState: this.player,
+                localStorageKeys: Object.keys(localStorage).filter(k => k.includes('quiz_progress'))
+            });
         } catch (error) {
             console.error('Failed to start game:', error);
             this.showError('Failed to start the quiz. Please try refreshing the page.');
@@ -753,133 +628,198 @@ export class BuildVerificationQuiz extends BaseQuiz {
     }
 
     displayScenario() {
-        const currentScenarios = this.getCurrentScenarios();
-        
-        // Check if we've answered all 15 questions
-        if (this.player.questionHistory.length >= 15) {
-            console.log('All 15 questions answered, ending game');
-            this.endGame(false);
-            return;
-        }
-        
-        // Get the next scenario based on current progress
-        let scenario;
-        const questionCount = this.player.questionHistory.length;
-        
-        // Reset currentScenario based on the current level
-        if (questionCount < 5) {
-            // Basic questions (0-4)
-            scenario = this.basicScenarios[questionCount];
-            this.player.currentScenario = questionCount;
-        } else if (questionCount < 10) {
-            // Intermediate questions (5-9)
-            scenario = this.intermediateScenarios[questionCount - 5];
-            this.player.currentScenario = questionCount - 5;
-        } else if (questionCount < 15) {
-            // Advanced questions (10-14)
-            scenario = this.advancedScenarios[questionCount - 10];
-            this.player.currentScenario = questionCount - 10;
-        }
+        // Use currentScenario for all progress logic
+        const currentScenarioIndex = this.player.currentScenario;
+        const totalAnswered = this.player.questionHistory.length;
+        const totalQuestions = this.totalQuestions || 15;
 
-        if (!scenario) {
-            console.error('No scenario found for current progress. Question count:', questionCount);
-            this.endGame(true);
-            return;
-        }
+        console.log('[BuildVerificationQuiz][displayScenario] Showing scenario:', {
+            currentScenarioIndex,
+            totalAnswered,
+            totalQuestions
+        });
 
-        // Store current question number for consistency
-        this.currentQuestionNumber = questionCount + 1;
-        
-        // Show level transition message at the start of each level or when level changes
-        const currentLevel = this.getCurrentLevel();
-        const previousLevel = questionCount > 0 ? 
-            (questionCount <= 5 ? 'Basic' : 
-             questionCount <= 10 ? 'Intermediate' : 'Advanced') : null;
+        // Debug: verify currentScenario and questionHistory are aligned correctly
+        if (currentScenarioIndex !== totalAnswered) {
+            console.warn('[BuildVerificationQuiz][displayScenario] Misalignment detected! currentScenario and questionHistory.length don\'t match:',
+                `currentScenario=${currentScenarioIndex}, questionHistory.length=${totalAnswered}`);
             
-        if (questionCount === 0 || 
-            (questionCount === 5 && currentLevel === 'Intermediate') || 
-            (questionCount === 10 && currentLevel === 'Advanced')) {
-            const transitionContainer = document.getElementById('level-transition-container');
-            if (transitionContainer) {
-                transitionContainer.innerHTML = ''; // Clear any existing messages
-                
-                const levelMessage = document.createElement('div');
-                levelMessage.className = 'level-transition';
-                levelMessage.setAttribute('role', 'alert');
-                levelMessage.textContent = `Starting ${currentLevel} Questions`;
-                
-                transitionContainer.appendChild(levelMessage);
-                transitionContainer.classList.add('active');
-                
-                // Update the level indicator
-                const levelIndicator = document.getElementById('level-indicator');
-                if (levelIndicator) {
-                    levelIndicator.textContent = `Level: ${currentLevel}`;
-                }
-                
-                // Remove the message and container height after animation
-                setTimeout(() => {
-                    transitionContainer.classList.remove('active');
-                    setTimeout(() => {
-                        transitionContainer.innerHTML = '';
-                    }, 300); // Wait for height transition to complete
-                }, 3000);
+            // Auto-fix if there's a mismatch - this is critical for proper quiz flow
+            if (totalAnswered > 0 && currentScenarioIndex === 0) {
+                console.log('[BuildVerificationQuiz][displayScenario] Auto-fixing: Setting currentScenario to match questionHistory.length');
+                this.player.currentScenario = totalAnswered;
             }
         }
 
-        // Update scenario display
-        const titleElement = document.getElementById('scenario-title');
-        const descriptionElement = document.getElementById('scenario-description');
-        const optionsContainer = document.getElementById('options-container');
-
-        if (!titleElement || !descriptionElement || !optionsContainer) {
-            console.error('Required elements not found');
+        // Check if we've answered all questions
+        if (currentScenarioIndex >= totalQuestions) {
+            console.log('[BuildVerificationQuiz][displayScenario] All questions answered, ending game');
+            this.endGame(false);
             return;
         }
 
-        titleElement.textContent = scenario.title;
-        descriptionElement.textContent = scenario.description;
+        // Determine level and scenario set
+        let scenario;
+        let scenarioSet;
+        let scenarioLevel;
+        
+        try {
+            // Calculate which level we're on and get the appropriate scenario set
+            if (currentScenarioIndex < 5) {
+                scenarioSet = this.basicScenarios;
+                scenarioLevel = 'Basic';
+                scenario = scenarioSet[currentScenarioIndex];
+            } else if (currentScenarioIndex < 10) {
+                scenarioSet = this.intermediateScenarios;
+                scenarioLevel = 'Intermediate';
+                scenario = scenarioSet[currentScenarioIndex - 5];
+            } else if (currentScenarioIndex < 15) {
+                scenarioSet = this.advancedScenarios;
+                scenarioLevel = 'Advanced';
+                scenario = scenarioSet[currentScenarioIndex - 10];
+            }
 
-        // Update question counter immediately
-        const questionProgress = document.getElementById('question-progress');
-        if (questionProgress) {
-            questionProgress.textContent = `Question: ${this.currentQuestionNumber}/15`;
+            if (!scenario) {
+                console.error('[BuildVerificationQuiz][displayScenario] No scenario found for currentScenario:', currentScenarioIndex);
+                console.log('[BuildVerificationQuiz][displayScenario] Scenario sets:', {
+                    basic: this.basicScenarios?.length || 0,
+                    intermediate: this.intermediateScenarios?.length || 0,
+                    advanced: this.advancedScenarios?.length || 0
+                });
+                
+                // Emergency fallback - try to recover by moving to next question or resetting
+                if (totalAnswered > 0 && totalAnswered < totalQuestions) {
+                    console.log('[BuildVerificationQuiz][displayScenario] Attempting recovery by moving to next available scenario');
+                    this.player.currentScenario = totalAnswered;
+                    // Try recursively one more time with the fixed index
+                    this.displayScenario();
+                    return;
+                } else {
+                    // If we still can't recover, try the emergency recovery method
+                    console.log('[BuildVerificationQuiz][displayScenario] Attempting emergency data recovery');
+                    this.recoverProgress().then(success => {
+                        if (!success) {
+                            // If recovery fails, show end game as last resort
+                            this.endGame(true);
+                        }
+                    }).catch(() => this.endGame(true));
+                    return;
+                }
+            }
+
+            // Store current question number for consistency
+            this.currentQuestionNumber = currentScenarioIndex + 1;
+
+            // Show level transition message at the start of each level or when level changes
+            if (
+                currentScenarioIndex === 0 ||
+                (currentScenarioIndex === 5 && scenarioLevel === 'Intermediate') ||
+                (currentScenarioIndex === 10 && scenarioLevel === 'Advanced')
+            ) {
+                const transitionContainer = document.getElementById('level-transition-container');
+                if (transitionContainer) {
+                    transitionContainer.innerHTML = '';
+                    const levelMessage = document.createElement('div');
+                    levelMessage.className = 'level-transition';
+                    levelMessage.setAttribute('role', 'alert');
+                    levelMessage.textContent = `Starting ${scenarioLevel} Questions`;
+                    transitionContainer.appendChild(levelMessage);
+                    transitionContainer.classList.add('active');
+                    const levelIndicator = document.getElementById('level-indicator');
+                    if (levelIndicator) {
+                        levelIndicator.textContent = `Level: ${scenarioLevel}`;
+                    }
+                    setTimeout(() => {
+                        transitionContainer.classList.remove('active');
+                        setTimeout(() => {
+                            transitionContainer.innerHTML = '';
+                        }, 300);
+                    }, 3000);
+                }
+            }
+
+            // Update scenario display
+            const titleElement = document.getElementById('scenario-title');
+            const descriptionElement = document.getElementById('scenario-description');
+            const optionsContainer = document.getElementById('options-container');
+
+            if (!titleElement || !descriptionElement || !optionsContainer) {
+                console.error('[BuildVerificationQuiz][displayScenario] Required elements not found');
+                return;
+            }
+
+            titleElement.textContent = scenario.title;
+            descriptionElement.textContent = scenario.description;
+
+            // Update question counter
+            const questionProgress = document.getElementById('question-progress');
+            if (questionProgress) {
+                questionProgress.textContent = `Question: ${this.currentQuestionNumber}/15`;
+            }
+
+            // Create a copy of options with their original indices
+            const shuffledOptions = scenario.options.map((option, index) => ({
+                ...option,
+                originalIndex: index
+            }));
+            for (let i = shuffledOptions.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [shuffledOptions[i], shuffledOptions[j]] = [shuffledOptions[j], shuffledOptions[i]];
+            }
+            optionsContainer.innerHTML = '';
+            
+            shuffledOptions.forEach((option, index) => {
+                const optionElement = document.createElement('div');
+                optionElement.className = 'option';
+                optionElement.innerHTML = `
+                    <input type="radio" 
+                        name="option" 
+                        value="${option.originalIndex}" 
+                        id="option${index}"
+                        tabindex="0"
+                        aria-label="${option.text}"
+                        role="radio">
+                    <label for="option${index}">${option.text}</label>
+                `;
+                optionsContainer.appendChild(optionElement);
+            });
+
+            this.updateProgress();
+            this.initializeTimer();
+            console.log('[BuildVerificationQuiz][displayScenario] Showing scenario', scenarioLevel, 'index', currentScenarioIndex, scenario.title);
+
+            // Make scenario screen visible if not already
+            const gameScreen = document.getElementById('game-screen');
+            if (gameScreen && gameScreen.classList.contains('hidden')) {
+                console.log('[BuildVerificationQuiz][displayScenario] Making game screen visible');
+                gameScreen.classList.remove('hidden');
+            }
+
+            // Add extra log after showing
+            setTimeout(() => {
+                console.log('[BuildVerificationQuiz][displayScenario][post-show] player state:', {
+                    experience: this.player.experience,
+                    questionHistory: this.player.questionHistory.length,
+                    currentScenario: this.player.currentScenario
+                });
+            }, 0);
+        } catch (error) {
+            console.error('[BuildVerificationQuiz][displayScenario] Error showing scenario:', error);
+            // Emergency recovery if an error occurs
+            const gameScreen = document.getElementById('game-screen');
+            if (gameScreen) gameScreen.classList.remove('hidden');
+            
+            // Try to recover progress data in case of display error
+            console.log('[BuildVerificationQuiz][displayScenario] Attempting emergency recovery after display error');
+            this.recoverProgress().then(success => {
+                if (!success) {
+                    // If recovery fails, show error message
+                    this.showError('An error occurred loading the quiz. Try refreshing the page.');
+                }
+            }).catch(() => {
+                this.showError('An error occurred loading the quiz. Try refreshing the page.');
+            });
         }
-
-        // Create a copy of options with their original indices
-        const shuffledOptions = scenario.options.map((option, index) => ({
-            ...option,
-            originalIndex: index
-        }));
-
-        // Shuffle the options
-        for (let i = shuffledOptions.length - 1; i > 0; i--) {
-            const j = Math.floor(Math.random() * (i + 1));
-            [shuffledOptions[i], shuffledOptions[j]] = [shuffledOptions[j], shuffledOptions[i]];
-        }
-
-        optionsContainer.innerHTML = '';
-
-        shuffledOptions.forEach((option, index) => {
-            const optionElement = document.createElement('div');
-            optionElement.className = 'option';
-            optionElement.innerHTML = `
-                <input type="radio" 
-                    name="option" 
-                    value="${option.originalIndex}" 
-                    id="option${index}"
-                    tabindex="0"
-                    aria-label="${option.text}"
-                    role="radio">
-                <label for="option${index}">${option.text}</label>
-            `;
-            optionsContainer.appendChild(optionElement);
-        });
-
-        this.updateProgress();
-
-        // Initialize timer for the new question
-        this.initializeTimer();
     }
 
     async handleAnswer() {
@@ -890,7 +830,7 @@ export class BuildVerificationQuiz extends BaseQuiz {
             submitButton.disabled = true;
         }
 
-        // Clear any existing timer
+        // Clear the timer when an answer is submitted
         if (this.questionTimer) {
             clearInterval(this.questionTimer);
         }
@@ -901,7 +841,7 @@ export class BuildVerificationQuiz extends BaseQuiz {
             if (!selectedOption) return;
 
             const currentScenarios = this.getCurrentScenarios();
-            const scenario = currentScenarios[this.player.currentScenario];
+            const scenario = currentScenarios[this.player.currentScenario < 5 ? this.player.currentScenario : this.player.currentScenario < 10 ? this.player.currentScenario - 5 : this.player.currentScenario - 10];
             const originalIndex = parseInt(selectedOption.value);
             
             const selectedAnswer = scenario.options[originalIndex];
@@ -945,7 +885,7 @@ export class BuildVerificationQuiz extends BaseQuiz {
                 experience: this.player.experience,
                 questionHistory: this.player.questionHistory,
                 questionsAnswered: this.player.questionHistory.length,
-                lastUpdated: new Date().toISOString()
+                lastActive: new Date().toISOString()
             };
             
             // Save quiz result
@@ -1270,6 +1210,7 @@ export class BuildVerificationQuiz extends BaseQuiz {
                 
                 // Clear any local storage for this quiz
                 this.clearQuizLocalStorage(username, this.quizName);
+                
             } catch (error) {
                 console.error('Error saving final quiz score:', error);
             }
@@ -1333,51 +1274,145 @@ export class BuildVerificationQuiz extends BaseQuiz {
         this.generateRecommendations();
     }
 
-    // Helper method to calculate the score percentage based on correct answers
-    calculateScorePercentage() {
-        const correctAnswers = this.player.questionHistory.filter(q => 
-            q.selectedAnswer && (q.selectedAnswer.isCorrect || 
-            q.selectedAnswer.experience === Math.max(...q.scenario.options.map(o => o.experience || 0)))
-        ).length;
-        return Math.round((correctAnswers / Math.max(1, Math.min(this.player.questionHistory.length, 15))) * 100);
+    async loadScenariosWithCaching() {
+        // Try to load from cache first
+        const cachedData = localStorage.getItem(`quiz_scenarios_${this.quizName}`);
+        const cacheTimestamp = localStorage.getItem(`quiz_scenarios_${this.quizName}_timestamp`);
+        
+        // Check if cache is valid (less than 1 day old)
+        const cacheValid = cacheTimestamp && (Date.now() - parseInt(cacheTimestamp)) < 86400000;
+        
+        if (cachedData && cacheValid) {
+            console.log('[BuildVerificationQuiz] Using cached scenarios');
+            const data = JSON.parse(cachedData);
+            this.basicScenarios = data.basic || buildVerificationScenarios.basic;
+            this.intermediateScenarios = data.intermediate || buildVerificationScenarios.intermediate;
+            this.advancedScenarios = data.advanced || buildVerificationScenarios.advanced;
+            return;
+        }
+        
+        // If no valid cache, try to fetch from API
+        try {
+            console.log('[BuildVerificationQuiz] Fetching scenarios from API');
+            const data = await this.apiService.getQuizScenarios(this.quizName);
+            
+            if (data && data.scenarios) {
+                // Cache the result
+                localStorage.setItem(`quiz_scenarios_${this.quizName}`, JSON.stringify(data.scenarios));
+                localStorage.setItem(`quiz_scenarios_${this.quizName}_timestamp`, Date.now().toString());
+                
+                // Update scenarios
+                this.basicScenarios = data.scenarios.basic || buildVerificationScenarios.basic;
+                this.intermediateScenarios = data.scenarios.intermediate || buildVerificationScenarios.intermediate;
+                this.advancedScenarios = data.scenarios.advanced || buildVerificationScenarios.advanced;
+            }
+        } catch (error) {
+            console.error('[BuildVerificationQuiz] Failed to load scenarios from API:', error);
+            console.log('[BuildVerificationQuiz] Falling back to default scenarios');
+            // Already loaded default scenarios in constructor
+        }
     }
 
-    clearQuizLocalStorage(username, quizName) {
-        const variations = [
-            quizName,                                              // original
-            quizName.toLowerCase(),                               // lowercase
-            quizName.toUpperCase(),                               // uppercase
-            quizName.replace(/-/g, ''),                           // no hyphens
-            quizName.replace(/([A-Z])/g, '-$1').toLowerCase(),    // kebab-case
-            quizName.replace(/-([a-z])/g, (_, c) => c.toUpperCase()), // camelCase
-            quizName.replace(/-/g, '_'),                          // snake_case
-        ];
-
-        // Add build verification specific variations
-        if (quizName.toLowerCase().includes('build')) {
-            variations.push(
-                'Build-Verification',
-                'build-verification',
-                'buildVerification',
-                'Build_Verification',
-                'build_verification',
-                'BVT',
-                'bvt'
-            );
+    // New recovery method for handling emergency recovery situations
+    async recoverProgress() {
+        console.log('[BuildVerificationQuiz] Entering emergency recovery mode');
+        try {
+            const username = localStorage.getItem('username');
+            if (!username) {
+                console.error('[BuildVerificationQuiz] No username found, cannot recover progress');
+                return false;
+            }
+            
+            // Make sure we have access to the QuizSyncService
+            if (typeof window.quizSyncService === 'undefined' && typeof quizSyncService === 'undefined') {
+                console.error('[BuildVerificationQuiz] QuizSyncService not available, cannot perform recovery');
+                return false;
+            }
+            
+            const syncService = window.quizSyncService || quizSyncService;
+            console.log('[BuildVerificationQuiz] Using QuizSyncService to recover progress data');
+            
+            // Try to recover progress data
+            const recoveredData = await syncService.recoverProgressData(username, this.quizName);
+            
+            if (!recoveredData) {
+                console.warn('[BuildVerificationQuiz] No data could be recovered, recovery failed');
+                return false;
+            }
+            
+            console.log('[BuildVerificationQuiz] Successfully recovered data:', {
+                questionCount: recoveredData.questionHistory?.length || 0,
+                experience: recoveredData.experience || 0,
+                status: recoveredData.status || 'unknown'
+            });
+            
+            // Sanitize the recovered data
+            const progressData = {
+                experience: !isNaN(parseFloat(recoveredData.experience)) ? parseFloat(recoveredData.experience) : 0,
+                tools: Array.isArray(recoveredData.tools) ? recoveredData.tools : [],
+                questionHistory: Array.isArray(recoveredData.questionHistory) ? recoveredData.questionHistory : [],
+                currentScenario: 0, // Will be set correctly below
+                status: recoveredData.status || 'in-progress',
+                questionsAnswered: Array.isArray(recoveredData.questionHistory) ? recoveredData.questionHistory.length : 0,
+                scorePercentage: !isNaN(parseFloat(recoveredData.scorePercentage)) ? parseFloat(recoveredData.scorePercentage) : 0
+            };
+            
+            // Set currentScenario based on question history
+            if (progressData.questionHistory.length > 0) {
+                progressData.currentScenario = progressData.questionHistory.length;
+            }
+            
+            // Update player state
+            this.player.experience = progressData.experience;
+            this.player.tools = progressData.tools;
+            this.player.questionHistory = progressData.questionHistory;
+            this.player.currentScenario = progressData.currentScenario;
+            
+            console.log('[BuildVerificationQuiz] Player state updated from recovered data:', {
+                experience: this.player.experience,
+                questionHistory: this.player.questionHistory.length,
+                currentScenario: this.player.currentScenario
+            });
+            
+            // If quiz is completed, show end game screen
+            if ((progressData.status === 'completed' || 
+                 progressData.status === 'passed' || 
+                 progressData.status === 'failed') && 
+                progressData.questionHistory.length > 0) {
+                console.log(`[BuildVerificationQuiz] Quiz is ${progressData.status}, showing end screen`);
+                this.endGame(progressData.status === 'failed');
+                return true;
+            }
+            
+            // Save the recovered data to ensure it's persistently stored
+            try {
+                await this.saveProgress();
+                console.log('[BuildVerificationQuiz] Saved recovered progress to all storage locations');
+            } catch (saveError) {
+                console.warn('[BuildVerificationQuiz] Failed to save recovered progress:', saveError);
+            }
+            
+            // Show the current scenario
+            this.displayScenario();
+            return true;
+        } catch (error) {
+            console.error('[BuildVerificationQuiz] Recovery attempt failed:', error);
+            return false;
         }
-
-        variations.forEach(variant => {
-            localStorage.removeItem(`quiz_progress_${username}_${variant}`);
-            localStorage.removeItem(`quizResults_${username}_${variant}`);
-        });
     }
 }
 
+// Singleton instance for BuildVerificationQuiz
+let buildVerificationQuizInstance = null;
+
 // Initialize quiz when the page loads
+// Only allow one instance
 document.addEventListener('DOMContentLoaded', () => {
-    // Clear any existing quiz instances before starting this quiz
+    if (buildVerificationQuizInstance) {
+        console.log('[BuildVerificationQuiz] Instance already exists, not creating a new one.');
+        return;
+    }
     BaseQuiz.clearQuizInstances('build-verification');
-    
-    const quiz = new BuildVerificationQuiz();
-    quiz.startGame();
-});
+    buildVerificationQuizInstance = new BuildVerificationQuiz();
+    buildVerificationQuizInstance.startGame();
+}); 

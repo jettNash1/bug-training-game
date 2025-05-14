@@ -1,5 +1,6 @@
 import { QuizUser } from './QuizUser.js';
 import { APIService } from './api-service.js';
+import { QuizProgressService } from './services/QuizProgressService.js';
 
 export class BaseQuiz {
     constructor(config) {
@@ -11,6 +12,10 @@ export class BaseQuiz {
         this.isLoading = false;
         this.questionTimer = null;
         this.apiService = new APIService();
+        
+        // Initialize QuizProgressService - use global instance if available
+        this.quizProgressService = window.quizProgressService || new QuizProgressService();
+        
         this.guideUrl = null;
         this.showGuideButton = false;
         
@@ -923,57 +928,132 @@ export class BaseQuiz {
         }
     }
 
-    // Default saveProgress method that will be called by handleTimeUp
-    // if the quiz implementation doesn't override it
-    async saveProgress() {
-        console.log(`[BaseQuiz][saveProgress] Saving progress for quiz: ${this.quizName}`);
-        
-        // First determine the status based on clear conditions
-        let status = 'in-progress';
-        if (this.player.questionHistory.length >= this.totalQuestions) {
-            const correctAnswers = this.player.questionHistory.filter(q => q.isCorrect).length;
-            const scorePercentage = Math.round((correctAnswers / this.totalQuestions) * 100);
-            status = scorePercentage >= this.passPercentage ? 'passed' : 'failed';
+    /**
+     * Loads quiz progress from the most reliable source.
+     * This method uses the QuizProgressService for consistent progress handling.
+     */
+    async loadProgress() {
+        try {
+            console.log(`[${this.quizName}] Attempting to load progress...`);
+            
+            const username = localStorage.getItem('username');
+            if (!username) {
+                console.warn(`[${this.quizName}] No username found, cannot load progress`);
+                return false;
+            }
+            
+            // Use QuizProgressService to get progress
+            const progressResult = await this.quizProgressService.getQuizProgress(this.quizName);
+            
+            if (!progressResult.success || !progressResult.data || 
+                (progressResult.data.questionHistory && progressResult.data.questionHistory.length === 0)) {
+                console.log(`[${this.quizName}] No valid progress data found`);
+                return false;
+            }
+            
+            const progressData = progressResult.data;
+            console.log(`[${this.quizName}] Progress loaded:`, progressData);
+            
+            // Sanitize and validate data to prevent invalid values
+            progressData.experience = !isNaN(parseFloat(progressData.experience)) ? parseFloat(progressData.experience) : 0;
+            progressData.tools = Array.isArray(progressData.tools) ? progressData.tools : [];
+            progressData.questionHistory = Array.isArray(progressData.questionHistory) ? 
+                progressData.questionHistory : [];
+            
+            // CRITICAL: Ensure currentScenario is consistent with question history
+            if (progressData.questionHistory.length > 0) {
+                console.log(`[${this.quizName}] Setting currentScenario to match questionHistory.length:`, 
+                    progressData.questionHistory.length);
+                
+                // ALWAYS set currentScenario to match the question history length
+                // This ensures we go to the next unanswered question
+                progressData.currentScenario = progressData.questionHistory.length;
+            } else {
+                console.log(`[${this.quizName}] No questions in history, starting from beginning`);
+                progressData.currentScenario = 0;
+            }
+            
+            // Fix inconsistent state: if quiz is marked as completed but has no progress
+            if ((progressData.status === 'completed' || 
+                 progressData.status === 'passed' || 
+                 progressData.status === 'failed') && 
+                (progressData.questionHistory.length === 0 || 
+                 progressData.currentScenario === 0)) {
+                console.log(`[${this.quizName}] Fixing inconsistent state: quiz marked as completed but has no progress`);
+                progressData.status = 'in-progress';
+            }
+
+            // Update the player state with the loaded progress data
+            this.player.experience = progressData.experience;
+            this.player.tools = progressData.tools;
+            this.player.questionHistory = progressData.questionHistory;
+            this.player.currentScenario = progressData.currentScenario;
+            
+            console.log(`[${this.quizName}] Player state updated:`, {
+                experience: this.player.experience,
+                questionHistory: this.player.questionHistory.length,
+                currentScenario: this.player.currentScenario,
+                status: progressData.status
+            });
+            
+            // Only show end screen if quiz is actually completed and has progress
+            if ((progressData.status === 'completed' || 
+                 progressData.status === 'passed' || 
+                 progressData.status === 'failed') && 
+                progressData.questionHistory.length > 0 && 
+                progressData.currentScenario > 0) {
+                console.log(`[${this.quizName}] Quiz is ${progressData.status} with ${progressData.questionHistory.length} questions answered`);
+                this.endGame(progressData.status === 'failed');
+                return true;
+            }
+            
+            return progressData.questionHistory.length > 0;
+        } catch (error) {
+            console.error(`[${this.quizName}] Error loading progress:`, error);
+            return false;
         }
-        
-        // Create a standardized progress object
-        const progressData = {
-            experience: this.player.experience || 0,
-            tools: this.player.tools || [],
-            questionHistory: this.player.questionHistory || [],
-            currentScenario: this.player.currentScenario || 0,
-            lastUpdated: new Date().toISOString(),
-            questionsAnswered: this.player.questionHistory.length,
-            status: status,
-            scorePercentage: this.calculateScorePercentage()
-        };
-        
+    }
+    
+    /**
+     * Saves quiz progress using the QuizProgressService
+     */
+    async saveProgress(status = 'in-progress') {
         try {
             const username = localStorage.getItem('username');
             if (!username) {
-                console.error('[BaseQuiz] No user found, cannot save progress');
-                return false;
-            }
-
-            // Normalize quiz name
-            const normalizedQuizName = this.normalizeQuizName(this.quizName);
-            
-            // Save to localStorage as backup
-            const storageKey = `quiz_progress_${username}_${normalizedQuizName}`;
-            localStorage.setItem(storageKey, JSON.stringify({ data: progressData }));
-            
-            // Save to API
-            console.log('[BaseQuiz] Saving progress to API:', progressData);
-            const response = await this.apiService.saveQuizProgress(normalizedQuizName, progressData);
-            
-            if (!response || !response.success) {
-                console.error('[BaseQuiz] Failed to save progress to API:', response);
+                console.warn(`[${this.quizName}] No username found, cannot save progress`);
                 return false;
             }
             
+            // Make sure we have the correct quiz name
+            const normalizedQuizName = this.quizProgressService.normalizeQuizName(this.quizName);
+            
+            // Build the progress data
+            const progress = {
+                experience: this.player.experience,
+                questionsAnswered: this.player.questionHistory.length,
+                currentScenario: this.player.currentScenario,
+                status: status,
+                scorePercentage: this.calculateScore(),
+                tools: this.player.tools,
+                questionHistory: this.player.questionHistory,
+                lastUpdated: new Date().toISOString()
+            };
+            
+            console.log(`[${this.quizName}] Saving progress:`, progress);
+            
+            // Use QuizProgressService to save progress
+            const saveResult = await this.quizProgressService.saveQuizProgress(normalizedQuizName, progress);
+            
+            if (!saveResult.success) {
+                console.error(`[${this.quizName}] Failed to save progress:`, saveResult.message);
+                return false;
+            }
+            
+            console.log(`[${this.quizName}] Progress saved successfully`);
             return true;
         } catch (error) {
-            console.error('[BaseQuiz] Failed to save progress:', error);
+            console.error(`[${this.quizName}] Error saving progress:`, error);
             return false;
         }
     }
@@ -1708,90 +1788,82 @@ export class BaseQuiz {
      */
     async loadProgress() {
         try {
-            // Normalize quiz name
-            const normalizedQuizName = this.normalizeQuizName(this.quizName);
+            console.log(`[${this.quizName}] Attempting to load progress...`);
             
             const username = localStorage.getItem('username');
             if (!username) {
-                console.error('[BaseQuiz] No user found, cannot load progress');
+                console.warn(`[${this.quizName}] No username found, cannot load progress`);
                 return false;
             }
-
-            const storageKey = `quiz_progress_${username}_${normalizedQuizName}`;
-            const savedProgress = await this.apiService.getQuizProgress(normalizedQuizName);
-            console.log('[BaseQuiz] Loading from key:', storageKey, 'API Response:', savedProgress);
             
-            let progress = null;
+            // Use QuizProgressService to get progress
+            const progressResult = await this.quizProgressService.getQuizProgress(this.quizName);
             
-            if (savedProgress && savedProgress.data) {
-                progress = {
-                    experience: savedProgress.data.experience || 0,
-                    tools: savedProgress.data.tools || [],
-                    questionHistory: savedProgress.data.questionHistory || [],
-                    currentScenario: savedProgress.data.currentScenario || 0,
-                    status: savedProgress.data.status || 'in-progress',
-                    scorePercentage: savedProgress.data.scorePercentage || 0
-                };
+            if (!progressResult.success || !progressResult.data || 
+                (progressResult.data.questionHistory && progressResult.data.questionHistory.length === 0)) {
+                console.log(`[${this.quizName}] No valid progress data found`);
+                return false;
+            }
+            
+            const progressData = progressResult.data;
+            console.log(`[${this.quizName}] Progress loaded:`, progressData);
+            
+            // Sanitize and validate data to prevent invalid values
+            progressData.experience = !isNaN(parseFloat(progressData.experience)) ? parseFloat(progressData.experience) : 0;
+            progressData.tools = Array.isArray(progressData.tools) ? progressData.tools : [];
+            progressData.questionHistory = Array.isArray(progressData.questionHistory) ? 
+                progressData.questionHistory : [];
+            
+            // CRITICAL: Ensure currentScenario is consistent with question history
+            if (progressData.questionHistory.length > 0) {
+                console.log(`[${this.quizName}] Setting currentScenario to match questionHistory.length:`, 
+                    progressData.questionHistory.length);
+                
+                // ALWAYS set currentScenario to match the question history length
+                // This ensures we go to the next unanswered question
+                progressData.currentScenario = progressData.questionHistory.length;
             } else {
-                // Try loading from localStorage as fallback
-                const localData = localStorage.getItem(storageKey);
-                if (localData) {
-                    const parsed = JSON.parse(localData);
-                    progress = parsed.data || parsed;
-                }
+                console.log(`[${this.quizName}] No questions in history, starting from beginning`);
+                progressData.currentScenario = 0;
+            }
+            
+            // Fix inconsistent state: if quiz is marked as completed but has no progress
+            if ((progressData.status === 'completed' || 
+                 progressData.status === 'passed' || 
+                 progressData.status === 'failed') && 
+                (progressData.questionHistory.length === 0 || 
+                 progressData.currentScenario === 0)) {
+                console.log(`[${this.quizName}] Fixing inconsistent state: quiz marked as completed but has no progress`);
+                progressData.status = 'in-progress';
             }
 
-            if (progress) {
-                // Validate and fix any inconsistencies
-                if (!Array.isArray(progress.questionHistory)) {
-                    progress.questionHistory = [];
-                }
-                
-                // Ensure currentScenario matches question history length
-                if (progress.questionHistory.length > 0) {
-                    // Set currentScenario to the next unanswered question
-                    progress.currentScenario = progress.questionHistory.length;
-                } else {
-                    // If no questions answered, start from the beginning
-                    progress.currentScenario = 0;
-                }
-                
-                // Fix inconsistent state: if quiz is marked as completed but has no progress
-                if ((progress.status === 'completed' || progress.status === 'passed' || progress.status === 'failed') && 
-                    (progress.questionHistory.length === 0 || progress.currentScenario === 0)) {
-                    progress.status = 'in-progress';
-                }
-
-                // Update the player state
-                this.player.experience = progress.experience;
-                this.player.tools = progress.tools;
-                this.player.questionHistory = progress.questionHistory;
-                this.player.currentScenario = progress.currentScenario;
-                
-                // Only show end screen if quiz is actually completed and has progress
-                if ((progress.status === 'completed' || progress.status === 'passed' || progress.status === 'failed') && 
-                    progress.questionHistory.length > 0 && progress.currentScenario > 0) {
-                    console.log(`[BaseQuiz] Quiz is ${progress.status} with ${progress.questionHistory.length} questions answered`);
-                    this.endGame(progress.status === 'failed');
-                    return true;
-                }
-
-                // If any fixes were made, save back to API
-                const needsSave = progress.currentScenario !== savedProgress?.data?.currentScenario ||
-                                progress.status !== savedProgress?.data?.status;
-                if (needsSave) {
-                    console.log('[BaseQuiz] Saving fixed progress back to API');
-                    await this.saveProgress();
-                }
-
-                // Show the current question based on progress
-                this.displayScenario();
+            // Update the player state with the loaded progress data
+            this.player.experience = progressData.experience;
+            this.player.tools = progressData.tools;
+            this.player.questionHistory = progressData.questionHistory;
+            this.player.currentScenario = progressData.currentScenario;
+            
+            console.log(`[${this.quizName}] Player state updated:`, {
+                experience: this.player.experience,
+                questionHistory: this.player.questionHistory.length,
+                currentScenario: this.player.currentScenario,
+                status: progressData.status
+            });
+            
+            // Only show end screen if quiz is actually completed and has progress
+            if ((progressData.status === 'completed' || 
+                 progressData.status === 'passed' || 
+                 progressData.status === 'failed') && 
+                progressData.questionHistory.length > 0 && 
+                progressData.currentScenario > 0) {
+                console.log(`[${this.quizName}] Quiz is ${progressData.status} with ${progressData.questionHistory.length} questions answered`);
+                this.endGame(progressData.status === 'failed');
                 return true;
             }
             
-            return false;
+            return progressData.questionHistory.length > 0;
         } catch (error) {
-            console.error('[BaseQuiz] Error loading progress:', error);
+            console.error(`[${this.quizName}] Error loading progress:`, error);
             return false;
         }
     }

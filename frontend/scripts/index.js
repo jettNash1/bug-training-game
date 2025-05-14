@@ -1,7 +1,14 @@
 import { APIService } from '../api-service.js';
 import { QuizUser } from '../QuizUser.js';
+import { QuizProgressService } from '../services/QuizProgressService.js';
 
 function normalizeQuizName(quizName) {
+    // Use the QuizProgressService's normalizeQuizName to ensure consistency
+    if (window.quizProgressService) {
+        return window.quizProgressService.normalizeQuizName(quizName);
+    }
+    
+    // Fallback implementation if service is not available
     if (!quizName) return '';
     
     // Normalize to lowercase and trim
@@ -142,6 +149,11 @@ class IndexPage {
         try {
             console.log('[Index] Initializing IndexPage');
             this.apiService = new APIService();
+            this.quizProgressService = new QuizProgressService();
+            
+            // Store in window for global access
+            window.quizProgressService = this.quizProgressService;
+            
             this.user = new QuizUser(localStorage.getItem('username'));
             this.quizItems = document.querySelectorAll('.quiz-item:not(.locked-quiz)');
             
@@ -265,65 +277,8 @@ class IndexPage {
     }
 
     async checkAndCleanContaminatedData() {
-        try {
-            const username = localStorage.getItem('username');
-            if (!username) return;
-            
-            console.log('[Index] Checking for contaminated quiz data...');
-            
-            // Get list of quiz IDs from quiz items 
-            const quizItems = Array.from(this.quizItems || []);
-            const quizIds = quizItems
-                .map(item => item.dataset.quiz)
-                .filter(Boolean)
-                .map(id => normalizeQuizName(id));
-                
-            // For each quiz ID, check if it has correct data in localStorage
-            let contaminationFound = false;
-            
-            for (const quizId of quizIds) {
-                // Check both old and new format keys
-                const oldKey = `quiz_progress_${username}_${quizId}`;
-                const newKey = `strict_quiz_progress_${username}_${quizId}`;
-                
-                try {
-                    // Check old key format
-                    const oldData = localStorage.getItem(oldKey);
-                    if (oldData) {
-                        const parsed = JSON.parse(oldData);
-                        if (parsed && parsed.quizName && parsed.quizName !== quizId) {
-                            console.warn(`[Index] Found contaminated data! Key ${oldKey} contains data for quiz ${parsed.quizName}`);
-                            localStorage.removeItem(oldKey);
-                            contaminationFound = true;
-                        }
-                    }
-                    
-                    // Check new key format
-                    const newData = localStorage.getItem(newKey);
-                    if (newData) {
-                        const parsed = JSON.parse(newData);
-                        if (parsed && parsed.quizName && parsed.quizName !== quizId) {
-                            console.warn(`[Index] Found contaminated data! Key ${newKey} contains data for quiz ${parsed.quizName}`);
-                            localStorage.removeItem(newKey);
-                            contaminationFound = true;
-                        }
-                    }
-                } catch (e) {
-                    console.warn(`[Index] Error checking quiz ${quizId} data:`, e);
-                }
-            }
-            
-            if (contaminationFound) {
-                console.log('[Index] Cleared contaminated quiz data');
-            } else {
-                console.log('[Index] No contaminated quiz data found');
-            }
-            
-            return contaminationFound;
-        } catch (error) {
-            console.error('[Index] Error checking for contaminated data:', error);
-            return false;
-        }
+        // Simply delegate to the QuizProgressService
+        return this.quizProgressService.checkAndCleanContaminatedData();
     }
 
     handleLogout() {
@@ -346,26 +301,30 @@ class IndexPage {
             const username = localStorage.getItem('username');
             if (!username) return;
 
-            // Get user data including quiz progress and results in a single call
-            const userData = await this.apiService.getUserData();
-            if (!userData.success) {
-                throw new Error('Failed to load user data');
-            }
+            console.log('[Index] Loading all quiz progress data');
 
-            console.log('[Index] Raw user data:', userData);
+            // Use the QuizProgressService to get all quiz progress in a single call
+            const progressResult = await this.quizProgressService.getAllQuizProgress();
             
-            // Ensure we have the user data object
-            if (!userData.data) {
-                console.error('[Index] User data is missing');
+            if (!progressResult.success || !progressResult.data) {
+                console.error('[Index] Failed to load quiz progress:', progressResult.message);
                 return false;
             }
-
-            // Extract quiz progress from user data
-            let quizProgress = userData.data.quizProgress || {};
-            let quizResults = userData.data.quizResults || [];
             
-            console.log('[Index] Original quiz progress from API:', quizProgress);
-            console.log('[Index] Original quiz results from API:', quizResults);
+            const quizProgress = progressResult.data;
+            console.log('[Index] Loaded progress for', Object.keys(quizProgress).length, 'quizzes');
+            
+            // Get quiz results separately from API
+            let quizResults = [];
+            try {
+                const userData = await this.apiService.getUserData();
+                if (userData.success && userData.data && userData.data.quizResults) {
+                    quizResults = userData.data.quizResults;
+                    console.log('[Index] Loaded', quizResults.length, 'quiz results');
+                }
+            } catch (error) {
+                console.warn('[Index] Error loading quiz results:', error);
+            }
 
             // --- MIGRATION: Move any legacy tester-mindset keys to kebab-case ---
             const legacyKeys = Object.keys(quizProgress).filter(k => k.toLowerCase().replace(/[_\s]/g, '-').includes('tester') && k !== 'tester-mindset');
@@ -383,159 +342,13 @@ class IndexPage {
             });
             // --- END MIGRATION ---
 
-            // --- STEP 1: Scan ALL localStorage for ANY quiz progress ---
-            try {
-                console.log('[Index] Scanning ALL localStorage for quiz progress items');
-                
-                // Get all keys that match the quiz progress pattern
-                // Look for both old and new format keys
-                const progressPatterns = [
-                    `strict_quiz_progress_${username}_`, // New format
-                    `quiz_progress_${username}_`        // Old format
-                ];
-                
-                const allKeys = Object.keys(localStorage);
-                const progressKeys = allKeys.filter(key => {
-                    return progressPatterns.some(pattern => key.startsWith(pattern));
-                });
-                
-                console.log(`[Index] Found ${progressKeys.length} potential quiz progress items in localStorage`);
-                
-                // Process each key to extract quiz progress
-                progressKeys.forEach(key => {
-                    try {
-                        // Extract the quiz name from the key based on which pattern it matches
-                        let quizId = null;
-                        let isNewFormat = false;
-                        
-                        for (const pattern of progressPatterns) {
-                            if (key.startsWith(pattern)) {
-                                const quizNameMatch = key.match(new RegExp(`${pattern}([^_]+)`));
-                                if (quizNameMatch && quizNameMatch[1]) {
-                                    quizId = quizNameMatch[1];
-                                    isNewFormat = pattern.includes('strict');
-                                    break;
-                                }
-                            }
-                        }
-                        
-                        if (!quizId) return;
-                        
-                        if (key.includes('_backup') || key.includes('_emergency')) {
-                            // Skip backup/emergency keys as we'll process the main one
-                            return;
-                        }
-                        
-                        // Normalize the quiz ID
-                        const normalizedQuizId = normalizeQuizName(quizId);
-                        
-                        // Process the localStorage data
-                        const localStorageData = localStorage.getItem(key);
-                        if (!localStorageData) return;
-                        
-                        const parsedData = JSON.parse(localStorageData);
-                        if (!parsedData || !parsedData.data) return;
-                        
-                        // Verify this data actually belongs to the correct quiz - only for new format
-                        if (isNewFormat && parsedData.quizName && parsedData.quizName !== normalizedQuizId) {
-                            console.warn(`[Index] Skipping localStorage data from key ${key} because it belongs to ${parsedData.quizName}, not ${normalizedQuizId}`);
-                            return;
-                        }
-                        
-                        const localProgress = parsedData.data;
-                        const apiProgress = quizProgress[normalizedQuizId];
-                        
-                        // Check if we should use this localStorage data
-                        if (!apiProgress || 
-                            (localProgress.questionsAnswered > (apiProgress.questionsAnswered || 0)) ||
-                            (localProgress.lastUpdated && apiProgress.lastUpdated && 
-                             new Date(localProgress.lastUpdated) > new Date(apiProgress.lastUpdated))) {
-                            
-                            console.log(`[Index] Using localStorage progress for ${normalizedQuizId} from key ${key}`);
-                            quizProgress[normalizedQuizId] = localProgress;
-                        }
-                    } catch (keyError) {
-                        console.warn(`[Index] Error processing localStorage key ${key}:`, keyError);
-                    }
-                });
-            } catch (localScanError) {
-                console.warn('[Index] Error scanning localStorage for quiz progress:', localScanError);
-            }
-
-            // --- STEP 2: Individual API calls for quizzes missing progress ---
-            try {
-                // Get all quiz IDs from the quiz items
-                const quizItems = Array.from(this.quizItems || []);
-                const quizIds = quizItems
-                    .map(item => item.dataset.quiz)
-                    .filter(Boolean)
-                    .map(id => normalizeQuizName(id));
-                
-                console.log(`[Index] Found ${quizIds.length} quiz IDs from quiz items`);
-                
-                // Check which quizzes are missing progress data
-                const missingProgress = quizIds.filter(id => {
-                    const progress = quizProgress[id];
-                    return !progress || !progress.questionsAnswered;
-                });
-                
-                if (missingProgress.length > 0) {
-                    console.log(`[Index] Fetching individual progress for ${missingProgress.length} quizzes`);
-                    
-                    // Create all fetch promises
-                    const fetchPromises = missingProgress.map(async (quizId) => {
-                        try {
-                            // Get the progress for this quiz
-                            const result = await this.apiService.getQuizProgress(quizId);
-                            
-                            if (result.success && result.data && (
-                                result.data.questionsAnswered > 0 || 
-                                (result.data.questionHistory && result.data.questionHistory.length > 0)
-                            )) {
-                                console.log(`[Index] Got individual progress for ${quizId}: ${result.data.questionsAnswered} questions`);
-                                quizProgress[quizId] = result.data;
-                                return true;
-                            } else {
-                                // If API call didn't return anything useful, check localStorage one more time
-                                const storageKey = `quiz_progress_${username}_${quizId}`;
-                                try {
-                                    const localData = localStorage.getItem(storageKey);
-                                    if (localData) {
-                                        const parsed = JSON.parse(localData);
-                                        if (parsed && parsed.data && (
-                                            parsed.data.questionsAnswered > 0 ||
-                                            (parsed.data.questionHistory && parsed.data.questionHistory.length > 0)
-                                        )) {
-                                            console.log(`[Index] Found individual localStorage progress for ${quizId}`);
-                                            quizProgress[quizId] = parsed.data;
-                                            return true;
-                                        }
-                                    }
-                                } catch (e) {
-                                    console.warn(`[Index] Error checking localStorage for ${quizId}:`, e);
-                                }
-                            }
-                            return false;
-                        } catch (error) {
-                            console.warn(`[Index] Error fetching individual progress for ${quizId}:`, error);
-                            return false;
-                        }
-                    });
-                    
-                    // Wait for all fetches to complete
-                    await Promise.all(fetchPromises);
-                }
-            } catch (apiError) {
-                console.warn('[Index] Error fetching individual quiz progress:', apiError);
-            }
-
             // --- Robust progress sync for legacy users ---
             for (const result of quizResults) {
-                const quizName = normalizeQuizName(result.quizName);
+                const quizName = this.quizProgressService.normalizeQuizName(result.quizName);
                 const progress = quizProgress[quizName];
                 // If no progress or not completed, reconstruct and save
                 if (!progress || progress.status !== 'completed') {
-                    await this.apiService.saveQuizProgress(quizName, {
+                    await this.quizProgressService.saveQuizProgress(quizName, {
                         experience: result.experience,
                         questionsAnswered: result.questionsAnswered,
                         status: 'completed',
@@ -555,14 +368,16 @@ class IndexPage {
                     const quizId = item.dataset.quiz;
                     if (!quizId) return null;
                     
-                    // Normalize the quizId consistently
-                    const lookupId = normalizeQuizName(quizId);
+                    // Normalize the quizId consistently using the service
+                    const lookupId = this.quizProgressService.normalizeQuizName(quizId);
                     
                     // First check for quiz progress
                     const progress = quizProgress[lookupId];
                     
                     // Then check for quiz results
-                    const result = quizResults.find(r => normalizeQuizName(r.quizName) === lookupId);
+                    const result = quizResults.find(r => 
+                        this.quizProgressService.normalizeQuizName(r.quizName) === lookupId
+                    );
                     
                     // Combine data from both sources, with progress taking precedence
                     const combinedData = {
@@ -580,14 +395,8 @@ class IndexPage {
                     }
                     // Apply progress data if available (overrides result data)
                     if (progress) {
-                        // Derive questionsAnswered from questionHistory if not directly provided
-                        if (!progress.questionsAnswered && Array.isArray(progress.questionHistory) && progress.questionHistory.length > 0) {
-                            combinedData.questionsAnswered = progress.questionHistory.length;
-                            console.log(`[Index] Derived questionsAnswered=${progress.questionHistory.length} from questionHistory for ${lookupId}`);
-                        } else {
-                            combinedData.questionsAnswered = progress.questionsAnswered || 0;
-                        }
-                        
+                        // Questionsanswered should already be fixed by the QuizProgressService
+                        combinedData.questionsAnswered = progress.questionsAnswered || 0;
                         combinedData.status = progress.status || 'not-started';
                         combinedData.tools = progress.tools || [];
                         combinedData.questionHistory = progress.questionHistory || [];
@@ -598,19 +407,8 @@ class IndexPage {
                         if (progress.experience !== undefined) {
                             combinedData.experience = progress.experience;
                         }
-                        
-                        // If we still have questionHistory but no questionsAnswered, ensure we set it
-                        if (combinedData.questionsAnswered === 0 && Array.isArray(combinedData.questionHistory) && combinedData.questionHistory.length > 0) {
-                            combinedData.questionsAnswered = combinedData.questionHistory.length;
-                            console.log(`[Index] Fixed missing questionsAnswered by using questionHistory.length=${combinedData.questionHistory.length} for ${lookupId}`);
-                        }
-                        
-                        // If we have currentScenario but no questionsAnswered, use that
-                        if (combinedData.questionsAnswered === 0 && progress.currentScenario && progress.currentScenario > 0) {
-                            combinedData.questionsAnswered = progress.currentScenario;
-                            console.log(`[Index] Used currentScenario=${progress.currentScenario} for questionsAnswered for ${lookupId}`);
-                        }
                     }
+                    
                     console.log(`[Index] Processed data for quiz ${lookupId}:`, combinedData);
                     return combinedData;
                 })
@@ -646,14 +444,13 @@ class IndexPage {
                 return;
             }
             
-            // Use normalized quiz name for comparison
-            const normalizedQuizId = normalizeQuizName(quizId);
+            // Use normalized quiz name from the service for consistent comparison
+            const normalizedQuizId = this.quizProgressService.normalizeQuizName(quizId);
             console.log(`[Index] Looking for quiz score for ${normalizedQuizId}`);
             
-            // Find score with case insensitive matching to be extra safe
+            // Find score with accurate matching using the service
             const quizScore = this.quizScores.find(score => 
-                normalizeQuizName(score.quizName) === normalizedQuizId || 
-                score.quizName?.toLowerCase() === normalizedQuizId.toLowerCase()
+                this.quizProgressService.normalizeQuizName(score.quizName) === normalizedQuizId
             );
             
             if (!quizScore) {
@@ -746,13 +543,12 @@ class IndexPage {
                 const quizId = item.dataset.quiz;
                 if (!quizId) return stats;
                 
-                // Use normalized quiz ID consistently
-                const normalizedQuizId = normalizeQuizName(quizId);
+                // Use normalized quiz ID consistently with the service
+                const normalizedQuizId = this.quizProgressService.normalizeQuizName(quizId);
                 
-                // Find with case insensitive matching to be extra safe
+                // Find with consistent matching from the service
                 const quizScore = this.quizScores.find(score => 
-                    normalizeQuizName(score.quizName) === normalizedQuizId ||
-                    score.quizName?.toLowerCase() === normalizedQuizId.toLowerCase()
+                    this.quizProgressService.normalizeQuizName(score.quizName) === normalizedQuizId
                 );
                 
                 // Count as completed if all 15 questions are answered, regardless of status
@@ -1169,7 +965,7 @@ class IndexPage {
             const quizId = item.dataset.quiz;
             if (!quizId) return;
             
-            const normalized = normalizeQuizName(quizId);
+            const normalized = this.quizProgressService.normalizeQuizName(quizId);
             console.log(`Quiz ID: "${quizId}" → Normalized: "${normalized}"`);
         });
         
@@ -1177,7 +973,7 @@ class IndexPage {
             console.log('----- Quiz Scores in Memory -----');
             this.quizScores.forEach(score => {
                 const quizName = score.quizName;
-                const normalized = normalizeQuizName(quizName);
+                const normalized = this.quizProgressService.normalizeQuizName(quizName);
                 console.log(`Score name: "${quizName}" → Normalized: "${normalized}" (Questions: ${score.questionsAnswered})`);
             });
         }
@@ -1200,6 +996,9 @@ class IndexPage {
 // Initialize the index page when the DOM is loaded
 let indexPage;
 document.addEventListener('DOMContentLoaded', () => {
+    // Create the QuizProgressService globally for consistency across the app
+    window.quizProgressService = new QuizProgressService();
+    
     indexPage = new IndexPage();
     
     // Store in window for global access and auto-refresh functionality

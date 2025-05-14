@@ -1,6 +1,8 @@
 import { APIService } from '../api-service.js';
 import { BaseQuiz } from '../quiz-helper.js';
 import { QuizUser } from '../QuizUser.js';
+import { automationInterviewScenarios } from '../data/automationInterview-scenarios.js';
+import quizSyncService from '../services/quiz-synch-service.js';
 
 export class AutomationInterviewQuiz extends BaseQuiz {
     constructor() {
@@ -8,17 +10,13 @@ export class AutomationInterviewQuiz extends BaseQuiz {
             maxXP: 300,
             totalQuestions: 15,
             passPercentage: 70,
-            levelThresholds: {
-                basic: { questions: 5, minXP: 0 }, //35
-                intermediate: { questions: 10, minXP: 0 }, //110
-                advanced: { questions: 15, minXP: 0 } //235
-            },
             performanceThresholds: [
                 { threshold: 90, message: '🏆 Outstanding! You\'re an automation expert!' },
                 { threshold: 80, message: '👏 Great job! You\'ve shown strong automation skills!' },
                 { threshold: 70, message: '👍 Good work! Keep practicing to improve further.' },
                 { threshold: 0, message: '📚 Consider reviewing automation best practices and try again!' }
-            ]
+            ],
+            quizName: 'automation-interview'
         };
         
         super(config);
@@ -42,6 +40,11 @@ export class AutomationInterviewQuiz extends BaseQuiz {
 
         // Initialize API service
         this.apiService = new APIService();
+
+        // Load scenarios from external data file
+        this.basicScenarios = automationInterviewScenarios.basicScenarios;
+        this.intermediateScenarios = automationInterviewScenarios.intermediateScenarios;
+        this.advancedScenarios = automationInterviewScenarios.advancedScenarios;
 
         // Initialize all screen elements
         this.gameScreen = document.getElementById('game-screen');
@@ -67,482 +70,482 @@ export class AutomationInterviewQuiz extends BaseQuiz {
             return;
         }
 
-        // Basic Scenarios (IDs 1-5)
-        this.basicScenarios = [
-            {
-                id: 1,
-                level: 'Basic',
-                title: 'Team Mentoring',
-                description: 'How do you mentor and guide a team in automation testing?',
-                options: [
-                    {
-                        text: 'Introduce standard practices, encourage collaboration, and provide workshops on different automation topics',
-                        outcome: 'Perfect! This provides a comprehensive approach to team development.',
-                        experience: 15,
-                        tool: 'Team Development',
-                        isCorrect: true
-                    },
-                    {
-                        text: 'Take an unguided approach and allow them to do their own research',
-                        outcome: 'Teams need structured guidance and support for effective learning.',
-                        experience: -10,
-                        isCorrect: false
-                    },
-                    {
-                        text: 'Ensure team members only learn a specific framework/set of technologies',
-                        outcome: 'Teams benefit from broader knowledge across different automation tools and approaches.',
-                        experience: -5,
-                        isCorrect: false
-                    },
-                    {
-                        text: 'Prioritise team members that show a greater understanding of automation',
-                        outcome: 'All team members should receive equal opportunity for growth and development.',
-                        experience: -10,
-                        isCorrect: false
-                    }
-                ]
-            },
-            {
-                id: 2,
-                level: 'Basic',
-                title: 'Documentation Handover',
-                description: 'What kind of documentation would you record once an automation project had been passed over to a client to maintain?',
-                options: [
-                    {
-                        text: 'Handover document/read me file containing set up details',
-                        outcome: 'Excellent! This ensures the client has all necessary information for maintenance.',
-                        experience: 15,
-                        tool: 'Documentation'
-                    },
-                    {
-                        text: 'Hand them the code and a run command',
-                        outcome: 'Proper documentation is essential for successful project handover.',
-                        experience: -10
-                    },
-                    {
-                        text: 'Only provide the client with the reports from previous testing/tests',
-                        outcome: 'Setup and maintenance documentation is crucial for project continuity.',
-                        experience: -5
-                    },
-                    {
-                        text: 'Provide a call/presentation of how to maintain the project',
-                        outcome: 'Written documentation is necessary for future reference.',
-                        experience: -10
-                    }
-                ]
-            },
-            {
-                id: 3,
-                level: 'Basic',
-                title: 'Element Locators',
-                description: 'You\'re writing a test script and need to locate elements on a web page. What\'s the best approach?',
-                options: [
-                    {
-                        text: 'The approach should include the use unique IDs and data attributes',
-                        outcome: 'Perfect! This creates reliable and maintainable tests.',
-                        experience: 15,
-                        tool: 'Element Location'
-                    },
-                    {
-                        text: 'Create complex CSS selectors that chain multiple classes and attributes together for maximum specificity',
-                        outcome: 'Simple, unique locators are more reliable and usable.',
-                        experience: -10
-                    },
-                    {
-                        text: 'Generate full XPath expressions from the browser\'s copy selector feature',
-                        outcome: 'Absolute XPaths can be fragile and hard to maintain.',
-                        experience: -10
-                    },
-                    {
-                        text: 'Locate elements by their displayed text content and position on the page',
-                        outcome: 'Position and text content can change frequently and make it difficult locate elements.',
-                        experience: -5
-                    }
-                ]
-            },
-            {
-                id: 4,
-                level: 'Basic',
-                title: 'Test Script Organisation',
-                description: 'How should you structure your automated test scripts?',
-                options: [
-                    {
-                        text: 'Use page object model with clear separation of concerns',
-                        outcome: 'Excellent! This promotes reusability and maintainability.',
-                        experience: 15,
-                        tool: 'Code Organization'
-                    },
-                    {
-                        text: 'Write long, detailed test scripts that cover multiple scenarios in a single file',
-                        outcome: 'Tests should be organised logically and modularly for ease of use.',
-                        experience: -10
-                    },
-                    {
-                        text: 'Duplicate similar test code to ensure each test is independent',
-                        outcome: 'Code duplication should be avoided if possible as it makes it harder to update tests when the underlying system changes.',
-                        experience: -5
-                    },
-                    {
-                        text: 'Place test code alongside application code for easy access',
-                        outcome: 'Test code should be separate from application code to provide flexibility on maintenance.',
-                        experience: -10
-                    }
-                ]
-            },
-            {
-                id: 5,
-                level: 'Basic',
-                title: 'Test Execution',
-                description: 'Your automated tests are failing intermittently. What should you do?',
-                options: [
-                    {
-                        text: 'Implement smart waits and proper synchronization',
-                        outcome: 'Perfect! This helps create stable tests.',
-                        experience: 15,
-                        tool: 'Test Stability'
-                    },
-                    {
-                        text: 'Add Thread.sleep() or fixed delays throughout the test scripts',
-                        outcome: 'Fixed delays can make tests slow and unreliable.',
-                        experience: -5
-                    },
-                    {
-                        text: 'Configure the CI system to automatically retry failed tests multiple times',
-                        outcome: 'Root causes should be addressed instead of retrying failed tests.',
-                        experience: -10
-                    },
-                    {
-                        text: 'Mark intermittent tests as known issues in the test report',
-                        outcome: 'Intermittent failures require thorough investigation.',
-                        experience: -10
-                    }
-                ]
-            }
-        ];
-
-        // Intermediate Scenarios (IDs 6-10)
-        this.intermediateScenarios = [
-            {
-                id: 6,
-                level: 'Intermediate',
-                title: 'Test Data Management',
-                description: 'How should you handle test data in your automation framework?',
-                options: [
-                    {
-                        text: 'Use external data sources with proper cleanup',
-                        outcome: 'Excellent! This ensures efficient test data management.',
-                        experience: 20,
-                        tool: 'Data Management'
-                    },
-                    {
-                        text: 'Create elaborate setup scripts that generate fresh test data before each test execution',
-                        outcome: 'Test data should be managed efficiently.',
-                        experience: -5
-                    },
-                    {
-                        text: 'Copy and sanitise production data for testing purposes',
-                        outcome: 'Test data should be controlled and secure.',
-                        experience: -10
-                    },
-                    {
-                        text: 'Maintain test data directly in the test scripts',
-                        outcome: 'Test data should be externalised.',
-                        experience: -15
-                    }
-                ]
-            },
-            {
-                id: 7,
-                level: 'Intermediate',
-                title: 'CI/CD Integration',
-                description: 'How do you integrate automated tests into the CI/CD pipeline?',
-                options: [
-                    {
-                        text: 'Organise tests in stages with appropriate triggers',
-                        outcome: 'Perfect! This enables continuous testing.',
-                        experience: 20,
-                        tool: 'CI/CD Integration'
-                    },
-                    {
-                        text: 'Execute the complete test suite sequentially after every code change',
-                        outcome: 'Tests should be organised in appropriate stages.',
-                        experience: -10
-                    },
-                    {
-                        text: 'Run tests manually before each production deployment',
-                        outcome: 'Automation should be integrated into CI/CD.',
-                        experience: -5
-                    },
-                    {
-                        text: 'Configure nightly runs of all automated tests',
-                        outcome: 'Tests should provide timely feedback.',
-                        experience: -15
-                    }
-                ]
-            },
-            {
-                id: 8,
-                level: 'Intermediate',
-                title: 'Version Control Approach',
-                description: 'What is an effective version control approach for adding new features to an automation project?',
-                options: [
-                    {
-                        text: 'Create branches for each new test feature',
-                        outcome: 'Perfect! This enables organized and controlled development.',
-                        experience: 20,
-                        tool: 'Version Control'
-                    },
-                    {
-                        text: 'Keep a single, main branch, and push all changes',
-                        outcome: 'Feature branches help manage changes more effectively.',
-                        experience: -10
-                    },
-                    {
-                        text: 'Avoid using version control, it slows down development',
-                        outcome: 'Version control is essential for managing test code effectively.',
-                        experience: -15
-                    },
-                    {
-                        text: 'Skip reviews of pull requests to increase test development speed',
-                        outcome: 'Code reviews are crucial for maintaining quality.',
-                        experience: -10
-                    }
-                ]
-            },
-            {
-                id: 9,
-                level: 'Intermediate',
-                title: 'Version Control Importance',
-                description: 'Why is proper use of version control important for an automation project?',
-                options: [
-                    {
-                        text: 'Allows for efficient collaboration and auditability',
-                        outcome: 'Excellent! Version control is crucial for team collaboration.',
-                        experience: 20,
-                        tool: 'Collaboration'
-                    },
-                    {
-                        text: 'Usage should be avoided, as this slows down the development and coverage of tests',
-                        outcome: 'Version control is essential for managing changes effectively.',
-                        experience: -15
-                    },
-                    {
-                        text: 'Its only useful for historical changes',
-                        outcome: 'Version control provides many benefits beyond history tracking.',
-                        experience: -10
-                    },
-                    {
-                        text: 'Avoids conflicts in code',
-                        outcome: 'While true, version control offers many more benefits.',
-                        experience: -5
-                    }
-                ]
-            },
-            {
-                id: 10,
-                level: 'Intermediate',
-                title: 'Error Handling',
-                description: 'How do you handle errors and exceptions in your test automation framework?',
-                options: [
-                    {
-                        text: 'Implement custom exception handlers with retry logic',
-                        outcome: 'Perfect! This enables good error diagnosis.',
-                        experience: 20,
-                        tool: 'Error Handling'
-                    },
-                    {
-                        text: 'Write extensive try-catch blocks around every possible point of failure in the test scripts',
-                        outcome: 'Error handling should be strategic and efficient.',
-                        experience: -15
-                    },
-                    {
-                        text: 'Log all exceptions to a central error log',
-                        outcome: 'Errors need proper handling, not just logging.',
-                        experience: -10
-                    },
-                    {
-                        text: 'Skip error handling within automation tests',
-                        outcome: 'Error handling is crucial for prompt identification of issues.',
-                        experience: -5
-                    }
-                ]
-            }
-        ];
-
-        // Advanced Scenarios (IDs 11-15)
-        this.advancedScenarios = [
-            {
-                id: 11,
-                level: 'Advanced',
-                title: 'Performance Testing',
-                description: 'How do you implement automated performance testing?',
-                options: [
-                    {
-                        text: 'Monitor key metrics under various load conditions',
-                        outcome: 'Perfect! This ensures comprehensive testing.',
-                        experience: 25,
-                        tool: 'Performance Testing'
-                    },
-                    {
-                        text: 'Create complex performance test scenarios that simulate every possible user interaction simultaneously',
-                        outcome: 'Focus should be on key performance indicators.',
-                        experience: -10
-                    },
-                    {
-                        text: 'Record browser timings in production',
-                        outcome: 'Use proper test environments.',
-                        experience: -15
-                    },
-                    {
-                        text: 'Test with maximum concurrent users',
-                        outcome: 'Various load scenarios needed.',
-                        experience: -20
-                    }
-                ]
-            },
-            {
-                id: 12,
-                level: 'Advanced',
-                title: 'API Testing',
-                description: 'How do you approach automated API testing?',
-                options: [
-                    {
-                        text: 'Validate contracts and response schemas',
-                        outcome: 'Excellent! This ensures robust API testing.',
-                        experience: 25,
-                        tool: 'API Testing'
-                    },
-                    {
-                        text: 'Write exhaustive tests covering every possible combination of API parameters and headers',
-                        outcome: 'Focus should be on meaningful test scenarios.',
-                        experience: -20
-                    },
-                    {
-                        text: 'Focus tests only on success scenarios to ensure the application under test meets requirements',
-                        outcome: 'Edge cases must also be tested for comprehensive coverage.',
-                        experience: -10
-                    },
-                    {
-                        text: 'The testing approach for API should be manual in nature',
-                        outcome: 'APIs should be automatically tested as this improves efficiency in faster testing cycles.',
-                        experience: -15
-                    }
-                ]
-            },
-            {
-                id: 13,
-                level: 'Advanced',
-                title: 'Framework Selection Discussion',
-                description: 'A potential client is wanting to ensure use of a particular testing framework. But you believe they could benefit from using something else. How would you handle this?',
-                options: [
-                    {
-                        text: 'Outlining the advantages of the recommended framework',
-                        outcome: 'Perfect! This promotes informed decision-making.',
-                        experience: 25,
-                        tool: 'Framework Analysis'
-                    },
-                    {
-                        text: 'Agree with their requirement and use their framework of choice',
-                        outcome: 'Professional recommendations should be made when beneficial.',
-                        experience: -10
-                    },
-                    {
-                        text: 'Disregard their choice and implement your own testing framework',
-                        outcome: 'Client requirements should be respected and discussed professionally.',
-                        experience: -20
-                    },
-                    {
-                        text: 'Refuse to work with the client unless they agree to use your suggestions',
-                        outcome: 'Collaboration and professional discussion is essential.',
-                        experience: -15
-                    }
-                ]
-            },
-            {
-                id: 14,
-                level: 'Advanced',
-                title: 'Automation Project Candidacy',
-                description: 'What is a poor candidate for an automation project?',
-                options: [
-                    {
-                        text: 'A client whose budget is limited, and the project\'s scope is small',
-                        outcome: 'Excellent! Automation should be cost-effective.',
-                        experience: 25,
-                        tool: 'Project Assessment'
-                    },
-                    {
-                        text: 'A client with repetitive and time-consuming manual tests',
-                        outcome: 'This is actually a good candidate for automation.',
-                        experience: -20
-                    },
-                    {
-                        text: 'When implementing automation would be more cost-effective than a manual approach',
-                        outcome: 'This would be an ideal candidate for automation.',
-                        experience: -15
-                    },
-                    {
-                        text: 'Client whose project features numerous forms and fields',
-                        outcome: 'Form testing is often a good candidate for automation.',
-                        experience: -10
-                    }
-                ]
-            },
-            {
-                id: 15,
-                level: 'Advanced',
-                title: 'Critical Bug Handling',
-                description: 'A critical bug slipped into production despite automation coverage. How do you handle it?',
-                options: [
-                    {
-                        text: 'Investigate the root cause to improve the automation for the next run',
-                        outcome: 'Perfect! This ensures continuous improvement.',
-                        experience: 25,
-                        tool: 'Root Cause Analysis'
-                    },
-                    {
-                        text: 'Ignore the error as it\'s not part of the original scope',
-                        outcome: 'Critical bugs require immediate attention and investigation.',
-                        experience: -20
-                    },
-                    {
-                        text: 'Get the client to roll back all changes without finding the root cause',
-                        outcome: 'Understanding the root cause is crucial for prevention.',
-                        experience: -15
-                    },
-                    {
-                        text: 'See if the automation team are responsible for the code not being robust',
-                        outcome: 'Focus should be on solution and prevention rather than blame.',
-                        experience: -10
-                    }
-                ]
-            }
-        ];
-
         // Initialize UI and add event listeners
         this.initializeEventListeners();
 
         this.isLoading = false;
+
+        // Add this debugging check to the constructor
+        console.log('[AutomationInterviewQuiz] Quiz name being used:', this.quizName);
+        const relatedLocalStorage = Object.keys(localStorage).filter(k => 
+            k.includes('quiz_progress') || k.includes('automation-interview')
+        );
+        console.log('[AutomationInterviewQuiz] Related localStorage keys:', relatedLocalStorage);        
     }
 
+    // Helper for showing errors to the user
     showError(message) {
-        const errorDiv = document.createElement('div');
-        errorDiv.className = 'error-notification';
-        errorDiv.setAttribute('role', 'alert');
-        errorDiv.textContent = message;
-        document.body.appendChild(errorDiv);
-        setTimeout(() => errorDiv.remove(), 5000);
+        try {
+            const errorElement = document.createElement('div');
+            errorElement.className = 'error-message';
+            errorElement.textContent = message;
+            errorElement.style.color = 'red';
+            errorElement.style.padding = '20px';
+            errorElement.style.textAlign = 'center';
+            errorElement.style.fontWeight = 'bold';
+            
+            // Find a good place to show the error
+            const container = document.getElementById('game-screen') || 
+                              document.getElementById('quiz-container') || 
+                              document.body;
+            
+            if (container) {
+                // Clear container if not body
+                if (container !== document.body) {
+                    container.innerHTML = '';
+                }
+                
+                container.appendChild(errorElement);
+                console.error('[AutomationInterviewQuiz] Displayed error to user:', message);
+            }
+        } catch (e) {
+            console.error('[AutomationInterviewQuiz] Failed to show error to user:', e);
+        }
     }
 
-    shouldEndGame(totalQuestionsAnswered, currentXP) {
-        return totalQuestionsAnswered >= this.totalQuestions;
+    shouldEndGame() {
+        // Only end the game when all 15 questions are answered
+        return (this.player?.questionHistory?.length || 0) >= 15;
     }
 
+    // Helper method to calculate the score percentage based on correct answers
     calculateScorePercentage() {
-        const answered = this.player.questionHistory.length;
-        if (answered === 0) return 0;
+        const correctAnswers = this.player.questionHistory.filter(q => 
+            q.selectedAnswer && (q.selectedAnswer.isCorrect || 
+            q.selectedAnswer.experience === Math.max(...q.scenario.options.map(o => o.experience || 0)))
+        ).length;
+        return Math.round((correctAnswers / Math.max(1, Math.min(this.player.questionHistory.length, 15))) * 100);
+    }
+
+    async saveProgress() {
+        // First determine the status based on clear conditions
+        let status = 'in-progress';
         
-        const correctAnswers = this.player.questionHistory.filter(q => q.selectedAnswer.isCorrect).length;
-        return Math.round((correctAnswers / answered) * 100);
+        // Check for completion (all 15 questions answered)
+        if (this.player.questionHistory.length >= 15) {
+            // Calculate pass/fail based on correct answers
+            const correctAnswers = this.player.questionHistory.filter(q => 
+                q.selectedAnswer && (q.selectedAnswer.isCorrect || 
+                q.selectedAnswer.experience === Math.max(...q.scenario.options.map(o => o.experience || 0)))
+            ).length;
+            const scorePercentage = Math.round((correctAnswers / 15) * 100);
+            status = scorePercentage >= 70 ? 'passed' : 'failed';
+        }
+    
+        const progressData = {
+            experience: this.player.experience,
+            tools: this.player.tools,
+            currentScenario: this.player.currentScenario,
+            questionHistory: this.player.questionHistory,
+            lastUpdated: new Date().toISOString(),
+            questionsAnswered: this.player.questionHistory.length,
+            status: status,
+            scorePercentage: this.calculateScorePercentage()
+        };
+    
+        try {
+            const username = localStorage.getItem('username');
+            if (!username) {
+                console.error('No user found, cannot save progress');
+                return false;
+            }
+            
+            // Use user-specific key for localStorage
+            const storageKey = `quiz_progress_${username}_${this.quizName}`;
+            localStorage.setItem(storageKey, JSON.stringify({ data: progressData }));
+            
+            // ADDITIONAL FAILSAFE: Also save to sessionStorage which persists for the current session
+            try {
+                sessionStorage.setItem(storageKey, JSON.stringify({ 
+                    data: progressData,
+                    timestamp: Date.now()
+                }));
+                console.log('[AutomationInterviewQuiz] Backed up progress to sessionStorage');
+                
+                // Create an emergency backup with a timestamp
+                const emergencyKey = `${storageKey}_emergency_${Date.now()}`;
+                sessionStorage.setItem(emergencyKey, JSON.stringify({ 
+                    data: progressData,
+                    timestamp: Date.now()
+                }));
+            } catch (sessionError) {
+                console.warn('[AutomationInterviewQuiz] Failed to save to sessionStorage:', sessionError);
+            }
+            
+            // Try to use sync service, but have a direct API fallback
+            try {
+                if (typeof quizSyncService !== 'undefined') {
+                    quizSyncService.addToSyncQueue(username, this.quizName, progressData);
+                    console.log('[AutomationInterviewQuiz] Added to sync queue');
+                } else {
+                    throw new Error('Sync service not available');
+                }
+            } catch (syncError) {
+                // Direct API saving as fallback
+                console.warn('[AutomationInterviewQuiz] Sync service failed, trying direct API save:', syncError);
+                
+                try {
+                    await this.apiService.saveQuizProgress(this.quizName, progressData);
+                    console.log('[AutomationInterviewQuiz] Saved progress directly to API');
+                } catch (apiError) {
+                    console.error('[AutomationInterviewQuiz] Failed to save to API:', apiError);
+                    // Already saved to localStorage above, so we have a backup
+                }
+            }
+            
+            return true;
+        } catch (error) {
+            console.error('[AutomationInterviewQuiz] Failed to save progress:', error);
+            
+            // EMERGENCY FALLBACK: Attempt to save to sessionStorage as last resort
+            try {
+                const username = localStorage.getItem('username') || 'anonymous';
+                const emergencyKey = `quiz_progress_${username}_${this.quizName}_emergency`;
+                sessionStorage.setItem(emergencyKey, JSON.stringify({ 
+                    data: progressData,
+                    timestamp: Date.now()
+                }));
+                console.log('[AutomationInterviewQuiz] Saved emergency backup to sessionStorage');
+            } catch (sessionError) {
+                console.error('[AutomationInterviewQuiz] All storage methods failed:', sessionError);
+            }
+            
+            return false;
+        }
+    }
+
+    async loadProgress() {
+        try {
+            const username = localStorage.getItem('username');
+            if (!username) {
+                console.error('[AutomationInterviewQuiz] No user found, cannot load progress');
+                return false;
+            }
+
+            // Important diagnostic: log ALL quiz progress localStorage keys for this user
+            const allStorageKeys = Object.keys(localStorage).filter(key => 
+                key.includes('quiz_progress') && key.includes(username)
+            );
+            console.log('[AutomationInterviewQuiz] ALL localStorage quiz progress keys for this user:', allStorageKeys);
+
+            // Define all possible storage keys in priority order
+            const storageKeys = [
+                `quiz_progress_${username}_${this.quizName}`,
+                `quiz_progress_${username}_${this.quizName}_backup`,
+                `quiz_progress_${username}_automation-interview`,  // Fallback for standardized name
+                `quiz_progress_${username}_automation-interview_backup`,
+                `quiz_progress_${username}_automation-interview_emergency`
+            ];
+            
+            // Log which keys we will try
+            console.log('[AutomationInterviewQuiz] Will try these localStorage keys in order:', storageKeys);
+            
+            let progressData = null;
+            let dataSource = '';
+            let apiProgress = null;
+            
+            // First collect ALL possible progress data sources before deciding which to use
+            
+            // Check sessionStorage first as an additional data source
+            let sessionStorageData = null;
+            try {
+                // Get all sessionStorage keys for this user
+                const sessionKeys = Object.keys(sessionStorage).filter(key => 
+                    key.includes('quiz_progress') && key.includes(username)
+                );
+                console.log('[AutomationInterviewQuiz] SessionStorage keys found:', sessionKeys);
+                
+                // Get the most recent session storage data
+                if (sessionKeys.length > 0) {
+                    let mostRecentKey = sessionKeys[0];
+                    let mostRecentTime = 0;
+                    
+                    // Find most recent by looking at the keys with timestamps or data timestamps
+                    for (const key of sessionKeys) {
+                        try {
+                            const sessionData = JSON.parse(sessionStorage.getItem(key));
+                            // Check if key contains timestamp or data has timestamp
+                            const keyTimestamp = key.includes('emergency_') ? 
+                                parseInt(key.split('emergency_')[1]) : 0;
+                            const dataTimestamp = sessionData.timestamp ? 
+                                parseInt(sessionData.timestamp) : 0;
+                            
+                            const timestamp = Math.max(keyTimestamp, dataTimestamp);
+                            
+                            if (timestamp > mostRecentTime) {
+                                mostRecentTime = timestamp;
+                                mostRecentKey = key;
+                            }
+                        } catch (e) {}
+                    }
+                    
+                    // Load the most recent session data
+                    try {
+                        const sessionData = JSON.parse(sessionStorage.getItem(mostRecentKey));
+                        sessionStorageData = sessionData.data || sessionData;
+                        console.log('[AutomationInterviewQuiz] Loaded most recent sessionStorage data from key:', 
+                            mostRecentKey, 'with question count:', 
+                            sessionStorageData.questionHistory?.length || 0);
+                    } catch (e) {
+                        console.warn('[AutomationInterviewQuiz] Failed to parse session storage data:', e);
+                    }
+                }
+            } catch (sessionError) {
+                console.warn('[AutomationInterviewQuiz] Error accessing sessionStorage:', sessionError);
+            }
+            
+            // Try to get progress from API
+            try {
+                console.log('[AutomationInterviewQuiz] Attempting to load progress from API');
+                apiProgress = await this.apiService.getQuizProgress(this.quizName);
+                console.log('[AutomationInterviewQuiz] API progress response:', apiProgress);
+                
+                if (apiProgress && apiProgress.data) {
+                    // Verify API data has actual content (not just empty structures)
+                    const apiHasProgress = 
+                        (apiProgress.data.questionHistory && apiProgress.data.questionHistory.length > 0) &&
+                        (apiProgress.data.currentScenario && apiProgress.data.currentScenario > 0);
+                    
+                    if (apiHasProgress) {
+                        console.log('[AutomationInterviewQuiz] API data contains valid progress with questions:', 
+                            apiProgress.data.questionHistory.length);
+                    } else {
+                        console.warn('[AutomationInterviewQuiz] API returned data but without valid questions or progress');
+                    }
+                } else {
+                    console.warn('[AutomationInterviewQuiz] API returned no valid data');
+                }
+            } catch (apiError) {
+                console.warn('[AutomationInterviewQuiz] Failed to load progress from API:', apiError);
+            }
+            
+            // Collect all localStorage data
+            const localStorageData = {};
+            let bestLocalStorageData = null;
+            let bestQuestionCount = 0;
+            
+            for (const key of storageKeys) {
+                const localData = localStorage.getItem(key);
+                
+                if (localData) {
+                    try {
+                        const parsed = JSON.parse(localData);
+                        const candidateData = parsed.data || parsed;
+                        
+                        // Store all parsed data for reference
+                        localStorageData[key] = candidateData;
+                        
+                        // Check if this data has any question history
+                        if (candidateData && Array.isArray(candidateData.questionHistory)) {
+                            const questionCount = candidateData.questionHistory.length;
+                            console.log(`[AutomationInterviewQuiz] Found localStorage data in ${key} with ${questionCount} questions`);
+                            
+                            // Keep track of the best localStorage data (most questions)
+                            if (questionCount > bestQuestionCount) {
+                                bestLocalStorageData = candidateData;
+                                bestQuestionCount = questionCount;
+                                console.log(`[AutomationInterviewQuiz] This is now the best local storage data (${questionCount} questions)`);
+                            }
+                        }
+                    } catch (parseError) {
+                        console.error(`[AutomationInterviewQuiz] Failed to parse localStorage data for key ${key}:`, parseError);
+                    }
+                }
+            }
+            
+            // Now choose the best data source based on which has the most questions
+            
+            // Track the best data and its source
+            let bestData = null;
+            let bestSource = '';
+            let bestCount = 0;
+            
+            // Check API data
+            if (apiProgress && apiProgress.data && 
+                apiProgress.data.questionHistory && 
+                apiProgress.data.questionHistory.length > 0) {
+                
+                bestData = apiProgress.data;
+                bestSource = 'API';
+                bestCount = apiProgress.data.questionHistory.length;
+                console.log(`[AutomationInterviewQuiz] API data has ${bestCount} questions`);
+            }
+            
+            // Check localStorage data
+            if (bestLocalStorageData && 
+                bestLocalStorageData.questionHistory && 
+                bestLocalStorageData.questionHistory.length > bestCount) {
+                
+                bestData = bestLocalStorageData;
+                bestSource = 'localStorage';
+                bestCount = bestLocalStorageData.questionHistory.length;
+                console.log(`[AutomationInterviewQuiz] localStorage data has ${bestCount} questions, better than current best`);
+            }
+            
+            // Check sessionStorage data
+            if (sessionStorageData && 
+                sessionStorageData.questionHistory && 
+                sessionStorageData.questionHistory.length > bestCount) {
+                
+                bestData = sessionStorageData;
+                bestSource = 'sessionStorage';
+                bestCount = sessionStorageData.questionHistory.length;
+                console.log(`[AutomationInterviewQuiz] sessionStorage data has ${bestCount} questions, better than current best`);
+            }
+            
+            // Use the best data we've found
+            if (bestData) {
+                console.log(`[AutomationInterviewQuiz] Using best progress data from ${bestSource} with ${bestCount} questions`);
+                progressData = bestData;
+                dataSource = bestSource;
+                
+                // If the best data wasn't from the API, sync it back to the API
+                if (bestSource !== 'API' && bestCount > 0) {
+                    try {
+                        console.log('[AutomationInterviewQuiz] Syncing best progress data to API and localStorage');
+                        
+                        // Update localStorage with the best data
+                        localStorage.setItem(storageKeys[0], JSON.stringify({ 
+                            data: progressData,
+                            timestamp: Date.now() 
+                        }));
+                        
+                        // Update API with the best data
+                        await this.apiService.saveQuizProgress(this.quizName, progressData);
+                    } catch (syncError) {
+                        console.warn('[AutomationInterviewQuiz] Failed to sync best progress data:', syncError);
+                    }
+                }
+            } else {
+                console.log('[AutomationInterviewQuiz] No valid progress data found from any source, trying recovery...');
+                
+                // Try to recover from the sync service as last resort
+                try {
+                    // Get QuizSyncService if available
+                    if (typeof window.quizSyncService !== 'undefined' || typeof quizSyncService !== 'undefined') {
+                        const syncService = window.quizSyncService || quizSyncService;
+                        const recoveredData = await syncService.recoverProgressData(username, this.quizName);
+                        
+                        if (recoveredData) {
+                            console.log('[AutomationInterviewQuiz] Successfully recovered data from QuizSyncService');
+                            progressData = recoveredData;
+                            dataSource = 'recovered';
+                        } else {
+                            console.warn('[AutomationInterviewQuiz] No data could be recovered, returning false');
+                            return false;
+                        }
+                    } else {
+                        console.warn('[AutomationInterviewQuiz] QuizSyncService not available, cannot recover');
+                        return false;
+                    }
+                } catch (recoveryError) {
+                    console.error('[AutomationInterviewQuiz] Error during data recovery:', recoveryError);
+                    return false;
+                }
+            }
+
+            if (progressData) {
+                console.log(`[AutomationInterviewQuiz] Processing loaded progress data from ${dataSource}`);
+                
+                // Sanitize and validate data to prevent invalid values
+                progressData.experience = !isNaN(parseFloat(progressData.experience)) ? parseFloat(progressData.experience) : 0;
+                progressData.tools = Array.isArray(progressData.tools) ? progressData.tools : [];
+                progressData.questionHistory = Array.isArray(progressData.questionHistory) ? 
+                    progressData.questionHistory : [];
+                
+                // CRITICAL: Ensure currentScenario is consistent with question history
+                // This is a key point of failure
+                if (progressData.questionHistory.length > 0) {
+                    console.log('[AutomationInterviewQuiz] Setting currentScenario to match questionHistory.length:', 
+                        progressData.questionHistory.length);
+                    
+                    // ALWAYS set currentScenario to match the question history length
+                    // This ensures we go to the next unanswered question
+                    progressData.currentScenario = progressData.questionHistory.length;
+                } else {
+                    console.log('[AutomationInterviewQuiz] No questions in history, starting from beginning');
+                    progressData.currentScenario = 0;
+                }
+                
+                // Fix inconsistent state: if quiz is marked as completed but has no progress
+                if ((progressData.status === 'completed' || 
+                     progressData.status === 'passed' || 
+                     progressData.status === 'failed') && 
+                    (progressData.questionHistory.length === 0 || 
+                     progressData.currentScenario === 0)) {
+                    console.log('[AutomationInterviewQuiz] Fixing inconsistent state: quiz marked as completed but has no progress');
+                    progressData.status = 'in-progress';
+                }
+
+                // Update the player state with the loaded progress data
+                this.player.experience = progressData.experience;
+                this.player.tools = progressData.tools;
+                this.player.questionHistory = progressData.questionHistory;
+                this.player.currentScenario = progressData.currentScenario;
+                
+                console.log('[AutomationInterviewQuiz] Player state updated:', {
+                    experience: this.player.experience,
+                    questionHistory: this.player.questionHistory.length,
+                    currentScenario: this.player.currentScenario,
+                    status: progressData.status,
+                    source: dataSource
+                });
+                
+                // Only show end screen if quiz is actually completed and has progress
+                if ((progressData.status === 'completed' || 
+                     progressData.status === 'passed' || 
+                     progressData.status === 'failed') && 
+                    progressData.questionHistory.length > 0 && 
+                    progressData.currentScenario > 0) {
+                    console.log(`[AutomationInterviewQuiz] Quiz is ${progressData.status} with ${progressData.questionHistory.length} questions answered`);
+                    this.endGame(progressData.status === 'failed');
+                    return true;
+                }
+
+                // Additional guard: verify that progress was loaded correctly
+                if (this.player.questionHistory.length === 0 && progressData.questionHistory.length > 0) {
+                    console.error('[AutomationInterviewQuiz] CRITICAL ERROR: Failed to load question history properly!');
+                    // Forced retry with direct assignment
+                    this.player.questionHistory = [...progressData.questionHistory];
+                    this.player.currentScenario = this.player.questionHistory.length;
+                    console.log('[AutomationInterviewQuiz] Forced player state update after error:', {
+                        questionHistory: this.player.questionHistory.length,
+                        currentScenario: this.player.currentScenario
+                    });
+                }
+
+                // Force save progress back to ensure consistency
+                await this.saveProgress();
+                
+                // Show the current question based on progress
+                this.displayScenario();
+                return true;
+            }
+            
+            console.log('[AutomationInterviewQuiz] No existing progress found');
+            return false;
+        } catch (error) {
+            console.error('[AutomationInterviewQuiz] Error loading progress:', error);
+            
+            // As a last resort, try to recover progress data using the QuizSyncService
+            try {
+                console.log('[AutomationInterviewQuiz] Attempting emergency progress recovery after error');
+                return await this.recoverProgress();
+            } catch (recoveryError) {
+                console.error('[AutomationInterviewQuiz] Emergency recovery also failed:', recoveryError);
+                return false;
+            }
+        }
     }
 
     async startGame() {
@@ -563,8 +566,8 @@ export class AutomationInterviewQuiz extends BaseQuiz {
                 return;
             }
 
-            // Initialize event listeners
-            this.initializeEventListeners();
+            // Try to load scenarios from API with caching
+            await this.loadScenariosWithCaching();
 
             // Load previous progress
             const hasProgress = await this.loadProgress();
@@ -576,6 +579,8 @@ export class AutomationInterviewQuiz extends BaseQuiz {
                 this.player.tools = [];
                 this.player.currentScenario = 0;
                 this.player.questionHistory = [];
+                // Only show scenario if no progress
+                this.displayScenario();
             }
             
             // Clear any existing transition messages
@@ -585,12 +590,11 @@ export class AutomationInterviewQuiz extends BaseQuiz {
                 transitionContainer.classList.remove('active');
             }
 
-            // Clear any existing timer
-            if (this.questionTimer) {
-                clearInterval(this.questionTimer);
-            }
-            
-            await this.displayScenario();
+            // Add this to the startGame method after loading progress
+            console.log('[AutomationInterviewQuiz] Progress status check:', {
+                playerState: this.player,
+                localStorageKeys: Object.keys(localStorage).filter(k => k.includes('quiz_progress'))
+            });
         } catch (error) {
             console.error('Failed to start game:', error);
             this.showError('Failed to start the quiz. Please try refreshing the page.');
@@ -624,133 +628,198 @@ export class AutomationInterviewQuiz extends BaseQuiz {
     }
 
     displayScenario() {
-        const currentScenarios = this.getCurrentScenarios();
-        
-        // Check if we should end the game
-        if (this.shouldEndGame(this.player.questionHistory.length, this.player.experience)) {
-            const scorePercentage = this.calculateScorePercentage();
-            this.endGame(scorePercentage < this.passPercentage);
-            return;
-        }
+        // Use currentScenario for all progress logic
+        const currentScenarioIndex = this.player.currentScenario;
+        const totalAnswered = this.player.questionHistory.length;
+        const totalQuestions = this.totalQuestions || 15;
 
-        // Get the next scenario based on current progress
-        let scenario;
-        const questionCount = this.player.questionHistory.length;
-        
-        // Reset currentScenario based on the current level
-        if (questionCount < 5) {
-            // Basic questions (0-4)
-            scenario = this.basicScenarios[questionCount];
-            this.player.currentScenario = questionCount;
-        } else if (questionCount < 10) {
-            // Intermediate questions (5-9)
-            scenario = this.intermediateScenarios[questionCount - 5];
-            this.player.currentScenario = questionCount - 5;
-        } else if (questionCount < 15) {
-            // Advanced questions (10-14)
-            scenario = this.advancedScenarios[questionCount - 10];
-            this.player.currentScenario = questionCount - 10;
-        }
+        console.log('[AutomationInterviewQuiz][displayScenario] Showing scenario:', {
+            currentScenarioIndex,
+            totalAnswered,
+            totalQuestions
+        });
 
-        if (!scenario) {
-            console.error('No scenario found for current progress. Question count:', questionCount);
-            this.endGame(true);
-            return;
-        }
-
-        // Store current question number for consistency
-        this.currentQuestionNumber = questionCount + 1;
-        
-        // Show level transition message at the start of each level or when level changes
-        const currentLevel = this.getCurrentLevel();
-        const previousLevel = questionCount > 0 ? 
-            (questionCount <= 5 ? 'Basic' : 
-             questionCount <= 10 ? 'Intermediate' : 'Advanced') : null;
+        // Debug: verify currentScenario and questionHistory are aligned correctly
+        if (currentScenarioIndex !== totalAnswered) {
+            console.warn('[AutomationInterviewQuiz][displayScenario] Misalignment detected! currentScenario and questionHistory.length don\'t match:',
+                `currentScenario=${currentScenarioIndex}, questionHistory.length=${totalAnswered}`);
             
-        if (questionCount === 0 || 
-            (questionCount === 5 && currentLevel === 'Intermediate') || 
-            (questionCount === 10 && currentLevel === 'Advanced')) {
-            const transitionContainer = document.getElementById('level-transition-container');
-            if (transitionContainer) {
-                transitionContainer.innerHTML = ''; // Clear any existing messages
-                
-                const levelMessage = document.createElement('div');
-                levelMessage.className = 'level-transition';
-                levelMessage.setAttribute('role', 'alert');
-                levelMessage.textContent = `Starting ${currentLevel} Questions`;
-                
-                transitionContainer.appendChild(levelMessage);
-                transitionContainer.classList.add('active');
-                
-                // Update the level indicator
-                const levelIndicator = document.getElementById('level-indicator');
-                if (levelIndicator) {
-                    levelIndicator.textContent = `Level: ${currentLevel}`;
-                }
-                
-                // Remove the message and container height after animation
-                setTimeout(() => {
-                    transitionContainer.classList.remove('active');
-                    setTimeout(() => {
-                        transitionContainer.innerHTML = '';
-                    }, 300); // Wait for height transition to complete
-                }, 3000);
+            // Auto-fix if there's a mismatch - this is critical for proper quiz flow
+            if (totalAnswered > 0 && currentScenarioIndex === 0) {
+                console.log('[AutomationInterviewQuiz][displayScenario] Auto-fixing: Setting currentScenario to match questionHistory.length');
+                this.player.currentScenario = totalAnswered;
             }
         }
 
-        // Update scenario display
-        const titleElement = document.getElementById('scenario-title');
-        const descriptionElement = document.getElementById('scenario-description');
-        const optionsContainer = document.getElementById('options-container');
-
-        if (!titleElement || !descriptionElement || !optionsContainer) {
-            console.error('Required elements not found');
+        // Check if we've answered all questions
+        if (currentScenarioIndex >= totalQuestions) {
+            console.log('[AutomationInterviewQuiz][displayScenario] All questions answered, ending game');
+            this.endGame(false);
             return;
         }
 
-        titleElement.textContent = scenario.title;
-        descriptionElement.textContent = scenario.description;
+        // Determine level and scenario set
+        let scenario;
+        let scenarioSet;
+        let scenarioLevel;
+        
+        try {
+            // Calculate which level we're on and get the appropriate scenario set
+            if (currentScenarioIndex < 5) {
+                scenarioSet = this.basicScenarios;
+                scenarioLevel = 'Basic';
+                scenario = scenarioSet[currentScenarioIndex];
+            } else if (currentScenarioIndex < 10) {
+                scenarioSet = this.intermediateScenarios;
+                scenarioLevel = 'Intermediate';
+                scenario = scenarioSet[currentScenarioIndex - 5];
+            } else if (currentScenarioIndex < 15) {
+                scenarioSet = this.advancedScenarios;
+                scenarioLevel = 'Advanced';
+                scenario = scenarioSet[currentScenarioIndex - 10];
+            }
 
-        // Update question counter immediately
-        const questionProgress = document.getElementById('question-progress');
-        if (questionProgress) {
-            questionProgress.textContent = `Question: ${this.currentQuestionNumber}/15`;
+            if (!scenario) {
+                console.error('[AutomationInterviewQuiz][displayScenario] No scenario found for currentScenario:', currentScenarioIndex);
+                console.log('[AutomationInterviewQuiz][displayScenario] Scenario sets:', {
+                    basic: this.basicScenarios?.length || 0,
+                    intermediate: this.intermediateScenarios?.length || 0,
+                    advanced: this.advancedScenarios?.length || 0
+                });
+                
+                // Emergency fallback - try to recover by moving to next question or resetting
+                if (totalAnswered > 0 && totalAnswered < totalQuestions) {
+                    console.log('[AutomationInterviewQuiz][displayScenario] Attempting recovery by moving to next available scenario');
+                    this.player.currentScenario = totalAnswered;
+                    // Try recursively one more time with the fixed index
+                    this.displayScenario();
+                    return;
+                } else {
+                    // If we still can't recover, try the emergency recovery method
+                    console.log('[AutomationInterviewQuiz][displayScenario] Attempting emergency data recovery');
+                    this.recoverProgress().then(success => {
+                        if (!success) {
+                            // If recovery fails, show end game as last resort
+                            this.endGame(true);
+                        }
+                    }).catch(() => this.endGame(true));
+                    return;
+                }
+            }
+
+            // Store current question number for consistency
+            this.currentQuestionNumber = currentScenarioIndex + 1;
+
+            // Show level transition message at the start of each level or when level changes
+            if (
+                currentScenarioIndex === 0 ||
+                (currentScenarioIndex === 5 && scenarioLevel === 'Intermediate') ||
+                (currentScenarioIndex === 10 && scenarioLevel === 'Advanced')
+            ) {
+                const transitionContainer = document.getElementById('level-transition-container');
+                if (transitionContainer) {
+                    transitionContainer.innerHTML = '';
+                    const levelMessage = document.createElement('div');
+                    levelMessage.className = 'level-transition';
+                    levelMessage.setAttribute('role', 'alert');
+                    levelMessage.textContent = `Starting ${scenarioLevel} Questions`;
+                    transitionContainer.appendChild(levelMessage);
+                    transitionContainer.classList.add('active');
+                    const levelIndicator = document.getElementById('level-indicator');
+                    if (levelIndicator) {
+                        levelIndicator.textContent = `Level: ${scenarioLevel}`;
+                    }
+                    setTimeout(() => {
+                        transitionContainer.classList.remove('active');
+                        setTimeout(() => {
+                            transitionContainer.innerHTML = '';
+                        }, 300);
+                    }, 3000);
+                }
+            }
+
+            // Update scenario display
+            const titleElement = document.getElementById('scenario-title');
+            const descriptionElement = document.getElementById('scenario-description');
+            const optionsContainer = document.getElementById('options-container');
+
+            if (!titleElement || !descriptionElement || !optionsContainer) {
+                console.error('[AutomationInterviewQuiz][displayScenario] Required elements not found');
+                return;
+            }
+
+            titleElement.textContent = scenario.title;
+            descriptionElement.textContent = scenario.description;
+
+            // Update question counter
+            const questionProgress = document.getElementById('question-progress');
+            if (questionProgress) {
+                questionProgress.textContent = `Question: ${this.currentQuestionNumber}/15`;
+            }
+
+            // Create a copy of options with their original indices
+            const shuffledOptions = scenario.options.map((option, index) => ({
+                ...option,
+                originalIndex: index
+            }));
+            for (let i = shuffledOptions.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [shuffledOptions[i], shuffledOptions[j]] = [shuffledOptions[j], shuffledOptions[i]];
+            }
+            optionsContainer.innerHTML = '';
+            
+            shuffledOptions.forEach((option, index) => {
+                const optionElement = document.createElement('div');
+                optionElement.className = 'option';
+                optionElement.innerHTML = `
+                    <input type="radio" 
+                        name="option" 
+                        value="${option.originalIndex}" 
+                        id="option${index}"
+                        tabindex="0"
+                        aria-label="${option.text}"
+                        role="radio">
+                    <label for="option${index}">${option.text}</label>
+                `;
+                optionsContainer.appendChild(optionElement);
+            });
+
+            this.updateProgress();
+            this.initializeTimer();
+            console.log('[AutomationInterviewQuiz][displayScenario] Showing scenario', scenarioLevel, 'index', currentScenarioIndex, scenario.title);
+
+            // Make scenario screen visible if not already
+            const gameScreen = document.getElementById('game-screen');
+            if (gameScreen && gameScreen.classList.contains('hidden')) {
+                console.log('[AutomationInterviewQuiz][displayScenario] Making game screen visible');
+                gameScreen.classList.remove('hidden');
+            }
+
+            // Add extra log after showing
+            setTimeout(() => {
+                console.log('[AutomationInterviewQuiz][displayScenario][post-show] player state:', {
+                    experience: this.player.experience,
+                    questionHistory: this.player.questionHistory.length,
+                    currentScenario: this.player.currentScenario
+                });
+            }, 0);
+        } catch (error) {
+            console.error('[AutomationInterviewQuiz][displayScenario] Error showing scenario:', error);
+            // Emergency recovery if an error occurs
+            const gameScreen = document.getElementById('game-screen');
+            if (gameScreen) gameScreen.classList.remove('hidden');
+            
+            // Try to recover progress data in case of display error
+            console.log('[AutomationInterviewQuiz][displayScenario] Attempting emergency recovery after display error');
+            this.recoverProgress().then(success => {
+                if (!success) {
+                    // If recovery fails, show error message
+                    this.showError('An error occurred loading the quiz. Try refreshing the page.');
+                }
+            }).catch(() => {
+                this.showError('An error occurred loading the quiz. Try refreshing the page.');
+            });
         }
-
-        // Create a copy of options with their original indices
-        const shuffledOptions = scenario.options.map((option, index) => ({
-            ...option,
-            originalIndex: index
-        }));
-
-        // Shuffle the options
-        for (let i = shuffledOptions.length - 1; i > 0; i--) {
-            const j = Math.floor(Math.random() * (i + 1));
-            [shuffledOptions[i], shuffledOptions[j]] = [shuffledOptions[j], shuffledOptions[i]];
-        }
-
-        optionsContainer.innerHTML = '';
-
-        shuffledOptions.forEach((option, index) => {
-            const optionElement = document.createElement('div');
-            optionElement.className = 'option';
-            optionElement.innerHTML = `
-                <input type="radio" 
-                    name="option" 
-                    value="${option.originalIndex}" 
-                    id="option${index}"
-                    tabindex="0"
-                    aria-label="${option.text}"
-                    role="radio">
-                <label for="option${index}">${option.text}</label>
-            `;
-            optionsContainer.appendChild(optionElement);
-        });
-
-        this.updateProgress();
-
-        // Initialize timer for the new question
-        this.initializeTimer();
     }
 
     async handleAnswer() {
@@ -772,34 +841,30 @@ export class AutomationInterviewQuiz extends BaseQuiz {
             if (!selectedOption) return;
 
             const currentScenarios = this.getCurrentScenarios();
-            const scenario = currentScenarios[this.player.currentScenario];
+            const scenario = currentScenarios[this.player.currentScenario < 5 ? this.player.currentScenario : this.player.currentScenario < 10 ? this.player.currentScenario - 5 : this.player.currentScenario - 10];
             const originalIndex = parseInt(selectedOption.value);
             
             const selectedAnswer = scenario.options[originalIndex];
 
-            // Calculate new experience with level-based minimum thresholds
-            let newExperience = this.player.experience + selectedAnswer.experience;
-            
-            // Apply minimum thresholds based on current level
-            const questionCount = this.player.questionHistory.length;
-            if (questionCount >= 5) { // Intermediate level
-                newExperience = Math.max(this.levelThresholds.basic.minXP, newExperience);
-            }
-            if (questionCount >= 10) { // Advanced level
-                newExperience = Math.max(this.levelThresholds.intermediate.minXP, newExperience);
-            }
+            // Find the correct answer (option with highest experience)
+            const correctAnswer = scenario.options.reduce((prev, current) => 
+                (prev.experience > current.experience) ? prev : current
+            );
+
+            // Mark selected answer as correct or incorrect
+            selectedAnswer.isCorrect = selectedAnswer === correctAnswer;
 
             // Update player experience with bounds
-            this.player.experience = Math.max(0, Math.min(this.maxXP, newExperience));
+            this.player.experience = Math.max(0, Math.min(this.maxXP, this.player.experience + selectedAnswer.experience));
             
             // Calculate time spent on this question
             const timeSpent = this.questionStartTime ? Date.now() - this.questionStartTime : null;
 
-            // Add status to question history
+            // Add to question history
             this.player.questionHistory.push({
                 scenario: scenario,
                 selectedAnswer: selectedAnswer,
-                status: selectedAnswer.isCorrect ? 'correct' : 'incorrect',
+                isCorrect: selectedAnswer.isCorrect,
                 maxPossibleXP: Math.max(...scenario.options.map(o => o.experience)),
                 timeSpent: timeSpent,
                 timedOut: false
@@ -861,11 +926,6 @@ export class AutomationInterviewQuiz extends BaseQuiz {
             }
 
             this.updateProgress();
-
-            // Check if we should end the game after answering
-            if (this.shouldEndGame(this.player.questionHistory.length, this.player.experience)) {
-                setTimeout(() => this.endGame(scorePercentage < this.passPercentage), 2000);
-            }
         } catch (error) {
             console.error('Failed to handle answer:', error);
             this.showError('Failed to save your answer. Please try again.');
@@ -903,7 +963,7 @@ export class AutomationInterviewQuiz extends BaseQuiz {
         }
         
         if (questionInfoElement) {
-            questionInfoElement.textContent = `Question: ${questionNumber}/${this.totalQuestions}`;
+            questionInfoElement.textContent = `Question: ${questionNumber}/15`;
         }
         
         // Ensure the card is visible
@@ -922,11 +982,11 @@ export class AutomationInterviewQuiz extends BaseQuiz {
         }
         
         if (questionProgress) {
-            questionProgress.textContent = `Question: ${questionNumber}/${this.totalQuestions}`;
+            questionProgress.textContent = `Question: ${questionNumber}/${this.totalQuestions || 15}`;
         }
         
         if (progressFill) {
-            const progressPercentage = (totalAnswered / this.totalQuestions) * 100;
+            const progressPercentage = (totalAnswered / (this.totalQuestions || 15)) * 100;
             progressFill.style.width = `${progressPercentage}%`;
         }
     }
@@ -962,12 +1022,11 @@ export class AutomationInterviewQuiz extends BaseQuiz {
 
     getCurrentScenarios() {
         const totalAnswered = this.player.questionHistory.length;
-        const currentXP = this.player.experience;
         
-        // Check for level progression
-        if (totalAnswered >= 10 && currentXP >= this.levelThresholds.intermediate.minXP) {
+        // Progress through levels based only on question count
+        if (totalAnswered >= 10) {
             return this.advancedScenarios;
-        } else if (totalAnswered >= 5 && currentXP >= this.levelThresholds.basic.minXP) {
+        } else if (totalAnswered >= 5) {
             return this.intermediateScenarios;
         }
         return this.basicScenarios;
@@ -975,11 +1034,11 @@ export class AutomationInterviewQuiz extends BaseQuiz {
 
     getCurrentLevel() {
         const totalAnswered = this.player.questionHistory.length;
-        const currentXP = this.player.experience;
         
-        if (totalAnswered >= 10 && currentXP >= this.levelThresholds.intermediate.minXP) {
+        // Progress through levels based only on question count
+        if (totalAnswered >= 10) {
             return 'Advanced';
-        } else if (totalAnswered >= 5 && currentXP >= this.levelThresholds.basic.minXP) {
+        } else if (totalAnswered >= 5) {
             return 'Intermediate';
         }
         return 'Basic';
@@ -1015,9 +1074,9 @@ export class AutomationInterviewQuiz extends BaseQuiz {
         let recommendationsHTML = '';
 
         if (score >= 95 && weakAreas.length === 0) {
-            recommendationsHTML = '<p>🌟 Outstanding! You have demonstrated mastery in all aspects of automation. You clearly understand the nuances of automation and are well-equipped to handle any automation challenges!</p>';
+            recommendationsHTML = '<p>🌟 Outstanding! You have demonstrated mastery in automation testing. You clearly understand best practices and are well-equipped to handle complex automation challenges!</p>';
         } else if (score >= 80) {
-            recommendationsHTML = '<p>🌟 Excellent performance! Your automation skills are very strong. To achieve complete mastery, consider focusing on:</p>';
+            recommendationsHTML = '<p>🌟 Excellent performance! Your automation testing skills are very strong. To achieve complete mastery, consider focusing on:</p>';
             recommendationsHTML += '<ul>';
             if (weakAreas.length > 0) {
                 weakAreas.forEach(area => {
@@ -1049,38 +1108,47 @@ export class AutomationInterviewQuiz extends BaseQuiz {
         const title = scenario.title.toLowerCase();
         const description = scenario.description.toLowerCase();
 
-        if (title.includes('daily') || description.includes('daily')) {
-            return 'Daily Communication';
-        } else if (title.includes('team') || description.includes('team')) {
-            return 'Team Collaboration';
-        } else if (title.includes('stakeholder') || description.includes('stakeholder')) {
-            return 'Stakeholder Management';
-        } else if (title.includes('conflict') || description.includes('conflict')) {
-            return 'Conflict Resolution';
-        } else if (title.includes('remote') || description.includes('remote')) {
-            return 'Remote Communication';
-        } else if (title.includes('documentation') || description.includes('documentation')) {
-            return 'Documentation';
-        } else if (title.includes('presentation') || description.includes('presentation')) {
-            return 'Presentation Skills';
+        if (title.includes('test data') || description.includes('test data')) {
+            return 'Data Management';
+        } else if (title.includes('ci/cd') || description.includes('ci/cd')) {
+            return 'CI/CD Integration';
+        } else if (title.includes('version control') || description.includes('version control')) {
+            return 'Version Control';
+        } else if (title.includes('error') || description.includes('error')) {
+            return 'Error Handling';
+        } else if (title.includes('performance') || description.includes('performance')) {
+            return 'Performance Testing';
+        } else if (title.includes('api') || description.includes('api')) {
+            return 'API Testing';
+        } else if (title.includes('framework') || description.includes('framework')) {
+            return 'Framework Analysis';
+        } else if (title.includes('element') || description.includes('element')) {
+            return 'Element Location';
         } else {
-            return 'General Communication';
+            return 'General Automation';
         }
     }
 
     getRecommendation(area) {
         const recommendations = {
-            'Daily Communication': 'Practice maintaining clear status updates and regular check-ins with team members.',
-            'Team Collaboration': 'Focus on active listening and providing constructive feedback in team settings.',
-            'Stakeholder Management': 'Work on presenting information clearly and managing expectations effectively.',
-            'Conflict Resolution': 'Study conflict resolution techniques and practice diplomatic communication.',
-            'Remote Communication': 'Improve virtual communication skills and use of collaboration tools.',
-            'Documentation': 'Enhance documentation skills with clear, concise, and well-structured content.',
-            'Presentation Skills': 'Practice presenting technical information in a clear and engaging manner.',
-            'General Communication': 'Focus on fundamental communication principles and professional etiquette.'
+            'Team Development': 'Focus on establishing standard practices and providing structured guidance for team learning.',
+            'Documentation': 'Improve documentation practices with comprehensive setup guides and maintenance instructions.',
+            'Element Location': 'Practice using unique IDs and data attributes for reliable element location.',
+            'Code Organization': 'Implement page object model patterns and maintain clear separation of concerns.',
+            'Test Stability': 'Master synchronization techniques and implement smart waits for stable tests.',
+            'Data Management': 'Develop efficient test data handling with proper cleanup procedures.',
+            'CI/CD Integration': 'Learn to organize tests in appropriate stages with proper triggers.',
+            'Version Control': 'Practice feature branching and effective code review processes.',
+            'Error Handling': 'Implement strategic error handling with custom exception handlers.',
+            'Performance Testing': 'Study key metrics monitoring under various load conditions.',
+            'API Testing': 'Focus on contract validation and response schema testing.',
+            'Framework Analysis': 'Develop skills in framework evaluation and selection.',
+            'Project Assessment': 'Learn to evaluate project suitability for automation.',
+            'Root Cause Analysis': 'Improve debugging and root cause investigation techniques.',
+            'General Automation': 'Study fundamental automation principles and best practices.'
         };
 
-        return recommendations[area] || 'Continue practicing general communication skills.';
+        return recommendations[area] || 'Continue developing general automation testing skills.';
     }
 
     async endGame(failed = false) {
@@ -1094,14 +1162,20 @@ export class AutomationInterviewQuiz extends BaseQuiz {
             progressCard.style.display = 'none';
         }
 
-        const scorePercentage = this.calculateScorePercentage();
+        // Calculate final score based on correct answers
+        const correctAnswers = this.player.questionHistory.filter(q => 
+            q.selectedAnswer && (q.selectedAnswer.isCorrect || 
+            q.selectedAnswer.experience === Math.max(...q.scenario.options.map(o => o.experience || 0)))
+        ).length;
+        const scorePercentage = Math.round((correctAnswers / 15) * 100);
+        const hasPassed = !failed && scorePercentage >= this.passPercentage;
         
         // Save the final quiz result with pass/fail status
         const username = localStorage.getItem('username');
         if (username) {
             try {
                 const user = new QuizUser(username);
-                const status = failed ? 'failed' : 'completed';
+                const status = hasPassed ? 'passed' : 'failed';
                 console.log('Setting final quiz status:', { status, score: scorePercentage });
                 
                 const result = {
@@ -1110,12 +1184,12 @@ export class AutomationInterviewQuiz extends BaseQuiz {
                     experience: this.player.experience,
                     questionHistory: this.player.questionHistory,
                     questionsAnswered: this.player.questionHistory.length,
-                    lastActive: new Date().toISOString(),
+                    lastUpdated: new Date().toISOString(),
                     scorePercentage: scorePercentage
                 };
 
                 // Save to QuizUser
-                user.updateQuizScore(
+                await user.updateQuizScore(
                     this.quizName,
                     result.score,
                     result.experience,
@@ -1138,8 +1212,9 @@ export class AutomationInterviewQuiz extends BaseQuiz {
                 console.log('Saving final progress to API:', apiProgress);
                 await this.apiService.saveQuizProgress(this.quizName, apiProgress.data);
                 
-                // Clear local storage once final score is saved
-                this.clearQuizLocalStorage();
+                // Clear any local storage for this quiz
+                this.clearQuizLocalStorage(username, this.quizName);
+                
             } catch (error) {
                 console.error('Error saving final quiz score:', error);
             }
@@ -1150,12 +1225,12 @@ export class AutomationInterviewQuiz extends BaseQuiz {
         // Update the quiz complete header based on status
         const quizCompleteHeader = document.querySelector('#end-screen h2');
         if (quizCompleteHeader) {
-            quizCompleteHeader.textContent = failed ? 'Quiz Failed!' : 'Quiz Complete!';
+            quizCompleteHeader.textContent = hasPassed ? 'Quiz Complete!' : 'Quiz Failed!';
         }
 
         const performanceSummary = document.getElementById('performance-summary');
-        if (failed) {
-            performanceSummary.textContent = `Quiz failed. You scored ${scorePercentage}%, but needed at least ${this.passPercentage}% to pass. You cannot retry this quiz.`;
+        if (!hasPassed) {
+            performanceSummary.textContent = 'Quiz failed. You did not earn enough points to pass. You can retry this quiz later.';
             // Hide restart button if failed
             const restartBtn = document.getElementById('restart-btn');
             if (restartBtn) {
@@ -1167,7 +1242,8 @@ export class AutomationInterviewQuiz extends BaseQuiz {
                 quizContainer.classList.add('failed');
             }
         } else {
-            const threshold = this.performanceThresholds.find(t => t.threshold <= scorePercentage);
+            // Find the appropriate performance message
+            const threshold = this.config.performanceThresholds.find(t => scorePercentage >= t.threshold);
             if (threshold) {
                 performanceSummary.textContent = threshold.message;
             } else {
@@ -1183,8 +1259,8 @@ export class AutomationInterviewQuiz extends BaseQuiz {
                 const reviewItem = document.createElement('div');
                 reviewItem.className = 'review-item';
                 
-                const isCorrect = record.selectedAnswer.isCorrect;
-                
+                const isCorrect = record.selectedAnswer && (record.selectedAnswer.isCorrect || 
+                    record.selectedAnswer.experience === Math.max(...record.scenario.options.map(o => o.experience || 0)));
                 reviewItem.classList.add(isCorrect ? 'correct' : 'incorrect');
                 
                 reviewItem.innerHTML = `
@@ -1202,25 +1278,145 @@ export class AutomationInterviewQuiz extends BaseQuiz {
         this.generateRecommendations();
     }
 
-    clearQuizLocalStorage() {
+    async loadScenariosWithCaching() {
+        // Try to load from cache first
+        const cachedData = localStorage.getItem(`quiz_scenarios_${this.quizName}`);
+        const cacheTimestamp = localStorage.getItem(`quiz_scenarios_${this.quizName}_timestamp`);
+        
+        // Check if cache is valid (less than 1 day old)
+        const cacheValid = cacheTimestamp && (Date.now() - parseInt(cacheTimestamp)) < 86400000;
+        
+        if (cachedData && cacheValid) {
+            console.log('[AutomationInterviewQuiz] Using cached scenarios');
+            const data = JSON.parse(cachedData);
+            this.basicScenarios = data.basic || automationInterviewScenarios.basicScenarios;
+            this.intermediateScenarios = data.intermediate || automationInterviewScenarios.intermediateScenarios;
+            this.advancedScenarios = data.advanced || automationInterviewScenarios.advancedScenarios;
+            return;
+        }
+        
+        // If no valid cache, try to fetch from API
         try {
-            const username = localStorage.getItem('username');
-            if (username) {
-                const storageKey = `quiz_progress_${username}_${this.quizName}`;
-                localStorage.removeItem(storageKey);
-                console.log('Cleared quiz local storage');
+            console.log('[AutomationInterviewQuiz] Fetching scenarios from API');
+            const data = await this.apiService.getQuizScenarios(this.quizName);
+            
+            if (data && data.scenarios) {
+                // Cache the result
+                localStorage.setItem(`quiz_scenarios_${this.quizName}`, JSON.stringify(data.scenarios));
+                localStorage.setItem(`quiz_scenarios_${this.quizName}_timestamp`, Date.now().toString());
+                
+                // Update scenarios
+                this.basicScenarios = data.scenarios.basic || automationInterviewScenarios.basicScenarios;
+                this.intermediateScenarios = data.scenarios.intermediate || automationInterviewScenarios.intermediateScenarios;
+                this.advancedScenarios = data.scenarios.advanced || automationInterviewScenarios.advancedScenarios;
             }
         } catch (error) {
-            console.error('Failed to clear quiz local storage:', error);
+            console.error('[AutomationInterviewQuiz] Failed to load scenarios from API:', error);
+            console.log('[AutomationInterviewQuiz] Falling back to default scenarios');
+            // Already loaded default scenarios in constructor
+        }
+    }
+
+    // New recovery method for handling emergency recovery situations
+    async recoverProgress() {
+        console.log('[AutomationInterviewQuiz] Entering emergency recovery mode');
+        try {
+            const username = localStorage.getItem('username');
+            if (!username) {
+                console.error('[AutomationInterviewQuiz] No username found, cannot recover progress');
+                return false;
+            }
+            
+            // Make sure we have access to the QuizSyncService
+            if (typeof window.quizSyncService === 'undefined' && typeof quizSyncService === 'undefined') {
+                console.error('[AutomationInterviewQuiz] QuizSyncService not available, cannot perform recovery');
+                return false;
+            }
+            
+            const syncService = window.quizSyncService || quizSyncService;
+            console.log('[AutomationInterviewQuiz] Using QuizSyncService to recover progress data');
+            
+            // Try to recover progress data
+            const recoveredData = await syncService.recoverProgressData(username, this.quizName);
+            
+            if (!recoveredData) {
+                console.warn('[AutomationInterviewQuiz] No data could be recovered, recovery failed');
+                return false;
+            }
+            
+            console.log('[AutomationInterviewQuiz] Successfully recovered data:', {
+                questionCount: recoveredData.questionHistory?.length || 0,
+                experience: recoveredData.experience || 0,
+                status: recoveredData.status || 'unknown'
+            });
+            
+            // Sanitize the recovered data
+            const progressData = {
+                experience: !isNaN(parseFloat(recoveredData.experience)) ? parseFloat(recoveredData.experience) : 0,
+                tools: Array.isArray(recoveredData.tools) ? recoveredData.tools : [],
+                questionHistory: Array.isArray(recoveredData.questionHistory) ? recoveredData.questionHistory : [],
+                currentScenario: 0, // Will be set correctly below
+                status: recoveredData.status || 'in-progress',
+                questionsAnswered: Array.isArray(recoveredData.questionHistory) ? recoveredData.questionHistory.length : 0,
+                scorePercentage: !isNaN(parseFloat(recoveredData.scorePercentage)) ? parseFloat(recoveredData.scorePercentage) : 0
+            };
+            
+            // Set currentScenario based on question history
+            if (progressData.questionHistory.length > 0) {
+                progressData.currentScenario = progressData.questionHistory.length;
+            }
+            
+            // Update player state
+            this.player.experience = progressData.experience;
+            this.player.tools = progressData.tools;
+            this.player.questionHistory = progressData.questionHistory;
+            this.player.currentScenario = progressData.currentScenario;
+            
+            console.log('[AutomationInterviewQuiz] Player state updated from recovered data:', {
+                experience: this.player.experience,
+                questionHistory: this.player.questionHistory.length,
+                currentScenario: this.player.currentScenario
+            });
+            
+            // If quiz is completed, show end game screen
+            if ((progressData.status === 'completed' || 
+                 progressData.status === 'passed' || 
+                 progressData.status === 'failed') && 
+                progressData.questionHistory.length > 0) {
+                console.log(`[AutomationInterviewQuiz] Quiz is ${progressData.status}, showing end screen`);
+                this.endGame(progressData.status === 'failed');
+                return true;
+            }
+            
+            // Save the recovered data to ensure it's persistently stored
+            try {
+                await this.saveProgress();
+                console.log('[AutomationInterviewQuiz] Saved recovered progress to all storage locations');
+            } catch (saveError) {
+                console.warn('[AutomationInterviewQuiz] Failed to save recovered progress:', saveError);
+            }
+            
+            // Show the current scenario
+            this.displayScenario();
+            return true;
+        } catch (error) {
+            console.error('[AutomationInterviewQuiz] Recovery attempt failed:', error);
+            return false;
         }
     }
 }
 
-// Start the quiz when the page loads
+// Singleton instance for AutomationInterviewQuiz
+let automationInterviewQuizInstance = null;
+
+// Initialize quiz when the page loads
+// Only allow one instance
 document.addEventListener('DOMContentLoaded', () => {
-    // Clear any existing quiz instances before starting this quiz
+    if (automationInterviewQuizInstance) {
+        console.log('[AutomationInterviewQuiz] Instance already exists, not creating a new one.');
+        return;
+    }
     BaseQuiz.clearQuizInstances('automation-interview');
-    
-    const quiz = new AutomationInterviewQuiz();
-    quiz.startGame();
+    automationInterviewQuizInstance = new AutomationInterviewQuiz();
+    automationInterviewQuizInstance.startGame();
 }); 
