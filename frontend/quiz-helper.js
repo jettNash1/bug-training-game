@@ -1395,10 +1395,10 @@ export class BaseQuiz {
             // Calculate final score
             const scorePercentage = this.calculateScore();
             const hasPassed = !failed && scorePercentage >= this.passPercentage;
-
+        
             // Save final progress
             await this.saveProgress(hasPassed ? 'passed' : 'failed');
-
+        
             // Update UI
             if (this.gameScreen) this.gameScreen.classList.add('hidden');
             if (this.outcomeScreen) this.outcomeScreen.classList.add('hidden');

@@ -41,31 +41,17 @@ export class CommunicationQuiz extends BaseQuiz {
         // Initialize API service
         this.apiService = new APIService();
 
-        // Load scenarios from external data file and ensure proper structure
-        console.log('[CommunicationQuiz][constructor] Loading scenarios from data file');
-        try {
-            // Directly load from imported file
-            this.basicScenarios = communicationScenarios.basic;
-            this.intermediateScenarios = communicationScenarios.intermediate;
-            this.advancedScenarios = communicationScenarios.advanced;
-            
-            // Verify scenario arrays are loaded properly
-            console.log('[CommunicationQuiz][constructor] Scenarios loaded:', {
-                basicScenariosLength: Array.isArray(this.basicScenarios) ? this.basicScenarios.length : 'Not an array',
-                intermediateScenariosLength: Array.isArray(this.intermediateScenarios) ? this.intermediateScenarios.length : 'Not an array',
-                advancedScenariosLength: Array.isArray(this.advancedScenarios) ? this.advancedScenarios.length : 'Not an array',
-            });
-            
-            // Log first scenario from each level for verification
-            if (Array.isArray(this.basicScenarios) && this.basicScenarios.length > 0) {
-                console.log('[CommunicationQuiz][constructor] First basic scenario:', this.basicScenarios[0].title);
-            } else {
-                console.warn('[CommunicationQuiz][constructor] No valid basic scenarios found!');
-            }
-        } catch (error) {
-            console.error('[CommunicationQuiz][constructor] Error loading scenarios:', error);
-            this.showError('Failed to load quiz scenarios. Please refresh the page.');
-        }
+        // Load scenarios from external data file
+        console.log('[CommunicationQuiz][constructor] Loading scenarios from communicationScenarios');
+        this.basicScenarios = communicationScenarios.basic;
+        this.intermediateScenarios = communicationScenarios.intermediate;
+        this.advancedScenarios = communicationScenarios.advanced;
+        
+        console.log('[CommunicationQuiz][constructor] Scenario arrays initialized:', {
+            basicScenarios: this.basicScenarios.length,
+            intermediateScenarios: this.intermediateScenarios.length,
+            advancedScenarios: this.advancedScenarios.length
+        });
 
         // Initialize all screen elements
         this.gameScreen = document.getElementById('game-screen');
@@ -228,412 +214,143 @@ export class CommunicationQuiz extends BaseQuiz {
     }
 
     displayScenario() {
-        // Use currentScenario for all progress logic
-        const currentScenarioIndex = this.player.currentScenario;
-        const totalAnswered = this.player.questionHistory.length;
-        const totalQuestions = this.totalQuestions || 15;
-
-        console.log('[CommunicationQuiz][displayScenario] Showing scenario:', {
-            currentScenarioIndex,
-            totalAnswered,
-            totalQuestions
-        });
-
-        // Debug: verify currentScenario and questionHistory are aligned correctly
-        if (currentScenarioIndex !== totalAnswered) {
-            console.warn('[CommunicationQuiz][displayScenario] Misalignment detected! currentScenario and questionHistory.length don\'t match:',
-                `currentScenario=${currentScenarioIndex}, questionHistory.length=${totalAnswered}`);
-            
-            // Auto-fix if there's a mismatch - this is critical for proper quiz flow
-            if (totalAnswered > 0 && currentScenarioIndex === 0) {
-                console.log('[CommunicationQuiz][displayScenario] Auto-fixing: Setting currentScenario to match questionHistory.length');
-                this.player.currentScenario = totalAnswered;
-            }
-        }
-
-        // Check if we've answered all questions
-        if (currentScenarioIndex >= totalQuestions) {
-            console.log('[CommunicationQuiz][displayScenario] All questions answered, ending game');
+        // Check if we've answered all 15 questions
+        if (this.player.questionHistory.length >= 15) {
+            console.log('All 15 questions answered, ending game');
             this.endGame(false);
             return;
         }
-
-        // Determine level and scenario set - with extensive logging
-        let scenario;
-        let scenarioSet;
-        let scenarioLevel;
-        let scenarioIndex = 0;
         
-        try {
-            // First, log the state of our scenario arrays
-            console.log('[CommunicationQuiz][displayScenario] Scenario arrays status:', {
-                basicScenarios: Array.isArray(this.basicScenarios) ? `Array (${this.basicScenarios.length})` : typeof this.basicScenarios,
-                intermediateScenarios: Array.isArray(this.intermediateScenarios) ? `Array (${this.intermediateScenarios.length})` : typeof this.intermediateScenarios,
-                advancedScenarios: Array.isArray(this.advancedScenarios) ? `Array (${this.advancedScenarios.length})` : typeof this.advancedScenarios
-            });
-            
-            // Calculate which level we're on and get the appropriate scenario set
-            if (currentScenarioIndex < 5) {
-                scenarioSet = this.basicScenarios;
-                scenarioLevel = 'Basic';
-                scenarioIndex = currentScenarioIndex;
-            } else if (currentScenarioIndex < 10) {
-                scenarioSet = this.intermediateScenarios;
-                scenarioLevel = 'Intermediate';
-                scenarioIndex = currentScenarioIndex - 5;
-            } else if (currentScenarioIndex < 15) {
-                scenarioSet = this.advancedScenarios;
-                scenarioLevel = 'Advanced';
-                scenarioIndex = currentScenarioIndex - 10;
-            }
-            
-            // Check if scenario set is valid
-            if (!Array.isArray(scenarioSet)) {
-                console.error(`[CommunicationQuiz][displayScenario] scenarioSet is not an array for level: ${scenarioLevel}`);
-                
-                // Try emergency recovery - directly access the array
-                if (scenarioLevel === 'Basic' && Array.isArray(this.basicScenarios)) {
-                    scenarioSet = this.basicScenarios;
-                    console.log('[CommunicationQuiz][displayScenario] Emergency recovery - using direct basicScenarios array');
-                } else if (scenarioLevel === 'Intermediate' && Array.isArray(this.intermediateScenarios)) {
-                    scenarioSet = this.intermediateScenarios;
-                    console.log('[CommunicationQuiz][displayScenario] Emergency recovery - using direct intermediateScenarios array');
-                } else if (scenarioLevel === 'Advanced' && Array.isArray(this.advancedScenarios)) {
-                    scenarioSet = this.advancedScenarios;
-                    console.log('[CommunicationQuiz][displayScenario] Emergency recovery - using direct advancedScenarios array');
-                }
-            }
-            
-            // Additional safety check
-            if (!Array.isArray(scenarioSet)) {
-                console.error('[CommunicationQuiz][displayScenario] Emergency recovery failed - no valid scenario array found');
-                this.showError('Quiz data is not loading properly. Please try refreshing the page.');
-                return;
-            }
-            
-            console.log(`[CommunicationQuiz][displayScenario] Using ${scenarioLevel} scenario at index ${scenarioIndex} from set of ${scenarioSet.length}`);
-            
-            // Get scenario with index bounds check
-            if (scenarioIndex >= 0 && scenarioIndex < scenarioSet.length) {
-                scenario = scenarioSet[scenarioIndex];
-            } else {
-                console.error(`[CommunicationQuiz][displayScenario] Scenario index ${scenarioIndex} out of bounds (set length: ${scenarioSet.length})`);
-            }
-
-            if (!scenario) {
-                console.error('[CommunicationQuiz][displayScenario] No scenario found for currentScenario:', currentScenarioIndex);
-                console.log('[CommunicationQuiz][displayScenario] Scenario sets:', {
-                    basic: this.basicScenarios?.length || 0,
-                    intermediate: this.intermediateScenarios?.length || 0,
-                    advanced: this.advancedScenarios?.length || 0
-                });
-                
-                // Emergency fallback - try to recover by moving to next question or resetting
-                if (totalAnswered > 0 && totalAnswered < totalQuestions) {
-                    console.log('[CommunicationQuiz][displayScenario] Attempting recovery by moving to next available scenario');
-                    this.player.currentScenario = totalAnswered;
-                    // Try recursively one more time with the fixed index
-                    this.displayScenario();
-                    return;
-                } else {
-                    // If we still can't recover, try the emergency recovery method
-                    console.log('[CommunicationQuiz][displayScenario] Attempting emergency data recovery');
-                    this.recoverProgress().then(success => {
-                        if (!success) {
-                            // If recovery fails, show end game as last resort
-                            this.endGame(true);
-                        }
-                    }).catch(() => this.endGame(true));
-                    return;
-                }
-            }
-
-            // Store current question number for consistency
-            this.currentQuestionNumber = currentScenarioIndex + 1;
-
-            // Show level transition message at the start of each level or when level changes
-            if (
-                currentScenarioIndex === 0 ||
-                (currentScenarioIndex === 5 && scenarioLevel === 'Intermediate') ||
-                (currentScenarioIndex === 10 && scenarioLevel === 'Advanced')
-            ) {
-                const transitionContainer = document.getElementById('level-transition-container');
-                if (transitionContainer) {
-                    transitionContainer.innerHTML = '';
-                    const levelMessage = document.createElement('div');
-                    levelMessage.className = 'level-transition';
-                    levelMessage.setAttribute('role', 'alert');
-                    levelMessage.textContent = `Starting ${scenarioLevel} Questions`;
-                    transitionContainer.appendChild(levelMessage);
-                    transitionContainer.classList.add('active');
-                    const levelIndicator = document.getElementById('level-indicator');
-                    if (levelIndicator) {
-                        levelIndicator.textContent = `Level: ${scenarioLevel}`;
-                    }
-                    setTimeout(() => {
-                        transitionContainer.classList.remove('active');
-                        setTimeout(() => {
-                            transitionContainer.innerHTML = '';
-                        }, 300);
-                    }, 3000);
-                }
-            }
-
-            // Update scenario display
-            const titleElement = document.getElementById('scenario-title');
-            const descriptionElement = document.getElementById('scenario-description');
-            const optionsContainer = document.getElementById('options-container');
-
-            if (!titleElement || !descriptionElement || !optionsContainer) {
-                console.error('[CommunicationQuiz][displayScenario] Required elements not found');
-                return;
-            }
-
-            titleElement.textContent = scenario.title;
-            descriptionElement.textContent = scenario.description;
-
-            // Update question counter
-            const questionProgress = document.getElementById('question-progress');
-            if (questionProgress) {
-                questionProgress.textContent = `Question: ${this.currentQuestionNumber}/15`;
-            }
-
-            // Create a copy of options with their original indices
-            const shuffledOptions = scenario.options.map((option, index) => ({
-                ...option,
-                originalIndex: index
-            }));
-            for (let i = shuffledOptions.length - 1; i > 0; i--) {
-                const j = Math.floor(Math.random() * (i + 1));
-                [shuffledOptions[i], shuffledOptions[j]] = [shuffledOptions[j], shuffledOptions[i]];
-            }
-            optionsContainer.innerHTML = '';
-
-            shuffledOptions.forEach((option, index) => {
-                const optionElement = document.createElement('div');
-                optionElement.className = 'option';
-                optionElement.innerHTML = `
-                    <input type="radio"
-                        name="option"
-                        value="${option.originalIndex}" 
-                        id="option${index}"
-                        tabindex="0"
-                        aria-label="${option.text}"
-                        role="radio">
-                    <label for="option${index}">${option.text}</label>
-                `;
-                optionsContainer.appendChild(optionElement);
-            });
-
-            this.updateProgress();
-            this.initializeTimer();
-            console.log('[CommunicationQuiz][displayScenario] Showing scenario', scenarioLevel, 'index', currentScenarioIndex, scenario.title);
-
-            // Make scenario screen visible if not already
-            const gameScreen = document.getElementById('game-screen');
-            if (gameScreen && gameScreen.classList.contains('hidden')) {
-                console.log('[CommunicationQuiz][displayScenario] Making game screen visible');
-                gameScreen.classList.remove('hidden');
-            }
-
-            // DIRECT DOM MANIPULATION AS LAST RESORT
-            // If the normal methods don't work, we'll try to directly update the DOM
-            console.log('[CommunicationQuiz][displayScenario] Applying direct DOM manipulation to ensure content is visible');
-            // Create or update title
-            let directTitleElement = document.querySelector('.scenario-title') || document.querySelector('h2') || titleElement;
-            if (directTitleElement) {
-                directTitleElement.textContent = scenario.title;
-                directTitleElement.style.display = 'block';
-                console.log('[CommunicationQuiz][displayScenario] Direct title update:', scenario.title);
-            } else {
-                // If we can't find the title element, try to create one
-                const mainContent = document.querySelector('.quiz-content') || document.querySelector('#game-screen') || document.body;
-                directTitleElement = document.createElement('h2');
-                directTitleElement.textContent = scenario.title;
-                directTitleElement.style.fontWeight = 'bold';
-                directTitleElement.style.fontSize = '1.5rem';
-                directTitleElement.style.marginBottom = '1rem';
-                mainContent.prepend(directTitleElement);
-                console.log('[CommunicationQuiz][displayScenario] Created new title element');
-            }
-            
-            // Create or update description
-            let directDescElement = document.querySelector('.scenario-description') || document.querySelector('#scenario-description') || descriptionElement;
-            if (directDescElement) {
-                directDescElement.textContent = scenario.description;
-                directDescElement.style.display = 'block';
-                console.log('[CommunicationQuiz][displayScenario] Direct description update:', scenario.description);
-            } else {
-                // If we can't find the description element, try to create one
-                const mainContent = document.querySelector('.quiz-content') || document.querySelector('#game-screen') || document.body;
-                directDescElement = document.createElement('p');
-                directDescElement.textContent = scenario.description;
-                directDescElement.style.marginBottom = '2rem';
-                if (directTitleElement.nextSibling) {
-                    mainContent.insertBefore(directDescElement, directTitleElement.nextSibling);
-                } else {
-                    mainContent.appendChild(directDescElement);
-                }
-                console.log('[CommunicationQuiz][displayScenario] Created new description element');
-            }
-            
-            // Direct options manipulation - ensure options are displayed
-            let directOptionsContainer = document.querySelector('#options-container') || optionsContainer;
-            if (!directOptionsContainer || directOptionsContainer.innerHTML.trim() === '') {
-                console.log('[CommunicationQuiz][displayScenario] Options container empty or not found, creating direct options');
-                // Find a place to put options
-                const mainContent = document.querySelector('.quiz-content') || document.querySelector('#game-screen') || document.body;
-                
-                // Create container if needed
-                if (!directOptionsContainer) {
-                    directOptionsContainer = document.createElement('div');
-                    directOptionsContainer.id = 'options-container';
-                    directOptionsContainer.className = 'options-container';
-                    mainContent.appendChild(directOptionsContainer);
-                }
-                
-                // Clear any existing content
-                directOptionsContainer.innerHTML = '';
-                
-                // Add options directly
-                shuffledOptions.forEach((option, index) => {
-                    const optionElement = document.createElement('div');
-                    optionElement.className = 'option';
-                    optionElement.style.margin = '10px 0';
-                    optionElement.style.padding = '10px';
-                    optionElement.style.border = '1px solid #ddd';
-                    optionElement.style.borderRadius = '4px';
-                    optionElement.style.cursor = 'pointer';
-                    
-                    const radioInput = document.createElement('input');
-                    radioInput.type = 'radio';
-                    radioInput.name = 'option';
-                    radioInput.value = option.originalIndex;
-                    radioInput.id = `option${index}`;
-                    radioInput.tabIndex = 0;
-                    radioInput.setAttribute('aria-label', option.text);
-                    radioInput.setAttribute('role', 'radio');
-                    
-                    const label = document.createElement('label');
-                    label.htmlFor = `option${index}`;
-                    label.textContent = option.text;
-                    label.style.marginLeft = '10px';
-                    label.style.cursor = 'pointer';
-                    
-                    optionElement.appendChild(radioInput);
-                    optionElement.appendChild(label);
-                    directOptionsContainer.appendChild(optionElement);
-                    
-                    // Add click handler for the entire option div
-                    optionElement.addEventListener('click', () => {
-                        radioInput.checked = true;
-                    });
-                });
-                
-                // Create submit button if not exists
-                let submitButton = document.querySelector('.submit-button');
-                if (!submitButton) {
-                    submitButton = document.createElement('button');
-                    submitButton.textContent = 'Submit Answer';
-                    submitButton.className = 'submit-button';
-                    submitButton.style.marginTop = '20px';
-                    submitButton.style.padding = '10px 20px';
-                    submitButton.style.backgroundColor = '#4a90e2';
-                    submitButton.style.color = 'white';
-                    submitButton.style.border = 'none';
-                    submitButton.style.borderRadius = '4px';
-                    submitButton.style.cursor = 'pointer';
-                    submitButton.style.width = '100%';
-                    
-                    // Add click handler
-                    submitButton.addEventListener('click', () => {
-                        this.handleAnswer();
-                    });
-                    
-                    // Add to page
-                    directOptionsContainer.after(submitButton);
-                }
-                
-                console.log('[CommunicationQuiz][displayScenario] Created direct options with submit button');
-            }
-
-            // SPECIFIC SELECTORS FOR THE ACTUAL HTML ELEMENTS
-            // This targets the exact elements from the HTML
-            console.log('[CommunicationQuiz][displayScenario] Trying direct content injection using exact HTML IDs');
-            
-            // Force direct update to the actual HTML elements
-            const actualTitleElement = document.getElementById('scenario-title');
-            const actualDescriptionElement = document.getElementById('scenario-description');
-            const actualOptionsContainer = document.getElementById('options-container');
-            
-            if (actualTitleElement) {
-                actualTitleElement.textContent = scenario.title;
-                actualTitleElement.style.display = 'block';
-                console.log('[CommunicationQuiz][displayScenario] Updated actual #scenario-title element');
-            }
-            
-            if (actualDescriptionElement) {
-                actualDescriptionElement.textContent = scenario.description;
-                actualDescriptionElement.style.display = 'block';
-                console.log('[CommunicationQuiz][displayScenario] Updated actual #scenario-description element');
-            }
-            
-            if (actualOptionsContainer && (!actualOptionsContainer.children.length || actualOptionsContainer.innerHTML.trim() === '')) {
-                console.log('[CommunicationQuiz][displayScenario] Injecting options directly into #options-container');
-                actualOptionsContainer.innerHTML = '';
-                
-                shuffledOptions.forEach((option, index) => {
-                    const optionHTML = `
-                        <div class="option">
-                            <input type="radio"
-                                name="option"
-                                value="${option.originalIndex}" 
-                                id="direct-option${index}"
-                                tabindex="0"
-                                aria-label="${option.text}"
-                                role="radio">
-                            <label for="direct-option${index}">${option.text}</label>
-                        </div>
-                    `;
-                    actualOptionsContainer.insertAdjacentHTML('beforeend', optionHTML);
-                });
-                
-                // Make sure the form is enabled
-                const optionsForm = document.getElementById('options-form');
-                if (optionsForm) {
-                    optionsForm.classList.remove('hidden');
-                    const submitBtn = document.getElementById('submit-btn');
-                    if (submitBtn) {
-                        submitBtn.style.display = 'block';
-                    }
-                }
-            }
-
-            // Add extra log after showing
-            setTimeout(() => {
-                console.log('[CommunicationQuiz][displayScenario][post-show] player state:', {
-                    experience: this.player.experience,
-                    questionHistory: this.player.questionHistory.length,
-                    currentScenario: this.player.currentScenario
-                });
-            }, 0);
-        } catch (error) {
-            console.error('[CommunicationQuiz][displayScenario] Error showing scenario:', error);
-            // Emergency recovery if an error occurs
-            const gameScreen = document.getElementById('game-screen');
-            if (gameScreen) gameScreen.classList.remove('hidden');
-            
-            // Try to recover progress data in case of display error
-            console.log('[CommunicationQuiz][displayScenario] Attempting emergency recovery after display error');
-            this.recoverProgress().then(success => {
-                if (!success) {
-                    // If recovery fails, show error message
-                    this.showError('An error occurred loading the quiz. Try refreshing the page.');
-                }
-            }).catch(() => {
-                this.showError('An error occurred loading the quiz. Try refreshing the page.');
-            });
+        // Get the next scenario based on current progress
+        let scenario;
+        const questionCount = this.player.questionHistory.length;
+        
+        // Reset currentScenario based on the current level
+        if (questionCount < 5) {
+            // Basic questions (0-4)
+            scenario = this.basicScenarios[questionCount];
+            this.player.currentScenario = questionCount;
+        } else if (questionCount < 10) {
+            // Intermediate questions (5-9)
+            scenario = this.intermediateScenarios[questionCount - 5];
+            this.player.currentScenario = questionCount - 5;
+        } else if (questionCount < 15) {
+            // Advanced questions (10-14)
+            scenario = this.advancedScenarios[questionCount - 10];
+            this.player.currentScenario = questionCount - 10;
         }
+
+        if (!scenario) {
+            console.error('No scenario found for current progress. Question count:', questionCount);
+            this.endGame(true);
+            return;
+        }
+
+        // Store current question number for consistency
+        this.currentQuestionNumber = questionCount + 1;
+        
+        // Show level transition message at the start of each level or when level changes
+        const currentLevel = this.getCurrentLevel();
+        const previousLevel = questionCount > 0 ? 
+            (questionCount <= 5 ? 'Basic' : 
+             questionCount <= 10 ? 'Intermediate' : 'Advanced') : null;
+            
+        if (questionCount === 0 || 
+            (questionCount === 5 && currentLevel === 'Intermediate') || 
+            (questionCount === 10 && currentLevel === 'Advanced')) {
+            const transitionContainer = document.getElementById('level-transition-container');
+            if (transitionContainer) {
+                transitionContainer.innerHTML = ''; // Clear any existing messages
+                
+                const levelMessage = document.createElement('div');
+                levelMessage.className = 'level-transition';
+                levelMessage.setAttribute('role', 'alert');
+                levelMessage.textContent = `Starting ${currentLevel} Questions`;
+                
+                transitionContainer.appendChild(levelMessage);
+                transitionContainer.classList.add('active');
+                
+                // Update the level indicator
+                const levelIndicator = document.getElementById('level-indicator');
+                if (levelIndicator) {
+                    levelIndicator.textContent = `Level: ${currentLevel}`;
+                }
+                
+                // Remove the message and container height after animation
+                setTimeout(() => {
+                    transitionContainer.classList.remove('active');
+                    setTimeout(() => {
+                        transitionContainer.innerHTML = '';
+                    }, 300); // Wait for height transition to complete
+                }, 3000);
+            }
+        }
+
+        // Update scenario display
+        const titleElement = document.getElementById('scenario-title');
+        const descriptionElement = document.getElementById('scenario-description');
+        const optionsContainer = document.getElementById('options-container');
+
+        if (!titleElement || !descriptionElement || !optionsContainer) {
+            console.error('Required elements not found');
+            return;
+        }
+
+        titleElement.textContent = scenario.title;
+        descriptionElement.textContent = scenario.description;
+
+        // Update question counter immediately
+        const questionProgress = document.getElementById('question-progress');
+        if (questionProgress) {
+            questionProgress.textContent = `Question: ${this.currentQuestionNumber}/15`;
+        }
+
+        // Create a copy of options with their original indices
+        const shuffledOptions = scenario.options.map((option, index) => ({
+            ...option,
+            originalIndex: index
+        }));
+
+        // Shuffle the options
+        for (let i = shuffledOptions.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [shuffledOptions[i], shuffledOptions[j]] = [shuffledOptions[j], shuffledOptions[i]];
+        }
+
+        optionsContainer.innerHTML = '';
+
+        shuffledOptions.forEach((option, index) => {
+            const optionElement = document.createElement('div');
+            optionElement.className = 'option';
+            optionElement.innerHTML = `
+                <input type="radio" 
+                    name="option" 
+                    value="${option.originalIndex}" 
+                    id="option${index}"
+                    tabindex="0"
+                    aria-label="${option.text}"
+                    role="radio">
+                <label for="option${index}">${option.text}</label>
+            `;
+            optionsContainer.appendChild(optionElement);
+        });
+
+        // Ensure the options form and submit button are visible
+        const optionsForm = document.getElementById('options-form');
+        const submitButton = document.getElementById('submit-btn');
+        if (optionsForm) optionsForm.classList.remove('hidden');
+        if (submitButton) submitButton.style.display = 'block';
+
+        // Show the game screen if it's hidden
+        const gameScreen = document.getElementById('game-screen');
+        if (gameScreen && gameScreen.classList.contains('hidden')) {
+            gameScreen.classList.remove('hidden');
+        }
+
+        this.updateProgress();
+
+        // Initialize timer for the new question
+        this.initializeTimer();
     }
 
     async handleAnswer() {
@@ -1075,162 +792,31 @@ export class CommunicationQuiz extends BaseQuiz {
     }
 
     async loadScenariosWithCaching() {
-        console.log('[CommunicationQuiz][loadScenariosWithCaching] Starting scenario loading');
+        console.log('[CommunicationQuiz] Starting scenario loading');
         
-        // First, make sure we have default scenarios already loaded from the import
-        // This ensures we always have scenarios available
-        if (!Array.isArray(this.basicScenarios) || !this.basicScenarios.length) {
-            console.log('[CommunicationQuiz][loadScenariosWithCaching] Ensuring default scenarios are loaded');
-            this.basicScenarios = communicationScenarios.basic;
-            this.intermediateScenarios = communicationScenarios.intermediate;
-            this.advancedScenarios = communicationScenarios.advanced;
-        }
+        // Ensure default scenarios are loaded
+        this.basicScenarios = communicationScenarios.basic;
+        this.intermediateScenarios = communicationScenarios.intermediate;
+        this.advancedScenarios = communicationScenarios.advanced;
         
-        // Log initial state
-        console.log('[CommunicationQuiz][loadScenariosWithCaching] Initial scenario state:', {
-            basicScenarios: Array.isArray(this.basicScenarios) ? this.basicScenarios.length : 'not array',
-            intermediateScenarios: Array.isArray(this.intermediateScenarios) ? this.intermediateScenarios.length : 'not array',
-            advancedScenarios: Array.isArray(this.advancedScenarios) ? this.advancedScenarios.length : 'not array'
+        console.log('[CommunicationQuiz] Scenarios loaded from imported file:', {
+            basic: this.basicScenarios.length,
+            intermediate: this.intermediateScenarios.length,
+            advanced: this.advancedScenarios.length
         });
         
-        // Try to load from cache first
-        const cachedData = localStorage.getItem(`quiz_scenarios_${this.quizName}`);
-        const cacheTimestamp = localStorage.getItem(`quiz_scenarios_${this.quizName}_timestamp`);
-        
-        // Check if cache is valid (less than 1 day old)
-        const cacheValid = cacheTimestamp && (Date.now() - parseInt(cacheTimestamp)) < 86400000;
-        
-        if (cachedData && cacheValid) {
-            try {
-                console.log('[CommunicationQuiz][loadScenariosWithCaching] Using cached scenarios');
-                const data = JSON.parse(cachedData);
-                
-                // Handle different possible data structures
-                if (data.scenarios) {
-                    // Handle {scenarios: {basic: [...], ...}} structure
-                    if (data.scenarios.basic && Array.isArray(data.scenarios.basic)) {
-                        this.basicScenarios = data.scenarios.basic;
-                    }
-                    if (data.scenarios.intermediate && Array.isArray(data.scenarios.intermediate)) {
-                        this.intermediateScenarios = data.scenarios.intermediate;
-                    }
-                    if (data.scenarios.advanced && Array.isArray(data.scenarios.advanced)) {
-                        this.advancedScenarios = data.scenarios.advanced;
-                    }
-                } else if (data.basic || data.intermediate || data.advanced) {
-                    // Handle {basic: [...], ...} structure
-                    if (data.basic && Array.isArray(data.basic)) {
-                        this.basicScenarios = data.basic;
-                    }
-                    if (data.intermediate && Array.isArray(data.intermediate)) {
-                        this.intermediateScenarios = data.intermediate;
-                    }
-                    if (data.advanced && Array.isArray(data.advanced)) {
-                        this.advancedScenarios = data.advanced;
-                    }
-                }
-                
-                // Validate loaded data
-                if (!Array.isArray(this.basicScenarios) || !this.basicScenarios.length) {
-                    console.warn('[CommunicationQuiz][loadScenariosWithCaching] Invalid basic scenarios from cache, falling back to defaults');
-                    this.basicScenarios = communicationScenarios.basic;
-                }
-                if (!Array.isArray(this.intermediateScenarios) || !this.intermediateScenarios.length) {
-                    console.warn('[CommunicationQuiz][loadScenariosWithCaching] Invalid intermediate scenarios from cache, falling back to defaults');
-                    this.intermediateScenarios = communicationScenarios.intermediate;
-                }
-                if (!Array.isArray(this.advancedScenarios) || !this.advancedScenarios.length) {
-                    console.warn('[CommunicationQuiz][loadScenariosWithCaching] Invalid advanced scenarios from cache, falling back to defaults');
-                    this.advancedScenarios = communicationScenarios.advanced;
-                }
-            } catch (error) {
-                console.error('[CommunicationQuiz][loadScenariosWithCaching] Error parsing cached scenarios:', error);
-                console.log('[CommunicationQuiz][loadScenariosWithCaching] Using default scenarios instead');
-                // Ensure defaults are loaded
-                this.basicScenarios = communicationScenarios.basic;
-                this.intermediateScenarios = communicationScenarios.intermediate;
-                this.advancedScenarios = communicationScenarios.advanced;
-            }
-            
-            // Log our scenario state after loading from cache
-            console.log('[CommunicationQuiz][loadScenariosWithCaching] Scenario state after cache loading:', {
-                basicScenarios: Array.isArray(this.basicScenarios) ? this.basicScenarios.length : 'not array',
-                intermediateScenarios: Array.isArray(this.intermediateScenarios) ? this.intermediateScenarios.length : 'not array',
-                advancedScenarios: Array.isArray(this.advancedScenarios) ? this.advancedScenarios.length : 'not array'
-            });
-            
-            return;
-        }
-        
-        // If no valid cache, try to fetch from API or local file
+        // Try to fetch from API (for future updates, but default to the imported scenarios)
         try {
-            console.log('[CommunicationQuiz][loadScenariosWithCaching] Fetching scenarios from API or local file');
             const data = await this.apiService.getQuizScenarios(this.quizName);
-            console.log('[CommunicationQuiz][loadScenariosWithCaching] API response:', data);
-            
-            if (data) {
-                // Process different potential structures from API
-                if (data.scenarios) {
-                    // Handle {scenarios: {basic: [...], ...}} structure
-                    if (data.scenarios.basic && Array.isArray(data.scenarios.basic)) {
-                        this.basicScenarios = data.scenarios.basic;
-                    }
-                    if (data.scenarios.intermediate && Array.isArray(data.scenarios.intermediate)) {
-                        this.intermediateScenarios = data.scenarios.intermediate;
-                    }
-                    if (data.scenarios.advanced && Array.isArray(data.scenarios.advanced)) {
-                        this.advancedScenarios = data.scenarios.advanced;
-                    }
-                } else if (data.basic || data.intermediate || data.advanced) {
-                    // Handle {basic: [...], ...} structure
-                    if (data.basic && Array.isArray(data.basic)) {
-                        this.basicScenarios = data.basic;
-                    }
-                    if (data.intermediate && Array.isArray(data.intermediate)) {
-                        this.intermediateScenarios = data.intermediate;
-                    }
-                    if (data.advanced && Array.isArray(data.advanced)) {
-                        this.advancedScenarios = data.advanced;
-                    }
-                }
-                
-                // Cache the result
-                localStorage.setItem(`quiz_scenarios_${this.quizName}`, JSON.stringify({
-                    basic: this.basicScenarios,
-                    intermediate: this.intermediateScenarios,
-                    advanced: this.advancedScenarios
-                }));
-                localStorage.setItem(`quiz_scenarios_${this.quizName}_timestamp`, Date.now().toString());
-            }
-            
-            // Validate loaded data regardless of source
-            if (!Array.isArray(this.basicScenarios) || !this.basicScenarios.length) {
-                console.warn('[CommunicationQuiz][loadScenariosWithCaching] Invalid basic scenarios, using defaults');
-                this.basicScenarios = communicationScenarios.basic;
-            }
-            if (!Array.isArray(this.intermediateScenarios) || !this.intermediateScenarios.length) {
-                console.warn('[CommunicationQuiz][loadScenariosWithCaching] Invalid intermediate scenarios, using defaults');
-                this.intermediateScenarios = communicationScenarios.intermediate;
-            }
-            if (!Array.isArray(this.advancedScenarios) || !this.advancedScenarios.length) {
-                console.warn('[CommunicationQuiz][loadScenariosWithCaching] Invalid advanced scenarios, using defaults');
-                this.advancedScenarios = communicationScenarios.advanced;
+            if (data && data.basic && Array.isArray(data.basic) && data.basic.length > 0) {
+                this.basicScenarios = data.basic;
+                this.intermediateScenarios = data.intermediate;
+                this.advancedScenarios = data.advanced;
+                console.log('[CommunicationQuiz] Updated scenarios from API');
             }
         } catch (error) {
-            console.error('[CommunicationQuiz][loadScenariosWithCaching] Failed to load scenarios from API or local file:', error);
-            console.log('[CommunicationQuiz][loadScenariosWithCaching] Using default scenarios instead');
-            // Ensure defaults are loaded
-            this.basicScenarios = communicationScenarios.basic;
-            this.intermediateScenarios = communicationScenarios.intermediate;
-            this.advancedScenarios = communicationScenarios.advanced;
+            console.log('[CommunicationQuiz] Using default imported scenarios');
         }
-        
-        // Final verification log
-        console.log('[CommunicationQuiz][loadScenariosWithCaching] Final scenario state:', {
-            basicScenarios: Array.isArray(this.basicScenarios) ? this.basicScenarios.length : 'not array',
-            intermediateScenarios: Array.isArray(this.intermediateScenarios) ? this.intermediateScenarios.length : 'not array',
-            advancedScenarios: Array.isArray(this.advancedScenarios) ? this.advancedScenarios.length : 'not array'
-        });
     }
 
     // Emergency recovery method now simplified
