@@ -875,4 +875,241 @@ document.addEventListener('DOMContentLoaded', () => {
     BaseQuiz.clearQuizInstances('communication');
     communicationQuizInstance = new CommunicationQuiz();
     communicationQuizInstance.startGame();
+    
+    // FORCE EMERGENCY OVERRIDE - Direct DOM manipulation after 2 seconds
+    setTimeout(() => {
+        diagnoseQuizDOM();
+        forceScenarioDisplay();
+    }, 2000);
 }); 
+
+// DIAGNOSTIC FUNCTION
+// This function analyzes the DOM to find potential issues with quiz display
+function diagnoseQuizDOM() {
+    console.log('[DIAGNOSTIC] Starting DOM analysis');
+    
+    // Check key quiz elements
+    const elements = {
+        'game-screen': document.getElementById('game-screen'),
+        'scenario-title': document.getElementById('scenario-title'),
+        'scenario-description': document.getElementById('scenario-description'),
+        'options-container': document.getElementById('options-container'),
+        'submit-btn': document.getElementById('submit-btn'),
+        'options-form': document.getElementById('options-form'),
+        'level-indicator': document.getElementById('level-indicator'),
+        'question-progress': document.getElementById('question-progress'),
+        'progress-fill': document.getElementById('progress-fill')
+    };
+    
+    // Log the state of each element
+    console.log('[DIAGNOSTIC] Key quiz elements:');
+    Object.entries(elements).forEach(([id, element]) => {
+        if (element) {
+            const displayStyle = window.getComputedStyle(element).display;
+            const visibility = window.getComputedStyle(element).visibility;
+            const isHidden = element.classList.contains('hidden');
+            
+            console.log(`[DIAGNOSTIC] #${id}: Found | Display: ${displayStyle} | Visibility: ${visibility} | Hidden class: ${isHidden}`);
+            
+            // Look at inner content for key elements
+            if (id === 'scenario-title' || id === 'scenario-description') {
+                console.log(`[DIAGNOSTIC] #${id} text content: "${element.textContent}"`);
+            }
+            if (id === 'options-container') {
+                console.log(`[DIAGNOSTIC] #${id} has ${element.children.length} options`);
+            }
+        } else {
+            console.log(`[DIAGNOSTIC] #${id}: NOT FOUND in DOM`);
+        }
+    });
+    
+    // Check quiz layout structure
+    const quizContainer = document.querySelector('.quiz-container');
+    if (quizContainer) {
+        console.log('[DIAGNOSTIC] Quiz container structure:');
+        logElementTree(quizContainer, 0);
+    } else {
+        console.log('[DIAGNOSTIC] Quiz container not found!');
+    }
+    
+    // Check imported scenario data
+    try {
+        const basicScenariosLength = communicationScenarios.basic.length;
+        const intermediateScenariosLength = communicationScenarios.intermediate.length;
+        const advancedScenariosLength = communicationScenarios.advanced.length;
+        
+        console.log('[DIAGNOSTIC] Scenario data:', {
+            basic: basicScenariosLength,
+            intermediate: intermediateScenariosLength,
+            advanced: advancedScenariosLength
+        });
+        
+        // Check first scenario
+        if (basicScenariosLength > 0) {
+            const firstScenario = communicationScenarios.basic[0];
+            console.log('[DIAGNOSTIC] First scenario title:', firstScenario.title);
+            console.log('[DIAGNOSTIC] First scenario options count:', firstScenario.options.length);
+        }
+    } catch (error) {
+        console.error('[DIAGNOSTIC] Error accessing scenario data:', error);
+    }
+    
+    console.log('[DIAGNOSTIC] DOM analysis complete');
+}
+
+// Helper to log DOM tree structure
+function logElementTree(element, depth) {
+    if (depth > 3) return; // Limit depth to prevent too much output
+    
+    const indent = '  '.repeat(depth);
+    const classes = Array.from(element.classList).join('.');
+    const id = element.id ? `#${element.id}` : '';
+    const display = window.getComputedStyle(element).display;
+    const hidden = element.classList.contains('hidden') ? ' (HIDDEN)' : '';
+    
+    console.log(`${indent}${element.tagName.toLowerCase()}${id}${classes ? `.${classes}` : ''} | display: ${display}${hidden}`);
+    
+    Array.from(element.children).forEach(child => {
+        logElementTree(child, depth + 1);
+    });
+}
+
+// EMERGENCY OVERRIDE FUNCTION
+// This function directly manipulates the DOM to display the first scenario
+// completely bypassing all the normal quiz flow
+function forceScenarioDisplay() {
+    console.log('[EMERGENCY OVERRIDE] Forcing scenario display directly');
+    
+    try {
+        // Get the scenario data directly from the imported module
+        const basicScenarios = communicationScenarios.basic;
+        const firstScenario = basicScenarios[0];
+        
+        if (!firstScenario) {
+            console.error('[EMERGENCY OVERRIDE] No scenario data found!');
+            return;
+        }
+        
+        console.log('[EMERGENCY OVERRIDE] First scenario:', firstScenario);
+        
+        // Direct access to HTML elements
+        const titleElement = document.getElementById('scenario-title');
+        const descriptionElement = document.getElementById('scenario-description');
+        const optionsContainer = document.getElementById('options-container');
+        
+        // Force show the game screen
+        const gameScreen = document.getElementById('game-screen');
+        if (gameScreen) {
+            gameScreen.classList.remove('hidden');
+            gameScreen.style.display = 'block';
+        }
+        
+        // Force set the title
+        if (titleElement) {
+            titleElement.textContent = firstScenario.title;
+            titleElement.style.display = 'block';
+            console.log('[EMERGENCY OVERRIDE] Set title to:', firstScenario.title);
+        } else {
+            console.error('[EMERGENCY OVERRIDE] No title element found!');
+            
+            // Try to insert a title anyway
+            const questionSection = document.querySelector('.question-section');
+            if (questionSection) {
+                const newTitle = document.createElement('h2');
+                newTitle.id = 'scenario-title';
+                newTitle.textContent = firstScenario.title;
+                questionSection.prepend(newTitle);
+                console.log('[EMERGENCY OVERRIDE] Created new title element');
+            }
+        }
+        
+        // Force set the description
+        if (descriptionElement) {
+            descriptionElement.textContent = firstScenario.description;
+            descriptionElement.style.display = 'block';
+            console.log('[EMERGENCY OVERRIDE] Set description to:', firstScenario.description);
+        } else {
+            console.error('[EMERGENCY OVERRIDE] No description element found!');
+            
+            // Try to insert a description anyway
+            const questionSection = document.querySelector('.question-section');
+            if (questionSection) {
+                const newDesc = document.createElement('p');
+                newDesc.id = 'scenario-description';
+                newDesc.textContent = firstScenario.description;
+                if (titleElement) {
+                    titleElement.after(newDesc);
+                } else {
+                    questionSection.appendChild(newDesc);
+                }
+                console.log('[EMERGENCY OVERRIDE] Created new description element');
+            }
+        }
+        
+        // Force set the options
+        if (optionsContainer) {
+            optionsContainer.innerHTML = ''; // Clear existing
+            
+            firstScenario.options.forEach((option, idx) => {
+                const optionDiv = document.createElement('div');
+                optionDiv.className = 'option';
+                optionDiv.innerHTML = `
+                    <input type="radio"
+                        name="option"
+                        value="${idx}"
+                        id="option${idx}"
+                        tabindex="0"
+                        aria-label="${option.text}"
+                        role="radio">
+                    <label for="option${idx}">${option.text}</label>
+                `;
+                optionsContainer.appendChild(optionDiv);
+            });
+            
+            console.log('[EMERGENCY OVERRIDE] Set options');
+        } else {
+            console.error('[EMERGENCY OVERRIDE] No options container found!');
+            
+            // Try to find the form
+            const optionsForm = document.getElementById('options-form');
+            if (optionsForm) {
+                const newOptionsContainer = document.createElement('div');
+                newOptionsContainer.id = 'options-container';
+                
+                firstScenario.options.forEach((option, idx) => {
+                    const optionDiv = document.createElement('div');
+                    optionDiv.className = 'option';
+                    optionDiv.innerHTML = `
+                        <input type="radio"
+                            name="option"
+                            value="${idx}"
+                            id="option${idx}"
+                            tabindex="0"
+                            aria-label="${option.text}"
+                            role="radio">
+                        <label for="option${idx}">${option.text}</label>
+                    `;
+                    newOptionsContainer.appendChild(optionDiv);
+                });
+                
+                optionsForm.prepend(newOptionsContainer);
+                console.log('[EMERGENCY OVERRIDE] Created new options container');
+            }
+        }
+        
+        // Make sure submit button is visible
+        const submitButton = document.getElementById('submit-btn');
+        if (submitButton) {
+            submitButton.style.display = 'block';
+        }
+        
+        // Make sure progress is showing
+        document.querySelectorAll('.quiz-header-progress, #level-indicator, #question-progress').forEach(el => {
+            if (el) el.style.display = 'block';
+        });
+        
+        console.log('[EMERGENCY OVERRIDE] Force display complete!');
+    } catch (error) {
+        console.error('[EMERGENCY OVERRIDE] Error forcing scenario display:', error);
+    }
+} 
