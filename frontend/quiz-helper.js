@@ -842,13 +842,13 @@ export class BaseQuiz {
                 console.error('[BaseQuiz] QuizProgressService not initialized');
                 return false;
             }
-
+            
             const progressResult = await this.quizProgressService.getQuizProgress(this.quizName);
             
             if (!progressResult.success || !progressResult.data) {
                 return false;
             }
-
+            
             const progressData = progressResult.data;
             
             // Update player state
@@ -857,7 +857,7 @@ export class BaseQuiz {
             this.player.questionHistory = progressData.questionHistory || [];
             this.player.currentScenario = progressData.currentScenario || 0;
 
-            return true;
+                return true;
         } catch (error) {
             console.error('[BaseQuiz] Error loading progress:', error);
             return false;
@@ -873,7 +873,7 @@ export class BaseQuiz {
                 console.error('[BaseQuiz] QuizProgressService not initialized');
                 return false;
             }
-
+            
             const progressData = {
                 quizName: this.quizName,
                 experience: this.player.experience,
@@ -883,7 +883,7 @@ export class BaseQuiz {
                 status: status,
                 lastUpdated: new Date().toISOString()
             };
-
+            
             const result = await this.quizProgressService.saveQuizProgress(this.quizName, progressData);
             return result.success;
         } catch (error) {
@@ -1348,7 +1348,7 @@ export class BaseQuiz {
 
             // Increment scenario counter
             this.player.currentScenario++;
-
+            
             // Save progress
             await this.saveProgress();
 
@@ -1588,13 +1588,13 @@ export class BaseQuiz {
                 console.error('[BaseQuiz] QuizProgressService not initialized');
                 return false;
             }
-
+            
             const progressResult = await this.quizProgressService.getQuizProgress(this.quizName);
             
             if (!progressResult.success || !progressResult.data) {
                 return false;
             }
-
+            
             const progressData = progressResult.data;
             
             // Update player state
@@ -1603,7 +1603,7 @@ export class BaseQuiz {
             this.player.questionHistory = progressData.questionHistory || [];
             this.player.currentScenario = progressData.currentScenario || 0;
 
-            return true;
+                return true;
         } catch (error) {
             console.error('[BaseQuiz] Error loading progress:', error);
             return false;

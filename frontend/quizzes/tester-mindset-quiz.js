@@ -853,9 +853,9 @@ export class TesterMindsetQuiz extends BaseQuiz {
         if (cachedData && cacheValid) {
             console.log('[TesterMindsetQuiz] Using cached scenarios');
             const data = JSON.parse(cachedData);
-            this.basicScenarios = data.basic || communicationScenarios.basic;
-            this.intermediateScenarios = data.intermediate || communicationScenarios.intermediate;
-            this.advancedScenarios = data.advanced || communicationScenarios.advanced;
+            this.basicScenarios = data.basic || testerMindsetScenarios.basic;
+            this.intermediateScenarios = data.intermediate || testerMindsetScenarios.intermediate;
+            this.advancedScenarios = data.advanced || testerMindsetScenarios.advanced;
             return;
         }
         
@@ -870,9 +870,9 @@ export class TesterMindsetQuiz extends BaseQuiz {
                 localStorage.setItem(`quiz_scenarios_${this.quizName}_timestamp`, Date.now().toString());
                 
                 // Update scenarios
-                this.basicScenarios = data.scenarios.basic || communicationScenarios.basic;
-                this.intermediateScenarios = data.scenarios.intermediate || communicationScenarios.intermediate;
-                this.advancedScenarios = data.scenarios.advanced || communicationScenarios.advanced;
+                this.basicScenarios = data.scenarios.basic || testerMindsetScenarios.basic;
+                this.intermediateScenarios = data.scenarios.intermediate || testerMindsetScenarios.intermediate;
+                this.advancedScenarios = data.scenarios.advanced || testerMindsetScenarios.advanced;
             }
         } catch (error) {
             console.error('[TesterMindsetQuiz] Failed to load scenarios from API:', error);
