@@ -47,54 +47,14 @@ export class CommunicationQuiz extends BaseQuiz {
 
         // Load scenarios from external data file
         console.log('[CommunicationQuiz][constructor] Loading scenarios from communicationScenarios');
-        
-        // Direct initialization with proper error checking and structure normalization
-        // Check for common structure issues and resolve them
-        if (communicationScenarios && typeof communicationScenarios === 'object') {
-            // Handle the case where basic might be nested under a 'scenarios' property
-            if (communicationScenarios.basic) {
-                if (Array.isArray(communicationScenarios.basic)) {
-                    this.basicScenarios = communicationScenarios.basic;
-                } else if (communicationScenarios.basic.scenarios && Array.isArray(communicationScenarios.basic.scenarios)) {
-                    // Handle structure like { basic: { scenarios: [...] } }
-                    this.basicScenarios = communicationScenarios.basic.scenarios;
-                }
-            } else {
-                this.basicScenarios = [];
-            }
-            
-            // Same for intermediate
-            if (communicationScenarios.intermediate) {
-                if (Array.isArray(communicationScenarios.intermediate)) {
-                    this.intermediateScenarios = communicationScenarios.intermediate;
-                } else if (communicationScenarios.intermediate.scenarios && Array.isArray(communicationScenarios.intermediate.scenarios)) {
-                    this.intermediateScenarios = communicationScenarios.intermediate.scenarios;
-                }
-            } else {
-                this.intermediateScenarios = [];
-            }
-            
-            // Same for advanced
-            if (communicationScenarios.advanced) {
-                if (Array.isArray(communicationScenarios.advanced)) {
-                    this.advancedScenarios = communicationScenarios.advanced;
-                } else if (communicationScenarios.advanced.scenarios && Array.isArray(communicationScenarios.advanced.scenarios)) {
-                    this.advancedScenarios = communicationScenarios.advanced.scenarios;
-                }
-            } else {
-                this.advancedScenarios = [];
-            }
-        } else {
-            console.error('[CommunicationQuiz][constructor] communicationScenarios is not valid');
-            this.basicScenarios = [];
-            this.intermediateScenarios = [];
-            this.advancedScenarios = [];
-        }
+        this.basicScenarios = communicationScenarios.basic;
+        this.intermediateScenarios = communicationScenarios.intermediate;
+        this.advancedScenarios = communicationScenarios.advanced;
         
         console.log('[CommunicationQuiz][constructor] Scenario arrays initialized:', {
-            basicScenarios: this.basicScenarios?.length || 0,
-            intermediateScenarios: this.intermediateScenarios?.length || 0,
-            advancedScenarios: this.advancedScenarios?.length || 0
+            basicScenarios: this.basicScenarios.length,
+            intermediateScenarios: this.intermediateScenarios.length,
+            advancedScenarios: this.advancedScenarios.length
         });
 
         // Initialize all screen elements
@@ -339,92 +299,38 @@ export class CommunicationQuiz extends BaseQuiz {
                 loadingIndicator.classList.add('hidden');
             }
             
-            // EMERGENCY CHECK: Ensure we have scenarios loaded before displaying
-            if ((!this.basicScenarios || this.basicScenarios.length === 0) && 
-                (!this.intermediateScenarios || this.intermediateScenarios.length === 0) && 
-                (!this.advancedScenarios || this.advancedScenarios.length === 0)) {
+            // EMERGENCY CHECK: Ensure we are at the correct question before displaying
+            const currentUsername = localStorage.getItem('username');
+            if (currentUsername) {
+                const progressKey = `quiz_progress_${currentUsername}_${this.quizName}`;
+                const progressData = localStorage.getItem(progressKey);
                 
-                console.error('[CommunicationQuiz] No scenarios available, attempting emergency reload');
-                
-                // Create at least one emergency scenario to prevent UI from breaking
-                this.basicScenarios = [{
-                    id: 999,
-                    level: 'Basic',
-                    title: 'Emergency Scenario',
-                    description: 'The quiz system is having difficulty loading scenarios. Please answer this question to continue.',
-                    options: [
-                        {
-                            text: 'In a critical situation, providing clear and concise updates is most important',
-                            outcome: 'Good choice! Clear communication is essential in critical situations.',
-                            experience: 15,
-                            isCorrect: true
-                        },
-                        {
-                            text: 'Waiting for others to make decisions is the best approach in uncertain situations',
-                            outcome: 'Taking initiative is usually better than waiting for directions.',
-                            experience: 0
-                        },
-                        {
-                            text: 'Detailed technical explanations are always the best way to communicate issues',
-                            outcome: 'Communication should be adapted to the audience.',
-                            experience: 0
-                        },
-                        {
-                            text: 'It\'s better to delay communication until you have complete information',
-                            outcome: 'Timely updates are often more valuable than perfect information.',
-                            experience: 0
+                if (progressData) {
+                    try {
+                        const parsed = JSON.parse(progressData);
+                        if (parsed.questionHistory && 
+                            Array.isArray(parsed.questionHistory) && 
+                            parsed.questionHistory.length > 0 &&
+                            this.player.questionHistory.length < parsed.questionHistory.length) {
+                            
+                            console.log('[CRITICAL FIX] Progress mismatch detected, fixing:', {
+                                currentLength: this.player.questionHistory.length,
+                                savedLength: parsed.questionHistory.length
+                            });
+                            
+                            // Force the correct progress
+                            this.player.questionHistory = parsed.questionHistory;
+                            this.player.currentScenario = parsed.questionHistory.length;
                         }
-                    ]
-                }];
+                    } catch (e) {
+                        console.error('[CommunicationQuiz] Error checking progress in startGame:', e);
+                    }
+                }
             }
             
             // CRITICAL: Always display scenario after loading, regardless of progress state
             debugProgressState('BEFORE_DISPLAY_SCENARIO');
-            
-            // Direct scenario display instead of this.displayScenario() to prevent possible scope issues
-            try {
-                this.displayScenario();
-            } catch (displayError) {
-                console.error('[CommunicationQuiz] Error in displayScenario:', displayError);
-                
-                // Try direct DOM manipulation as last resort
-                try {
-                    const gameScreen = document.getElementById('game-screen');
-                    if (gameScreen && this.basicScenarios && this.basicScenarios.length > 0) {
-                        const scenario = this.basicScenarios[0];
-                        
-                        // Create emergency content
-                        gameScreen.innerHTML = `
-                            <div class="scenario-container">
-                                <h2>${scenario.title}</h2>
-                                <p>${scenario.description}</p>
-                                <form id="options-form">
-                                    <div class="options-container">
-                                        ${scenario.options.map((option, index) => `
-                                            <div class="option">
-                                                <input type="radio" name="option" id="option-${index}" value="${index}">
-                                                <label for="option-${index}">${option.text}</label>
-                                            </div>
-                                        `).join('')}
-                                    </div>
-                                    <button type="submit" class="submit-btn">Submit Answer</button>
-                                </form>
-                            </div>
-                        `;
-                        
-                        // Re-attach event listener
-                        document.getElementById('options-form')?.addEventListener('submit', (e) => {
-                            e.preventDefault();
-                            this.handleAnswer();
-                        });
-                        
-                        console.log('[CommunicationQuiz] Emergency DOM manipulation successful');
-                    }
-                } catch (domError) {
-                    console.error('[CommunicationQuiz] Emergency DOM manipulation failed:', domError);
-                }
-            }
-            
+            this.displayScenario();
             debugProgressState('AFTER_DISPLAY_SCENARIO');
             
             // Setup periodic save to ensure progress is never lost
@@ -441,10 +347,7 @@ export class CommunicationQuiz extends BaseQuiz {
             
             // Try emergency display to show something to the user
             setTimeout(() => {
-                // Call displayScenario directly instead of non-existent forceScenarioDisplay
-                if (this && typeof this.displayScenario === 'function') {
-                    this.displayScenario();
-                }
+                forceScenarioDisplay();
             }, 1000);
             
             return false;
@@ -685,70 +588,9 @@ export class CommunicationQuiz extends BaseQuiz {
 
         if (!titleElement || !descriptionElement || !optionsContainer) {
             console.error('[CommunicationQuiz] Required elements not found, using emergency DOM creation');
-            
-            // Instead of calling non-existent forceScenarioDisplay, implement direct DOM manipulation
-            try {
-                const gameScreen = document.getElementById('game-screen');
-                if (!gameScreen) {
-                    this.showError('Game screen not found. Please refresh the page.');
-                    return;
-                }
-                
-                // Create emergency scenario container
-                const scenarioContainer = document.createElement('div');
-                scenarioContainer.className = 'scenario-container';
-                
-                // Create needed elements
-                scenarioContainer.innerHTML = `
-                    <h2 id="scenario-title">${scenario.title}</h2>
-                    <p id="scenario-description">${scenario.description}</p>
-                    <div id="question-progress">Question: ${this.currentQuestionNumber}/15</div>
-                    <form id="options-form">
-                        <div id="options-container"></div>
-                        <button type="submit" id="submit-btn" class="submit-button">Submit Answer</button>
-                    </form>
-                `;
-                
-                // Replace game screen content
-                gameScreen.innerHTML = '';
-                gameScreen.appendChild(scenarioContainer);
-                
-                // Get the new elements
-                const newOptionsContainer = document.getElementById('options-container');
-                
-                // Create options
-                scenario.options.forEach((option, index) => {
-                    const optionElement = document.createElement('div');
-                    optionElement.className = 'option';
-                    optionElement.innerHTML = `
-                        <input type="radio" 
-                            name="option" 
-                            value="${index}" 
-                            id="option${index}"
-                            tabindex="0"
-                            aria-label="${option.text}"
-                            role="radio">
-                        <label for="option${index}">${option.text}</label>
-                    `;
-                    newOptionsContainer.appendChild(optionElement);
-                });
-                
-                // Show the game screen
-                gameScreen.classList.remove('hidden');
-                
-                // Re-attach event listener
-                document.getElementById('options-form')?.addEventListener('submit', (e) => {
-                    e.preventDefault();
-                    this.handleAnswer();
-                });
-                
-                console.log('[CommunicationQuiz] Emergency DOM creation successful');
-                return;
-            } catch (e) {
-                console.error('[CommunicationQuiz] Emergency DOM creation failed:', e);
-                this.showError('Failed to display question. Please refresh the page.');
-                return;
-            }
+            // If elements don't exist, try creating them
+            forceScenarioDisplay();
+            return;
         }
 
         // Set the title and description
@@ -1796,12 +1638,53 @@ document.addEventListener('DOMContentLoaded', async () => {
         // Create new instance
         communicationQuizInstance = new CommunicationQuiz();
         
+        // First attempt emergency backup restoration
+        setTimeout(() => {
+            console.log('[CommunicationQuiz] Checking for emergency backup progress');
+            const restored = restoreProgressFromBackup();
+            if (restored) {
+                console.log('[CommunicationQuiz] Successfully restored from emergency backup');
+            } else {
+                console.log('[CommunicationQuiz] No emergency backup found or restoration failed, proceeding with normal flow');
+                
+                // If backup restoration failed, run force correct question
+                setTimeout(() => {
+                    console.log('[CommunicationQuiz] Running force correct question as fallback');
+                    forceCorrectQuestionDisplay();
+                }, 500);
+            }
+        }, 1000);
+        
         // CRITICAL: Run force correct question immediately to ensure proper progress
         setTimeout(() => {
-            console.log('[CommunicationQuiz] Running emergency checks immediately after creation');
-            // Try to restore from emergency backup
-            restoreProgressFromBackup();
-        }, 500);
+            try {
+                // Create debug button if it doesn't exist
+                if (!document.getElementById('force-question-btn')) {
+                    const debugButton = document.createElement('button');
+                    debugButton.id = 'force-question-btn';
+                    debugButton.textContent = 'Force Correct Question';
+                    debugButton.style.position = 'fixed';
+                    debugButton.style.bottom = '10px';
+                    debugButton.style.right = '10px';
+                    debugButton.style.zIndex = '9999';
+                    debugButton.style.padding = '5px 10px';
+                    debugButton.style.background = '#ff9800';
+                    debugButton.style.color = 'white';
+                    debugButton.style.border = 'none';
+                    debugButton.style.borderRadius = '4px';
+                    debugButton.style.cursor = 'pointer';
+                    
+                    debugButton.addEventListener('click', () => {
+                        forceCorrectQuestionDisplay();
+                    });
+                    
+                    document.body.appendChild(debugButton);
+                    console.log('[DEBUG] Added force question button to UI');
+                }
+            } catch (e) {
+                console.error('[DEBUG] Error adding debug button:', e);
+            }
+        }, 3000);
     } catch (e) {
         console.error('[CommunicationQuiz] Error initializing quiz:', e);
     }
