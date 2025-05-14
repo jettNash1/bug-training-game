@@ -837,8 +837,8 @@ export class APIService {
     async getQuizScenarios(quizName) {
         // Map quiz names to their local scenario file paths
         const localScenarioMap = {
-            'tester-mindset': '/frontend/data/testerMindset-scenarios.js',
-            'communication': '/frontend/data/communication-scenarios.js',
+            'tester-mindset': '/data/testerMindset-scenarios.js',
+            'communication': '/data/communication-scenarios.js',
             // Add more mappings as needed
         };
 
