@@ -705,59 +705,22 @@ export class APIService {
 
     async getQuizScenarios(quizName) {
         try {
-            console.log(`Fetching scenarios for quiz: ${quizName}`);
-            
-            // Create a controller for the fetch request
-            const controller = new AbortController();
-            const signal = controller.signal;
-            
-            // Set a timeout to abort the fetch after 4 seconds
-            const timeoutId = setTimeout(() => {
-                controller.abort();
-                console.warn(`Fetch for quiz scenarios timed out after 4 seconds: ${quizName}`);
-            }, 4000);
-            
-            try {
-                const response = await this.fetchWithAdminAuth(
-                    `${this.baseUrl}/admin/quizzes/${quizName}/scenarios`,
-                    {
-                        method: 'GET',
-                        headers: {
-                            'Content-Type': 'application/json'
-                        },
-                        signal
-                    }
-                );
-                
-                // Clear the timeout since the request completed
-                clearTimeout(timeoutId);
-                
-                if (!response.success) {
-                    console.error('Failed to fetch quiz scenarios:', response);
-                    throw new Error(response.message || 'Failed to fetch quiz scenarios');
+            const response = await fetch(`/api/quizzes/${quizName}/scenarios`, {
+                method: 'GET',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${localStorage.getItem('token')}`
                 }
-
-                return {
-                    success: true,
-                    data: response.data || {
-                        basic: [],
-                        intermediate: [],
-                        advanced: []
-                    }
-                };
-            } catch (fetchError) {
-                // Clear the timeout to prevent memory leaks
-                clearTimeout(timeoutId);
-                
-                // Check if this was an abort error
-                if (fetchError.name === 'AbortError') {
-                    throw new Error(`Request for quiz scenarios timed out: ${quizName}`);
-                }
-                
-                throw fetchError;
+            });
+            
+            if (!response.ok) {
+                throw new Error(`Failed to fetch scenarios: ${response.status}`);
             }
+            
+            const data = await response.json();
+            return data;
         } catch (error) {
-            console.error(`Failed to fetch scenarios for quiz ${quizName}:`, error);
+            console.error(`Error fetching ${quizName} scenarios:`, error);
             throw error;
         }
     }
