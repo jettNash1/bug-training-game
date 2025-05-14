@@ -2,7 +2,7 @@ import { APIService } from '../api-service.js';
 import { BaseQuiz } from '../quiz-helper.js';
 import { QuizUser } from '../QuizUser.js';
 import { communicationScenarios } from '../data/communication-scenarios.js';
-import quizSyncService from '../services/quiz-sync-service.js';
+import { quizSyncService } from '../services/quiz-sync-service.js';
 
 export class CommunicationQuiz extends BaseQuiz {
     constructor() {
