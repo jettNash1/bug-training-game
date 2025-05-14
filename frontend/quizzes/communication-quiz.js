@@ -84,13 +84,34 @@ export class CommunicationQuiz extends BaseQuiz {
         console.log('[CommunicationQuiz] Related localStorage keys:', relatedLocalStorage);
     }
 
+    // Helper for showing errors to the user
     showError(message) {
-        const errorDiv = document.createElement('div');
-        errorDiv.className = 'error-notification';
-        errorDiv.setAttribute('role', 'alert');
-        errorDiv.textContent = message;
-        document.body.appendChild(errorDiv);
-        setTimeout(() => errorDiv.remove(), 5000);
+        try {
+            const errorElement = document.createElement('div');
+            errorElement.className = 'error-message';
+            errorElement.textContent = message;
+            errorElement.style.color = 'red';
+            errorElement.style.padding = '20px';
+            errorElement.style.textAlign = 'center';
+            errorElement.style.fontWeight = 'bold';
+            
+            // Find a good place to show the error
+            const container = document.getElementById('game-screen') || 
+                              document.getElementById('quiz-container') || 
+                              document.body;
+            
+            if (container) {
+                // Clear container if not body
+                if (container !== document.body) {
+                    container.innerHTML = '';
+                }
+                
+                container.appendChild(errorElement);
+                console.error('[CommunicationQuiz] Displayed error to user:', message);
+            }
+        } catch (e) {
+            console.error('[CommunicationQuiz] Failed to show error to user:', e);
+        }
     }
 
     shouldEndGame() {
@@ -144,6 +165,24 @@ export class CommunicationQuiz extends BaseQuiz {
             const storageKey = `quiz_progress_${username}_${this.quizName}`;
             localStorage.setItem(storageKey, JSON.stringify({ data: progressData }));
             
+            // ADDITIONAL FAILSAFE: Also save to sessionStorage which persists for the current session
+            try {
+                sessionStorage.setItem(storageKey, JSON.stringify({ 
+                    data: progressData,
+                    timestamp: Date.now()
+                }));
+                console.log('[CommunicationQuiz] Backed up progress to sessionStorage');
+                
+                // Create an emergency backup with a timestamp
+                const emergencyKey = `${storageKey}_emergency_${Date.now()}`;
+                sessionStorage.setItem(emergencyKey, JSON.stringify({ 
+                    data: progressData,
+                    timestamp: Date.now()
+                }));
+            } catch (sessionError) {
+                console.warn('[CommunicationQuiz] Failed to save to sessionStorage:', sessionError);
+            }
+            
             // Try to use sync service, but have a direct API fallback
             try {
                 if (typeof quizSyncService !== 'undefined') {
@@ -168,6 +207,20 @@ export class CommunicationQuiz extends BaseQuiz {
             return true;
         } catch (error) {
             console.error('[CommunicationQuiz] Failed to save progress:', error);
+            
+            // EMERGENCY FALLBACK: Attempt to save to sessionStorage as last resort
+            try {
+                const username = localStorage.getItem('username') || 'anonymous';
+                const emergencyKey = `quiz_progress_${username}_${this.quizName}_emergency`;
+                sessionStorage.setItem(emergencyKey, JSON.stringify({ 
+                    data: progressData,
+                    timestamp: Date.now()
+                }));
+                console.log('[CommunicationQuiz] Saved emergency backup to sessionStorage');
+            } catch (sessionError) {
+                console.error('[CommunicationQuiz] All storage methods failed:', sessionError);
+            }
+            
             return false;
         }
     }
@@ -180,89 +233,248 @@ export class CommunicationQuiz extends BaseQuiz {
                 return false;
             }
 
-            // Define all possible storage keys
+            // Important diagnostic: log ALL quiz progress localStorage keys for this user
+            const allStorageKeys = Object.keys(localStorage).filter(key => 
+                key.includes('quiz_progress') && key.includes(username)
+            );
+            console.log('[CommunicationQuiz] ALL localStorage quiz progress keys for this user:', allStorageKeys);
+
+            // Define all possible storage keys in priority order
             const storageKeys = [
                 `quiz_progress_${username}_${this.quizName}`,
+                `quiz_progress_${username}_${this.quizName}_backup`,
                 `quiz_progress_${username}_communication`,  // Fallback for standardized name
-                `quiz_progress_${username}_${this.quizName}_backup` // Possible backup key
+                `quiz_progress_${username}_communication_backup`,
+                `quiz_progress_${username}_communication_emergency`
             ];
+            
+            // Log which keys we will try
+            console.log('[CommunicationQuiz] Will try these localStorage keys in order:', storageKeys);
             
             let progressData = null;
             let dataSource = '';
+            let apiProgress = null;
             
-            // Try to get progress from API first
+            // First collect ALL possible progress data sources before deciding which to use
+            
+            // Check sessionStorage first as an additional data source
+            let sessionStorageData = null;
+            try {
+                // Get all sessionStorage keys for this user
+                const sessionKeys = Object.keys(sessionStorage).filter(key => 
+                    key.includes('quiz_progress') && key.includes(username)
+                );
+                console.log('[CommunicationQuiz] SessionStorage keys found:', sessionKeys);
+                
+                // Get the most recent session storage data
+                if (sessionKeys.length > 0) {
+                    let mostRecentKey = sessionKeys[0];
+                    let mostRecentTime = 0;
+                    
+                    // Find most recent by looking at the keys with timestamps or data timestamps
+                    for (const key of sessionKeys) {
+                        try {
+                            const sessionData = JSON.parse(sessionStorage.getItem(key));
+                            // Check if key contains timestamp or data has timestamp
+                            const keyTimestamp = key.includes('emergency_') ? 
+                                parseInt(key.split('emergency_')[1]) : 0;
+                            const dataTimestamp = sessionData.timestamp ? 
+                                parseInt(sessionData.timestamp) : 0;
+                            
+                            const timestamp = Math.max(keyTimestamp, dataTimestamp);
+                            
+                            if (timestamp > mostRecentTime) {
+                                mostRecentTime = timestamp;
+                                mostRecentKey = key;
+                            }
+                        } catch (e) {}
+                    }
+                    
+                    // Load the most recent session data
+                    try {
+                        const sessionData = JSON.parse(sessionStorage.getItem(mostRecentKey));
+                        sessionStorageData = sessionData.data || sessionData;
+                        console.log('[CommunicationQuiz] Loaded most recent sessionStorage data from key:', 
+                            mostRecentKey, 'with question count:', 
+                            sessionStorageData.questionHistory?.length || 0);
+                    } catch (e) {
+                        console.warn('[CommunicationQuiz] Failed to parse session storage data:', e);
+                    }
+                }
+            } catch (sessionError) {
+                console.warn('[CommunicationQuiz] Error accessing sessionStorage:', sessionError);
+            }
+            
+            // Try to get progress from API
             try {
                 console.log('[CommunicationQuiz] Attempting to load progress from API');
-                const apiProgress = await this.apiService.getQuizProgress(this.quizName);
+                apiProgress = await this.apiService.getQuizProgress(this.quizName);
+                console.log('[CommunicationQuiz] API progress response:', apiProgress);
                 
                 if (apiProgress && apiProgress.data) {
                     // Verify API data has actual content (not just empty structures)
                     const apiHasProgress = 
-                        (apiProgress.data.questionHistory && apiProgress.data.questionHistory.length > 0) ||
-                        (apiProgress.data.questionsAnswered && apiProgress.data.questionsAnswered > 0);
+                        (apiProgress.data.questionHistory && apiProgress.data.questionHistory.length > 0) &&
+                        (apiProgress.data.currentScenario && apiProgress.data.currentScenario > 0);
                     
                     if (apiHasProgress) {
-                        console.log('[CommunicationQuiz] Successfully loaded progress from API:', apiProgress.data);
-                        progressData = apiProgress.data;
-                        dataSource = 'API';
-                        
-                        // Also update localStorage with the latest data for future use
-                        localStorage.setItem(storageKeys[0], JSON.stringify({ 
-                            data: progressData,
-                            timestamp: Date.now() 
-                        }));
+                        console.log('[CommunicationQuiz] API data contains valid progress with questions:', 
+                            apiProgress.data.questionHistory.length);
                     } else {
-                        console.warn('[CommunicationQuiz] API returned data but without actual progress.');
+                        console.warn('[CommunicationQuiz] API returned data but without valid questions or progress');
                     }
+                } else {
+                    console.warn('[CommunicationQuiz] API returned no valid data');
                 }
             } catch (apiError) {
                 console.warn('[CommunicationQuiz] Failed to load progress from API:', apiError);
             }
             
-            // If API failed or returned no progress, try all localStorage options
-            if (!progressData || (progressData.questionHistory && progressData.questionHistory.length === 0)) {
-                console.log('[CommunicationQuiz] Trying to load progress from localStorage');
+            // Collect all localStorage data
+            const localStorageData = {};
+            let bestLocalStorageData = null;
+            let bestQuestionCount = 0;
+            
+            for (const key of storageKeys) {
+                const localData = localStorage.getItem(key);
                 
-                // Try each storage key in order
-                for (const key of storageKeys) {
-                    const localData = localStorage.getItem(key);
-                    
-                    if (localData) {
-                        try {
-                            const parsed = JSON.parse(localData);
-                            const candidateData = parsed.data || parsed;
+                if (localData) {
+                    try {
+                        const parsed = JSON.parse(localData);
+                        const candidateData = parsed.data || parsed;
+                        
+                        // Store all parsed data for reference
+                        localStorageData[key] = candidateData;
+                        
+                        // Check if this data has any question history
+                        if (candidateData && Array.isArray(candidateData.questionHistory)) {
+                            const questionCount = candidateData.questionHistory.length;
+                            console.log(`[CommunicationQuiz] Found localStorage data in ${key} with ${questionCount} questions`);
                             
-                            // Check if this data has any question history
-                            if (candidateData && Array.isArray(candidateData.questionHistory) && 
-                                candidateData.questionHistory.length > 0) {
-                                
-                                progressData = candidateData;
-                                dataSource = `localStorage (${key})`;
-                                console.log(`[CommunicationQuiz] Successfully loaded progress from localStorage key: ${key}`);
-                                break; // Found valid data, stop looking
+                            // Keep track of the best localStorage data (most questions)
+                            if (questionCount > bestQuestionCount) {
+                                bestLocalStorageData = candidateData;
+                                bestQuestionCount = questionCount;
+                                console.log(`[CommunicationQuiz] This is now the best local storage data (${questionCount} questions)`);
                             }
-                        } catch (parseError) {
-                            console.error(`[CommunicationQuiz] Failed to parse localStorage data for key ${key}:`, parseError);
                         }
+                    } catch (parseError) {
+                        console.error(`[CommunicationQuiz] Failed to parse localStorage data for key ${key}:`, parseError);
                     }
+                }
+            }
+            
+            // Now choose the best data source based on which has the most questions
+            
+            // Track the best data and its source
+            let bestData = null;
+            let bestSource = '';
+            let bestCount = 0;
+            
+            // Check API data
+            if (apiProgress && apiProgress.data && 
+                apiProgress.data.questionHistory && 
+                apiProgress.data.questionHistory.length > 0) {
+                
+                bestData = apiProgress.data;
+                bestSource = 'API';
+                bestCount = apiProgress.data.questionHistory.length;
+                console.log(`[CommunicationQuiz] API data has ${bestCount} questions`);
+            }
+            
+            // Check localStorage data
+            if (bestLocalStorageData && 
+                bestLocalStorageData.questionHistory && 
+                bestLocalStorageData.questionHistory.length > bestCount) {
+                
+                bestData = bestLocalStorageData;
+                bestSource = 'localStorage';
+                bestCount = bestLocalStorageData.questionHistory.length;
+                console.log(`[CommunicationQuiz] localStorage data has ${bestCount} questions, better than current best`);
+            }
+            
+            // Check sessionStorage data
+            if (sessionStorageData && 
+                sessionStorageData.questionHistory && 
+                sessionStorageData.questionHistory.length > bestCount) {
+                
+                bestData = sessionStorageData;
+                bestSource = 'sessionStorage';
+                bestCount = sessionStorageData.questionHistory.length;
+                console.log(`[CommunicationQuiz] sessionStorage data has ${bestCount} questions, better than current best`);
+            }
+            
+            // Use the best data we've found
+            if (bestData) {
+                console.log(`[CommunicationQuiz] Using best progress data from ${bestSource} with ${bestCount} questions`);
+                progressData = bestData;
+                dataSource = bestSource;
+                
+                // If the best data wasn't from the API, sync it back to the API
+                if (bestSource !== 'API' && bestCount > 0) {
+                    try {
+                        console.log('[CommunicationQuiz] Syncing best progress data to API and localStorage');
+                        
+                        // Update localStorage with the best data
+                        localStorage.setItem(storageKeys[0], JSON.stringify({ 
+                            data: progressData,
+                            timestamp: Date.now() 
+                        }));
+                        
+                        // Update API with the best data
+                        await this.apiService.saveQuizProgress(this.quizName, progressData);
+                    } catch (syncError) {
+                        console.warn('[CommunicationQuiz] Failed to sync best progress data:', syncError);
+                    }
+                }
+            } else {
+                console.log('[CommunicationQuiz] No valid progress data found from any source, trying recovery...');
+                
+                // Try to recover from the sync service as last resort
+                try {
+                    // Get QuizSyncService if available
+                    if (typeof window.quizSyncService !== 'undefined' || typeof quizSyncService !== 'undefined') {
+                        const syncService = window.quizSyncService || quizSyncService;
+                        const recoveredData = await syncService.recoverProgressData(username, this.quizName);
+                        
+                        if (recoveredData) {
+                            console.log('[CommunicationQuiz] Successfully recovered data from QuizSyncService');
+                            progressData = recoveredData;
+                            dataSource = 'recovered';
+                        } else {
+                            console.warn('[CommunicationQuiz] No data could be recovered, returning false');
+                            return false;
+                        }
+                    } else {
+                        console.warn('[CommunicationQuiz] QuizSyncService not available, cannot recover');
+                        return false;
+                    }
+                } catch (recoveryError) {
+                    console.error('[CommunicationQuiz] Error during data recovery:', recoveryError);
+                    return false;
                 }
             }
 
             if (progressData) {
                 console.log(`[CommunicationQuiz] Processing loaded progress data from ${dataSource}`);
                 
-                // Sanitize and validate data
+                // Sanitize and validate data to prevent invalid values
                 progressData.experience = !isNaN(parseFloat(progressData.experience)) ? parseFloat(progressData.experience) : 0;
                 progressData.tools = Array.isArray(progressData.tools) ? progressData.tools : [];
                 progressData.questionHistory = Array.isArray(progressData.questionHistory) ? 
                     progressData.questionHistory : [];
                 
-                // Ensure currentScenario matches question history length for consistency
+                // CRITICAL: Ensure currentScenario is consistent with question history
+                // This is a key point of failure
                 if (progressData.questionHistory.length > 0) {
-                    // Set currentScenario to the next unanswered question
+                    console.log('[CommunicationQuiz] Setting currentScenario to match questionHistory.length:', 
+                        progressData.questionHistory.length);
+                    
+                    // ALWAYS set currentScenario to match the question history length
+                    // This ensures we go to the next unanswered question
                     progressData.currentScenario = progressData.questionHistory.length;
                 } else {
-                    // If no questions answered, start from the beginning
+                    console.log('[CommunicationQuiz] No questions in history, starting from beginning');
                     progressData.currentScenario = 0;
                 }
                 
@@ -272,10 +484,11 @@ export class CommunicationQuiz extends BaseQuiz {
                      progressData.status === 'failed') && 
                     (progressData.questionHistory.length === 0 || 
                      progressData.currentScenario === 0)) {
+                    console.log('[CommunicationQuiz] Fixing inconsistent state: quiz marked as completed but has no progress');
                     progressData.status = 'in-progress';
                 }
 
-                // Update the player state
+                // Update the player state with the loaded progress data
                 this.player.experience = progressData.experience;
                 this.player.tools = progressData.tools;
                 this.player.questionHistory = progressData.questionHistory;
@@ -300,12 +513,20 @@ export class CommunicationQuiz extends BaseQuiz {
                     return true;
                 }
 
-                // If data was loaded from localStorage or had any fixes applied, save it back to API
-                // to ensure consistency with our sanitized values
-                if (dataSource !== 'API' && progressData.questionHistory.length > 0) {
-                    console.log('[CommunicationQuiz] Synchronizing localStorage progress with API');
-                    await this.saveProgress();
+                // Additional guard: verify that progress was loaded correctly
+                if (this.player.questionHistory.length === 0 && progressData.questionHistory.length > 0) {
+                    console.error('[CommunicationQuiz] CRITICAL ERROR: Failed to load question history properly!');
+                    // Forced retry with direct assignment
+                    this.player.questionHistory = [...progressData.questionHistory];
+                    this.player.currentScenario = this.player.questionHistory.length;
+                    console.log('[CommunicationQuiz] Forced player state update after error:', {
+                        questionHistory: this.player.questionHistory.length,
+                        currentScenario: this.player.currentScenario
+                    });
                 }
+
+                // Force save progress back to ensure consistency
+                await this.saveProgress();
                 
                 // Show the current question based on progress
                 this.displayScenario();
@@ -316,7 +537,15 @@ export class CommunicationQuiz extends BaseQuiz {
             return false;
         } catch (error) {
             console.error('[CommunicationQuiz] Error loading progress:', error);
-            return false;
+            
+            // As a last resort, try to recover progress data using the QuizSyncService
+            try {
+                console.log('[CommunicationQuiz] Attempting emergency progress recovery after error');
+                return await this.recoverProgress();
+            } catch (recoveryError) {
+                console.error('[CommunicationQuiz] Emergency recovery also failed:', recoveryError);
+                return false;
+            }
         }
     }
 
@@ -405,9 +634,27 @@ export class CommunicationQuiz extends BaseQuiz {
         const totalAnswered = this.player.questionHistory.length;
         const totalQuestions = this.totalQuestions || 15;
 
+        console.log('[CommunicationQuiz][displayScenario] Showing scenario:', {
+            currentScenarioIndex,
+            totalAnswered,
+            totalQuestions
+        });
+
+        // Debug: verify currentScenario and questionHistory are aligned correctly
+        if (currentScenarioIndex !== totalAnswered) {
+            console.warn('[CommunicationQuiz][displayScenario] Misalignment detected! currentScenario and questionHistory.length don\'t match:',
+                `currentScenario=${currentScenarioIndex}, questionHistory.length=${totalAnswered}`);
+            
+            // Auto-fix if there's a mismatch - this is critical for proper quiz flow
+            if (totalAnswered > 0 && currentScenarioIndex === 0) {
+                console.log('[CommunicationQuiz][displayScenario] Auto-fixing: Setting currentScenario to match questionHistory.length');
+                this.player.currentScenario = totalAnswered;
+            }
+        }
+
         // Check if we've answered all questions
         if (currentScenarioIndex >= totalQuestions) {
-            console.log('[displayScenario] All questions answered, ending game');
+            console.log('[CommunicationQuiz][displayScenario] All questions answered, ending game');
             this.endGame(false);
             return;
         }
@@ -416,110 +663,164 @@ export class CommunicationQuiz extends BaseQuiz {
         let scenario;
         let scenarioSet;
         let scenarioLevel;
-        if (currentScenarioIndex < 5) {
-            scenarioSet = this.basicScenarios;
-            scenario = scenarioSet[currentScenarioIndex];
-            scenarioLevel = 'Basic';
-        } else if (currentScenarioIndex < 10) {
-            scenarioSet = this.intermediateScenarios;
-            scenario = scenarioSet[currentScenarioIndex - 5];
-            scenarioLevel = 'Intermediate';
-        } else if (currentScenarioIndex < 15) {
-            scenarioSet = this.advancedScenarios;
-            scenario = scenarioSet[currentScenarioIndex - 10];
-            scenarioLevel = 'Advanced';
-        }
-
-        if (!scenario) {
-            console.error('[displayScenario] No scenario found for currentScenario:', currentScenarioIndex);
-            this.endGame(true);
-            return;
-        }
-
-        // Store current question number for consistency
-        this.currentQuestionNumber = currentScenarioIndex + 1;
-
-        // Show level transition message at the start of each level or when level changes
-        if (
-            currentScenarioIndex === 0 ||
-            (currentScenarioIndex === 5 && scenarioLevel === 'Intermediate') ||
-            (currentScenarioIndex === 10 && scenarioLevel === 'Advanced')
-        ) {
-            const transitionContainer = document.getElementById('level-transition-container');
-            if (transitionContainer) {
-                transitionContainer.innerHTML = '';
-                const levelMessage = document.createElement('div');
-                levelMessage.className = 'level-transition';
-                levelMessage.setAttribute('role', 'alert');
-                levelMessage.textContent = `Starting ${scenarioLevel} Questions`;
-                transitionContainer.appendChild(levelMessage);
-                transitionContainer.classList.add('active');
-                const levelIndicator = document.getElementById('level-indicator');
-                if (levelIndicator) {
-                    levelIndicator.textContent = `Level: ${scenarioLevel}`;
-                }
-                setTimeout(() => {
-                    transitionContainer.classList.remove('active');
-                    setTimeout(() => {
-                        transitionContainer.innerHTML = '';
-                    }, 300);
-                }, 3000);
+        
+        try {
+            // Calculate which level we're on and get the appropriate scenario set
+            if (currentScenarioIndex < 5) {
+                scenarioSet = this.basicScenarios;
+                scenarioLevel = 'Basic';
+                scenario = scenarioSet[currentScenarioIndex];
+            } else if (currentScenarioIndex < 10) {
+                scenarioSet = this.intermediateScenarios;
+                scenarioLevel = 'Intermediate';
+                scenario = scenarioSet[currentScenarioIndex - 5];
+            } else if (currentScenarioIndex < 15) {
+                scenarioSet = this.advancedScenarios;
+                scenarioLevel = 'Advanced';
+                scenario = scenarioSet[currentScenarioIndex - 10];
             }
+
+            if (!scenario) {
+                console.error('[CommunicationQuiz][displayScenario] No scenario found for currentScenario:', currentScenarioIndex);
+                console.log('[CommunicationQuiz][displayScenario] Scenario sets:', {
+                    basic: this.basicScenarios?.length || 0,
+                    intermediate: this.intermediateScenarios?.length || 0,
+                    advanced: this.advancedScenarios?.length || 0
+                });
+                
+                // Emergency fallback - try to recover by moving to next question or resetting
+                if (totalAnswered > 0 && totalAnswered < totalQuestions) {
+                    console.log('[CommunicationQuiz][displayScenario] Attempting recovery by moving to next available scenario');
+                    this.player.currentScenario = totalAnswered;
+                    // Try recursively one more time with the fixed index
+                    this.displayScenario();
+                    return;
+                } else {
+                    // If we still can't recover, try the emergency recovery method
+                    console.log('[CommunicationQuiz][displayScenario] Attempting emergency data recovery');
+                    this.recoverProgress().then(success => {
+                        if (!success) {
+                            // If recovery fails, show end game as last resort
+                            this.endGame(true);
+                        }
+                    }).catch(() => this.endGame(true));
+                    return;
+                }
+            }
+
+            // Store current question number for consistency
+            this.currentQuestionNumber = currentScenarioIndex + 1;
+
+            // Show level transition message at the start of each level or when level changes
+            if (
+                currentScenarioIndex === 0 ||
+                (currentScenarioIndex === 5 && scenarioLevel === 'Intermediate') ||
+                (currentScenarioIndex === 10 && scenarioLevel === 'Advanced')
+            ) {
+                const transitionContainer = document.getElementById('level-transition-container');
+                if (transitionContainer) {
+                    transitionContainer.innerHTML = '';
+                    const levelMessage = document.createElement('div');
+                    levelMessage.className = 'level-transition';
+                    levelMessage.setAttribute('role', 'alert');
+                    levelMessage.textContent = `Starting ${scenarioLevel} Questions`;
+                    transitionContainer.appendChild(levelMessage);
+                    transitionContainer.classList.add('active');
+                    const levelIndicator = document.getElementById('level-indicator');
+                    if (levelIndicator) {
+                        levelIndicator.textContent = `Level: ${scenarioLevel}`;
+                    }
+                    setTimeout(() => {
+                        transitionContainer.classList.remove('active');
+                        setTimeout(() => {
+                            transitionContainer.innerHTML = '';
+                        }, 300);
+                    }, 3000);
+                }
+            }
+
+            // Update scenario display
+            const titleElement = document.getElementById('scenario-title');
+            const descriptionElement = document.getElementById('scenario-description');
+            const optionsContainer = document.getElementById('options-container');
+
+            if (!titleElement || !descriptionElement || !optionsContainer) {
+                console.error('[CommunicationQuiz][displayScenario] Required elements not found');
+                return;
+            }
+
+            titleElement.textContent = scenario.title;
+            descriptionElement.textContent = scenario.description;
+
+            // Update question counter
+            const questionProgress = document.getElementById('question-progress');
+            if (questionProgress) {
+                questionProgress.textContent = `Question: ${this.currentQuestionNumber}/15`;
+            }
+
+            // Create a copy of options with their original indices
+            const shuffledOptions = scenario.options.map((option, index) => ({
+                ...option,
+                originalIndex: index
+            }));
+            for (let i = shuffledOptions.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [shuffledOptions[i], shuffledOptions[j]] = [shuffledOptions[j], shuffledOptions[i]];
+            }
+            optionsContainer.innerHTML = '';
+            
+            shuffledOptions.forEach((option, index) => {
+                const optionElement = document.createElement('div');
+                optionElement.className = 'option';
+                optionElement.innerHTML = `
+                    <input type="radio" 
+                        name="option" 
+                        value="${option.originalIndex}" 
+                        id="option${index}"
+                        tabindex="0"
+                        aria-label="${option.text}"
+                        role="radio">
+                    <label for="option${index}">${option.text}</label>
+                `;
+                optionsContainer.appendChild(optionElement);
+            });
+
+            this.updateProgress();
+            this.initializeTimer();
+            console.log('[CommunicationQuiz][displayScenario] Showing scenario', scenarioLevel, 'index', currentScenarioIndex, scenario.title);
+
+            // Make scenario screen visible if not already
+            const gameScreen = document.getElementById('game-screen');
+            if (gameScreen && gameScreen.classList.contains('hidden')) {
+                console.log('[CommunicationQuiz][displayScenario] Making game screen visible');
+                gameScreen.classList.remove('hidden');
+            }
+
+            // Add extra log after showing
+            setTimeout(() => {
+                console.log('[CommunicationQuiz][displayScenario][post-show] player state:', {
+                    experience: this.player.experience,
+                    questionHistory: this.player.questionHistory.length,
+                    currentScenario: this.player.currentScenario
+                });
+            }, 0);
+        } catch (error) {
+            console.error('[CommunicationQuiz][displayScenario] Error showing scenario:', error);
+            // Emergency recovery if an error occurs
+            const gameScreen = document.getElementById('game-screen');
+            if (gameScreen) gameScreen.classList.remove('hidden');
+            
+            // Try to recover progress data in case of display error
+            console.log('[CommunicationQuiz][displayScenario] Attempting emergency recovery after display error');
+            this.recoverProgress().then(success => {
+                if (!success) {
+                    // If recovery fails, show error message
+                    this.showError('An error occurred loading the quiz. Try refreshing the page.');
+                }
+            }).catch(() => {
+                this.showError('An error occurred loading the quiz. Try refreshing the page.');
+            });
         }
-
-        // Update scenario display
-        const titleElement = document.getElementById('scenario-title');
-        const descriptionElement = document.getElementById('scenario-description');
-        const optionsContainer = document.getElementById('options-container');
-
-        if (!titleElement || !descriptionElement || !optionsContainer) {
-            console.error('[displayScenario] Required elements not found');
-            return;
-        }
-
-        titleElement.textContent = scenario.title;
-        descriptionElement.textContent = scenario.description;
-
-        // Update question counter
-        const questionProgress = document.getElementById('question-progress');
-        if (questionProgress) {
-            questionProgress.textContent = `Question: ${this.currentQuestionNumber}/15`;
-        }
-
-        // Create a copy of options with their original indices
-        const shuffledOptions = scenario.options.map((option, index) => ({
-            ...option,
-            originalIndex: index
-        }));
-        for (let i = shuffledOptions.length - 1; i > 0; i--) {
-            const j = Math.floor(Math.random() * (i + 1));
-            [shuffledOptions[i], shuffledOptions[j]] = [shuffledOptions[j], shuffledOptions[i]];
-        }
-        optionsContainer.innerHTML = '';
-        shuffledOptions.forEach((option, index) => {
-            const optionElement = document.createElement('div');
-            optionElement.className = 'option';
-            optionElement.innerHTML = `
-                <input type="radio" 
-                    name="option" 
-                    value="${option.originalIndex}" 
-                    id="option${index}"
-                    tabindex="0"
-                    aria-label="${option.text}"
-                    role="radio">
-                <label for="option${index}">${option.text}</label>
-            `;
-            optionsContainer.appendChild(optionElement);
-        });
-
-        this.updateProgress();
-        this.initializeTimer();
-        console.log('[displayScenario] Showing scenario', scenarioLevel, 'index', currentScenarioIndex, scenario.title);
-
-        // Add extra log after showing
-        setTimeout(() => {
-            console.log('[displayScenario][post-show] player:', JSON.parse(JSON.stringify(this.player)));
-        }, 0);
     }
 
     async handleAnswer() {
@@ -1004,6 +1305,94 @@ export class CommunicationQuiz extends BaseQuiz {
             console.error('[CommunicationQuiz] Failed to load scenarios from API:', error);
             console.log('[CommunicationQuiz] Falling back to default scenarios');
             // Already loaded default scenarios in constructor
+        }
+    }
+
+    // New recovery method for handling emergency recovery situations
+    async recoverProgress() {
+        console.log('[CommunicationQuiz] Entering emergency recovery mode');
+        try {
+            const username = localStorage.getItem('username');
+            if (!username) {
+                console.error('[CommunicationQuiz] No username found, cannot recover progress');
+                return false;
+            }
+            
+            // Make sure we have access to the QuizSyncService
+            if (typeof window.quizSyncService === 'undefined' && typeof quizSyncService === 'undefined') {
+                console.error('[CommunicationQuiz] QuizSyncService not available, cannot perform recovery');
+                return false;
+            }
+            
+            const syncService = window.quizSyncService || quizSyncService;
+            console.log('[CommunicationQuiz] Using QuizSyncService to recover progress data');
+            
+            // Try to recover progress data
+            const recoveredData = await syncService.recoverProgressData(username, this.quizName);
+            
+            if (!recoveredData) {
+                console.warn('[CommunicationQuiz] No data could be recovered, recovery failed');
+                return false;
+            }
+            
+            console.log('[CommunicationQuiz] Successfully recovered data:', {
+                questionCount: recoveredData.questionHistory?.length || 0,
+                experience: recoveredData.experience || 0,
+                status: recoveredData.status || 'unknown'
+            });
+            
+            // Sanitize the recovered data
+            const progressData = {
+                experience: !isNaN(parseFloat(recoveredData.experience)) ? parseFloat(recoveredData.experience) : 0,
+                tools: Array.isArray(recoveredData.tools) ? recoveredData.tools : [],
+                questionHistory: Array.isArray(recoveredData.questionHistory) ? recoveredData.questionHistory : [],
+                currentScenario: 0, // Will be set correctly below
+                status: recoveredData.status || 'in-progress',
+                questionsAnswered: Array.isArray(recoveredData.questionHistory) ? recoveredData.questionHistory.length : 0,
+                scorePercentage: !isNaN(parseFloat(recoveredData.scorePercentage)) ? parseFloat(recoveredData.scorePercentage) : 0
+            };
+            
+            // Set currentScenario based on question history
+            if (progressData.questionHistory.length > 0) {
+                progressData.currentScenario = progressData.questionHistory.length;
+            }
+            
+            // Update player state
+            this.player.experience = progressData.experience;
+            this.player.tools = progressData.tools;
+            this.player.questionHistory = progressData.questionHistory;
+            this.player.currentScenario = progressData.currentScenario;
+            
+            console.log('[CommunicationQuiz] Player state updated from recovered data:', {
+                experience: this.player.experience,
+                questionHistory: this.player.questionHistory.length,
+                currentScenario: this.player.currentScenario
+            });
+            
+            // If quiz is completed, show end game screen
+            if ((progressData.status === 'completed' || 
+                 progressData.status === 'passed' || 
+                 progressData.status === 'failed') && 
+                progressData.questionHistory.length > 0) {
+                console.log(`[CommunicationQuiz] Quiz is ${progressData.status}, showing end screen`);
+                this.endGame(progressData.status === 'failed');
+                return true;
+            }
+            
+            // Save the recovered data to ensure it's persistently stored
+            try {
+                await this.saveProgress();
+                console.log('[CommunicationQuiz] Saved recovered progress to all storage locations');
+            } catch (saveError) {
+                console.warn('[CommunicationQuiz] Failed to save recovered progress:', saveError);
+            }
+            
+            // Show the current scenario
+            this.displayScenario();
+            return true;
+        } catch (error) {
+            console.error('[CommunicationQuiz] Recovery attempt failed:', error);
+            return false;
         }
     }
 }
