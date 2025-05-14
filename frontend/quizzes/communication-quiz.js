@@ -75,6 +75,13 @@ export class CommunicationQuiz extends BaseQuiz {
         this.initializeEventListeners();
         
         this.isLoading = false;
+
+        // Add this debugging check to the constructor
+        console.log('[CommunicationQuiz] Quiz name being used:', this.quizName);
+        const relatedLocalStorage = Object.keys(localStorage).filter(k => 
+            k.includes('quiz_progress') || k.includes('communication')
+        );
+        console.log('[CommunicationQuiz] Related localStorage keys:', relatedLocalStorage);
     }
 
     showError(message) {
@@ -114,7 +121,7 @@ export class CommunicationQuiz extends BaseQuiz {
             const scorePercentage = Math.round((correctAnswers / 15) * 100);
             status = scorePercentage >= 70 ? 'passed' : 'failed';
         }
-
+    
         const progressData = {
             experience: this.player.experience,
             tools: this.player.tools,
@@ -125,7 +132,7 @@ export class CommunicationQuiz extends BaseQuiz {
             status: status,
             scorePercentage: this.calculateScorePercentage()
         };
-
+    
         try {
             const username = localStorage.getItem('username');
             if (!username) {
@@ -137,8 +144,26 @@ export class CommunicationQuiz extends BaseQuiz {
             const storageKey = `quiz_progress_${username}_${this.quizName}`;
             localStorage.setItem(storageKey, JSON.stringify({ data: progressData }));
             
-            // Add to sync queue for reliable API saving
-            quizSyncService.addToSyncQueue(username, this.quizName, progressData);
+            // Try to use sync service, but have a direct API fallback
+            try {
+                if (typeof quizSyncService !== 'undefined') {
+                    quizSyncService.addToSyncQueue(username, this.quizName, progressData);
+                    console.log('[CommunicationQuiz] Added to sync queue');
+                } else {
+                    throw new Error('Sync service not available');
+                }
+            } catch (syncError) {
+                // Direct API saving as fallback
+                console.warn('[CommunicationQuiz] Sync service failed, trying direct API save:', syncError);
+                
+                try {
+                    await this.apiService.saveQuizProgress(this.quizName, progressData);
+                    console.log('[CommunicationQuiz] Saved progress directly to API');
+                } catch (apiError) {
+                    console.error('[CommunicationQuiz] Failed to save to API:', apiError);
+                    // Already saved to localStorage above, so we have a backup
+                }
+            }
             
             return true;
         } catch (error) {
@@ -155,8 +180,13 @@ export class CommunicationQuiz extends BaseQuiz {
                 return false;
             }
 
-            // Use user-specific key for localStorage
-            const storageKey = `quiz_progress_${username}_${this.quizName}`;
+            // Define all possible storage keys
+            const storageKeys = [
+                `quiz_progress_${username}_${this.quizName}`,
+                `quiz_progress_${username}_communication`,  // Fallback for standardized name
+                `quiz_progress_${username}_${this.quizName}_backup` // Possible backup key
+            ];
+            
             let progressData = null;
             
             // Try to get progress from API first
@@ -165,28 +195,43 @@ export class CommunicationQuiz extends BaseQuiz {
                 const apiProgress = await this.apiService.getQuizProgress(this.quizName);
                 
                 if (apiProgress && apiProgress.data) {
-                    console.log('[CommunicationQuiz] Successfully loaded progress from API');
+                    console.log('[CommunicationQuiz] Successfully loaded progress from API:', apiProgress.data);
                     progressData = apiProgress.data;
                     
-                    // Also update localStorage with the latest data
-                    localStorage.setItem(storageKey, JSON.stringify({ data: progressData }));
+                    // Also update localStorage with the latest data for future use
+                    localStorage.setItem(storageKeys[0], JSON.stringify({ 
+                        data: progressData,
+                        timestamp: Date.now() 
+                    }));
                 }
             } catch (apiError) {
                 console.warn('[CommunicationQuiz] Failed to load progress from API:', apiError);
             }
             
-            // If API failed, try localStorage
+            // If API failed, try all localStorage options
             if (!progressData) {
                 console.log('[CommunicationQuiz] Trying to load progress from localStorage');
-                const localData = localStorage.getItem(storageKey);
                 
-                if (localData) {
-                    try {
-                        const parsed = JSON.parse(localData);
-                        progressData = parsed.data || parsed;
-                        console.log('[CommunicationQuiz] Successfully loaded progress from localStorage');
-                    } catch (parseError) {
-                        console.error('[CommunicationQuiz] Failed to parse localStorage data:', parseError);
+                // Try each storage key in order
+                for (const key of storageKeys) {
+                    const localData = localStorage.getItem(key);
+                    
+                    if (localData) {
+                        try {
+                            const parsed = JSON.parse(localData);
+                            const candidateData = parsed.data || parsed;
+                            
+                            // Check if this data has any history
+                            if (candidateData && Array.isArray(candidateData.questionHistory) && 
+                                candidateData.questionHistory.length > 0) {
+                                
+                                progressData = candidateData;
+                                console.log(`[CommunicationQuiz] Successfully loaded progress from localStorage key: ${key}`);
+                                break; // Found valid data, stop looking
+                            }
+                        } catch (parseError) {
+                            console.error(`[CommunicationQuiz] Failed to parse localStorage data for key ${key}:`, parseError);
+                        }
                     }
                 }
             }
@@ -195,7 +240,7 @@ export class CommunicationQuiz extends BaseQuiz {
                 console.log('[CommunicationQuiz] Processing loaded progress data');
                 
                 // Sanitize and validate data
-                progressData.experience = progressData.experience || 0;
+                progressData.experience = !isNaN(parseFloat(progressData.experience)) ? parseFloat(progressData.experience) : 0;
                 progressData.tools = Array.isArray(progressData.tools) ? progressData.tools : [];
                 progressData.questionHistory = Array.isArray(progressData.questionHistory) ? 
                     progressData.questionHistory : [];
@@ -242,9 +287,9 @@ export class CommunicationQuiz extends BaseQuiz {
                     return true;
                 }
 
-                // If data was loaded from localStorage and differs from API, save it back
+                // If data was loaded from localStorage or had any fixes applied, save it back
                 // to ensure consistency with our sanitized values
-                this.saveProgress();
+                await this.saveProgress();
                 
                 // Show the current question based on progress
                 this.displayScenario();
@@ -300,6 +345,12 @@ export class CommunicationQuiz extends BaseQuiz {
                 transitionContainer.innerHTML = '';
                 transitionContainer.classList.remove('active');
             }
+
+            // Add this to the startGame method after loading progress
+            console.log('[CommunicationQuiz] Progress status check:', {
+                playerState: this.player,
+                localStorageKeys: Object.keys(localStorage).filter(k => k.includes('quiz_progress'))
+            });
         } catch (error) {
             console.error('Failed to start game:', error);
             this.showError('Failed to start the quiz. Please try refreshing the page.');
