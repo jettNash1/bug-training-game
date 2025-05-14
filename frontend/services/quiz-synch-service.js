@@ -20,7 +20,7 @@ export class QuizSyncService {
         // Don't add duplicates for the same quiz
         const existingIndex = this.syncQueue.findIndex(
             item => item.username === username && item.quizName === quizName
-        );
+        ); 
         
         if (existingIndex !== -1) {
             // Replace with newer data
