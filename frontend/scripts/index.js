@@ -23,6 +23,43 @@ function normalizeQuizName(quizName) {
         .replace(/^-+|-+$/g, '');
 }
 
+function autoRefreshIndexOnFocus() {
+    let wasInactive = false;
+    
+    // Listen for page visibility changes
+    document.addEventListener('visibilitychange', () => {
+        if (document.visibilityState === 'hidden') {
+            wasInactive = true;
+        } else if (document.visibilityState === 'visible' && wasInactive) {
+            // Page is now visible after being inactive
+            console.log('[Index] Page became visible after being inactive, refreshing quiz progress');
+            wasInactive = false;
+            
+            // Refresh the page data when coming back to the index
+            if (window.indexPage) {
+                window.indexPage.refreshAllQuizProgress();
+            }
+        }
+    });
+    
+    // Also check for window focus events as a backup
+    window.addEventListener('focus', () => {
+        if (wasInactive) {
+            console.log('[Index] Window regained focus after being inactive, refreshing quiz progress');
+            wasInactive = false;
+            
+            // Refresh the page data when coming back to the index
+            if (window.indexPage) {
+                window.indexPage.refreshAllQuizProgress();
+            }
+        }
+    });
+    
+    window.addEventListener('blur', () => {
+        wasInactive = true;
+    });
+}
+
 class IndexPage {
     constructor() {
         try {
@@ -204,40 +241,125 @@ class IndexPage {
             });
             // --- END MIGRATION ---
 
-            // --- Check localStorage for any more recent/complete quiz progress ---
-            // This helps ensure we have the latest progress even if the API data is stale
+            // --- STEP 1: Scan ALL localStorage for ANY quiz progress ---
             try {
-                console.log('[Index] Checking localStorage for more recent quiz progress');
-                this.quizItems.forEach(item => {
-                    const quizId = item.dataset.quiz;
-                    if (!quizId) return;
-                    
-                    const normalizedQuizId = normalizeQuizName(quizId);
-                    const storageKey = `quiz_progress_${username}_${normalizedQuizId}`;
-                    
+                console.log('[Index] Scanning ALL localStorage for quiz progress items');
+                
+                // Get all keys that match the quiz progress pattern
+                const progressPattern = `quiz_progress_${username}_`;
+                const allKeys = Object.keys(localStorage);
+                const progressKeys = allKeys.filter(key => key.startsWith(progressPattern));
+                
+                console.log(`[Index] Found ${progressKeys.length} potential quiz progress items in localStorage`);
+                
+                // Process each key to extract quiz progress
+                progressKeys.forEach(key => {
                     try {
-                        const localStorageData = localStorage.getItem(storageKey);
-                        if (localStorageData) {
-                            const parsedData = JSON.parse(localStorageData);
-                            if (parsedData && parsedData.data) {
-                                const localProgress = parsedData.data;
-                                const apiProgress = quizProgress[normalizedQuizId];
-                                
-                                // Compare the two and use the one with more progress
-                                if (!apiProgress || 
-                                    (localProgress.questionsAnswered > apiProgress.questionsAnswered) || 
-                                    (localProgress.lastUpdated && apiProgress.lastUpdated && new Date(localProgress.lastUpdated) > new Date(apiProgress.lastUpdated))) {
-                                    console.log(`[Index] Using localStorage progress for ${normalizedQuizId} (more recent/complete than API)`);
-                                    quizProgress[normalizedQuizId] = localProgress;
-                                }
-                            }
+                        // Extract the quiz name from the key
+                        const quizNameMatch = key.match(new RegExp(`${progressPattern}([^_]+)`));
+                        if (!quizNameMatch || !quizNameMatch[1]) return;
+                        
+                        let quizId = quizNameMatch[1];
+                        if (key.includes('_backup') || key.includes('_emergency')) {
+                            // Skip backup/emergency keys as we'll process the main one
+                            return;
                         }
-                    } catch (localError) {
-                        console.warn(`[Index] Error checking localStorage for ${normalizedQuizId}:`, localError);
+                        
+                        // Normalize the quiz ID
+                        const normalizedQuizId = normalizeQuizName(quizId);
+                        
+                        // Process the localStorage data
+                        const localStorageData = localStorage.getItem(key);
+                        if (!localStorageData) return;
+                        
+                        const parsedData = JSON.parse(localStorageData);
+                        if (!parsedData || !parsedData.data) return;
+                        
+                        const localProgress = parsedData.data;
+                        const apiProgress = quizProgress[normalizedQuizId];
+                        
+                        // Check if we should use this localStorage data
+                        if (!apiProgress || 
+                            (localProgress.questionsAnswered > (apiProgress.questionsAnswered || 0)) ||
+                            (localProgress.lastUpdated && apiProgress.lastUpdated && 
+                             new Date(localProgress.lastUpdated) > new Date(apiProgress.lastUpdated))) {
+                            
+                            console.log(`[Index] Using localStorage progress for ${normalizedQuizId} from key ${key}`);
+                            quizProgress[normalizedQuizId] = localProgress;
+                        }
+                    } catch (keyError) {
+                        console.warn(`[Index] Error processing localStorage key ${key}:`, keyError);
                     }
                 });
-            } catch (localError) {
-                console.warn('[Index] Error checking localStorage for quiz progress:', localError);
+            } catch (localScanError) {
+                console.warn('[Index] Error scanning localStorage for quiz progress:', localScanError);
+            }
+
+            // --- STEP 2: Individual API calls for quizzes missing progress ---
+            try {
+                // Get all quiz IDs from the quiz items
+                const quizItems = Array.from(this.quizItems || []);
+                const quizIds = quizItems
+                    .map(item => item.dataset.quiz)
+                    .filter(Boolean)
+                    .map(id => normalizeQuizName(id));
+                
+                console.log(`[Index] Found ${quizIds.length} quiz IDs from quiz items`);
+                
+                // Check which quizzes are missing progress data
+                const missingProgress = quizIds.filter(id => {
+                    const progress = quizProgress[id];
+                    return !progress || !progress.questionsAnswered;
+                });
+                
+                if (missingProgress.length > 0) {
+                    console.log(`[Index] Fetching individual progress for ${missingProgress.length} quizzes`);
+                    
+                    // Create all fetch promises
+                    const fetchPromises = missingProgress.map(async (quizId) => {
+                        try {
+                            // Get the progress for this quiz
+                            const result = await this.apiService.getQuizProgress(quizId);
+                            
+                            if (result.success && result.data && (
+                                result.data.questionsAnswered > 0 || 
+                                (result.data.questionHistory && result.data.questionHistory.length > 0)
+                            )) {
+                                console.log(`[Index] Got individual progress for ${quizId}: ${result.data.questionsAnswered} questions`);
+                                quizProgress[quizId] = result.data;
+                                return true;
+                            } else {
+                                // If API call didn't return anything useful, check localStorage one more time
+                                const storageKey = `quiz_progress_${username}_${quizId}`;
+                                try {
+                                    const localData = localStorage.getItem(storageKey);
+                                    if (localData) {
+                                        const parsed = JSON.parse(localData);
+                                        if (parsed && parsed.data && (
+                                            parsed.data.questionsAnswered > 0 ||
+                                            (parsed.data.questionHistory && parsed.data.questionHistory.length > 0)
+                                        )) {
+                                            console.log(`[Index] Found individual localStorage progress for ${quizId}`);
+                                            quizProgress[quizId] = parsed.data;
+                                            return true;
+                                        }
+                                    }
+                                } catch (e) {
+                                    console.warn(`[Index] Error checking localStorage for ${quizId}:`, e);
+                                }
+                            }
+                            return false;
+                        } catch (error) {
+                            console.warn(`[Index] Error fetching individual progress for ${quizId}:`, error);
+                            return false;
+                        }
+                    });
+                    
+                    // Wait for all fetches to complete
+                    await Promise.all(fetchPromises);
+                }
+            } catch (apiError) {
+                console.warn('[Index] Error fetching individual quiz progress:', apiError);
             }
 
             // --- Robust progress sync for legacy users ---
@@ -875,12 +997,31 @@ class IndexPage {
         
         console.groupEnd();
     }
+
+    async refreshAllQuizProgress() {
+        console.log('[Index] Refreshing all quiz progress');
+        
+        // Don't show loading overlay for refresh
+        await this.loadUserProgress();
+        this.updateQuizProgress();
+        this.updateCategoryProgress();
+        
+        console.log('[Index] Quiz progress refresh complete');
+    }
 }
 
 // Initialize the index page when the DOM is loaded
 let indexPage;
 document.addEventListener('DOMContentLoaded', () => {
     indexPage = new IndexPage();
+    
+    // Store in window for global access and auto-refresh functionality
+    window.indexPage = indexPage;
+    
+    // Initialize auto-refresh functionality
+    autoRefreshIndexOnFocus();
+    
+    console.log('[Index] Initialization complete, auto-refresh for quiz progress is active');
 });
 
 // Expose handleLogout to the window object
