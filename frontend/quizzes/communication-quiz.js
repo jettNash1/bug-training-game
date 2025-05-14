@@ -436,6 +436,179 @@ export class CommunicationQuiz extends BaseQuiz {
                 gameScreen.classList.remove('hidden');
             }
 
+            // DIRECT DOM MANIPULATION AS LAST RESORT
+            // If the normal methods don't work, we'll try to directly update the DOM
+            console.log('[CommunicationQuiz][displayScenario] Applying direct DOM manipulation to ensure content is visible');
+            // Create or update title
+            let directTitleElement = document.querySelector('.scenario-title') || document.querySelector('h2') || titleElement;
+            if (directTitleElement) {
+                directTitleElement.textContent = scenario.title;
+                directTitleElement.style.display = 'block';
+                console.log('[CommunicationQuiz][displayScenario] Direct title update:', scenario.title);
+            } else {
+                // If we can't find the title element, try to create one
+                const mainContent = document.querySelector('.quiz-content') || document.querySelector('#game-screen') || document.body;
+                directTitleElement = document.createElement('h2');
+                directTitleElement.textContent = scenario.title;
+                directTitleElement.style.fontWeight = 'bold';
+                directTitleElement.style.fontSize = '1.5rem';
+                directTitleElement.style.marginBottom = '1rem';
+                mainContent.prepend(directTitleElement);
+                console.log('[CommunicationQuiz][displayScenario] Created new title element');
+            }
+            
+            // Create or update description
+            let directDescElement = document.querySelector('.scenario-description') || document.querySelector('#scenario-description') || descriptionElement;
+            if (directDescElement) {
+                directDescElement.textContent = scenario.description;
+                directDescElement.style.display = 'block';
+                console.log('[CommunicationQuiz][displayScenario] Direct description update:', scenario.description);
+            } else {
+                // If we can't find the description element, try to create one
+                const mainContent = document.querySelector('.quiz-content') || document.querySelector('#game-screen') || document.body;
+                directDescElement = document.createElement('p');
+                directDescElement.textContent = scenario.description;
+                directDescElement.style.marginBottom = '2rem';
+                if (directTitleElement.nextSibling) {
+                    mainContent.insertBefore(directDescElement, directTitleElement.nextSibling);
+                } else {
+                    mainContent.appendChild(directDescElement);
+                }
+                console.log('[CommunicationQuiz][displayScenario] Created new description element');
+            }
+            
+            // Direct options manipulation - ensure options are displayed
+            let directOptionsContainer = document.querySelector('#options-container') || optionsContainer;
+            if (!directOptionsContainer || directOptionsContainer.innerHTML.trim() === '') {
+                console.log('[CommunicationQuiz][displayScenario] Options container empty or not found, creating direct options');
+                // Find a place to put options
+                const mainContent = document.querySelector('.quiz-content') || document.querySelector('#game-screen') || document.body;
+                
+                // Create container if needed
+                if (!directOptionsContainer) {
+                    directOptionsContainer = document.createElement('div');
+                    directOptionsContainer.id = 'options-container';
+                    directOptionsContainer.className = 'options-container';
+                    mainContent.appendChild(directOptionsContainer);
+                }
+                
+                // Clear any existing content
+                directOptionsContainer.innerHTML = '';
+                
+                // Add options directly
+                shuffledOptions.forEach((option, index) => {
+                    const optionElement = document.createElement('div');
+                    optionElement.className = 'option';
+                    optionElement.style.margin = '10px 0';
+                    optionElement.style.padding = '10px';
+                    optionElement.style.border = '1px solid #ddd';
+                    optionElement.style.borderRadius = '4px';
+                    optionElement.style.cursor = 'pointer';
+                    
+                    const radioInput = document.createElement('input');
+                    radioInput.type = 'radio';
+                    radioInput.name = 'option';
+                    radioInput.value = option.originalIndex;
+                    radioInput.id = `option${index}`;
+                    radioInput.tabIndex = 0;
+                    radioInput.setAttribute('aria-label', option.text);
+                    radioInput.setAttribute('role', 'radio');
+                    
+                    const label = document.createElement('label');
+                    label.htmlFor = `option${index}`;
+                    label.textContent = option.text;
+                    label.style.marginLeft = '10px';
+                    label.style.cursor = 'pointer';
+                    
+                    optionElement.appendChild(radioInput);
+                    optionElement.appendChild(label);
+                    directOptionsContainer.appendChild(optionElement);
+                    
+                    // Add click handler for the entire option div
+                    optionElement.addEventListener('click', () => {
+                        radioInput.checked = true;
+                    });
+                });
+                
+                // Create submit button if not exists
+                let submitButton = document.querySelector('.submit-button');
+                if (!submitButton) {
+                    submitButton = document.createElement('button');
+                    submitButton.textContent = 'Submit Answer';
+                    submitButton.className = 'submit-button';
+                    submitButton.style.marginTop = '20px';
+                    submitButton.style.padding = '10px 20px';
+                    submitButton.style.backgroundColor = '#4a90e2';
+                    submitButton.style.color = 'white';
+                    submitButton.style.border = 'none';
+                    submitButton.style.borderRadius = '4px';
+                    submitButton.style.cursor = 'pointer';
+                    submitButton.style.width = '100%';
+                    
+                    // Add click handler
+                    submitButton.addEventListener('click', () => {
+                        this.handleAnswer();
+                    });
+                    
+                    // Add to page
+                    directOptionsContainer.after(submitButton);
+                }
+                
+                console.log('[CommunicationQuiz][displayScenario] Created direct options with submit button');
+            }
+
+            // SPECIFIC SELECTORS FOR THE ACTUAL HTML ELEMENTS
+            // This targets the exact elements from the HTML
+            console.log('[CommunicationQuiz][displayScenario] Trying direct content injection using exact HTML IDs');
+            
+            // Force direct update to the actual HTML elements
+            const actualTitleElement = document.getElementById('scenario-title');
+            const actualDescriptionElement = document.getElementById('scenario-description');
+            const actualOptionsContainer = document.getElementById('options-container');
+            
+            if (actualTitleElement) {
+                actualTitleElement.textContent = scenario.title;
+                actualTitleElement.style.display = 'block';
+                console.log('[CommunicationQuiz][displayScenario] Updated actual #scenario-title element');
+            }
+            
+            if (actualDescriptionElement) {
+                actualDescriptionElement.textContent = scenario.description;
+                actualDescriptionElement.style.display = 'block';
+                console.log('[CommunicationQuiz][displayScenario] Updated actual #scenario-description element');
+            }
+            
+            if (actualOptionsContainer && (!actualOptionsContainer.children.length || actualOptionsContainer.innerHTML.trim() === '')) {
+                console.log('[CommunicationQuiz][displayScenario] Injecting options directly into #options-container');
+                actualOptionsContainer.innerHTML = '';
+                
+                shuffledOptions.forEach((option, index) => {
+                    const optionHTML = `
+                        <div class="option">
+                            <input type="radio"
+                                name="option"
+                                value="${option.originalIndex}" 
+                                id="direct-option${index}"
+                                tabindex="0"
+                                aria-label="${option.text}"
+                                role="radio">
+                            <label for="direct-option${index}">${option.text}</label>
+                        </div>
+                    `;
+                    actualOptionsContainer.insertAdjacentHTML('beforeend', optionHTML);
+                });
+                
+                // Make sure the form is enabled
+                const optionsForm = document.getElementById('options-form');
+                if (optionsForm) {
+                    optionsForm.classList.remove('hidden');
+                    const submitBtn = document.getElementById('submit-btn');
+                    if (submitBtn) {
+                        submitBtn.style.display = 'block';
+                    }
+                }
+            }
+
             // Add extra log after showing
             setTimeout(() => {
                 console.log('[CommunicationQuiz][displayScenario][post-show] player state:', {
