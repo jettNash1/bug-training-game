@@ -41,10 +41,31 @@ export class CommunicationQuiz extends BaseQuiz {
         // Initialize API service
         this.apiService = new APIService();
 
-        // Load scenarios from external data file
-        this.basicScenarios = communicationScenarios.basic;
-        this.intermediateScenarios = communicationScenarios.intermediate;
-        this.advancedScenarios = communicationScenarios.advanced;
+        // Load scenarios from external data file and ensure proper structure
+        console.log('[CommunicationQuiz][constructor] Loading scenarios from data file');
+        try {
+            // Directly load from imported file
+            this.basicScenarios = communicationScenarios.basic;
+            this.intermediateScenarios = communicationScenarios.intermediate;
+            this.advancedScenarios = communicationScenarios.advanced;
+            
+            // Verify scenario arrays are loaded properly
+            console.log('[CommunicationQuiz][constructor] Scenarios loaded:', {
+                basicScenariosLength: Array.isArray(this.basicScenarios) ? this.basicScenarios.length : 'Not an array',
+                intermediateScenariosLength: Array.isArray(this.intermediateScenarios) ? this.intermediateScenarios.length : 'Not an array',
+                advancedScenariosLength: Array.isArray(this.advancedScenarios) ? this.advancedScenarios.length : 'Not an array',
+            });
+            
+            // Log first scenario from each level for verification
+            if (Array.isArray(this.basicScenarios) && this.basicScenarios.length > 0) {
+                console.log('[CommunicationQuiz][constructor] First basic scenario:', this.basicScenarios[0].title);
+            } else {
+                console.warn('[CommunicationQuiz][constructor] No valid basic scenarios found!');
+            }
+        } catch (error) {
+            console.error('[CommunicationQuiz][constructor] Error loading scenarios:', error);
+            this.showError('Failed to load quiz scenarios. Please refresh the page.');
+        }
 
         // Initialize all screen elements
         this.gameScreen = document.getElementById('game-screen');
@@ -237,25 +258,66 @@ export class CommunicationQuiz extends BaseQuiz {
             return;
         }
 
-        // Determine level and scenario set
+        // Determine level and scenario set - with extensive logging
         let scenario;
         let scenarioSet;
         let scenarioLevel;
+        let scenarioIndex = 0;
         
         try {
+            // First, log the state of our scenario arrays
+            console.log('[CommunicationQuiz][displayScenario] Scenario arrays status:', {
+                basicScenarios: Array.isArray(this.basicScenarios) ? `Array (${this.basicScenarios.length})` : typeof this.basicScenarios,
+                intermediateScenarios: Array.isArray(this.intermediateScenarios) ? `Array (${this.intermediateScenarios.length})` : typeof this.intermediateScenarios,
+                advancedScenarios: Array.isArray(this.advancedScenarios) ? `Array (${this.advancedScenarios.length})` : typeof this.advancedScenarios
+            });
+            
             // Calculate which level we're on and get the appropriate scenario set
             if (currentScenarioIndex < 5) {
                 scenarioSet = this.basicScenarios;
                 scenarioLevel = 'Basic';
-                scenario = scenarioSet[currentScenarioIndex];
+                scenarioIndex = currentScenarioIndex;
             } else if (currentScenarioIndex < 10) {
                 scenarioSet = this.intermediateScenarios;
                 scenarioLevel = 'Intermediate';
-                scenario = scenarioSet[currentScenarioIndex - 5];
+                scenarioIndex = currentScenarioIndex - 5;
             } else if (currentScenarioIndex < 15) {
                 scenarioSet = this.advancedScenarios;
                 scenarioLevel = 'Advanced';
-                scenario = scenarioSet[currentScenarioIndex - 10];
+                scenarioIndex = currentScenarioIndex - 10;
+            }
+            
+            // Check if scenario set is valid
+            if (!Array.isArray(scenarioSet)) {
+                console.error(`[CommunicationQuiz][displayScenario] scenarioSet is not an array for level: ${scenarioLevel}`);
+                
+                // Try emergency recovery - directly access the array
+                if (scenarioLevel === 'Basic' && Array.isArray(this.basicScenarios)) {
+                    scenarioSet = this.basicScenarios;
+                    console.log('[CommunicationQuiz][displayScenario] Emergency recovery - using direct basicScenarios array');
+                } else if (scenarioLevel === 'Intermediate' && Array.isArray(this.intermediateScenarios)) {
+                    scenarioSet = this.intermediateScenarios;
+                    console.log('[CommunicationQuiz][displayScenario] Emergency recovery - using direct intermediateScenarios array');
+                } else if (scenarioLevel === 'Advanced' && Array.isArray(this.advancedScenarios)) {
+                    scenarioSet = this.advancedScenarios;
+                    console.log('[CommunicationQuiz][displayScenario] Emergency recovery - using direct advancedScenarios array');
+                }
+            }
+            
+            // Additional safety check
+            if (!Array.isArray(scenarioSet)) {
+                console.error('[CommunicationQuiz][displayScenario] Emergency recovery failed - no valid scenario array found');
+                this.showError('Quiz data is not loading properly. Please try refreshing the page.');
+                return;
+            }
+            
+            console.log(`[CommunicationQuiz][displayScenario] Using ${scenarioLevel} scenario at index ${scenarioIndex} from set of ${scenarioSet.length}`);
+            
+            // Get scenario with index bounds check
+            if (scenarioIndex >= 0 && scenarioIndex < scenarioSet.length) {
+                scenario = scenarioSet[scenarioIndex];
+            } else {
+                console.error(`[CommunicationQuiz][displayScenario] Scenario index ${scenarioIndex} out of bounds (set length: ${scenarioSet.length})`);
             }
 
             if (!scenario) {
@@ -839,14 +901,25 @@ export class CommunicationQuiz extends BaseQuiz {
         this.generateRecommendations();
     }
 
-    // Helper to extract scenario arrays from different formats
-    extractScenarioArray(obj, key) {
-        if (Array.isArray(obj[key])) return obj[key];
-        if (obj[key] && Array.isArray(obj[key].scenarios)) return obj[key].scenarios;
-        return [];
-    }
-
     async loadScenariosWithCaching() {
+        console.log('[CommunicationQuiz][loadScenariosWithCaching] Starting scenario loading');
+        
+        // First, make sure we have default scenarios already loaded from the import
+        // This ensures we always have scenarios available
+        if (!Array.isArray(this.basicScenarios) || !this.basicScenarios.length) {
+            console.log('[CommunicationQuiz][loadScenariosWithCaching] Ensuring default scenarios are loaded');
+            this.basicScenarios = communicationScenarios.basic;
+            this.intermediateScenarios = communicationScenarios.intermediate;
+            this.advancedScenarios = communicationScenarios.advanced;
+        }
+        
+        // Log initial state
+        console.log('[CommunicationQuiz][loadScenariosWithCaching] Initial scenario state:', {
+            basicScenarios: Array.isArray(this.basicScenarios) ? this.basicScenarios.length : 'not array',
+            intermediateScenarios: Array.isArray(this.intermediateScenarios) ? this.intermediateScenarios.length : 'not array',
+            advancedScenarios: Array.isArray(this.advancedScenarios) ? this.advancedScenarios.length : 'not array'
+        });
+        
         // Try to load from cache first
         const cachedData = localStorage.getItem(`quiz_scenarios_${this.quizName}`);
         const cacheTimestamp = localStorage.getItem(`quiz_scenarios_${this.quizName}_timestamp`);
@@ -855,46 +928,136 @@ export class CommunicationQuiz extends BaseQuiz {
         const cacheValid = cacheTimestamp && (Date.now() - parseInt(cacheTimestamp)) < 86400000;
         
         if (cachedData && cacheValid) {
-            console.log('[CommunicationQuiz] Using cached scenarios');
-            const data = JSON.parse(cachedData);
-            const scenarios = data.scenarios || data;
-            this.basicScenarios = this.extractScenarioArray(scenarios, 'basic');
-            this.intermediateScenarios = this.extractScenarioArray(scenarios, 'intermediate');
-            this.advancedScenarios = this.extractScenarioArray(scenarios, 'advanced');
-            if (!this.basicScenarios.length) console.error('No valid basic scenarios loaded!');
-            if (!this.intermediateScenarios.length) console.error('No valid intermediate scenarios loaded!');
-            if (!this.advancedScenarios.length) console.error('No valid advanced scenarios loaded!');
+            try {
+                console.log('[CommunicationQuiz][loadScenariosWithCaching] Using cached scenarios');
+                const data = JSON.parse(cachedData);
+                
+                // Handle different possible data structures
+                if (data.scenarios) {
+                    // Handle {scenarios: {basic: [...], ...}} structure
+                    if (data.scenarios.basic && Array.isArray(data.scenarios.basic)) {
+                        this.basicScenarios = data.scenarios.basic;
+                    }
+                    if (data.scenarios.intermediate && Array.isArray(data.scenarios.intermediate)) {
+                        this.intermediateScenarios = data.scenarios.intermediate;
+                    }
+                    if (data.scenarios.advanced && Array.isArray(data.scenarios.advanced)) {
+                        this.advancedScenarios = data.scenarios.advanced;
+                    }
+                } else if (data.basic || data.intermediate || data.advanced) {
+                    // Handle {basic: [...], ...} structure
+                    if (data.basic && Array.isArray(data.basic)) {
+                        this.basicScenarios = data.basic;
+                    }
+                    if (data.intermediate && Array.isArray(data.intermediate)) {
+                        this.intermediateScenarios = data.intermediate;
+                    }
+                    if (data.advanced && Array.isArray(data.advanced)) {
+                        this.advancedScenarios = data.advanced;
+                    }
+                }
+                
+                // Validate loaded data
+                if (!Array.isArray(this.basicScenarios) || !this.basicScenarios.length) {
+                    console.warn('[CommunicationQuiz][loadScenariosWithCaching] Invalid basic scenarios from cache, falling back to defaults');
+                    this.basicScenarios = communicationScenarios.basic;
+                }
+                if (!Array.isArray(this.intermediateScenarios) || !this.intermediateScenarios.length) {
+                    console.warn('[CommunicationQuiz][loadScenariosWithCaching] Invalid intermediate scenarios from cache, falling back to defaults');
+                    this.intermediateScenarios = communicationScenarios.intermediate;
+                }
+                if (!Array.isArray(this.advancedScenarios) || !this.advancedScenarios.length) {
+                    console.warn('[CommunicationQuiz][loadScenariosWithCaching] Invalid advanced scenarios from cache, falling back to defaults');
+                    this.advancedScenarios = communicationScenarios.advanced;
+                }
+            } catch (error) {
+                console.error('[CommunicationQuiz][loadScenariosWithCaching] Error parsing cached scenarios:', error);
+                console.log('[CommunicationQuiz][loadScenariosWithCaching] Using default scenarios instead');
+                // Ensure defaults are loaded
+                this.basicScenarios = communicationScenarios.basic;
+                this.intermediateScenarios = communicationScenarios.intermediate;
+                this.advancedScenarios = communicationScenarios.advanced;
+            }
+            
+            // Log our scenario state after loading from cache
+            console.log('[CommunicationQuiz][loadScenariosWithCaching] Scenario state after cache loading:', {
+                basicScenarios: Array.isArray(this.basicScenarios) ? this.basicScenarios.length : 'not array',
+                intermediateScenarios: Array.isArray(this.intermediateScenarios) ? this.intermediateScenarios.length : 'not array',
+                advancedScenarios: Array.isArray(this.advancedScenarios) ? this.advancedScenarios.length : 'not array'
+            });
+            
             return;
         }
         
         // If no valid cache, try to fetch from API or local file
         try {
-            console.log('[CommunicationQuiz] Fetching scenarios from API or local file');
+            console.log('[CommunicationQuiz][loadScenariosWithCaching] Fetching scenarios from API or local file');
             const data = await this.apiService.getQuizScenarios(this.quizName);
-            let scenarios = null;
-            if (data && data.scenarios) {
-                scenarios = data.scenarios;
-            } else if (data && (data.basic || data.intermediate || data.advanced)) {
-                scenarios = data;
-            }
-            if (scenarios) {
+            console.log('[CommunicationQuiz][loadScenariosWithCaching] API response:', data);
+            
+            if (data) {
+                // Process different potential structures from API
+                if (data.scenarios) {
+                    // Handle {scenarios: {basic: [...], ...}} structure
+                    if (data.scenarios.basic && Array.isArray(data.scenarios.basic)) {
+                        this.basicScenarios = data.scenarios.basic;
+                    }
+                    if (data.scenarios.intermediate && Array.isArray(data.scenarios.intermediate)) {
+                        this.intermediateScenarios = data.scenarios.intermediate;
+                    }
+                    if (data.scenarios.advanced && Array.isArray(data.scenarios.advanced)) {
+                        this.advancedScenarios = data.scenarios.advanced;
+                    }
+                } else if (data.basic || data.intermediate || data.advanced) {
+                    // Handle {basic: [...], ...} structure
+                    if (data.basic && Array.isArray(data.basic)) {
+                        this.basicScenarios = data.basic;
+                    }
+                    if (data.intermediate && Array.isArray(data.intermediate)) {
+                        this.intermediateScenarios = data.intermediate;
+                    }
+                    if (data.advanced && Array.isArray(data.advanced)) {
+                        this.advancedScenarios = data.advanced;
+                    }
+                }
+                
                 // Cache the result
-                localStorage.setItem(`quiz_scenarios_${this.quizName}`, JSON.stringify({ scenarios }));
+                localStorage.setItem(`quiz_scenarios_${this.quizName}`, JSON.stringify({
+                    basic: this.basicScenarios,
+                    intermediate: this.intermediateScenarios,
+                    advanced: this.advancedScenarios
+                }));
                 localStorage.setItem(`quiz_scenarios_${this.quizName}_timestamp`, Date.now().toString());
-                this.basicScenarios = this.extractScenarioArray(scenarios, 'basic');
-                this.intermediateScenarios = this.extractScenarioArray(scenarios, 'intermediate');
-                this.advancedScenarios = this.extractScenarioArray(scenarios, 'advanced');
-                if (!this.basicScenarios.length) console.error('No valid basic scenarios loaded!');
-                if (!this.intermediateScenarios.length) console.error('No valid intermediate scenarios loaded!');
-                if (!this.advancedScenarios.length) console.error('No valid advanced scenarios loaded!');
-            } else {
-                console.error('No scenarios loaded!');
+            }
+            
+            // Validate loaded data regardless of source
+            if (!Array.isArray(this.basicScenarios) || !this.basicScenarios.length) {
+                console.warn('[CommunicationQuiz][loadScenariosWithCaching] Invalid basic scenarios, using defaults');
+                this.basicScenarios = communicationScenarios.basic;
+            }
+            if (!Array.isArray(this.intermediateScenarios) || !this.intermediateScenarios.length) {
+                console.warn('[CommunicationQuiz][loadScenariosWithCaching] Invalid intermediate scenarios, using defaults');
+                this.intermediateScenarios = communicationScenarios.intermediate;
+            }
+            if (!Array.isArray(this.advancedScenarios) || !this.advancedScenarios.length) {
+                console.warn('[CommunicationQuiz][loadScenariosWithCaching] Invalid advanced scenarios, using defaults');
+                this.advancedScenarios = communicationScenarios.advanced;
             }
         } catch (error) {
-            console.error('[CommunicationQuiz] Failed to load scenarios from API or local file:', error);
-            console.log('[CommunicationQuiz] Falling back to default scenarios');
-            // Already loaded default scenarios in constructor
+            console.error('[CommunicationQuiz][loadScenariosWithCaching] Failed to load scenarios from API or local file:', error);
+            console.log('[CommunicationQuiz][loadScenariosWithCaching] Using default scenarios instead');
+            // Ensure defaults are loaded
+            this.basicScenarios = communicationScenarios.basic;
+            this.intermediateScenarios = communicationScenarios.intermediate;
+            this.advancedScenarios = communicationScenarios.advanced;
         }
+        
+        // Final verification log
+        console.log('[CommunicationQuiz][loadScenariosWithCaching] Final scenario state:', {
+            basicScenarios: Array.isArray(this.basicScenarios) ? this.basicScenarios.length : 'not array',
+            intermediateScenarios: Array.isArray(this.intermediateScenarios) ? this.intermediateScenarios.length : 'not array',
+            advancedScenarios: Array.isArray(this.advancedScenarios) ? this.advancedScenarios.length : 'not array'
+        });
     }
 
     // Emergency recovery method now simplified
