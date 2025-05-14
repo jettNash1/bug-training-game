@@ -1,4 +1,4 @@
-import { APIService } from '../api-service.js';
+import { APIService } from '../frontend/api-service.js';
 
 class QuizSyncService {
     constructor() {
