@@ -835,10 +835,32 @@ export class APIService {
     }
 
     async getQuizScenarios(quizName) {
+        // Map quiz names to their local scenario file paths
+        const localScenarioMap = {
+            'tester-mindset': '../data/testerMindset-scenarios.js',
+            'communication': '../data/communication-scenarios.js',
+            // Add more mappings as needed
+        };
+
+        if (localScenarioMap[quizName]) {
+            try {
+                // Dynamic import of the local scenario file
+                const module = await import(localScenarioMap[quizName]);
+                // The exported object should be named consistently
+                // e.g., testerMindsetScenarios or communicationScenarios
+                const scenarios = module.testerMindsetScenarios || module.communicationScenarios || module.default;
+                return { scenarios };
+            } catch (error) {
+                console.error(`Error loading local scenarios for ${quizName}:`, error);
+                throw new Error(`Failed to load local scenarios for ${quizName}`);
+            }
+        }
+
+        // Fallback: fetch from API as before
         try {
             const response = await fetch(`/api/quizzes/${quizName}/scenarios`, {
-                        method: 'GET',
-                        headers: {
+                method: 'GET',
+                headers: {
                     'Content-Type': 'application/json',
                     'Authorization': `Bearer ${localStorage.getItem('token')}`
                 }
