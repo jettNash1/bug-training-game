@@ -346,13 +346,13 @@ export class CommunicationQuiz extends BaseQuiz {
                 [shuffledOptions[i], shuffledOptions[j]] = [shuffledOptions[j], shuffledOptions[i]];
             }
             optionsContainer.innerHTML = '';
-            
+
             shuffledOptions.forEach((option, index) => {
                 const optionElement = document.createElement('div');
                 optionElement.className = 'option';
                 optionElement.innerHTML = `
-                    <input type="radio" 
-                        name="option" 
+                    <input type="radio"
+                        name="option"
                         value="${option.originalIndex}" 
                         id="option${index}"
                         tabindex="0"
