@@ -240,9 +240,20 @@ class BadgesPage {
             completionDateHtml = `<div class="badge-completion-date">Completed: ${formattedDate}</div>`;
         }
         
+        // Normalize image path if needed
+        let imagePath = badge.imagePath;
+        if (imagePath && imagePath.endsWith('.svg')) {
+            // Normalize paths for cms-testing and sanity-smoke
+            if (imagePath.toLowerCase().includes('cms.svg')) {
+                imagePath = imagePath.replace('cms.svg', 'cms-testing.svg');
+            } else if (imagePath.toLowerCase().includes('sanity.svg') && !imagePath.includes('sanity-smoke')) {
+                imagePath = imagePath.replace('sanity.svg', 'sanity-smoke.svg');
+            }
+        }
+        
         // Check if we have an image path
-        const badgeIconHtml = badge.imagePath ? 
-            `<img src="${badge.imagePath}" alt="${badge.name}" class="badge-image" onerror="this.onerror=null; this.src='assets/badges/default.svg';">` : 
+        const badgeIconHtml = imagePath ? 
+            `<img src="${imagePath}" alt="${badge.name}" class="badge-image" onerror="this.onerror=null; this.src='assets/badges/default.svg';">` : 
             `<i class="${badge.icon}"></i>`;
         
         badgeElement.innerHTML = `
@@ -261,6 +272,18 @@ class BadgesPage {
     // Helper method to preload images
     preloadImage(src) {
         const img = new Image();
+        
+        // Ensure we're using the correct SVG paths
+        // This helps with potential case sensitivity issues or outdated paths
+        if (src.endsWith('.svg')) {
+            // Normalize paths for cms-testing and sanity-smoke
+            if (src.toLowerCase().includes('cms.svg')) {
+                src = src.replace('cms.svg', 'cms-testing.svg');
+            } else if (src.toLowerCase().includes('sanity.svg') && !src.includes('sanity-smoke')) {
+                src = src.replace('sanity.svg', 'sanity-smoke.svg');
+            }
+        }
+        
         img.src = src;
         
         // For SVG files, we may need special handling

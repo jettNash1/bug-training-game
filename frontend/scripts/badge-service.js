@@ -150,8 +150,23 @@ export class BadgeService {
                 };
             });
 
+            // Filter out duplicate badges (same quiz but different case)
+            // For example, if we have both 'cms-testing' and 'CMS-testing', we only want one
+            const uniqueBadges = [];
+            const quizIds = new Set();
+            
+            badges.forEach(badge => {
+                const normalizedId = badge.quizId.toLowerCase();
+                
+                // If we haven't seen this quiz ID yet (case-insensitive), add it
+                if (!quizIds.has(normalizedId)) {
+                    quizIds.add(normalizedId);
+                    uniqueBadges.push(badge);
+                }
+            });
+
             // Sort badges: completed first, then alphabetically by name
-            badges.sort((a, b) => {
+            uniqueBadges.sort((a, b) => {
                 // First sort by completion status
                 if (a.earned && !b.earned) return -1;
                 if (!a.earned && b.earned) return 1;
@@ -161,17 +176,17 @@ export class BadgeService {
             });
 
             // Count completed badges
-            const completedCount = badges.filter(badge => badge.earned).length;
+            const completedCount = uniqueBadges.filter(badge => badge.earned).length;
 
             console.log('Final badges data:', {
-                total: badges.length,
+                total: uniqueBadges.length,
                 completed: completedCount,
-                badges: badges
+                badges: uniqueBadges
             });
 
             return {
-                badges,
-                totalBadges: badges.length,
+                badges: uniqueBadges,
+                totalBadges: uniqueBadges.length,
                 earnedCount: completedCount
             };
         } catch (error) {
