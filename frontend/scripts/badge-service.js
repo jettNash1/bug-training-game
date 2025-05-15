@@ -2,6 +2,60 @@ export class BadgeService {
     constructor(apiService) {
         this.apiService = apiService;
         this.cachedCategories = null;
+        // Define badge image mapping
+        this.badgeImageMapping = {
+            // Default mapping for common quiz types
+            'automation-interview': 'automation.png',
+            'build-verification': 'build.png',
+            'cms-testing': 'cms.png',
+            'integration-testing': 'integration.png',
+            'api-testing': 'api.png',
+            'security-testing': 'security.png',
+            'performance-testing': 'performance.png',
+            'usability-testing': 'usability.png',
+            'accessibility-testing': 'accessibility.png',
+            'mobile-testing': 'mobile.png',
+            'regression-testing': 'regression.png',
+            'functional-testing': 'functional.png',
+            'exploratory-testing': 'exploratory.png',
+            'test-planning': 'planning.png',
+            'defect-management': 'defect.png',
+            'test-automation': 'automation.png',
+            'continuous-integration': 'ci.png',
+            'agile-testing': 'agile.png',
+            'qa-fundamentals': 'fundamentals.png',
+            'test-strategy': 'strategy.png',
+            'test-metrics': 'metrics.png',
+            'test-estimation': 'estimation.png',
+            'test-reporting': 'reporting.png',
+            'test-design': 'design.png',
+            'test-environment': 'environment.png',
+            'test-data': 'data.png',
+            'test-case': 'testcase.png',
+        };
+    }
+
+    // Get badge image for a specific quiz
+    getBadgeImage(quizId) {
+        // Convert quiz-id format to quizId for lookup
+        const normalizedId = quizId.replace('quiz-', '');
+        
+        // Check if we have a specific image for this quiz
+        if (this.badgeImageMapping[normalizedId]) {
+            return `assets/badges/${this.badgeImageMapping[normalizedId]}`;
+        }
+        
+        // Try to extract category from the quiz ID
+        const parts = normalizedId.split('-');
+        if (parts.length > 1) {
+            const category = parts[0];
+            if (this.badgeImageMapping[category]) {
+                return `assets/badges/${this.badgeImageMapping[category]}`;
+            }
+        }
+        
+        // Fallback to a default image if no specific match
+        return 'assets/badges/default.png';
     }
 
     countVisibleQuizzes(categories) {
@@ -69,7 +123,9 @@ export class BadgeService {
                     icon: 'fa-solid fa-check-circle',
                     earned: isCompleted,
                     completionDate: isCompleted ? (progress.lastUpdated || progress.completedAt || new Date().toISOString()) : null,
-                    quizId: quiz.id
+                    quizId: quiz.id,
+                    // Add image path to the badge data
+                    imagePath: this.getBadgeImage(`quiz-${quiz.id}`)
                 };
             });
 
@@ -231,7 +287,9 @@ export class BadgeService {
                 icon: 'fa-solid fa-check-circle',
                 earned: isCompleted,
                 completionDate: completionDate,
-                quizId: quiz.id
+                quizId: quiz.id,
+                // Add image path to the badge data
+                imagePath: this.getBadgeImage(`quiz-${quiz.id}`)
             });
         }
 

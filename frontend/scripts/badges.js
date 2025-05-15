@@ -94,6 +94,9 @@ class BadgesPage {
             // Apply enhanced styling
             this.applyEnhancedStyling();
 
+            // Preload default badge image
+            this.preloadImage('assets/badges/default.png');
+
             // Load badges data with timeout
             const timeoutPromise = new Promise((_, reject) => {
                 setTimeout(() => reject(new Error('Loading badges timed out')), 10000);
@@ -156,6 +159,13 @@ class BadgesPage {
             if (!badgesData || !badgesData.badges) {
                 throw new Error('Invalid badges data received');
             }
+            
+            // Preload all badge images
+            badgesData.badges.forEach(badge => {
+                if (badge.imagePath) {
+                    this.preloadImage(badge.imagePath);
+                }
+            });
             
             // Update the badge counters
             const earnedElement = document.getElementById('badges-earned');
@@ -230,9 +240,14 @@ class BadgesPage {
             completionDateHtml = `<div class="badge-completion-date">Completed: ${formattedDate}</div>`;
         }
         
+        // Check if we have an image path
+        const badgeIconHtml = badge.imagePath ? 
+            `<img src="${badge.imagePath}" alt="${badge.name}" class="badge-image" onerror="this.onerror=null; this.src='assets/badges/default.png';">` : 
+            `<i class="${badge.icon}"></i>`;
+        
         badgeElement.innerHTML = `
             <div class="badge-icon">
-                <i class="${badge.icon}"></i>
+                ${badgeIconHtml}
             </div>
             <h3 class="badge-name">${badge.name}</h3>
             <p class="badge-description">${badge.description}</p>
@@ -241,6 +256,13 @@ class BadgesPage {
         `;
         
         return badgeElement;
+    }
+
+    // Helper method to preload images
+    preloadImage(src) {
+        const img = new Image();
+        img.src = src;
+        return img;
     }
 }
 
