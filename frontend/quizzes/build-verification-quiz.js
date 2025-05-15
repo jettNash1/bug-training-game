@@ -42,9 +42,9 @@ export class BuildVerificationQuiz extends BaseQuiz {
         };
 
         // Load scenarios from our data file
-        this.basicScenarios = testerMindsetScenarios.basic;
-        this.intermediateScenarios = testerMindsetScenarios.intermediate;
-        this.advancedScenarios = testerMindsetScenarios.advanced;
+        this.basicScenarios = buildVerificationScenarios.basic;
+        this.intermediateScenarios = buildVerificationScenarios.intermediate;
+        this.advancedScenarios = buildVerificationScenarios.advanced;
 
         // Initialize elements
         this.gameScreen = document.getElementById('game-screen');
@@ -658,23 +658,29 @@ export class BuildVerificationQuiz extends BaseQuiz {
                 let recommendationsHTML = '';
                 
                 if (scorePercentage >= 90) {
-                    recommendationsHTML = '<p>🌟 Outstanding! You have demonstrated excellent knowledge of testing principles!</p>';
+                    recommendationsHTML = '<p>🌟 Outstanding! You have demonstrated excellent knowledge of Build Verification Testing principles!</p>';
                 } else if (scorePercentage >= 70) {
                     recommendationsHTML = '<p>👍 Good job! Here are some areas to review:</p><ul>';
                     // Find areas where the user made mistakes
                     const incorrectQuestions = this.player.questionHistory.filter(q => !q.isCorrect);
                     incorrectQuestions.forEach(q => {
-                        recommendationsHTML += `<li>Review ${q.scenario.title}: ${q.scenario.description}</li>`;
+                        // Add tool recommendation if available
+                        const toolRec = q.selectedAnswer.tool ? 
+                            `Consider using ${q.selectedAnswer.tool} to improve in this area.` : '';
+                        recommendationsHTML += `<li>Review ${q.scenario.title}: ${q.scenario.description} ${toolRec}</li>`;
                     });
                     recommendationsHTML += '</ul>';
                 } else {
-                    recommendationsHTML = '<p>📚 Here are key areas for improvement:</p><ul>';
+                    recommendationsHTML = '<p>📚 Here are key areas for improvement in Build Verification Testing:</p><ul>';
                     // Find areas where the user made mistakes
                     const incorrectQuestions = this.player.questionHistory.filter(q => !q.isCorrect);
                     incorrectQuestions.forEach(q => {
-                        recommendationsHTML += `<li>Review ${q.scenario.title}: ${q.scenario.description}</li>`;
+                        // Add tool recommendation if available
+                        const toolRec = q.selectedAnswer.tool ? 
+                            `Consider using ${q.selectedAnswer.tool} to improve in this area.` : '';
+                        recommendationsHTML += `<li>Review ${q.scenario.title}: ${q.scenario.description} ${toolRec}</li>`;
                     });
-                    recommendationsHTML += '</ul>';
+                    recommendationsHTML += '</ul><p>Focus on understanding core BVT concepts like test case development, environment setup, and issue handling.</p>';
                 }
                 
                 recommendations.innerHTML = recommendationsHTML;
