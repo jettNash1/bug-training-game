@@ -226,20 +226,68 @@ export class APIService {
     async getAllUsers() {
         try {
             console.log('Fetching all users');
-            const response = await this.fetchWithAdminAuth(`${this.baseUrl}/admin/users`);
-            
-            if (!response.success) {
-                console.error('Failed to fetch users:', response.message);
+            const adminToken = localStorage.getItem('adminToken');
+            if (!adminToken) {
+                console.error('No admin token found when trying to fetch users');
                 return { 
                     success: false, 
-                    message: response.message || 'Failed to fetch users',
+                    message: 'Authentication required',
                     data: []
                 };
             }
+
+            const response = await fetch(`${this.baseUrl}/admin/users`, {
+                method: 'GET',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${adminToken}`
+                },
+                credentials: 'include'
+            });
+
+            if (!response.ok) {
+                console.error(`Failed to fetch users: ${response.status} ${response.statusText}`);
+                return { 
+                    success: false, 
+                    message: `Server error: ${response.status}`,
+                    data: []
+                };
+            }
+
+            // Read response text first
+            const text = await response.text();
+            console.log('Raw users response:', text);
+            
+            // Try to parse as JSON
+            let data;
+            try {
+                data = JSON.parse(text);
+            } catch (e) {
+                console.error('Failed to parse response as JSON:', e);
+                return { 
+                    success: false, 
+                    message: 'Invalid server response',
+                    data: []
+                };
+            }
+
+            // Ensure we have an array of users
+            if (!data || !Array.isArray(data.data || data)) {
+                console.error('Response does not contain users array:', data);
+                return {
+                    success: true,
+                    message: 'No users found or invalid data format',
+                    data: []
+                };
+            }
+
+            // Get the users array from the response
+            const users = data.data || data;
+            console.log(`Found ${users.length} users`);
             
             return {
                 success: true,
-                data: response.data || []
+                data: users
             };
         } catch (error) {
             console.error('Error fetching all users:', error);
