@@ -41,9 +41,6 @@ class TestQuiz extends BaseQuiz {
             tools: []
         };
         
-        // Initialize the API service
-        this.apiService = new APIService();
-        
         // Load scenarios from our data file
         this.basicScenarios = testScenarios.basic;
         this.intermediateScenarios = testScenarios.intermediate;
@@ -100,27 +97,6 @@ class TestQuiz extends BaseQuiz {
         document.addEventListener('keydown', (e) => {
             if (e.key === 'Enter' && e.target.type === 'radio') {
                 this.handleAnswer();
-            }
-        });
-        
-        // Add visibility change event listener to check progress when returning to tab
-        document.addEventListener('visibilitychange', () => {
-            if (document.visibilityState === 'visible') {
-                console.log('[TestQuiz] Page became visible, checking progress state');
-                
-                // Ensure the current scenario is displayed when returning to the page
-                if (this.player && this.player.questionHistory) {
-                    // Ensure currentScenario matches question history length
-                    if (this.player.currentScenario !== this.player.questionHistory.length) {
-                        console.log('[TestQuiz] Fixing currentScenario to match question history length');
-                        this.player.currentScenario = this.player.questionHistory.length;
-                        
-                        // If the quiz was in progress, show the correct screen
-                        if (!this.shouldEndGame()) {
-                            this.displayScenario();
-                        }
-                    }
-                }
             }
         });
     }
@@ -207,13 +183,6 @@ class TestQuiz extends BaseQuiz {
                 // CRITICAL: Ensure currentScenario is set correctly based on question history
                 this.player.currentScenario = this.player.questionHistory.length;
                 console.log('[TestQuiz] Set currentScenario to match question history:', this.player.currentScenario);
-                
-                // Log the loaded state
-                console.log('[TestQuiz] Loaded player state:', {
-                    currentScenario: this.player.currentScenario,
-                    questionsAnswered: this.player.questionHistory.length,
-                    experience: this.player.experience
-                });
             }
             
             // Check if the quiz is already completed
@@ -252,12 +221,6 @@ class TestQuiz extends BaseQuiz {
         const currentScenarios = this.getCurrentScenarios();
         const scenarioIndex = this.player.questionHistory.length % 3; // Use modulo to cycle through 3 scenarios per level
         const scenario = currentScenarios[scenarioIndex]; 
-        
-        if (!scenario) {
-            console.error(`[TestQuiz] No scenario found for index ${scenarioIndex} in level ${this.getCurrentLevel()}`);
-            this.showError('Failed to load question. Please refresh the page.');
-            return;
-        }
         
         console.log(`[TestQuiz] Displaying scenario #${this.player.currentScenario + 1}:`, {
             title: scenario.title,
@@ -374,104 +337,6 @@ class TestQuiz extends BaseQuiz {
             this.saveProgress('in-progress').catch(err => {
                 console.warn('[TestQuiz] Save after display failed:', err);
             });
-        }
-    }
-    
-    // Override saveProgress to add extra logging and ensure data is properly saved
-    async saveProgress(status = null) {
-        try {
-            console.log('[TestQuiz] Saving progress with status:', status);
-            
-            // Use the parent implementation
-            await super.saveProgress(status);
-            
-            // Also save to QuizUser directly to ensure it's stored in the API
-            const username = localStorage.getItem('username');
-            if (username) {
-                try {
-                    const user = new QuizUser(username);
-                    
-                    // Calculate score based on correct answers
-                    const score = this.calculateScorePercentage();
-                    
-                    // Save to QuizUser API
-                    await user.updateQuizScore(
-                        this.quizName,
-                        score, // score
-                        this.player.experience, // experience
-                        this.player.tools, // tools
-                        this.player.questionHistory, // questionHistory
-                        this.player.questionHistory.length, // questionsAnswered
-                        status || 'in-progress' // status
-                    );
-                    
-                    console.log('[TestQuiz] Successfully saved progress to API');
-                } catch (apiError) {
-                    console.error('[TestQuiz] Error saving to API:', apiError);
-                    // Continue execution - localStorage save from super is our backup
-                }
-            }
-            
-            return true;
-        } catch (error) {
-            console.error('[TestQuiz] Error saving progress:', error);
-            return false;
-        }
-    }
-    
-    // Override loadProgress to add verification
-    async loadProgress() {
-        console.log('[TestQuiz] Loading progress...');
-        
-        try {
-            // First try to load progress using the BaseQuiz implementation
-            const hasProgress = await super.loadProgress();
-            console.log('[TestQuiz] Parent loadProgress result:', hasProgress);
-            
-            if (hasProgress && this.player.questionHistory && this.player.questionHistory.length > 0) {
-                // Make sure currentScenario matches the question history length
-                this.player.currentScenario = this.player.questionHistory.length;
-                
-                console.log('[TestQuiz] Successfully loaded progress:', {
-                    experience: this.player.experience,
-                    questionHistory: this.player.questionHistory.length,
-                    currentScenario: this.player.currentScenario
-                });
-                
-                return true;
-            }
-            
-            // If the parent class couldn't load progress, try the API directly
-            try {
-                const username = localStorage.getItem('username');
-                if (username) {
-                    const user = new QuizUser(username);
-                    const quizProgress = await user.getQuizProgress(this.quizName);
-                    
-                    if (quizProgress && quizProgress.questionHistory && quizProgress.questionHistory.length > 0) {
-                        console.log('[TestQuiz] Loaded progress from API:', quizProgress);
-                        
-                        // Update player state from API data
-                        this.player.experience = quizProgress.experience || 0;
-                        this.player.tools = quizProgress.tools || [];
-                        this.player.questionHistory = quizProgress.questionHistory || [];
-                        this.player.currentScenario = quizProgress.questionHistory.length;
-                        
-                        // Save this to localStorage so next time it loads faster
-                        await super.saveProgress('in-progress');
-                        
-                        return true;
-                    }
-                }
-            } catch (apiError) {
-                console.error('[TestQuiz] Error loading from API:', apiError);
-                // Continue with whatever we got from the parent class
-            }
-            
-            return hasProgress;
-        } catch (error) {
-            console.error('[TestQuiz] Error loading progress:', error);
-            return false;
         }
     }
     
