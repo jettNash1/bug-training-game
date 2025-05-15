@@ -150,23 +150,35 @@ export class BadgeService {
                 };
             });
 
-            // Filter out duplicate badges (same quiz but different case)
-            // For example, if we have both 'cms-testing' and 'CMS-testing', we only want one
+            // Filter out duplicate badges using a more sophisticated approach
             const uniqueBadges = [];
-            const quizIds = new Set();
+            const normalizedSeenQuizzes = new Map(); // Map normalized ID to original badge
             
             badges.forEach(badge => {
-                const normalizedId = badge.quizId.toLowerCase();
+                // Normalize quiz ID for comparison (handle case differences and extra words)
+                let normalizedId = badge.quizId.toLowerCase();
                 
-                // If we haven't seen this quiz ID yet (case-insensitive), add it
-                if (!quizIds.has(normalizedId)) {
-                    quizIds.add(normalizedId);
-                    uniqueBadges.push(badge);
+                // Special handling for problem cases
+                if (normalizedId.includes('sanity') || normalizedId.includes('smoke')) {
+                    normalizedId = 'sanity-smoke'; // Normalize all sanity/smoke variations
+                } else if (normalizedId.includes('cms') || normalizedId.includes('content')) {
+                    normalizedId = 'cms-testing'; // Normalize all CMS variations
+                } else if (normalizedId.includes('exploratory')) {
+                    normalizedId = 'exploratory'; // Normalize all exploratory variations
+                }
+                
+                // Use the first badge we find for each normalized ID, or replace with earned one
+                if (!normalizedSeenQuizzes.has(normalizedId) || 
+                    (badge.earned && !normalizedSeenQuizzes.get(normalizedId).earned)) {
+                    normalizedSeenQuizzes.set(normalizedId, badge);
                 }
             });
+            
+            // Convert the Map values to our unique badges array
+            const finalBadges = Array.from(normalizedSeenQuizzes.values());
 
             // Sort badges: completed first, then alphabetically by name
-            uniqueBadges.sort((a, b) => {
+            finalBadges.sort((a, b) => {
                 // First sort by completion status
                 if (a.earned && !b.earned) return -1;
                 if (!a.earned && b.earned) return 1;
@@ -176,17 +188,17 @@ export class BadgeService {
             });
 
             // Count completed badges
-            const completedCount = uniqueBadges.filter(badge => badge.earned).length;
+            const completedCount = finalBadges.filter(badge => badge.earned).length;
 
             console.log('Final badges data:', {
-                total: uniqueBadges.length,
+                total: finalBadges.length,
                 completed: completedCount,
-                badges: uniqueBadges
+                badges: finalBadges
             });
 
             return {
-                badges: uniqueBadges,
-                totalBadges: uniqueBadges.length,
+                badges: finalBadges,
+                totalBadges: finalBadges.length,
                 earnedCount: completedCount
             };
         } catch (error) {

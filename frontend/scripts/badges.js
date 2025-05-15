@@ -243,11 +243,14 @@ class BadgesPage {
         // Normalize image path if needed
         let imagePath = badge.imagePath;
         if (imagePath && imagePath.endsWith('.svg')) {
-            // Normalize paths for cms-testing and sanity-smoke
-            if (imagePath.toLowerCase().includes('cms.svg')) {
-                imagePath = imagePath.replace('cms.svg', 'cms-testing.svg');
-            } else if (imagePath.toLowerCase().includes('sanity.svg') && !imagePath.includes('sanity-smoke')) {
-                imagePath = imagePath.replace('sanity.svg', 'sanity-smoke.svg');
+            // Normalize paths for specific quiz types 
+            if (imagePath.toLowerCase().includes('cms')) {
+                imagePath = 'assets/badges/cms-testing.svg';
+            } else if ((imagePath.toLowerCase().includes('sanity') || imagePath.toLowerCase().includes('smoke')) && 
+                       !imagePath.includes('sanity-smoke.svg')) {
+                imagePath = 'assets/badges/sanity-smoke.svg';
+            } else if (imagePath.toLowerCase().includes('exploratory') && !imagePath.endsWith('exploratory.svg')) {
+                imagePath = 'assets/badges/exploratory.svg';
             }
         }
         
@@ -276,11 +279,14 @@ class BadgesPage {
         // Ensure we're using the correct SVG paths
         // This helps with potential case sensitivity issues or outdated paths
         if (src.endsWith('.svg')) {
-            // Normalize paths for cms-testing and sanity-smoke
-            if (src.toLowerCase().includes('cms.svg')) {
-                src = src.replace('cms.svg', 'cms-testing.svg');
-            } else if (src.toLowerCase().includes('sanity.svg') && !src.includes('sanity-smoke')) {
-                src = src.replace('sanity.svg', 'sanity-smoke.svg');
+            // Normalize paths for specific quiz types
+            if (src.toLowerCase().includes('cms')) {
+                src = 'assets/badges/cms-testing.svg';
+            } else if ((src.toLowerCase().includes('sanity') || src.toLowerCase().includes('smoke')) && 
+                !src.includes('sanity-smoke.svg')) {
+                src = 'assets/badges/sanity-smoke.svg';
+            } else if (src.toLowerCase().includes('exploratory') && !src.endsWith('exploratory.svg')) {
+                src = 'assets/badges/exploratory.svg';
             }
         }
         
