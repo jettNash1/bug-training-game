@@ -400,4 +400,30 @@
     margin: 20px 0;
     border-radius: 4px;
     color: #c0392b;
+}
+
+.timeout-warning {
+    background-color: #ffe6e6;
+    border-left: 4px solid #ff4d4d;
+    padding: 10px;
+    margin: 10px 0;
+    border-radius: 4px;
+    color: #d63031;
+    font-weight: bold;
+}
+
+.review-item.timed-out {
+    border-left-color: #ff4d4d;
+}
+
+.review-item.timed-out::after {
+    content: "⏱️ Timed Out";
+    display: inline-block;
+    background-color: #ffe6e6;
+    color: #d63031;
+    font-size: 0.8rem;
+    padding: 2px 6px;
+    border-radius: 4px;
+    margin-left: 10px;
+    font-weight: bold;
 } 

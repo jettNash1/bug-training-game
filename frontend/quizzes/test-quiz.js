@@ -65,6 +65,11 @@ class TestQuiz extends BaseQuiz {
             document.querySelector('.quiz-container').appendChild(transitionContainer);
         }
         
+        // Timer-related properties
+        this.questionTimer = null;
+        this.questionStartTime = null;
+        this.questionTimeLimitInSeconds = 60; // 60 seconds per question
+        
         this.isLoading = false;
         
         // Initialize event listeners
@@ -209,6 +214,107 @@ class TestQuiz extends BaseQuiz {
         }
     }
     
+    // Initialize the timer for the current question
+    initializeTimer() {
+        // Clear any existing timer
+        if (this.questionTimer) {
+            clearInterval(this.questionTimer);
+            this.questionTimer = null;
+        }
+        
+        // Reset timer display
+        const timerContainer = document.getElementById('timer-container');
+        const timerDisplay = document.getElementById('timer-display');
+        
+        if (!timerContainer || !timerDisplay) {
+            // Create timer elements if they don't exist
+            this.createTimerElement();
+            return this.initializeTimer(); // Restart the function now that elements exist
+        }
+        
+        // Show the timer
+        timerContainer.classList.remove('hidden');
+        timerContainer.classList.remove('timer-warning');
+        
+        // Set starting time
+        const timeLimit = this.questionTimeLimitInSeconds;
+        timerDisplay.textContent = timeLimit;
+        
+        // Record start time
+        this.questionStartTime = Date.now();
+        
+        // Start timer interval
+        this.questionTimer = setInterval(() => {
+            const elapsedSeconds = Math.floor((Date.now() - this.questionStartTime) / 1000);
+            const remainingSeconds = Math.max(0, timeLimit - elapsedSeconds);
+            
+            timerDisplay.textContent = remainingSeconds;
+            
+            // Add warning class when less than 10 seconds remain
+            if (remainingSeconds <= 10 && !timerContainer.classList.contains('timer-warning')) {
+                timerContainer.classList.add('timer-warning');
+            }
+            
+            // If time is up, auto-submit answer or select random option
+            if (remainingSeconds <= 0) {
+                clearInterval(this.questionTimer);
+                this.handleTimedOut();
+            }
+        }, 1000);
+    }
+    
+    // Create timer element if it doesn't exist
+    createTimerElement() {
+        // Check if timer container already exists
+        if (document.getElementById('timer-container')) {
+            return;
+        }
+        
+        // Create timer container
+        const timerContainer = document.createElement('div');
+        timerContainer.id = 'timer-container';
+        timerContainer.className = 'timer-container';
+        timerContainer.setAttribute('aria-live', 'polite');
+        
+        // Create timer display
+        const timerDisplay = document.createElement('span');
+        timerDisplay.id = 'timer-display';
+        timerDisplay.textContent = this.questionTimeLimitInSeconds;
+        
+        // Add timer to container
+        timerContainer.appendChild(timerDisplay);
+        
+        // Add container to game screen
+        const questionSection = document.querySelector('.question-section');
+        if (questionSection) {
+            questionSection.appendChild(timerContainer);
+        } else {
+            // Fallback to game screen if question section not found
+            const gameScreen = document.getElementById('game-screen');
+            if (gameScreen) {
+                gameScreen.appendChild(timerContainer);
+            }
+        }
+    }
+    
+    // Handle when time runs out for a question
+    handleTimedOut() {
+        console.log('[TestQuiz] Question timed out');
+        
+        // Select a random option if none selected
+        const selectedOption = document.querySelector('input[name="option"]:checked');
+        if (!selectedOption) {
+            const options = document.querySelectorAll('input[name="option"]');
+            if (options.length > 0) {
+                const randomIndex = Math.floor(Math.random() * options.length);
+                options[randomIndex].checked = true;
+            }
+        }
+        
+        // Submit the answer with the timed out flag
+        this.handleAnswer(true);
+    }
+    
     // Display the current scenario
     displayScenario() {
         // Check if the quiz is already completed
@@ -331,6 +437,9 @@ class TestQuiz extends BaseQuiz {
         this.outcomeScreen.classList.add('hidden');
         this.endScreen.classList.add('hidden');
         
+        // Initialize timer for the question
+        this.initializeTimer();
+        
         // Save progress after displaying - ensures we're in a consistent state
         if (this.player.questionHistory.length > 0) {
             // Only save if we have actual progress to avoid recursive saves
@@ -341,11 +450,17 @@ class TestQuiz extends BaseQuiz {
     }
     
     // Handle answer submission
-    async handleAnswer() {
+    async handleAnswer(timedOut = false) {
         if (this.isLoading) return;
         
         try {
             this.isLoading = true;
+            
+            // Clear the timer
+            if (this.questionTimer) {
+                clearInterval(this.questionTimer);
+                this.questionTimer = null;
+            }
             
             const submitButton = document.querySelector('.submit-button');
             if (submitButton) {
@@ -353,17 +468,19 @@ class TestQuiz extends BaseQuiz {
             }
             
             const selectedOption = document.querySelector('input[name="option"]:checked');
-            if (!selectedOption) {
+            if (!selectedOption && !timedOut) {
                 alert('Please select an answer.');
                 this.isLoading = false;
                 if (submitButton) {
                     submitButton.disabled = false;
                 }
+                // Restart timer since we're not proceeding
+                this.initializeTimer();
                 return;
             }
             
             // Get the selected option index
-            const optionIndex = parseInt(selectedOption.value);
+            const optionIndex = selectedOption ? parseInt(selectedOption.value) : 0;
             
             // Get the current scenario
             const currentScenarios = this.getCurrentScenarios();
@@ -375,11 +492,14 @@ class TestQuiz extends BaseQuiz {
             
             console.log('[TestQuiz] Selected answer:', {
                 text: selectedAnswer.text,
-                experience: selectedAnswer.experience
+                experience: selectedAnswer.experience,
+                timedOut: timedOut
             });
             
-            // Add to player experience
-            this.player.experience += selectedAnswer.experience;
+            // Add to player experience (no points if timed out)
+            if (!timedOut) {
+                this.player.experience += selectedAnswer.experience;
+            }
             
             // Find the correct answer (option with highest experience)
             const correctAnswer = scenario.options.reduce((prev, current) => 
@@ -389,12 +509,16 @@ class TestQuiz extends BaseQuiz {
             // Mark selected answer as correct or incorrect
             selectedAnswer.isCorrect = selectedAnswer === correctAnswer;
             
+            // Calculate time spent on this question
+            const timeSpent = this.questionStartTime ? Date.now() - this.questionStartTime : null;
+            
             // Add to question history
             this.player.questionHistory.push({
                 scenario: scenario,
                 selectedAnswer: selectedAnswer,
                 isCorrect: selectedAnswer.isCorrect,
-                timeSpent: null
+                timeSpent: timeSpent,
+                timedOut: timedOut
             });
             
             // Increment current scenario
@@ -410,16 +534,27 @@ class TestQuiz extends BaseQuiz {
             // Display outcome content
             const outcomeContent = document.querySelector('.outcome-content');
             if (outcomeContent) {
+                // Prepare the outcome message
+                let outcomeHeader = selectedAnswer.isCorrect ? 'Correct!' : 'Incorrect';
+                let outcomeMessage = selectedAnswer.outcome || '';
+                
+                // Add timed out message if applicable
+                if (timedOut) {
+                    outcomeHeader = 'Time\'s Up!';
+                    outcomeMessage = 'You ran out of time. A random answer was selected.';
+                }
+                
                 outcomeContent.innerHTML = `
-                    <h3>${selectedAnswer.isCorrect ? 'Correct!' : 'Incorrect'}</h3>
-                    <p>${selectedAnswer.outcome || ''}</p>
+                    <h3>${outcomeHeader}</h3>
+                    <p>${outcomeMessage}</p>
                     <p class="result">${selectedAnswer.isCorrect ? 'Correct answer!' : 'Try again next time.'}</p>
-                    ${selectedAnswer.tool ? `<p class="tool-gained">You've gained the <strong>${selectedAnswer.tool}</strong> tool!</p>` : ''}
+                    ${timedOut ? '<p class="timeout-warning">Remember to answer within the time limit!</p>' : ''}
+                    ${selectedAnswer.tool && !timedOut ? `<p class="tool-gained">You've gained the <strong>${selectedAnswer.tool}</strong> tool!</p>` : ''}
                     <button id="continue-btn" class="submit-button">Continue</button>
                 `;
                 
-                // If this answer added a tool, add it to player's tools
-                if (selectedAnswer.tool && !this.player.tools.includes(selectedAnswer.tool)) {
+                // If this answer added a tool and wasn't timed out, add it to player's tools
+                if (selectedAnswer.tool && !timedOut && !this.player.tools.includes(selectedAnswer.tool)) {
                     this.player.tools.push(selectedAnswer.tool);
                 }
                 
@@ -513,6 +648,12 @@ class TestQuiz extends BaseQuiz {
             this.outcomeScreen.classList.add('hidden');
             this.endScreen.classList.remove('hidden');
             
+            // Hide the timer
+            const timerContainer = document.getElementById('timer-container');
+            if (timerContainer) {
+                timerContainer.classList.add('hidden');
+            }
+            
             // Hide the progress card on the end screen
             const progressCard = document.querySelector('.quiz-header-progress');
             if (progressCard) {
@@ -587,12 +728,17 @@ class TestQuiz extends BaseQuiz {
                     reviewItem.className = 'review-item';
                     reviewItem.classList.add(record.isCorrect ? 'correct' : 'incorrect');
                     
+                    // Add timed out class if applicable
+                    if (record.timedOut) {
+                        reviewItem.classList.add('timed-out');
+                    }
+                    
                     reviewItem.innerHTML = `
                         <h4>Question ${index + 1}</h4>
                         <p class="scenario">${record.scenario.title}</p>
                         <p class="answer"><strong>Your Answer:</strong> ${record.selectedAnswer.text}</p>
                         <p class="outcome"><strong>Outcome:</strong> ${record.selectedAnswer.outcome}</p>
-                        <p class="result"><strong>Result:</strong> ${record.isCorrect ? 'Correct' : 'Incorrect'}</p>
+                        <p class="result"><strong>Result:</strong> ${record.isCorrect ? 'Correct' : 'Incorrect'} ${record.timedOut ? '(Timed Out)' : ''}</p>
                     `;
                     
                     reviewList.appendChild(reviewItem);
@@ -611,6 +757,12 @@ class TestQuiz extends BaseQuiz {
     // Restart the quiz
     async restartQuiz() {
         console.log('[TestQuiz] Restarting quiz...');
+        
+        // Clear the timer if it exists
+        if (this.questionTimer) {
+            clearInterval(this.questionTimer);
+            this.questionTimer = null;
+        }
         
         // Reset player state
         this.player = {
