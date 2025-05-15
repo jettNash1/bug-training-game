@@ -428,7 +428,8 @@ export class APIService {
             'fully-scripted', 
             'exploratory',
             'sanity-smoke', 
-            'functional-interview'
+            'functional-interview',
+            'test-quiz'
         ];
         
         // If it's an exact match with our known list, return it directly

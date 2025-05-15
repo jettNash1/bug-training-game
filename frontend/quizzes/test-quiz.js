@@ -214,6 +214,24 @@ class TestQuiz extends BaseQuiz {
                     questionsAnswered: this.player.questionHistory.length,
                     experience: this.player.experience
                 });
+                
+                // Sanity check progress consistency
+                if (this.player.questionHistory.length > 0 && this.player.experience === 0) {
+                    // If we have history but no experience, try to recalculate
+                    let calculatedXP = 0;
+                    this.player.questionHistory.forEach(record => {
+                        if (record.selectedAnswer && typeof record.selectedAnswer.experience === 'number') {
+                            calculatedXP += record.selectedAnswer.experience;
+                        }
+                    });
+                    
+                    if (calculatedXP > 0) {
+                        console.log(`[TestQuiz] Fixing inconsistent state: Recalculated experience from question history: ${calculatedXP}`);
+                        this.player.experience = calculatedXP;
+                        // Save the fixed state
+                        await this.saveProgress('in-progress');
+                    }
+                }
             }
             
             // Check if the quiz is already completed
@@ -383,7 +401,8 @@ class TestQuiz extends BaseQuiz {
             console.log('[TestQuiz] Saving progress with status:', status);
             
             // Use the parent implementation
-            await super.saveProgress(status);
+            const result = await super.saveProgress(status);
+            console.log('[TestQuiz] Parent saveProgress result:', result);
             
             // Also save to QuizUser directly to ensure it's stored in the API
             const username = localStorage.getItem('username');
@@ -394,18 +413,43 @@ class TestQuiz extends BaseQuiz {
                     // Calculate score based on correct answers
                     const score = this.calculateScorePercentage();
                     
+                    // Create a sanitized copy of player state
+                    const sanitizedHistory = Array.isArray(this.player.questionHistory) ? 
+                        this.player.questionHistory : [];
+                    const sanitizedTools = Array.isArray(this.player.tools) ? 
+                        this.player.tools : [];
+                    
                     // Save to QuizUser API
                     await user.updateQuizScore(
                         this.quizName,
                         score, // score
                         this.player.experience, // experience
-                        this.player.tools, // tools
-                        this.player.questionHistory, // questionHistory
-                        this.player.questionHistory.length, // questionsAnswered
+                        sanitizedTools, // tools
+                        sanitizedHistory, // questionHistory
+                        sanitizedHistory.length, // questionsAnswered
                         status || 'in-progress' // status
                     );
                     
                     console.log('[TestQuiz] Successfully saved progress to API');
+                    
+                    // As a precaution, also save directly to localStorage using consistent key format
+                    const strictKey = `strict_quiz_progress_${username}_${this.quizName}`;
+                    const progressData = {
+                        experience: this.player.experience,
+                        tools: sanitizedTools,
+                        questionHistory: sanitizedHistory,
+                        currentScenario: sanitizedHistory.length,
+                        status: status || 'in-progress',
+                        lastUpdated: new Date().toISOString()
+                    };
+                    
+                    localStorage.setItem(strictKey, JSON.stringify({
+                        quizName: this.quizName,
+                        data: progressData,
+                        timestamp: new Date().toISOString()
+                    }));
+                    
+                    console.log('[TestQuiz] Also saved backup to localStorage with key:', strictKey);
                 } catch (apiError) {
                     console.error('[TestQuiz] Error saving to API:', apiError);
                     // Continue execution - localStorage save from super is our backup
@@ -428,17 +472,19 @@ class TestQuiz extends BaseQuiz {
             const hasProgress = await super.loadProgress();
             console.log('[TestQuiz] Parent loadProgress result:', hasProgress);
             
-            if (hasProgress && this.player.questionHistory && this.player.questionHistory.length > 0) {
+            if (hasProgress) {
                 // Make sure currentScenario matches the question history length
-                this.player.currentScenario = this.player.questionHistory.length;
-                
-                console.log('[TestQuiz] Successfully loaded progress:', {
-                    experience: this.player.experience,
-                    questionHistory: this.player.questionHistory.length,
-                    currentScenario: this.player.currentScenario
-                });
-                
-                return true;
+                if (this.player.questionHistory && this.player.questionHistory.length > 0) {
+                    this.player.currentScenario = this.player.questionHistory.length;
+                    
+                    console.log('[TestQuiz] Successfully loaded progress:', {
+                        experience: this.player.experience,
+                        questionHistory: this.player.questionHistory.length,
+                        currentScenario: this.player.currentScenario
+                    });
+                    
+                    return true;
+                }
             }
             
             // If the parent class couldn't load progress, try the API directly
@@ -466,6 +512,36 @@ class TestQuiz extends BaseQuiz {
             } catch (apiError) {
                 console.error('[TestQuiz] Error loading from API:', apiError);
                 // Continue with whatever we got from the parent class
+            }
+            
+            // Check local storage directly as a last resort
+            try {
+                const username = localStorage.getItem('username');
+                if (username) {
+                    // Try both strict and legacy storage keys
+                    const strictKey = `strict_quiz_progress_${username}_${this.quizName}`;
+                    const legacyKey = `quiz_progress_${username}_${this.quizName}`;
+                    
+                    let storageData = localStorage.getItem(strictKey) || localStorage.getItem(legacyKey);
+                    if (storageData) {
+                        const parsed = JSON.parse(storageData);
+                        const progressData = parsed.data || parsed;
+                        
+                        if (progressData && progressData.questionHistory && progressData.questionHistory.length > 0) {
+                            console.log('[TestQuiz] Loaded progress from direct localStorage:', progressData);
+                            
+                            // Update player state from localStorage data
+                            this.player.experience = progressData.experience || 0;
+                            this.player.tools = progressData.tools || [];
+                            this.player.questionHistory = progressData.questionHistory || [];
+                            this.player.currentScenario = progressData.questionHistory.length;
+                            
+                            return true;
+                        }
+                    }
+                }
+            } catch (storageError) {
+                console.error('[TestQuiz] Error checking localStorage directly:', storageError);
             }
             
             return hasProgress;
@@ -807,10 +883,96 @@ class TestQuiz extends BaseQuiz {
             alert(message);
         }
     }
+    
+    // Helper to check and log progress data for debugging
+    async debugCheckProgress() {
+        try {
+            console.log('[TestQuiz] Debug checking progress state...');
+            
+            // Log current player state
+            console.log('[TestQuiz] Current player state:', {
+                experience: this.player.experience,
+                questionHistory: this.player.questionHistory?.length || 0,
+                currentScenario: this.player.currentScenario
+            });
+            
+            // Check API state
+            const username = localStorage.getItem('username');
+            if (username) {
+                try {
+                    const user = new QuizUser(username);
+                    const apiProgress = await user.getQuizProgress(this.quizName);
+                    console.log('[TestQuiz] API progress state:', apiProgress);
+                } catch (e) {
+                    console.error('[TestQuiz] Failed to get API progress:', e);
+                }
+            }
+            
+            // Check localStorage state
+            try {
+                const strictKey = `strict_quiz_progress_${username}_${this.quizName}`;
+                const legacyKey = `quiz_progress_${username}_${this.quizName}`;
+                
+                const strictData = localStorage.getItem(strictKey);
+                const legacyData = localStorage.getItem(legacyKey);
+                
+                if (strictData) {
+                    console.log('[TestQuiz] Strict localStorage data:', JSON.parse(strictData));
+                } else {
+                    console.log('[TestQuiz] No strict localStorage data found');
+                }
+                
+                if (legacyData) {
+                    console.log('[TestQuiz] Legacy localStorage data:', JSON.parse(legacyData));
+                } else {
+                    console.log('[TestQuiz] No legacy localStorage data found');
+                }
+            } catch (e) {
+                console.error('[TestQuiz] Failed to check localStorage:', e);
+            }
+            
+            // Check QuizProgressService
+            try {
+                if (this.quizProgressService) {
+                    const progressResult = await this.quizProgressService.getQuizProgress(this.quizName);
+                    console.log('[TestQuiz] QuizProgressService data:', progressResult);
+                } else {
+                    console.log('[TestQuiz] QuizProgressService not available');
+                }
+            } catch (e) {
+                console.error('[TestQuiz] Failed to check QuizProgressService:', e);
+            }
+        } catch (error) {
+            console.error('[TestQuiz] Debug check failed:', error);
+        }
+    }
 }
 
 // Create and initialize the quiz when the DOM is loaded
 document.addEventListener('DOMContentLoaded', () => {
     console.log('[TestQuiz] DOM loaded, initializing quiz...');
     window.testQuiz = new TestQuiz();
+    
+    // Add debug button for development
+    if (window.location.hostname === 'localhost' || window.location.search.includes('debug=true')) {
+        setTimeout(() => {
+            const debugButton = document.createElement('button');
+            debugButton.innerText = 'Debug Progress';
+            debugButton.style.position = 'fixed';
+            debugButton.style.bottom = '10px';
+            debugButton.style.right = '10px';
+            debugButton.style.zIndex = '9999';
+            debugButton.style.padding = '5px 10px';
+            debugButton.style.background = '#f0f0f0';
+            debugButton.style.border = '1px solid #ccc';
+            debugButton.style.borderRadius = '4px';
+            debugButton.style.cursor = 'pointer';
+            
+            debugButton.addEventListener('click', () => {
+                window.testQuiz.debugCheckProgress();
+            });
+            
+            document.body.appendChild(debugButton);
+        }, 2000);
+    }
 }); 
