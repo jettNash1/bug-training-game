@@ -176,6 +176,53 @@ export class APIService {
         }
     }
 
+    async adminLogin(username, password) {
+        try {
+            console.log('Attempting admin login:', { username, url: `${this.baseUrl}/admin/login` });
+            
+            const response = await fetch(`${this.baseUrl}/admin/login`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                credentials: 'include',
+                body: JSON.stringify({ username, password })
+            });
+
+            console.log('Admin login response status:', response.status);
+            
+            // Try to read the response text first
+            const text = await response.text();
+            console.log('Admin login response text:', text);
+
+            // Then parse it as JSON if possible
+            let data;
+            try {
+                data = JSON.parse(text);
+            } catch (e) {
+                console.error('Failed to parse response as JSON:', e);
+                throw new Error('Invalid response from server');
+            }
+
+            if (!response.ok) {
+                throw new Error(data.message || 'Admin login failed');
+            }
+
+            // Store the admin token in localStorage
+            if (data.token) {
+                localStorage.setItem('adminToken', data.token);
+                console.log('Admin token stored successfully');
+            } else {
+                console.warn('No admin token received from server');
+            }
+
+            return data;
+        } catch (error) {
+            console.error('Admin login error:', error);
+            throw error;
+        }
+    }
+
     async register(username, password) {
         try {
             console.log('Attempting registration:', { username, url: `${this.baseUrl}/users/register` });
