@@ -13,10 +13,10 @@ export class AutomationInterviewQuiz extends BaseQuiz {
             totalQuestions: 15,
             passPercentage: 70,
             performanceThresholds: [
-                { threshold: 90, message: '🏆 Outstanding! You\'re a testing mindset expert!' },
-                { threshold: 80, message: '👏 Great job! You\'ve shown strong testing instincts!' },
+                { threshold: 90, message: '🏆 Outstanding! You\'re an automation interview expert!' },
+                { threshold: 80, message: '👏 Great job! You\'ve shown strong automation interview instincts!' },
                 { threshold: 70, message: '👍 Good work! You\'ve passed the quiz!' },
-                { threshold: 0, message: '📚 Consider reviewing testing mindset best practices and try again!' }
+                { threshold: 0, message: '📚 Consider reviewing automation interview best practices and try again!' }
             ],
             quizName: 'automation-interview'
         };

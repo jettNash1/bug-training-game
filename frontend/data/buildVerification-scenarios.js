@@ -588,5 +588,5 @@ export const buildVerificationScenarios = {
                     }
                 ]
             }
-        ]
-    };
+    ]
+};
