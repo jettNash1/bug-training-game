@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200">
+  <circle cx="100" cy="100" r="90" fill="#27ae60"/>
+  <path d="M60 80 L90 80 L90 60 L140 100 L90 140 L90 120 L60 120 Z" fill="white"/>
+  <text x="60" y="105" font-family="Arial" font-size="18" font-weight="bold" fill="white">API</text>
+</svg> 

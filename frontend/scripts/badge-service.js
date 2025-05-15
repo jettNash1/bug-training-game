@@ -5,33 +5,33 @@ export class BadgeService {
         // Define badge image mapping
         this.badgeImageMapping = {
             // Default mapping for common quiz types
-            'automation-interview': 'automation.png',
-            'build-verification': 'build.png',
-            'cms-testing': 'cms.png',
-            'integration-testing': 'integration.png',
-            'api-testing': 'api.png',
-            'security-testing': 'security.png',
-            'performance-testing': 'performance.png',
-            'usability-testing': 'usability.png',
-            'accessibility-testing': 'accessibility.png',
-            'mobile-testing': 'mobile.png',
-            'regression-testing': 'regression.png',
-            'functional-testing': 'functional.png',
-            'exploratory-testing': 'exploratory.png',
-            'test-planning': 'planning.png',
-            'defect-management': 'defect.png',
-            'test-automation': 'automation.png',
-            'continuous-integration': 'ci.png',
-            'agile-testing': 'agile.png',
-            'qa-fundamentals': 'fundamentals.png',
-            'test-strategy': 'strategy.png',
-            'test-metrics': 'metrics.png',
-            'test-estimation': 'estimation.png',
-            'test-reporting': 'reporting.png',
-            'test-design': 'design.png',
-            'test-environment': 'environment.png',
-            'test-data': 'data.png',
-            'test-case': 'testcase.png',
+            'automation-interview': 'automation.svg',
+            'build-verification': 'build.svg',
+            'cms-testing': 'cms.svg',
+            'integration-testing': 'integration.svg',
+            'api-testing': 'api.svg',
+            'security-testing': 'security.svg',
+            'performance-testing': 'performance.svg',
+            'usability-testing': 'usability.svg',
+            'accessibility-testing': 'accessibility.svg',
+            'mobile-testing': 'mobile.svg',
+            'regression-testing': 'regression.svg',
+            'functional-testing': 'functional.svg',
+            'exploratory-testing': 'exploratory.svg',
+            'test-planning': 'planning.svg',
+            'defect-management': 'defect.svg',
+            'test-automation': 'automation.svg',
+            'continuous-integration': 'ci.svg',
+            'agile-testing': 'agile.svg',
+            'qa-fundamentals': 'fundamentals.svg',
+            'test-strategy': 'strategy.svg',
+            'test-metrics': 'metrics.svg',
+            'test-estimation': 'estimation.svg',
+            'test-reporting': 'reporting.svg',
+            'test-design': 'design.svg',
+            'test-environment': 'environment.svg',
+            'test-data': 'data.svg',
+            'test-case': 'testcase.svg',
         };
     }
 
@@ -55,7 +55,7 @@ export class BadgeService {
         }
         
         // Fallback to a default image if no specific match
-        return 'assets/badges/default.png';
+        return 'assets/badges/default.svg';
     }
 
     countVisibleQuizzes(categories) {

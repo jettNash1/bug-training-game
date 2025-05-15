@@ -95,7 +95,7 @@ class BadgesPage {
             this.applyEnhancedStyling();
 
             // Preload default badge image
-            this.preloadImage('assets/badges/default.png');
+            this.preloadImage('assets/badges/default.svg');
 
             // Load badges data with timeout
             const timeoutPromise = new Promise((_, reject) => {
@@ -242,7 +242,7 @@ class BadgesPage {
         
         // Check if we have an image path
         const badgeIconHtml = badge.imagePath ? 
-            `<img src="${badge.imagePath}" alt="${badge.name}" class="badge-image" onerror="this.onerror=null; this.src='assets/badges/default.png';">` : 
+            `<img src="${badge.imagePath}" alt="${badge.name}" class="badge-image" onerror="this.onerror=null; this.src='assets/badges/default.svg';">` : 
             `<i class="${badge.icon}"></i>`;
         
         badgeElement.innerHTML = `
@@ -262,6 +262,20 @@ class BadgesPage {
     preloadImage(src) {
         const img = new Image();
         img.src = src;
+        
+        // For SVG files, we may need special handling
+        if (src.endsWith('.svg')) {
+            fetch(src)
+                .then(response => response.ok ? response.text() : Promise.reject('Failed to load SVG'))
+                .then(svgContent => {
+                    // SVG loaded successfully
+                    console.log(`SVG ${src} preloaded successfully`);
+                })
+                .catch(error => {
+                    console.warn(`Failed to preload SVG ${src}:`, error);
+                });
+        }
+        
         return img;
     }
 }
