@@ -4,7 +4,7 @@ export const QUIZ_TYPES = [
     'communication', 'initiative', 'time-management', 'tester-mindset',
     'risk-analysis', 'risk-management', 'non-functional', 'test-support',
     'issue-verification', 'build-verification', 'issue-tracking-tools',
-    'raising-tickets', 'reports', 'cms-testing', 'email-testing', 'content-copy',
+    'raising-tickets', 'reports', 'risk-analysis', 'risk-management', 'cms-testing', 'email-testing', 'content-copy',
     'locale-testing', 'script-metrics-troubleshooting', 'standard-script-testing',
     'test-types-tricks', 'automation-interview', 'fully-scripted', 'exploratory',
     'sanity-smoke', 'functional-interview'

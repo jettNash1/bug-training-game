@@ -1,23 +1,29 @@
 import { APIService } from '../api-service.js';
 import { BaseQuiz } from '../quiz-helper.js';
 import { QuizUser } from '../QuizUser.js';
+import { scriptMetricsTroubleshootingScenarios } from '../data/script-metrics-troubleshooting-scenarios.js';
 
 export class ScriptMetricsTroubleshootingQuiz extends BaseQuiz {
     constructor() {
+        console.log('[ScriptMetricsTroubleshootingQuiz] Initializing...');
+        
+        // Configure the quiz with basic settings
         const config = {
             maxXP: 300,
             totalQuestions: 15,
             passPercentage: 70,
             performanceThresholds: [
                 { threshold: 90, message: '🏆 Outstanding! You\'re a script metrics troubleshooting expert!' },
-                { threshold: 80, message: '👏 Great job! You\'ve shown strong script metrics troubleshooting skills!' },
+                { threshold: 80, message: '👏 Great job! You\'ve shown strong script metrics troubleshooting instincts!' },
                 { threshold: 70, message: '👍 Good work! You\'ve passed the quiz!' },
                 { threshold: 0, message: '📚 Consider reviewing script metrics troubleshooting best practices and try again!' }
-            ]
+            ],
+            quizName: 'script-metrics-troubleshooting'
         };
         
+        // Call the parent constructor with our config
         super(config);
-        
+
         // Set the quiz name
         Object.defineProperty(this, 'quizName', {
             value: 'script-metrics-troubleshooting',
@@ -25,831 +31,61 @@ export class ScriptMetricsTroubleshootingQuiz extends BaseQuiz {
             configurable: false,
             enumerable: true
         });
-        
+
         // Initialize player state
         this.player = {
             name: '',
             experience: 0,
-            tools: [],
+            questionHistory: [],
             currentScenario: 0,
-            questionHistory: []
+            tools: []
         };
 
-        // Initialize API service
-        this.apiService = new APIService();
+        // Load scenarios from our data file
+        this.basicScenarios = scriptMetricsTroubleshootingScenarios.basic;
+        this.intermediateScenarios = scriptMetricsTroubleshootingScenarios.intermediate;
+        this.advancedScenarios = scriptMetricsTroubleshootingScenarios.advanced;
 
-        // Initialize all screen elements
+        // Initialize elements
         this.gameScreen = document.getElementById('game-screen');
         this.outcomeScreen = document.getElementById('outcome-screen');
         this.endScreen = document.getElementById('end-screen');
         
-        // Verify all required elements exist
-        if (!this.gameScreen) {
-            console.error('Game screen element not found');
-            this.showError('Quiz initialization failed. Please refresh the page.');
-            return;
+        // Create level transition container if it doesn't exist
+        if (!document.getElementById('level-transition-container')) {
+            const transitionContainer = document.createElement('div');
+            transitionContainer.id = 'level-transition-container';
+            transitionContainer.className = 'level-transition-container';
+            document.querySelector('.quiz-container').appendChild(transitionContainer);
         }
         
-        if (!this.outcomeScreen) {
-            console.error('Outcome screen element not found');
-            this.showError('Quiz initialization failed. Please refresh the page.');
-            return;
-        }
+        // Timer-related properties
+        this.questionTimer = null;
+        this.questionStartTime = null;
+        this.questionTimeLimitInSeconds = 60; // 60 seconds per question
         
-        if (!this.endScreen) {
-            console.error('End screen element not found');
-            this.showError('Quiz initialization failed. Please refresh the page.');
-            return;
-        }
-
-        // Basic Scenarios (IDs 1-5)
-        this.basicScenarios = [
-            {
-                id: 1,
-                level: 'Basic',
-                title: 'Primary objective',
-                description: 'What is the primary purpose of script metrics?',
-                options: [
-                    {
-                        text: 'To create visual presentations on projects for clients',
-                        outcome: 'While metrics may be shared with clients, this is not their primary purpose',
-                        experience: -5
-                    },
-                    {
-                        text: 'To gauge project progress and inform report writing',
-                        outcome: 'Correct! - Metrics are used to track progress and help with daily reporting',
-                        experience: 15,
-                        tool: 'Metrics Fundamentals'
-                    },
-                    {
-                        text: 'To track employee performance to match individuals with specific projects',
-                        outcome: 'Metrics are about project progress, not individual performance',
-                        experience: -10
-                    },
-                    {
-                        text: 'To gauge project progress and determine resources required to complete the testing activites',
-                        outcome: 'This is true but incomplete as it misses the reporting aspect.',
-                        experience: 5
-                    }
-                ]
-            },
-            {
-                id: 2,
-                level: 'Basic',
-                title: 'Environment Tables',
-                description: 'Where should you add new rows to environment tables?',
-                options: [
-                    {
-                        text: 'At the very bottom of the table',
-                        outcome: 'Adding rows at the bottom can break formulas.',
-                        experience: -5
-                    },
-                    {
-                        text: 'Within the existing table, above the final row',
-                        outcome: 'Correct! - This ensures formulas remain intact and metrics update properly.',
-                        experience: 15,
-                        tool: 'Table Management'
-                    },
-                    {
-                        text: 'In a new separate table',
-                        outcome: 'This would not maintain connection with existing metrics.',
-                        experience: -10
-                    },
-                    {
-                        text: 'Above the table header',
-                        outcome: 'While this keeps data within the table, it\'s not the optimal location.',
-                        experience: 5
-                    }
-                ]
-            },
-            {
-                id: 3,
-                level: 'Basic',
-                title: 'Metrics Pie Chart Labels',
-                description: 'What causes missing pie chart labels in the Metrics tab?',
-                options: [
-                    {
-                        text: 'Software bugs raised in any of the test scripts',
-                        outcome: 'Missing labels are usually due to chart size or data arrangement',
-                        experience: -10
-                    },
-                    {
-                        text: 'Corrupted data within the test script',
-                        outcome: 'This is not typically the cause of missing labels.',
-                        experience: -5
-                    },
-                    {
-                        text: 'Chart size and data arrangement',
-                        outcome: 'Correct! - Labels may be missing due to chart size or how data is arranged in the table.',
-                        experience: 15,
-                        tool: 'Chart Management'
-                    },
-                    {
-                        text: 'Chart size in relation to the rest of the metrics features on the tab',
-                        outcome: 'While chart size is a factor, data arrangement also matters',
-                        experience: 5
-                    }
-                ]
-            },
-            {
-                id: 4,
-                level: 'Basic',
-                title: 'Environment Rows',
-                description: 'How should you handle empty environment rows?',
-                options: [
-                    {
-                        text: 'Delete the environment rows completely',
-                        outcome: 'Deleting rows can break formulas.',
-                        experience: -10
-                    },
-                    {
-                        text: 'Copy formulas from existing rows and update environment details',
-                        outcome: 'Correct! - This maintains formula integrity while allowing new environment details.',
-                        experience: 15,
-                        tool: 'Environment Management'
-                    },
-                    {
-                        text: 'Hide the environment rows within the environment checks tab',
-                        outcome: 'Hiding rows doesn\'t properly address the issue as metrics can still be picked up from hidden rows.',
-                        experience: -5
-                    },
-                    {
-                        text: 'Keep original formulas for different environment rows and clear content',
-                        outcome: 'While maintaining formulas is good, they need to be properly copied to assign different rows.',
-                        experience: 5
-                    }
-                ]
-            },
-            {
-                id: 5,
-                level: 'Basic',
-                title: '#REF! Errors',
-                description: 'What causes #REF! errors in the Session Totals table?',
-                options: [
-                    {
-                        text: 'Insufficient lines for all dates in the sessions totals table',
-                        outcome: 'Correct! - The error appears when there aren\'t enough lines for all testing dates.',
-                        experience: 15,
-                        tool: 'Error Handling'
-                    },
-                    {
-                        text: 'Corrupted data within the spreadsheet',
-                        outcome: 'This is rarely the cause of #REF! errors in this context.',
-                        experience: -5
-                    },
-                    {
-                        text: 'Wrong date format inserted into the sessions totals table',
-                        outcome: 'Date formatting is not the cause of #REF! errors.',
-                        experience: -10
-                    },
-                    {
-                        text: 'Too many dates entered within the sessions total table',
-                        outcome: 'While related to dates, the issue it\'s specifically related line availability.',
-                        experience: 5
-                    }
-                ]
-            },
-            {
-                id: 16,
-                level: 'Basic',
-                title: 'Environment Metrics',
-                description: 'If environment metrics do not reflect the actual number of environments, what should you check first?',
-                options: [
-                    {
-                        text: 'Check that new rows were added within the existing table and have the correct formulas',
-                        outcome: 'Correct! first ensure that new rows in the table are always added within the existing table and copy formulas from existing rows.',
-                        experience: 15,
-                        tool: 'Environment Metrics'
-                    },
-                    {
-                        text: 'Verify that Microsoft Excel is updated to the latest version',
-                        outcome: 'First you must ensure that new rows in the table are always added within the existing table and that formulas are copied from existing rows.',
-                        experience: -5
-                    },
-                    {
-                        text: 'Delete and recreate the entire environment checks tab',
-                        outcome: 'Deleting and recreating the tab is not advised as it would be time consuming.',
-                        experience: -10
-                    },
-                    {
-                        text: 'Restart Excel to refresh all formulas automatically',
-                        outcome: 'First you should double click the cell in the data table with the incorrect figure and ensure that the dotted lines displayed over the environment table encompass all rows containing environments.',
-                        experience: -5
-                    }
-                ]
-            },
-            {
-                id: 17,
-                level: 'Basic',
-                title: 'Compatibility Environments Completed',
-                description: 'What influences the Compatibility Environments Complete figure in the Environment Checks tab?',
-                options: [
-                    {
-                        text: 'The number of environments with \'Complete\' in the status column',
-                        outcome: 'There is no status column within the Compatibility Environments tab.',
-                        experience: -5
-                    },
-                    {
-                        text: 'The total number of browsers tested across all environments',
-                        outcome: 'The figure calculated based on browsers tested.',
-                        experience: -10
-                    },
-                    {
-                        text: 'The count of compatibility environments that have Yes in the Checked? column',
-                        outcome: 'Correct! The Compatibility Environments Complete figure counts how many compatibility environments have Yes in the Checked? column.',
-                        experience: 15,
-                        tool: 'Compatibility Environments Completed'
-                    },
-                    {
-                        text: 'Environments marked as Complete and verified by a second tester',
-                        outcome: 'There is no column for complete and a second tester is not required to verify the tests.',
-                        experience: 0
-                    }
-                ]
-            },
-            {
-                id: 18,
-                level: 'Basic',
-                title: 'New Metrics Table Rows',
-                description: 'When a formula in the metrics table doesn\'t count a newly added environment row, what troubleshooting step should you take?',
-                options: [
-                    {
-                        text: 'Restart Excel to refresh all formulas automatically',
-                        outcome: 'First you should double click the cell in the data table with the incorrect figure and ensure that the dotted lines displayed over the environment table encompass all rows containing environments.',
-                        experience: -5
-                    },
-                    {
-                        text: 'Add a new row to the metrics table to account for the additional environment',
-                        outcome: 'Adding new rows wont address the issue as new rows already aren\'t being calculated.', 
-                        experience: -10
-                    },
-                    {
-                        text: 'Double click the cell with the incorrect figure to check if the formula encompasses all rows',
-                        outcome: 'Correct! The first port of call should be to double click the cell in the data table with the incorrect figure and ensure that the dotted lines displayed over the environment table encompass all rows containing environments.',
-                        experience: 15,
-                        tool: 'New Metrics Table Rows'
-                    },
-                    {
-                        text: 'Contact your manager immediately to report the broken formula',
-                        outcome: 'The problem should be addressed first by the tester, If the count is still incorrect a colleague can be contacted.',
-                        experience: 0
-                    }
-                ]
-            },
-            {
-                id: 19,
-                level: 'Basic',
-                title: 'Formula Editing',
-                description: 'When editing formulas in a newly copied Environment Checks table, what is the key modification required?',
-                options: [
-                    {
-                        text: 'Point the formulas to the equivalent cells in the newly created tab',
-                        outcome: 'Correct! The formula in each cell of the new table that\'s pointing to the Environment Checks tab should be edited to instead point to the equivalent cell in the newly created tab.',
-                        experience: 15,
-                        tool: 'Formula Editing'
-                    },
-                    {
-                        text: 'Change the formula to use absolute cell references instead of relative references',
-                        outcome: 'Changing cell references to absolute doesn\'t correct where the formula should be pointed to.',
-                        experience: -10
-                    },
-                    {
-                        text: 'Remove all existing formulas and create simplified versions.',
-                        outcome: 'Removing and simplifying formulas is not recommended as this could affect formula and test result accurracy.',
-                        experience: -5
-                    },
-                    {
-                        text: 'Add error handling functions to each formula.',
-                        outcome: 'Adding error handling functions doesn\'t correct where the formula should be pointed to.',
-                        experience: 0
-                    }
-                ]
-            },
-            {
-                id: 20,
-                level: 'Basic',
-                title: 'Environment Count',
-                description: 'Why might an environment not be counted in the \'Compatibility Environments Complete\' figure despite correct cell population and \'Primary No\' checked?',
-                options: [
-                    {
-                        text: 'The formula in the cell showing the figure isn\'t encompassing all environment rows',
-                        outcome: 'Correct! by double clicking the cell showing the incorrect figure, you can see if the formula is not encompassing the newly added environment row.',
-                        experience: 15,
-                        tool: 'Environment Count'
-                    },
-                    {
-                        text: 'The environment is marked as a primary environment rather than a compatibility environment',
-                        outcome: 'The question stated that the \'Primary No\' column had been checked.',
-                        experience: -10
-                    },
-                    {
-                        text: 'The environment was added after the initial script was created',
-                        outcome: 'When an environment is added shouldn\'t have a bearing on environment count.',
-                        experience: -5
-                    },
-                    {
-                        text: 'The count automatically updates only at the end of each day',
-                        outcome: 'This is not the case, environments should be counted when added to the table and formulas are correctly checked.',
-                        experience: 0
-                    }
-                ]
-            }
-        ];
-
-         // Intermediate Scenarios (IDs 6-10, 125 XP total)
-        this.intermediateScenarios = [
-            {
-                id: 6,
-                level: 'Intermediate',
-                title: 'Environment Check Tabs',
-                description: 'How should you handle multiple Environment Checks tabs?',
-                options: [
-                    {
-                        text: 'Create new independent metrics for each environment tab',
-                        outcome: 'This would not maintain proper tracking across tabs.',
-                        experience: -15
-                    },
-                    {
-                        text: 'Copy and update existing table with new tab references',
-                        outcome: 'Correct! - This maintains consistency while incorporating new data.',
-                        experience: 20,
-                        tool: 'Tab Management'
-                    },
-                    {
-                        text: 'Merge all environment data into one tab',
-                        outcome: 'This would make tracking different sessions difficult',
-                        experience: -10
-                    },
-                    {
-                        text: 'Add new columns to existing tables within the environment check tab',
-                        outcome: 'While this maintains data connection, it\'s not the optimal solution',
-                        experience: 5
-                    }
-                ]
-            },
-            {
-                id: 7,
-                level: 'Intermediate',
-                title: 'Compatibility Environments Completed',
-                description: 'What affects the Compatibility Environments Complete figure?',
-                options: [
-                    {
-                        text: 'The primary column and environment count within the environments table',
-                        outcome: 'While primary column is important, the checked field is also required to report accurate metrics.',
-                        experience: 5
-                    },
-                    {
-                        text: 'The primary column within the environments table',
-                        outcome: 'Multiple columns affect this figure and the \'Checked\' column is also taken into consideration.',
-                        experience: -15
-                    },
-                    {
-                        text: 'The \'Checked\' column within the environments table',
-                        outcome: 'This alone doesn\'t determine compatibility status and the primary column is also taken into consideration.',
-                        experience: -10
-                    },
-                    {
-                        text: 'Both primary and \'Checked\' columns within the environments table',
-                        outcome: 'Correct! - Both columns together determine the completion status.',
-                        experience: 20,
-                        tool: 'Compatibility Tracking'
-                    }
-                ]
-            },
-            {
-                id: 8,
-                level: 'Intermediate',
-                title: 'Environment Lists',
-                description: 'How should you modify environment lists that have multiple tickets?',
-                options: [
-                    {
-                        text: 'Update each list individually to reflect the specific related tickets',
-                        outcome: 'This is inefficient and prone to inconsistency.',
-                        experience: -5
-                    },
-                    {
-                        text: 'Update the environment list tab and remove excess rows',
-                        outcome: 'Correct! - This ensures consistent updates across all linked tickets.',
-                        experience: 20,
-                        tool: 'List Management'
-                    },
-                    {
-                        text: 'Create new environment lists across multiple tabs',
-                        outcome: 'This breaks the connection with existing metrics.',
-                        experience: -10
-                    },
-                    {
-                        text: 'Update the main environments list tab only',
-                        outcome: 'While updating the main tab is important, excess rows still need handling.',
-                        experience: 5
-                    }
-                ]
-            },
-            {
-                id: 9,
-                level: 'Intermediate',
-                title: 'New Row Formulas',
-                description: 'What should you do when formulas don\'t encompass new rows?',
-                options: [
-                    {
-                        text: 'Extend the formula manually for each affected metric',
-                        outcome: 'While this works, double-clicking is more efficient.',
-                        experience: 5
-                    },
-                    {
-                        text: 'Copy a formula from another sheet',
-                        outcome: 'This appoach not match the specific needs of your sheet.',
-                        experience: -5
-                    },
-                    {
-                        text: 'Create new formulas for the affected metrics',
-                        outcome: 'Creating new formulas may lead to inconsistencies',
-                        experience: -10
-                    },
-                    {
-                        text: 'Double-click and update cell ranges for the affected rows',
-                        outcome: 'Correct! - This allows proper adjustment of formula ranges.',
-                        experience: 20,
-                        tool: 'Formula Management'
-                    }
-                ]
-            },
-            {
-                id: 10,
-                level: 'Intermediate',
-                title: 'Environment Coverage',
-                description: 'How should you handle environment-specific coverage?',
-                options: [
-                    {
-                        text: 'Create separate sheets for specific environment testing',
-                        outcome: 'This creates unnecessary complexity within the test script.',
-                        experience: -10
-                    },
-                    {
-                        text: 'Combine global and specific environments as needed',
-                        outcome: 'Correct! - This allows flexibility while maintaining consistency.',
-                        experience: 20,
-                        tool: 'Coverage Management'
-                    },
-                    {
-                        text: 'Use only global environments within the test script',
-                        outcome: 'This doesn\'t account for ticket or environment specific needs',
-                        experience: -5
-                    },
-                    {
-                        text: 'Use specific environments only',
-                        outcome: 'While this works for some projects, it\'s not flexible enough and the exact environment testing may not be achievable',
-                        experience: 5
-                    }
-                ]
-            }
-        ];
-
-        // Advanced Scenarios (IDs 11-15, 150 XP total)
-        this.advancedScenarios = [
-            {
-                id: 11,
-                level: 'Advanced',
-                title: 'Duplicated Environment Checks',
-                description: 'When updating duplicated environment checks tabs, what\'s crucial?',
-                options: [
-                    {
-                        text: 'Update all cell references within the environment checks tab',
-                        outcome: 'Multiple aspects need attention rather than just this one area, including formula accuracy.',
-                        experience: 5
-                    },
-                    {
-                        text: 'Update all references and verify formula accuracy',
-                        outcome: 'Correct! - This ensures complete and accurate metric tracking',
-                        experience: 25,
-                        tool: 'Reference Management'
-                    },
-                    {
-                        text: 'Copy all formulas exactly for the duplicated environments checks tab',
-                        outcome: 'Formula will need adjustment for the new context on the new tab',
-                        experience: -5
-                    },
-                    {
-                        text: 'Update table structure within duplicated environments checks tab',
-                        outcome: 'While structure matters, formula updates are also crucial',
-                        experience: -10
-                    }
-                ]
-            },
-            {
-                id: 12,
-                level: 'Advanced',
-                title: 'Environment Table Metrics',
-                description: 'How should you handle complex environment table metrics?',
-                options: [
-                    {
-                        text: 'Simplify the metrics to return the expected outcome',
-                        outcome: 'Simplifying metrics could lose important tracking details.',
-                        experience: -15
-                    },
-                    {
-                        text: 'Use basic counting for the metrics table only',
-                        outcome: 'This wouldn\'t capture all necessary metrics.',
-                        experience: -10
-                    },
-                    {
-                        text: 'Verify all formula chains and dependencies',
-                        outcome: 'Correct! - This ensures accurate tracking across all dependencies',
-                        experience: 25,
-                        tool: 'Dependency Management'
-                    },
-                    {
-                        text: 'Check individual formulas that relate to the environment table',
-                        outcome: 'While important, it misses the broader dependencies like formula chains',
-                        experience: 5
-                    }
-                ]
-            },
-            {
-                id: 13,
-                level: 'Advanced',
-                title: 'Cross Tab Metrics',
-                description: 'What\'s the correct approach for updating cross-tab metrics?',
-                options: [
-                    {
-                        text: 'Maintain formula relationships while updating references',
-                        outcome: 'Correct! - This preserves metric integrity across tabs',
-                        experience: 25,
-                        tool: 'Cross-Tab Management'
-                    },
-                    {
-                        text: 'Update each tab independently across the test script tabs',
-                        outcome: 'This breaks cross-tab relationships.',
-                        experience: -10
-                    },
-                    {
-                        text: 'Update the primary metrics across the test script tabs',
-                        outcome: 'While important, secondary metrics also need attention for full reporting details.',
-                        experience: 5
-                    },
-                    {
-                        text: 'Create new metrics to reflect the current testing references',
-                        outcome: 'This approach can lose historical tracking.',
-                        experience: -5
-                    }
-                ]
-            },
-            {
-                id: 14,
-                level: 'Advanced',
-                title: 'Un-displayed Metrics',
-                description: 'How should you handle metric discrepancies across multiple tabs?',
-                options: [
-                    {
-                        text: 'Check individual tab metrics throughout the test script',
-                        outcome: 'While important, cross-tab relationships are also taken into consideration.',
-                        experience: 5
-                    },
-                    {
-                        text: 'Determine an average from the discrepancies to enter into the metrics tables',
-                        outcome: 'This doesn\'t address the root cause of the metrics issues across the tabs within the test script.',
-                        experience: -5
-                    },
-                    {
-                        text: 'Use the highest values returned from the tabs within the test script',
-                        outcome: 'This could hide actual issues and actual metrics need to be reported.',
-                        experience: -10
-                    },
-                    {
-                        text: 'Trace formula chains and verify all connections',
-                        outcome: 'Correct! - This identifies and resolves the source of discrepancies.',
-                        experience: 25,
-                        tool: 'Discrepancy Resolution'
-                    }
-                ]
-            },
-            {
-                id: 15,
-                level: 'Advanced',
-                title: 'Metrics Updates',
-                description: 'What\'s the best approach for maintaining metric integrity during major updates?',
-                options: [
-                    {
-                        text: 'Start with fresh metrics when major updates to the test script are required',
-                        outcome: 'This approach can lose valuable historical data.',
-                        experience: -10
-                    },
-                    {
-                        text: 'Copy existing metrics from across the test script',
-                        outcome: 'This could potentially copy any existing issues within the metrics.',
-                        experience: -5
-                    },
-                    {
-                        text: 'Verify all dependencies and update systematically',
-                        outcome: 'Correct! - This maintains accuracy while allowing updates.',
-                        experience: 25,
-                        tool: 'Update Management'
-                    },
-                    {
-                        text: 'Update primary metrics across the test script',
-                        outcome: 'While a good start, more comprehensive attention is required to cover all metrics.',
-                        experience: 5
-                    }
-                ]
-            }
-        ];
-
-        // Initialize UI and add event listeners
+        this.isLoading = false;
+        
+        // Initialize event listeners
         this.initializeEventListeners();
 
-        this.isLoading = false;
+        // Start the quiz
+        this.startGame();
     }
-
-    showError(message) {
-        const errorDiv = document.createElement('div');
-        errorDiv.className = 'error-notification';
-        errorDiv.setAttribute('role', 'alert');
-        errorDiv.textContent = message;
-        document.body.appendChild(errorDiv);
-        setTimeout(() => errorDiv.remove(), 5000);
-    }
-
+    
+    // Override the shouldEndGame method for our quiz
     shouldEndGame() {
-        // Only end the game when all 15 questions are answered
-        return (this.player?.questionHistory?.length || 0) >= 15;
+        return this.player.questionHistory.length >= 15;
     }
-
-    // Helper method to calculate the score percentage based on correct answers
-    calculateScorePercentage() {
-        const correctAnswers = this.player.questionHistory.filter(q => 
-            q.selectedAnswer && (q.selectedAnswer.isCorrect || 
-            q.selectedAnswer.experience === Math.max(...q.scenario.options.map(o => o.experience || 0)))
-        ).length;
-        return Math.round((correctAnswers / Math.max(1, Math.min(this.player.questionHistory.length, 15))) * 100);
-    }
-
-    async saveProgress() {
-        // First determine the status based on clear conditions
-        let status = 'in-progress';
-        
-        // Check for completion (all 15 questions answered)
-        if (this.player.questionHistory.length >= 15) {
-            // Calculate pass/fail based on correct answers
-            const correctAnswers = this.player.questionHistory.filter(q => 
-                q.selectedAnswer && (q.selectedAnswer.isCorrect || 
-                q.selectedAnswer.experience === Math.max(...q.scenario.options.map(o => o.experience || 0)))
-            ).length;
-            const scorePercentage = Math.round((correctAnswers / 15) * 100);
-            status = scorePercentage >= 70 ? 'passed' : 'failed';
-        }
-
-        const progress = {
-            data: {
-                experience: this.player.experience,
-                tools: this.player.tools,
-                currentScenario: this.player.currentScenario,
-                questionHistory: this.player.questionHistory,
-                lastUpdated: new Date().toISOString(),
-                questionsAnswered: this.player.questionHistory.length,
-                status: status,
-                scorePercentage: this.calculateScorePercentage()
-            }
-        };
-
-        try {
-            const username = localStorage.getItem('username');
-            if (!username) {
-                console.error('No user found, cannot save progress');
-                return;
-            }
-            
-            // Use user-specific key for localStorage
-            const storageKey = `quiz_progress_${username}_${this.quizName}`;
-            localStorage.setItem(storageKey, JSON.stringify(progress));
-            
-            console.log('Saving progress with status:', status);
-            await this.apiService.saveQuizProgress(this.quizName, progress.data);
-        } catch (error) {
-            console.error('Failed to save progress:', error);
-        }
-    }
-
-    async loadProgress() {
-        try {
-            const username = localStorage.getItem('username');
-            if (!username) {
-                console.error('No user found, cannot load progress');
-                return false;
-            }
-
-            // Use user-specific key for localStorage
-            const storageKey = `quiz_progress_${username}_${this.quizName}`;
-            const savedProgress = await this.apiService.getQuizProgress(this.quizName);
-            console.log('Raw API Response:', savedProgress);
-            let progress = null;
-            
-            if (savedProgress && savedProgress.data) {
-                // Normalize the data structure
-                progress = {
-                    experience: savedProgress.data.experience || 0,
-                    tools: savedProgress.data.tools || [],
-                    questionHistory: savedProgress.data.questionHistory || [],
-                    currentScenario: savedProgress.data.currentScenario || 0,
-                    status: savedProgress.data.status || 'in-progress'
-                };
-                console.log('Normalized progress data:', progress);
-            } else {
-                // Try loading from localStorage as fallback
-                const localData = localStorage.getItem(storageKey);
-                if (localData) {
-                    const parsed = JSON.parse(localData);
-                    progress = parsed;
-                    console.log('Loaded progress from localStorage:', progress);
-                }
-            }
-
-            if (progress) {
-                // Set the player state from progress
-                this.player.experience = progress.experience || 0;
-                this.player.tools = progress.tools || [];
-                this.player.questionHistory = progress.questionHistory || [];
-                this.player.currentScenario = progress.currentScenario || 0;
-
-                // Ensure we're updating the UI correctly
-                this.updateProgress();
-                
-                // Check quiz status and show appropriate screen
-                if (progress.status === 'failed') {
-                    this.endGame(true);
-                    return true;
-                } else if (progress.status === 'completed') {
-                    this.endGame(false);
-                    return true;
-                }
-
-                return true;
-            }
-            return false;
-        } catch (error) {
-            console.error('Failed to load progress:', error);
-            return false;
-        }
-    }
-
-    async startGame() {
-        if (this.isLoading) return;
-        
-        try {
-            this.isLoading = true;
-            // Show loading indicator
-            const loadingIndicator = document.getElementById('loading-indicator');
-            if (loadingIndicator) {
-                loadingIndicator.classList.remove('hidden');
-            }
-
-            // Set player name from localStorage
-            this.player.name = localStorage.getItem('username');
-            if (!this.player.name) {
-                window.location.href = '/login.html';
-                return;
-            }
-
-            // Initialize event listeners
-            this.initializeEventListeners();
-
-            // Load previous progress
-            const hasProgress = await this.loadProgress();
-            console.log('Previous progress loaded:', hasProgress);
-            
-            if (!hasProgress) {
-                // Reset player state if no valid progress exists
-                this.player.experience = 0;
-                this.player.tools = [];
-                this.player.currentScenario = 0;
-                this.player.questionHistory = [];
-            }
-            
-            // Clear any existing transition messages
-            const transitionContainer = document.getElementById('level-transition-container');
-            if (transitionContainer) {
-                transitionContainer.innerHTML = '';
-                transitionContainer.classList.remove('active');
-            }
-            
-            await this.displayScenario();
-        } catch (error) {
-            console.error('Failed to start game:', error);
-            this.showError('Failed to start the quiz. Please try refreshing the page.');
-        } finally {
-            this.isLoading = false;
-            // Hide loading state
-            const loadingIndicator = document.getElementById('loading-indicator');
-            if (loadingIndicator) {
-                loadingIndicator.classList.add('hidden');
-            }
-        }
-    }
-
+    
+    // Initialize event listeners
     initializeEventListeners() {
-        // Add event listeners for the continue and restart buttons
-        document.getElementById('continue-btn')?.addEventListener('click', () => this.nextScenario());
-        document.getElementById('restart-btn')?.addEventListener('click', () => this.restartGame());
-
+        // Add event listener for the restart button
+        const restartButton = document.getElementById('restart-btn');
+        if (restartButton) {
+            restartButton.addEventListener('click', () => this.restartQuiz());
+        }
+        
         // Add form submission handler
         document.getElementById('options-form')?.addEventListener('submit', (e) => {
             e.preventDefault();
@@ -863,54 +99,208 @@ export class ScriptMetricsTroubleshootingQuiz extends BaseQuiz {
             }
         });
     }
-
-    displayScenario() {
-        const currentScenarios = this.getCurrentScenarios();
-        
-        // Check if we've answered all 15 questions
-        if (this.player.questionHistory.length >= 15) {
-            console.log('All 15 questions answered, ending game');
-            this.endGame(false);
-            return;
-        }
-        
-        // Get the next scenario based on current progress
-        let scenario;
+    
+    // Get the scenarios for the current level
+    getCurrentScenarios() {
         const questionCount = this.player.questionHistory.length;
         
-        // Reset currentScenario based on the current level
         if (questionCount < 5) {
-            // Basic questions (0-4)
-            scenario = this.basicScenarios[questionCount];
-            this.player.currentScenario = questionCount;
+            return this.basicScenarios;
         } else if (questionCount < 10) {
-            // Intermediate questions (5-9)
-            scenario = this.intermediateScenarios[questionCount - 5];
-            this.player.currentScenario = questionCount - 5;
-        } else if (questionCount < 15) {
-            // Advanced questions (10-14)
-            scenario = this.advancedScenarios[questionCount - 10];
-            this.player.currentScenario = questionCount - 10;
+            return this.intermediateScenarios;
+        } else {
+            return this.advancedScenarios;
         }
+    }
+    
+    // Get the current level based on question index
+    getCurrentLevel() {
+        const questionCount = this.player.questionHistory.length;
+        
+        if (questionCount < 5) {
+            return 'Basic';
+        } else if (questionCount < 10) {
+            return 'Intermediate';
+        } else {
+            return 'Advanced';
+        }
+    }
+    
+    // Calculate the score percentage
+    calculateScorePercentage() {
+        const correctAnswers = this.player.questionHistory.filter(q => 
+            q.selectedAnswer && q.isCorrect
+        ).length;
+        return Math.round((correctAnswers / Math.max(1, this.player.questionHistory.length)) * 100);
+    }
 
-        if (!scenario) {
-            console.error('No scenario found for current progress. Question count:', questionCount);
-            this.endGame(true);
+    // Start the quiz
+    async startGame() {
+        if (this.isLoading) return;
+        
+        console.log('[ScriptMetricsTroubleshootingQuiz] Starting game...');
+        
+        try {
+            this.isLoading = true;
+            
+            // Show loading indicator
+            const loadingIndicator = document.getElementById('loading-indicator');
+            if (loadingIndicator) {
+                loadingIndicator.classList.remove('hidden');
+            }
+
+            // Set player name
+            this.player.name = localStorage.getItem('username');
+            if (!this.player.name) {
+                window.location.href = '../login.html';
+                return;
+            }
+
+            // Try to load previous progress
+            const hasProgress = await this.loadProgress();
+            console.log(`[ScriptMetricsTroubleshootingQuiz] Progress loaded: ${hasProgress}`);
+            
+            // Hide loading indicator
+            if (loadingIndicator) {
+                loadingIndicator.classList.add('hidden');
+            }
+            
+            if (!hasProgress) {
+                // Reset player state if no valid progress exists
+                this.player.experience = 0;
+                this.player.tools = [];
+                this.player.currentScenario = 0;
+                this.player.questionHistory = [];
+                console.log('[ScriptMetricsTroubleshootingQuiz] No previous progress, starting fresh');
+            } else {
+                // Verify the loaded progress contains valid question history
+                if (!this.player.questionHistory || !Array.isArray(this.player.questionHistory)) {
+                    console.log('[ScriptMetricsTroubleshootingQuiz] Invalid question history in loaded progress, resetting');
+                    this.player.questionHistory = [];
+                }
+                
+                // CRITICAL: Ensure currentScenario is set correctly based on question history
+                this.player.currentScenario = this.player.questionHistory.length;
+                console.log('[ScriptMetricsTroubleshootingQuiz] Set currentScenario to match question history:', this.player.currentScenario);
+            }
+            
+            // Check if the quiz is already completed
+            if (this.shouldEndGame()) {
+                this.endGame(false);
+                return;
+            }
+            
+            // Clear any existing transition messages
+            const transitionContainer = document.getElementById('level-transition-container');
+            if (transitionContainer) {
+                transitionContainer.innerHTML = '';
+                transitionContainer.classList.remove('active');
+            }
+
+            // Display the first/next scenario
+            this.displayScenario();
+            
+            this.isLoading = false;
+        } catch (error) {
+            console.error('[ScriptMetricsTroubleshootingQuiz] Error starting game:', error);
+            this.isLoading = false;
+            this.showError('Failed to start the quiz. Please refresh the page.');
+        }
+    }
+    
+    // Initialize the timer for the current question
+    initializeTimer() {
+        // Clear any existing timer
+        if (this.questionTimer) {
+            clearInterval(this.questionTimer);
+            this.questionTimer = null;
+        }
+        
+        // Reset timer display
+        const timerContainer = document.getElementById('timer-container');
+        const timerDisplay = document.getElementById('timer-display');
+        
+        if (!timerContainer || !timerDisplay) {
+            console.error('[ScriptMetricsTroubleshootingQuiz] Timer elements not found');
             return;
         }
-
-        // Store current question number for consistency
-        this.currentQuestionNumber = questionCount + 1;
         
-        // Show level transition message at the start of each level or when level changes
-        const currentLevel = this.getCurrentLevel();
-        const previousLevel = questionCount > 0 ? 
-            (questionCount <= 5 ? 'Basic' : 
-             questionCount <= 10 ? 'Intermediate' : 'Advanced') : null;
+        // Show the timer
+        timerContainer.classList.remove('hidden');
+        timerContainer.classList.remove('timer-warning');
+        
+        // Set starting time
+        const timeLimit = this.questionTimeLimitInSeconds;
+        timerDisplay.textContent = timeLimit;
+        
+        // Record start time
+        this.questionStartTime = Date.now();
+        
+        // Start timer interval
+        this.questionTimer = setInterval(() => {
+            const elapsedSeconds = Math.floor((Date.now() - this.questionStartTime) / 1000);
+            const remainingSeconds = Math.max(0, timeLimit - elapsedSeconds);
             
+            timerDisplay.textContent = remainingSeconds;
+            
+            // Add warning class when less than 10 seconds remain
+            if (remainingSeconds <= 10 && !timerContainer.classList.contains('timer-warning')) {
+                timerContainer.classList.add('timer-warning');
+            }
+            
+            // If time is up, auto-submit answer or select random option
+            if (remainingSeconds <= 0) {
+                clearInterval(this.questionTimer);
+                this.handleTimedOut();
+            }
+        }, 1000);
+    }
+    
+    // Handle when time runs out for a question
+    handleTimedOut() {
+        console.log('[ScriptMetricsTroubleshootingQuiz] Question timed out');
+        
+        // Select a random option if none selected
+        const selectedOption = document.querySelector('input[name="option"]:checked');
+        if (!selectedOption) {
+            const options = document.querySelectorAll('input[name="option"]');
+            if (options.length > 0) {
+                const randomIndex = Math.floor(Math.random() * options.length);
+                options[randomIndex].checked = true;
+            }
+        }
+        
+        // Submit the answer with the timed out flag
+        this.handleAnswer(true);
+    }
+    
+    // Display the current scenario
+    displayScenario() {
+        // Check if the quiz is already completed
+        if (this.shouldEndGame()) {
+            this.endGame(false);
+                    return;
+        }
+        
+        // Get the current scenario based on progress
+        const currentScenarios = this.getCurrentScenarios();
+        const scenarioIndex = this.player.questionHistory.length % 5; // Use modulo to cycle through 5 scenarios per level
+        const scenario = currentScenarios[scenarioIndex]; 
+        
+        console.log(`[ScriptMetricsTroubleshootingQuiz] Displaying scenario #${this.player.currentScenario + 1}:`, {
+            title: scenario.title,
+            level: this.getCurrentLevel(),
+            index: scenarioIndex
+        });
+        
+        // Show level transition message when level changes
+        const currentLevel = this.getCurrentLevel();
+        const questionCount = this.player.questionHistory.length;
+        
         if (questionCount === 0 || 
             (questionCount === 5 && currentLevel === 'Intermediate') || 
             (questionCount === 10 && currentLevel === 'Advanced')) {
+            
             const transitionContainer = document.getElementById('level-transition-container');
             if (transitionContainer) {
                 transitionContainer.innerHTML = ''; // Clear any existing messages
@@ -923,12 +313,6 @@ export class ScriptMetricsTroubleshootingQuiz extends BaseQuiz {
                 transitionContainer.appendChild(levelMessage);
                 transitionContainer.classList.add('active');
                 
-                // Update the level indicator
-                const levelIndicator = document.getElementById('level-indicator');
-                if (levelIndicator) {
-                    levelIndicator.textContent = `Level: ${currentLevel}`;
-                }
-                
                 // Remove the message and container height after animation
                 setTimeout(() => {
                     transitionContainer.classList.remove('active');
@@ -939,84 +323,136 @@ export class ScriptMetricsTroubleshootingQuiz extends BaseQuiz {
             }
         }
 
-        // Update scenario display
+        // Update UI for scenario
         const titleElement = document.getElementById('scenario-title');
         const descriptionElement = document.getElementById('scenario-description');
-        const optionsContainer = document.getElementById('options-container');
-
-        if (!titleElement || !descriptionElement || !optionsContainer) {
-            console.error('Required elements not found');
-            return;
+        
+        if (titleElement && descriptionElement) {
+            titleElement.textContent = scenario.title;
+            descriptionElement.textContent = scenario.description;
         }
 
-        titleElement.textContent = scenario.title;
-        descriptionElement.textContent = scenario.description;
-
-        // Update question counter immediately
+        // Update question progress
         const questionProgress = document.getElementById('question-progress');
         if (questionProgress) {
-            questionProgress.textContent = `Question: ${this.currentQuestionNumber}/15`;
+            questionProgress.textContent = `Question: ${questionCount + 1}/15`;
         }
+        
+        // Update level indicator
+        const levelIndicator = document.getElementById('level-indicator');
+        if (levelIndicator) {
+            levelIndicator.textContent = `Level: ${currentLevel}`;
+        }
+        
+        // Update progress bar
+        const progressFill = document.getElementById('progress-fill');
+        if (progressFill) {
+            const progressPercentage = (questionCount / 15) * 100;
+            progressFill.style.width = `${progressPercentage}%`;
+        }
+        
+        // Display options with shuffling
+        const optionsContainer = document.getElementById('options-container');
+        if (optionsContainer) {
+            optionsContainer.innerHTML = '';
 
         // Create a copy of options with their original indices
-        const shuffledOptions = scenario.options.map((option, index) => ({
+            const shuffledOptions = scenario.options.map((option, index) => ({
             ...option,
             originalIndex: index
         }));
-
-        // Shuffle the options
+            
+            // Shuffle the options
         for (let i = shuffledOptions.length - 1; i > 0; i--) {
             const j = Math.floor(Math.random() * (i + 1));
             [shuffledOptions[i], shuffledOptions[j]] = [shuffledOptions[j], shuffledOptions[i]];
         }
-
-        optionsContainer.innerHTML = '';
-
-        shuffledOptions.forEach((option, index) => {
-            const optionElement = document.createElement('div');
-            optionElement.className = 'option';
-            optionElement.innerHTML = `
+            
+            shuffledOptions.forEach((option, idx) => {
+                const optionDiv = document.createElement('div');
+                optionDiv.className = 'option';
+                optionDiv.innerHTML = `
                 <input type="radio" 
                     name="option" 
                     value="${option.originalIndex}" 
-                    id="option${index}"
+                        id="option${idx}"
                     tabindex="0"
                     aria-label="${option.text}"
                     role="radio">
-                <label for="option${index}">${option.text}</label>
-            `;
-            optionsContainer.appendChild(optionElement);
-        });
-
-        this.updateProgress();
-
-        // Initialize timer for the new question
+                    <label for="option${idx}">${option.text}</label>
+                `;
+                optionsContainer.appendChild(optionDiv);
+            });
+        }
+        
+        // Show game screen
+        this.gameScreen.classList.remove('hidden');
+        this.outcomeScreen.classList.add('hidden');
+        this.endScreen.classList.add('hidden');
+        
+        // Initialize timer for the question
         this.initializeTimer();
+        
+        // Save progress after displaying - ensures we're in a consistent state
+        if (this.player.questionHistory.length > 0) {
+            // Only save if we have actual progress to avoid recursive saves
+            this.saveProgress('in-progress').catch(err => {
+                console.warn('[ScriptMetricsTroubleshootingQuiz] Save after display failed:', err);
+            });
+        }
     }
-
-    async handleAnswer() {
+    
+    // Handle answer submission
+    async handleAnswer(timedOut = false) {
         if (this.isLoading) return;
+        
+        try {
+            this.isLoading = true;
+            
+            // Clear the timer
+            if (this.questionTimer) {
+                clearInterval(this.questionTimer);
+                this.questionTimer = null;
+            }
         
         const submitButton = document.querySelector('.submit-button');
         if (submitButton) {
             submitButton.disabled = true;
         }
 
-        // Clear the timer when an answer is submitted
-        if (this.questionTimer) {
-            clearInterval(this.questionTimer);
-        }
-        
-        try {
-            this.isLoading = true;
             const selectedOption = document.querySelector('input[name="option"]:checked');
-            if (!selectedOption) return;
-
-            const currentScenarios = this.getCurrentScenarios();
-            const scenario = currentScenarios[this.player.currentScenario];
-            const originalIndex = parseInt(selectedOption.value);
+            if (!selectedOption && !timedOut) {
+                alert('Please select an answer.');
+                this.isLoading = false;
+                if (submitButton) {
+                    submitButton.disabled = false;
+                }
+                // Restart timer since we're not proceeding
+                this.initializeTimer();
+                return;
+            }
             
-            const selectedAnswer = scenario.options[originalIndex];
+            // Get the selected option index
+            const optionIndex = selectedOption ? parseInt(selectedOption.value) : 0;
+            
+            // Get the current scenario
+            const currentScenarios = this.getCurrentScenarios();
+            const scenarioIndex = this.player.questionHistory.length % 5;
+            const scenario = currentScenarios[scenarioIndex];
+            
+            // Get the selected answer
+            const selectedAnswer = scenario.options[optionIndex];
+            
+            console.log('[ScriptMetricsTroubleshootingQuiz] Selected answer:', {
+                text: selectedAnswer.text,
+                experience: selectedAnswer.experience,
+                timedOut: timedOut
+            });
+            
+            // Add to player experience (no points if timed out)
+            if (!timedOut) {
+                this.player.experience += selectedAnswer.experience;
+            }
 
             // Find the correct answer (option with highest experience)
             const correctAnswer = scenario.options.reduce((prev, current) => 
@@ -1025,9 +461,6 @@ export class ScriptMetricsTroubleshootingQuiz extends BaseQuiz {
 
             // Mark selected answer as correct or incorrect
             selectedAnswer.isCorrect = selectedAnswer === correctAnswer;
-
-            // Update player experience with bounds
-            this.player.experience = Math.max(0, Math.min(this.maxXP, this.player.experience + selectedAnswer.experience));
             
             // Calculate time spent on this question
             const timeSpent = this.questionStartTime ? Date.now() - this.questionStartTime : null;
@@ -1037,9 +470,8 @@ export class ScriptMetricsTroubleshootingQuiz extends BaseQuiz {
                 scenario: scenario,
                 selectedAnswer: selectedAnswer,
                 isCorrect: selectedAnswer.isCorrect,
-                maxPossibleXP: Math.max(...scenario.options.map(o => o.experience)),
                 timeSpent: timeSpent,
-                timedOut: false
+                timedOut: timedOut
             });
 
             // Increment current scenario
@@ -1047,50 +479,39 @@ export class ScriptMetricsTroubleshootingQuiz extends BaseQuiz {
 
             // Save progress
             await this.saveProgress();
-
-            // Calculate the score percentage
-            const scorePercentage = this.calculateScorePercentage();
             
-            const score = {
-                quizName: this.quizName,
-                score: scorePercentage,
-                experience: this.player.experience,
-                questionHistory: this.player.questionHistory,
-                questionsAnswered: this.player.questionHistory.length,
-                lastActive: new Date().toISOString()
-            };
-            
-            // Save quiz result
-            const username = localStorage.getItem('username');
-            if (username) {
-                const quizUser = new QuizUser(username);
-                await quizUser.updateQuizScore(
-                    this.quizName,
-                    score.score,
-                    score.experience,
-                    this.player.tools,
-                    score.questionHistory,
-                    score.questionsAnswered
-                );
-            }
-
-            // Show outcome screen
-            if (this.gameScreen && this.outcomeScreen) {
+            // Show outcome
                 this.gameScreen.classList.add('hidden');
                 this.outcomeScreen.classList.remove('hidden');
-            }
             
-            // Set content directly in the outcome screen
-            const outcomeContent = this.outcomeScreen.querySelector('.outcome-content');
+            // Display outcome content
+            const outcomeContent = document.querySelector('.outcome-content');
             if (outcomeContent) {
+                // Prepare the outcome message
+                let outcomeHeader = selectedAnswer.isCorrect ? 'Correct!' : 'Incorrect';
+                let outcomeMessage = selectedAnswer.outcome || '';
+                
+                // Add timed out message if applicable
+                if (timedOut) {
+                    outcomeHeader = 'Time\'s Up!';
+                    outcomeMessage = 'You ran out of time. A random answer was selected.';
+                }
+                
                 outcomeContent.innerHTML = `
-                    <h3>${selectedAnswer.isCorrect ? 'Correct!' : 'Incorrect'}</h3>
-                    <p>${selectedAnswer.outcome || ''}</p>
+                    <h3>${outcomeHeader}</h3>
+                    <p>${outcomeMessage}</p>
                     <p class="result">${selectedAnswer.isCorrect ? 'Correct answer!' : 'Try again next time.'}</p>
+                    ${timedOut ? '<p class="timeout-warning">Remember to answer within the time limit!</p>' : ''}
+                    ${selectedAnswer.tool && !timedOut ? `<p class="tool-gained">You've gained the <strong>${selectedAnswer.tool}</strong> tool!</p>` : ''}
                     <button id="continue-btn" class="submit-button">Continue</button>
                 `;
                 
-                // Add event listener to the continue button
+                // If this answer added a tool and wasn't timed out, add it to player's tools
+                if (selectedAnswer.tool && !timedOut && !this.player.tools.includes(selectedAnswer.tool)) {
+                    this.player.tools.push(selectedAnswer.tool);
+                }
+                
+                // Add event listener to continue button
                 const continueBtn = outcomeContent.querySelector('#continue-btn');
                 if (continueBtn) {
                     continueBtn.addEventListener('click', () => this.nextScenario());
@@ -1098,17 +519,20 @@ export class ScriptMetricsTroubleshootingQuiz extends BaseQuiz {
             }
 
             this.updateProgress();
+            
         } catch (error) {
-            console.error('Failed to handle answer:', error);
-            this.showError('Failed to save your answer. Please try again.');
+            console.error('[ScriptMetricsTroubleshootingQuiz] Error handling answer:', error);
+            this.showError('Failed to process your answer. Please try again.');
         } finally {
             this.isLoading = false;
+            const submitButton = document.querySelector('.submit-button');
             if (submitButton) {
                 submitButton.disabled = false;
             }
         }
     }
 
+    // Move to the next scenario
     nextScenario() {
         // Hide outcome screen and show game screen
         if (this.outcomeScreen && this.gameScreen) {
@@ -1120,302 +544,84 @@ export class ScriptMetricsTroubleshootingQuiz extends BaseQuiz {
         this.displayScenario();
     }
 
+    // Update progress display
     updateProgress() {
         // Get current level and question count
         const currentLevel = this.getCurrentLevel();
         const totalAnswered = this.player.questionHistory.length;
         const questionNumber = totalAnswered + 1;
         
-        // Update the existing progress card elements
-        const levelInfoElement = document.querySelector('.level-info');
-        const questionInfoElement = document.querySelector('.question-info');
-        
-        if (levelInfoElement) {
-            levelInfoElement.textContent = `Level: ${currentLevel}`;
-        }
-        
-        if (questionInfoElement) {
-            questionInfoElement.textContent = `Question: ${questionNumber}/15`;
-        }
-        
-        // Ensure the card is visible
-        const progressCard = document.querySelector('.quiz-header-progress');
-        if (progressCard) {
-            progressCard.style.display = 'block';
-        }
-        
-        // Update legacy progress elements if they exist
+        // Update level indicator
         const levelIndicator = document.getElementById('level-indicator');
-        const questionProgress = document.getElementById('question-progress');
-        const progressFill = document.getElementById('progress-fill');
-        
         if (levelIndicator) {
             levelIndicator.textContent = `Level: ${currentLevel}`;
         }
         
+        // Update question progress
+        const questionProgress = document.getElementById('question-progress');
         if (questionProgress) {
-            questionProgress.textContent = `Question: ${questionNumber}/${this.totalQuestions || 15}`;
+            questionProgress.textContent = `Question: ${questionNumber}/15`;
         }
         
+        // Update progress bar
+        const progressFill = document.getElementById('progress-fill');
         if (progressFill) {
-            const progressPercentage = (totalAnswered / (this.totalQuestions || 15)) * 100;
+            const progressPercentage = (totalAnswered / 15) * 100;
             progressFill.style.width = `${progressPercentage}%`;
         }
     }
 
-    restartGame() {
-        // Reset player state
-        this.player = {
-            name: localStorage.getItem('username'),
-            experience: 0,
-            tools: [],
-            currentScenario: 0,
-            questionHistory: []
-        };
-
-        // Reset UI
-        this.gameScreen.classList.remove('hidden');
-        this.outcomeScreen.classList.add('hidden');
-        this.endScreen.classList.add('hidden');
-
-        // Clear any existing transition messages
-        const transitionContainer = document.getElementById('level-transition-container');
-        if (transitionContainer) {
-            transitionContainer.innerHTML = '';
-            transitionContainer.classList.remove('active');
-        }
-
-        // Update progress display
-        this.updateProgress();
-
-        // Start from first scenario
-        this.displayScenario();
-    }
-
-    getCurrentScenarios() {
-        const totalAnswered = this.player.questionHistory.length;
-        
-        // Progress through levels based only on question count
-        if (totalAnswered >= 10) {
-            return this.advancedScenarios;
-        } else if (totalAnswered >= 5) {
-            return this.intermediateScenarios;
-        }
-        return this.basicScenarios;
-    }
-
-    getCurrentLevel() {
-        const totalAnswered = this.player.questionHistory.length;
-        
-        // Progress through levels based only on question count
-        if (totalAnswered >= 10) {
-            return 'Advanced';
-        } else if (totalAnswered >= 5) {
-            return 'Intermediate';
-        }
-        return 'Basic';
-    }
-
-    generateRecommendations() {
-        const recommendationsContainer = document.getElementById('recommendations');
-        if (!recommendationsContainer) return;
-
-        const score = Math.round((this.player.experience / this.maxXP) * 100);
-        const weakAreas = [];
-        const strongAreas = [];
-
-        // Analyze performance in different areas
-        this.player.questionHistory.forEach(record => {
-            const maxXP = record.maxPossibleXP;
-            const earnedXP = record.selectedAnswer.experience;
-            const isCorrect = earnedXP === maxXP;
-
-            // Categorize the question based on its content
-            const questionType = this.categorizeQuestion(record.scenario);
-            
-            if (isCorrect) {
-                if (!strongAreas.includes(questionType)) {
-                    strongAreas.push(questionType);
-                }
-            } else {
-                if (!weakAreas.includes(questionType)) {
-                    weakAreas.push(questionType);
-                }
-            }
-        });
-
-        // Generate recommendations HTML
-        let recommendationsHTML = '';
-
-        if (score >= 95 && weakAreas.length === 0) {
-            recommendationsHTML = '<p>🌟 Outstanding! You have demonstrated mastery in all aspects of troubleshooting script metrics. You clearly understand the nuances of script metrics and are well-equipped to handle any script metrics challenges!</p>';
-        } else if (score >= 80) {
-            recommendationsHTML = '<p>🌟 Excellent performance! Your script metrics skills are very strong. To achieve complete mastery, consider focusing on:</p>';
-            recommendationsHTML += '<ul>';
-            if (weakAreas.length > 0) {
-                weakAreas.forEach(area => {
-                    recommendationsHTML += `<li>${this.getRecommendation(area)}</li>`;
-                });
-            }
-            recommendationsHTML += '</ul>';
-        } else if (score >= 60) {
-            recommendationsHTML = '<p>👍 Good effort! Here are some areas to focus on:</p>';
-            recommendationsHTML += '<ul>';
-            weakAreas.forEach(area => {
-                recommendationsHTML += `<li>${this.getRecommendation(area)}</li>`;
-            });
-            recommendationsHTML += '</ul>';
-        } else {
-            recommendationsHTML = '<p>📚 Here are key areas for improvement:</p>';
-            recommendationsHTML += '<ul>';
-            weakAreas.forEach(area => {
-                recommendationsHTML += `<li>${this.getRecommendation(area)}</li>`;
-            });
-            recommendationsHTML += '</ul>';
-        }
-
-        recommendationsContainer.innerHTML = recommendationsHTML;
-    }
-
-    categorizeQuestion(scenario) {
-        // Categorize questions based on their content
-        const title = scenario.title.toLowerCase();
-        const description = scenario.description.toLowerCase();
-
-        if (title.includes('formula') || description.includes('formula')) {
-            return 'Formula Management';
-        } else if (title.includes('environment') || description.includes('environment')) {
-            return 'Environment Coverage';
-        } else if (title.includes('table') || description.includes('table')) {
-            return 'Table Structure';
-        } else if (title.includes('metric') || description.includes('metric')) {
-            return 'Metric Accuracy';
-        } else if (title.includes('reference') || description.includes('reference')) {
-            return 'Data References';
-        } else if (title.includes('compatibility') || description.includes('compatibility')) {
-            return 'Compatibility Tracking';
-        } else if (title.includes('list') || description.includes('list')) {
-            return 'List Management';
-        } else if (title.includes('update') || description.includes('update')) {
-            return 'Update Handling';
-        } else {
-            return 'General Script Metrics';
-        }
-    }
-
-    getRecommendation(area) {
-        const recommendations = {
-            'Formula Management': 'Focus on maintaining accurate formula chains and proper cell references.',
-            'Environment Coverage': 'Strengthen tracking of environment-specific metrics and coverage data.',
-            'Table Structure': 'Improve organization and maintenance of data table structures.',
-            'Metric Accuracy': 'Enhance verification of metric calculations and dependencies.',
-            'Data References': 'Develop better strategies for managing cross-sheet data references.',
-            'Compatibility Tracking': 'Focus on accurate tracking of compatibility status across environments.',
-            'List Management': 'Strengthen maintenance and updates of environment lists.',
-            'Update Handling': 'Improve handling of metric updates while maintaining data integrity.',
-            'General Script Metrics': 'Continue developing fundamental script metrics principles.'
-        };
-
-        return recommendations[area] || 'Continue practicing core script metrics principles.';
-    }
-
+    // End the quiz
     async endGame(failed = false) {
+        console.log('[ScriptMetricsTroubleshootingQuiz] Ending game...');
+        
+        try {
+            // Calculate score
+            const correctAnswers = this.player.questionHistory.filter(q => q.isCorrect).length;
+            const totalAnswers = this.player.questionHistory.length;
+            const scorePercentage = Math.round((correctAnswers / totalAnswers) * 100);
+            
+            // Determine if passed or failed
+            const passed = scorePercentage >= this.passPercentage;
+            
+            console.log('[ScriptMetricsTroubleshootingQuiz] Quiz results:', {
+                score: scorePercentage,
+                experience: this.player.experience,
+                passed: passed
+            });
+            
+            // Hide screens
         this.gameScreen.classList.add('hidden');
         this.outcomeScreen.classList.add('hidden');
         this.endScreen.classList.remove('hidden');
 
-        // Hide the progress card on the end screen
-        const progressCard = document.querySelector('.quiz-header-progress');
-        if (progressCard) {
-            progressCard.style.display = 'none';
-        }
-
-        // Calculate final score based on correct answers
-        const correctAnswers = this.player.questionHistory.filter(q => 
-            q.selectedAnswer && (q.selectedAnswer.isCorrect || 
-            q.selectedAnswer.experience === Math.max(...q.scenario.options.map(o => o.experience || 0)))
-        ).length;
-        const scorePercentage = Math.round((correctAnswers / 15) * 100);
-        const hasPassed = !failed && scorePercentage >= this.passPercentage;
-        
-        // Save the final quiz result with pass/fail status
-        const username = localStorage.getItem('username');
-        if (username) {
-            try {
-                const user = new QuizUser(username);
-                const status = hasPassed ? 'passed' : 'failed';
-                console.log('Setting final quiz status:', { status, score: scorePercentage });
-                
-                const result = {
-                    score: scorePercentage,
-                    status: status,
-                    experience: this.player.experience,
-                    questionHistory: this.player.questionHistory,
-                    questionsAnswered: this.player.questionHistory.length,
-                    lastUpdated: new Date().toISOString(),
-                    scorePercentage: scorePercentage
-                };
-
-                // Save to QuizUser
-                await user.updateQuizScore(
-                    this.quizName,
-                    result.score,
-                    result.experience,
-                    this.player.tools,
-                    result.questionHistory,
-                    result.questionsAnswered,
-                    status
-                );
-
-                // Save to API with proper structure
-                const apiProgress = {
-                    data: {
-                        ...result,
-                        tools: this.player.tools,
-                        currentScenario: this.player.currentScenario
-                    }
-                };
-
-                // Save directly via API to ensure status is updated
-                console.log('Saving final progress to API:', apiProgress);
-                await this.apiService.saveQuizProgress(this.quizName, apiProgress.data);
-                
-                // Clear any local storage for this quiz
-                this.clearQuizLocalStorage(username, this.quizName);
-                
-            } catch (error) {
-                console.error('Error saving final quiz score:', error);
+            // Hide the timer
+            const timerContainer = document.getElementById('timer-container');
+            if (timerContainer) {
+                timerContainer.classList.add('hidden');
             }
-        }
-
-        document.getElementById('final-score').textContent = `Final Score: ${scorePercentage}%`;
-
+        
         // Update the quiz complete header based on status
         const quizCompleteHeader = document.querySelector('#end-screen h2');
         if (quizCompleteHeader) {
-            quizCompleteHeader.textContent = hasPassed ? 'Quiz Complete!' : 'Quiz Failed!';
-        }
-
-        const performanceSummary = document.getElementById('performance-summary');
-        if (!hasPassed) {
-            performanceSummary.textContent = 'Quiz failed. You did not earn enough points to pass. You can retry this quiz later.';
-            // Hide restart button if failed
-            const restartBtn = document.getElementById('restart-btn');
-            if (restartBtn) {
-                restartBtn.style.display = 'none';
+                quizCompleteHeader.textContent = passed ? 'Quiz Complete!' : 'Quiz Failed!';
             }
-            // Add failed class to quiz container for styling
-            const quizContainer = document.getElementById('quiz-container');
-            if (quizContainer) {
-                quizContainer.classList.add('failed');
+            
+            // Update final score display
+            const finalScore = document.getElementById('final-score');
+            if (finalScore) {
+                finalScore.textContent = `Final Score: ${scorePercentage}%`;
             }
-        } else {
+            
+            // Update performance summary
+            const performanceSummary = document.getElementById('performance-summary');
+            if (performanceSummary) {
+                if (passed) {
             // Find the appropriate performance message
             const threshold = this.config.performanceThresholds.find(t => scorePercentage >= t.threshold);
-            if (threshold) {
-                performanceSummary.textContent = threshold.message;
+                    performanceSummary.textContent = threshold ? threshold.message : 'Congratulations! You passed the quiz.';
             } else {
-                performanceSummary.textContent = 'Quiz completed successfully!';
+                    performanceSummary.textContent = 'Quiz failed. You did not earn enough points to pass. You can retry this quiz later.';
             }
         }
 
@@ -1423,35 +629,188 @@ export class ScriptMetricsTroubleshootingQuiz extends BaseQuiz {
         const reviewList = document.getElementById('question-review');
         if (reviewList) {
             reviewList.innerHTML = ''; // Clear existing content
+                
             this.player.questionHistory.forEach((record, index) => {
                 const reviewItem = document.createElement('div');
                 reviewItem.className = 'review-item';
-                
-                const isCorrect = record.selectedAnswer && (record.selectedAnswer.isCorrect || 
-                    record.selectedAnswer.experience === Math.max(...record.scenario.options.map(o => o.experience || 0)));
-                reviewItem.classList.add(isCorrect ? 'correct' : 'incorrect');
+                    reviewItem.classList.add(record.isCorrect ? 'correct' : 'incorrect');
+                    
+                    // Add timed out class if applicable
+                    if (record.timedOut) {
+                        reviewItem.classList.add('timed-out');
+                    }
                 
                 reviewItem.innerHTML = `
                     <h4>Question ${index + 1}</h4>
-                    <p class="scenario">${record.scenario.description}</p>
+                        <p class="scenario">${record.scenario.title}</p>
                     <p class="answer"><strong>Your Answer:</strong> ${record.selectedAnswer.text}</p>
                     <p class="outcome"><strong>Outcome:</strong> ${record.selectedAnswer.outcome}</p>
-                    <p class="result"><strong>Result:</strong> ${isCorrect ? 'Correct' : 'Incorrect'}</p>
+                        <p class="result"><strong>Result:</strong> ${record.isCorrect ? 'Correct' : 'Incorrect'} ${record.timedOut ? '(Timed Out)' : ''}</p>
                 `;
                 
                 reviewList.appendChild(reviewItem);
             });
         }
 
-        this.generateRecommendations();
+            // Generate recommendations
+            const recommendations = document.getElementById('recommendations');
+            if (recommendations) {
+                let recommendationsHTML = '';
+                
+                if (scorePercentage >= 90) {
+                    recommendationsHTML = '<p>🌟 Outstanding! You have demonstrated excellent knowledge of script metrics!</p>';
+                } else if (scorePercentage >= 70) {
+                    recommendationsHTML = '<p>👍 Good job! Here are some areas to review:</p><ul>';
+                    // Find areas where the user made mistakes and group by level
+                    const incorrectQuestions = this.player.questionHistory.filter(q => !q.isCorrect);
+                    const basicMistakes = incorrectQuestions.filter(q => q.scenario.level === 'Basic');
+                    const intermediateMistakes = incorrectQuestions.filter(q => q.scenario.level === 'Intermediate');
+                    const advancedMistakes = incorrectQuestions.filter(q => q.scenario.level === 'Advanced');
+
+                    if (basicMistakes.length > 0) {
+                        recommendationsHTML += '<li><strong>Basic Concepts:</strong><ul>';
+                        basicMistakes.forEach(q => {
+                            recommendationsHTML += `<li>Review ${q.scenario.title}: ${q.scenario.description}</li>`;
+                        });
+                        recommendationsHTML += '</ul></li>';
+                    }
+
+                    if (intermediateMistakes.length > 0) {
+                        recommendationsHTML += '<li><strong>Intermediate Topics:</strong><ul>';
+                        intermediateMistakes.forEach(q => {
+                            recommendationsHTML += `<li>Review ${q.scenario.title}: ${q.scenario.description}</li>`;
+                        });
+                        recommendationsHTML += '</ul></li>';
+                    }
+
+                    if (advancedMistakes.length > 0) {
+                        recommendationsHTML += '<li><strong>Advanced Concepts:</strong><ul>';
+                        advancedMistakes.forEach(q => {
+                            recommendationsHTML += `<li>Review ${q.scenario.title}: ${q.scenario.description}</li>`;
+                        });
+                        recommendationsHTML += '</ul></li>';
+                    }
+                    recommendationsHTML += '</ul>';
+                } else {
+                    recommendationsHTML = '<p>📚 Here are key areas for improvement:</p><ul>';
+                    // Find areas where the user made mistakes and group by level
+                    const incorrectQuestions = this.player.questionHistory.filter(q => !q.isCorrect);
+                    const basicMistakes = incorrectQuestions.filter(q => q.scenario.level === 'Basic');
+                    const intermediateMistakes = incorrectQuestions.filter(q => q.scenario.level === 'Intermediate');
+                    const advancedMistakes = incorrectQuestions.filter(q => q.scenario.level === 'Advanced');
+
+                    if (basicMistakes.length > 0) {
+                        recommendationsHTML += '<li><strong>Focus on Basic Concepts:</strong><ul>';
+                        basicMistakes.forEach(q => {
+                            recommendationsHTML += `<li>Master ${q.scenario.title}: ${q.scenario.description}</li>`;
+                        });
+                        recommendationsHTML += '</ul></li>';
+                    }
+
+                    if (intermediateMistakes.length > 0) {
+                        recommendationsHTML += '<li><strong>Strengthen Intermediate Knowledge:</strong><ul>';
+                        intermediateMistakes.forEach(q => {
+                            recommendationsHTML += `<li>Practice ${q.scenario.title}: ${q.scenario.description}</li>`;
+                        });
+                        recommendationsHTML += '</ul></li>';
+                    }
+
+                    if (advancedMistakes.length > 0) {
+                        recommendationsHTML += '<li><strong>Review Advanced Topics:</strong><ul>';
+                        advancedMistakes.forEach(q => {
+                            recommendationsHTML += `<li>Study ${q.scenario.title}: ${q.scenario.description}</li>`;
+                        });
+                        recommendationsHTML += '</ul></li>';
+                    }
+                    recommendationsHTML += '</ul>';
+                }
+                
+                recommendations.innerHTML = recommendationsHTML;
+            }
+            
+            // Save final progress
+            await this.saveProgress(passed ? 'passed' : 'failed');
+            
+        } catch (error) {
+            console.error('[ScriptMetricsTroubleshootingQuiz] Error ending game:', error);
+            this.showError('Failed to complete the quiz. Please refresh the page.');
+        }
+    }
+    
+    // Restart the quiz
+    async restartQuiz() {
+        console.log('[ScriptMetricsTroubleshootingQuiz] Restarting quiz...');
+        
+        // Clear the timer if it exists
+        if (this.questionTimer) {
+            clearInterval(this.questionTimer);
+            this.questionTimer = null;
+        }
+        
+        // Reset player state
+        this.player = {
+            name: localStorage.getItem('username'),
+            experience: 0,
+            questionHistory: [],
+            currentScenario: 0,
+            tools: []
+        };
+        
+        // Save reset progress
+        await this.saveProgress('in-progress');
+        
+        // Reset UI
+        this.gameScreen.classList.remove('hidden');
+        this.outcomeScreen.classList.add('hidden');
+        this.endScreen.classList.add('hidden');
+        
+        // Clear any existing transition messages
+        const transitionContainer = document.getElementById('level-transition-container');
+        if (transitionContainer) {
+            transitionContainer.innerHTML = '';
+            transitionContainer.classList.remove('active');
+        }
+        
+        // Start again
+        this.displayScenario();
+    }
+    
+    // Helper for showing errors
+    showError(message) {
+        console.error('[ScriptMetricsTroubleshootingQuiz] Error:', message);
+        
+        try {
+            const errorElement = document.createElement('div');
+            errorElement.className = 'error-message';
+            errorElement.textContent = message;
+            errorElement.style.color = 'red';
+            errorElement.style.padding = '20px';
+            errorElement.style.textAlign = 'center';
+            errorElement.style.fontWeight = 'bold';
+            
+            // Find a good place to show the error
+            const container = document.getElementById('game-screen') || 
+                            document.getElementById('quiz-container') || 
+                            document.body;
+            
+            if (container) {
+                // Clear container if not body
+                if (container !== document.body) {
+                    container.innerHTML = '';
+                }
+                
+                container.appendChild(errorElement);
+                console.error('[ScriptMetricsTroubleshootingQuiz] Displayed error to user:', message);
+            }
+        } catch (e) {
+            // Fallback to alert if error display fails
+            alert(message);
+        }
     }
 }
 
-// Initialize quiz when the page loads
+// Create and initialize the quiz when the DOM is loaded
 document.addEventListener('DOMContentLoaded', () => {
-    // Clear any existing quiz instances before starting this quiz
-    BaseQuiz.clearQuizInstances('script-metrics-troubleshooting');
-    
-    const quiz = new ScriptMetricsTroubleshootingQuiz();
-    quiz.startGame();
+    console.log('[ScriptMetricsTroubleshootingQuiz] DOM loaded, initializing quiz...');
+    window.scriptMetricsTroubleshootingQuiz = new ScriptMetricsTroubleshootingQuiz();
 }); 

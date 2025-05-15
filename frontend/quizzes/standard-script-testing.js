@@ -1,23 +1,29 @@
 import { APIService } from '../api-service.js';
 import { BaseQuiz } from '../quiz-helper.js';
 import { QuizUser } from '../QuizUser.js';
+import { standardScriptTestingScenarios } from '../data/standard-script-testing-scenarios.js';
 
 export class StandardScriptTestingQuiz extends BaseQuiz {
     constructor() {
+        console.log('[StandardScriptTestingQuiz] Initializing...');
+        
+        // Configure the quiz with basic settings
         const config = {
             maxXP: 300,
             totalQuestions: 15,
             passPercentage: 70,
             performanceThresholds: [
-                { threshold: 90, message: '🏆 Outstanding! You\'re a testing mindset expert!' },
-                { threshold: 80, message: '👏 Great job! You\'ve shown strong testing instincts!' },
+                { threshold: 90, message: '🏆 Outstanding! You\'re a standard script testing expert!' },
+                { threshold: 80, message: '👏 Great job! You\'ve shown strong standard script testing instincts!' },
                 { threshold: 70, message: '👍 Good work! You\'ve passed the quiz!' },
-                { threshold: 0, message: '📚 Consider reviewing testing mindset best practices and try again!' }
-            ]
+                { threshold: 0, message: '📚 Consider reviewing standard script testing best practices and try again!' }
+            ],
+            quizName: 'standard-script-testing'
         };
         
+        // Call the parent constructor with our config
         super(config);
-        
+
         // Set the quiz name
         Object.defineProperty(this, 'quizName', {
             value: 'standard-script-testing',
@@ -25,897 +31,61 @@ export class StandardScriptTestingQuiz extends BaseQuiz {
             configurable: false,
             enumerable: true
         });
-        
+
         // Initialize player state
         this.player = {
             name: '',
             experience: 0,
-            tools: [],
+            questionHistory: [],
             currentScenario: 0,
-            questionHistory: []
+            tools: []
         };
 
-        // Initialize API service
-        this.apiService = new APIService();
+        // Load scenarios from our data file
+        this.basicScenarios = standardScriptTestingScenarios.basic;
+        this.intermediateScenarios = standardScriptTestingScenarios.intermediate;
+        this.advancedScenarios = standardScriptTestingScenarios.advanced;
 
-        // Initialize all screen elements
+        // Initialize elements
         this.gameScreen = document.getElementById('game-screen');
         this.outcomeScreen = document.getElementById('outcome-screen');
         this.endScreen = document.getElementById('end-screen');
         
-        // Verify all required elements exist
-        if (!this.gameScreen) {
-            console.error('Game screen element not found');
-            this.showError('Quiz initialization failed. Please refresh the page.');
-            return;
+        // Create level transition container if it doesn't exist
+        if (!document.getElementById('level-transition-container')) {
+            const transitionContainer = document.createElement('div');
+            transitionContainer.id = 'level-transition-container';
+            transitionContainer.className = 'level-transition-container';
+            document.querySelector('.quiz-container').appendChild(transitionContainer);
         }
         
-        if (!this.outcomeScreen) {
-            console.error('Outcome screen element not found');
-            this.showError('Quiz initialization failed. Please refresh the page.');
-            return;
-        }
+        // Timer-related properties
+        this.questionTimer = null;
+        this.questionStartTime = null;
+        this.questionTimeLimitInSeconds = 60; // 60 seconds per question
         
-        if (!this.endScreen) {
-            console.error('End screen element not found');
-            this.showError('Quiz initialization failed. Please refresh the page.');
-            return;
-        }
-
-        // Basic Scenarios (IDs 1-10, now includes 5 additional scenarios)
-        this.basicScenarios = [
-            {
-                id: 1,
-                level: 'Basic',
-                title: 'Objective',
-                description: 'What is a standard test script?',
-                options: [
-                    {
-                        text: 'A piece of automated code that runs tests without human intervention',
-                        outcome: 'While scripts can be automated, this answer misses the fundamental purpose of documenting and structuring test cases.',
-                        experience: 5
-                    },
-                    {
-                        text: 'A documented set of instructions and conditions that outline how to execute specific test cases within a software testing process',
-                        outcome: 'Correct! This is the exact definition of a standard test script.',
-                        experience: 15,
-                        tool: 'Script Fundamentals'
-                    },
-                    {
-                        text: 'A set of programming commands used to create software',
-                        outcome: 'This describes programming code, not test scripts.',
-                        experience: -10
-                    },
-                    {
-                        text: 'A collection of test cases with a loose structure focused on user journeys',
-                        outcome: 'This contradicts the organised nature of standard test scripts.',
-                        experience: -5
-                    }
-                ]
-            },
-            {
-                id: 2,
-                level: 'Basic',
-                title: 'Script Format',
-                description: 'Which format is used for writing test cases in standard test scripts?',
-                options: [
-                    {
-                        text: 'Python code',
-                        outcome: 'Python is a programming language, not a test case format.',
-                        experience: -5
-                    },
-                    {
-                        text: 'SQL queries',
-                        outcome: 'SQL is for database queries, not test case writing.',
-                        experience: -10
-                    },
-                    {
-                        text: 'Gherkin language',
-                        outcome: 'Correct! Gherkin language is used for writing test cases.',
-                        experience: 15,
-                        tool: 'Test Case Writing'
-                    },
-                    {
-                        text: 'JSON format',
-                        outcome: 'While JSON is a structured format, it\'s not the specified format for standard script test cases.',
-                        experience: 5
-                    }
-                ]
-            },
-            {
-                id: 3,
-                level: 'Basic',
-                title: 'Test Case Planning',
-                description: 'How many test cases should be planned per day of testing on average?',
-                options: [
-                    {
-                        text: '25-50 test cases',
-                        outcome: 'This is well below the recommended amount',
-                        experience: -10
-                    },
-                    {
-                        text: '50-75 test cases',
-                        outcome: 'While close to the correct range, this is slightly below the recommended amount.',
-                        experience: 5
-                    },
-                    {
-                        text: '75-100 test cases',
-                        outcome: 'Correct! It is specifically recommended that 75-100 test cases is the average per day of testing.',
-                        experience: 15,
-                        tool: 'Test Planning'
-                    },
-                    {
-                        text: '100-125 test cases',
-                        outcome: 'This exceeds the recommended amount',
-                        experience: -5
-                    }
-                ]
-            },
-            {
-                id: 4,
-                level: 'Basic',
-                title: 'Executing The Script',
-                description: 'What is the first step in executing a standard test script?',
-                options: [
-                    {
-                        text: 'Start with writing new test cases to be included in the script',
-                        outcome: 'Test cases should already be written during the planning phase.',
-                        experience: -10
-                    },
-                    {
-                        text: 'Begin testing immediately to complete the most coverage within the project time frame set',
-                        outcome: 'While testing needs to be done, reviews must come first.',
-                        experience: 5
-                    },
-                    {
-                        text: 'Review the Operational Project Details and Statement of Work',
-                        outcome: 'Correct! The is the first step before writing the test cases to ascertain any project specifics',
-                        experience: 15,
-                        tool: 'Script Execution'
-                    },
-                    {
-                        text: 'Create a new test environment',
-                        outcome: 'This is not part of the execution process',
-                        experience: -5
-                    }
-                ]
-            },
-            {
-                id: 5,
-                level: 'Basic',
-                title: 'Submission Data',
-                description: 'What is the primary purpose of the "Submissions Data" tab in the test script?',
-                options: [
-                    {
-                        text: 'To record test case results, focus time allocation and tester details',
-                        outcome: 'While it does record data, it\'s specifically for submissions, not general test results.',
-                        experience: 5
-                    },
-                    {
-                        text: 'To store all test environment details used for the project',
-                        outcome: 'Environment details are stored elsewhere in the test script.',
-                        experience: -5
-                    },
-                    {
-                        text: 'To maintain a record of submitted data for traceability',
-                        outcome: 'Correct! The tab is used for recording submitted data, including user credentials for traceability',
-                        experience: 15,
-                        tool: 'Data Management'
-                    },
-                    {
-                        text: 'To track bug reports raised against the system under test',
-                        outcome: 'Bug tracking is handled in a separate system',
-                        experience: -10
-                    }
-                ]
-            },
-            {
-                id: 16,
-                level: 'Basic',
-                title: 'Test Script Execution',
-                description: 'What should be done first when executing a standard test script?',
-                options: [
-                    {
-                        text: 'Run the set of smoke tests',
-                        outcome: 'Correct! Running the smoke tests first should identify defects in functionality critical to the application under test.',
-                        experience: 15,
-                        tool: 'Test Script Execution'
-                    },
-                    {
-                        text: 'Run compatibility tests',
-                        outcome: 'Compatibility testing should come after or, if possible, in conjunction with primary environment coverage.',
-                        experience: -5
-                    },
-                    {
-                        text: 'Focus areas should be extremely detailed and specific, breaking down every possible user action',
-                        outcome: 'This would make test execution more like scripted testing in being more specific.',
-                        experience: -10
-                    },
-                    {
-                        text: 'Begin with the user journeys',
-                        outcome: 'User journeys are executed after the functional test cases have been completed.',
-                        experience: 0
-                    }
-                ]
-            },
-            {
-                id: 17,
-                level: 'Basic',
-                title: 'Standard Scripting Advantages',
-                description: 'What is a key advantage of using standard test scripts according to the guide?',
-                options: [
-                    {
-                        text: 'They require less documentation',
-                        outcome: 'Standard scripts actually require more documentation, not less, as they need detailed test cases and steps',
-                        experience: -5
-                    },
-                    {
-                        text: 'They eliminate the need for client involvement',
-                        outcome: 'If the client prefers to be closely involved in the testing process, standard test scripts provide a clear structure for review.',
-                        experience: -10
-                    },
-                    {
-                        text: 'They ensure consistency and reproducibility across the testing team',
-                        outcome: 'Correct! Standard scripts ensure consistent execution of tests across the testing team, and over time. This is crucial for tracking progress.',
-                        experience: 15,
-                        tool: 'Standard Scripting Advantages'
-                    },
-                    {
-                        text: 'They reduce the time required for test planning',
-                        outcome: 'Standard scripts require significant planning time, as evidenced by the detailed test planning process.',
-                        experience: 0
-                    }
-                ]
-            },
-            {
-                id: 18,
-                level: 'Basic',
-                title: 'Standard Scripting Approach',
-                description: 'What is recommended when creating test cases for a standard script?',
-                options: [
-                    {
-                        text: 'Jump between different areas of the page to ensure comprehensive coverage',
-                        outcome: 'This approach should be avoided in order to create a logical flow when following the script.',
-                        experience: -5
-                    },
-                    {
-                        text: 'Focus only on positive test cases to improve execution speed',
-                        outcome: 'both positive tests (expected behaviour) and negative tests (where potential issues or errors may lie for invalid inputs) should be considered for coverage.',
-                        experience: -10
-                    },
-                    {
-                        text: 'Follow a logical process to maintain clarity for the tester',
-                        outcome: 'Correct! When writing test cases, a logical process should be observed. Avoid jumping around the page to maintain clarity for the tester.',
-                        experience: 15,
-                        tool: 'Standard Scripting Approach'
-                    },
-                    {
-                        text: 'Create test cases with minimal detail to allow for tester interpretation',
-                        outcome: 'Emphasis should be on detailed documentation, not minimal detail that requires interpretation.',
-                        experience: 0
-                    }
-                ]
-            },
-            {
-                id: 19,
-                level: 'Basic',
-                title: 'Test Case Accuracy',
-                description: 'What should be done when there are doubts about the accuracy of a test case?',
-                options: [
-                    {
-                        text: 'Mark the test case and add comments to highlight uncertainties',
-                        outcome: 'Correct! If there are doubts around any test cases, comments can be added to the cell to highlight this and confirmed by either the author or the client.',
-                        experience: 15,
-                        tool: 'Test Case Accuracy'
-                    },
-                    {
-                        text: 'Delete the test case from the script and continue with other test cases',
-                        outcome: 'Deleting the test case can cause missed defects and reduce test coverage of the application under test',
-                        experience: -10
-                    },
-                    {
-                        text: 'Run the test anyway and record all outcomes.',
-                        outcome: 'All uncertainties must be addressed as to avoid any lost testing time on areas not in scope.',
-                        experience: -5
-                    },
-                    {
-                        text: 'Always mark such cases as "failed" to be safe.',
-                        outcome: 'This would be inaccurate if there is uncertainty about requirements rather than an actual failure.',
-                        experience: 0
-                    }
-                ]
-            },
-            {
-                id: 20,
-                level: 'Basic',
-                title: 'Standard Script Allocation',
-                description: 'What factors should be considered when determining whether to use a standard test script approach?',
-                options: [
-                    {
-                        text: 'The complexity of the software and the client\'s preference for involvement',
-                        outcome: 'Correct! If the software has critical components that must function to a high standard and If the client prefers to be closely involved in the testing process, then this is the correct approach.',
-                        experience: 15,
-                        tool: 'Standard Script Allocation'
-                    },
-                    {
-                        text: 'Project budget and timeline should be factors when taking a standard scripting process into consideration',
-                        outcome: 'While budget and timeline are factors, they aren\'t the only factors to be taken into consideration. Critical components within the system should also be considered.',
-                        experience: -10
-                    },
-                    {
-                        text: 'Whether the team prefers exploratory or scripted testing',
-                        outcome: 'Team preferences should not determine the testing approach and what is best for the system under test should always be prioritised.',
-                        experience: -5
-                    },
-                    {
-                        text: 'The programming language used to develop the software should be taken into consideration',
-                        outcome: 'Programming language used for development shouldn\'t be a factor for manual testing.',
-                        experience: 0
-                    }
-                ]
-            }
-        ];
-
-        // Intermediate Scenarios (IDs 6-10)
-        this.intermediateScenarios = [
-            {
-                id: 6,
-                level: 'Intermediate',
-                title: 'Test Case Priority',
-                description: 'Which of the following is a key factor in determining test case priority?',
-                options: [
-                    {
-                        text: 'The alphabetical order of the test cases within the script',
-                        outcome: 'Alphabetical order is not a factor in priority.',
-                        experience: -5
-                    },
-                    {
-                        text: 'The length of time it takes to execute the specific test ',
-                        outcome: 'While execution time might be considered, it\'s not a primary factor.',
-                        experience: 5
-                    },
-                    {
-                        text: 'The impact of the feature being tested and frequency of use',
-                        outcome: 'Correct! These are key factors in determining priority of test cases',
-                        experience: 20,
-                        tool: 'Priority Management'
-                    },
-                    {
-                        text: 'The preference and experience of the individual tester',
-                        outcome: 'Individual preferences should not determine priority as this may miss critical test areas due to time management',
-                        experience: -10
-                    }
-                ]
-            },
-            {
-                id: 7,
-                level: 'Intermediate',
-                title: 'Out Of Scope Environments',
-                description: 'What should be done with environment sections that are not in scope?',
-                options: [
-                    {
-                        text: 'Out of scope environments should be deleted',
-                        outcome: 'Deleting sections could cause problems if they\'re needed later.',
-                        experience: -10
-                    },
-                    {
-                        text: 'Out of scope environments should be left unchanged',
-                        outcome: 'Leaving them unchanged could cause confusion on what needs to be tested.',
-                        experience: -5
-                    },
-                    {
-                        text: 'The columns or rows for out of scope environments should be hidden',
-                        outcome: 'While this would hide unused sections, it\'s not the recommended approach as this would still affect metrics',
-                        experience: 5
-                    },
-                    {
-                        text: 'These sections should be greyed out and the dashes removed from the result and date columns',
-                        outcome: 'Correct! This is the recommended approach for environments that are not in scope for the project',
-                        experience: 20,
-                        tool: 'Environment Management'
-                    }
-                ]
-            },
-            {
-                id: 8,
-                level: 'Intermediate',
-                title: 'Primary Test Tab',
-                description: 'How should test suites be organised in the primary functional tests tab?',
-                options: [
-                    {
-                        text: 'The test suites should be organised alphabetically by suite name',
-                        outcome: 'While this would be organised, it doesn\'t consider importance',
-                        experience: 5
-                    },
-                    {
-                        text: 'This should be organised based on tester preference',
-                        outcome: 'This type of ordering could make the script difficult to follow.',
-                        experience: -10
-                    },
-                    {
-                        text: 'By complexity and risk factors using high, medium, and low priorities',
-                        outcome: 'Correct! Suites should be prioritised by complexity and risk factors',
-                        experience: 20,
-                        tool: 'Suite Organization'
-                    },
-                    {
-                        text: 'These should be organised by the date they were created',
-                        outcome: 'Creation date is not a factor in organisation and doesn\'t take into consideration priority.',
-                        experience: -5
-                    }
-                ]
-            },
-            {
-                id: 9,
-                level: 'Intermediate',
-                title: 'Document References',
-                description: 'What should be included in the document reference for a test case?',
-                options: [
-                    {
-                        text: 'Only the test case ID should be included in the test case reference',
-                        outcome: 'While ID is important, more information is required, including documentation references that can help in executing the test.',
-                        experience: 5
-                    },
-                    {
-                        text: 'Information that aided in creating the test case and which will help during execution',
-                        outcome: 'Correct! References should include anything that aided creation and that will help with execution of the test case.',
-                        experience: 20,
-                        tool: 'Documentation Management'
-                    },
-                    {
-                        text: 'The tester\'s name should be included as reference',
-                        outcome: 'Tester\'s name is not part of the documentation reference',
-                        experience: -5
-                    },
-                    {
-                        text: 'The current date should be included as reference',
-                        outcome: 'The date is not part of the documentation reference.',
-                        experience: -10
-                    }
-                ]
-            },
-            {
-                id: 10,
-                level: 'Intermediate',
-                title: 'Smoke Tests',
-                description: 'When should smoke tests be executed during standard script testing?',
-                options: [
-                    {
-                        text: 'Smoke tests should be executed at the end of all other testing',
-                        outcome: 'This would be too late to catch any potential major issues.',
-                        experience: -10
-                    },
-                    {
-                        text: 'These should be performed first, before other test cases',
-                        outcome: 'Correct! Smoke tests should be run first as these are devised from the highest priority test cases.',
-                        experience: 20,
-                        tool: 'Smoke Testing'
-                    },
-                    {
-                        text: 'These should all be run, only when issues are found',
-                        outcome: 'While issues might trigger retesting, smoke tests come first.',
-                        experience: 5
-                    },
-                    {
-                        text: 'These should be run after compatibility testing',
-                        outcome: 'Compatibility testing should come after primary testing.',
-                        experience: -5
-                    }
-                ]
-            }
-        ];
-
-        // Advanced Scenarios (IDs 11-15)
-        this.advancedScenarios = [
-            {
-                id: 11,
-                level: 'Advanced',
-                title: 'Multiple Primary Environments',
-                description: 'What is the correct approach when dealing with multiple primary environments in a standard test script?',
-                options: [
-                    {
-                        text: 'Create entirely new test cases for each environment',
-                        outcome: 'While some new cases might be needed, copying and modifying is more efficient',
-                        experience: 5
-                    },
-                    {
-                        text: 'Copy and modify test suites as needed, adjusting for environment-specific differences',
-                        outcome: 'Correct! Test suites can be copied and modified for different environments',
-                        experience: 25,
-                        tool: 'Environment Testing'
-                    },
-                    {
-                        text: 'Perform test activities only on the highest priority environment',
-                        outcome: 'All supported primary environments require testing',
-                        experience: -10
-                    },
-                    {
-                        text: 'Select which tests to run on each environment according to tester preference',
-                        outcome: 'A random selection would not ensure comprehensive coverage',
-                        experience: -5
-                    }
-                ]
-            },
-            {
-                id: 12,
-                level: 'Advanced',
-                title: 'Compatibility Testing',
-                description: 'How should compatibility testing be integrated with primary environment testing?',
-                options: [
-                    {
-                        text: 'Primary testing should always be completed first and foremost',
-                        outcome: 'While primary testing is important, parallel testing is possible.',
-                        experience: 5
-                    },
-                    {
-                        text: 'Only do compatibility testing if time constraints permit it',
-                        outcome: 'Compatibility testing is required, and is not optional unless stated by the client.',
-                        experience: -5
-                    },
-                    {
-                        text: 'This can be started alongside primary testing in parallel, depending on project scheduling',
-                        outcome: 'Correct! Compatibility testing can be done in parallel with primary environment testing',
-                        experience: 25,
-                        tool: 'Compatibility Testing'
-                    },
-                    {
-                        text: 'Compatibility testing must be done before primary testing',
-                        outcome: 'This is not the correct approach as issues could be missed early on in the testing process',
-                        experience: -5
-                    }
-                ]
-            },
-            {
-                id: 13,
-                level: 'Advanced',
-                title: 'Requirements Updates',
-                description: 'What is the appropriate way to handle changes in requirements during the testing phase?',
-                options: [
-                    {
-                        text: 'Continue with original test cases and test the new requirements if time constraints permit',
-                        outcome: 'Leaving requirements changes would lead to invalid test results and potentially missed issues.',
-                        experience: -5
-                    },
-                    {
-                        text: 'Mark test cases where expected behaviour is in question, add comments for clarification, and remove comments once clarified',
-                        outcome: 'Correct! This is the process for handling requirement changes.',
-                        experience: 25,
-                        tool: 'Requirements Management'
-                    },
-                    {
-                        text: 'Pause testing until all requirements are finalised with client feedback',
-                        outcome: 'While pausing might seem logical, it\'s not the recommended approach and is not good time management.',
-                        experience: 5
-                    },
-                    {
-                        text: 'Delete the affected test cases to be updated when requirements are finalised.',
-                        outcome: 'Deleting cases would lose valuable information already sourced.',
-                        experience: -10
-                    }
-                ]
-            },
-            {
-                id: 14,
-                level: 'Advanced',
-                title: 'User Journeys',
-                description: 'How should user journeys be structured in comparison to functional tests?',
-                options: [
-                    {
-                        text: 'User journeys must always use Gherkin format',
-                        outcome: 'While Gherkin can be used, it\'s not required for user journeys',
-                        experience: 5
-                    },
-                    {
-                        text: 'These don\'t require Gherkin format but should contain logical step processes',
-                        outcome: 'Correct! User journeys don\'t require Gherkin but should be stated in logical steps.',
-                        experience: 25,
-                        tool: 'Journey Testing'
-                    },
-                    {
-                        text: 'These should be written in technical programming language',
-                        outcome: 'Technical programming language is not appropriate for user journeys as these need to be in logical steps for ease of understanding',
-                        experience: -10
-                    },
-                    {
-                        text: 'These must be constructed in single-line instructions only',
-                        outcome: 'Single-line instructions would be insufficient and may miss some critical information',
-                        experience: -5
-                    }
-                ]
-            },
-            {
-                id: 15,
-                level: 'Advanced',
-                title: 'Test Case Structure',
-                description: 'What factors should influence the structure of test case creation in the standard script?',
-                options: [
-                    {
-                        text: 'The client\'s stated requirements should only influence the structure of the test cases',
-                        outcome: 'While client requirements are important, other factors must be considered like risk assessment.',
-                        experience: 5
-                    },
-                    {
-                        text: 'A combination of target audience, project timing, risk assessment, and client requirements',
-                        outcome: 'Correct! These are all factors for important considerations.',
-                        experience: 25,
-                        tool: 'Test Structure'
-                    },
-                    {
-                        text: 'The tester\'s previous experience with similar projects should be the determining factor',
-                        outcome: 'While experience is valuable, it shouldn\'t solely determine structure.',
-                        experience: -5
-                    },
-                    {
-                        text: 'The number of available testers required to work on the project',
-                        outcome: 'Tester availability doesn\'t determine test case structure.',
-                        experience: -10
-                    }
-                ]
-            }
-        ];
-
-        // Initialize UI and add event listeners
+        this.isLoading = false;
+        
+        // Initialize event listeners
         this.initializeEventListeners();
 
-        this.isLoading = false;
+        // Start the quiz
+        this.startGame();
     }
-
-    showError(message) {
-        const errorDiv = document.createElement('div');
-        errorDiv.className = 'error-notification';
-        errorDiv.setAttribute('role', 'alert');
-        errorDiv.textContent = message;
-        document.body.appendChild(errorDiv);
-        setTimeout(() => errorDiv.remove(), 5000);
+    
+    // Override the shouldEndGame method for our quiz
+    shouldEndGame() {
+        return this.player.questionHistory.length >= 15;
     }
-
-    shouldEndGame(totalQuestionsAnswered, currentXP) {
-        // End game when all questions are answered
-        return totalQuestionsAnswered >= this.totalQuestions;
-    }
-
-    async saveProgress() {
-        // First determine the status based on quiz completion and score
-        let status = 'in-progress';
-        let scorePercentage = 0;
-        
-        // Calculate score percentage based on correct answers
-        if (this.player.questionHistory.length > 0) {
-            scorePercentage = this.calculateScorePercentage();
-        }
-        
-        // Check for completion (all questions answered)
-        if (this.player.questionHistory.length >= this.totalQuestions) {
-            status = scorePercentage >= this.passPercentage ? 'passed' : 'failed';
-        }
-
-        const progress = {
-            data: {
-                experience: this.player.experience,
-                tools: this.player.tools,
-                currentScenario: this.player.currentScenario,
-                questionHistory: this.player.questionHistory,
-                lastUpdated: new Date().toISOString(),
-                questionsAnswered: this.player.questionHistory.length,
-                status: status,
-                scorePercentage: scorePercentage,
-                randomizedScenarios: this.randomizedScenarios || {} // Save the randomized scenarios
-            }
-        };
-
-        try {
-            const username = localStorage.getItem('username');
-            if (!username) {
-                console.error('No user found, cannot save progress');
-                return;
-            }
-            
-            // Use user-specific key for localStorage
-            const storageKey = `quiz_progress_${username}_${this.quizName}`;
-            localStorage.setItem(storageKey, JSON.stringify(progress));
-            
-            console.log('Saving progress with status:', status, 'and score:', scorePercentage);
-            await this.apiService.saveQuizProgress(this.quizName, progress.data);
-        } catch (error) {
-            console.error('Failed to save progress:', error);
-        }
-    }
-
-    async loadProgress() {
-        try {
-            const username = localStorage.getItem('username');
-            if (!username) {
-                console.error('No user found, cannot load progress');
-                return false;
-            }
-
-            // Use user-specific key for localStorage
-            const storageKey = `quiz_progress_${username}_${this.quizName}`;
-            const savedProgress = await this.apiService.getQuizProgress(this.quizName);
-            console.log('Raw API Response:', savedProgress);
-            let progress = null;
-            
-            if (savedProgress && savedProgress.data) {
-                // Normalize the data structure
-                progress = {
-                    experience: savedProgress.data.experience || 0,
-                    tools: savedProgress.data.tools || [],
-                    questionHistory: savedProgress.data.questionHistory || [],
-                    currentScenario: savedProgress.data.currentScenario || 0,
-                    status: savedProgress.data.status || 'in-progress',
-                    scorePercentage: savedProgress.data.scorePercentage || 0,
-                    randomizedScenarios: savedProgress.data.randomizedScenarios || {}
-                };
-                console.log('Normalized progress data:', progress);
-            } else {
-                // Try loading from localStorage as fallback
-                const localData = localStorage.getItem(storageKey);
-                if (localData) {
-                    const parsed = JSON.parse(localData);
-                    progress = parsed.data || parsed;
-                    console.log('Loaded progress from localStorage:', progress);
-                }
-            }
-
-            if (progress) {
-                // Restore randomized scenarios if available
-                if (progress.randomizedScenarios) {
-                    this.randomizedScenarios = progress.randomizedScenarios;
-                    console.log('Restored randomized scenarios:', this.randomizedScenarios);
-                    
-                    // If we have scenario IDs instead of full objects, restore full scenarios
-                    for (const level in this.randomizedScenarios) {
-                        if (Array.isArray(this.randomizedScenarios[level])) {
-                            // Check if we have IDs instead of full scenario objects
-                            if (this.randomizedScenarios[level].length > 0 && 
-                                (typeof this.randomizedScenarios[level][0] === 'number' || 
-                                 typeof this.randomizedScenarios[level][0] === 'string')) {
-                                console.log(`Restoring full scenarios for level ${level} from IDs`);
-                                
-                                // Get the source scenarios for this level
-                                let sourceScenarios;
-                                if (level === 'basic') {
-                                    sourceScenarios = this.basicScenarios;
-                                } else if (level === 'intermediate') {
-                                    sourceScenarios = this.intermediateScenarios;
-                                } else if (level === 'advanced') {
-                                    sourceScenarios = this.advancedScenarios;
-                                }
-                                
-                                if (sourceScenarios) {
-                                    // Replace IDs with full scenario objects
-                                    this.randomizedScenarios[level] = this.randomizedScenarios[level].map(id => {
-                                        const scenarioId = typeof id === 'string' ? parseInt(id, 10) : id;
-                                        return sourceScenarios.find(s => s.id === scenarioId) || null;
-                                    }).filter(Boolean);
-                                    
-                                    console.log(`Restored ${this.randomizedScenarios[level].length} full scenarios for level ${level}`);
-                                }
-                            }
-                        }
-                    }
-                }
-                
-                // Set the player state from progress
-                this.player.experience = progress.experience || 0;
-                this.player.tools = progress.tools || [];
-                this.player.questionHistory = progress.questionHistory || [];
-                this.player.currentScenario = progress.currentScenario || 0;
-
-                // Ensure we're updating the UI correctly
-                this.updateProgress();
-                
-                // Check quiz status and show appropriate screen
-                if (progress.status === 'failed') {
-                    this.endGame(true);
-                    return true;
-                } else if (progress.status === 'passed' || progress.status === 'completed') {
-                    this.endGame(false);
-                    return true;
-                }
-
-                return true;
-            }
-            return false;
-        } catch (error) {
-            console.error('Failed to load progress:', error);
-            return false;
-        }
-    }
-
-    async startGame() {
-        if (this.isLoading) return;
-        
-        try {
-            this.isLoading = true;
-            // Show loading indicator
-            const loadingIndicator = document.getElementById('loading-indicator');
-            if (loadingIndicator) {
-                loadingIndicator.classList.remove('hidden');
-            }
-
-            // Set player name from localStorage
-            this.player.name = localStorage.getItem('username');
-            if (!this.player.name) {
-                window.location.href = '/login.html';
-                return;
-            }
-            
-            // Clear any conflicting randomized scenarios
-            const username = localStorage.getItem('username');
-            if (username) {
-                // Clear any leftover randomized scenarios from other quizzes
-                // to prevent cross-contamination
-                const quizzes = ['script-metrics-troubleshooting', 'standard-script-testing'];
-                quizzes.forEach(quizName => {
-                    if (quizName !== this.quizName) {
-                        const key = `quiz_progress_${username}_${quizName}`;
-                        const data = localStorage.getItem(key);
-                        if (data) {
-                            try {
-                                console.log(`[Quiz] Clearing potential conflicting scenarios from ${quizName}`);
-                                const parsed = JSON.parse(data);
-                                if (parsed && parsed.data && parsed.data.randomizedScenarios) {
-                                    delete parsed.data.randomizedScenarios;
-                                    localStorage.setItem(key, JSON.stringify(parsed));
-                                }
-                            } catch (e) {
-                                console.error(`[Quiz] Error clearing scenarios from ${quizName}:`, e);
-                            }
-                        }
-                    }
-                });
-            }
-
-            // Initialize event listeners
-            this.initializeEventListeners();
-
-            // Load previous progress
-            const hasProgress = await this.loadProgress();
-            console.log('Previous progress loaded:', hasProgress);
-            
-            if (!hasProgress) {
-                // Reset player state if no valid progress exists
-                this.player.experience = 0;
-                this.player.tools = [];
-                this.player.currentScenario = 0;
-                this.player.questionHistory = [];
-                
-                // Clear any existing randomized scenarios
-                this.randomizedScenarios = {};
-            }
-            
-            // Clear any existing transition messages
-            const transitionContainer = document.getElementById('level-transition-container');
-            if (transitionContainer) {
-                transitionContainer.innerHTML = '';
-                transitionContainer.classList.remove('active');
-            }
-
-            // Clear any existing timer
-            if (this.questionTimer) {
-                clearInterval(this.questionTimer);
-            }
-            
-            await this.displayScenario();
-        } catch (error) {
-            console.error('Failed to start game:', error);
-            this.showError('Failed to start the quiz. Please try refreshing the page.');
-        } finally {
-            this.isLoading = false;
-            // Hide loading state
-            const loadingIndicator = document.getElementById('loading-indicator');
-            if (loadingIndicator) {
-                loadingIndicator.classList.add('hidden');
-            }
-        }
-    }
-
+    
+    // Initialize event listeners
     initializeEventListeners() {
-        // Add event listeners for the continue and restart buttons
-        document.getElementById('continue-btn')?.addEventListener('click', () => this.nextScenario());
-        document.getElementById('restart-btn')?.addEventListener('click', () => this.restartGame());
-
+        // Add event listener for the restart button
+        const restartButton = document.getElementById('restart-btn');
+        if (restartButton) {
+            restartButton.addEventListener('click', () => this.restartQuiz());
+        }
+        
         // Add form submission handler
         document.getElementById('options-form')?.addEventListener('submit', (e) => {
             e.preventDefault();
@@ -929,56 +99,208 @@ export class StandardScriptTestingQuiz extends BaseQuiz {
             }
         });
     }
-
-    displayScenario() {
-        // Check if we've answered all questions
-        if (this.player.questionHistory.length >= this.totalQuestions) {
-            console.log('All questions answered, ending game');
-            this.endGame(false);
-            return;
-        }
-        
-        // Get the randomized scenarios for the current level
-        const currentScenarios = this.getCurrentScenarios();
-        
-        // Get the next scenario based on current progress within level
-        let scenario;
+    
+    // Get the scenarios for the current level
+    getCurrentScenarios() {
         const questionCount = this.player.questionHistory.length;
         
-        // Determine which level we're in and set the correct index
-        let currentLevelIndex;
         if (questionCount < 5) {
-            // Basic questions (0-4)
-            currentLevelIndex = questionCount;
+            return this.basicScenarios;
         } else if (questionCount < 10) {
-            // Intermediate questions (5-9)
-            currentLevelIndex = questionCount - 5;
+            return this.intermediateScenarios;
         } else {
-            // Advanced questions (10-14)
-            currentLevelIndex = questionCount - 10;
+            return this.advancedScenarios;
+        }
+    }
+    
+    // Get the current level based on question index
+    getCurrentLevel() {
+        const questionCount = this.player.questionHistory.length;
+        
+        if (questionCount < 5) {
+            return 'Basic';
+        } else if (questionCount < 10) {
+            return 'Intermediate';
+        } else {
+            return 'Advanced';
+        }
+    }
+    
+    // Calculate the score percentage
+    calculateScorePercentage() {
+        const correctAnswers = this.player.questionHistory.filter(q => 
+            q.selectedAnswer && q.isCorrect
+        ).length;
+        return Math.round((correctAnswers / Math.max(1, this.player.questionHistory.length)) * 100);
+    }
+
+    // Start the quiz
+    async startGame() {
+        if (this.isLoading) return;
+        
+        console.log('[StandardScriptTestingQuiz] Starting game...');
+        
+        try {
+            this.isLoading = true;
+            
+            // Show loading indicator
+            const loadingIndicator = document.getElementById('loading-indicator');
+            if (loadingIndicator) {
+                loadingIndicator.classList.remove('hidden');
+            }
+
+            // Set player name
+            this.player.name = localStorage.getItem('username');
+            if (!this.player.name) {
+                window.location.href = '../login.html';
+                return;
+            }
+
+            // Try to load previous progress
+            const hasProgress = await this.loadProgress();
+            console.log(`[StandardScriptTestingQuiz] Progress loaded: ${hasProgress}`);
+            
+            // Hide loading indicator
+            if (loadingIndicator) {
+                loadingIndicator.classList.add('hidden');
+            }
+            
+            if (!hasProgress) {
+                // Reset player state if no valid progress exists
+                this.player.experience = 0;
+                this.player.tools = [];
+                this.player.currentScenario = 0;
+                this.player.questionHistory = [];
+                console.log('[StandardScriptTestingQuiz] No previous progress, starting fresh');
+            } else {
+                // Verify the loaded progress contains valid question history
+                if (!this.player.questionHistory || !Array.isArray(this.player.questionHistory)) {
+                    console.log('[StandardScriptTestingQuiz] Invalid question history in loaded progress, resetting');
+                    this.player.questionHistory = [];
+                }
+                
+                // CRITICAL: Ensure currentScenario is set correctly based on question history
+                this.player.currentScenario = this.player.questionHistory.length;
+                console.log('[StandardScriptTestingQuiz] Set currentScenario to match question history:', this.player.currentScenario);
+            }
+            
+            // Check if the quiz is already completed
+            if (this.shouldEndGame()) {
+                this.endGame(false);
+                return;
+            }
+            
+            // Clear any existing transition messages
+            const transitionContainer = document.getElementById('level-transition-container');
+            if (transitionContainer) {
+                transitionContainer.innerHTML = '';
+                transitionContainer.classList.remove('active');
+            }
+
+            // Display the first/next scenario
+            this.displayScenario();
+            
+            this.isLoading = false;
+        } catch (error) {
+            console.error('[StandardScriptTestingQuiz] Error starting game:', error);
+            this.isLoading = false;
+            this.showError('Failed to start the quiz. Please refresh the page.');
+        }
+    }
+    
+    // Initialize the timer for the current question
+    initializeTimer() {
+        // Clear any existing timer
+        if (this.questionTimer) {
+            clearInterval(this.questionTimer);
+            this.questionTimer = null;
         }
         
-        // Get the scenario from the current randomized scenarios
-        scenario = currentScenarios[currentLevelIndex];
+        // Reset timer display
+        const timerContainer = document.getElementById('timer-container');
+        const timerDisplay = document.getElementById('timer-display');
         
-        if (!scenario) {
-            console.error('No scenario found for current progress. Question count:', questionCount);
-            this.endGame(true);
+        if (!timerContainer || !timerDisplay) {
+            console.error('[StandardScriptTestingQuiz] Timer elements not found');
             return;
         }
-
-        // Store current question number for consistency
-        this.currentQuestionNumber = questionCount + 1;
         
-        // Show level transition message at the start of each level or when level changes
-        const currentLevel = this.getCurrentLevel();
-        const previousLevel = questionCount > 0 ? 
-            (questionCount < 5 ? 'Basic' : 
-             questionCount < 10 ? 'Intermediate' : 'Advanced') : null;
+        // Show the timer
+        timerContainer.classList.remove('hidden');
+        timerContainer.classList.remove('timer-warning');
+        
+        // Set starting time
+        const timeLimit = this.questionTimeLimitInSeconds;
+        timerDisplay.textContent = timeLimit;
+        
+        // Record start time
+        this.questionStartTime = Date.now();
+        
+        // Start timer interval
+        this.questionTimer = setInterval(() => {
+            const elapsedSeconds = Math.floor((Date.now() - this.questionStartTime) / 1000);
+            const remainingSeconds = Math.max(0, timeLimit - elapsedSeconds);
             
+            timerDisplay.textContent = remainingSeconds;
+            
+            // Add warning class when less than 10 seconds remain
+            if (remainingSeconds <= 10 && !timerContainer.classList.contains('timer-warning')) {
+                timerContainer.classList.add('timer-warning');
+            }
+            
+            // If time is up, auto-submit answer or select random option
+            if (remainingSeconds <= 0) {
+                clearInterval(this.questionTimer);
+                this.handleTimedOut();
+            }
+        }, 1000);
+    }
+    
+    // Handle when time runs out for a question
+    handleTimedOut() {
+        console.log('[StandardScriptTestingQuiz] Question timed out');
+        
+        // Select a random option if none selected
+        const selectedOption = document.querySelector('input[name="option"]:checked');
+        if (!selectedOption) {
+            const options = document.querySelectorAll('input[name="option"]');
+            if (options.length > 0) {
+                const randomIndex = Math.floor(Math.random() * options.length);
+                options[randomIndex].checked = true;
+            }
+        }
+        
+        // Submit the answer with the timed out flag
+        this.handleAnswer(true);
+    }
+    
+    // Display the current scenario
+    displayScenario() {
+        // Check if the quiz is already completed
+        if (this.shouldEndGame()) {
+            this.endGame(false);
+                    return;
+        }
+        
+        // Get the current scenario based on progress
+        const currentScenarios = this.getCurrentScenarios();
+        const scenarioIndex = this.player.questionHistory.length % 5; // Use modulo to cycle through 5 scenarios per level
+        const scenario = currentScenarios[scenarioIndex]; 
+        
+        console.log(`[StandardScriptTestingQuiz] Displaying scenario #${this.player.currentScenario + 1}:`, {
+            title: scenario.title,
+            level: this.getCurrentLevel(),
+            index: scenarioIndex
+        });
+        
+        // Show level transition message when level changes
+        const currentLevel = this.getCurrentLevel();
+        const questionCount = this.player.questionHistory.length;
+        
         if (questionCount === 0 || 
             (questionCount === 5 && currentLevel === 'Intermediate') || 
             (questionCount === 10 && currentLevel === 'Advanced')) {
+            
             const transitionContainer = document.getElementById('level-transition-container');
             if (transitionContainer) {
                 transitionContainer.innerHTML = ''; // Clear any existing messages
@@ -991,12 +313,6 @@ export class StandardScriptTestingQuiz extends BaseQuiz {
                 transitionContainer.appendChild(levelMessage);
                 transitionContainer.classList.add('active');
                 
-                // Update the level indicator
-                const levelIndicator = document.getElementById('level-indicator');
-                if (levelIndicator) {
-                    levelIndicator.textContent = `Level: ${currentLevel}`;
-                }
-                
                 // Remove the message and container height after animation
                 setTimeout(() => {
                     transitionContainer.classList.remove('active');
@@ -1007,100 +323,136 @@ export class StandardScriptTestingQuiz extends BaseQuiz {
             }
         }
 
-        // Update scenario display
+        // Update UI for scenario
         const titleElement = document.getElementById('scenario-title');
         const descriptionElement = document.getElementById('scenario-description');
-        const optionsContainer = document.getElementById('options-container');
-
-        if (!titleElement || !descriptionElement || !optionsContainer) {
-            console.error('Required elements not found');
-            return;
+        
+        if (titleElement && descriptionElement) {
+            titleElement.textContent = scenario.title;
+            descriptionElement.textContent = scenario.description;
         }
 
-        titleElement.textContent = scenario.title;
-        descriptionElement.textContent = scenario.description;
-
-        // Update question counter immediately
+        // Update question progress
         const questionProgress = document.getElementById('question-progress');
         if (questionProgress) {
-            questionProgress.textContent = `Question: ${this.currentQuestionNumber}/${this.totalQuestions}`;
+            questionProgress.textContent = `Question: ${questionCount + 1}/15`;
         }
+        
+        // Update level indicator
+        const levelIndicator = document.getElementById('level-indicator');
+        if (levelIndicator) {
+            levelIndicator.textContent = `Level: ${currentLevel}`;
+        }
+        
+        // Update progress bar
+        const progressFill = document.getElementById('progress-fill');
+        if (progressFill) {
+            const progressPercentage = (questionCount / 15) * 100;
+            progressFill.style.width = `${progressPercentage}%`;
+        }
+        
+        // Display options with shuffling
+        const optionsContainer = document.getElementById('options-container');
+        if (optionsContainer) {
+            optionsContainer.innerHTML = '';
 
         // Create a copy of options with their original indices
-        const shuffledOptions = scenario.options.map((option, index) => ({
+            const shuffledOptions = scenario.options.map((option, index) => ({
             ...option,
             originalIndex: index
         }));
-
-        // Shuffle the options
+            
+            // Shuffle the options
         for (let i = shuffledOptions.length - 1; i > 0; i--) {
             const j = Math.floor(Math.random() * (i + 1));
             [shuffledOptions[i], shuffledOptions[j]] = [shuffledOptions[j], shuffledOptions[i]];
         }
-
-        optionsContainer.innerHTML = '';
-
-        shuffledOptions.forEach((option, index) => {
-            const optionElement = document.createElement('div');
-            optionElement.className = 'option';
-            optionElement.innerHTML = `
+            
+            shuffledOptions.forEach((option, idx) => {
+                const optionDiv = document.createElement('div');
+                optionDiv.className = 'option';
+                optionDiv.innerHTML = `
                 <input type="radio" 
                     name="option" 
                     value="${option.originalIndex}" 
-                    id="option${index}"
+                        id="option${idx}"
                     tabindex="0"
                     aria-label="${option.text}"
                     role="radio">
-                <label for="option${index}">${option.text}</label>
-            `;
-            optionsContainer.appendChild(optionElement);
-        });
-
-        this.updateProgress();
-
-        // Initialize timer for the new question
+                    <label for="option${idx}">${option.text}</label>
+                `;
+                optionsContainer.appendChild(optionDiv);
+            });
+        }
+        
+        // Show game screen
+        this.gameScreen.classList.remove('hidden');
+        this.outcomeScreen.classList.add('hidden');
+        this.endScreen.classList.add('hidden');
+        
+        // Initialize timer for the question
         this.initializeTimer();
+        
+        // Save progress after displaying - ensures we're in a consistent state
+        if (this.player.questionHistory.length > 0) {
+            // Only save if we have actual progress to avoid recursive saves
+            this.saveProgress('in-progress').catch(err => {
+                console.warn('[StandardScriptTestingQuiz] Save after display failed:', err);
+            });
+        }
     }
-
-    async handleAnswer() {
+    
+    // Handle answer submission
+    async handleAnswer(timedOut = false) {
         if (this.isLoading) return;
+        
+        try {
+            this.isLoading = true;
+            
+            // Clear the timer
+            if (this.questionTimer) {
+                clearInterval(this.questionTimer);
+                this.questionTimer = null;
+            }
         
         const submitButton = document.querySelector('.submit-button');
         if (submitButton) {
             submitButton.disabled = true;
         }
 
-        // Clear any existing timer
-        if (this.questionTimer) {
-            clearInterval(this.questionTimer);
-        }
-        
-        try {
-            this.isLoading = true;
             const selectedOption = document.querySelector('input[name="option"]:checked');
-            if (!selectedOption) return;
-
-            const currentScenarios = this.getCurrentScenarios();
-            
-            // Determine which level we're in and set the correct index
-            const questionCount = this.player.questionHistory.length;
-            let currentLevelIndex;
-            
-            if (questionCount < 5) {
-                // Basic questions (0-4)
-                currentLevelIndex = questionCount;
-            } else if (questionCount < 10) {
-                // Intermediate questions (5-9)
-                currentLevelIndex = questionCount - 5;
-            } else {
-                // Advanced questions (10-14)
-                currentLevelIndex = questionCount - 10;
+            if (!selectedOption && !timedOut) {
+                alert('Please select an answer.');
+                this.isLoading = false;
+                if (submitButton) {
+                    submitButton.disabled = false;
+                }
+                // Restart timer since we're not proceeding
+                this.initializeTimer();
+                return;
             }
             
-            const scenario = currentScenarios[currentLevelIndex];
-            const originalIndex = parseInt(selectedOption.value);
+            // Get the selected option index
+            const optionIndex = selectedOption ? parseInt(selectedOption.value) : 0;
             
-            const selectedAnswer = scenario.options[originalIndex];
+            // Get the current scenario
+            const currentScenarios = this.getCurrentScenarios();
+            const scenarioIndex = this.player.questionHistory.length % 5;
+            const scenario = currentScenarios[scenarioIndex];
+            
+            // Get the selected answer
+            const selectedAnswer = scenario.options[optionIndex];
+            
+            console.log('[StandardScriptTestingQuiz] Selected answer:', {
+                text: selectedAnswer.text,
+                experience: selectedAnswer.experience,
+                timedOut: timedOut
+            });
+            
+            // Add to player experience (no points if timed out)
+            if (!timedOut) {
+                this.player.experience += selectedAnswer.experience;
+            }
 
             // Find the correct answer (option with highest experience)
             const correctAnswer = scenario.options.reduce((prev, current) => 
@@ -1109,9 +461,6 @@ export class StandardScriptTestingQuiz extends BaseQuiz {
 
             // Mark selected answer as correct or incorrect
             selectedAnswer.isCorrect = selectedAnswer === correctAnswer;
-
-            // Update player experience with bounds
-            this.player.experience = Math.max(0, Math.min(this.maxXP, this.player.experience + selectedAnswer.experience));
             
             // Calculate time spent on this question
             const timeSpent = this.questionStartTime ? Date.now() - this.questionStartTime : null;
@@ -1121,9 +470,8 @@ export class StandardScriptTestingQuiz extends BaseQuiz {
                 scenario: scenario,
                 selectedAnswer: selectedAnswer,
                 isCorrect: selectedAnswer.isCorrect,
-                maxPossibleXP: Math.max(...scenario.options.map(o => o.experience)),
                 timeSpent: timeSpent,
-                timedOut: false
+                timedOut: timedOut
             });
 
             // Increment current scenario
@@ -1131,50 +479,39 @@ export class StandardScriptTestingQuiz extends BaseQuiz {
 
             // Save progress
             await this.saveProgress();
-
-            // Calculate the score percentage
-            const scorePercentage = this.calculateScorePercentage();
             
-            const score = {
-                quizName: this.quizName,
-                score: scorePercentage,
-                experience: this.player.experience,
-                questionHistory: this.player.questionHistory,
-                questionsAnswered: this.player.questionHistory.length,
-                lastUpdated: new Date().toISOString()
-            };
-            
-            // Save quiz result
-            const username = localStorage.getItem('username');
-            if (username) {
-                const quizUser = new QuizUser(username);
-                await quizUser.updateQuizScore(
-                    this.quizName,
-                    score.score,
-                    score.experience,
-                    this.player.tools,
-                    score.questionHistory,
-                    score.questionsAnswered
-                );
-            }
-
-            // Show outcome screen
-            if (this.gameScreen && this.outcomeScreen) {
+            // Show outcome
                 this.gameScreen.classList.add('hidden');
                 this.outcomeScreen.classList.remove('hidden');
-            }
             
-            // Set content directly in the outcome screen
-            const outcomeContent = this.outcomeScreen.querySelector('.outcome-content');
+            // Display outcome content
+            const outcomeContent = document.querySelector('.outcome-content');
             if (outcomeContent) {
+                // Prepare the outcome message
+                let outcomeHeader = selectedAnswer.isCorrect ? 'Correct!' : 'Incorrect';
+                let outcomeMessage = selectedAnswer.outcome || '';
+                
+                // Add timed out message if applicable
+                if (timedOut) {
+                    outcomeHeader = 'Time\'s Up!';
+                    outcomeMessage = 'You ran out of time. A random answer was selected.';
+                }
+                
                 outcomeContent.innerHTML = `
-                    <h3>${selectedAnswer.isCorrect ? 'Correct!' : 'Incorrect'}</h3>
-                    <p>${selectedAnswer.outcome || ''}</p>
+                    <h3>${outcomeHeader}</h3>
+                    <p>${outcomeMessage}</p>
                     <p class="result">${selectedAnswer.isCorrect ? 'Correct answer!' : 'Try again next time.'}</p>
+                    ${timedOut ? '<p class="timeout-warning">Remember to answer within the time limit!</p>' : ''}
+                    ${selectedAnswer.tool && !timedOut ? `<p class="tool-gained">You've gained the <strong>${selectedAnswer.tool}</strong> tool!</p>` : ''}
                     <button id="continue-btn" class="submit-button">Continue</button>
                 `;
                 
-                // Add event listener to the continue button
+                // If this answer added a tool and wasn't timed out, add it to player's tools
+                if (selectedAnswer.tool && !timedOut && !this.player.tools.includes(selectedAnswer.tool)) {
+                    this.player.tools.push(selectedAnswer.tool);
+                }
+                
+                // Add event listener to continue button
                 const continueBtn = outcomeContent.querySelector('#continue-btn');
                 if (continueBtn) {
                     continueBtn.addEventListener('click', () => this.nextScenario());
@@ -1182,22 +519,20 @@ export class StandardScriptTestingQuiz extends BaseQuiz {
             }
 
             this.updateProgress();
-
-            // Check if all questions have been answered
-            if (this.shouldEndGame(this.player.questionHistory.length, this.player.experience)) {
-                await this.endGame(false);
-            }
+            
         } catch (error) {
-            console.error('Failed to handle answer:', error);
-            this.showError('Failed to save your answer. Please try again.');
+            console.error('[StandardScriptTestingQuiz] Error handling answer:', error);
+            this.showError('Failed to process your answer. Please try again.');
         } finally {
             this.isLoading = false;
+            const submitButton = document.querySelector('.submit-button');
             if (submitButton) {
                 submitButton.disabled = false;
             }
         }
     }
 
+    // Move to the next scenario
     nextScenario() {
         // Hide outcome screen and show game screen
         if (this.outcomeScreen && this.gameScreen) {
@@ -1209,305 +544,84 @@ export class StandardScriptTestingQuiz extends BaseQuiz {
         this.displayScenario();
     }
 
+    // Update progress display
     updateProgress() {
         // Get current level and question count
         const currentLevel = this.getCurrentLevel();
         const totalAnswered = this.player.questionHistory.length;
         const questionNumber = totalAnswered + 1;
         
-        // Update the existing progress card elements
-        const levelInfoElement = document.querySelector('.level-info');
-        const questionInfoElement = document.querySelector('.question-info');
-        
-        if (levelInfoElement) {
-            levelInfoElement.textContent = `Level: ${currentLevel}`;
-        }
-        
-        if (questionInfoElement) {
-            questionInfoElement.textContent = `Question: ${questionNumber}/${this.totalQuestions}`;
-        }
-        
-        // Ensure the card is visible
-        const progressCard = document.querySelector('.quiz-header-progress');
-        if (progressCard) {
-            progressCard.style.display = 'block';
-        }
-        
-        // Update legacy progress elements if they exist
+        // Update level indicator
         const levelIndicator = document.getElementById('level-indicator');
-        const questionProgress = document.getElementById('question-progress');
-        const progressFill = document.getElementById('progress-fill');
-        
         if (levelIndicator) {
             levelIndicator.textContent = `Level: ${currentLevel}`;
         }
         
+        // Update question progress
+        const questionProgress = document.getElementById('question-progress');
         if (questionProgress) {
-            questionProgress.textContent = `Question: ${questionNumber}/${this.totalQuestions}`;
+            questionProgress.textContent = `Question: ${questionNumber}/15`;
         }
         
+        // Update progress bar
+        const progressFill = document.getElementById('progress-fill');
         if (progressFill) {
-            const progressPercentage = (totalAnswered / this.totalQuestions) * 100;
+            const progressPercentage = (totalAnswered / 15) * 100;
             progressFill.style.width = `${progressPercentage}%`;
         }
     }
 
-    restartGame() {
-        // Reset player state
-        this.player = {
-            name: localStorage.getItem('username'),
-            experience: 0,
-            tools: [],
-            currentScenario: 0,
-            questionHistory: []
-        };
-
-        // Reset UI
-        this.gameScreen.classList.remove('hidden');
-        this.outcomeScreen.classList.add('hidden');
-        this.endScreen.classList.add('hidden');
-
-        // Clear any existing transition messages
-        const transitionContainer = document.getElementById('level-transition-container');
-        if (transitionContainer) {
-            transitionContainer.innerHTML = '';
-            transitionContainer.classList.remove('active');
-        }
-
-        // Update progress display
-        this.updateProgress();
-
-        // Start from first scenario
-        this.displayScenario();
-    }
-
-    getCurrentScenarios() {
-        const totalAnswered = this.player.questionHistory.length;
-        let level;
-        let scenarios;
+    // End the quiz
+    async endGame(failed = false) {
+        console.log('[StandardScriptTestingQuiz] Ending game...');
         
-        if (totalAnswered >= 10) {
-            level = 'advanced';
-            scenarios = this.advancedScenarios;
-        } else if (totalAnswered >= 5) {
-            level = 'intermediate';
-            scenarios = this.intermediateScenarios;
-        } else {
-            level = 'basic';
-            scenarios = this.basicScenarios;
-        }
-        
-        // Use the getRandomizedScenarios method to get or create random scenarios
-        return this.getRandomizedScenarios(level, scenarios);
-    }
-
-    getCurrentLevel() {
-        const totalAnswered = this.player.questionHistory.length;
-        
-        // Progress through levels based only on question count
-        if (totalAnswered >= 10) {
-            return 'Advanced';
-        } else if (totalAnswered >= 5) {
-            return 'Intermediate';
-        }
-        return 'Basic';
-    }
-
-    generateRecommendations() {
-        const recommendationsContainer = document.getElementById('recommendations');
-        if (!recommendationsContainer) return;
-
-        const score = Math.round((this.player.experience / this.maxXP) * 100);
-        const weakAreas = [];
-        const strongAreas = [];
-
-        // Analyze performance in different areas
-        this.player.questionHistory.forEach(record => {
-            const maxXP = record.maxPossibleXP;
-            const earnedXP = record.selectedAnswer.experience;
-            const isCorrect = earnedXP === maxXP;
-
-            // Categorize the question based on its content
-            const questionType = this.categorizeQuestion(record.scenario);
+        try {
+            // Calculate score
+            const correctAnswers = this.player.questionHistory.filter(q => q.isCorrect).length;
+            const totalAnswers = this.player.questionHistory.length;
+            const scorePercentage = Math.round((correctAnswers / totalAnswers) * 100);
             
-            if (isCorrect) {
-                if (!strongAreas.includes(questionType)) {
-                    strongAreas.push(questionType);
-                }
-            } else {
-                if (!weakAreas.includes(questionType)) {
-                    weakAreas.push(questionType);
-                }
-            }
-        });
-
-        // Generate recommendations HTML
-        let recommendationsHTML = '';
-
-        if (score >= 95 && weakAreas.length === 0) {
-            recommendationsHTML = '<p>🌟 Outstanding! You have demonstrated mastery in all aspects of standard scripting. You clearly understand the nuances of standard scripting and are well-equipped to handle any standard scripting challenges!</p>';
-        } else if (score >= 80) {
-            recommendationsHTML = '<p>🌟 Excellent performance! Your standard scripting skills are very strong. To achieve complete mastery, consider focusing on:</p>';
-            recommendationsHTML += '<ul>';
-            if (weakAreas.length > 0) {
-                weakAreas.forEach(area => {
-                    recommendationsHTML += `<li>${this.getRecommendation(area)}</li>`;
-                });
-            }
-            recommendationsHTML += '</ul>';
-        } else if (score >= 60) {
-            recommendationsHTML = '<p>👍 Good effort! Here are some areas to focus on:</p>';
-            recommendationsHTML += '<ul>';
-            weakAreas.forEach(area => {
-                recommendationsHTML += `<li>${this.getRecommendation(area)}</li>`;
+            // Determine if passed or failed
+            const passed = scorePercentage >= this.passPercentage;
+            
+            console.log('[StandardScriptTestingQuiz] Quiz results:', {
+                score: scorePercentage,
+                experience: this.player.experience,
+                passed: passed
             });
-            recommendationsHTML += '</ul>';
-        } else {
-            recommendationsHTML = '<p>📚 Here are key areas for improvement:</p>';
-            recommendationsHTML += '<ul>';
-            weakAreas.forEach(area => {
-                recommendationsHTML += `<li>${this.getRecommendation(area)}</li>`;
-            });
-            recommendationsHTML += '</ul>';
-        }
-
-        recommendationsContainer.innerHTML = recommendationsHTML;
-    }
-
-    categorizeQuestion(scenario) {
-        // Categorize questions based on their content
-        const title = scenario.title.toLowerCase();
-        const description = scenario.description.toLowerCase();
-
-        if (title.includes('test case') || description.includes('test case')) {
-            return 'Test Case Design';
-        } else if (title.includes('coverage') || description.includes('coverage')) {
-            return 'Test Coverage';
-        } else if (title.includes('defect') || description.includes('bug')) {
-            return 'Defect Management';
-        } else if (title.includes('priority') || description.includes('priority')) {
-            return 'Priority Assessment';
-        } else if (title.includes('regression') || description.includes('regression')) {
-            return 'Regression Testing';
-        } else if (title.includes('documentation') || description.includes('document')) {
-            return 'Test Documentation';
-        } else if (title.includes('environment') || description.includes('environment')) {
-            return 'Environment Setup';
-        } else if (title.includes('execution') || description.includes('execute')) {
-            return 'Test Execution';
-        } else {
-            return 'General Script Testing';
-        }
-    }
-
-    getRecommendation(area) {
-        const recommendations = {
-            'Test Case Design': 'Focus on creating comprehensive and reusable test cases with clear steps.',
-            'Test Coverage': 'Strengthen understanding of test coverage requirements and validation.',
-            'Defect Management': 'Improve defect reporting with detailed reproduction steps and evidence.',
-            'Priority Assessment': 'Develop better judgment in assessing test case and defect priorities.',
-            'Regression Testing': 'Enhance identification of regression risks and test scope.',
-            'Test Documentation': 'Focus on maintaining clear and detailed test documentation.',
-            'Environment Setup': 'Strengthen verification of test environment configurations.',
-            'Test Execution': 'Improve efficiency and accuracy in test case execution.',
-            'General Script Testing': 'Continue developing fundamental script testing principles.'
-        };
-
-        return recommendations[area] || 'Continue practicing core script testing principles.';
-    }
-
-     async endGame(failed = false) {
+            
+            // Hide screens
         this.gameScreen.classList.add('hidden');
         this.outcomeScreen.classList.add('hidden');
         this.endScreen.classList.remove('hidden');
 
-        // Hide the progress card on the end screen
-        const progressCard = document.querySelector('.quiz-header-progress');
-        if (progressCard) {
-            progressCard.style.display = 'none';
-        }
-
-        // Calculate final score percentage based on correct answers
-        const scorePercentage = this.calculateScorePercentage();
-        const hasPassed = !failed && scorePercentage >= this.passPercentage;
-        
-        // Save the final quiz result with pass/fail status
-        const username = localStorage.getItem('username');
-        if (username) {
-            try {
-                const user = new QuizUser(username);
-                const status = hasPassed ? 'passed' : 'failed';
-                console.log('Setting final quiz status:', { status, score: scorePercentage });
-                
-                const result = {
-                    score: scorePercentage,
-                    status: status,
-                    experience: this.player.experience,
-                    questionHistory: this.player.questionHistory,
-                    questionsAnswered: this.player.questionHistory.length,
-                    lastUpdated: new Date().toISOString(),
-                    scorePercentage: scorePercentage
-                };
-
-                // Save to QuizUser
-                await user.updateQuizScore(
-                    this.quizName,
-                    result.score,
-                    result.experience,
-                    this.player.tools,
-                    result.questionHistory,
-                    result.questionsAnswered,
-                    status
-                );
-
-                // Save to API with proper structure
-                const apiProgress = {
-                    data: {
-                        ...result,
-                        tools: this.player.tools,
-                        currentScenario: this.player.currentScenario
-                    }
-                };
-
-                // Save directly via API to ensure status is updated
-                console.log('Saving final progress to API:', apiProgress);
-                await this.apiService.saveQuizProgress(this.quizName, apiProgress.data);
-                
-                // Clear any local storage for this quiz
-                this.clearQuizLocalStorage(username, this.quizName);
-            } catch (error) {
-                console.error('Error saving final quiz score:', error);
+            // Hide the timer
+            const timerContainer = document.getElementById('timer-container');
+            if (timerContainer) {
+                timerContainer.classList.add('hidden');
             }
-        }
-
-        document.getElementById('final-score').textContent = `Final Score: ${scorePercentage}%`;
         
         // Update the quiz complete header based on status
         const quizCompleteHeader = document.querySelector('#end-screen h2');
         if (quizCompleteHeader) {
-            quizCompleteHeader.textContent = hasPassed ? 'Quiz Complete!' : 'Quiz Failed!';
-        }
-
-        const performanceSummary = document.getElementById('performance-summary');
-        if (!hasPassed) {
-            performanceSummary.textContent = 'Quiz failed. You did not earn enough points to pass. You can retry this quiz later.';
-            // Hide restart button if failed
-            const restartBtn = document.getElementById('restart-btn');
-            if (restartBtn) {
-                restartBtn.style.display = 'none';
+                quizCompleteHeader.textContent = passed ? 'Quiz Complete!' : 'Quiz Failed!';
             }
-            // Add failed class to quiz container for styling
-            const quizContainer = document.getElementById('quiz-container');
-            if (quizContainer) {
-                quizContainer.classList.add('failed');
+            
+            // Update final score display
+            const finalScore = document.getElementById('final-score');
+            if (finalScore) {
+                finalScore.textContent = `Final Score: ${scorePercentage}%`;
             }
-        } else {
+            
+            // Update performance summary
+            const performanceSummary = document.getElementById('performance-summary');
+            if (performanceSummary) {
+                if (passed) {
             // Find the appropriate performance message
             const threshold = this.config.performanceThresholds.find(t => scorePercentage >= t.threshold);
-            if (threshold) {
-                performanceSummary.textContent = threshold.message;
+                    performanceSummary.textContent = threshold ? threshold.message : 'Congratulations! You passed the quiz.';
             } else {
-                performanceSummary.textContent = 'Quiz completed successfully!';
+                    performanceSummary.textContent = 'Quiz failed. You did not earn enough points to pass. You can retry this quiz later.';
             }
         }
 
@@ -1515,137 +629,188 @@ export class StandardScriptTestingQuiz extends BaseQuiz {
         const reviewList = document.getElementById('question-review');
         if (reviewList) {
             reviewList.innerHTML = ''; // Clear existing content
+                
             this.player.questionHistory.forEach((record, index) => {
                 const reviewItem = document.createElement('div');
                 reviewItem.className = 'review-item';
-                
-                const isCorrect = record.selectedAnswer && (record.selectedAnswer.isCorrect || 
-                    record.selectedAnswer.experience === Math.max(...record.scenario.options.map(o => o.experience || 0)));
-                reviewItem.classList.add(isCorrect ? 'correct' : 'incorrect');
+                    reviewItem.classList.add(record.isCorrect ? 'correct' : 'incorrect');
+                    
+                    // Add timed out class if applicable
+                    if (record.timedOut) {
+                        reviewItem.classList.add('timed-out');
+                    }
                 
                 reviewItem.innerHTML = `
                     <h4>Question ${index + 1}</h4>
-                    <p class="scenario">${record.scenario.description}</p>
+                        <p class="scenario">${record.scenario.title}</p>
                     <p class="answer"><strong>Your Answer:</strong> ${record.selectedAnswer.text}</p>
                     <p class="outcome"><strong>Outcome:</strong> ${record.selectedAnswer.outcome}</p>
-                    <p class="result"><strong>Result:</strong> ${isCorrect ? 'Correct' : 'Incorrect'}</p>
+                        <p class="result"><strong>Result:</strong> ${record.isCorrect ? 'Correct' : 'Incorrect'} ${record.timedOut ? '(Timed Out)' : ''}</p>
                 `;
                 
                 reviewList.appendChild(reviewItem);
             });
         }
 
-        this.generateRecommendations();
-    }
+            // Generate recommendations
+            const recommendations = document.getElementById('recommendations');
+            if (recommendations) {
+                let recommendationsHTML = '';
+                
+                if (scorePercentage >= 90) {
+                    recommendationsHTML = '<p>🌟 Outstanding! You have demonstrated excellent knowledge of standard test script principles!</p>';
+                } else if (scorePercentage >= 70) {
+                    recommendationsHTML = '<p>👍 Good job! Here are some areas to review:</p><ul>';
+                    // Find areas where the user made mistakes and group by level
+                    const incorrectQuestions = this.player.questionHistory.filter(q => !q.isCorrect);
+                    const basicQuestions = incorrectQuestions.filter(q => q.scenario.level === 'Basic');
+                    const intermediateQuestions = incorrectQuestions.filter(q => q.scenario.level === 'Intermediate');
+                    const advancedQuestions = incorrectQuestions.filter(q => q.scenario.level === 'Advanced');
 
-    // Helper method to calculate the score percentage based on correct answers
-    calculateScorePercentage() {
-        const correctAnswers = this.player.questionHistory.filter(q => 
-            q.selectedAnswer && (q.selectedAnswer.isCorrect || 
-            q.selectedAnswer.experience === Math.max(...q.scenario.options.map(o => o.experience || 0)))
-        ).length;
-        
-        // Calculate percentage based on completed questions (cap at max questions)
-        const totalAnswered = Math.min(this.player.questionHistory.length, this.totalQuestions);
-        return totalAnswered > 0 ? Math.round((correctAnswers / totalAnswered) * 100) : 0;
-    }
+                    if (basicQuestions.length > 0) {
+                        recommendationsHTML += '<li><strong>Basic Concepts:</strong><ul>';
+                        basicQuestions.forEach(q => {
+                            recommendationsHTML += `<li>Review ${q.scenario.title}: ${q.scenario.description}</li>`;
+                        });
+                        recommendationsHTML += '</ul></li>';
+                    }
 
-    clearQuizLocalStorage(username, quizName) {
-        const variations = [
-            quizName,                                              // original
-            quizName.toLowerCase(),                               // lowercase
-            quizName.toUpperCase(),                               // uppercase
-            quizName.replace(/-/g, ''),                           // no hyphens
-            quizName.replace(/([A-Z])/g, '-$1').toLowerCase(),    // kebab-case
-            quizName.replace(/-([a-z])/g, (_, c) => c.toUpperCase()), // camelCase
-            quizName.replace(/-/g, '_'),                          // snake_case
-        ];
+                    if (intermediateQuestions.length > 0) {
+                        recommendationsHTML += '<li><strong>Intermediate Topics:</strong><ul>';
+                        intermediateQuestions.forEach(q => {
+                            recommendationsHTML += `<li>Review ${q.scenario.title}: ${q.scenario.description}</li>`;
+                        });
+                        recommendationsHTML += '</ul></li>';
+                    }
 
-        // Add standard-script-testing specific variations
-        if (quizName.toLowerCase().includes('standard-script-testing')) {
-            variations.push(
-                'standard-script-testing',
-                'standardScriptTesting',
-                'standardScriptTestingTest',
-                'standardScriptTesting_',
-                'standardScriptTesting'
-            );
+                    if (advancedQuestions.length > 0) {
+                        recommendationsHTML += '<li><strong>Advanced Concepts:</strong><ul>';
+                        advancedQuestions.forEach(q => {
+                            recommendationsHTML += `<li>Review ${q.scenario.title}: ${q.scenario.description}</li>`;
+                        });
+                        recommendationsHTML += '</ul></li>';
+                    }
+                    recommendationsHTML += '</ul>';
+                } else {
+                    recommendationsHTML = '<p>📚 Here are key areas for improvement:</p><ul>';
+                    // Find areas where the user made mistakes and group by level
+                    const incorrectQuestions = this.player.questionHistory.filter(q => !q.isCorrect);
+                    const basicQuestions = incorrectQuestions.filter(q => q.scenario.level === 'Basic');
+                    const intermediateQuestions = incorrectQuestions.filter(q => q.scenario.level === 'Intermediate');
+                    const advancedQuestions = incorrectQuestions.filter(q => q.scenario.level === 'Advanced');
+
+                    if (basicQuestions.length > 0) {
+                        recommendationsHTML += '<li><strong>Focus on Basic Concepts:</strong><ul>';
+                        basicQuestions.forEach(q => {
+                            recommendationsHTML += `<li>Master ${q.scenario.title}: ${q.scenario.description}</li>`;
+                        });
+                        recommendationsHTML += '</ul></li>';
+                    }
+
+                    if (intermediateQuestions.length > 0) {
+                        recommendationsHTML += '<li><strong>Strengthen Intermediate Knowledge:</strong><ul>';
+                        intermediateQuestions.forEach(q => {
+                            recommendationsHTML += `<li>Study ${q.scenario.title}: ${q.scenario.description}</li>`;
+                        });
+                        recommendationsHTML += '</ul></li>';
+                    }
+
+                    if (advancedQuestions.length > 0) {
+                        recommendationsHTML += '<li><strong>Review Advanced Topics:</strong><ul>';
+                        advancedQuestions.forEach(q => {
+                            recommendationsHTML += `<li>Practice ${q.scenario.title}: ${q.scenario.description}</li>`;
+                        });
+                        recommendationsHTML += '</ul></li>';
+                    }
+                    recommendationsHTML += '</ul>';
+                }
+                
+                recommendations.innerHTML = recommendationsHTML;
+            }
+            
+            // Save final progress
+            await this.saveProgress(passed ? 'passed' : 'failed');
+            
+        } catch (error) {
+            console.error('[StandardScriptTestingQuiz] Error ending game:', error);
+            this.showError('Failed to complete the quiz. Please refresh the page.');
         }
-
-        variations.forEach(variant => {
-            localStorage.removeItem(`quiz_progress_${username}_${variant}`);
-            localStorage.removeItem(`quizResults_${username}_${variant}`);
-        });
+    }
+    
+    // Restart the quiz
+    async restartQuiz() {
+        console.log('[StandardScriptTestingQuiz] Restarting quiz...');
+        
+        // Clear the timer if it exists
+        if (this.questionTimer) {
+            clearInterval(this.questionTimer);
+            this.questionTimer = null;
+        }
+        
+        // Reset player state
+        this.player = {
+            name: localStorage.getItem('username'),
+            experience: 0,
+            questionHistory: [],
+            currentScenario: 0,
+            tools: []
+        };
+        
+        // Save reset progress
+        await this.saveProgress('in-progress');
+        
+        // Reset UI
+        this.gameScreen.classList.remove('hidden');
+        this.outcomeScreen.classList.add('hidden');
+        this.endScreen.classList.add('hidden');
+        
+        // Clear any existing transition messages
+        const transitionContainer = document.getElementById('level-transition-container');
+        if (transitionContainer) {
+            transitionContainer.innerHTML = '';
+            transitionContainer.classList.remove('active');
+        }
+        
+        // Start again
+        this.displayScenario();
+    }
+    
+    // Helper for showing errors
+    showError(message) {
+        console.error('[StandardScriptTestingQuiz] Error:', message);
+        
+        try {
+            const errorElement = document.createElement('div');
+            errorElement.className = 'error-message';
+            errorElement.textContent = message;
+            errorElement.style.color = 'red';
+            errorElement.style.padding = '20px';
+            errorElement.style.textAlign = 'center';
+            errorElement.style.fontWeight = 'bold';
+            
+            // Find a good place to show the error
+            const container = document.getElementById('game-screen') || 
+                            document.getElementById('quiz-container') || 
+                            document.body;
+            
+            if (container) {
+                // Clear container if not body
+                if (container !== document.body) {
+                    container.innerHTML = '';
+                }
+                
+                container.appendChild(errorElement);
+                console.error('[StandardScriptTestingQuiz] Displayed error to user:', message);
+            }
+        } catch (e) {
+            // Fallback to alert if error display fails
+            alert(message);
+        }
     }
 }
 
-// Start the quiz when the page loads
+// Create and initialize the quiz when the DOM is loaded
 document.addEventListener('DOMContentLoaded', () => {
-    console.log('[StandardScriptTestingQuiz] Initializing quiz');
-    
-    // Force clean any existing quiz references that might be in memory
-    if (window.currentQuiz) {
-        console.log('[StandardScriptTestingQuiz] Cleaning up existing quiz instance:', window.currentQuiz.quizName);
-        // Clear any timers or other resources
-        if (window.currentQuiz.questionTimer) {
-            clearInterval(window.currentQuiz.questionTimer);
-        }
-    }
-    
-    // Clear any conflicting localStorage entries
-    const username = localStorage.getItem('username');
-    if (username) {
-        // List all quiz names that might conflict
-        const potentialConflicts = [
-            'script-metrics-troubleshooting',
-            'standard-script-testing',
-            'fully-scripted',
-            'exploratory'
-        ];
-        
-        // Clean localStorage to prevent cross-contamination
-        potentialConflicts.forEach(quizName => {
-            const key = `quiz_progress_${username}_${quizName}`;
-            const data = localStorage.getItem(key);
-            if (data) {
-                console.log(`[StandardScriptTestingQuiz] Found potential conflicting quiz data: ${quizName}`);
-                try {
-                    const parsed = JSON.parse(data);
-                    if (parsed && parsed.data && parsed.data.randomizedScenarios) {
-                        console.log(`[StandardScriptTestingQuiz] Cleaning randomized scenarios from ${quizName}`);
-                        delete parsed.data.randomizedScenarios;
-                        localStorage.setItem(key, JSON.stringify(parsed));
-                    }
-                } catch (e) {
-                    console.error(`[StandardScriptTestingQuiz] Error cleaning scenarios:`, e);
-                }
-            }
-        });
-    }
-    
-    // Create a new instance and keep a global reference
-    const quiz = new StandardScriptTestingQuiz();
-    window.currentQuiz = quiz;
-    
-    // Add a specific property to identify this quiz
-    Object.defineProperty(window, 'ACTIVE_QUIZ_NAME', {
-        value: 'standard-script-testing',
-        writable: true,
-        configurable: true
-    });
-    
-    // Force clear any unrelated randomized scenarios
-    if (quiz.randomizedScenarios) {
-        // Keep only keys specific to this quiz
-        Object.keys(quiz.randomizedScenarios).forEach(key => {
-            if (!key.startsWith('standard-script-testing_')) {
-                console.log(`[StandardScriptTestingQuiz] Removing unrelated randomized scenario: ${key}`);
-                delete quiz.randomizedScenarios[key];
-            }
-        });
-    }
-    
-    // Start the quiz
-    console.log('[StandardScriptTestingQuiz] Starting quiz');
-    quiz.startGame();
+    console.log('[StandardScriptTestingQuiz] DOM loaded, initializing quiz...');
+    window.standardScriptTestingQuiz = new StandardScriptTestingQuiz();
 }); 

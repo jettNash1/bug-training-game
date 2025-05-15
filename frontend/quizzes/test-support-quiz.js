@@ -1,740 +1,91 @@
 import { APIService } from '../api-service.js';
 import { BaseQuiz } from '../quiz-helper.js';
 import { QuizUser } from '../QuizUser.js';
+import { testSupportScenarios } from '../data/testSupport-scenarios.js';
 
 export class TestSupportQuiz extends BaseQuiz {
     constructor() {
+        console.log('[TestSupportQuiz] Initializing...');
+        
+        // Configure the quiz with basic settings
         const config = {
             maxXP: 300,
             totalQuestions: 15,
             passPercentage: 70,
             performanceThresholds: [
                 { threshold: 90, message: '🏆 Outstanding! You\'re a test support expert!' },
-                { threshold: 80, message: '👏 Great job! You\'ve shown strong test support skills!' },
+                { threshold: 80, message: '👏 Great job! You\'ve shown strong test support instincts!' },
                 { threshold: 70, message: '👍 Good work! You\'ve passed the quiz!' },
                 { threshold: 0, message: '📚 Consider reviewing test support best practices and try again!' }
-            ]
+            ],
+            quizName: 'test-support'
         };
         
+        // Call the parent constructor with our config
         super(config);
-        
-        // Set quiz name
+
+        // Set the quiz name
         Object.defineProperty(this, 'quizName', {
             value: 'test-support',
             writable: false,
             configurable: false,
             enumerable: true
         });
-        
+
+        // Initialize player state
         this.player = {
             name: '',
             experience: 0,
-            tools: [],
+            questionHistory: [],
             currentScenario: 0,
-            questionHistory: []
+            tools: []
         };
-        
-        this.apiService = new APIService();
 
+        // Load scenarios from our data file
+        this.basicScenarios = testSupportScenarios.basic;
+        this.intermediateScenarios = testSupportScenarios.intermediate;
+        this.advancedScenarios = testSupportScenarios.advanced;
+
+        // Initialize elements
         this.gameScreen = document.getElementById('game-screen');
         this.outcomeScreen = document.getElementById('outcome-screen');
         this.endScreen = document.getElementById('end-screen');
-       
-        if (!this.gameScreen) {
-            console.error('Game screen element not found');
-            this.showError('Quiz initialization failed. Please refresh the page.');
-            return;
+        
+        // Create level transition container if it doesn't exist
+        if (!document.getElementById('level-transition-container')) {
+            const transitionContainer = document.createElement('div');
+            transitionContainer.id = 'level-transition-container';
+            transitionContainer.className = 'level-transition-container';
+            document.querySelector('.quiz-container').appendChild(transitionContainer);
         }
-       
-        if (!this.outcomeScreen) {
-            console.error('Outcome screen element not found');
-            this.showError('Quiz initialization failed. Please refresh the page.');
-            return;
-        }
-       
-        if (!this.endScreen) {
-            console.error('End screen element not found');
-            this.showError('Quiz initialization failed. Please refresh the page.');
-            return;
-        }
-
-        // Basic Scenarios (IDs 1-5)
-        this.basicScenarios = [
-            {
-                id: 1,
-                level: 'Basic',
-                title: 'Morning Communication',
-                description: 'You\'re starting your first day on test support. What\'s the most professional first action?',
-                options: [
-                    {
-                        text: 'Send a message to the client checking for specific test tasks and confirm your presence',
-                        outcome: 'Perfect! This shows proactive communication and readiness to begin.',
-                        experience: 15,
-                        tool: 'Client Communication'
-                    },
-                    {
-                        text: 'Start test activities without checking in with client contacts for the project',
-                        outcome: 'Morning check-ins are crucial for test support coordination.',
-                        experience: -10
-                    },
-                    {
-                        text: 'Wait for the client to contact you directly to coordinate testing activities',
-                        outcome: 'Proactive communication is essential in test support. The client can make an informed decision on progress and suggested focus areas.',
-                        experience: -5
-                    },
-                    {
-                        text: 'Check internal emails for client instruction or any scheduled meetings',
-                        outcome: 'External client communication should be prioritized at start of day when working on a test support project.',
-                        experience: 0
-                    }
-                ]
-            },
-            {
-                id: 2,
-                level: 'Basic',
-                title: 'Access Verification',
-                description: 'You\'re preparing for a test support session. What\'s the most thorough preparation approach?',
-                options: [
-                    {
-                        text: 'Verify access to test URLs, designs, documentation, and tracker board',
-                        outcome: 'Excellent! This ensures you\'re fully prepared for testing.',
-                        experience: 15,
-                        tool: 'Access Management'
-                    },
-                    {
-                        text: 'Check test environment access associated with the URL\'s provided by the client',
-                        outcome: 'This is important, although all resources require verification for effective testing.',
-                        experience: -10
-                    },
-                    {
-                        text: 'Initiate contact with the client once access is required for the system under test',
-                        outcome: 'Proactive access verification is the best approach as this prevents delays in testing activities.',
-                        experience: -5
-                    },
-                    {
-                        text: 'Contact the client for access to any required areas during testing',
-                        outcome: 'Access to areas needed to commence testing activities should be verified before starting any test activities.',
-                        experience: 0
-                    }
-                ]
-            },
-            {
-                id: 3,
-                level: 'Basic',
-                title: 'Documentation Management',
-                description: 'You\'re starting on an ongoing test support project. What\'s the best documentation approach?',
-                options: [
-                    {
-                        text: 'Create a process document noting important information and project procedures',
-                        outcome: 'Perfect! This ensures knowledge retention and consistent processes.',
-                        experience: 15,
-                        tool: 'Process Documentation'
-                    },
-                    {
-                        text: 'Rely on processes from memory and experience of working with the client on an ongoing basis',
-                        outcome: 'Documentation is crucial for consistency and knowledge transfer.',
-                        experience: -10
-                    },
-                    {
-                        text: 'Document any major issues that have been raised or previously highlighted by the client',
-                        outcome: 'While essential, all processes and important information require documentation for clarity and traceability.',
-                        experience: -5
-                    },
-                    {
-                        text: 'Contact the client and ask if there is any documentation in place for current processes',
-                        outcome: 'While some procedures the client uses within their work flow will apply. Procedures and processes relating to how Zoonou integrate those are most useful and should be noted',
-                        experience: 0
-                    }
-                ]
-            },
-            {
-                id: 4,
-                level: 'Basic',
-                title: 'Client Communication Channels',
-                description: 'You notice you don\'t have direct client communication access. What\'s the best approach?',
-                options: [
-                    {
-                        text: 'Check with the project manager about getting added to relevant communication channels',
-                        outcome: 'Excellent! This ensures a proper communication setup for moving forward.',
-                        experience: 15,
-                        tool: 'Communication Setup'
-                    },
-                    {
-                        text: 'Proceed without direct communication with the client as the project manager can cover this',
-                        outcome: 'Direct client communication is crucial for an ongoing test support role as there will be multiple meetings and potentially multiple releases during weekly testing.',
-                        experience: -10
-                    },
-                    {
-                        text: 'Use personal communication methods as this promotes trust',
-                        outcome: 'Official channels should always be used for client communication for traceability and process resolution.',
-                        experience: -5
-                    },
-                    {
-                        text: 'Use email as a full history thread can be utilised',
-                        outcome: 'Established communication channels need to be agreed upon and in general acted upon quickly. Whilst email is an important tool in communication, it is not always the quickest way to resolve any queries.',
-                        experience: 0
-                    }
-                ]
-            },
-            {
-                id: 5,
-                level: 'Basic',
-                title: 'Project Board Monitoring',
-                description: 'How should you approach project board management during test support?',
-                options: [
-                    {
-                        text: 'Keep the board open and regularly monitor it for new tickets and progress updates',
-                        outcome: 'Perfect! This ensures timely response to new testing needs.',
-                        experience: 15,
-                        tool: 'Project Tracking'
-                    },
-                    {
-                        text: 'Check the project board once daily and continue with testing activities',
-                        outcome: 'Regular monitoring throughout the day is required to ensure quick response times.',
-                        experience: -10
-                    },
-                    {
-                        text: 'Wait for notifications from client contacts to refer to the project board',
-                        outcome: 'Proactive board monitoring is essential as notifications will come from different sources and may not be set up fully.',
-                        experience: -5
-                    },
-                    {
-                        text: 'Check any assigned tickets from the project board',
-                        outcome: 'Overall project progress requires monitoring not only for any tickets that can potentially be resolved, but also for project roadmap assesment.',
-                        experience: 0
-                    }
-                ]
-            },
-            // Additional Basic Scenarios from Guide - Test Support Additional Questions
-            {
-                id: 16,
-                level: 'Basic',
-                title: 'Test Support Relationships',
-                description: 'Which of the following best describes the relationship between Zoonou testers and the client during test support?',
-                options: [
-                    {
-                        text: 'Testers become embedded in the client\'s development team, sometimes joining sprint planning and daily standups',
-                        outcome: 'Correct! during test support, testers essentially become a part of the client\'s development team.',
-                        experience: 15,
-                        tool: 'Test Support Relationships'
-                    },
-                    {
-                        text: 'Testers work completely independently with no client interaction',
-                        outcome: 'This contradicts the embedded nature of test support, where direct client interaction is common.',
-                        experience: -5
-                    },
-                    {
-                        text: 'Testers provide only written reports with no direct communication',
-                        outcome: 'Emphasis should be on good communication including written communication and voice/video calls.',
-                        experience: -10
-                    },
-                    {
-                        text: 'Testers only communicate through the project manager',
-                        outcome: 'While project managers are involved, testers often have direct communication with clients, particularly in the independent type of test support.',
-                        experience: 0
-                    }
-                ]
-            },
-            {
-                id: 17,
-                level: 'Basic',
-                title: 'Test Support Disadvantage',
-                description: 'What is one key risk or disadvantage of test support?',
-                options: [
-                    {
-                        text: 'Test support always costs more than standalone testing',
-                        outcome: 'Test support doesn\'t generally cost the company offering the service any more than other types of testing.',
-                        experience: -5
-                    },
-                    {
-                        text: 'Test support always requires more testers than other testing approaches',
-                        outcome: 'Test support doesn\'t generally require more resources and that all depends on the needs of a specific project.',
-                        experience: -10
-                    },
-                    {
-                        text: 'The line between Zoonou\'s and the client\'s ways of working can become blurred',
-                        outcome: 'Correct! This can occur with the way Zoonou operates and the way the client operates which needs to be managed on a regular basis.',
-                        experience: 15,
-                        tool: 'Test Support Disadvantage'
-                    },
-                    {
-                        text: 'Test support slows down the development process significantly',
-                        outcome: 'Test support can actually make development more efficient by catching issues earlier.',
-                        experience: 0
-                    }
-                ]
-            },
-            {
-                id: 18,
-                level: 'Basic',
-                title: 'Test Support Documentation',
-                description: 'What type of document should be created and maintained for test support projects?',
-                options: [
-                    {
-                        text: 'Technical architecture diagrams should be created and maintained.',
-                        outcome: 'While technical architecture might be useful to understand, process guides should take priority.',
-                        experience: -5
-                    },
-                    {
-                        text: 'Weekly formal testing reports only should be created and maintained',
-                        outcome: 'While reporting may be part of the process, a comprehensive process guide should be kept up to date for any type of project handover required.', 
-                        experience: -10
-                    },
-                    {
-                        text: 'Handover and process guides should be created and maintained',
-                        outcome: 'Correct! It is important that some form of process guide is present on test support projects, especially on longer running ongoing test support projects',
-                        experience: 15,
-                        tool: 'Test Support Documentation'
-                    },
-                    {
-                        text: 'Detailed coding standards document should be created and maintained',
-                        outcome: 'Coding standards do not apply to a manual testing service.',
-                        experience: 0
-                    }
-                ]
-            },
-            {
-                id: 19,
-                level: 'Basic',
-                title: 'Test Support Characteristics',
-                description: 'Which of the following is not a characteristic of test support?',
-                options: [
-                    {
-                        text: 'Rigid adherence to standardised test processes',
-                        outcome: 'Correct! Flexibility is a key characteristic of test support and the need to adapt to client practices while maintaining Zoonou\'s characteristics is essential.',
-                        experience: 15,
-                        tool: 'Test Support Characteristics'
-                    },
-                    {
-                        text: 'Flexibility in testing tasks is a characteristic of test support',
-                        outcome: 'This is correct as test support tasks can vary from session to session.',
-                        experience: -10
-                    },
-                    {
-                        text: 'Independence in decision-making is a characteristic of test support',
-                        outcome: 'This is correct as test support should allow testers to make decisions related to testing based on their in-depth understanding of the software.',
-                        experience: -5
-                    },
-                    {
-                        text: 'Development of in-depth project expertise is a characteristic of test support',
-                        outcome: 'This is correct as test support testers should build an in-depth understanding of the software and the development team\'s processes.',
-                        experience: 0
-                    }
-                ]
-            },
-            {
-                id: 20,
-                level: 'Basic',
-                title: 'Documentation Updates',
-                description: 'When should a tester update the handover and process guides during a test support project?',
-                options: [
-                    {
-                        text: 'As and when new information is introduced or processes change',
-                        outcome: 'Correct! These guides should not be stagnant, it is important to update these documents as and when new information is introduced to the project or changes are made to the processes.',
-                        experience: 15,
-                        tool: 'Documentation Updates'
-                    },
-                    {
-                        text: 'A handover guide should only be updated at the beginning of the project',
-                        outcome: 'Updating only at the beginning would mean the guide becomes outdated as the project evolves.',
-                        experience: -10
-                    },
-                    {
-                        text: 'A handover guide should only be updated when a new tester joins the project',
-                        outcome: 'While a handover guide is particularly useful when new testers join, the guide should be updated whenever there are changes, not just when new testers join.',
-                        experience: -5
-                    },
-                    {
-                        text: 'A handover guide should only be updated at the end of the project',
-                        outcome: 'Updating only at the end would mean the guide is not helpful during the ongoing project and could result in lost information if not documented promptly.',
-                        experience: 0
-                    }
-                ]
-            }
-        ];
-
-        // Intermediate Scenarios (IDs 6-10)
-        this.intermediateScenarios = [
-            {
-                id: 6,
-                level: 'Intermediate',
-                title: 'Client Process Adaptation',
-                description: 'You\'re working with a client who uses different terminology and processes. What\'s the best approach?',
-                options: [
-                    {
-                        text: 'Adapt to client terminology and processes while maintaining Zoonou standards',
-                        outcome: 'Excellent! This shows flexibility and professionalism.',
-                        experience: 20,
-                        tool: 'Process Adaptation'
-                    },
-                    {
-                        text: 'Subtly introduce Zoonou terminology throughout the project',
-                        outcome: 'Adapting to client processes is crucial for effective collaboration as Zoonou is integrating with their work flow.',
-                        experience: -15
-                    },
-                    {
-                        text: 'Continue with Zoonou terminology throughout documentation and reports',
-                        outcome: 'Understanding and adapting to client processes is essential. This will also promote less confusion if more resources are required or when reports are submitted to the client',
-                        experience: -10
-                    },
-                    {
-                        text: 'Use client terminology in meetings with the client and Zoonou terminology for internal meetings',
-                        outcome: 'Adaptation improves collaboration with the client, and making Zoonou colleagues aware of this terminology improves awareness should more project resources be required.',
-                        experience: 0
-                    }
-                ]
-            },
-            {
-                id: 7,
-                level: 'Intermediate',
-                title: 'Handling Idle Time',
-                description: 'You\'re booked for test support but have no tasks due to client delays. What\'s the best approach?',
-                options: [
-                    {
-                        text: 'Inform the project manager and explore additional ways to add value to the project',
-                        outcome: 'Excellent! This ensures productive use of time and adds value.',
-                        experience: 20,
-                        tool: 'Time Management'
-                    },
-                    {
-                        text: 'Wait for tasks to be assigned by the client project manager',
-                        outcome: 'Proactive exploration of additional tasks is more beneficial to both the client and the project understanding.',
-                        experience: -15
-                    },
-                    {
-                        text: 'Use the time for self-improvement as long as it\'s of benefit to Zoonou',
-                        outcome: 'Any down time should be used productively for the specific project. This should also be communicated with the client and project manager',
-                        experience: -10
-                    },
-                    {
-                        text: 'Inform the client of availability and what you intend to do with the project downtime',
-                        outcome: 'Whilst this is a good approach. The Zoonou project manager should also be made aware as they may need to explore additional opportunities.',
-                        experience: 0
-                    }
-                ]
-            },
-            {
-                id: 8,
-                level: 'Intermediate',
-                title: 'Communication with Non-Responsive Clients',
-                description: 'The client is slow to respond, affecting your testing. What\'s the best approach?',
-                options: [
-                    {
-                        text: 'Maintain open communication, update the project manager, and suggest raising the issue in regular catch-ups',
-                        outcome: 'Excellent! This ensures issues are addressed and communication remains open.',
-                        experience: 20,
-                        tool: 'Communication Management'
-                    },
-                    {
-                        text: 'Stop testing until client responds with how to proceed',
-                        outcome: 'Testing should continue with available information and on any other areas possible.',
-                        experience: -15
-                    },
-                    {
-                        text: 'Communicate when client responds and look for a resolution to any raised concerns',
-                        outcome: 'Proactive communication is essential and it is good practice to follow up on any concerns that have not been addressed.',
-                        experience: -10
-                    },
-                    {
-                        text: 'Find a way around the communication issues by raising any issues with other team members',
-                        outcome: 'Whilst this approach may work in some instances. It is good practice to address communication for effective collaboration moving forward.',
-                        experience: 0
-                    }
-                ]
-            },
-            {
-                id: 9,
-                level: 'Intermediate',
-                title: 'Managing Multiple Projects',
-                description: 'You\'re assigned to multiple test support projects. What\'s the best approach to manage your workload?',
-                options: [
-                    {
-                        text: 'Prioritise tasks based on deadlines and importance, communicate availability to project managers',
-                        outcome: 'Excellent! This ensures effective workload management.',
-                        experience: 20,
-                        tool: 'Workload Management'
-                    },
-                    {
-                        text: 'Focus on one project at a time using prior experience and preference',
-                        outcome: 'Multiple projects require balanced attention as clients will base project time management around any issues raised.',
-                        experience: -15
-                    },
-                    {
-                        text: 'Rely on project managers to assign priorities as they are aligned with the client and business needs',
-                        outcome: 'Proactive project prioritisation is a preferred approach. However, this should also be cross referenced with the project managers',
-                        experience: -10
-                    },
-                    {
-                        text: 'Work on the project that has the shortest time line in regards to project release dates',
-                        outcome: 'All projects need attention based on priorities. However, there may be other contributing factors and shorter sprints within competing projects. In this instance the project manager should be informed of any decisions moving forward',
-                        experience: 0
-                    }
-                ]
-            },
-            {
-                id: 10,
-                level: 'Intermediate',
-                title: 'Building Client Relationships',
-                description: 'You\'re new to a test support project. How do you build a strong relationship with the client?',
-                options: [
-                    {
-                        text: 'Communicate regularly, provide valuable feedback, and demonstrate understanding of their needs',
-                        outcome: 'Excellent! This builds trust and rapport with the client.',
-                        experience: 20,
-                        tool: 'Relationship Building'
-                    },
-                    {
-                        text: 'Communicate if necessary and when major issues need resolving',
-                        outcome: 'Regular communication is key to building a good working relationship. Process improvements, project progress and suggestions are also an important factor in test support roles',
-                        experience: -15
-                    },
-                    {
-                        text: 'Focus communication on testing tasks relating to the project',
-                        outcome: 'Building relationships requires more than task completion. Process improvements, project progress and suggestions are also an important factor in test support roles',
-                        experience: -10
-                    },
-                    {
-                        text: 'Wait for client to initiate relationship building through communication channels',
-                        outcome: 'Proactive relationship building is the preferred approach as this promotes professionalism towards the project and client trust.',
-                        experience: 0
-                    }
-                ]
-            }
-        ];
-
-        // Advanced Scenarios (IDs 11-15)
-        this.advancedScenarios = [
-            {
-                id: 11,
-                level: 'Advanced',
-                title: 'Independent Decision Making',
-                description: 'You\'ve identified a more efficient testing approach. How do you proceed?',
-                options: [
-                    {
-                        text: 'Communicate the approach to the project manager and client, providing rationale and expected benefits',
-                        outcome: 'Excellent! This demonstrates initiative and effective communication.',
-                        experience: 25,
-                        tool: 'Decision Making'
-                    },
-                    {
-                        text: 'Implement the approach after consulting with the Zoonou project manager',
-                        outcome: 'Consultation ensures alignment and acceptance. So this should also be communicated with the client to gain their feedback',
-                        experience: -15
-                    },
-                    {
-                        text: 'Leave any new approaches to processes as the client will have the current processes in place for a good period of time',
-                        outcome: 'Innovative approaches should always be communicated and explored.',
-                        experience: -10
-                    },
-                    {
-                        text: 'Always wait for client to suggest changes as they have a better insight to business goals',
-                        outcome: 'Proactive suggestions are a valuable asset in gaining a good working relationship and a collaborative approach.',
-                        experience: -5
-                    }
-                ]
-            },
-            {
-                id: 12,
-                level: 'Advanced',
-                title: 'Handling Client Requests',
-                description: 'A client requests a change that deviates from Zoonou\'s standard processes. What\'s the best approach?',
-                options: [
-                    {
-                        text: 'Discuss the request with your line manager for approval before responding to the client',
-                        outcome: 'Excellent! This ensures proper alignment and authority.',
-                        experience: 25,
-                        tool: 'Request Management'
-                    },
-                    {
-                        text: 'Agree to the request and carry out the process within the project testing activities',
-                        outcome: 'Approval is needed for deviations from standard processes.',
-                        experience: -15
-                    },
-                    {
-                        text: 'Decline the request and continue with usual standard processes',
-                        outcome: 'Discussion with the client, project manager and line manager ensures understanding and potential compromise.',
-                        experience: -10
-                    },
-                    {
-                        text: 'Don\'t respond to the request as the client should propose this directly through the business channels agreed',
-                        outcome: 'Whilst this may be true in some circumstances. It essential for good communication, business collaboration and quick resolution that the client can feel the need to come directly to the person working on the project.',
-                        experience: -5
-                    }
-                ]
-            },
-            {
-                id: 13,
-                level: 'Advanced',
-                title: 'Knowledge Retention',
-                description: 'You\'re leaving a long-term test support project. How do you ensure knowledge retention?',
-                options: [
-                    {
-                        text: 'Create a comprehensive handover guide documenting processes and key information',
-                        outcome: 'Excellent! This ensures smooth transition and knowledge retention.',
-                        experience: 25,
-                        tool: 'Knowledge Management'
-                    },
-                    {
-                        text: 'Promote a verbal handover process that doesn\'t require documentation',
-                        outcome: 'Written documentation ensures thorough knowledge transfer and can be updated in line with changes for future reference and traceability.',
-                        experience: -15
-                    },
-                    {
-                        text: 'Document all major issues that have been resolved and that are still open',
-                        outcome: 'All relevant information needs documentation. Including business processes and project progress',
-                        experience: -10
-                    },
-                    {
-                        text: 'Provide updated links to client documentation',
-                        outcome: 'Whilst client documentation is essential. Any documentation on all aspects of the project gathered by Zoonou should be updated and shared for continuity.',
-                        experience: -5
-                    }
-                ]
-            },
-            {
-                id: 14,
-                level: 'Advanced',
-                title: 'Managing Client Expectations',
-                description: 'A client expects more testing than the agreed scope allows. How do you manage this?',
-                options: [
-                    {
-                        text: 'Communicate scope limitations clearly and discuss potential adjustments with the project manager',
-                        outcome: 'Excellent! This ensures clear expectations and potential solutions.',
-                        experience: 25,
-                        tool: 'Expectation Management'
-                    },
-                    {
-                        text: 'Attempt to meet the client expectations regardless of scope',
-                        outcome: 'Scope limitations need clear communication as new updates to what is expected may exceed agreed project time frames.',
-                        experience: -15
-                    },
-                    {
-                        text: 'Continue to reach the initial scope and expectations set out in planning',
-                        outcome: 'Expectations need addressing and managing, especially if new targets are set mid project.',
-                        experience: -10
-                    },
-                    {
-                        text: 'Inform the project manager without client communication',
-                        outcome: 'Direct client communication is essential as this will promote a good working relationship and inform them of what can be expected within the time frame set.',
-                        experience: -5
-                    }
-                ]
-            },
-            {
-                id: 15,
-                level: 'Advanced',
-                title: 'Long-Term Client Engagement',
-                description: 'You\'re leading a long-term test support project. How do you ensure ongoing success?',
-                options: [
-                    {
-                        text: 'Maintain regular communication, adapt to client needs, and continuously improve processes',
-                        outcome: 'Excellent! This ensures long-term success and client satisfaction.',
-                        experience: 25,
-                        tool: 'Project Leadership'
-                    },
-                    {
-                        text: 'Follow initial client processes without change',
-                        outcome: 'Continuous improvement is key to long-term success and any potential improvements to processes should be communicated and explored.',
-                        experience: -15
-                    },
-                    {
-                        text: 'Focus on immediate tasks set out in planning and meetings',
-                        outcome: 'Long-term success requires strategic focus and this should be continuously monitored to mitigate any project risks.',
-                        experience: -10
-                    },
-                    {
-                        text: 'Wait for client feedback to current progress to make any changes that may benefit the project',
-                        outcome: 'Proactive improvement is the preferred approach and promotes good awareness of the business goals and a good collaborative relationship.',
-                        experience: -5
-                    }
-                ]
-            }
-        ];
-
-        // Initialize UI and add event listeners
+        
+        // Timer-related properties
+        this.questionTimer = null;
+        this.questionStartTime = null;
+        this.questionTimeLimitInSeconds = 60; // 60 seconds per question
+        
+        this.isLoading = false;
+        
+        // Initialize event listeners
         this.initializeEventListeners();
 
-        this.isLoading = false;
+        // Start the quiz
+        this.startGame();
     }
-
-    showError(message) {
-        const errorDiv = document.createElement('div');
-        errorDiv.className = 'error-notification';
-        errorDiv.setAttribute('role', 'alert');
-        errorDiv.textContent = message;
-        document.body.appendChild(errorDiv);
-        setTimeout(() => errorDiv.remove(), 5000);
+    
+    // Override the shouldEndGame method for our quiz
+    shouldEndGame() {
+        return this.player.questionHistory.length >= 15;
     }
-
-    shouldEndGame(totalQuestionsAnswered, currentXP) {
-        // End game when all questions are answered
-        return this.player?.questionHistory?.length >= this.totalQuestions;
-    }
-
-    async startGame() {
-        if (this.isLoading) return;
-        
-        try {
-            this.isLoading = true;
-            // Show loading indicator
-            const loadingIndicator = document.getElementById('loading-indicator');
-            if (loadingIndicator) {
-                loadingIndicator.classList.remove('hidden');
-            }
-
-            // Set player name from localStorage
-            this.player.name = localStorage.getItem('username');
-            if (!this.player.name) {
-                window.location.href = '/login.html';
-                return;
-            }
-
-            // Initialize event listeners
-            this.initializeEventListeners();
-
-            // Load previous progress
-            const hasProgress = await this.loadProgress();
-            console.log('Previous progress loaded:', hasProgress);
-            
-            if (!hasProgress) {
-                // Reset player state if no valid progress exists
-                this.player.experience = 0;
-                this.player.tools = [];
-                this.player.currentScenario = 0;
-                this.player.questionHistory = [];
-            }
-            
-            // Clear any existing transition messages
-            const transitionContainer = document.getElementById('level-transition-container');
-            if (transitionContainer) {
-                transitionContainer.innerHTML = '';
-                transitionContainer.classList.remove('active');
-            }
-
-            // Clear any existing timer
-            if (this.questionTimer) {
-                clearInterval(this.questionTimer);
-            }
-            
-            await this.displayScenario();
-        } catch (error) {
-            console.error('Failed to start game:', error);
-            this.showError('Failed to start the quiz. Please try refreshing the page.');
-        } finally {
-            this.isLoading = false;
-            // Hide loading state
-            const loadingIndicator = document.getElementById('loading-indicator');
-            if (loadingIndicator) {
-                loadingIndicator.classList.add('hidden');
-            }
-        }
-    }
-
+    
+    // Initialize event listeners
     initializeEventListeners() {
-        // Add event listeners for the continue and restart buttons
-        document.getElementById('continue-btn')?.addEventListener('click', () => this.nextScenario());
-        document.getElementById('restart-btn')?.addEventListener('click', () => this.restartGame());
-
+        // Add event listener for the restart button
+        const restartButton = document.getElementById('restart-btn');
+        if (restartButton) {
+            restartButton.addEventListener('click', () => this.restartQuiz());
+        }
+        
         // Add form submission handler
         document.getElementById('options-form')?.addEventListener('submit', (e) => {
             e.preventDefault();
@@ -748,53 +99,208 @@ export class TestSupportQuiz extends BaseQuiz {
             }
         });
     }
-
-    displayScenario() {
-        const currentScenarios = this.getCurrentScenarios();
-        
-        // Check if we've answered all 15 questions
-        if (this.player.questionHistory.length >= 15) {
-            console.log('All 15 questions answered, ending game');
-            this.endGame(false);
-            return;
-        }
-        
-        // Get the next scenario based on current progress
-        let scenario;
+    
+    // Get the scenarios for the current level
+    getCurrentScenarios() {
         const questionCount = this.player.questionHistory.length;
         
         if (questionCount < 5) {
-            // Basic questions (0-4)
-            scenario = this.basicScenarios[questionCount];
-            this.player.currentScenario = questionCount;
+            return this.basicScenarios;
         } else if (questionCount < 10) {
-            // Intermediate questions (5-9)
-            scenario = this.intermediateScenarios[questionCount - 5];
-            this.player.currentScenario = questionCount - 5;
-        } else if (questionCount < 15) {
-            // Advanced questions (10-14)
-            scenario = this.advancedScenarios[questionCount - 10];
-            this.player.currentScenario = questionCount - 10;
+            return this.intermediateScenarios;
+        } else {
+            return this.advancedScenarios;
         }
+    }
+    
+    // Get the current level based on question index
+    getCurrentLevel() {
+        const questionCount = this.player.questionHistory.length;
+        
+        if (questionCount < 5) {
+            return 'Basic';
+        } else if (questionCount < 10) {
+            return 'Intermediate';
+        } else {
+            return 'Advanced';
+        }
+    }
+    
+    // Calculate the score percentage
+    calculateScorePercentage() {
+        const correctAnswers = this.player.questionHistory.filter(q => 
+            q.selectedAnswer && q.isCorrect
+        ).length;
+        return Math.round((correctAnswers / Math.max(1, this.player.questionHistory.length)) * 100);
+    }
 
-        if (!scenario) {
-            console.error('No scenario found for current progress. Question count:', questionCount);
-            this.endGame(true);
+    // Start the quiz
+    async startGame() {
+        if (this.isLoading) return;
+        
+        console.log('[TestSupportQuiz] Starting game...');
+        
+        try {
+            this.isLoading = true;
+            
+            // Show loading indicator
+            const loadingIndicator = document.getElementById('loading-indicator');
+            if (loadingIndicator) {
+                loadingIndicator.classList.remove('hidden');
+            }
+
+            // Set player name
+            this.player.name = localStorage.getItem('username');
+            if (!this.player.name) {
+                window.location.href = '../login.html';
+                return;
+            }
+
+            // Try to load previous progress
+            const hasProgress = await this.loadProgress();
+            console.log(`[TestSupportQuiz] Progress loaded: ${hasProgress}`);
+            
+            // Hide loading indicator
+            if (loadingIndicator) {
+                loadingIndicator.classList.add('hidden');
+            }
+            
+            if (!hasProgress) {
+                // Reset player state if no valid progress exists
+                this.player.experience = 0;
+                this.player.tools = [];
+                this.player.currentScenario = 0;
+                this.player.questionHistory = [];
+                console.log('[TestSupportQuiz] No previous progress, starting fresh');
+            } else {
+                // Verify the loaded progress contains valid question history
+                if (!this.player.questionHistory || !Array.isArray(this.player.questionHistory)) {
+                    console.log('[TestSupportQuiz] Invalid question history in loaded progress, resetting');
+                    this.player.questionHistory = [];
+                }
+                
+                // CRITICAL: Ensure currentScenario is set correctly based on question history
+                this.player.currentScenario = this.player.questionHistory.length;
+                console.log('[TestSupportQuiz] Set currentScenario to match question history:', this.player.currentScenario);
+            }
+            
+            // Check if the quiz is already completed
+            if (this.shouldEndGame()) {
+                this.endGame(false);
+                return;
+            }
+            
+            // Clear any existing transition messages
+            const transitionContainer = document.getElementById('level-transition-container');
+            if (transitionContainer) {
+                transitionContainer.innerHTML = '';
+                transitionContainer.classList.remove('active');
+            }
+
+            // Display the first/next scenario
+            this.displayScenario();
+            
+            this.isLoading = false;
+        } catch (error) {
+            console.error('[TestSupportQuiz] Error starting game:', error);
+            this.isLoading = false;
+            this.showError('Failed to start the quiz. Please refresh the page.');
+        }
+    }
+    
+    // Initialize the timer for the current question
+    initializeTimer() {
+        // Clear any existing timer
+        if (this.questionTimer) {
+            clearInterval(this.questionTimer);
+            this.questionTimer = null;
+        }
+        
+        // Reset timer display
+        const timerContainer = document.getElementById('timer-container');
+        const timerDisplay = document.getElementById('timer-display');
+        
+        if (!timerContainer || !timerDisplay) {
+            console.error('[TestSupportQuiz] Timer elements not found');
             return;
         }
-
-        // Store current question number for consistency
-        this.currentQuestionNumber = questionCount + 1;
         
-        // Show level transition message at the start of each level or when level changes
-        const currentLevel = this.getCurrentLevel();
-        const previousLevel = questionCount > 0 ? 
-            (questionCount <= 5 ? 'Basic' : 
-             questionCount <= 10 ? 'Intermediate' : 'Advanced') : null;
+        // Show the timer
+        timerContainer.classList.remove('hidden');
+        timerContainer.classList.remove('timer-warning');
+        
+        // Set starting time
+        const timeLimit = this.questionTimeLimitInSeconds;
+        timerDisplay.textContent = timeLimit;
+        
+        // Record start time
+        this.questionStartTime = Date.now();
+        
+        // Start timer interval
+        this.questionTimer = setInterval(() => {
+            const elapsedSeconds = Math.floor((Date.now() - this.questionStartTime) / 1000);
+            const remainingSeconds = Math.max(0, timeLimit - elapsedSeconds);
             
+            timerDisplay.textContent = remainingSeconds;
+            
+            // Add warning class when less than 10 seconds remain
+            if (remainingSeconds <= 10 && !timerContainer.classList.contains('timer-warning')) {
+                timerContainer.classList.add('timer-warning');
+            }
+            
+            // If time is up, auto-submit answer or select random option
+            if (remainingSeconds <= 0) {
+                clearInterval(this.questionTimer);
+                this.handleTimedOut();
+            }
+        }, 1000);
+    }
+    
+    // Handle when time runs out for a question
+    handleTimedOut() {
+        console.log('[TestSupportQuiz] Question timed out');
+        
+        // Select a random option if none selected
+        const selectedOption = document.querySelector('input[name="option"]:checked');
+        if (!selectedOption) {
+            const options = document.querySelectorAll('input[name="option"]');
+            if (options.length > 0) {
+                const randomIndex = Math.floor(Math.random() * options.length);
+                options[randomIndex].checked = true;
+            }
+        }
+        
+        // Submit the answer with the timed out flag
+        this.handleAnswer(true);
+    }
+    
+    // Display the current scenario
+    displayScenario() {
+        // Check if the quiz is already completed
+        if (this.shouldEndGame()) {
+            this.endGame(false);
+                    return;
+        }
+        
+        // Get the current scenario based on progress
+        const currentScenarios = this.getCurrentScenarios();
+        const scenarioIndex = this.player.questionHistory.length % 5; // Use modulo to cycle through 5 scenarios per level
+        const scenario = currentScenarios[scenarioIndex]; 
+        
+        console.log(`[TestSupportQuiz] Displaying scenario #${this.player.currentScenario + 1}:`, {
+            title: scenario.title,
+            level: this.getCurrentLevel(),
+            index: scenarioIndex
+        });
+        
+        // Show level transition message when level changes
+        const currentLevel = this.getCurrentLevel();
+        const questionCount = this.player.questionHistory.length;
+        
         if (questionCount === 0 || 
             (questionCount === 5 && currentLevel === 'Intermediate') || 
             (questionCount === 10 && currentLevel === 'Advanced')) {
+            
             const transitionContainer = document.getElementById('level-transition-container');
             if (transitionContainer) {
                 transitionContainer.innerHTML = ''; // Clear any existing messages
@@ -807,12 +313,6 @@ export class TestSupportQuiz extends BaseQuiz {
                 transitionContainer.appendChild(levelMessage);
                 transitionContainer.classList.add('active');
                 
-                // Update the level indicator
-                const levelIndicator = document.getElementById('level-indicator');
-                if (levelIndicator) {
-                    levelIndicator.textContent = `Level: ${currentLevel}`;
-                }
-                
                 // Remove the message and container height after animation
                 setTimeout(() => {
                     transitionContainer.classList.remove('active');
@@ -823,84 +323,136 @@ export class TestSupportQuiz extends BaseQuiz {
             }
         }
 
-        // Update scenario display
+        // Update UI for scenario
         const titleElement = document.getElementById('scenario-title');
         const descriptionElement = document.getElementById('scenario-description');
-        const optionsContainer = document.getElementById('options-container');
-
-        if (!titleElement || !descriptionElement || !optionsContainer) {
-            console.error('Required elements not found');
-            return;
+        
+        if (titleElement && descriptionElement) {
+            titleElement.textContent = scenario.title;
+            descriptionElement.textContent = scenario.description;
         }
 
-        titleElement.textContent = scenario.title;
-        descriptionElement.textContent = scenario.description;
-
-        // Update question counter immediately
+        // Update question progress
         const questionProgress = document.getElementById('question-progress');
         if (questionProgress) {
-            questionProgress.textContent = `Question: ${this.currentQuestionNumber}/15`;
+            questionProgress.textContent = `Question: ${questionCount + 1}/15`;
         }
+        
+        // Update level indicator
+        const levelIndicator = document.getElementById('level-indicator');
+        if (levelIndicator) {
+            levelIndicator.textContent = `Level: ${currentLevel}`;
+        }
+        
+        // Update progress bar
+        const progressFill = document.getElementById('progress-fill');
+        if (progressFill) {
+            const progressPercentage = (questionCount / 15) * 100;
+            progressFill.style.width = `${progressPercentage}%`;
+        }
+        
+        // Display options with shuffling
+        const optionsContainer = document.getElementById('options-container');
+        if (optionsContainer) {
+            optionsContainer.innerHTML = '';
 
         // Create a copy of options with their original indices
-        const shuffledOptions = scenario.options.map((option, index) => ({
+            const shuffledOptions = scenario.options.map((option, index) => ({
             ...option,
             originalIndex: index
         }));
-
-        // Shuffle the options
+            
+            // Shuffle the options
         for (let i = shuffledOptions.length - 1; i > 0; i--) {
             const j = Math.floor(Math.random() * (i + 1));
             [shuffledOptions[i], shuffledOptions[j]] = [shuffledOptions[j], shuffledOptions[i]];
         }
-
-        optionsContainer.innerHTML = '';
-
-        shuffledOptions.forEach((option, index) => {
-            const optionElement = document.createElement('div');
-            optionElement.className = 'option';
-            optionElement.innerHTML = `
+            
+            shuffledOptions.forEach((option, idx) => {
+                const optionDiv = document.createElement('div');
+                optionDiv.className = 'option';
+                optionDiv.innerHTML = `
                 <input type="radio" 
                     name="option" 
                     value="${option.originalIndex}" 
-                    id="option${index}"
+                        id="option${idx}"
                     tabindex="0"
                     aria-label="${option.text}"
                     role="radio">
-                <label for="option${index}">${option.text}</label>
-            `;
-            optionsContainer.appendChild(optionElement);
-        });
-
-        this.updateProgress();
-
-        // Initialize timer for the new question
+                    <label for="option${idx}">${option.text}</label>
+                `;
+                optionsContainer.appendChild(optionDiv);
+            });
+        }
+        
+        // Show game screen
+        this.gameScreen.classList.remove('hidden');
+        this.outcomeScreen.classList.add('hidden');
+        this.endScreen.classList.add('hidden');
+        
+        // Initialize timer for the question
         this.initializeTimer();
+        
+        // Save progress after displaying - ensures we're in a consistent state
+        if (this.player.questionHistory.length > 0) {
+            // Only save if we have actual progress to avoid recursive saves
+            this.saveProgress('in-progress').catch(err => {
+                console.warn('[TestSupportQuiz] Save after display failed:', err);
+            });
+        }
     }
-
-    async handleAnswer() {
+    
+    // Handle answer submission
+    async handleAnswer(timedOut = false) {
         if (this.isLoading) return;
+        
+        try {
+            this.isLoading = true;
+            
+            // Clear the timer
+            if (this.questionTimer) {
+                clearInterval(this.questionTimer);
+                this.questionTimer = null;
+            }
         
         const submitButton = document.querySelector('.submit-button');
         if (submitButton) {
             submitButton.disabled = true;
         }
 
-        // Clear the timer when an answer is submitted
-        if (this.questionTimer) {
-            clearInterval(this.questionTimer);
-        }
-        
-        try {
-            this.isLoading = true;
             const selectedOption = document.querySelector('input[name="option"]:checked');
-            if (!selectedOption) return;
-
-            const currentScenarios = this.getCurrentScenarios();
-            const scenario = currentScenarios[this.player.currentScenario];
-            const originalIndex = parseInt(selectedOption.value);
+            if (!selectedOption && !timedOut) {
+                alert('Please select an answer.');
+                this.isLoading = false;
+                if (submitButton) {
+                    submitButton.disabled = false;
+                }
+                // Restart timer since we're not proceeding
+                this.initializeTimer();
+                return;
+            }
             
-            const selectedAnswer = scenario.options[originalIndex];
+            // Get the selected option index
+            const optionIndex = selectedOption ? parseInt(selectedOption.value) : 0;
+            
+            // Get the current scenario
+            const currentScenarios = this.getCurrentScenarios();
+            const scenarioIndex = this.player.questionHistory.length % 5;
+            const scenario = currentScenarios[scenarioIndex];
+            
+            // Get the selected answer
+            const selectedAnswer = scenario.options[optionIndex];
+            
+            console.log('[TestSupportQuiz] Selected answer:', {
+                text: selectedAnswer.text,
+                experience: selectedAnswer.experience,
+                timedOut: timedOut
+            });
+            
+            // Add to player experience (no points if timed out)
+            if (!timedOut) {
+                this.player.experience += selectedAnswer.experience;
+            }
 
             // Find the correct answer (option with highest experience)
             const correctAnswer = scenario.options.reduce((prev, current) => 
@@ -909,9 +461,6 @@ export class TestSupportQuiz extends BaseQuiz {
 
             // Mark selected answer as correct or incorrect
             selectedAnswer.isCorrect = selectedAnswer === correctAnswer;
-
-            // Update player experience with bounds
-            this.player.experience = Math.max(0, Math.min(this.maxXP, this.player.experience + selectedAnswer.experience));
             
             // Calculate time spent on this question
             const timeSpent = this.questionStartTime ? Date.now() - this.questionStartTime : null;
@@ -921,9 +470,8 @@ export class TestSupportQuiz extends BaseQuiz {
                 scenario: scenario,
                 selectedAnswer: selectedAnswer,
                 isCorrect: selectedAnswer.isCorrect,
-                maxPossibleXP: Math.max(...scenario.options.map(o => o.experience)),
                 timeSpent: timeSpent,
-                timedOut: false
+                timedOut: timedOut
             });
 
             // Increment current scenario
@@ -931,53 +479,60 @@ export class TestSupportQuiz extends BaseQuiz {
 
             // Save progress
             await this.saveProgress();
-
-            // Calculate the score percentage
-            const scorePercentage = this.calculateScorePercentage();
             
-            const score = {
-                quizName: this.quizName,
-                score: scorePercentage,
-                experience: this.player.experience,
-                questionHistory: this.player.questionHistory,
-                questionsAnswered: this.player.questionHistory.length,
-                lastUpdated: new Date().toISOString()
-            };
+            // Show outcome
+                this.gameScreen.classList.add('hidden');
+                this.outcomeScreen.classList.remove('hidden');
             
-            // Save quiz result
-            const username = localStorage.getItem('username');
-            if (username) {
-                const quizUser = new QuizUser(username);
-                await quizUser.updateQuizScore(
-                    this.quizName,
-                    score.score,
-                    score.experience,
-                    this.player.tools,
-                    score.questionHistory,
-                    score.questionsAnswered
-                );
+            // Display outcome content
+            const outcomeContent = document.querySelector('.outcome-content');
+            if (outcomeContent) {
+                // Prepare the outcome message
+                let outcomeHeader = selectedAnswer.isCorrect ? 'Correct!' : 'Incorrect';
+                let outcomeMessage = selectedAnswer.outcome || '';
+                
+                // Add timed out message if applicable
+                if (timedOut) {
+                    outcomeHeader = 'Time\'s Up!';
+                    outcomeMessage = 'You ran out of time. A random answer was selected.';
+                }
+                
+                outcomeContent.innerHTML = `
+                    <h3>${outcomeHeader}</h3>
+                    <p>${outcomeMessage}</p>
+                    <p class="result">${selectedAnswer.isCorrect ? 'Correct answer!' : 'Try again next time.'}</p>
+                    ${timedOut ? '<p class="timeout-warning">Remember to answer within the time limit!</p>' : ''}
+                    ${selectedAnswer.tool && !timedOut ? `<p class="tool-gained">You've gained the <strong>${selectedAnswer.tool}</strong> tool!</p>` : ''}
+                    <button id="continue-btn" class="submit-button">Continue</button>
+                `;
+                
+                // If this answer added a tool and wasn't timed out, add it to player's tools
+                if (selectedAnswer.tool && !timedOut && !this.player.tools.includes(selectedAnswer.tool)) {
+                    this.player.tools.push(selectedAnswer.tool);
+                }
+                
+                // Add event listener to continue button
+                const continueBtn = outcomeContent.querySelector('#continue-btn');
+                if (continueBtn) {
+                    continueBtn.addEventListener('click', () => this.nextScenario());
+                }
             }
-
-            // Show outcome screen and update display with answer outcome
-            BaseQuiz.prototype.displayOutcome.call(this, selectedAnswer);
 
             this.updateProgress();
-
-            // Check if all questions have been answered
-            if (this.shouldEndGame()) {
-                await this.endGame(false);
-            }
+            
         } catch (error) {
-            console.error('Failed to handle answer:', error);
-            this.showError('Failed to save your answer. Please try again.');
+            console.error('[TestSupportQuiz] Error handling answer:', error);
+            this.showError('Failed to process your answer. Please try again.');
         } finally {
             this.isLoading = false;
+            const submitButton = document.querySelector('.submit-button');
             if (submitButton) {
                 submitButton.disabled = false;
             }
         }
     }
 
+    // Move to the next scenario
     nextScenario() {
         // Hide outcome screen and show game screen
         if (this.outcomeScreen && this.gameScreen) {
@@ -989,294 +544,84 @@ export class TestSupportQuiz extends BaseQuiz {
         this.displayScenario();
     }
 
+    // Update progress display
     updateProgress() {
         // Get current level and question count
         const currentLevel = this.getCurrentLevel();
         const totalAnswered = this.player.questionHistory.length;
         const questionNumber = totalAnswered + 1;
         
-        // Update the existing progress card elements
-        const levelInfoElement = document.querySelector('.level-info');
-        const questionInfoElement = document.querySelector('.question-info');
-        
-        if (levelInfoElement) {
-            levelInfoElement.textContent = `Level: ${currentLevel}`;
-        }
-        
-        if (questionInfoElement) {
-            questionInfoElement.textContent = `Question: ${questionNumber}/15`;
-        }
-        
-        // Ensure the card is visible
-        const progressCard = document.querySelector('.quiz-header-progress');
-        if (progressCard) {
-            progressCard.style.display = 'block';
-        }
-        
-        // Update legacy progress elements if they exist
+        // Update level indicator
         const levelIndicator = document.getElementById('level-indicator');
-        const questionProgress = document.getElementById('question-progress');
-        const progressFill = document.getElementById('progress-fill');
-        
         if (levelIndicator) {
             levelIndicator.textContent = `Level: ${currentLevel}`;
         }
         
+        // Update question progress
+        const questionProgress = document.getElementById('question-progress');
         if (questionProgress) {
-            questionProgress.textContent = `Question: ${questionNumber}/${this.totalQuestions || 15}`;
+            questionProgress.textContent = `Question: ${questionNumber}/15`;
         }
         
+        // Update progress bar
+        const progressFill = document.getElementById('progress-fill');
         if (progressFill) {
-            const progressPercentage = (totalAnswered / (this.totalQuestions || 15)) * 100;
+            const progressPercentage = (totalAnswered / 15) * 100;
             progressFill.style.width = `${progressPercentage}%`;
         }
     }
 
-    restartGame() {
-        // Reset player state
-        this.player = {
-            name: localStorage.getItem('username'),
-            experience: 0,
-            tools: [],
-            currentScenario: 0,
-            questionHistory: []
-        };
-
-        // Reset UI
-        this.gameScreen.classList.remove('hidden');
-        this.outcomeScreen.classList.add('hidden');
-        this.endScreen.classList.add('hidden');
-
-        // Clear any existing transition messages
-        const transitionContainer = document.getElementById('level-transition-container');
-        if (transitionContainer) {
-            transitionContainer.innerHTML = '';
-            transitionContainer.classList.remove('active');
-        }
-
-        // Update progress display
-        this.updateProgress();
-
-        // Start from first scenario
-        this.displayScenario();
-    }
-
-    getCurrentScenarios() {
-        const totalAnswered = this.player.questionHistory.length;
-        
-        // Progress through levels based only on question count
-        if (totalAnswered >= 10) {
-            return this.advancedScenarios;
-        } else if (totalAnswered >= 5) {
-            return this.intermediateScenarios;
-        }
-        return this.basicScenarios;
-    }
-
-    getCurrentLevel() {
-        const totalAnswered = this.player.questionHistory.length;
-        
-        // Progress through levels based only on question count
-        if (totalAnswered >= 10) {
-            return 'Advanced';
-        } else if (totalAnswered >= 5) {
-            return 'Intermediate';
-        }
-        return 'Basic';
-    }
-
-    generateRecommendations() {
-        const recommendationsContainer = document.getElementById('recommendations');
-        if (!recommendationsContainer) return;
-
-        const score = Math.round((this.player.experience / this.maxXP) * 100);
-        const weakAreas = [];
-        const strongAreas = [];
-
-        // Analyze performance in different areas
-        this.player.questionHistory.forEach(record => {
-            const maxXP = record.maxPossibleXP;
-            const earnedXP = record.selectedAnswer.experience;
-            const isCorrect = earnedXP === maxXP;
-
-            // Categorize the question based on its content
-            const questionType = this.categorizeQuestion(record.scenario);
-            
-            if (isCorrect) {
-                if (!strongAreas.includes(questionType)) {
-                    strongAreas.push(questionType);
-                }
-            } else {
-                if (!weakAreas.includes(questionType)) {
-                    weakAreas.push(questionType);
-                }
-            }
-        });
-
-        // Generate recommendations HTML
-        let recommendationsHTML = '';
-
-        if (score >= 95 && weakAreas.length === 0) {
-            recommendationsHTML = '<p>🌟 Outstanding! You have demonstrated mastery in all aspects of test support. You clearly understand the nuances of test support and are well-equipped to handle any test support challenges!</p>';
-        } else if (score >= 80) {
-            recommendationsHTML = '<p>🌟 Excellent performance! Your test support skills are very strong. To achieve complete mastery, consider focusing on:</p>';
-            recommendationsHTML += '<ul>';
-            if (weakAreas.length > 0) {
-                weakAreas.forEach(area => {
-                    recommendationsHTML += `<li>${this.getRecommendation(area)}</li>`;
-                });
-            }
-            recommendationsHTML += '</ul>';
-        } else if (score >= 60) {
-            recommendationsHTML = '<p>👍 Good effort! Here are some areas to focus on:</p>';
-            recommendationsHTML += '<ul>';
-            weakAreas.forEach(area => {
-                recommendationsHTML += `<li>${this.getRecommendation(area)}</li>`;
-            });
-            recommendationsHTML += '</ul>';
-        } else {
-            recommendationsHTML = '<p>📚 Here are key areas for improvement:</p>';
-            recommendationsHTML += '<ul>';
-            weakAreas.forEach(area => {
-                recommendationsHTML += `<li>${this.getRecommendation(area)}</li>`;
-            });
-            recommendationsHTML += '</ul>';
-        }
-
-        recommendationsContainer.innerHTML = recommendationsHTML;
-    }
-
-    categorizeQuestion(scenario) {
-        // Categorize questions based on their content
-        const title = scenario.title.toLowerCase();
-        const description = scenario.description.toLowerCase();
-
-        if (title.includes('access') || description.includes('access')) {
-            return 'Access Management';
-        } else if (title.includes('documentation') || description.includes('documentation')) {
-            return 'Documentation Management';
-        } else if (title.includes('board') || description.includes('board')) {
-            return 'Project Tracking';
-        } else if (title.includes('client') || description.includes('client')) {
-            return 'Client Communication';
-        } else if (title.includes('idle') || description.includes('idle')) {
-            return 'Time Management';
-        } else if (title.includes('process') || description.includes('process')) {
-            return 'Process Adherence';
-        } else if (title.includes('team') || description.includes('team')) {
-            return 'Team Collaboration';
-        } else {
-            return 'General Support Skills';
-        }
-    }
-
-    getRecommendation(area) {
-        const recommendations = {
-            'Access Management': 'Focus on proactively verifying and maintaining access to all necessary testing resources and systems.',
-            'Documentation Management': 'Improve documentation practices for processes, issues, and project-specific information.',
-            'Project Tracking': 'Enhance your approach to monitoring project boards and maintaining up-to-date ticket status.',
-            'Client Communication': 'Strengthen professional communication skills and proper handling of client requests.',
-            'Time Management': 'Work on effectively managing support time, including handling idle periods productively.',
-            'Process Adherence': 'Focus on understanding and following standard processes while knowing when to escalate exceptions.',
-            'Team Collaboration': 'Develop better coordination with team members and stakeholders during support activities.',
-            'General Support Skills': 'Continue developing fundamental test support skills and best practices.'
-        };
-
-        return recommendations[area] || 'Continue practicing core test support principles.';
-    }
-
+    // End the quiz
     async endGame(failed = false) {
+        console.log('[TestSupportQuiz] Ending game...');
+        
+        try {
+            // Calculate score
+            const correctAnswers = this.player.questionHistory.filter(q => q.isCorrect).length;
+            const totalAnswers = this.player.questionHistory.length;
+            const scorePercentage = Math.round((correctAnswers / totalAnswers) * 100);
+            
+            // Determine if passed or failed
+            const passed = scorePercentage >= this.passPercentage;
+            
+            console.log('[TestSupportQuiz] Quiz results:', {
+                score: scorePercentage,
+                experience: this.player.experience,
+                passed: passed
+            });
+            
+            // Hide screens
         this.gameScreen.classList.add('hidden');
         this.outcomeScreen.classList.add('hidden');
         this.endScreen.classList.remove('hidden');
 
-        // Hide the progress card on the end screen
-        const progressCard = document.querySelector('.quiz-header-progress');
-        if (progressCard) {
-            progressCard.style.display = 'none';
-        }
-
-        // Calculate final score percentage based on correct answers
-        const scorePercentage = this.calculateScorePercentage();
-        const hasPassed = !failed && scorePercentage >= this.passPercentage;
-        
-        // Save the final quiz result with pass/fail status
-        const username = localStorage.getItem('username');
-        if (username) {
-            try {
-                const user = new QuizUser(username);
-                const status = hasPassed ? 'passed' : 'failed';
-                console.log('Setting final quiz status:', { status, score: scorePercentage });
-                
-                const result = {
-                    score: scorePercentage,
-                    status: status,
-                    experience: this.player.experience,
-                    questionHistory: this.player.questionHistory,
-                    questionsAnswered: this.player.questionHistory.length,
-                    lastUpdated: new Date().toISOString(),
-                    scorePercentage: scorePercentage
-                };
-
-                // Save to QuizUser
-                await user.updateQuizScore(
-                    this.quizName,
-                    result.score,
-                    result.experience,
-                    this.player.tools,
-                    result.questionHistory,
-                    result.questionsAnswered,
-                    status
-                );
-
-                // Save to API with proper structure
-                const apiProgress = {
-                    data: {
-                        ...result,
-                        tools: this.player.tools,
-                        currentScenario: this.player.currentScenario
-                    }
-                };
-
-                // Save directly via API to ensure status is updated
-                console.log('Saving final progress to API:', apiProgress);
-                await this.apiService.saveQuizProgress(this.quizName, apiProgress.data);
-                
-                // Clear any local storage for this quiz
-                this.clearQuizLocalStorage(username, this.quizName);
-            } catch (error) {
-                console.error('Error saving final quiz score:', error);
+            // Hide the timer
+            const timerContainer = document.getElementById('timer-container');
+            if (timerContainer) {
+                timerContainer.classList.add('hidden');
             }
-        }
-
-        document.getElementById('final-score').textContent = `Final Score: ${scorePercentage}%`;
         
         // Update the quiz complete header based on status
         const quizCompleteHeader = document.querySelector('#end-screen h2');
         if (quizCompleteHeader) {
-            quizCompleteHeader.textContent = hasPassed ? 'Quiz Complete!' : 'Quiz Failed!';
-        }
-
-        const performanceSummary = document.getElementById('performance-summary');
-        if (!hasPassed) {
-            performanceSummary.textContent = 'Quiz failed. You did not earn enough points to pass. You can retry this quiz later.';
-            // Hide restart button if failed
-            const restartBtn = document.getElementById('restart-btn');
-            if (restartBtn) {
-                restartBtn.style.display = 'none';
+                quizCompleteHeader.textContent = passed ? 'Quiz Complete!' : 'Quiz Failed!';
             }
-            // Add failed class to quiz container for styling
-            const quizContainer = document.getElementById('quiz-container');
-            if (quizContainer) {
-                quizContainer.classList.add('failed');
+            
+            // Update final score display
+            const finalScore = document.getElementById('final-score');
+            if (finalScore) {
+                finalScore.textContent = `Final Score: ${scorePercentage}%`;
             }
-        } else {
+            
+            // Update performance summary
+            const performanceSummary = document.getElementById('performance-summary');
+            if (performanceSummary) {
+                if (passed) {
             // Find the appropriate performance message
             const threshold = this.config.performanceThresholds.find(t => scorePercentage >= t.threshold);
-            if (threshold) {
-                performanceSummary.textContent = threshold.message;
+                    performanceSummary.textContent = threshold ? threshold.message : 'Congratulations! You passed the quiz.';
             } else {
-                performanceSummary.textContent = 'Quiz completed successfully!';
+                    performanceSummary.textContent = 'Quiz failed. You did not earn enough points to pass. You can retry this quiz later.';
             }
         }
 
@@ -1284,75 +629,160 @@ export class TestSupportQuiz extends BaseQuiz {
         const reviewList = document.getElementById('question-review');
         if (reviewList) {
             reviewList.innerHTML = ''; // Clear existing content
+                
             this.player.questionHistory.forEach((record, index) => {
                 const reviewItem = document.createElement('div');
                 reviewItem.className = 'review-item';
-                
-                const isCorrect = record.selectedAnswer && (record.selectedAnswer.isCorrect || 
-                    record.selectedAnswer.experience === Math.max(...record.scenario.options.map(o => o.experience || 0)));
-                reviewItem.classList.add(isCorrect ? 'correct' : 'incorrect');
+                    reviewItem.classList.add(record.isCorrect ? 'correct' : 'incorrect');
+                    
+                    // Add timed out class if applicable
+                    if (record.timedOut) {
+                        reviewItem.classList.add('timed-out');
+                    }
                 
                 reviewItem.innerHTML = `
                     <h4>Question ${index + 1}</h4>
-                    <p class="scenario">${record.scenario.description}</p>
+                        <p class="scenario">${record.scenario.title}</p>
                     <p class="answer"><strong>Your Answer:</strong> ${record.selectedAnswer.text}</p>
                     <p class="outcome"><strong>Outcome:</strong> ${record.selectedAnswer.outcome}</p>
-                    <p class="result"><strong>Result:</strong> ${isCorrect ? 'Correct' : 'Incorrect'}</p>
+                        <p class="result"><strong>Result:</strong> ${record.isCorrect ? 'Correct' : 'Incorrect'} ${record.timedOut ? '(Timed Out)' : ''}</p>
                 `;
                 
                 reviewList.appendChild(reviewItem);
             });
         }
 
-        this.generateRecommendations();
-    }
-
-    // Helper method to calculate the score percentage based on correct answers
-    calculateScorePercentage() {
-        const correctAnswers = this.player.questionHistory.filter(q => 
-            q.selectedAnswer && (q.selectedAnswer.isCorrect || 
-            q.selectedAnswer.experience === Math.max(...q.scenario.options.map(o => o.experience || 0)))
-        ).length;
-        
-        // Calculate percentage based on completed questions (cap at max questions)
-        const totalAnswered = Math.min(this.player.questionHistory.length, this.totalQuestions);
-        return totalAnswered > 0 ? Math.round((correctAnswers / totalAnswered) * 100) : 0;
-    }
-
-    clearQuizLocalStorage(username, quizName) {
-        const variations = [
-            quizName,                                              // original
-            quizName.toLowerCase(),                               // lowercase
-            quizName.toUpperCase(),                               // uppercase
-            quizName.replace(/-/g, ''),                           // no hyphens
-            quizName.replace(/([A-Z])/g, '-$1').toLowerCase(),    // kebab-case
-            quizName.replace(/-([a-z])/g, (_, c) => c.toUpperCase()), // camelCase
-            quizName.replace(/-/g, '_'),                          // snake_case
-        ];
-
-        // Add test-support specific variations
-        if (quizName.toLowerCase().includes('test-support')) {
-            variations.push(
-                'Test-Support',
-                'test-support',
-                'testSupport',
-                'Test_Support',
-                'test_support'
-            );
+            // Generate recommendations
+            const recommendations = document.getElementById('recommendations');
+            if (recommendations) {
+                let recommendationsHTML = '';
+                
+                if (scorePercentage >= 90) {
+                    recommendationsHTML = '<p>🌟 Outstanding! You have demonstrated excellent knowledge of test support principles and practices!</p>';
+                } else if (scorePercentage >= 70) {
+                    recommendationsHTML = '<p>👍 Good job! Here are some areas to review:</p><ul>';
+                    // Find areas where the user made mistakes
+                    const incorrectQuestions = this.player.questionHistory.filter(q => !q.isCorrect);
+                    incorrectQuestions.forEach(q => {
+                        // Add specific recommendations based on the scenario level
+                        let recommendation = `<li>Review ${q.scenario.title}: ${q.scenario.description}`;
+                        if (q.scenario.level === 'Basic') {
+                            recommendation += ' - Focus on fundamental test support concepts like communication, documentation and access management.';
+                        } else if (q.scenario.level === 'Intermediate') {
+                            recommendation += ' - Practice client relationship management, workload prioritization and process adaptation skills.';
+                        } else if (q.scenario.level === 'Advanced') {
+                            recommendation += ' - Study advanced topics like decision making, expectation management and long-term client engagement.';
+                        }
+                        recommendation += '</li>';
+                        recommendationsHTML += recommendation;
+                    });
+                    recommendationsHTML += '</ul>';
+                } else {
+                    recommendationsHTML = '<p>📚 Here are key areas for improvement:</p><ul>';
+                    // Find areas where the user made mistakes
+                    const incorrectQuestions = this.player.questionHistory.filter(q => !q.isCorrect);
+                    incorrectQuestions.forEach(q => {
+                        // Add specific recommendations based on the scenario level
+                        let recommendation = `<li>Review ${q.scenario.title}: ${q.scenario.description}`;
+                        if (q.scenario.level === 'Basic') {
+                            recommendation += ' - Master the basics of test support including morning communication, access verification, and documentation management.';
+                        } else if (q.scenario.level === 'Intermediate') {
+                            recommendation += ' - Improve your understanding of client processes, time management and multi-project handling.';
+                        } else if (q.scenario.level === 'Advanced') {
+                            recommendation += ' - Focus on developing leadership skills in test support, including knowledge retention and client expectation management.';
+                        }
+                        recommendation += '</li>';
+                        recommendationsHTML += recommendation;
+                    });
+                    recommendationsHTML += '</ul>';
+                }
+                
+                recommendations.innerHTML = recommendationsHTML;
+            }
+            
+            // Save final progress
+            await this.saveProgress(passed ? 'passed' : 'failed');
+            
+        } catch (error) {
+            console.error('[TestSupportQuiz] Error ending game:', error);
+            this.showError('Failed to complete the quiz. Please refresh the page.');
         }
-
-        variations.forEach(variant => {
-            localStorage.removeItem(`quiz_progress_${username}_${variant}`);
-            localStorage.removeItem(`quizResults_${username}_${variant}`);
-        });
+    }
+    
+    // Restart the quiz
+    async restartQuiz() {
+        console.log('[TestSupportQuiz] Restarting quiz...');
+        
+        // Clear the timer if it exists
+        if (this.questionTimer) {
+            clearInterval(this.questionTimer);
+            this.questionTimer = null;
+        }
+        
+        // Reset player state
+        this.player = {
+            name: localStorage.getItem('username'),
+            experience: 0,
+            questionHistory: [],
+            currentScenario: 0,
+            tools: []
+        };
+        
+        // Save reset progress
+        await this.saveProgress('in-progress');
+        
+        // Reset UI
+        this.gameScreen.classList.remove('hidden');
+        this.outcomeScreen.classList.add('hidden');
+        this.endScreen.classList.add('hidden');
+        
+        // Clear any existing transition messages
+        const transitionContainer = document.getElementById('level-transition-container');
+        if (transitionContainer) {
+            transitionContainer.innerHTML = '';
+            transitionContainer.classList.remove('active');
+        }
+        
+        // Start again
+        this.displayScenario();
+    }
+    
+    // Helper for showing errors
+    showError(message) {
+        console.error('[TestSupportQuiz] Error:', message);
+        
+        try {
+            const errorElement = document.createElement('div');
+            errorElement.className = 'error-message';
+            errorElement.textContent = message;
+            errorElement.style.color = 'red';
+            errorElement.style.padding = '20px';
+            errorElement.style.textAlign = 'center';
+            errorElement.style.fontWeight = 'bold';
+            
+            // Find a good place to show the error
+            const container = document.getElementById('game-screen') || 
+                            document.getElementById('quiz-container') || 
+                            document.body;
+            
+            if (container) {
+                // Clear container if not body
+                if (container !== document.body) {
+                    container.innerHTML = '';
+                }
+                
+                container.appendChild(errorElement);
+                console.error('[TestSupportQuiz] Displayed error to user:', message);
+            }
+        } catch (e) {
+            // Fallback to alert if error display fails
+            alert(message);
+        }
     }
 }
 
-// Initialize quiz when the page loads
+// Create and initialize the quiz when the DOM is loaded
 document.addEventListener('DOMContentLoaded', () => {
-    // Clear any existing quiz instances before starting this quiz
-    BaseQuiz.clearQuizInstances('test-support');
-    
-    const quiz = new TestSupportQuiz();
-    quiz.startGame();
+    console.log('[TestSupportQuiz] DOM loaded, initializing quiz...');
+    window.testSupportQuiz = new TestSupportQuiz();
 }); 
