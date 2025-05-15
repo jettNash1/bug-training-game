@@ -117,7 +117,7 @@ export class BadgeService {
                 };
             }
 
-            // Process quiz completion status
+            // Process quiz completion status and force specific image paths
             const badges = allQuizzes.map(quiz => {
                 const progress = quizProgress[quiz.id] || {};
                 
@@ -129,12 +129,28 @@ export class BadgeService {
                     (typeof progress.questionsAnswered === 'number' && progress.questionsAnswered >= 15)
                 );
 
+                // Determine the badge image path based on quiz type
+                let imagePath;
+                
+                // Force specific image paths for problem quiz types
+                if (quiz.id.toLowerCase().includes('sanity') || quiz.id.toLowerCase().includes('smoke')) {
+                    imagePath = 'assets/badges/sanity-smoke.svg';
+                } else if (quiz.id.toLowerCase().includes('cms')) {
+                    imagePath = 'assets/badges/cms-testing.svg';
+                } else if (quiz.id.toLowerCase().includes('exploratory')) {
+                    imagePath = 'assets/badges/exploratory.svg';
+                } else {
+                    // Use the normal badge image path lookup for other quiz types
+                    imagePath = this.getBadgeImage(`quiz-${quiz.id}`);
+                }
+
                 console.log(`Quiz ${quiz.id} completion status:`, {
                     isCompleted,
                     progress,
                     status: progress.status,
                     questionsAnswered: progress.questionsAnswered,
-                    questionHistory: progress.questionHistory?.length
+                    questionHistory: progress.questionHistory?.length,
+                    imagePath: imagePath
                 });
 
                 return {
@@ -145,8 +161,7 @@ export class BadgeService {
                     earned: isCompleted,
                     completionDate: isCompleted ? (progress.lastUpdated || progress.completedAt || new Date().toISOString()) : null,
                     quizId: quiz.id,
-                    // Add image path to the badge data
-                    imagePath: this.getBadgeImage(`quiz-${quiz.id}`)
+                    imagePath: imagePath
                 };
             });
 
@@ -158,10 +173,10 @@ export class BadgeService {
                 // Normalize quiz ID for comparison (handle case differences and extra words)
                 let normalizedId = badge.quizId.toLowerCase();
                 
-                // Special handling for problem cases
+                // Special handling for problem cases - use simple categories for grouping
                 if (normalizedId.includes('sanity') || normalizedId.includes('smoke')) {
                     normalizedId = 'sanity-smoke'; // Normalize all sanity/smoke variations
-                } else if (normalizedId.includes('cms') || normalizedId.includes('content')) {
+                } else if (normalizedId.includes('cms')) {
                     normalizedId = 'cms-testing'; // Normalize all CMS variations
                 } else if (normalizedId.includes('exploratory')) {
                     normalizedId = 'exploratory'; // Normalize all exploratory variations

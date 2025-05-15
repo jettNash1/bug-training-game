@@ -240,18 +240,16 @@ class BadgesPage {
             completionDateHtml = `<div class="badge-completion-date">Completed: ${formattedDate}</div>`;
         }
         
-        // Normalize image path if needed
+        // Handle special cases for badge image paths
         let imagePath = badge.imagePath;
-        if (imagePath && imagePath.endsWith('.svg')) {
-            // Normalize paths for specific quiz types 
-            if (imagePath.toLowerCase().includes('cms')) {
-                imagePath = 'assets/badges/cms-testing.svg';
-            } else if ((imagePath.toLowerCase().includes('sanity') || imagePath.toLowerCase().includes('smoke')) && 
-                       !imagePath.includes('sanity-smoke.svg')) {
-                imagePath = 'assets/badges/sanity-smoke.svg';
-            } else if (imagePath.toLowerCase().includes('exploratory') && !imagePath.endsWith('exploratory.svg')) {
-                imagePath = 'assets/badges/exploratory.svg';
-            }
+        
+        // Force specific image paths based on badge ID
+        if (badge.id.toLowerCase().includes('sanity') || badge.id.toLowerCase().includes('smoke')) {
+            imagePath = 'assets/badges/sanity-smoke.svg';
+        } else if (badge.id.toLowerCase().includes('cms')) {
+            imagePath = 'assets/badges/cms-testing.svg';
+        } else if (badge.id.toLowerCase().includes('exploratory')) {
+            imagePath = 'assets/badges/exploratory.svg';
         }
         
         // Check if we have an image path
@@ -274,26 +272,20 @@ class BadgesPage {
 
     // Helper method to preload images
     preloadImage(src) {
-        const img = new Image();
-        
-        // Ensure we're using the correct SVG paths
-        // This helps with potential case sensitivity issues or outdated paths
-        if (src.endsWith('.svg')) {
-            // Normalize paths for specific quiz types
-            if (src.toLowerCase().includes('cms')) {
-                src = 'assets/badges/cms-testing.svg';
-            } else if ((src.toLowerCase().includes('sanity') || src.toLowerCase().includes('smoke')) && 
-                !src.includes('sanity-smoke.svg')) {
-                src = 'assets/badges/sanity-smoke.svg';
-            } else if (src.toLowerCase().includes('exploratory') && !src.endsWith('exploratory.svg')) {
-                src = 'assets/badges/exploratory.svg';
-            }
+        // If we're dealing with special badge types, override the src
+        if (src && src.toLowerCase().includes('sanity') || src.toLowerCase().includes('smoke')) {
+            src = 'assets/badges/sanity-smoke.svg';
+        } else if (src && src.toLowerCase().includes('cms')) {
+            src = 'assets/badges/cms-testing.svg';
+        } else if (src && src.toLowerCase().includes('exploratory')) {
+            src = 'assets/badges/exploratory.svg';
         }
         
+        const img = new Image();
         img.src = src;
         
         // For SVG files, we may need special handling
-        if (src.endsWith('.svg')) {
+        if (src && src.endsWith('.svg')) {
             fetch(src)
                 .then(response => response.ok ? response.text() : Promise.reject('Failed to load SVG'))
                 .then(svgContent => {
