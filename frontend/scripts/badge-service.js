@@ -7,7 +7,7 @@ export class BadgeService {
             // Default mapping for common quiz types
             'automation-interview': 'automation.svg',
             'build-verification': 'build.svg',
-            'cms-testing': 'cms.svg',
+            'cms-testing': 'cms-testing.svg',
             'integration-testing': 'integration.svg',
             'api-testing': 'api.svg',
             'security-testing': 'security.svg',
@@ -51,7 +51,7 @@ export class BadgeService {
             'standard-script-testing': 'script-testing.svg',
             'test-types-tricks': 'test-types.svg',
             'fully-scripted': 'script-testing.svg',
-            'sanity-smoke': 'sanity.svg',
+            'sanity-smoke': 'sanity-smoke.svg',
             'functional-interview': 'functional-interview.svg'
         };
     }

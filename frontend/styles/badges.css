@@ -1,7 +1,7 @@
 .badges-container {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
-    gap: 30px;
+    gap: 40px;
     margin-top: 30px;
     max-width: 1200px;
     margin-left: auto;
@@ -36,7 +36,7 @@
     position: relative;
     overflow: hidden;
     height: 100%;
-    margin-bottom: 15px;
+    margin-bottom: 20px;
     border: 1px solid rgba(0, 0, 0, 0.05);
 }
 
@@ -233,11 +233,12 @@ footer p {
 @media (max-width: 768px) {
     .badges-container {
         grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-        gap: 20px;
+        gap: 30px;
     }
     
     .badge-card {
         padding: 20px 15px;
+        margin-bottom: 15px;
     }
     
     .badge-icon {
