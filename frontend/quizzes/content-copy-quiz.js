@@ -1,23 +1,29 @@
 import { APIService } from '../api-service.js';
 import { BaseQuiz } from '../quiz-helper.js';
 import { QuizUser } from '../QuizUser.js';
+import { contentCopyScenarios } from '../data/contentCopy-scenarios.js';
 
 export class ContentCopyQuiz extends BaseQuiz {
     constructor() {
+        console.log('[ContentCopyQuiz] Initializing...');
+        
+        // Configure the quiz with basic settings
         const config = {
             maxXP: 300,
             totalQuestions: 15,
             passPercentage: 70,
             performanceThresholds: [
-                { threshold: 90, message: '🏆 Outstanding! You\'re a content copy expert!' },
-                { threshold: 80, message: '👏 Great job! You\'ve shown strong content writing skills!' },
+                { threshold: 90, message: '🏆 Outstanding! You\'re an content copy expert!' },
+                { threshold: 80, message: '👏 Great job! You\'ve shown strong content copy instincts!' },
                 { threshold: 70, message: '👍 Good work! You\'ve passed the quiz!' },
-                { threshold: 0, message: '📚 Consider reviewing content writing best practices and try again!' }
-            ]
+                { threshold: 0, message: '📚 Consider reviewing content copy best practices and try again!' }
+            ],
+            quizName: 'content-copy'
         };
         
+        // Call the parent constructor with our config
         super(config);
-        
+
         // Set the quiz name
         Object.defineProperty(this, 'quizName', {
             value: 'content-copy',
@@ -25,737 +31,61 @@ export class ContentCopyQuiz extends BaseQuiz {
             configurable: false,
             enumerable: true
         });
-        
-         // Initialize player state
-         this.player = {
+
+        // Initialize player state
+        this.player = {
             name: '',
             experience: 0,
-            tools: [],
+            questionHistory: [],
             currentScenario: 0,
-            questionHistory: []
+            tools: []
         };
 
-        // Initialize API service
-        this.apiService = new APIService();
+        // Load scenarios from our data file
+        this.basicScenarios = contentCopyScenarios.basic;
+        this.intermediateScenarios = contentCopyScenarios.intermediate;
+        this.advancedScenarios = contentCopyScenarios.advanced;
 
-        // Initialize all screen elements
+        // Initialize elements
         this.gameScreen = document.getElementById('game-screen');
         this.outcomeScreen = document.getElementById('outcome-screen');
         this.endScreen = document.getElementById('end-screen');
         
-        // Verify all required elements exist
-        if (!this.gameScreen) {
-            console.error('Game screen element not found');
-            this.showError('Quiz initialization failed. Please refresh the page.');
-            return;
+        // Create level transition container if it doesn't exist
+        if (!document.getElementById('level-transition-container')) {
+            const transitionContainer = document.createElement('div');
+            transitionContainer.id = 'level-transition-container';
+            transitionContainer.className = 'level-transition-container';
+            document.querySelector('.quiz-container').appendChild(transitionContainer);
         }
         
-        if (!this.outcomeScreen) {
-            console.error('Outcome screen element not found');
-            this.showError('Quiz initialization failed. Please refresh the page.');
-            return;
-        }
+        // Timer-related properties
+        this.questionTimer = null;
+        this.questionStartTime = null;
+        this.questionTimeLimitInSeconds = 60; // 60 seconds per question
         
-        if (!this.endScreen) {
-            console.error('End screen element not found');
-            this.showError('Quiz initialization failed. Please refresh the page.');
-            return;
-        }
-
-        // Basic Scenarios (IDs 1-10, expanded from 1-5)
-        this.basicScenarios = [
-            {
-                id: 1,
-                level: 'Basic',
-                title: 'Primary objective',
-                description: 'What is the primary focus of copy proofing?',
-                options: [
-                    {
-                        text: 'Testing the functionality of the software',
-                        outcome: 'Functionality testing is explicitly out of scope for copy proofing.',
-                        experience: -10,
-                        isCorrect: false
-                    },
-                    {
-                        text: 'Checking grammar, spelling, and typos in content',
-                        outcome: 'Correct! This is the core purpose of copy proofing.',
-                        experience: 15,
-                        isCorrect: true
-                    },
-                    {
-                        text: 'Verifying user interface design matches submitted documentation',
-                        outcome: 'While content proofing includes some UI elements, copy proofing specifically focuses on text content.',
-                        experience: 5,
-                        isCorrect: false
-                    },
-                    {
-                        text: 'Testing cross-browser compatibility with supported environments',
-                        outcome: 'This is a functional testing concern, not related to copy proofing.',
-                        experience: -5,
-                        isCorrect: false
-                    }
-                ]
-            },
-            {
-                id: 2,
-                level: 'Basic',
-                title: 'Content proofing scope',
-                description: 'When conducting content proofing, what is considered out of scope?',
-                options: [
-                    {
-                        text: 'Any spelling errors throughout the system under test',
-                        outcome: 'Spelling errors are a key focus of content proofing.',
-                        experience: -10
-                    },
-                    {
-                        text: 'Grammatical mistakes throughout the system under test',
-                        outcome: 'Grammar checking is a fundamental part of content proofing.',
-                        experience: -5
-                    },
-                    {
-                        text: 'Software functionality issues throughout the system under test',
-                        outcome: 'Correct! functionality is out of scope for content testing.',
-                        experience: 15
-                    },
-                    {
-                        text: 'Content consistency throughout the system under test',
-                        outcome: 'While consistency is important, some aspects might be out of scope depending on the project and client recommendations.',
-                        experience: 5
-                    }
-                ]
-            },
-            {
-                id: 3,
-                level: 'Basic',
-                title: 'Main objectives',
-                description: 'When conducting content proofing, what can be considered as main objectives?',
-                options: [
-                    {
-                        text: 'Ensuring quality of the product',
-                        outcome: 'Correct! This is a primary objective of content proofing.',
-                        experience: 15
-                    },
-                    {
-                        text: 'Improving website loading speed',
-                        outcome: 'This is a technical performance concern, not related to content.',
-                        experience: -10
-                    },
-                    {
-                        text: 'Testing payment systems',
-                        outcome: 'This is a functional testing concern.',
-                        experience: -5
-                    },
-                    {
-                        text: 'Optimizing database performance',
-                        outcome: 'While quality-related, this is not a content proofing objective',
-                        experience: 5
-                    }
-                ]
-            },
-            {
-                id: 4,
-                level: 'Basic',
-                title: 'Attention to detail',
-                description: 'Why is attention to detail important in content proofing',
-                options: [
-                    {
-                        text: 'To find security vulnerabilities that might compromise the system',
-                        outcome: 'Security testing is separate to content proofing.',
-                        experience: -10
-                    },
-                    {
-                        text: 'To maintain client confidence in quality work',
-                        outcome: 'Correct! This is within the main characteristics of content testing.',
-                        experience: 15
-                    },
-                    {
-                        text: 'To improve server performance and response times',
-                        outcome: 'This is not related to content proofing',
-                        experience: -5
-                    },
-                    {
-                        text: 'To reduce development costs with less build releases required',
-                        outcome: 'While good quality can reduce costs, it\'s not the primary reason for attention to detail',
-                        experience: 5
-                    }
-                ]
-            },
-            {
-                id: 5,
-                level: 'Basic',
-                title: 'Changes to content requirements',
-                description: 'What can happen if content changes occur after testing?',
-                options: [
-                    {
-                        text: 'Previous testing will become completely invalid',
-                        outcome: 'Not all testing will become invalid, but some changes may make prior testing redundant.',
-                        experience: 5
-                    },
-                    {
-                        text: 'The functionality of the system under test will be affected',
-                        outcome: 'Introducing content changes should not cause functionality issues.',
-                        experience: -10
-                    },
-                    {
-                        text: 'Previous content copy testing may be partially voided',
-                        outcome: 'Correct! This is a risk to content changes during the testing cycle',
-                        experience: 15
-                    },
-                    {
-                        text: 'The client must restart the project to introduce new content',
-                        outcome: 'While content changes may affect some areas already tested, it is not considered to fully re-test all content again',
-                        experience: 5
-                    }
-                ]
-            },
-            {
-                id: 16,
-                level: 'Basic',
-                title: 'Content Proofing Risks',
-                description: 'Which of the following is not a risk or disadvantage of content proofing?',
-                options: [
-                    {
-                        text: 'Content proofing typically costs more than other types of testing',
-                        outcome: 'Correct! content proofing doesn\'t cost any more than other types of testing general.',
-                        experience: 15,
-                        tool: 'Content Proofing Risks'
-                    },
-                    {
-                        text: 'Changes to content after testing may void previous verification',
-                        outcome: 'This is a risk when performing content proofing as there could be changes to content that have already been tested.',
-                        experience: -5
-                    },
-                    {
-                        text: 'High volumes of small issues can be time-consuming to report individually',
-                        outcome: 'This is a risk as it can be time-consuming and grouping issues by section should be a general approach.',
-                        experience: -10
-                    },
-                    {
-                        text: 'Testing without a copy deck to compare against may be less in-depth',
-                        outcome: 'This can be a test limitation if clients don\'t provide reference materials.',
-                        experience: 0
-                    }
-                ]
-            },
-            {
-                id: 17,
-                level: 'Basic',
-                title: 'Placeholder Testing',
-                description: 'When is it appropriate to raise blurry/placeholder images as a defect',
-                options: [
-                    {
-                        text: 'Only when the client specifically requests image quality checks',
-                        outcome: 'This type of test should be treated as standard content checking.',
-                        experience: -5
-                    },
-                    {
-                        text: 'Only when found in production environments, not in development',
-                        outcome: 'The environment under test should be priority and there shouldn\'t be any restrictions unless stated by the client.',
-                        experience: -10
-                    },
-                    {
-                        text: 'It depends on the scale and focus of the project',
-                        outcome: 'Correct! They can be raised either as a content or \'for reference\' ticket depending on the scale & focus of the project.',
-                        experience: 15,
-                        tool: 'Placeholder Testing'
-                    },
-                    {
-                        text: 'Only when comparing against a design document',
-                        outcome: 'These type of issues can be raised even without comparing against design documents.',
-                        experience: 0
-                    }
-                ]
-            },
-            {
-                id: 18,
-                level: 'Basic',
-                title: 'Documentation Inconsistencies',
-                description: 'What should a tester do when they notice inconsistencies with documentation in a project where content is not the main focus?',
-                options: [
-                    {
-                        text: 'Ignore them as they\'re not relevant to the project\'s focus',
-                        outcome: 'These issues should still be raised as a query.',
-                        experience: -5
-                    },
-                    {
-                        text: 'These types of issues should be raised as critical defects',
-                        outcome: 'Inconsistencies should be raised as queries, especially when content isn\'t the main focus.',
-                        experience: -10
-                    },
-                    {
-                        text: 'These should be raised as queries in case the designs are not up to date',
-                        outcome: 'Correct! when the content is not a main focus of the project, this can be raised as a query in case the designs are not up to date.',
-                        experience: 15,
-                        tool: 'Documentation Inconsistencies'
-                    },
-                    {
-                        text: 'Implement corrections without consulting the client',
-                        outcome: 'The standard process of raising tickets or queries should be followed before anything can be updated within documentation.',
-                        experience: 0
-                    }
-                ]
-            },
-            {
-                id: 19,
-                level: 'Basic',
-                title: 'Content Proofing Characteristics',
-                description: 'What testing characteristic is specifically important for content proofing?',
-                options: [
-                    {
-                        text: 'Attention to detail',
-                        outcome: 'Correct! Attention to detail is a key characteristic of content proofing tests.',
-                        experience: 15,
-                        tool: 'Contant Proofing Characteristics'
-                    },
-                    {
-                        text: 'Technical knowledge',
-                        outcome: 'Technical knowledge is not a required test characteristic unlike attention to detail.',
-                        experience: -10
-                    },
-                    {
-                        text: 'Speed of execution.',
-                        outcome: 'Speed of execution is not a required testing technique for content proofing and could lead to missed defects.',
-                        experience: -5
-                    },
-                    {
-                        text: 'Programming expertise.',
-                        outcome: 'Programming knowledge is not a required test characteristic unlike attention to detail',
-                        experience: 0
-                    }
-                ]
-            },
-            {
-                id: 20,
-                level: 'Basic',
-                title: 'Content Proofing Test Execution',
-                description: 'When content proofing is occurring alongside functional testing on a project, what is true?',
-                options: [
-                    {
-                        text: 'Both can occur, with content proofing focusing only on content issues',
-                        outcome: 'Correct! both can occur at the same time with content proofing maintaining its specific focus.',
-                        experience: 15,
-                        tool: 'Content Proofing Test Execution'
-                    },
-                    {
-                        text: 'Content proofing must be completed before functional testing begins',
-                        outcome: 'Content proofing can take place at any time during the testing process as long as the client has provided the relevant documentation.',
-                        experience: -10
-                    },
-                    {
-                        text: 'Functional testing takes priority over content proofing',
-                        outcome: 'There should only be a priority based on the clients needs.',
-                        experience: -5
-                    },
-                    {
-                        text: 'Content proofing cannot be performed effectively when functional testing is also being done',
-                        outcome: 'Content proofing can occur alongside functional testing for some projects.',
-                        experience: 0
-                    }
-                ]
-            }
-        ];
-
-        // Intermediate Scenarios (IDs 6-10, 100 XP total, 20 XP each)
-        this.intermediateScenarios = [
-            {
-                id: 6,
-                level: 'Intermediate',
-                title: 'Operating system content consistency',
-                description: 'When comparing Android and iOS versions of an application, what should testers look for?',
-                options: [
-                    {
-                        text: 'Different operating system versions must be observed for inconsitencies',
-                        outcome: 'This is a technical consideration, not a content concern.',
-                        experience: -10
-                    },
-                    {
-                        text: 'Consistent user experience across all supported platforms',
-                        outcome: 'Correct! Content testing should specifically addresses platform consistency.',
-                        experience: 20
-                    },
-                    {
-                        text: 'Discrepancies between different screen sizes',
-                        outcome: 'While relevant for content display, it\'s not the primary focus',
-                        experience: 5
-                    },
-                    {
-                        text: 'Battery consumption differences across the supported environments',
-                        outcome: 'This is a technical performance concern and not related to content',
-                        experience: -5
-                    }
-                ]
-            },
-            {
-                id: 7,
-                level: 'Intermediate',
-                title: 'Volume of raised content issues',
-                description: 'What is a recommended approach when dealing with a high volume of small issues?',
-                options: [
-                    {
-                        text: 'Leave minor issues undocumented to stay in line with specific time constraints',
-                        outcome: 'All issues should be documented appropriately.',
-                        experience: -10
-                    },
-                    {
-                        text: 'Group all raised issues by content section they fall under',
-                        outcome: 'Correct! This is the recommended way of reporting issues for ease of identification.',
-                        experience: 20
-                    },
-                    {
-                        text: 'Report only critical issues to stay in line with specific time constraints',
-                        outcome: 'While issues may be considered minor, some would still be considered important to the client and user',
-                        experience: -5
-                    },
-                    {
-                        text: 'Create separate tickets for each typo found during testing activities',
-                        outcome: 'While thorough, this could be too time-consuming and grouping under specific areas is preferred',
-                        experience: 5
-                    }
-                ]
-            },
-            {
-                id: 8,
-                level: 'Intermediate',
-                title: 'Reviewing images',
-                description: 'What should testers consider when reviewing images across environments?',
-                options: [
-                    {
-                        text: 'Image file size and any issue regarding this area',
-                        outcome: 'While important, this is too narrow a testing focus. Image quality and resolution should also be considered',
-                        experience: 5
-                    },
-                    {
-                        text: 'Image loading speed to check for response time issues',
-                        outcome: 'This is a performance concern and not a content issue.',
-                        experience: -10
-                    },
-                    {
-                        text: 'Image quality and resolution across all environments',
-                        outcome: 'Correct! These are a primary factors in reviewing image content',
-                        experience: 20
-                    },
-                    {
-                        text: 'Number of images that can be used across the system under test',
-                        outcome: 'This is a design decision and not a content proofing concern',
-                        experience: -5
-                    }
-                ]
-            },
-            {
-                id: 9,
-                level: 'Intermediate',
-                title: 'Provided requirements',
-                description: 'How does the absence of a copy deck affect testing?',
-                options: [
-                    {
-                        text: 'Testing will become impossible as there is no documentation to refer to',
-                        outcome: 'Testing can still proceed with limited scope and tester knowledge.',
-                        experience: -5
-                    },
-                    {
-                        text: 'Testing becomes limited to grammar and punctuation',
-                        outcome: 'Correct! This is a risk of documentation not being provided by the client.',
-                        experience: 20
-                    },
-                    {
-                        text: 'Testing without documentation requires more time',
-                        outcome: 'While potentially true, it\'s not the main impact as grammar and spelling can still be tested',
-                        experience: 5
-                    },
-                    {
-                        text: 'Testing must then become automated to move forward',
-                        outcome: 'Automation is not a method use for content testing',
-                        experience: -10
-                    }
-                ]
-            },
-            {
-                id: 10,
-                level: 'Intermediate',
-                title: 'Localisation',
-                description: 'What role does localisation play in content proofing?',
-                options: [
-                    {
-                        text: 'None, as localisation is generally it\'s out of scope for content proofing',
-                        outcome: 'Localisation is an important part of content testing if required by the client.',
-                        experience: -10
-                    },
-                    {
-                        text: 'This focuses on technical terms throughout the system under test',
-                        outcome: 'While technical terms should be included, this is a risk of narrow scoping.',
-                        experience: 5
-                    },
-                    {
-                        text: 'Reviewing content appropriateness for a target market',
-                        outcome: 'Correct! Market considerations should be considered',
-                        experience: 20
-                    },
-                    {
-                        text: 'Checking page and content load times across all environments',
-                        outcome: 'This is a performance concern and not part of content testing',
-                        experience: -10
-                    }
-                ]
-            }
-        ];
-
-        // Advanced Scenarios (IDs 11-15, 125 XP total, 25 XP each)
-        this.advancedScenarios = [
-            {
-                id: 11,
-                level: 'Advanced',
-                title: 'Platform content inconsistencies',
-                description: 'How should testers approach platform inconsistencies between mobile versions?',
-                options: [
-                    {
-                        text: 'These should be treated as minor issues and only reported if time constraints allow',
-                        outcome: 'All inconsistencies should be documented no matter what severity they are.',
-                        experience: -10
-                    },
-                    {
-                        text: 'Document differences only if specified in requirements',
-                        outcome: 'While the client may have specified areas of scope, they may not have considered all critical areas relating to customer usage.',
-                        experience: 5
-                    },
-                    {
-                        text: 'Report all differences between environments unless variation is specified in documentation',
-                        outcome: 'Correct! This is considered the correct approach',
-                        experience: 25
-                    },
-                    {
-                        text: 'Focus only on issues found on iOS supported devices',
-                        outcome: 'All supported environments require equal attention',
-                        experience: -10
-                    }
-                ]
-            },
-            {
-                id: 12,
-                level: 'Advanced',
-                title: 'Functional & Content testing relationship',
-                description: 'What is the relationship between content proofing and functional testing in a project?',
-                options: [
-                    {
-                        text: 'They must always be conducted separately',
-                        outcome: 'Functional & Content testing can be combined during testing activities.',
-                        experience: -5
-                    },
-                    {
-                        text: 'They can be combined or separate based on project needs',
-                        outcome: 'Correct! This technique can be used on most projects dependent on client needs.',
-                        experience: 25
-                    },
-                    {
-                        text: 'They must always be combined to maximise test coverage',
-                        outcome: 'Only some projects may need content proofing which would be advised by the client',
-                        experience: -10
-                    },
-                    {
-                        text: 'Content proofing must come first in the testing cycle',
-                        outcome: 'While sometimes logical, it\'s not always a requirement',
-                        experience: 5
-                    }
-                ]
-            },
-            {
-                id: 13,
-                level: 'Advanced',
-                title: 'Content discrepancies within documentation',
-                description: 'How should testers handle content that differs from provided design documentation?',
-                options: [
-                    {
-                        text: 'Automatically reject the content as failed',
-                        outcome: 'Obvious differences can be raised, yet minor differences can be communicated to the client first before raising.',
-                        experience: -10
-                    },
-                    {
-                        text: 'disregard differences in older designs',
-                        outcome: 'This could lead to missing important inconsistencies.',
-                        experience: -5
-                    },
-                    {
-                        text: 'Raise as a query to verify if designs are current',
-                        outcome: 'Correct! This approach gives the client visibility and prompts confirmation for moving forward',
-                        experience: 25
-                    },
-                    {
-                        text: 'Check content updates and query any inconsistencies',
-                        outcome: 'Whilst checking current updates is important, potential issues could be missed within prior documentation areas',
-                        experience: 5
-                    }
-                ]
-            },
-            {
-                id: 14,
-                level: 'Advanced',
-                title: 'Tester documentation',
-                description: 'What impact does the quality of tester documentation have on content proofing?',
-                options: [
-                    {
-                        text: 'No impact as they\'re separate concerns',
-                        outcome: 'If a tester can\'t maintain high standards in their own documentation, it raises doubts about their ability to identify content issues.',
-                        experience: -10
-                    },
-                    {
-                        text: 'It affects client confidence in testing quality',
-                        outcome: 'Correct! It creates a professional impression that reinforces the value of the testing service.',
-                        experience: 25
-                    },
-                    {
-                        text: 'It only impacts internal processes',
-                        outcome: 'This is partially correct, although it overlooks how documentation quality influences client relationships',
-                        experience: 5
-                    },
-                    {
-                        text: 'It reduces testing productivity and volume',
-                        outcome: 'There\'s no direct correlation between documentation quality and testing speed',
-                        experience: -5
-                    }
-                ]
-            },
-            {
-                id: 15,
-                level: 'Advanced',
-                title: 'Content Prioritisation',
-                description: 'How should testers prioritise different types of content issues?',
-                options: [
-                    {
-                        text: 'All issues are equally important and should be reported as such',
-                        outcome: 'Not all issues have equal impact.',
-                        experience: -10
-                    },
-                    {
-                        text: 'Focus testing activities on spelling errors',
-                        outcome: 'This is too narrow in focus and other critical content issues may be missed.',
-                        experience: -5
-                    },
-                    {
-                        text: 'Evaluate impact on user experience and brand consistency',
-                        outcome: 'Correct! This is the correct approach for prioritisation of issues',
-                        experience: 25
-                    },
-                    {
-                        text: 'Prioritise issues based on page location',
-                        outcome: 'This can be relevant to the project. However, other critical issues may be missed by taking this approach',
-                        experience: 5
-                    }
-                ]
-            }
-        ];
-
-        // Initialize UI and add event listeners
+        this.isLoading = false;
+        
+        // Initialize event listeners
         this.initializeEventListeners();
 
-        this.isLoading = false;
+        // Start the quiz
+        this.startGame();
     }
-
-    showError(message) {
-        const errorDiv = document.createElement('div');
-        errorDiv.className = 'error-notification';
-        errorDiv.setAttribute('role', 'alert');
-        errorDiv.textContent = message;
-        document.body.appendChild(errorDiv);
-        setTimeout(() => errorDiv.remove(), 5000);
+    
+    // Override the shouldEndGame method for our quiz
+    shouldEndGame() {
+        return this.player.questionHistory.length >= 15;
     }
-
-    shouldEndGame(totalQuestionsAnswered, currentXP) {
-        // End game when all questions are answered
-        return totalQuestionsAnswered >= this.totalQuestions;
-    }
-
-    async startGame() {
-        if (this.isLoading) return;
-        
-        try {
-            this.isLoading = true;
-            // Show loading indicator
-            const loadingIndicator = document.getElementById('loading-indicator');
-            if (loadingIndicator) {
-                loadingIndicator.classList.remove('hidden');
-            }
-
-            // Set player name from localStorage
-            this.player.name = localStorage.getItem('username');
-            if (!this.player.name) {
-                window.location.href = '/login.html';
-                return;
-            }
-            
-            // Clear any conflicting randomized scenarios
-            const username = localStorage.getItem('username');
-            if (username) {
-                // Clear any leftover randomized scenarios from other quizzes
-                // to prevent cross-contamination
-                const quizzes = ['script-metrics-troubleshooting', 'standard-script-testing'];
-                quizzes.forEach(quizName => {
-                    if (quizName !== this.quizName) {
-                        const key = `quiz_progress_${username}_${quizName}`;
-                        const data = localStorage.getItem(key);
-                        if (data) {
-                            try {
-                                console.log(`[Quiz] Clearing potential conflicting scenarios from ${quizName}`);
-                                const parsed = JSON.parse(data);
-                                if (parsed && parsed.data && parsed.data.randomizedScenarios) {
-                                    delete parsed.data.randomizedScenarios;
-                                    localStorage.setItem(key, JSON.stringify(parsed));
-                                }
-                            } catch (e) {
-                                console.error(`[Quiz] Error clearing scenarios from ${quizName}:`, e);
-                            }
-                        }
-                    }
-                });
-            }
-
-            // Initialize event listeners
-            this.initializeEventListeners();
-
-            // Load previous progress
-            const hasProgress = await this.loadProgress();
-            console.log('Previous progress loaded:', hasProgress);
-            
-            if (!hasProgress) {
-                // Reset player state if no valid progress exists
-                this.player.experience = 0;
-                this.player.tools = [];
-                this.player.currentScenario = 0;
-                this.player.questionHistory = [];
-                
-                // Clear any existing randomized scenarios
-                this.randomizedScenarios = {};
-            }
-            
-            // Clear any existing transition messages
-            const transitionContainer = document.getElementById('level-transition-container');
-            if (transitionContainer) {
-                transitionContainer.innerHTML = '';
-                transitionContainer.classList.remove('active');
-            }
-
-            // Clear any existing timer
-            if (this.questionTimer) {
-                clearInterval(this.questionTimer);
-            }
-            
-            await this.displayScenario();
-        } catch (error) {
-            console.error('Failed to start game:', error);
-            this.showError('Failed to start the quiz. Please try refreshing the page.');
-        } finally {
-            this.isLoading = false;
-            // Hide loading state
-            const loadingIndicator = document.getElementById('loading-indicator');
-            if (loadingIndicator) {
-                loadingIndicator.classList.add('hidden');
-            }
-        }
-    }
-
+    
+    // Initialize event listeners
     initializeEventListeners() {
-        // Add event listeners for the continue and restart buttons
-        document.getElementById('continue-btn')?.addEventListener('click', () => this.nextScenario());
-        document.getElementById('restart-btn')?.addEventListener('click', () => this.restartGame());
-
+        // Add event listener for the restart button
+        const restartButton = document.getElementById('restart-btn');
+        if (restartButton) {
+            restartButton.addEventListener('click', () => this.restartQuiz());
+        }
+        
         // Add form submission handler
         document.getElementById('options-form')?.addEventListener('submit', (e) => {
             e.preventDefault();
@@ -769,56 +99,208 @@ export class ContentCopyQuiz extends BaseQuiz {
             }
         });
     }
-
-    displayScenario() {
-        // Check if we've answered all questions
-        if (this.player.questionHistory.length >= this.totalQuestions) {
-            console.log('All questions answered, ending game');
-            this.endGame(false);
-            return;
-        }
-        
-        // Get the randomized scenarios for the current level
-        const currentScenarios = this.getCurrentScenarios();
-        
-        // Get the next scenario based on current progress within level
-        let scenario;
+    
+    // Get the scenarios for the current level
+    getCurrentScenarios() {
         const questionCount = this.player.questionHistory.length;
         
-        // Determine which level we're in and set the correct index
-        let currentLevelIndex;
         if (questionCount < 5) {
-            // Basic questions (0-4)
-            currentLevelIndex = questionCount;
+            return this.basicScenarios;
         } else if (questionCount < 10) {
-            // Intermediate questions (5-9)
-            currentLevelIndex = questionCount - 5;
+            return this.intermediateScenarios;
         } else {
-            // Advanced questions (10-14)
-            currentLevelIndex = questionCount - 10;
+            return this.advancedScenarios;
+        }
+    }
+    
+    // Get the current level based on question index
+    getCurrentLevel() {
+        const questionCount = this.player.questionHistory.length;
+        
+        if (questionCount < 5) {
+            return 'Basic';
+        } else if (questionCount < 10) {
+            return 'Intermediate';
+        } else {
+            return 'Advanced';
+        }
+    }
+    
+    // Calculate the score percentage
+    calculateScorePercentage() {
+        const correctAnswers = this.player.questionHistory.filter(q => 
+            q.selectedAnswer && q.isCorrect
+        ).length;
+        return Math.round((correctAnswers / Math.max(1, this.player.questionHistory.length)) * 100);
+    }
+
+    // Start the quiz
+    async startGame() {
+        if (this.isLoading) return;
+        
+        console.log('[ContentCopyQuiz] Starting game...');
+        
+        try {
+            this.isLoading = true;
+            
+            // Show loading indicator
+            const loadingIndicator = document.getElementById('loading-indicator');
+            if (loadingIndicator) {
+                loadingIndicator.classList.remove('hidden');
+            }
+
+            // Set player name
+            this.player.name = localStorage.getItem('username');
+            if (!this.player.name) {
+                window.location.href = '../login.html';
+                return;
+            }
+
+            // Try to load previous progress
+            const hasProgress = await this.loadProgress();
+            console.log(`[ContentCopyQuiz] Progress loaded: ${hasProgress}`);
+            
+            // Hide loading indicator
+            if (loadingIndicator) {
+                loadingIndicator.classList.add('hidden');
+            }
+            
+            if (!hasProgress) {
+                // Reset player state if no valid progress exists
+                this.player.experience = 0;
+                this.player.tools = [];
+                this.player.currentScenario = 0;
+                this.player.questionHistory = [];
+                console.log('[ContentCopyQuiz] No previous progress, starting fresh');
+            } else {
+                // Verify the loaded progress contains valid question history
+                if (!this.player.questionHistory || !Array.isArray(this.player.questionHistory)) {
+                    console.log('[ContentCopyQuiz] Invalid question history in loaded progress, resetting');
+                    this.player.questionHistory = [];
+                }
+                
+                // CRITICAL: Ensure currentScenario is set correctly based on question history
+                this.player.currentScenario = this.player.questionHistory.length;
+                console.log('[ContentCopyQuiz] Set currentScenario to match question history:', this.player.currentScenario);
+            }
+            
+            // Check if the quiz is already completed
+            if (this.shouldEndGame()) {
+                this.endGame(false);
+                return;
+            }
+            
+            // Clear any existing transition messages
+            const transitionContainer = document.getElementById('level-transition-container');
+            if (transitionContainer) {
+                transitionContainer.innerHTML = '';
+                transitionContainer.classList.remove('active');
+            }
+
+            // Display the first/next scenario
+            this.displayScenario();
+            
+            this.isLoading = false;
+        } catch (error) {
+            console.error('[ContentCopyQuiz] Error starting game:', error);
+            this.isLoading = false;
+            this.showError('Failed to start the quiz. Please refresh the page.');
+        }
+    }
+    
+    // Initialize the timer for the current question
+    initializeTimer() {
+        // Clear any existing timer
+        if (this.questionTimer) {
+            clearInterval(this.questionTimer);
+            this.questionTimer = null;
         }
         
-        // Get the scenario from the current randomized scenarios
-        scenario = currentScenarios[currentLevelIndex];
+        // Reset timer display
+        const timerContainer = document.getElementById('timer-container');
+        const timerDisplay = document.getElementById('timer-display');
         
-        if (!scenario) {
-            console.error('No scenario found for current progress. Question count:', questionCount);
-            this.endGame(true);
+        if (!timerContainer || !timerDisplay) {
+            console.error('[ContentCopyQuiz] Timer elements not found');
             return;
         }
-
-        // Store current question number for consistency
-        this.currentQuestionNumber = questionCount + 1;
         
-        // Show level transition message at the start of each level or when level changes
-        const currentLevel = this.getCurrentLevel();
-        const previousLevel = questionCount > 0 ? 
-            (questionCount < 5 ? 'Basic' : 
-             questionCount < 10 ? 'Intermediate' : 'Advanced') : null;
+        // Show the timer
+        timerContainer.classList.remove('hidden');
+        timerContainer.classList.remove('timer-warning');
+        
+        // Set starting time
+        const timeLimit = this.questionTimeLimitInSeconds;
+        timerDisplay.textContent = timeLimit;
+        
+        // Record start time
+        this.questionStartTime = Date.now();
+        
+        // Start timer interval
+        this.questionTimer = setInterval(() => {
+            const elapsedSeconds = Math.floor((Date.now() - this.questionStartTime) / 1000);
+            const remainingSeconds = Math.max(0, timeLimit - elapsedSeconds);
             
+            timerDisplay.textContent = remainingSeconds;
+            
+            // Add warning class when less than 10 seconds remain
+            if (remainingSeconds <= 10 && !timerContainer.classList.contains('timer-warning')) {
+                timerContainer.classList.add('timer-warning');
+            }
+            
+            // If time is up, auto-submit answer or select random option
+            if (remainingSeconds <= 0) {
+                clearInterval(this.questionTimer);
+                this.handleTimedOut();
+            }
+        }, 1000);
+    }
+    
+    // Handle when time runs out for a question
+    handleTimedOut() {
+        console.log('[ContentCopyQuiz] Question timed out');
+        
+        // Select a random option if none selected
+        const selectedOption = document.querySelector('input[name="option"]:checked');
+        if (!selectedOption) {
+            const options = document.querySelectorAll('input[name="option"]');
+            if (options.length > 0) {
+                const randomIndex = Math.floor(Math.random() * options.length);
+                options[randomIndex].checked = true;
+            }
+        }
+        
+        // Submit the answer with the timed out flag
+        this.handleAnswer(true);
+    }
+    
+    // Display the current scenario
+    displayScenario() {
+        // Check if the quiz is already completed
+        if (this.shouldEndGame()) {
+            this.endGame(false);
+                    return;
+        }
+        
+        // Get the current scenario based on progress
+        const currentScenarios = this.getCurrentScenarios();
+        const scenarioIndex = this.player.questionHistory.length % 5; // Use modulo to cycle through 5 scenarios per level
+        const scenario = currentScenarios[scenarioIndex]; 
+        
+        console.log(`[ContentCopyQuiz] Displaying scenario #${this.player.currentScenario + 1}:`, {
+            title: scenario.title,
+            level: this.getCurrentLevel(),
+            index: scenarioIndex
+        });
+        
+        // Show level transition message when level changes
+        const currentLevel = this.getCurrentLevel();
+        const questionCount = this.player.questionHistory.length;
+        
         if (questionCount === 0 || 
             (questionCount === 5 && currentLevel === 'Intermediate') || 
             (questionCount === 10 && currentLevel === 'Advanced')) {
+            
             const transitionContainer = document.getElementById('level-transition-container');
             if (transitionContainer) {
                 transitionContainer.innerHTML = ''; // Clear any existing messages
@@ -831,12 +313,6 @@ export class ContentCopyQuiz extends BaseQuiz {
                 transitionContainer.appendChild(levelMessage);
                 transitionContainer.classList.add('active');
                 
-                // Update the level indicator
-                const levelIndicator = document.getElementById('level-indicator');
-                if (levelIndicator) {
-                    levelIndicator.textContent = `Level: ${currentLevel}`;
-                }
-                
                 // Remove the message and container height after animation
                 setTimeout(() => {
                     transitionContainer.classList.remove('active');
@@ -847,100 +323,136 @@ export class ContentCopyQuiz extends BaseQuiz {
             }
         }
 
-        // Update scenario display
+        // Update UI for scenario
         const titleElement = document.getElementById('scenario-title');
         const descriptionElement = document.getElementById('scenario-description');
-        const optionsContainer = document.getElementById('options-container');
-
-        if (!titleElement || !descriptionElement || !optionsContainer) {
-            console.error('Required elements not found');
-            return;
+        
+        if (titleElement && descriptionElement) {
+            titleElement.textContent = scenario.title;
+            descriptionElement.textContent = scenario.description;
         }
 
-        titleElement.textContent = scenario.title;
-        descriptionElement.textContent = scenario.description;
-
-        // Update question counter immediately
+        // Update question progress
         const questionProgress = document.getElementById('question-progress');
         if (questionProgress) {
-            questionProgress.textContent = `Question: ${this.currentQuestionNumber}/${this.totalQuestions}`;
+            questionProgress.textContent = `Question: ${questionCount + 1}/15`;
         }
+        
+        // Update level indicator
+        const levelIndicator = document.getElementById('level-indicator');
+        if (levelIndicator) {
+            levelIndicator.textContent = `Level: ${currentLevel}`;
+        }
+        
+        // Update progress bar
+        const progressFill = document.getElementById('progress-fill');
+        if (progressFill) {
+            const progressPercentage = (questionCount / 15) * 100;
+            progressFill.style.width = `${progressPercentage}%`;
+        }
+        
+        // Display options with shuffling
+        const optionsContainer = document.getElementById('options-container');
+        if (optionsContainer) {
+            optionsContainer.innerHTML = '';
 
         // Create a copy of options with their original indices
-        const shuffledOptions = scenario.options.map((option, index) => ({
+            const shuffledOptions = scenario.options.map((option, index) => ({
             ...option,
             originalIndex: index
         }));
-
-        // Shuffle the options
+            
+            // Shuffle the options
         for (let i = shuffledOptions.length - 1; i > 0; i--) {
             const j = Math.floor(Math.random() * (i + 1));
             [shuffledOptions[i], shuffledOptions[j]] = [shuffledOptions[j], shuffledOptions[i]];
         }
-
-        optionsContainer.innerHTML = '';
-
-        shuffledOptions.forEach((option, index) => {
-            const optionElement = document.createElement('div');
-            optionElement.className = 'option';
-            optionElement.innerHTML = `
+            
+            shuffledOptions.forEach((option, idx) => {
+                const optionDiv = document.createElement('div');
+                optionDiv.className = 'option';
+                optionDiv.innerHTML = `
                 <input type="radio" 
                     name="option" 
                     value="${option.originalIndex}" 
-                    id="option${index}"
+                        id="option${idx}"
                     tabindex="0"
                     aria-label="${option.text}"
                     role="radio">
-                <label for="option${index}">${option.text}</label>
-            `;
-            optionsContainer.appendChild(optionElement);
-        });
-
-        this.updateProgress();
-
-        // Initialize timer for the new question
+                    <label for="option${idx}">${option.text}</label>
+                `;
+                optionsContainer.appendChild(optionDiv);
+            });
+        }
+        
+        // Show game screen
+        this.gameScreen.classList.remove('hidden');
+        this.outcomeScreen.classList.add('hidden');
+        this.endScreen.classList.add('hidden');
+        
+        // Initialize timer for the question
         this.initializeTimer();
+        
+        // Save progress after displaying - ensures we're in a consistent state
+        if (this.player.questionHistory.length > 0) {
+            // Only save if we have actual progress to avoid recursive saves
+            this.saveProgress('in-progress').catch(err => {
+                console.warn('[ContentCopyQuiz] Save after display failed:', err);
+            });
+        }
     }
-
-    async handleAnswer() {
+    
+    // Handle answer submission
+    async handleAnswer(timedOut = false) {
         if (this.isLoading) return;
+        
+        try {
+            this.isLoading = true;
+            
+            // Clear the timer
+            if (this.questionTimer) {
+                clearInterval(this.questionTimer);
+                this.questionTimer = null;
+            }
         
         const submitButton = document.querySelector('.submit-button');
         if (submitButton) {
             submitButton.disabled = true;
         }
 
-        // Clear any existing timer
-        if (this.questionTimer) {
-            clearInterval(this.questionTimer);
-        }
-        
-        try {
-            this.isLoading = true;
             const selectedOption = document.querySelector('input[name="option"]:checked');
-            if (!selectedOption) return;
-
-            const currentScenarios = this.getCurrentScenarios();
-            
-            // Determine which level we're in and set the correct index
-            const questionCount = this.player.questionHistory.length;
-            let currentLevelIndex;
-            
-            if (questionCount < 5) {
-                // Basic questions (0-4)
-                currentLevelIndex = questionCount;
-            } else if (questionCount < 10) {
-                // Intermediate questions (5-9)
-                currentLevelIndex = questionCount - 5;
-            } else {
-                // Advanced questions (10-14)
-                currentLevelIndex = questionCount - 10;
+            if (!selectedOption && !timedOut) {
+                alert('Please select an answer.');
+                this.isLoading = false;
+                if (submitButton) {
+                    submitButton.disabled = false;
+                }
+                // Restart timer since we're not proceeding
+                this.initializeTimer();
+                return;
             }
             
-            const scenario = currentScenarios[currentLevelIndex];
-            const originalIndex = parseInt(selectedOption.value);
+            // Get the selected option index
+            const optionIndex = selectedOption ? parseInt(selectedOption.value) : 0;
             
-            const selectedAnswer = scenario.options[originalIndex];
+            // Get the current scenario
+            const currentScenarios = this.getCurrentScenarios();
+            const scenarioIndex = this.player.questionHistory.length % 5;
+            const scenario = currentScenarios[scenarioIndex];
+            
+            // Get the selected answer
+            const selectedAnswer = scenario.options[optionIndex];
+            
+            console.log('[ContentCopyQuiz] Selected answer:', {
+                text: selectedAnswer.text,
+                experience: selectedAnswer.experience,
+                timedOut: timedOut
+            });
+            
+            // Add to player experience (no points if timed out)
+            if (!timedOut) {
+                this.player.experience += selectedAnswer.experience;
+            }
 
             // Find the correct answer (option with highest experience)
             const correctAnswer = scenario.options.reduce((prev, current) => 
@@ -949,9 +461,6 @@ export class ContentCopyQuiz extends BaseQuiz {
 
             // Mark selected answer as correct or incorrect
             selectedAnswer.isCorrect = selectedAnswer === correctAnswer;
-
-            // Update player experience with bounds
-            this.player.experience = Math.max(0, Math.min(this.maxXP, this.player.experience + selectedAnswer.experience));
             
             // Calculate time spent on this question
             const timeSpent = this.questionStartTime ? Date.now() - this.questionStartTime : null;
@@ -961,9 +470,8 @@ export class ContentCopyQuiz extends BaseQuiz {
                 scenario: scenario,
                 selectedAnswer: selectedAnswer,
                 isCorrect: selectedAnswer.isCorrect,
-                maxPossibleXP: Math.max(...scenario.options.map(o => o.experience)),
                 timeSpent: timeSpent,
-                timedOut: false
+                timedOut: timedOut
             });
 
             // Increment current scenario
@@ -971,50 +479,39 @@ export class ContentCopyQuiz extends BaseQuiz {
 
             // Save progress
             await this.saveProgress();
-
-            // Calculate the score percentage
-            const scorePercentage = this.calculateScorePercentage();
             
-            const score = {
-                quizName: this.quizName,
-                score: scorePercentage,
-                experience: this.player.experience,
-                questionHistory: this.player.questionHistory,
-                questionsAnswered: this.player.questionHistory.length,
-                lastUpdated: new Date().toISOString()
-            };
-            
-            // Save quiz result
-            const username = localStorage.getItem('username');
-            if (username) {
-                const quizUser = new QuizUser(username);
-                await quizUser.updateQuizScore(
-                    this.quizName,
-                    score.score,
-                    score.experience,
-                    this.player.tools,
-                    score.questionHistory,
-                    score.questionsAnswered
-                );
-            }
-
-            // Show outcome screen
-            if (this.gameScreen && this.outcomeScreen) {
+            // Show outcome
                 this.gameScreen.classList.add('hidden');
                 this.outcomeScreen.classList.remove('hidden');
-            }
             
-            // Set content directly in the outcome screen
-            const outcomeContent = this.outcomeScreen.querySelector('.outcome-content');
+            // Display outcome content
+            const outcomeContent = document.querySelector('.outcome-content');
             if (outcomeContent) {
+                // Prepare the outcome message
+                let outcomeHeader = selectedAnswer.isCorrect ? 'Correct!' : 'Incorrect';
+                let outcomeMessage = selectedAnswer.outcome || '';
+                
+                // Add timed out message if applicable
+                if (timedOut) {
+                    outcomeHeader = 'Time\'s Up!';
+                    outcomeMessage = 'You ran out of time. A random answer was selected.';
+                }
+                
                 outcomeContent.innerHTML = `
-                    <h3>${selectedAnswer.isCorrect ? 'Correct!' : 'Incorrect'}</h3>
-                    <p>${selectedAnswer.outcome || ''}</p>
+                    <h3>${outcomeHeader}</h3>
+                    <p>${outcomeMessage}</p>
                     <p class="result">${selectedAnswer.isCorrect ? 'Correct answer!' : 'Try again next time.'}</p>
+                    ${timedOut ? '<p class="timeout-warning">Remember to answer within the time limit!</p>' : ''}
+                    ${selectedAnswer.tool && !timedOut ? `<p class="tool-gained">You've gained the <strong>${selectedAnswer.tool}</strong> tool!</p>` : ''}
                     <button id="continue-btn" class="submit-button">Continue</button>
                 `;
                 
-                // Add event listener to the continue button
+                // If this answer added a tool and wasn't timed out, add it to player's tools
+                if (selectedAnswer.tool && !timedOut && !this.player.tools.includes(selectedAnswer.tool)) {
+                    this.player.tools.push(selectedAnswer.tool);
+                }
+                
+                // Add event listener to continue button
                 const continueBtn = outcomeContent.querySelector('#continue-btn');
                 if (continueBtn) {
                     continueBtn.addEventListener('click', () => this.nextScenario());
@@ -1022,22 +519,20 @@ export class ContentCopyQuiz extends BaseQuiz {
             }
 
             this.updateProgress();
-
-            // Check if all questions have been answered
-            if (this.shouldEndGame(this.player.questionHistory.length, this.player.experience)) {
-                await this.endGame(false);
-            }
+            
         } catch (error) {
-            console.error('Failed to handle answer:', error);
-            this.showError('Failed to save your answer. Please try again.');
+            console.error('[ContentCopyQuiz] Error handling answer:', error);
+            this.showError('Failed to process your answer. Please try again.');
         } finally {
             this.isLoading = false;
+            const submitButton = document.querySelector('.submit-button');
             if (submitButton) {
                 submitButton.disabled = false;
             }
         }
     }
 
+    // Move to the next scenario
     nextScenario() {
         // Hide outcome screen and show game screen
         if (this.outcomeScreen && this.gameScreen) {
@@ -1049,302 +544,84 @@ export class ContentCopyQuiz extends BaseQuiz {
         this.displayScenario();
     }
 
+    // Update progress display
     updateProgress() {
         // Get current level and question count
         const currentLevel = this.getCurrentLevel();
         const totalAnswered = this.player.questionHistory.length;
         const questionNumber = totalAnswered + 1;
         
-        // Update the existing progress card elements
-        const levelInfoElement = document.querySelector('.level-info');
-        const questionInfoElement = document.querySelector('.question-info');
-        
-        if (levelInfoElement) {
-            levelInfoElement.textContent = `Level: ${currentLevel}`;
-        }
-        
-        if (questionInfoElement) {
-            questionInfoElement.textContent = `Question: ${questionNumber}/${this.totalQuestions}`;
-        }
-        
-        // Ensure the card is visible
-        const progressCard = document.querySelector('.quiz-header-progress');
-        if (progressCard) {
-            progressCard.style.display = 'block';
-        }
-        
-        // Update legacy progress elements if they exist
+        // Update level indicator
         const levelIndicator = document.getElementById('level-indicator');
-        const questionProgress = document.getElementById('question-progress');
-        const progressFill = document.getElementById('progress-fill');
-        
         if (levelIndicator) {
             levelIndicator.textContent = `Level: ${currentLevel}`;
         }
         
+        // Update question progress
+        const questionProgress = document.getElementById('question-progress');
         if (questionProgress) {
-            questionProgress.textContent = `Question: ${questionNumber}/${this.totalQuestions}`;
+            questionProgress.textContent = `Question: ${questionNumber}/15`;
         }
         
+        // Update progress bar
+        const progressFill = document.getElementById('progress-fill');
         if (progressFill) {
-            const progressPercentage = (totalAnswered / this.totalQuestions) * 100;
+            const progressPercentage = (totalAnswered / 15) * 100;
             progressFill.style.width = `${progressPercentage}%`;
         }
     }
 
-    restartGame() {
-        // Reset player state
-        this.player = {
-            name: localStorage.getItem('username'),
-            experience: 0,
-            tools: [],
-            currentScenario: 0,
-            questionHistory: []
-        };
-
-        // Reset UI
-        this.gameScreen.classList.remove('hidden');
-        this.outcomeScreen.classList.add('hidden');
-        this.endScreen.classList.add('hidden');
-
-        // Clear any existing transition messages
-        const transitionContainer = document.getElementById('level-transition-container');
-        if (transitionContainer) {
-            transitionContainer.innerHTML = '';
-            transitionContainer.classList.remove('active');
-        }
-
-        // Update progress display
-        this.updateProgress();
-
-        // Start from first scenario
-        this.displayScenario();
-    }
-
-    getCurrentScenarios() {
-        const totalAnswered = this.player.questionHistory.length;
-        let level;
-        let scenarios;
-        
-        if (totalAnswered >= 10) {
-            level = 'advanced';
-            scenarios = this.advancedScenarios;
-        } else if (totalAnswered >= 5) {
-            level = 'intermediate';
-            scenarios = this.intermediateScenarios;
-        } else {
-            level = 'basic';
-            scenarios = this.basicScenarios;
-        }
-        
-        // Use the getRandomizedScenarios method to get or create random scenarios
-        return this.getRandomizedScenarios(level, scenarios);
-    }
-
-    getCurrentLevel() {
-        const totalAnswered = this.player.questionHistory.length;
-        
-        // Progress through levels based only on question count
-        if (totalAnswered >= 10) {
-            return 'Advanced';
-        } else if (totalAnswered >= 5) {
-            return 'Intermediate';
-        }
-        return 'Basic';
-    }
-
-    generateRecommendations() {
-        const recommendationsContainer = document.getElementById('recommendations');
-        if (!recommendationsContainer) return;
-
-        const scorePercentage = this.calculateScorePercentage();
-        const weakAreas = [];
-        const strongAreas = [];
-
-        // Analyze performance in different areas
-        this.player.questionHistory.forEach(record => {
-            const maxXP = record.maxPossibleXP;
-            const earnedXP = record.selectedAnswer.experience;
-            const isCorrect = earnedXP === maxXP;
-
-            // Categorize the question based on its content
-            const questionType = this.categorizeQuestion(record.scenario);    
-
-            if (isCorrect) {
-                if (!strongAreas.includes(questionType)) {
-                    strongAreas.push(questionType);
-                }
-            } else {
-                if (!weakAreas.includes(questionType)) {
-                    weakAreas.push(questionType);
-                }
-            }
-        });
-
-        // Generate recommendations HTML
-        let recommendationsHTML = '';
-
-        if (scorePercentage >= 90 && weakAreas.length === 0) {
-            recommendationsHTML = '<p>🌟 Outstanding! You have demonstrated mastery in all aspects of content copy testing. You clearly understand the nuances of content copy testing and are well-equipped to handle any content copy testing challenges!</p>';
-        } else if (scorePercentage >= 80) {
-            recommendationsHTML = '<p>🌟 Excellent performance! Your content copy testing skills are very strong. To achieve complete mastery, consider focusing on:</p>';
-            recommendationsHTML += '<ul>';
-            if (weakAreas.length > 0) {
-                weakAreas.forEach(area => {
-                    recommendationsHTML += `<li>${this.getRecommendation(area)}</li>`;
-                });
-            }
-            recommendationsHTML += '</ul>';
-        } else if (scorePercentage >= 70) {
-            recommendationsHTML = '<p>👍 Good effort! Here are some areas to focus on:</p>';
-            recommendationsHTML += '<ul>';
-            weakAreas.forEach(area => {
-                recommendationsHTML += `<li>${this.getRecommendation(area)}</li>`;
-            });
-            recommendationsHTML += '</ul>';
-        } else {
-            recommendationsHTML = '<p>📚 Here are key areas for improvement:</p>';
-            recommendationsHTML += '<ul>';
-            weakAreas.forEach(area => {
-                recommendationsHTML += `<li>${this.getRecommendation(area)}</li>`;
-            });
-            recommendationsHTML += '</ul>';
-        }
-
-        recommendationsContainer.innerHTML = recommendationsHTML;
-    }
-
-    categorizeQuestion(scenario) {
-        // Categorize questions based on their content
-        const title = scenario.title.toLowerCase();
-        const description = scenario.description.toLowerCase();
-
-        if (title.includes('content') || description.includes('content')) {
-            return 'Content Testing';
-        } else if (title.includes('review') || description.includes('review')) {
-            return 'Content Review';
-        } else if (title.includes('volume') || description.includes('volume')) {
-            return 'Issue Volume Management';
-        } else if (title.includes('image') || description.includes('image')) {
-            return 'Image Content Testing';
-        } else if (title.includes('requirements') || description.includes('requirements')) {
-            return 'Requirements Analysis';
-        } else if (title.includes('platform') || description.includes('platform')) {
-            return 'Platform Consistency';
-        } else if (title.includes('documentation') || description.includes('documentation')) {
-            return 'Documentation Testing';
-        } else {
-            return 'General Content Testing';
-        }
-    }
-
-    getRecommendation(area) {
-        const recommendations = {
-            'Content Testing': 'Focus on improving content verification methodologies and consistency checks.',
-            'Content Review': 'Strengthen content review approaches and attention to detail.',
-            'Issue Volume Management': 'Enhance strategies for handling and organizing multiple content issues efficiently.',
-            'Image Content Testing': 'Improve testing approaches for image quality and resolution across environments.',
-            'Requirements Analysis': 'Develop better understanding of content requirements and documentation needs.',
-            'Platform Consistency': 'Focus on ensuring content consistency across different platforms and environments.',
-            'Documentation Testing': 'Work on thorough documentation review and verification processes.',
-            'General Content Testing': 'Continue developing core content testing principles and methodologies.'
-        };
-
-        return recommendations[area] || 'Continue practicing fundamental content testing principles.';
-    }
-
+    // End the quiz
     async endGame(failed = false) {
+        console.log('[ContentCopyQuiz] Ending game...');
+        
+        try {
+            // Calculate score
+            const correctAnswers = this.player.questionHistory.filter(q => q.isCorrect).length;
+            const totalAnswers = this.player.questionHistory.length;
+            const scorePercentage = Math.round((correctAnswers / totalAnswers) * 100);
+            
+            // Determine if passed or failed
+            const passed = scorePercentage >= this.passPercentage;
+            
+            console.log('[ContentCopyQuiz] Quiz results:', {
+                score: scorePercentage,
+                experience: this.player.experience,
+                passed: passed
+            });
+            
+            // Hide screens
         this.gameScreen.classList.add('hidden');
         this.outcomeScreen.classList.add('hidden');
         this.endScreen.classList.remove('hidden');
 
-        // Hide the progress card on the end screen
-        const progressCard = document.querySelector('.quiz-header-progress');
-        if (progressCard) {
-            progressCard.style.display = 'none';
-        }
-
-        // Calculate final score percentage based on correct answers
-        const scorePercentage = this.calculateScorePercentage();
-        const hasPassed = !failed && scorePercentage >= this.passPercentage;
-        
-        // Save the final quiz result with pass/fail status
-        const username = localStorage.getItem('username');
-        if (username) {
-            try {
-                const user = new QuizUser(username);
-                const status = hasPassed ? 'passed' : 'failed';
-                console.log('Setting final quiz status:', { status, score: scorePercentage });
-                
-                const result = {
-                    score: scorePercentage,
-                    status: status,
-                    experience: this.player.experience,
-                    questionHistory: this.player.questionHistory,
-                    questionsAnswered: this.player.questionHistory.length,
-                    lastUpdated: new Date().toISOString(),
-                    scorePercentage: scorePercentage
-                };
-
-                // Save to QuizUser
-                await user.updateQuizScore(
-                    this.quizName,
-                    result.score,
-                    result.experience,
-                    this.player.tools,
-                    result.questionHistory,
-                    result.questionsAnswered,
-                    status
-                );
-
-                // Save to API with proper structure
-                const apiProgress = {
-                    data: {
-                        ...result,
-                        tools: this.player.tools,
-                        currentScenario: this.player.currentScenario
-                    }
-                };
-
-                // Save directly via API to ensure status is updated
-                console.log('Saving final progress to API:', apiProgress);
-                await this.apiService.saveQuizProgress(this.quizName, apiProgress.data);
-                
-                // Clear any local storage for this quiz
-                this.clearQuizLocalStorage(username, this.quizName);
-            } catch (error) {
-                console.error('Error saving final quiz score:', error);
+            // Hide the timer
+            const timerContainer = document.getElementById('timer-container');
+            if (timerContainer) {
+                timerContainer.classList.add('hidden');
             }
-        }
-
-        document.getElementById('final-score').textContent = `Final Score: ${scorePercentage}%`;
         
         // Update the quiz complete header based on status
         const quizCompleteHeader = document.querySelector('#end-screen h2');
         if (quizCompleteHeader) {
-            quizCompleteHeader.textContent = hasPassed ? 'Quiz Complete!' : 'Quiz Failed!';
-        }
-
-        const performanceSummary = document.getElementById('performance-summary');
-        if (!hasPassed) {
-            performanceSummary.textContent = 'Quiz failed. You did not earn enough points to pass. You can retry this quiz later.';
-            // Hide restart button if failed
-            const restartBtn = document.getElementById('restart-btn');
-            if (restartBtn) {
-                restartBtn.style.display = 'none';
+                quizCompleteHeader.textContent = passed ? 'Quiz Complete!' : 'Quiz Failed!';
             }
-            // Add failed class to quiz container for styling
-            const quizContainer = document.getElementById('quiz-container');
-            if (quizContainer) {
-                quizContainer.classList.add('failed');
+            
+            // Update final score display
+            const finalScore = document.getElementById('final-score');
+            if (finalScore) {
+                finalScore.textContent = `Final Score: ${scorePercentage}%`;
             }
-        } else {
+            
+            // Update performance summary
+            const performanceSummary = document.getElementById('performance-summary');
+            if (performanceSummary) {
+                if (passed) {
             // Find the appropriate performance message
             const threshold = this.config.performanceThresholds.find(t => scorePercentage >= t.threshold);
-            if (threshold) {
-                performanceSummary.textContent = threshold.message;
+                    performanceSummary.textContent = threshold ? threshold.message : 'Congratulations! You passed the quiz.';
             } else {
-                performanceSummary.textContent = 'Quiz completed successfully!';
+                    performanceSummary.textContent = 'Quiz failed. You did not earn enough points to pass. You can retry this quiz later.';
             }
         }
 
@@ -1352,137 +629,167 @@ export class ContentCopyQuiz extends BaseQuiz {
         const reviewList = document.getElementById('question-review');
         if (reviewList) {
             reviewList.innerHTML = ''; // Clear existing content
+                
             this.player.questionHistory.forEach((record, index) => {
                 const reviewItem = document.createElement('div');
                 reviewItem.className = 'review-item';
-                
-                const isCorrect = record.selectedAnswer && (record.selectedAnswer.isCorrect || 
-                    record.selectedAnswer.experience === Math.max(...record.scenario.options.map(o => o.experience || 0)));
-                reviewItem.classList.add(isCorrect ? 'correct' : 'incorrect');
+                    reviewItem.classList.add(record.isCorrect ? 'correct' : 'incorrect');
+                    
+                    // Add timed out class if applicable
+                    if (record.timedOut) {
+                        reviewItem.classList.add('timed-out');
+                    }
                 
                 reviewItem.innerHTML = `
                     <h4>Question ${index + 1}</h4>
-                    <p class="scenario">${record.scenario.description}</p>
+                        <p class="scenario">${record.scenario.title}</p>
                     <p class="answer"><strong>Your Answer:</strong> ${record.selectedAnswer.text}</p>
                     <p class="outcome"><strong>Outcome:</strong> ${record.selectedAnswer.outcome}</p>
-                    <p class="result"><strong>Result:</strong> ${isCorrect ? 'Correct' : 'Incorrect'}</p>
+                        <p class="result"><strong>Result:</strong> ${record.isCorrect ? 'Correct' : 'Incorrect'} ${record.timedOut ? '(Timed Out)' : ''}</p>
                 `;
                 
                 reviewList.appendChild(reviewItem);
             });
         }
 
-        this.generateRecommendations();
-    }
+            // Generate recommendations
+            const recommendations = document.getElementById('recommendations');
+            if (recommendations) {
+                let recommendationsHTML = '';
+                
+                if (scorePercentage >= 90) {
+                    recommendationsHTML = '<p>🌟 Outstanding! You have demonstrated excellent knowledge of content copy proofing principles!</p>';
+                } else if (scorePercentage >= 70) {
+                    recommendationsHTML = '<p>👍 Good job! Here are some areas to review:</p><ul>';
+                    // Find areas where the user made mistakes and group by level
+                    const incorrectQuestions = this.player.questionHistory.filter(q => !q.isCorrect);
+                    const groupedByLevel = incorrectQuestions.reduce((acc, q) => {
+                        if (!acc[q.scenario.level]) {
+                            acc[q.scenario.level] = [];
+                        }
+                        acc[q.scenario.level].push(q);
+                        return acc;
+                    }, {});
 
-    // Helper method to calculate the score percentage based on correct answers
-    calculateScorePercentage() {
-        const correctAnswers = this.player.questionHistory.filter(q => 
-            q.selectedAnswer && (q.selectedAnswer.isCorrect || 
-            q.selectedAnswer.experience === Math.max(...q.scenario.options.map(o => o.experience || 0)))
-        ).length;
-        
-        // Calculate percentage based on completed questions (cap at max questions)
-        const totalAnswered = Math.min(this.player.questionHistory.length, this.totalQuestions);
-        return totalAnswered > 0 ? Math.round((correctAnswers / totalAnswered) * 100) : 0;
-    }
+                    // Display recommendations by level
+                    Object.entries(groupedByLevel).forEach(([level, questions]) => {
+                        recommendationsHTML += `<li><strong>${level} Level Areas:</strong><ul>`;
+                        questions.forEach(q => {
+                            recommendationsHTML += `<li>${q.scenario.title}: Review ${q.scenario.description.toLowerCase()}</li>`;
+                        });
+                        recommendationsHTML += '</ul></li>';
+                    });
+                    recommendationsHTML += '</ul>';
+                } else {
+                    recommendationsHTML = '<p>📚 Here are key areas for improvement in content proofing:</p><ul>';
+                    // Find areas where the user made mistakes and group by level
+                    const incorrectQuestions = this.player.questionHistory.filter(q => !q.isCorrect);
+                    const groupedByLevel = incorrectQuestions.reduce((acc, q) => {
+                        if (!acc[q.scenario.level]) {
+                            acc[q.scenario.level] = [];
+                        }
+                        acc[q.scenario.level].push(q);
+                        return acc;
+                    }, {});
 
-    clearQuizLocalStorage(username, quizName) {
-        const variations = [
-            quizName,                                              // original
-            quizName.toLowerCase(),                               // lowercase
-            quizName.toUpperCase(),                               // uppercase
-            quizName.replace(/-/g, ''),                           // no hyphens
-            quizName.replace(/([A-Z])/g, '-$1').toLowerCase(),    // kebab-case
-            quizName.replace(/-([a-z])/g, (_, c) => c.toUpperCase()), // camelCase
-            quizName.replace(/-/g, '_'),                          // snake_case
-        ];
-
-        // Add sanity-smoke specific variations
-        if (quizName.toLowerCase().includes('sanity-smoke')) {
-            variations.push(
-                'Sanity-Smoke',
-                'sanity-smoke',
-                'sanitySmokeTest',
-                'Sanity_Smoke',
-                'sanity_smoke'
-            );
+                    // Display recommendations by level with more detailed guidance
+                    Object.entries(groupedByLevel).forEach(([level, questions]) => {
+                        recommendationsHTML += `<li><strong>${level} Level Areas:</strong><ul>`;
+                        questions.forEach(q => {
+                            recommendationsHTML += `<li>${q.scenario.title}: ${q.scenario.description}<br>
+                                <em>Improvement needed: ${q.selectedAnswer.outcome}</em></li>`;
+                        });
+                        recommendationsHTML += '</ul></li>';
+                    });
+                    recommendationsHTML += '</ul><p>Remember: Content proofing focuses on checking grammar, spelling, and typos in content while ensuring quality and consistency across platforms.</p>';
+                }
+                
+                recommendations.innerHTML = recommendationsHTML;
+            }
+            
+            // Save final progress
+            await this.saveProgress(passed ? 'passed' : 'failed');
+            
+        } catch (error) {
+            console.error('[ContentCopyQuiz] Error ending game:', error);
+            this.showError('Failed to complete the quiz. Please refresh the page.');
         }
-
-        variations.forEach(variant => {
-            localStorage.removeItem(`quiz_progress_${username}_${variant}`);
-            localStorage.removeItem(`quizResults_${username}_${variant}`);
-        });
+    }
+    
+    // Restart the quiz
+    async restartQuiz() {
+        console.log('[ContentCopyQuiz] Restarting quiz...');
+        
+        // Clear the timer if it exists
+        if (this.questionTimer) {
+            clearInterval(this.questionTimer);
+            this.questionTimer = null;
+        }
+        
+        // Reset player state
+        this.player = {
+            name: localStorage.getItem('username'),
+            experience: 0,
+            questionHistory: [],
+            currentScenario: 0,
+            tools: []
+        };
+        
+        // Save reset progress
+        await this.saveProgress('in-progress');
+        
+        // Reset UI
+        this.gameScreen.classList.remove('hidden');
+        this.outcomeScreen.classList.add('hidden');
+        this.endScreen.classList.add('hidden');
+        
+        // Clear any existing transition messages
+        const transitionContainer = document.getElementById('level-transition-container');
+        if (transitionContainer) {
+            transitionContainer.innerHTML = '';
+            transitionContainer.classList.remove('active');
+        }
+        
+        // Start again
+        this.displayScenario();
+    }
+    
+    // Helper for showing errors
+    showError(message) {
+        console.error('[ContentCopyQuiz] Error:', message);
+        
+        try {
+            const errorElement = document.createElement('div');
+            errorElement.className = 'error-message';
+            errorElement.textContent = message;
+            errorElement.style.color = 'red';
+            errorElement.style.padding = '20px';
+            errorElement.style.textAlign = 'center';
+            errorElement.style.fontWeight = 'bold';
+            
+            // Find a good place to show the error
+            const container = document.getElementById('game-screen') || 
+                            document.getElementById('quiz-container') || 
+                            document.body;
+            
+            if (container) {
+                // Clear container if not body
+                if (container !== document.body) {
+                    container.innerHTML = '';
+                }
+                
+                container.appendChild(errorElement);
+                console.error('[ContentCopyQuiz] Displayed error to user:', message);
+            }
+        } catch (e) {
+            // Fallback to alert if error display fails
+            alert(message);
+        }
     }
 }
 
-// Start the quiz when the page loads
+// Create and initialize the quiz when the DOM is loaded
 document.addEventListener('DOMContentLoaded', () => {
-    console.log('[ContentCopyQuiz] Initializing quiz');
-    
-    // Force clean any existing quiz references that might be in memory
-    if (window.currentQuiz) {
-        console.log('[ContentCopyQuiz] Cleaning up existing quiz instance:', window.currentQuiz.quizName);
-        // Clear any timers or other resources
-        if (window.currentQuiz.questionTimer) {
-            clearInterval(window.currentQuiz.questionTimer);
-        }
-    }
-    
-    // Clear any conflicting localStorage entries
-    const username = localStorage.getItem('username');
-    if (username) {
-        // List all quiz names that might conflict
-        const potentialConflicts = [
-            'script-metrics-troubleshooting',
-            'standard-script-testing',
-            'fully-scripted',
-            'exploratory'
-        ];
-        
-        // Clean localStorage to prevent cross-contamination
-        potentialConflicts.forEach(quizName => {
-            const key = `quiz_progress_${username}_${quizName}`;
-            const data = localStorage.getItem(key);
-            if (data) {
-                console.log(`[ContentCopyQuiz] Found potential conflicting quiz data: ${quizName}`);
-                try {
-                    const parsed = JSON.parse(data);
-                    if (parsed && parsed.data && parsed.data.randomizedScenarios) {
-                        console.log(`[ContentCopyQuiz] Cleaning randomized scenarios from ${quizName}`);
-                        delete parsed.data.randomizedScenarios;
-                        localStorage.setItem(key, JSON.stringify(parsed));
-                    }
-                } catch (e) {
-                    console.error(`[ContentCopyQuiz] Error cleaning scenarios:`, e);
-                }
-            }
-        });
-    }
-    
-    // Create a new instance and keep a global reference
-    const quiz = new ContentCopyQuiz();
-    window.currentQuiz = quiz;
-    
-    // Add a specific property to identify this quiz
-    Object.defineProperty(window, 'ACTIVE_QUIZ_NAME', {
-        value: 'content-copy',
-        writable: true,
-        configurable: true
-    });
-    
-    // Force clear any unrelated randomized scenarios
-    if (quiz.randomizedScenarios) {
-        // Keep only keys specific to this quiz
-        Object.keys(quiz.randomizedScenarios).forEach(key => {
-            if (!key.startsWith('content-copy_')) {
-                console.log(`[ContentCopyQuiz] Removing unrelated randomized scenario: ${key}`);
-                delete quiz.randomizedScenarios[key];
-            }
-        });
-    }
-    
-    // Start the quiz
-    console.log('[ContentCopyQuiz] Starting quiz');
-    quiz.startGame();
+    console.log('[ContentCopyQuiz] DOM loaded, initializing quiz...');
+    window.contentCopyQuiz = new ContentCopyQuiz();
 }); 
