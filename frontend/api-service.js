@@ -321,19 +321,29 @@ export class APIService {
                 };
             }
 
-            // Ensure we have an array of users
-            if (!data || !Array.isArray(data.data || data)) {
-                console.error('Response does not contain users array:', data);
+            // Check for users in different possible response structures
+            let users = [];
+            
+            if (data && data.users && Array.isArray(data.users)) {
+                // API returns { success: true, users: [...] }
+                users = data.users;
+                console.log(`Found ${users.length} users in 'users' property`);
+            } else if (data && data.data && Array.isArray(data.data)) {
+                // API returns { success: true, data: [...] }
+                users = data.data;
+                console.log(`Found ${users.length} users in 'data' property`);
+            } else if (Array.isArray(data)) {
+                // API returns direct array of users
+                users = data;
+                console.log(`Found ${users.length} users in direct array`);
+            } else {
+                console.error('Response does not contain users array in any expected format:', data);
                 return {
                     success: true,
                     message: 'No users found or invalid data format',
                     data: []
                 };
             }
-
-            // Get the users array from the response
-            const users = data.data || data;
-            console.log(`Found ${users.length} users`);
             
             return {
                 success: true,
