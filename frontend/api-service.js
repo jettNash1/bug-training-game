@@ -223,6 +223,34 @@ export class APIService {
         }
     }
 
+    async getAllUsers() {
+        try {
+            console.log('Fetching all users');
+            const response = await this.fetchWithAdminAuth(`${this.baseUrl}/admin/users`);
+            
+            if (!response.success) {
+                console.error('Failed to fetch users:', response.message);
+                return { 
+                    success: false, 
+                    message: response.message || 'Failed to fetch users',
+                    data: []
+                };
+            }
+            
+            return {
+                success: true,
+                data: response.data || []
+            };
+        } catch (error) {
+            console.error('Error fetching all users:', error);
+            return { 
+                success: false, 
+                message: error.message || 'Error fetching users',
+                data: []
+            };
+        }
+    }
+
     async register(username, password) {
         try {
             console.log('Attempting registration:', { username, url: `${this.baseUrl}/users/register` });
