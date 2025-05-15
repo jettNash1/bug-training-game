@@ -46,12 +46,6 @@ export class TesterMindsetQuiz extends BaseQuiz {
         this.intermediateScenarios = testerMindsetScenarios.intermediate;
         this.advancedScenarios = testerMindsetScenarios.advanced;
         
-        console.log('[TesterMindsetQuiz] Scenarios loaded:', {
-            basicCount: this.basicScenarios.length,
-            intermediateCount: this.intermediateScenarios.length,
-            advancedCount: this.advancedScenarios.length
-        });
-        
         // Initialize elements
         this.gameScreen = document.getElementById('game-screen');
         this.outcomeScreen = document.getElementById('outcome-screen');
