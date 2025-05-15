@@ -378,7 +378,7 @@ export const communicationScenarios = {
                         experience: 0
                     }
                 ]
-            },
+            }, 
             {
                 id: 24,
                 level: 'Basic',
