@@ -227,9 +227,8 @@ class TestQuiz extends BaseQuiz {
         const timerDisplay = document.getElementById('timer-display');
         
         if (!timerContainer || !timerDisplay) {
-            // Create timer elements if they don't exist
-            this.createTimerElement();
-            return this.initializeTimer(); // Restart the function now that elements exist
+            console.error('[TestQuiz] Timer elements not found');
+            return;
         }
         
         // Show the timer
@@ -261,40 +260,6 @@ class TestQuiz extends BaseQuiz {
                 this.handleTimedOut();
             }
         }, 1000);
-    }
-    
-    // Create timer element if it doesn't exist
-    createTimerElement() {
-        // Check if timer container already exists
-        if (document.getElementById('timer-container')) {
-            return;
-        }
-        
-        // Create timer container
-        const timerContainer = document.createElement('div');
-        timerContainer.id = 'timer-container';
-        timerContainer.className = 'timer-container';
-        timerContainer.setAttribute('aria-live', 'polite');
-        
-        // Create timer display
-        const timerDisplay = document.createElement('span');
-        timerDisplay.id = 'timer-display';
-        timerDisplay.textContent = this.questionTimeLimitInSeconds;
-        
-        // Add timer to container
-        timerContainer.appendChild(timerDisplay);
-        
-        // Add container to game screen
-        const questionSection = document.querySelector('.question-section');
-        if (questionSection) {
-            questionSection.appendChild(timerContainer);
-        } else {
-            // Fallback to game screen if question section not found
-            const gameScreen = document.getElementById('game-screen');
-            if (gameScreen) {
-                gameScreen.appendChild(timerContainer);
-            }
-        }
     }
     
     // Handle when time runs out for a question
@@ -365,25 +330,30 @@ class TestQuiz extends BaseQuiz {
         }
         
         // Update UI for scenario
-        document.getElementById('scenario-title').textContent = scenario.title;
-        document.getElementById('scenario-description').textContent = scenario.description;
+        const titleElement = document.getElementById('scenario-title');
+        const descriptionElement = document.getElementById('scenario-description');
         
-        // Update the header info
-        const levelInfo = document.querySelector('.level-info');
-        const questionInfo = document.querySelector('.question-info');
-        
-        if (levelInfo) {
-            levelInfo.textContent = `Level: ${this.getCurrentLevel()}`;
+        if (titleElement && descriptionElement) {
+            titleElement.textContent = scenario.title;
+            descriptionElement.textContent = scenario.description;
         }
         
-        if (questionInfo) {
-            questionInfo.textContent = `Question: ${this.player.currentScenario + 1}/9`;
+        // Update question progress
+        const questionProgress = document.getElementById('question-progress');
+        if (questionProgress) {
+            questionProgress.textContent = `Question: ${questionCount + 1}/9`;
+        }
+        
+        // Update level indicator
+        const levelIndicator = document.getElementById('level-indicator');
+        if (levelIndicator) {
+            levelIndicator.textContent = `Level: ${currentLevel}`;
         }
         
         // Update progress bar
-        const progressFill = document.querySelector('.progress-fill');
+        const progressFill = document.getElementById('progress-fill');
         if (progressFill) {
-            const progressPercentage = (this.player.currentScenario / 9) * 100;
+            const progressPercentage = (questionCount / 9) * 100;
             progressFill.style.width = `${progressPercentage}%`;
         }
         
@@ -419,17 +389,6 @@ class TestQuiz extends BaseQuiz {
                 `;
                 optionsContainer.appendChild(optionDiv);
             });
-            
-            // Add submit button event listener
-            const submitButton = document.getElementById('submit-btn');
-            if (submitButton) {
-                // Remove previous event listeners
-                const newSubmitButton = submitButton.cloneNode(true);
-                submitButton.parentNode.replaceChild(newSubmitButton, submitButton);
-                
-                // Add new event listener
-                newSubmitButton.addEventListener('click', () => this.handleAnswer());
-            }
         }
         
         // Show game screen
@@ -598,26 +557,20 @@ class TestQuiz extends BaseQuiz {
         const totalAnswered = this.player.questionHistory.length;
         const questionNumber = totalAnswered + 1;
         
-        // Update the existing progress card elements
-        const levelInfoElement = document.querySelector('.level-info');
-        const questionInfoElement = document.querySelector('.question-info');
-        
-        if (levelInfoElement) {
-            levelInfoElement.textContent = `Level: ${currentLevel}`;
+        // Update level indicator
+        const levelIndicator = document.getElementById('level-indicator');
+        if (levelIndicator) {
+            levelIndicator.textContent = `Level: ${currentLevel}`;
         }
         
-        if (questionInfoElement) {
-            questionInfoElement.textContent = `Question: ${questionNumber}/9`;
-        }
-        
-        // Ensure the card is visible
-        const progressCard = document.querySelector('.quiz-header-progress');
-        if (progressCard) {
-            progressCard.style.display = 'block';
+        // Update question progress
+        const questionProgress = document.getElementById('question-progress');
+        if (questionProgress) {
+            questionProgress.textContent = `Question: ${questionNumber}/9`;
         }
         
         // Update progress bar
-        const progressFill = document.querySelector('.progress-fill');
+        const progressFill = document.getElementById('progress-fill');
         if (progressFill) {
             const progressPercentage = (totalAnswered / 9) * 100;
             progressFill.style.width = `${progressPercentage}%`;
@@ -654,72 +607,32 @@ class TestQuiz extends BaseQuiz {
                 timerContainer.classList.add('hidden');
             }
             
-            // Hide the progress card on the end screen
-            const progressCard = document.querySelector('.quiz-header-progress');
-            if (progressCard) {
-                progressCard.style.display = 'none';
-            }
-            
             // Update the quiz complete header based on status
             const quizCompleteHeader = document.querySelector('#end-screen h2');
             if (quizCompleteHeader) {
                 quizCompleteHeader.textContent = passed ? 'Quiz Complete!' : 'Quiz Failed!';
             }
             
-            // Update end screen elements
-            const scoreValue = document.querySelector('.score-value');
-            const experienceValue = document.querySelector('.experience-value');
-            const passFailMessage = document.getElementById('pass-fail-message');
-            
-            if (scoreValue) {
-                scoreValue.textContent = `${scorePercentage}%`;
+            // Update final score display
+            const finalScore = document.getElementById('final-score');
+            if (finalScore) {
+                finalScore.textContent = `Final Score: ${scorePercentage}%`;
             }
             
-            if (experienceValue) {
-                experienceValue.textContent = this.player.experience;
-            }
-            
-            if (passFailMessage) {
+            // Update performance summary
+            const performanceSummary = document.getElementById('performance-summary');
+            if (performanceSummary) {
                 if (passed) {
                     // Find the appropriate performance message
                     const threshold = this.config.performanceThresholds.find(t => scorePercentage >= t.threshold);
-                    passFailMessage.textContent = threshold ? threshold.message : 'Congratulations! You passed the quiz.';
-                    passFailMessage.className = 'pass-fail-message passed';
+                    performanceSummary.textContent = threshold ? threshold.message : 'Congratulations! You passed the quiz.';
                 } else {
-                    passFailMessage.textContent = 'You did not pass. Please try again.';
-                    passFailMessage.className = 'pass-fail-message failed';
-                }
-            }
-            
-            // Generate recommendations
-            const recommendationsList = document.getElementById('recommendations-list');
-            if (recommendationsList) {
-                recommendationsList.innerHTML = '';
-                
-                // Add tools gained
-                if (this.player.tools.length > 0) {
-                    const toolsItem = document.createElement('li');
-                    toolsItem.innerHTML = `<strong>Tools gained:</strong> ${this.player.tools.join(', ')}`;
-                    recommendationsList.appendChild(toolsItem);
-                }
-                
-                // Add recommendations based on incorrect answers
-                const incorrectQuestions = this.player.questionHistory.filter(q => !q.isCorrect);
-                if (incorrectQuestions.length > 0) {
-                    incorrectQuestions.forEach(q => {
-                        const recommendation = document.createElement('li');
-                        recommendation.textContent = `Review ${q.scenario.title}: ${q.scenario.description}`;
-                        recommendationsList.appendChild(recommendation);
-                    });
-                } else if (passed) {
-                    const perfectItem = document.createElement('li');
-                    perfectItem.textContent = 'Great job! You answered all questions correctly.';
-                    recommendationsList.appendChild(perfectItem);
+                    performanceSummary.textContent = 'Quiz failed. You did not earn enough points to pass. You can retry this quiz later.';
                 }
             }
             
             // Generate question review list
-            const reviewList = document.getElementById('review-list');
+            const reviewList = document.getElementById('question-review');
             if (reviewList) {
                 reviewList.innerHTML = ''; // Clear existing content
                 
@@ -743,6 +656,34 @@ class TestQuiz extends BaseQuiz {
                     
                     reviewList.appendChild(reviewItem);
                 });
+            }
+            
+            // Generate recommendations
+            const recommendations = document.getElementById('recommendations');
+            if (recommendations) {
+                let recommendationsHTML = '';
+                
+                if (scorePercentage >= 90) {
+                    recommendationsHTML = '<p>🌟 Outstanding! You have demonstrated excellent knowledge of testing principles!</p>';
+                } else if (scorePercentage >= 70) {
+                    recommendationsHTML = '<p>👍 Good job! Here are some areas to review:</p><ul>';
+                    // Find areas where the user made mistakes
+                    const incorrectQuestions = this.player.questionHistory.filter(q => !q.isCorrect);
+                    incorrectQuestions.forEach(q => {
+                        recommendationsHTML += `<li>Review ${q.scenario.title}: ${q.scenario.description}</li>`;
+                    });
+                    recommendationsHTML += '</ul>';
+                } else {
+                    recommendationsHTML = '<p>📚 Here are key areas for improvement:</p><ul>';
+                    // Find areas where the user made mistakes
+                    const incorrectQuestions = this.player.questionHistory.filter(q => !q.isCorrect);
+                    incorrectQuestions.forEach(q => {
+                        recommendationsHTML += `<li>Review ${q.scenario.title}: ${q.scenario.description}</li>`;
+                    });
+                    recommendationsHTML += '</ul>';
+                }
+                
+                recommendations.innerHTML = recommendationsHTML;
             }
             
             // Save final progress

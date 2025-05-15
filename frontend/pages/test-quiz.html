@@ -4,125 +4,108 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Test Quiz</title>
+    <link rel="icon" type="image/x-icon" href="../assets/favicon.ico">
     <link rel="stylesheet" href="../styles.css">
     <link rel="stylesheet" href="../styles/quiz.css">
     <script type="module" src="../config.js"></script>
-    <script type="module" src="../api-service.js"></script>
     <script type="module" src="../QuizUser.js"></script>
+    <script type="module" src="../api-service.js"></script>
+    <script type="module" src="../login.js"></script>
+    <script type="module" src="../auth.js"></script>
     <script type="module" src="../quiz-helper.js"></script>
-    <script type="module" src="../services/QuizProgressService.js"></script>
+    <script type="module">
+        import { handleLogout } from '../auth.js';
+        window.handleLogout = handleLogout;
+    </script>
     <script type="module" src="../quizzes/test-quiz.js"></script>
 </head>
 <body>
     <header class="app-header">
         <div class="logo">
-            <img src="../assets/zoonou-logo.svg" alt="Zoonou Logo" width="32" height="32">
             <h1>QA Learning Hub</h1>
         </div>
         <div class="user-menu">
             <div class="user-info">
-                <div class="username" id="headerUsername">User</div>
+                <div class="username" id="headerUsername"></div>
                 <div class="user-role">Learner</div>
             </div>
-            <button class="logout-button" onclick="window.location.href='../index.html'">Back</button>
+            <button class="logout-button" onclick="handleLogout()">Logout</button>
         </div>
     </header>
 
-    <main class="main-container">
-        <div class="quiz-container">
-            <h1 class="quiz-title">Test Quiz</h1>
-            <p class="quiz-description">A comprehensive test quiz with 9 scenarios across three difficulty levels.</p>
-            
-            <div id="loading-indicator" class="loading-indicator">
-                <div class="spinner"></div>
-                <p>Loading...</p>
-            </div>
-            
-            <!-- Level transition messages container -->
-            <div id="level-transition-container" class="level-transition-container"></div>
-            
-            <!-- Quiz Header Progress Info -->
+    <div class="quiz-container">
+        <div class="quiz-header">
+            <a href="../index.html" class="back-link">← Back to Hub</a>
             <div class="quiz-header-progress">
-                <div class="progress-info">
-                    <div class="level-info">Level: Basic</div>
-                    <div class="question-info">Question: 1/9</div>
+                <div class="level-info">
+                    <span id="level-indicator">Level: Basic</span>
                 </div>
                 <div class="progress-bar">
-                    <div class="progress-fill" style="width: 0%"></div>
+                    <div id="progress-fill"></div>
                 </div>
-            </div>
-
-            <!-- Game Screen - Shown during questions -->
-            <div id="game-screen" class="screen">
-                <div class="question-section">
-                    <h2 id="scenario-title">Question Title</h2>
-                    <p id="scenario-description">Question description goes here.</p>
-                    
-                    <form id="options-form">
-                        <div id="options-container" class="options-container">
-                            <!-- Options will be dynamically inserted here -->
-                        </div>
-                        <button id="submit-btn" class="submit-button" type="button">Submit</button>
-                    </form>
-                    
-                    <!-- Timer display -->
-                    <div id="timer-container" class="timer-container hidden">
-                        <div id="timer-display" class="timer-display">30</div>
-                        <div id="timer-progress" class="timer-progress">
-                            <div id="timer-fill" class="timer-fill"></div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            
-            <!-- Outcome Screen - Shown after answering -->
-            <div id="outcome-screen" class="screen hidden">
-                <div class="outcome-content">
-                    <!-- This will be filled dynamically -->
-                </div>
-            </div>
-            
-            <!-- End Screen - Shown at quiz completion -->
-            <div id="end-screen" class="screen hidden">
-                <h2>Quiz Complete!</h2>
-                
-                <div class="results-summary">
-                    <div id="score-display" class="score-display">
-                        <div class="score-value">0%</div>
-                        <div class="score-label">Score</div>
-                    </div>
-                    <div id="experience-display" class="experience-display">
-                        <div class="experience-value">0</div>
-                        <div class="experience-label">XP</div>
-                    </div>
-                </div>
-                
-                <div id="pass-fail-message" class="pass-fail-message">
-                    <!-- Dynamically filled based on pass/fail -->
-                </div>
-                
-                <div class="review-section">
-                    <h3>Question Review:</h3>
-                    <div id="review-list" class="review-list">
-                        <!-- Dynamically filled with questions and answers -->
-                    </div>
-                </div>
-                
-                <div class="recommendations-section">
-                    <h3>Areas to Focus On:</h3>
-                    <ul id="recommendations-list">
-                        <!-- Dynamically filled -->
-                    </ul>
-                </div>
-                
-                <div class="end-buttons">
-                    <button id="restart-btn" class="action-button">Restart Quiz</button>
-                    <button id="home-btn" class="action-button" onclick="window.location.href='../index.html'">Return Home</button>
-                </div>
+                <div id="question-progress" class="question-counter">Question: 1/9</div>
             </div>
         </div>
-    </main>
-    
+        
+        <!-- Game Screen -->
+        <div id="game-screen" class="quiz-card" role="main" aria-live="polite">
+            <div id="level-transition-container"></div>
+            
+            <div id="timer-container" class="timer-container" aria-live="polite">
+                <span id="timer-display">60</span>
+            </div>
+            
+            <div class="question-section">
+                <h2 id="scenario-title" tabindex="0"></h2>
+                <p id="scenario-description" tabindex="0"></p>
+            </div>
+            <form id="options-form" class="options-section">
+                <div id="options-container">
+                    <!-- Options will be dynamically inserted here -->
+                </div>
+                <button type="submit" id="submit-btn" class="submit-button">Submit Answer</button>
+            </form>
+        </div>
+
+        <!-- Outcome Screen -->
+        <div id="outcome-screen" class="quiz-card hidden">
+            <div class="outcome-content">
+                <h3>Outcome</h3>
+                <p id="outcome-text"></p>
+                <div id="rewards">
+                    <p id="xp-gained"></p>
+                    <p id="tool-gained"></p>
+                </div>
+                <button id="continue-btn" class="submit-button">Continue</button>
+            </div>
+        </div>
+
+        <!-- End Screen -->
+        <div id="end-screen" class="quiz-card hidden">
+            <h2>Quiz Complete!</h2>
+            <div id="final-score"></div>
+            <div id="performance-summary"></div>
+            
+            <div class="review-section">
+                <h3>Question Review</h3>
+                <div id="question-review" class="review-list"></div>
+            </div>
+            
+            <div class="recommendations-section">
+                <h3>Recommendations</h3>
+                <div id="recommendations"></div>
+            </div>
+
+            <a href="../index.html" class="back-link">← Back to Hub</a>
+            <button id="restart-btn" class="submit-button">Restart Quiz</button>
+        </div>
+
+        <div id="loading-indicator" class="loading-indicator hidden">
+            <div class="spinner"></div>
+            <span>Loading...</span>
+        </div>
+    </div>
+
     <script>
         // Set username in header if available
         document.addEventListener('DOMContentLoaded', () => {
