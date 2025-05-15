@@ -444,6 +444,5 @@ export const initiativeScenarios = {
                     }
                 ]
             }
-        ]
-    };
-
+    ]
+}
