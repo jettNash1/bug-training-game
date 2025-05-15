@@ -1,4 +1,4 @@
-export const testerMindsetScenarios = {
+export const contentCopyScenarios = {
         // Basic Scenarios (IDs 1-10, expanded from 1-5)
         basic: [
             {
