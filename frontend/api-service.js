@@ -178,15 +178,48 @@ export class APIService {
 
     async adminLogin(username, password) {
         try {
-            console.log('Attempting admin login:', { username, url: `${this.baseUrl}/admin/login` });
+            // Get the current API base URL
+            const apiBaseUrl = this.baseUrl;
+            console.log('Attempting admin login:', { 
+                username, 
+                url: `${apiBaseUrl}/admin/login`,
+                apiBaseUrl
+            });
             
-            const response = await fetch(`${this.baseUrl}/admin/login`, {
+            if (!apiBaseUrl) {
+                console.error('API base URL is not defined');
+                throw new Error('API configuration error. Please check your network connection and try again.');
+            }
+            
+            // Check if the server is reachable before attempting the login
+            try {
+                const pingResponse = await fetch(`${apiBaseUrl}/health`, { 
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    credentials: 'include',
+                    // Add timeout to prevent hanging requests
+                    signal: AbortSignal.timeout(5000) // 5 second timeout
+                });
+                
+                if (!pingResponse.ok) {
+                    console.warn('API health check failed before login attempt');
+                }
+            } catch (pingError) {
+                console.warn('Could not connect to API server:', pingError);
+                // Continue with login attempt anyway
+            }
+            
+            const response = await fetch(`${apiBaseUrl}/admin/login`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
                 },
                 credentials: 'include',
-                body: JSON.stringify({ username, password })
+                body: JSON.stringify({ username, password }),
+                // Add timeout to prevent hanging requests
+                signal: AbortSignal.timeout(10000) // 10 second timeout
             });
 
             console.log('Admin login response status:', response.status);
@@ -218,6 +251,12 @@ export class APIService {
 
             return data;
         } catch (error) {
+            // Check if this is a network error
+            if (error.name === 'TypeError' && error.message === 'Failed to fetch') {
+                console.error('Admin login network error - server may be unreachable:', error);
+                throw new Error('Server connection failed. Please check your network connection and try again.');
+            }
+            
             console.error('Admin login error:', error);
             throw error;
         }
@@ -226,6 +265,17 @@ export class APIService {
     async getAllUsers() {
         try {
             console.log('Fetching all users');
+            const apiBaseUrl = this.baseUrl;
+            
+            if (!apiBaseUrl) {
+                console.error('API base URL is not defined');
+                return { 
+                    success: false, 
+                    message: 'API configuration error',
+                    data: []
+                };
+            }
+            
             const adminToken = localStorage.getItem('adminToken');
             if (!adminToken) {
                 console.error('No admin token found when trying to fetch users');
@@ -2937,27 +2987,52 @@ export class APIService {
                 return { success: false, message: 'No admin token found' };
             }
 
-            const response = await fetch(`${this.baseUrl}/admin/verify-token`, {
-                headers: {
-                    'Authorization': `Bearer ${adminToken}`,
-                    'Content-Type': 'application/json'
-                },
-                credentials: 'include'
-            });
-
-            if (!response.ok) {
-                if (response.status === 401) {
-                    localStorage.removeItem('adminToken');
-                    return { success: false, message: 'Admin token expired or invalid' };
-                }
-                return { success: false, message: `Server error: ${response.status}` };
-            }
+            // Create AbortController for timeout to prevent hanging requests
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
 
             try {
-                const data = await response.json();
-                return { success: data.valid !== false, data };
-            } catch (parseError) {
-                return { success: false, message: 'Invalid response from server' };
+                const response = await fetch(`${this.baseUrl}/admin/verify-token`, {
+                    headers: {
+                        'Authorization': `Bearer ${adminToken}`,
+                        'Content-Type': 'application/json'
+                    },
+                    credentials: 'include',
+                    signal: controller.signal
+                });
+
+                clearTimeout(timeoutId); // Clear the timeout since fetch completed
+
+                if (!response.ok) {
+                    if (response.status === 401) {
+                        localStorage.removeItem('adminToken');
+                        return { success: false, message: 'Admin token expired or invalid' };
+                    }
+                    return { success: false, message: `Server error: ${response.status}` };
+                }
+
+                try {
+                    const data = await response.json();
+                    return { success: data.valid !== false, data };
+                } catch (parseError) {
+                    return { success: false, message: 'Invalid response from server' };
+                }
+            } catch (fetchError) {
+                clearTimeout(timeoutId); // Clear the timeout in case of error
+
+                // Check for timeout error
+                if (fetchError.name === 'AbortError') {
+                    console.error('Timeout verifying admin token');
+                    return { success: false, message: 'Verification request timed out. Server may be busy.' };
+                }
+
+                // Check for network error
+                if (fetchError.name === 'TypeError' && fetchError.message === 'Failed to fetch') {
+                    console.error('Network error verifying admin token - server may be unreachable');
+                    return { success: false, message: 'Server connection failed. Please check your network connection.' };
+                }
+
+                throw fetchError; // Re-throw unexpected errors
             }
         } catch (error) {
             console.error('Error verifying admin token:', error);

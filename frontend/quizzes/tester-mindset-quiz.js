@@ -23,7 +23,7 @@ export class TesterMindsetQuiz extends BaseQuiz {
         
         // Call the parent constructor with our config
         super(config);
-        
+
         // Set the quiz name
         Object.defineProperty(this, 'quizName', {
             value: 'tester-mindset',
@@ -31,7 +31,7 @@ export class TesterMindsetQuiz extends BaseQuiz {
             configurable: false,
             enumerable: true
         });
-        
+
         // Initialize player state
         this.player = {
             name: '',
@@ -40,12 +40,12 @@ export class TesterMindsetQuiz extends BaseQuiz {
             currentScenario: 0,
             tools: []
         };
-        
+
         // Load scenarios from our data file
         this.basicScenarios = testerMindsetScenarios.basic;
         this.intermediateScenarios = testerMindsetScenarios.intermediate;
         this.advancedScenarios = testerMindsetScenarios.advanced;
-        
+
         // Initialize elements
         this.gameScreen = document.getElementById('game-screen');
         this.outcomeScreen = document.getElementById('outcome-screen');
@@ -68,7 +68,7 @@ export class TesterMindsetQuiz extends BaseQuiz {
         
         // Initialize event listeners
         this.initializeEventListeners();
-        
+
         // Start the quiz
         this.startGame();
     }
@@ -133,7 +133,7 @@ export class TesterMindsetQuiz extends BaseQuiz {
         ).length;
         return Math.round((correctAnswers / Math.max(1, this.player.questionHistory.length)) * 100);
     }
-    
+
     // Start the quiz
     async startGame() {
         if (this.isLoading) return;
@@ -148,14 +148,14 @@ export class TesterMindsetQuiz extends BaseQuiz {
             if (loadingIndicator) {
                 loadingIndicator.classList.remove('hidden');
             }
-            
+
             // Set player name
             this.player.name = localStorage.getItem('username');
             if (!this.player.name) {
                 window.location.href = '../login.html';
                 return;
             }
-            
+
             // Try to load previous progress
             const hasProgress = await this.loadProgress();
             console.log(`[TesterMindsetQuiz] Progress loaded: ${hasProgress}`);
@@ -196,7 +196,7 @@ export class TesterMindsetQuiz extends BaseQuiz {
                 transitionContainer.innerHTML = '';
                 transitionContainer.classList.remove('active');
             }
-            
+
             // Display the first/next scenario
             this.displayScenario();
             
@@ -279,7 +279,7 @@ export class TesterMindsetQuiz extends BaseQuiz {
         // Check if the quiz is already completed
         if (this.shouldEndGame()) {
             this.endGame(false);
-            return;
+                    return;
         }
         
         // Get the current scenario based on progress
@@ -322,7 +322,7 @@ export class TesterMindsetQuiz extends BaseQuiz {
                 }, 3000);
             }
         }
-        
+
         // Update UI for scenario
         const titleElement = document.getElementById('scenario-title');
         const descriptionElement = document.getElementById('scenario-description');
@@ -331,7 +331,7 @@ export class TesterMindsetQuiz extends BaseQuiz {
             titleElement.textContent = scenario.title;
             descriptionElement.textContent = scenario.description;
         }
-        
+
         // Update question progress
         const questionProgress = document.getElementById('question-progress');
         if (questionProgress) {
@@ -355,30 +355,30 @@ export class TesterMindsetQuiz extends BaseQuiz {
         const optionsContainer = document.getElementById('options-container');
         if (optionsContainer) {
             optionsContainer.innerHTML = '';
-            
-            // Create a copy of options with their original indices
+
+        // Create a copy of options with their original indices
             const shuffledOptions = scenario.options.map((option, index) => ({
-                ...option,
-                originalIndex: index
-            }));
+            ...option,
+            originalIndex: index
+        }));
             
             // Shuffle the options
-            for (let i = shuffledOptions.length - 1; i > 0; i--) {
-                const j = Math.floor(Math.random() * (i + 1));
-                [shuffledOptions[i], shuffledOptions[j]] = [shuffledOptions[j], shuffledOptions[i]];
-            }
+        for (let i = shuffledOptions.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [shuffledOptions[i], shuffledOptions[j]] = [shuffledOptions[j], shuffledOptions[i]];
+        }
             
             shuffledOptions.forEach((option, idx) => {
                 const optionDiv = document.createElement('div');
                 optionDiv.className = 'option';
                 optionDiv.innerHTML = `
-                    <input type="radio" 
-                        name="option" 
-                        value="${option.originalIndex}" 
+                <input type="radio" 
+                    name="option" 
+                    value="${option.originalIndex}" 
                         id="option${idx}"
-                        tabindex="0"
-                        aria-label="${option.text}"
-                        role="radio">
+                    tabindex="0"
+                    aria-label="${option.text}"
+                    role="radio">
                     <label for="option${idx}">${option.text}</label>
                 `;
                 optionsContainer.appendChild(optionDiv);
@@ -414,12 +414,12 @@ export class TesterMindsetQuiz extends BaseQuiz {
                 clearInterval(this.questionTimer);
                 this.questionTimer = null;
             }
-            
-            const submitButton = document.querySelector('.submit-button');
-            if (submitButton) {
-                submitButton.disabled = true;
-            }
-            
+        
+        const submitButton = document.querySelector('.submit-button');
+        if (submitButton) {
+            submitButton.disabled = true;
+        }
+
             const selectedOption = document.querySelector('input[name="option"]:checked');
             if (!selectedOption && !timedOut) {
                 alert('Please select an answer.');
@@ -453,18 +453,18 @@ export class TesterMindsetQuiz extends BaseQuiz {
             if (!timedOut) {
                 this.player.experience += selectedAnswer.experience;
             }
-            
+
             // Find the correct answer (option with highest experience)
             const correctAnswer = scenario.options.reduce((prev, current) => 
                 (prev.experience > current.experience) ? prev : current
             );
-            
+
             // Mark selected answer as correct or incorrect
             selectedAnswer.isCorrect = selectedAnswer === correctAnswer;
             
             // Calculate time spent on this question
             const timeSpent = this.questionStartTime ? Date.now() - this.questionStartTime : null;
-            
+
             // Add to question history
             this.player.questionHistory.push({
                 scenario: scenario,
@@ -473,16 +473,16 @@ export class TesterMindsetQuiz extends BaseQuiz {
                 timeSpent: timeSpent,
                 timedOut: timedOut
             });
-            
+
             // Increment current scenario
             this.player.currentScenario++;
-            
+
             // Save progress
             await this.saveProgress();
             
             // Show outcome
-            this.gameScreen.classList.add('hidden');
-            this.outcomeScreen.classList.remove('hidden');
+                this.gameScreen.classList.add('hidden');
+                this.outcomeScreen.classList.remove('hidden');
             
             // Display outcome content
             const outcomeContent = document.querySelector('.outcome-content');
@@ -517,7 +517,7 @@ export class TesterMindsetQuiz extends BaseQuiz {
                     continueBtn.addEventListener('click', () => this.nextScenario());
                 }
             }
-            
+
             this.updateProgress();
             
         } catch (error) {
@@ -531,7 +531,7 @@ export class TesterMindsetQuiz extends BaseQuiz {
             }
         }
     }
-    
+
     // Move to the next scenario
     nextScenario() {
         // Hide outcome screen and show game screen
@@ -543,7 +543,7 @@ export class TesterMindsetQuiz extends BaseQuiz {
         // Display next scenario
         this.displayScenario();
     }
-    
+
     // Update progress display
     updateProgress() {
         // Get current level and question count
@@ -570,7 +570,7 @@ export class TesterMindsetQuiz extends BaseQuiz {
             progressFill.style.width = `${progressPercentage}%`;
         }
     }
-    
+
     // End the quiz
     async endGame(failed = false) {
         console.log('[TesterMindsetQuiz] Ending game...');
@@ -591,19 +591,19 @@ export class TesterMindsetQuiz extends BaseQuiz {
             });
             
             // Hide screens
-            this.gameScreen.classList.add('hidden');
-            this.outcomeScreen.classList.add('hidden');
-            this.endScreen.classList.remove('hidden');
-            
+        this.gameScreen.classList.add('hidden');
+        this.outcomeScreen.classList.add('hidden');
+        this.endScreen.classList.remove('hidden');
+
             // Hide the timer
             const timerContainer = document.getElementById('timer-container');
             if (timerContainer) {
                 timerContainer.classList.add('hidden');
             }
-            
-            // Update the quiz complete header based on status
-            const quizCompleteHeader = document.querySelector('#end-screen h2');
-            if (quizCompleteHeader) {
+        
+        // Update the quiz complete header based on status
+        const quizCompleteHeader = document.querySelector('#end-screen h2');
+        if (quizCompleteHeader) {
                 quizCompleteHeader.textContent = passed ? 'Quiz Complete!' : 'Quiz Failed!';
             }
             
@@ -617,41 +617,41 @@ export class TesterMindsetQuiz extends BaseQuiz {
             const performanceSummary = document.getElementById('performance-summary');
             if (performanceSummary) {
                 if (passed) {
-                    // Find the appropriate performance message
-                    const threshold = this.config.performanceThresholds.find(t => scorePercentage >= t.threshold);
+            // Find the appropriate performance message
+            const threshold = this.config.performanceThresholds.find(t => scorePercentage >= t.threshold);
                     performanceSummary.textContent = threshold ? threshold.message : 'Congratulations! You passed the quiz.';
-                } else {
+            } else {
                     performanceSummary.textContent = 'Quiz failed. You did not earn enough points to pass. You can retry this quiz later.';
-                }
             }
-            
-            // Generate question review list
-            const reviewList = document.getElementById('question-review');
-            if (reviewList) {
-                reviewList.innerHTML = ''; // Clear existing content
+        }
+
+        // Generate question review list
+        const reviewList = document.getElementById('question-review');
+        if (reviewList) {
+            reviewList.innerHTML = ''; // Clear existing content
                 
-                this.player.questionHistory.forEach((record, index) => {
-                    const reviewItem = document.createElement('div');
-                    reviewItem.className = 'review-item';
+            this.player.questionHistory.forEach((record, index) => {
+                const reviewItem = document.createElement('div');
+                reviewItem.className = 'review-item';
                     reviewItem.classList.add(record.isCorrect ? 'correct' : 'incorrect');
                     
                     // Add timed out class if applicable
                     if (record.timedOut) {
                         reviewItem.classList.add('timed-out');
                     }
-                    
-                    reviewItem.innerHTML = `
-                        <h4>Question ${index + 1}</h4>
+                
+                reviewItem.innerHTML = `
+                    <h4>Question ${index + 1}</h4>
                         <p class="scenario">${record.scenario.title}</p>
-                        <p class="answer"><strong>Your Answer:</strong> ${record.selectedAnswer.text}</p>
-                        <p class="outcome"><strong>Outcome:</strong> ${record.selectedAnswer.outcome}</p>
+                    <p class="answer"><strong>Your Answer:</strong> ${record.selectedAnswer.text}</p>
+                    <p class="outcome"><strong>Outcome:</strong> ${record.selectedAnswer.outcome}</p>
                         <p class="result"><strong>Result:</strong> ${record.isCorrect ? 'Correct' : 'Incorrect'} ${record.timedOut ? '(Timed Out)' : ''}</p>
-                    `;
-                    
-                    reviewList.appendChild(reviewItem);
-                });
-            }
-            
+                `;
+                
+                reviewList.appendChild(reviewItem);
+            });
+        }
+
             // Generate recommendations
             const recommendations = document.getElementById('recommendations');
             if (recommendations) {
