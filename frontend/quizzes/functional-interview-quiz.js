@@ -1,7 +1,7 @@
 import { APIService } from '../api-service.js';
 import { BaseQuiz } from '../quiz-helper.js';
 import { QuizUser } from '../QuizUser.js';
-import { functionalInterviewScenarios } from '../data/functional-interview-scenarios.js';
+import { functionalInterviewScenarios } from '../data/functionalInterview-scenarios.js';
 
 export class FunctionalInterviewQuiz extends BaseQuiz {
     constructor() {

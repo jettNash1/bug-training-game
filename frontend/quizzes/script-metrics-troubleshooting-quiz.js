@@ -1,7 +1,7 @@
 import { APIService } from '../api-service.js';
 import { BaseQuiz } from '../quiz-helper.js';
 import { QuizUser } from '../QuizUser.js';
-import { scriptMetricsTroubleshootingScenarios } from '../data/script-metrics-troubleshooting-scenarios.js';
+import { scriptMetricsScenarios } from '../data/scriptMetrics-scenarios.js';
 
 export class ScriptMetricsTroubleshootingQuiz extends BaseQuiz {
     constructor() {
@@ -42,9 +42,9 @@ export class ScriptMetricsTroubleshootingQuiz extends BaseQuiz {
         };
 
         // Load scenarios from our data file
-        this.basicScenarios = scriptMetricsTroubleshootingScenarios.basic;
-        this.intermediateScenarios = scriptMetricsTroubleshootingScenarios.intermediate;
-        this.advancedScenarios = scriptMetricsTroubleshootingScenarios.advanced;
+        this.basicScenarios = scriptMetricsScenarios.basic;
+        this.intermediateScenarios = scriptMetricsScenarios.intermediate;
+        this.advancedScenarios = scriptMetricsScenarios.advanced;
 
         // Initialize elements
         this.gameScreen = document.getElementById('game-screen');

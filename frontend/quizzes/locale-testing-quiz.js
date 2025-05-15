@@ -1,7 +1,7 @@
 import { APIService } from '../api-service.js';
 import { BaseQuiz } from '../quiz-helper.js';
 import { QuizUser } from '../QuizUser.js';
-import { localeTestingScenarios } from '../data/locale-testing-scenarios.js';
+import { localeTestingScenarios } from '../data/localeTesting-scenarios.js';
 
 export class LocaleTestingQuiz extends BaseQuiz {
     constructor() {

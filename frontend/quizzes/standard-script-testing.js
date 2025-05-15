@@ -1,7 +1,7 @@
 import { APIService } from '../api-service.js';
 import { BaseQuiz } from '../quiz-helper.js';
 import { QuizUser } from '../QuizUser.js';
-import { standardScriptTestingScenarios } from '../data/standard-script-testing-scenarios.js';
+import { standardScriptScenarios } from '../data/standardScript-scenarios.js';
 
 export class StandardScriptTestingQuiz extends BaseQuiz {
     constructor() {
@@ -42,9 +42,9 @@ export class StandardScriptTestingQuiz extends BaseQuiz {
         };
 
         // Load scenarios from our data file
-        this.basicScenarios = standardScriptTestingScenarios.basic;
-        this.intermediateScenarios = standardScriptTestingScenarios.intermediate;
-        this.advancedScenarios = standardScriptTestingScenarios.advanced;
+        this.basicScenarios = standardScriptScenarios.basic;
+        this.intermediateScenarios = standardScriptScenarios.intermediate;
+        this.advancedScenarios = standardScriptScenarios.advanced;
 
         // Initialize elements
         this.gameScreen = document.getElementById('game-screen');

@@ -1,7 +1,7 @@
 import { APIService } from '../api-service.js';
 import { BaseQuiz } from '../quiz-helper.js';
 import { QuizUser } from '../QuizUser.js';
-import { sanitySmokeScenarios } from '../data/sanity-smoke-scenarios.js';
+import { sanitySmokeScenarios } from '../data/sanitySmoke-scenarios.js';
 
 export class SanitySmokeQuiz extends BaseQuiz {
     constructor() {

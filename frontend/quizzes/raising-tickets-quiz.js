@@ -1,7 +1,7 @@
 import { APIService } from '../api-service.js';
 import { BaseQuiz } from '../quiz-helper.js';
 import { QuizUser } from '../QuizUser.js';
-import { raisingTicketsScenarios } from '../data/raising-tickets-scenarios.js';
+import { raisingTicketsScenarios } from '../data/raisingTickets-scenarios.js';
 
 export class RaisingTicketsQuiz extends BaseQuiz {
     constructor() {

@@ -1,7 +1,7 @@
 import { APIService } from '../api-service.js';
 import { BaseQuiz } from '../quiz-helper.js';
 import { QuizUser } from '../QuizUser.js';
-import { riskManagementScenarios } from '../data/risk-management-scenarios.js';
+import { riskManagementScenarios } from '../data/riskManagement-scenarios.js';
 
 export class RiskManagementQuiz extends BaseQuiz {
     constructor() {

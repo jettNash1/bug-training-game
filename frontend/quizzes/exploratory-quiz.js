@@ -1,7 +1,7 @@
 import { APIService } from '../api-service.js';
 import { BaseQuiz } from '../quiz-helper.js';
 import { QuizUser } from '../QuizUser.js';
-import { exploratoryScenarios } from '../data/exploratory-scenarios.js';
+import { exploratoryTestingScenarios } from '../data/exploratory-scenarios.js';
 
 export class ExploratoryQuiz extends BaseQuiz {
     constructor() {
@@ -18,7 +18,7 @@ export class ExploratoryQuiz extends BaseQuiz {
                 { threshold: 70, message: '👍 Good work! You\'ve passed the quiz!' },
                 { threshold: 0, message: '📚 Consider reviewing exploratory testing best practices and try again!' }
             ],
-            quizName: 'exploratory-testing'
+            quizName: 'exploratory'
         };
         
         // Call the parent constructor with our config
@@ -26,7 +26,7 @@ export class ExploratoryQuiz extends BaseQuiz {
 
         // Set the quiz name
         Object.defineProperty(this, 'quizName', {
-            value: 'exploratory-testing',
+            value: 'exploratory',
             writable: false,
             configurable: false,
             enumerable: true

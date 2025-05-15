@@ -1,7 +1,7 @@
 import { APIService } from '../api-service.js';
 import { BaseQuiz } from '../quiz-helper.js';
 import { QuizUser } from '../QuizUser.js';
-import { nonFunctionalTestingScenarios } from '../data/non-functional-testing-scenarios.js';
+import { nonFunctionalTestingScenarios } from '../data/nonFunctional-scenarios.js';
 
 export class NonFunctionalTestingQuiz extends BaseQuiz {
     constructor() {

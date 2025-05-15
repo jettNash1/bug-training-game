@@ -1,7 +1,7 @@
 import { APIService } from '../api-service.js';
 import { BaseQuiz } from '../quiz-helper.js';
 import { QuizUser } from '../QuizUser.js';
-import { timeManagementScenarios } from '../data/time-management-scenarios.js';
+import { timeManagementScenarios } from '../data/timeManagement-scenarios.js';
 
 export class TimeManagementQuiz extends BaseQuiz {
     constructor() {

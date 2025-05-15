@@ -1,7 +1,7 @@
 import { APIService } from '../api-service.js';
 import { BaseQuiz } from '../quiz-helper.js';
 import { QuizUser } from '../QuizUser.js';
-import { issueVerificationScenarios } from '../data/issue-verification-scenarios.js';
+import { issueVerificationScenarios } from '../data/issueVerification-scenarios.js';
 
 export class IssueVerificationQuiz extends BaseQuiz {
     constructor() {
