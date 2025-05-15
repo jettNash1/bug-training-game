@@ -9,8 +9,8 @@ class TestQuiz extends BaseQuiz {
         
         // Configure the quiz with basic settings
         const config = {
-            maxXP: 60, // Maximum experience points possible
-            totalQuestions: 3, // Total number of questions in the quiz
+            maxXP: 180, // Maximum experience points possible (increased for more questions)
+            totalQuestions: 9, // Updated to 9 questions total (3 from each level)
             passPercentage: 70, // Percentage needed to pass
             performanceThresholds: [
                 { threshold: 90, message: '🏆 Outstanding! You have excellent testing knowledge!' },
@@ -74,9 +74,9 @@ class TestQuiz extends BaseQuiz {
         this.startGame();
     }
     
-    // Override the shouldEndGame method for our simple 3-question quiz
+    // Override the shouldEndGame method for our 9-question quiz
     shouldEndGame() {
-        return this.player.questionHistory.length >= 3;
+        return this.player.questionHistory.length >= 9;
     }
     
     // Initialize event listeners
@@ -103,9 +103,11 @@ class TestQuiz extends BaseQuiz {
     
     // Get the scenarios for the current level
     getCurrentScenarios() {
-        if (this.player.currentScenario === 0) {
+        const questionCount = this.player.questionHistory.length;
+        
+        if (questionCount < 3) {
             return this.basicScenarios;
-        } else if (this.player.currentScenario === 1) {
+        } else if (questionCount < 6) {
             return this.intermediateScenarios;
         } else {
             return this.advancedScenarios;
@@ -114,9 +116,11 @@ class TestQuiz extends BaseQuiz {
     
     // Get the current level based on question index
     getCurrentLevel() {
-        if (this.player.currentScenario === 0) {
+        const questionCount = this.player.questionHistory.length;
+        
+        if (questionCount < 3) {
             return 'Basic';
-        } else if (this.player.currentScenario === 1) {
+        } else if (questionCount < 6) {
             return 'Intermediate';
         } else {
             return 'Advanced';
@@ -215,11 +219,13 @@ class TestQuiz extends BaseQuiz {
         
         // Get the current scenario based on progress
         const currentScenarios = this.getCurrentScenarios();
-        const scenario = currentScenarios[0]; // We only have one scenario per level
+        const scenarioIndex = this.player.questionHistory.length % 3; // Use modulo to cycle through 3 scenarios per level
+        const scenario = currentScenarios[scenarioIndex]; 
         
         console.log(`[TestQuiz] Displaying scenario #${this.player.currentScenario + 1}:`, {
             title: scenario.title,
-            level: this.getCurrentLevel()
+            level: this.getCurrentLevel(),
+            index: scenarioIndex
         });
         
         // Show level transition message when level changes
@@ -227,8 +233,8 @@ class TestQuiz extends BaseQuiz {
         const questionCount = this.player.questionHistory.length;
         
         if (questionCount === 0 || 
-            (questionCount === 1 && currentLevel === 'Intermediate') || 
-            (questionCount === 2 && currentLevel === 'Advanced')) {
+            (questionCount === 3 && currentLevel === 'Intermediate') || 
+            (questionCount === 6 && currentLevel === 'Advanced')) {
             
             const transitionContainer = document.getElementById('level-transition-container');
             if (transitionContainer) {
@@ -265,13 +271,13 @@ class TestQuiz extends BaseQuiz {
         }
         
         if (questionInfo) {
-            questionInfo.textContent = `Question: ${this.player.currentScenario + 1}/3`;
+            questionInfo.textContent = `Question: ${this.player.currentScenario + 1}/9`;
         }
         
         // Update progress bar
         const progressFill = document.querySelector('.progress-fill');
         if (progressFill) {
-            const progressPercentage = (this.player.currentScenario / 3) * 100;
+            const progressPercentage = (this.player.currentScenario / 9) * 100;
             progressFill.style.width = `${progressPercentage}%`;
         }
         
@@ -361,7 +367,8 @@ class TestQuiz extends BaseQuiz {
             
             // Get the current scenario
             const currentScenarios = this.getCurrentScenarios();
-            const scenario = currentScenarios[0]; // We only have one scenario per level
+            const scenarioIndex = this.player.questionHistory.length % 3;
+            const scenario = currentScenarios[scenarioIndex];
             
             // Get the selected answer
             const selectedAnswer = scenario.options[optionIndex];
@@ -465,7 +472,7 @@ class TestQuiz extends BaseQuiz {
         }
         
         if (questionInfoElement) {
-            questionInfoElement.textContent = `Question: ${questionNumber}/3`;
+            questionInfoElement.textContent = `Question: ${questionNumber}/9`;
         }
         
         // Ensure the card is visible
@@ -477,7 +484,7 @@ class TestQuiz extends BaseQuiz {
         // Update progress bar
         const progressFill = document.querySelector('.progress-fill');
         if (progressFill) {
-            const progressPercentage = (totalAnswered / 3) * 100;
+            const progressPercentage = (totalAnswered / 9) * 100;
             progressFill.style.width = `${progressPercentage}%`;
         }
     }

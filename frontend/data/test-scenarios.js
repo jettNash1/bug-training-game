@@ -28,11 +28,69 @@ export const testScenarios = {
                     experience: 0
                 }
             ]
+        },
+        {
+            id: 2,
+            level: 'Basic',
+            title: 'Bug Description',
+            description: 'You found a bug in the application. What information should you include in your bug report?',
+            options: [
+                {
+                    text: 'Steps to reproduce, expected vs. actual results, environment details, and severity assessment',
+                    outcome: 'Perfect! This provides all the essential information for developers to understand and fix the issue.',
+                    experience: 15,
+                    tool: 'Bug Reporting'
+                },
+                {
+                    text: 'Just a screenshot of the error and a brief description',
+                    outcome: 'Screenshots are helpful but insufficient without proper context and reproduction steps.',
+                    experience: -5
+                },
+                {
+                    text: 'A general description explaining that something doesn\'t work',
+                    outcome: 'Vague descriptions make it difficult for developers to locate and fix the issue.',
+                    experience: -10
+                },
+                {
+                    text: 'Only your assessment of how serious the bug is',
+                    outcome: 'Severity assessment alone doesn\'t provide the information needed to address the bug.',
+                    experience: 0
+                }
+            ]
+        },
+        {
+            id: 3,
+            level: 'Basic',
+            title: 'Test Documentation',
+            description: 'What is the primary purpose of creating test documentation?',
+            options: [
+                {
+                    text: 'To provide a record of what was tested, how it was tested, and the results for future reference',
+                    outcome: 'Correct! Good documentation helps with knowledge sharing, traceability, and repeatability.',
+                    experience: 15,
+                    tool: 'Test Documentation'
+                },
+                {
+                    text: 'To satisfy management requirements for paperwork',
+                    outcome: 'Documentation should provide value beyond just satisfying management requirements.',
+                    experience: -10
+                },
+                {
+                    text: 'To have something to show clients during meetings',
+                    outcome: 'While client demonstrations are important, that\'s not the primary purpose of test documentation.',
+                    experience: -5
+                },
+                {
+                    text: 'To make testers look busy when they aren\'t finding bugs',
+                    outcome: 'Documentation is a valuable activity, not busywork to fill time.',
+                    experience: 0
+                }
+            ]
         }
     ],
     intermediate: [
         {
-            id: 2,
+            id: 4,
             level: 'Intermediate',
             title: 'Bug Reporting',
             description: 'You\'ve found a complex bug that\'s difficult to reproduce. How should you report it?',
@@ -59,11 +117,69 @@ export const testScenarios = {
                     experience: -5
                 }
             ]
+        },
+        {
+            id: 5,
+            level: 'Intermediate',
+            title: 'Test Case Design',
+            description: 'You need to test a form with multiple fields. What testing technique would be most effective?',
+            options: [
+                {
+                    text: 'Boundary value analysis and equivalence partitioning to efficiently cover input ranges',
+                    outcome: 'Excellent! These techniques provide good coverage while minimizing the number of test cases.',
+                    experience: 20,
+                    tool: 'Test Design Techniques'
+                },
+                {
+                    text: 'Random testing of different inputs to see what happens',
+                    outcome: 'Random testing lacks systematic coverage and may miss important edge cases.',
+                    experience: -10
+                },
+                {
+                    text: 'Testing only with valid inputs since that\'s what users should enter',
+                    outcome: 'Negative testing with invalid inputs is essential for ensuring robust form validation.',
+                    experience: -15
+                },
+                {
+                    text: 'Test every possible combination of inputs to be thorough',
+                    outcome: 'Testing all combinations is usually impractical; structured techniques provide better efficiency.',
+                    experience: -5
+                }
+            ]
+        },
+        {
+            id: 6,
+            level: 'Intermediate',
+            title: 'Test Environment',
+            description: 'What is the best approach when setting up a test environment?',
+            options: [
+                {
+                    text: 'Create an environment that closely matches production with isolated test data',
+                    outcome: 'Perfect! A production-like environment with isolated test data provides realistic testing conditions.',
+                    experience: 20,
+                    tool: 'Environment Management'
+                },
+                {
+                    text: 'Use the production environment to ensure accuracy',
+                    outcome: 'Testing in production can affect real users and data, creating business risks.',
+                    experience: -15
+                },
+                {
+                    text: 'Use any available environment since they\'re all basically the same',
+                    outcome: 'Environment differences can significantly impact test results and bug reproduction.',
+                    experience: -10
+                },
+                {
+                    text: 'Always use your local development environment for convenience',
+                    outcome: 'Local environments may not capture all the conditions present in production.',
+                    experience: -5
+                }
+            ]
         }
     ],
     advanced: [
         {
-            id: 3,
+            id: 7,
             level: 'Advanced',
             title: 'Test Automation Strategy',
             description: 'Your team is implementing test automation. What approach should you recommend?',
@@ -88,6 +204,64 @@ export const testScenarios = {
                     text: 'Recommend purchasing a commercial tool that promises codeless automation',
                     outcome: 'Tool selection should be based on project needs rather than promises of quick solutions.',
                     experience: -20
+                }
+            ]
+        },
+        {
+            id: 8,
+            level: 'Advanced',
+            title: 'Performance Testing',
+            description: 'You need to implement performance testing for a high-traffic web application. What approach should you take?',
+            options: [
+                {
+                    text: 'Define clear performance requirements, identify key scenarios, simulate realistic loads, and measure against business metrics',
+                    outcome: 'Perfect! This approach ensures performance testing addresses actual business needs.',
+                    experience: 25,
+                    tool: 'Performance Testing'
+                },
+                {
+                    text: 'Run the maximum possible load to see when the system breaks',
+                    outcome: 'While stress testing is valuable, it should be part of a comprehensive approach based on requirements.',
+                    experience: -15
+                },
+                {
+                    text: 'Focus on measuring response times for all API endpoints',
+                    outcome: 'API testing is important but should be guided by user scenarios and business priorities.',
+                    experience: -10
+                },
+                {
+                    text: 'Monitor the production system to identify performance issues',
+                    outcome: 'Proactive testing before production is essential for preventing performance problems.',
+                    experience: -20
+                }
+            ]
+        },
+        {
+            id: 9,
+            level: 'Advanced',
+            title: 'Test Strategy',
+            description: 'As the QA lead, you need to develop a test strategy for a complex system. What should be your primary focus?',
+            options: [
+                {
+                    text: 'Aligning testing efforts with business risks and priorities to deliver the most value',
+                    outcome: 'Excellent! Risk-based testing ensures resources focus on the most important areas.',
+                    experience: 25,
+                    tool: 'Strategic Planning'
+                },
+                {
+                    text: 'Ensuring 100% test coverage of all code',
+                    outcome: 'Complete coverage is often impractical and doesn\'t necessarily focus on what matters most.',
+                    experience: -15
+                },
+                {
+                    text: 'Implementing the latest testing tools and technologies',
+                    outcome: 'Tools should support the strategy, not drive it; business needs should come first.',
+                    experience: -20
+                },
+                {
+                    text: 'Creating detailed test plans for all features',
+                    outcome: 'While documentation is important, not all features warrant the same level of testing.',
+                    experience: -10
                 }
             ]
         }
