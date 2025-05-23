@@ -1965,24 +1965,105 @@ export class Admin2Dashboard {
     // Helper method to generate HTML for scenarios
     generateScenariosHTML(scenarios) {
         if (!scenarios || !scenarios.length) return '<p>No scenarios found.</p>';
-        
-        return scenarios.map(scenario => `
-            <div class="scenario-card">
+        // Inline style block for quick visual improvement
+        const style = `
+        <style>
+        .scenario-card {
+            background: #fff;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.07);
+            margin-bottom: 2rem;
+            padding: 1.5rem 2rem;
+            transition: box-shadow 0.2s;
+            border-left: 6px solid #007bff;
+        }
+        .scenario-card h4 {
+            margin-top: 0;
+            margin-bottom: 0.5rem;
+            color: #007bff;
+        }
+        .scenario-description {
+            margin-bottom: 1rem;
+            color: #444;
+        }
+        .scenario-options {
+            margin-top: 1rem;
+        }
+        .options-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+        .option-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 0.75rem;
+            background: #f8f9fa;
+            border-radius: 5px;
+            margin-bottom: 0.75rem;
+            padding: 0.75rem 1rem;
+            border-left: 4px solid #adb5bd;
+            transition: background 0.2s, border-color 0.2s;
+        }
+        .option-item.correct-option {
+            background: #e6f9ed;
+            border-color: #28a745;
+        }
+        .option-item.incorrect-option {
+            background: #fbeaea;
+            border-color: #dc3545;
+        }
+        .option-icon {
+            font-size: 1.2em;
+            margin-right: 0.5em;
+            flex-shrink: 0;
+        }
+        .option-item .option-text {
+            font-weight: 500;
+        }
+        .option-outcome {
+            font-size: 0.95em;
+            color: #555;
+            margin-top: 0.25em;
+        }
+        </style>
+        `;
+        return style + scenarios.map(scenario => {
+            return `
+            <div class="scenario-card" tabindex="0" aria-label="Scenario: ${scenario.title || 'Untitled Scenario'}">
                 <h4>${scenario.title || 'Untitled Scenario'}</h4>
                 <div class="scenario-description">${scenario.description || 'No description available.'}</div>
                 <div class="scenario-options">
                     <strong>Options:</strong>
                     <ul class="options-list">
-                        ${scenario.options.map((option, index) => `
-                            <li class="option-item ${option.experience > 0 ? 'correct-option' : ''}">
-                                <div class="option-text">${option.text}</div>
-                                ${option.experience > 0 ? `<div class="option-outcome"><em>Outcome: ${option.outcome}</em></div>` : ''}
-                            </li>
-                        `).join('')}
+                        ${scenario.options.map((option, index) => {
+                            // Determine correctness
+                            let correctness = '';
+                            let icon = '';
+                            if (option.experience > 0) {
+                                correctness = 'correct-option';
+                                icon = '<span class="option-icon" aria-label="Correct" style="color:#28a745;">✔️</span>';
+                            } else if (option.experience < 0) {
+                                correctness = 'incorrect-option';
+                                icon = '<span class="option-icon" aria-label="Incorrect" style="color:#dc3545;">❌</span>';
+                            } else {
+                                icon = '<span class="option-icon" aria-label="Neutral" style="color:#adb5bd;">●</span>';
+                            }
+                            return `
+                                <li class="option-item ${correctness}" tabindex="0" aria-label="Option: ${option.text}">
+                                    ${icon}
+                                    <div>
+                                        <div class="option-text">${option.text}</div>
+                                        ${option.outcome ? `<div class="option-outcome"><em>Outcome: ${option.outcome}</em></div>` : ''}
+                                    </div>
+                                </li>
+                            `;
+                        }).join('')}
                     </ul>
                 </div>
             </div>
-        `).join('');
+            `;
+        }).join('');
     }
 
     // Override categorizeQuiz to ensure automation-interview is properly categorized
