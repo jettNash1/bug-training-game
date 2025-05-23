@@ -1588,77 +1588,79 @@ export class Admin2Dashboard {
 
     // Add fetchQuizScenarios method to match the parent class
     async fetchQuizScenarios(quizName) {
+        // Try to fetch from local JSON file first
+        const normalizedQuizName = quizName.toLowerCase();
+        const localJsonPath = `./data/${normalizedQuizName}-scenarios.json`;
         try {
-            console.log(`Fetching quiz scenarios for ${quizName} using API endpoint`);
-            
-            // Normalize the quiz name to match API expectations
-            const normalizedQuizName = quizName.toLowerCase();
-            
-            // Get the token
-            const token = localStorage.getItem('adminToken');
-            
-            if (!token) {
-                throw new Error('No admin token found. Please log in again.');
+            const response = await fetch(localJsonPath, { method: 'GET', headers: { 'Content-Type': 'application/json' } });
+            if (response.ok) {
+                const data = await response.json();
+                // Validate structure
+                if (data.basic || data.intermediate || data.advanced) {
+                    console.log(`Loaded scenarios for ${quizName} from local JSON file.`);
+                    return data;
+                } else {
+                    throw new Error('Invalid scenarios format in local JSON file');
+                }
+            } else {
+                throw new Error('Local JSON file not found');
             }
-            
-            // Get the API URL from config or use a fallback
-            let apiUrl;
+        } catch (jsonErr) {
+            console.warn(`Could not load local JSON for ${quizName}:`, jsonErr.message);
+            // Fallback to API fetch as before
             try {
-                // Try to import the config
-                const { config } = await import('./config.js');
-                apiUrl = config.apiUrl;
-                console.log(`Using API URL from config: ${apiUrl}`);
-            } catch (importError) {
-                console.warn('Failed to import config.js, using fallback API URL', importError);
-                
-                // Fallback logic to determine API URL
-                if (window.location.hostname.includes('render.com') || 
-                    window.location.hostname === 'bug-training-game.onrender.com') {
-                    apiUrl = 'https://bug-training-game-api.onrender.com/api';
-                } 
-                else if (window.location.hostname.includes('amazonaws.com') || 
-                         window.location.hostname.includes('s3-website') ||
-                         window.location.hostname.includes('learning-hub')) {
-                    apiUrl = 'http://13.42.151.152/api';
+                // Get the token
+                const token = localStorage.getItem('adminToken');
+                if (!token) {
+                    throw new Error('No admin token found. Please log in again.');
                 }
-                else {
-                    apiUrl = '/api'; // Local development
+                // Get the API URL from config or use a fallback
+                let apiUrl;
+                try {
+                    const { config } = await import('./config.js');
+                    apiUrl = config.apiUrl;
+                    console.log(`Using API URL from config: ${apiUrl}`);
+                } catch (importError) {
+                    console.warn('Failed to import config.js, using fallback API URL', importError);
+                    if (window.location.hostname.includes('render.com') || 
+                        window.location.hostname === 'bug-training-game.onrender.com') {
+                        apiUrl = 'https://bug-training-game-api.onrender.com/api';
+                    } 
+                    else if (window.location.hostname.includes('amazonaws.com') || 
+                             window.location.hostname.includes('s3-website') ||
+                             window.location.hostname.includes('learning-hub')) {
+                        apiUrl = 'http://13.42.151.152/api';
+                    }
+                    else {
+                        apiUrl = '/api'; // Local development
+                    }
+                    console.log(`Using fallback API URL: ${apiUrl}`);
                 }
-                
-                console.log(`Using fallback API URL: ${apiUrl}`);
+                const response = await fetch(`${apiUrl}/admin/quizzes/${normalizedQuizName}/scenarios`, {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+                if (!response.ok) {
+                    const errorData = await response.json().catch(() => ({}));
+                    const errorMessage = errorData.message || `Failed to fetch scenarios: ${response.status}`;
+                    if (errorMessage.includes('Could not extract scenarios from source code')) {
+                        throw new Error(`The quiz file format for ${this.formatQuizName(quizName)} is not compatible with the scenario viewer. This is likely due to the quiz file using JavaScript objects that cannot be parsed as JSON.`);
+                    }
+                    throw new Error(errorMessage);
+                }
+                const data = await response.json();
+                if (!data.success) {
+                    throw new Error(data.message || 'Failed to fetch scenarios from API');
+                }
+                console.log(`Successfully fetched scenarios for ${quizName} from API`);
+                return data;
+            } catch (error) {
+                console.error(`Error in fetchQuizScenarios for ${quizName}:`, error);
+                throw error;
             }
-            
-            const response = await fetch(`${apiUrl}/admin/quizzes/${normalizedQuizName}/scenarios`, {
-                method: 'GET',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`
-                }
-            });
-            
-            if (!response.ok) {
-                const errorData = await response.json().catch(() => ({}));
-                const errorMessage = errorData.message || `Failed to fetch scenarios: ${response.status}`;
-                
-                // Check for specific error about extracting scenarios
-                if (errorMessage.includes('Could not extract scenarios from source code')) {
-                    throw new Error(`The quiz file format for ${this.formatQuizName(quizName)} is not compatible with the scenario viewer. This is likely due to the quiz file using JavaScript objects that cannot be parsed as JSON.`);
-                }
-                
-                throw new Error(errorMessage);
-            }
-            
-            const data = await response.json();
-            
-            if (!data.success) {
-                throw new Error(data.message || 'Failed to fetch scenarios from API');
-            }
-            
-            console.log(`Successfully fetched scenarios for ${quizName} from API`);
-            return data;
-        } catch (error) {
-            console.error(`Error in fetchQuizScenarios for ${quizName}:`, error);
-            throw error;
         }
     }
 
