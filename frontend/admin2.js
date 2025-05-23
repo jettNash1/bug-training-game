@@ -1889,7 +1889,7 @@ export class Admin2Dashboard {
             if (!hasScenarios) {
                 scenariosHTML += `
                     <div class="no-scenarios" style="text-align: center; padding: 2rem;">
-                        <p>No scenarios found for this quiz.</p>
+                        <p>No scenarios found.</p>
                     </div>
                 `;
             } else {
