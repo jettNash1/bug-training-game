@@ -1590,7 +1590,7 @@ export class Admin2Dashboard {
     async fetchQuizScenarios(quizName) {
         // Try to fetch from local JSON file first
         const normalizedQuizName = quizName.toLowerCase();
-        const localJsonPath = `./data/${normalizedQuizName}-scenarios.json`;
+        const localJsonPath = `/data/${normalizedQuizName}-scenarios.json`;
         try {
             const response = await fetch(localJsonPath, { method: 'GET', headers: { 'Content-Type': 'application/json' } });
             if (response.ok) {
