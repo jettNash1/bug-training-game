@@ -4,9 +4,37 @@ import { QUIZ_TYPES } from './quiz-list.js';
 
 export class APIService {
     constructor() {
-        // Set the base URL with fallback logic
-        this.baseUrl = this.getApiBaseUrl();
-        console.log('APIService initialized with baseUrl:', this.baseUrl);
+        this.baseUrl = 'https://bug-training-game-api.onrender.com/api';
+        this.scheduledResetInterval = null;
+        this.startScheduledResetCheck();
+    }
+    
+    startScheduledResetCheck() {
+        // Clear any existing interval
+        if (this.scheduledResetInterval) {
+            clearInterval(this.scheduledResetInterval);
+        }
+
+        // Check for scheduled resets every minute
+        this.scheduledResetInterval = setInterval(async () => {
+            try {
+                console.log('Background check: Checking for scheduled resets...');
+                await this.checkAndProcessScheduledResets();
+            } catch (error) {
+                console.error('Background check: Error checking scheduled resets:', error);
+            }
+        }, 60000); // Check every minute
+
+        // Run an immediate check
+        this.checkAndProcessScheduledResets()
+            .catch(error => console.error('Background check: Error in initial scheduled reset check:', error));
+    }
+
+    stopScheduledResetCheck() {
+        if (this.scheduledResetInterval) {
+            clearInterval(this.scheduledResetInterval);
+            this.scheduledResetInterval = null;
+        }
     }
     
     // Helper method to get the API base URL with fallback logic
@@ -1896,14 +1924,14 @@ export class APIService {
             
             // Process each scheduled reset
             for (const schedule of schedules) {
-                // Convert reset time string to Date object
-                const resetTime = new Date(schedule.resetDateTime);
-                
-                // If the reset time has passed
-                if (resetTime <= now) {
-                    console.log(`Processing scheduled reset for ${schedule.username}'s ${schedule.quizName} quiz`);
+                try {
+                    // Convert reset time string to Date object
+                    const resetTime = new Date(schedule.resetDateTime);
                     
-                    try {
+                    // If the reset time has passed
+                    if (resetTime <= now) {
+                        console.log(`Processing scheduled reset for ${schedule.username}'s ${schedule.quizName} quiz`);
+                        
                         // Call API to reset the quiz using the correct endpoint
                         const resetResponse = await this.fetchWithAdminAuth(
                             `${this.baseUrl}/admin/users/${schedule.username}/quiz-progress/${schedule.quizName}/reset`,
@@ -1940,21 +1968,11 @@ export class APIService {
                         } else {
                             console.error(`Failed to reset quiz:`, resetResponse.message);
                         }
-                    } catch (resetError) {
-                        console.error(`Error resetting quiz:`, resetError);
+                    } else {
+                        console.log(`Schedule for ${schedule.username}'s ${schedule.quizName} quiz is not due yet. Next reset at ${resetTime}`);
                     }
-                } else {
-                    console.log(`Schedule for ${schedule.username}'s ${schedule.quizName} quiz is not due yet. Next reset at ${resetTime}`);
-                }
-            }
-            
-            // Update lastReset field for all processed quizzes
-            for (const quizName of processedQuizzes) {
-                try {
-                    await this.updateAutoResetLastResetTime(quizName);
-                    console.log(`Updated lastReset time for quiz: ${quizName}`);
-                } catch (error) {
-                    console.error(`Failed to update lastReset time for quiz ${quizName}:`, error);
+                } catch (resetError) {
+                    console.error(`Error processing reset for schedule:`, resetError);
                 }
             }
             
