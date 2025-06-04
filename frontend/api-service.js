@@ -1920,21 +1920,19 @@ export class APIService {
             // Keep track of which quiz names were reset
             const processedQuizzes = new Set();
             
-            // Get current time in UTC
+            // Get current time
             const now = new Date();
-            const nowUTC = new Date(now.getTime() - (now.getTimezoneOffset() * 60000));
             
             // Process each scheduled reset
             for (const schedule of schedules) {
                 try {
-                    // Convert reset time string to Date object in UTC
+                    // Convert reset time string to Date object
                     const resetTime = new Date(schedule.resetDateTime);
-                    const resetTimeUTC = new Date(resetTime.getTime() - (resetTime.getTimezoneOffset() * 60000));
                     
-                    console.log(`Comparing reset times (UTC): Reset=${resetTimeUTC.toISOString()}, Now=${nowUTC.toISOString()}`);
+                    console.log(`Schedule for ${schedule.username}'s ${schedule.quizName} quiz - Reset time: ${resetTime.toLocaleString()}, Current time: ${now.toLocaleString()}`);
                     
-                    // If the reset time has passed (compare in UTC)
-                    if (resetTimeUTC <= nowUTC) {
+                    // If the reset time has passed
+                    if (resetTime <= now) {
                         console.log(`Processing scheduled reset for ${schedule.username}'s ${schedule.quizName} quiz`);
                         
                         // Call API to reset the quiz using the correct endpoint
@@ -1946,61 +1944,20 @@ export class APIService {
                         );
                         
                         if (resetResponse.success) {
-                            console.log(`Successfully reset ${schedule.username}'s ${schedule.quizName} quiz`);
+                            console.log(`Successfully reset quiz progress for ${schedule.username}'s ${schedule.quizName} quiz`);
                             processedIds.push(schedule.id);
                             processedQuizzes.add(schedule.quizName);
                             
-                            // Also reset quiz scores
-                            try {
-                                const scoreResetResponse = await this.fetchWithAdminAuth(
-                                    `${this.baseUrl}/admin/users/${schedule.username}/quiz-scores/reset`,
-                                    {
-                                        method: 'POST',
-                                        headers: {
-                                            'Content-Type': 'application/json'
-                                        },
-                                        body: JSON.stringify({ quizName: schedule.quizName })
-                                    }
-                                );
-                                if (scoreResetResponse.success) {
-                                    console.log(`Successfully reset scores for ${schedule.username}'s ${schedule.quizName} quiz`);
-                                    
-                                    // Delete the schedule after successful reset
-                                    try {
-                                        await this.cancelScheduledReset(schedule.id);
-                                        console.log(`Successfully removed schedule ${schedule.id} after reset`);
-                                    } catch (deleteError) {
-                                        console.error(`Error removing schedule ${schedule.id}:`, deleteError);
-                                    }
-                                } else {
-                                    console.error(`Failed to reset quiz scores:`, scoreResetResponse.message);
-                                }
-                            } catch (scoreResetError) {
-                                console.error('Error resetting quiz scores:', scoreResetError);
-                            }
+                            // Delete the schedule after successful reset
+                            await this.cancelScheduledReset(schedule.id);
                         } else {
-                            console.error(`Failed to reset quiz:`, resetResponse.message);
+                            console.error(`Failed to reset quiz progress for ${schedule.username}'s ${schedule.quizName} quiz:`, resetResponse);
                         }
                     } else {
-                        console.log(`Schedule for ${schedule.username}'s ${schedule.quizName} quiz is not due yet. Next reset at ${resetTime} (${resetTimeUTC.toISOString()} UTC)`);
+                        console.log(`Schedule for ${schedule.username}'s ${schedule.quizName} quiz is not due yet. Next reset at ${resetTime.toLocaleString()}`);
                     }
-                } catch (error) {
-                    console.error(`Error processing schedule:`, error);
-                }
-            }
-            
-            // Clean up any processed schedules from local storage if we're using it as fallback
-            if (processedIds.length > 0 && response.fallback) {
-                try {
-                    const schedulesJson = localStorage.getItem('scheduledResets');
-                    if (schedulesJson) {
-                        const allSchedules = JSON.parse(schedulesJson);
-                        const remainingSchedules = allSchedules.filter(s => !processedIds.includes(s.id));
-                        localStorage.setItem('scheduledResets', JSON.stringify(remainingSchedules));
-                        console.log('Updated local storage after processing schedules');
-                    }
-                } catch (localError) {
-                    console.error('Error updating localStorage after processing schedules:', localError);
+                } catch (scheduleError) {
+                    console.error(`Error processing schedule for ${schedule.username}'s ${schedule.quizName} quiz:`, scheduleError);
                 }
             }
             
@@ -2008,13 +1965,15 @@ export class APIService {
                 success: true,
                 processed: processedIds.length,
                 total: schedules.length,
-                processedIds,
                 processedQuizzes: Array.from(processedQuizzes)
             };
-            
         } catch (error) {
             console.error('Error checking scheduled resets:', error);
-            return { success: false, message: error.message };
+            return {
+                success: false,
+                message: 'Failed to check scheduled resets',
+                error: error.message
+            };
         }
     }
 
