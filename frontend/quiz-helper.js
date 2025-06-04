@@ -1,6 +1,7 @@
 import { QuizUser } from './QuizUser.js';
 import { APIService } from './api-service.js';
 import { QuizProgressService } from './services/QuizProgressService.js';
+import { QUIZ_CATEGORIES } from './quiz-list.js';
 
 export class BaseQuiz {
     constructor(config) {
@@ -1619,23 +1620,12 @@ export class BaseQuiz {
     static clearQuizInstances(currentQuizName) {
         console.log(`[BaseQuiz] Clearing any existing quiz instances before starting ${currentQuizName}`);
         
-        // Clear any global quiz reference
-        if (window.currentQuiz) {
-            // Clear any timers or intervals
-            if (window.currentQuiz.timers) {
-                window.currentQuiz.timers.forEach(timer => clearTimeout(timer));
+        // Clear any existing quiz instances from the window object
+        for (let key in window) {
+            if (key.toLowerCase().includes('quiz') && typeof window[key] === 'object') {
+                delete window[key];
             }
-            if (window.currentQuiz.intervals) {
-                window.currentQuiz.intervals.forEach(interval => clearInterval(interval));
-            }
-            
-            console.log('[BaseQuiz] Cleared existing quiz instance:', window.currentQuiz.quizName);
-            delete window.currentQuiz;
         }
-        
-        // Set active quiz name for isolation purposes
-        window.ACTIVE_QUIZ_NAME = currentQuizName;
-        console.log(`[BaseQuiz] Set active quiz to: ${currentQuizName}`);
         
         // Clear any localStorage entries with conflicting quiz names
         // This prevents cross-contamination between quizzes
@@ -1643,12 +1633,7 @@ export class BaseQuiz {
             const username = localStorage.getItem('username');
             if (username) {
                 // Remove any quiz-specific localStorage items from other quizzes
-                const quizTypes = [
-                    'sanity-smoke',
-                    'script-metrics-troubleshooting',
-                    'communication-skills',
-                    // Add other quiz types here as they're developed
-                ];
+                const quizTypes = Object.values(QUIZ_CATEGORIES).flat();
                 
                 quizTypes.forEach(quizType => {
                     // Skip the current quiz

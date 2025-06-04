@@ -6,35 +6,10 @@
  */
 
 import { APIService } from '../api-service.js';
+import { QUIZ_CATEGORIES } from '../quiz-list.js';
 
 // List of all known quiz names for strict validation
-const KNOWN_QUIZ_NAMES = [
-    'communication', 
-    'initiative', 
-    'time-management', 
-    'tester-mindset',
-    'risk-analysis', 
-    'risk-management', 
-    'non-functional', 
-    'test-support',
-    'issue-verification', 
-    'build-verification', 
-    'issue-tracking-tools',
-    'raising-tickets', 
-    'reports', 
-    'cms-testing', 
-    'email-testing', 
-    'content-copy',
-    'locale-testing', 
-    'script-metrics-troubleshooting', 
-    'standard-script-testing',
-    'test-types-tricks', 
-    'automation-interview', 
-    'fully-scripted', 
-    'exploratory',
-    'sanity-smoke', 
-    'functional-interview'
-];
+const KNOWN_QUIZ_NAMES = Object.values(QUIZ_CATEGORIES).flat();
 
 export class QuizProgressService {
     constructor() {
