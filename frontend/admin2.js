@@ -232,6 +232,8 @@ export class Admin2Dashboard {
             this.updateUsersList();
             
             console.log("Completed loading progress for all users");
+            // --- Ensure hero stats are updated after all progress is loaded ---
+            await this.updateDashboard();
         } catch (error) {
             console.error('Unexpected error loading all user progress:', error);
             
