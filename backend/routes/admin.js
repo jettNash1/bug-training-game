@@ -1293,12 +1293,20 @@ router.post('/schedules', auth, async (req, res) => {
             });
         }
 
-        // Parse the reset time and adjust for timezone if offset is provided
+        // Parse the reset time - it's already in UTC from the frontend
         const resetTime = new Date(resetDateTime);
         
-        // Validate resetDateTime is in the future
+        // For validation, convert UTC time back to local time using the provided offset
+        const localResetTime = new Date(resetTime.getTime() + (timezoneOffset * 60000));
         const now = new Date();
-        if (resetTime <= now) {
+        
+        console.log(`Creating schedule:
+            UTC time: ${resetTime.toISOString()}
+            Local time: ${localResetTime.toLocaleString()}
+            Timezone offset: ${timezoneOffset} minutes`);
+        
+        // Validate resetDateTime is in the future (compare in local time)
+        if (localResetTime <= now) {
             return res.status(400).json({
                 success: false,
                 message: 'Reset time must be in the future'
@@ -1318,7 +1326,8 @@ router.post('/schedules', auth, async (req, res) => {
         const schedule = new ScheduledReset({
             username,
             quizName,
-            resetDateTime: resetTime,
+            resetDateTime: resetTime, // Store the UTC time
+            timezoneOffset, // Store the timezone offset for future reference
             createdAt: new Date()
         });
 
@@ -1327,7 +1336,10 @@ router.post('/schedules', auth, async (req, res) => {
         res.json({
             success: true,
             message: 'Scheduled reset created successfully',
-            data: schedule
+            data: {
+                ...schedule.toObject(),
+                localResetTime: localResetTime.toISOString() // Include local time in response
+            }
         });
     } catch (error) {
         console.error('Error creating scheduled reset:', error);

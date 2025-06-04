@@ -14,6 +14,11 @@ const scheduledResetSchema = new mongoose.Schema({
         type: Date,
         required: true
     },
+    timezoneOffset: {
+        type: Number,
+        required: true,
+        default: 0 // Default to UTC
+    },
     createdAt: {
         type: Date,
         default: Date.now
@@ -31,6 +36,15 @@ const scheduledResetSchema = new mongoose.Schema({
 scheduledResetSchema.index({ resetDateTime: 1 });
 scheduledResetSchema.index({ username: 1 });
 scheduledResetSchema.index({ quizName: 1 });
+
+// Virtual for getting local time
+scheduledResetSchema.virtual('localResetTime').get(function() {
+    return new Date(this.resetDateTime.getTime() + (this.timezoneOffset * 60000));
+});
+
+// Ensure virtuals are included in JSON
+scheduledResetSchema.set('toJSON', { virtuals: true });
+scheduledResetSchema.set('toObject', { virtuals: true });
 
 const ScheduledReset = mongoose.model('ScheduledReset', scheduledResetSchema);
 

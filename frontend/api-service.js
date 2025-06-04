@@ -1735,10 +1735,16 @@ export class APIService {
             // Create a Date object in the local timezone
             const localDate = new Date(resetDateTime);
             
-            // Convert to ISO string with timezone offset
-            const resetTimeWithOffset = new Date(localDate.getTime() - (localDate.getTimezoneOffset() * 60000)).toISOString();
-
-            console.log(`Creating scheduled reset for ${username}'s ${quizName} at ${resetDateTime} (with offset: ${resetTimeWithOffset})`);
+            // Store the timezone offset in minutes
+            const timezoneOffsetMinutes = localDate.getTimezoneOffset();
+            
+            // Convert to UTC time for storage
+            const utcTime = new Date(localDate.getTime() - (timezoneOffsetMinutes * 60000));
+            
+            console.log(`Creating scheduled reset:
+                Local time entered: ${localDate.toLocaleString()}
+                UTC time for storage: ${utcTime.toISOString()}
+                Timezone offset: ${timezoneOffsetMinutes} minutes`);
             
             const response = await this.fetchWithAdminAuth(`${this.baseUrl}/admin/schedules`, {
                 method: 'POST',
@@ -1748,8 +1754,8 @@ export class APIService {
                 body: JSON.stringify({
                     username,
                     quizName,
-                    resetDateTime: resetTimeWithOffset,
-                    timezoneOffset: new Date().getTimezoneOffset()
+                    resetDateTime: utcTime.toISOString(),
+                    timezoneOffset: timezoneOffsetMinutes
                 })
             });
             
@@ -1773,7 +1779,8 @@ export class APIService {
                             id: response.data._id || response.data.id || Date.now().toString(),
                             username,
                             quizName,
-                            resetDateTime,
+                            resetDateTime: localDate.toISOString(), // Store the local time in localStorage
+                            timezoneOffset: timezoneOffsetMinutes,
                             createdAt: new Date().toISOString()
                         };
                         
