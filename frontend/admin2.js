@@ -517,10 +517,16 @@ export class Admin2Dashboard {
     }
 
     updateStatisticsDisplay(stats) {
+        console.log('[DEBUG] updateStatisticsDisplay called', stats);
         const totalUsersElement = document.getElementById('totalUsers');
         const activeUsersElement = document.getElementById('activeUsers');
         // Rename Average Completion to Overall Progress
         const averageCompletionElement = document.getElementById('averageCompletion');
+        if (!averageCompletionElement) {
+            console.warn('[DEBUG] averageCompletion element not found in DOM');
+        } else {
+            console.log('[DEBUG] averageCompletion element found in DOM');
+        }
         if (totalUsersElement) {
             totalUsersElement.textContent = stats.totalUsers || 0;
         }
