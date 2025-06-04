@@ -42,31 +42,9 @@ export class TesterMindsetQuiz extends BaseQuiz {
         };
 
         // Load scenarios from our data file
-        if (!testerMindsetScenarios) {
-            console.error('[TesterMindsetQuiz] Failed to load scenarios data!');
-            throw new Error('Scenarios data not found');
-        }
-
-        // Validate and load each scenario level
-        this.basicScenarios = testerMindsetScenarios.basic || [];
-        this.intermediateScenarios = testerMindsetScenarios.intermediate || [];
-        this.advancedScenarios = testerMindsetScenarios.advanced || [];
-
-        // Validate that we have enough scenarios
-        if (!this.basicScenarios.length || !this.intermediateScenarios.length || !this.advancedScenarios.length) {
-            console.error('[TesterMindsetQuiz] Missing scenario data:', {
-                basic: this.basicScenarios.length,
-                intermediate: this.intermediateScenarios.length,
-                advanced: this.advancedScenarios.length
-            });
-            throw new Error('Incomplete scenario data');
-        }
-
-        console.log('[TesterMindsetQuiz] Scenarios loaded:', {
-            basicCount: this.basicScenarios.length,
-            intermediateCount: this.intermediateScenarios.length,
-            advancedCount: this.advancedScenarios.length
-        });
+        this.basicScenarios = testerMindsetScenarios.basic;
+        this.intermediateScenarios = testerMindsetScenarios.intermediate;
+        this.advancedScenarios = testerMindsetScenarios.advanced;
 
         // Initialize elements
         this.gameScreen = document.getElementById('game-screen');
@@ -131,11 +109,6 @@ export class TesterMindsetQuiz extends BaseQuiz {
         } else if (questionCount < 10) {
             return this.intermediateScenarios;
         } else {
-            // Ensure advancedScenarios exists before returning
-            if (!this.advancedScenarios || !this.advancedScenarios.length) {
-                console.error('[TesterMindsetQuiz] Advanced scenarios not found!');
-                return [];
-            }
             return this.advancedScenarios;
         }
     }
@@ -306,25 +279,13 @@ export class TesterMindsetQuiz extends BaseQuiz {
         // Check if the quiz is already completed
         if (this.shouldEndGame()) {
             this.endGame(false);
-            return;
+                    return;
         }
         
         // Get the current scenario based on progress
         const currentScenarios = this.getCurrentScenarios();
-        if (!currentScenarios || !currentScenarios.length) {
-            console.error('[TesterMindsetQuiz] No scenarios available for current level');
-            this.showError('Failed to start the quiz. Please refresh the page.');
-            return;
-        }
-        
         const scenarioIndex = this.player.questionHistory.length % 5; // Use modulo to cycle through 5 scenarios per level
-        const scenario = currentScenarios[scenarioIndex];
-        
-        if (!scenario) {
-            console.error('[TesterMindsetQuiz] No scenario found at index:', scenarioIndex);
-            this.showError('Failed to load the next question. Please refresh the page.');
-            return;
-        }
+        const scenario = currentScenarios[scenarioIndex]; 
         
         console.log(`[TesterMindsetQuiz] Displaying scenario #${this.player.currentScenario + 1}:`, {
             title: scenario.title,
@@ -588,8 +549,7 @@ export class TesterMindsetQuiz extends BaseQuiz {
         // Get current level and question count
         const currentLevel = this.getCurrentLevel();
         const totalAnswered = this.player.questionHistory.length;
-        // Cap the question number at 15
-        const questionNumber = Math.min(totalAnswered + 1, 15);
+        const questionNumber = totalAnswered + 1;
         
         // Update level indicator
         const levelIndicator = document.getElementById('level-indicator');
@@ -606,7 +566,7 @@ export class TesterMindsetQuiz extends BaseQuiz {
         // Update progress bar
         const progressFill = document.getElementById('progress-fill');
         if (progressFill) {
-            const progressPercentage = Math.min((totalAnswered / 15) * 100, 100);
+            const progressPercentage = (totalAnswered / 15) * 100;
             progressFill.style.width = `${progressPercentage}%`;
         }
     }
