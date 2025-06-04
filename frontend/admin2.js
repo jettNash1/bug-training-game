@@ -3599,255 +3599,127 @@ export class Admin2Dashboard {
     // Check for scheduled resets that need to be executed
     async checkScheduledResets() {
         try {
-            console.log('Checking for scheduled resets that need to be executed...');
+            // Get auto-reset settings
+            const autoResetResponse = await this.apiService.getAutoResetSettings();
             
-            // First, check explicit scheduled resets
-            const result = await this.apiService.checkAndProcessScheduledResets();
-            let totalProcessed = result.processed || 0;
+            if (!autoResetResponse.success) {
+                console.error('Failed to fetch auto-reset settings:', autoResetResponse.message);
+                return { success: false, message: autoResetResponse.message };
+            }
             
-            console.log('Regular schedule check complete:', result);
+            const now = new Date();
+            const settings = Array.isArray(autoResetResponse.data) 
+                ? autoResetResponse.data 
+                : Object.values(autoResetResponse.data);
             
-            // Then, also check auto-reset settings with nextResetTime in the past
-            try {
-                console.log('Checking auto-reset settings with passed nextResetTime...');
-                const autoResetResponse = await this.apiService.getAutoResetSettings();
+            console.log(`Found ${settings.length} auto-reset settings to check`);
+            let autoResetProcessed = 0;
+            
+            for (const setting of settings) {
+                // Skip if disabled or no quiz name
+                if (!setting.enabled || !setting.quizName) {
+                    console.log(`Skipping auto-reset for ${setting.quizName || 'unknown'} - not enabled`);
+                    continue;
+                }
                 
-                if (autoResetResponse.success && autoResetResponse.data) {
-                    const now = new Date();
-                    const settings = Array.isArray(autoResetResponse.data) 
-                        ? autoResetResponse.data 
-                        : Object.values(autoResetResponse.data);
+                // If no nextResetTime, calculate it now
+                if (!setting.nextResetTime) {
+                    console.log(`No nextResetTime for ${setting.quizName}, calculating it now`);
+                    setting.nextResetTime = this.calculateNextResetTime(setting.resetPeriod);
                     
-                    console.log(`Found ${settings.length} auto-reset settings to check`);
-                    let autoResetProcessed = 0;
+                    // Save the updated setting
+                    await this.apiService.saveAutoResetSetting(
+                        setting.quizName,
+                        setting.resetPeriod,
+                        true,
+                        setting.nextResetTime
+                    );
                     
-                    for (const setting of settings) {
-                        // Skip if disabled or no quiz name
-                        if (!setting.enabled || !setting.quizName) {
-                            console.log(`Skipping auto-reset for ${setting.quizName || 'unknown'} - not enabled`);
-                            continue;
-                        }
+                    console.log(`Updated nextResetTime for ${setting.quizName}: ${setting.nextResetTime}`);
+                }
+                
+                const nextResetTime = new Date(setting.nextResetTime);
+                console.log(`Next reset for ${setting.quizName}: ${nextResetTime}, current time: ${now}`);
+                
+                if (nextResetTime <= now) {
+                    console.log(`Auto-reset due for ${setting.quizName}`);
+                    autoResetProcessed++;
+                    
+                    try {
+                        // Get completed users
+                        const completedUsersResponse = await this.apiService.getCompletedUsers(setting.quizName);
+                        const completedUsers = completedUsersResponse.success ? completedUsersResponse.data : [];
                         
-                        // If no nextResetTime, calculate it now
-                        if (!setting.nextResetTime) {
-                            console.log(`No nextResetTime for ${setting.quizName}, calculating it now`);
-                            setting.nextResetTime = this.calculateNextResetTime(setting.resetPeriod);
-                            
-                            // Save the updated setting
-                            await this.apiService.saveAutoResetSetting(
-                                setting.quizName,
-                                setting.resetPeriod,
-                                true,
-                                setting.nextResetTime
-                            );
-                            
-                            console.log(`Updated nextResetTime for ${setting.quizName}: ${setting.nextResetTime}`);
-                        }
+                        console.log(`Found ${completedUsers.length} users to reset for ${setting.quizName}`);
                         
-                        const nextResetTime = new Date(setting.nextResetTime);
-                        console.log(`Next reset for ${setting.quizName}: ${nextResetTime}, current time: ${now}`);
-                        
-                        // Check if the reset time has passed
-                        if (nextResetTime <= now) {
-                            console.log(`Auto-reset time has passed for quiz ${setting.quizName}, processing...`);
-                            
+                        let successCount = 0;
+                        for (const username of completedUsers) {
                             try {
-                                // Get all completed users by loading all users and checking their progress
-                                const allUsersResponse = await this.apiService.getAllUsers();
-                                if (!allUsersResponse.success) {
-                                    console.error('Failed to get users for auto-reset check:', allUsersResponse.message);
-                                    continue;
+                                // Reset the quiz progress
+                                const resetResponse = await this.apiService.resetQuizProgress(username, setting.quizName);
+                                
+                                if (resetResponse.success) {
+                                    successCount++;
+                                    console.log(`Reset ${username}'s ${setting.quizName} quiz`);
+                                } else {
+                                    console.error(`Failed to reset ${username}'s ${setting.quizName} quiz:`, resetResponse.message);
                                 }
-                                
-                                const users = allUsersResponse.data || [];
-                                console.log(`Checking ${users.length} users for completed ${setting.quizName} quizzes`);
-                                
-                                // Debug: Log all usernames
-                                const usernames = users.map(user => user.username);
-                                console.log(`All users: ${usernames.join(', ')}`);
-                                
-                                // Manual check for users who have completed the quiz
-                                const completedUsers = [];
-                                const skippedUsers = [];
-                                
-                                for (const user of users) {
-                                    try {
-                                        // Skip TestUser4 if already added to completedUsers
-                                        if (user.username === 'TestUser4' && completedUsers.includes('TestUser4')) {
-                                            console.log('Skipping TestUser4 - already added to completedUsers');
-                                            continue;
-                                        }
-                                        
-                                        console.log(`Checking user ${user.username} for completed ${setting.quizName} quiz`);
-                                        
-                                        // First check quizResults (primary source of completed quizzes)
-                                        if (user.quizResults && Array.isArray(user.quizResults)) {
-                                            console.log(`${user.username} has ${user.quizResults.length} quiz results`);
-                                            
-                                            // Log all quiz results for easier debugging
-                                            user.quizResults.forEach(result => {
-                                                console.log(`${user.username} has result for ${result.quizName}: questions=${result.questionsAnswered}, score=${result.score}`);
-                                            });
-                                            
-                                            // More robust comparison - normalize both strings
-                                            const normalizedQuizName = setting.quizName.toLowerCase().trim();
-                                            const quizResult = user.quizResults.find(r => 
-                                                r.quizName && r.quizName.toLowerCase().trim() === normalizedQuizName);
-                                            
-                                            if (quizResult) {
-                                                console.log(`${user.username} has result for ${setting.quizName}: questions=${quizResult.questionsAnswered}, score=${quizResult.score}`);
-                                                
-                                                if (quizResult.questionsAnswered >= 15) {
-                                                    console.log(`User ${user.username} has completed ${setting.quizName} quiz (from quizResults) with ${quizResult.questionsAnswered} questions`);
-                                                    completedUsers.push(user.username);
-                                                    continue; // Skip progress check if we already found completion
-                                                } else {
-                                                    console.log(`User ${user.username} has NOT completed ${setting.quizName} quiz (from quizResults), only ${quizResult.questionsAnswered} questions`);
-                                                }
-                                            } else {
-                                                console.log(`User ${user.username} has no result for ${setting.quizName} in quizResults`);
-                                            }
-                                        } else {
-                                            console.log(`User ${user.username} has no quizResults array`);
-                                        }
-                                        
-                                        // Fallback to checking quizProgress if no result found
-                                        console.log(`Checking quizProgress for ${user.username}`);
-                                        try {
-                                            const progressResponse = await this.apiService.getUserQuizProgress(user.username, setting.quizName);
-                                            
-                                            if (progressResponse.success && progressResponse.data) {
-                                                const progress = progressResponse.data;
-                                                console.log(`${user.username} quizProgress data:`, progress);
-                                                
-                                                // Check if user has completed the quiz - ONLY check question count
-                                                const isCompleted = progress.questionsAnswered >= 15 || 
-                                                                  (progress.questionHistory && progress.questionHistory.length >= 15);
-                                                
-                                                if (isCompleted) {
-                                                    console.log(`User ${user.username} has completed ${setting.quizName} quiz (from quizProgress)`);
-                                                    completedUsers.push(user.username);
-                                                } else {
-                                                    console.log(`User ${user.username} has NOT completed ${setting.quizName} quiz (from quizProgress)`);
-                                                    skippedUsers.push(user.username);
-                                                }
-                                            } else {
-                                                console.log(`No progress data found for ${user.username} on ${setting.quizName}`);
-                                                skippedUsers.push(user.username);
-                                            }
-                                        } catch (progressError) {
-                                            console.error(`Error getting quiz progress for ${user.username}:`, progressError);
-                                            console.log(`Skipping API call for ${user.username} and continuing with next user`);
-                                            skippedUsers.push(user.username);
-                                        }
-                                    } catch (userError) {
-                                        console.error(`Error checking progress for user ${user.username}:`, userError);
-                                        skippedUsers.push(user.username);
-                                    }
-                                }
-                                
-                                console.log(`Found ${completedUsers.length} users who completed ${setting.quizName} quiz: ${completedUsers.join(', ')}`);
-                                console.log(`Skipped ${skippedUsers.length} users who haven't completed ${setting.quizName} quiz: ${skippedUsers.join(', ')}`);
-                                
-                                if (completedUsers.length === 0) {
-                                    this.showInfo(`No users have completed the ${this.formatQuizName(setting.quizName)} quiz`);
-                                    return;
-                                }
-                                
-                                this.showInfo(`Processing reset for ${completedUsers.length} users...`);
-                                
-                                // Reset each user's quiz
-                                let successCount = 0;
-                                for (const username of completedUsers) {
-                                    try {
-                                        // Reset the quiz progress
-                                        const resetResponse = await this.apiService.resetQuizProgress(username, setting.quizName);
-                                        
-                                        if (resetResponse.success) {
-                                            successCount++;
-                                            console.log(`Reset ${username}'s ${setting.quizName} quiz`);
-                                        } else {
-                                            console.error(`Failed to reset ${username}'s ${setting.quizName} quiz:`, resetResponse.message);
-                                        }
-                                    } catch (error) {
-                                        console.error(`Error resetting ${username}'s ${setting.quizName} quiz:`, error);
-                                    }
-                                }
-                                
-                                // Update lastReset time for the auto-reset setting
-                                await this.apiService.updateAutoResetLastResetTime(setting.quizName);
-                                
-                                // Calculate and update next reset time
-                                const newNextResetTime = this.calculateNextResetTime(setting.resetPeriod);
-                                await this.apiService.saveAutoResetSetting(
-                                    setting.quizName, 
-                                    setting.resetPeriod, 
-                                    true, 
-                                    newNextResetTime
-                                );
-                                
-                                console.log(`Updated next reset time for ${setting.quizName} to ${newNextResetTime}`);
-                                
-                                // Update local settings
-                                if (!this.autoResetSettings) {
-                                    this.autoResetSettings = {};
-                                }
-                                this.autoResetSettings[setting.quizName] = {
-                                    ...setting,
-                                    lastReset: new Date().toISOString(),
-                                    nextResetTime: newNextResetTime
-                                };
-                                
-                                // Reload settings to update the UI
-                                await this.loadAutoResetSettings();
-                                
-                                // Show success message
-                                this.showSuccess(`Successfully reset ${successCount} out of ${completedUsers.length} users for the ${this.formatQuizName(setting.quizName)} quiz`);
-                                
                             } catch (error) {
-                                console.error(`Error processing auto-reset for ${setting.quizName}:`, error);
+                                console.error(`Error resetting ${username}'s ${setting.quizName} quiz:`, error);
                             }
-                        } else {
-                            console.log(`Auto-reset for ${setting.quizName} not due yet. Next reset at ${nextResetTime}`);
                         }
-                    }
-                    
-                    totalProcessed += autoResetProcessed;
-                    
-                    if (autoResetProcessed > 0) {
-                        console.log(`Processed ${autoResetProcessed} auto-reset quizzes`);
-                        this.showInfo(`Processed ${autoResetProcessed} auto-reset quizzes`);
                         
-                        // Force reload of auto-reset settings to get updated times
-                        await this.loadAutoResetSettings();
+                        // Update lastReset time and calculate new nextResetTime
+                        await this.apiService.updateAutoResetLastResetTime(setting.quizName);
+                        const newNextResetTime = this.calculateNextResetTime(setting.resetPeriod);
+                        
+                        // Save the new nextResetTime
+                        await this.apiService.saveAutoResetSetting(
+                            setting.quizName,
+                            setting.resetPeriod,
+                            true,
+                            newNextResetTime
+                        );
+                        
+                        console.log(`Updated next reset time for ${setting.quizName} to ${newNextResetTime}`);
+                        
+                        // Update local settings
+                        if (!this.autoResetSettings) {
+                            this.autoResetSettings = {};
+                        }
+                        this.autoResetSettings[setting.quizName] = {
+                            ...setting,
+                            lastReset: new Date().toISOString(),
+                            nextResetTime: newNextResetTime
+                        };
+                        
+                        // Update the UI
+                        await this.displayAutoResetSettings();
+                        
+                        // Show success message
+                        this.showSuccess(`Successfully reset ${successCount} out of ${completedUsers.length} users for the ${this.formatQuizName(setting.quizName)} quiz`);
+                        
+                    } catch (error) {
+                        console.error(`Error processing auto-reset for ${setting.quizName}:`, error);
                     }
+                } else {
+                    console.log(`Auto-reset for ${setting.quizName} not due yet. Next reset at ${nextResetTime}`);
                 }
-            } catch (autoResetError) {
-                console.error('Error checking auto-reset settings:', autoResetError);
             }
             
-            if (totalProcessed > 0) {
-                console.log(`Processed total of ${totalProcessed} resets`);
+            if (autoResetProcessed > 0) {
+                console.log(`Processed ${autoResetProcessed} auto-reset quizzes`);
+                this.showInfo(`Processed ${autoResetProcessed} auto-reset quizzes`);
                 
-                // If any resets were processed, refresh the schedule section if it's active
-                const scheduleSection = document.getElementById('schedule-section');
-                if (scheduleSection && scheduleSection.classList.contains('active')) {
-                    console.log('Schedule section is active, refreshing data');
-                    await this.refreshScheduleData();
-                }
-            } else {
-                console.log('No resets needed processing');
+                // Force reload of auto-reset settings to get updated times
+                await this.loadAutoResetSettings();
             }
             
-            return { ...result, totalProcessed };
+            return { success: true, processed: autoResetProcessed, total: settings.length };
+            
         } catch (error) {
             console.error('Error checking scheduled resets:', error);
-            // Only show error to user if schedule section is active
-            const scheduleSection = document.getElementById('schedule-section');
-            if (scheduleSection && scheduleSection.classList.contains('active')) {
-                this.showInfo(`Failed to check scheduled resets: ${error.message}`, 'error');
-            }
-            throw error;
+            return { success: false, message: error.message };
         }
     }
     
@@ -5003,14 +4875,17 @@ export class Admin2Dashboard {
         }
     }
 
-    calculateNextResetTime(setting) {
+    calculateNextResetTime(input) {
         const now = new Date();
         
+        // Handle both parameter types (setting object or resetPeriod)
+        const resetPeriod = typeof input === 'object' ? input.resetPeriod : input;
+        
         // If resetPeriod is a number, it's in minutes
-        if (typeof setting.resetPeriod === 'number') {
+        if (typeof resetPeriod === 'number') {
             // Calculate next reset time from now
-            const nextReset = new Date(now.getTime() + (setting.resetPeriod * 60 * 1000));
-            console.log(`Calculated next reset time: ${nextReset.toISOString()} (${setting.resetPeriod} minutes from now)`);
+            const nextReset = new Date(now.getTime() + (resetPeriod * 60 * 1000));
+            console.log(`Calculated next reset time: ${nextReset.toISOString()} (${resetPeriod} minutes from now)`);
             return nextReset.toISOString();
         }
         
@@ -5018,7 +4893,7 @@ export class Admin2Dashboard {
         let nextReset = new Date(now);
         nextReset.setHours(0, 0, 0, 0); // Reset to midnight
         
-        switch (setting.resetPeriod) {
+        switch (resetPeriod) {
             case 'daily':
                 // Next day at midnight
                 nextReset.setDate(nextReset.getDate() + 1);
@@ -5038,7 +4913,7 @@ export class Admin2Dashboard {
                 nextReset.setDate(nextReset.getDate() + 1);
         }
         
-        console.log(`Calculated next reset time: ${nextReset.toISOString()} (${setting.resetPeriod})`);
+        console.log(`Calculated next reset time: ${nextReset.toISOString()} (${resetPeriod})`);
         return nextReset.toISOString();
     }
 
@@ -5217,18 +5092,30 @@ export class Admin2Dashboard {
     async deleteAutoReset(quizName) {
         try {
             console.log(`Deleting auto-reset for ${quizName}`);
+            
+            // Call API to delete the auto-reset setting
             const response = await this.apiService.deleteAutoResetSetting(quizName);
-
+            
             if (response.success) {
-                // Load settings first, then the display will be updated
-                await this.loadAutoResetSettings();
-                this.showInfo(`Auto-reset setting for ${quizName} deleted`);
+                // Remove from local settings
+                if (this.autoResetSettings && this.autoResetSettings[quizName]) {
+                    delete this.autoResetSettings[quizName];
+                }
+                
+                // Update the UI
+                await this.displayAutoResetSettings();
+                
+                // Show success message
+                this.showSuccess(`Auto-reset for ${this.formatQuizName(quizName)} has been deleted`);
+                
+                return true;
             } else {
-                this.showErrorMessage('Failed to delete auto-reset setting');
+                throw new Error(response.message || 'Failed to delete auto-reset setting');
             }
         } catch (error) {
             console.error('Error deleting auto-reset:', error);
-            this.showErrorMessage('Failed to delete auto-reset setting');
+            this.showError(`Failed to delete auto-reset: ${error.message}`);
+            return false;
         }
     }
 
