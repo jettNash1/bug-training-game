@@ -489,6 +489,8 @@ export class Admin2Dashboard {
         let activeToday = 0;
         let totalCompletion = 0;
 
+        // Debug: log each user's overall progress
+        console.log('--- Calculating Overall Progress for Hero Stat ---');
         this.users.forEach(user => {
             // Active Today: lastLogin is today
             if (user.lastLogin) {
@@ -498,11 +500,14 @@ export class Admin2Dashboard {
                 }
             }
             // Use the same per-user overall progress as on the user card
-            totalCompletion += this.calculateQuestionsAnsweredPercent(user);
+            const percent = this.calculateQuestionsAnsweredPercent(user);
+            totalCompletion += percent;
+            console.log(`User: ${user.username}, Overall Progress: ${percent.toFixed(1)}%`);
         });
 
         // Mean average overall progress
         const averageCompletion = totalUsers > 0 ? totalCompletion / totalUsers : 0;
+        console.log(`Computed mean average overall progress: ${averageCompletion.toFixed(1)}% (Total users: ${totalUsers})`);
 
         return {
             totalUsers,
