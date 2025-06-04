@@ -89,8 +89,8 @@ export class QuizList {
                     <a href="pages/${quizName}-quiz.html" class="quiz-item" data-quiz="${quizName}" data-progress="0">
                         <div class="quiz-completion" role="status" id="${quizName}-progress"></div>
                         <div class="quiz-icon" aria-hidden="true">
-                            <img src="/images/icons/${quizName}.svg" alt="${this.formatQuizName(quizName)} icon" 
-                                 onerror="this.src='/images/icons/default.svg'">
+                            <img src="./assets/badges/${quizName}.svg" alt="${this.formatQuizName(quizName)} icon" 
+                                 onerror="this.src='./assets/badges/default.svg'">
                         </div>
                         <div class="quiz-info">
                             <div class="quiz-title">${this.formatQuizName(quizName)}</div>
