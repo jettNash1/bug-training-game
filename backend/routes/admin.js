@@ -1595,7 +1595,7 @@ router.post('/auto-resets', auth, async (req, res) => {
             });
         }
 
-        const { quizName, resetPeriod, enabled } = req.body;
+        const { quizName, resetPeriod, enabled, nextResetTime } = req.body;
 
         // Validate inputs
         if (!quizName || resetPeriod === undefined) {
@@ -1613,14 +1613,20 @@ router.post('/auto-resets', auth, async (req, res) => {
             });
         }
 
+        // Build update fields, including nextResetTime if provided
+        const updateFields = {
+            resetPeriod,
+            enabled: enabled !== undefined ? enabled : true,
+            lastUpdated: new Date()
+        };
+        if (nextResetTime) {
+            updateFields.nextResetTime = nextResetTime;
+        }
+
         // Find existing setting or create new one
         const autoReset = await AutoReset.findOneAndUpdate(
             { quizName },
-            {
-                resetPeriod,
-                enabled: enabled !== undefined ? enabled : true,
-                lastUpdated: new Date()
-            },
+            updateFields,
             { new: true, upsert: true }
         );
 
