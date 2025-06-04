@@ -3778,18 +3778,25 @@ export class Admin2Dashboard {
                                 await this.apiService.updateAutoResetLastResetTime(setting.quizName);
                                 
                                 // Calculate and update next reset time
-                                const setting = this.autoResetSettings[setting.quizName];
-                                if (setting) {
-                                    const newNextResetTime = this.calculateNextResetTime(setting.resetPeriod);
-                                    await this.apiService.saveAutoResetSetting(
-                                        setting.quizName, 
-                                        setting.resetPeriod, 
-                                        true, 
-                                        newNextResetTime
-                                    );
-                                    
-                                    console.log(`Updated next reset time for ${setting.quizName} to ${newNextResetTime}`);
+                                const newNextResetTime = this.calculateNextResetTime(setting.resetPeriod);
+                                await this.apiService.saveAutoResetSetting(
+                                    setting.quizName, 
+                                    setting.resetPeriod, 
+                                    true, 
+                                    newNextResetTime
+                                );
+                                
+                                console.log(`Updated next reset time for ${setting.quizName} to ${newNextResetTime}`);
+                                
+                                // Update local settings
+                                if (!this.autoResetSettings) {
+                                    this.autoResetSettings = {};
                                 }
+                                this.autoResetSettings[setting.quizName] = {
+                                    ...setting,
+                                    lastReset: new Date().toISOString(),
+                                    nextResetTime: newNextResetTime
+                                };
                                 
                                 // Reload settings to update the UI
                                 await this.loadAutoResetSettings();
@@ -4997,30 +5004,42 @@ export class Admin2Dashboard {
     }
 
     calculateNextResetTime(setting) {
-        if (!setting.enabled) return null;
-        
         const now = new Date();
-        const lastReset = setting.lastReset ? new Date(setting.lastReset) : null;
         
-        // If there's no last reset, schedule from now
-        if (!lastReset) {
-            return new Date(now.getTime() + (setting.resetPeriod * 60 * 1000));
+        // If resetPeriod is a number, it's in minutes
+        if (typeof setting.resetPeriod === 'number') {
+            // Calculate next reset time from now
+            const nextReset = new Date(now.getTime() + (setting.resetPeriod * 60 * 1000));
+            console.log(`Calculated next reset time: ${nextReset.toISOString()} (${setting.resetPeriod} minutes from now)`);
+            return nextReset.toISOString();
         }
         
-        // Calculate next reset based on last reset time
-        const nextReset = new Date(lastReset.getTime() + (setting.resetPeriod * 60 * 1000));
+        // For string-based periods (daily, weekly, monthly)
+        let nextReset = new Date(now);
+        nextReset.setHours(0, 0, 0, 0); // Reset to midnight
         
-        // If next reset is in the past, calculate the next occurrence from now
-        if (nextReset < now) {
-            // Calculate how many periods have passed since the last reset
-            const timeSinceLastReset = now - lastReset;
-            const periodsSinceLastReset = Math.ceil(timeSinceLastReset / (setting.resetPeriod * 60 * 1000));
-            
-            // Calculate the next reset time by adding the appropriate number of periods to the last reset
-            return new Date(lastReset.getTime() + (periodsSinceLastReset * setting.resetPeriod * 60 * 1000));
+        switch (setting.resetPeriod) {
+            case 'daily':
+                // Next day at midnight
+                nextReset.setDate(nextReset.getDate() + 1);
+                break;
+            case 'weekly':
+                // Next Sunday at midnight
+                const daysUntilSunday = (7 - nextReset.getDay()) % 7;
+                nextReset.setDate(nextReset.getDate() + (daysUntilSunday || 7));
+                break;
+            case 'monthly':
+                // First day of next month
+                nextReset.setMonth(nextReset.getMonth() + 1);
+                nextReset.setDate(1);
+                break;
+            default:
+                // Default to daily
+                nextReset.setDate(nextReset.getDate() + 1);
         }
         
-        return nextReset;
+        console.log(`Calculated next reset time: ${nextReset.toISOString()} (${setting.resetPeriod})`);
+        return nextReset.toISOString();
     }
 
     startCountdownUpdates() {
@@ -5106,10 +5125,20 @@ export class Admin2Dashboard {
                 countdownElement.textContent = 'Reset due now!';
                 countdownElement.classList.add('countdown-overdue');
                 
-                // Trigger a check for auto-resets that need processing
-                this.checkScheduledResets().catch(err => {
-                    console.error('Error checking scheduled resets:', err);
-                });
+                // Get the quiz name from the element's data attribute
+                const quizName = countdownElement.dataset.quiz;
+                if (quizName) {
+                    // Trigger a check for auto-resets that need processing
+                    this.checkScheduledResets()
+                        .then(() => {
+                            console.log(`Processed scheduled reset for ${quizName}`);
+                            // Force a UI update after processing
+                            this.displayAutoResetSettings();
+                        })
+                        .catch(err => {
+                            console.error('Error checking scheduled resets:', err);
+                        });
+                }
                 
                 return;
             }
@@ -5122,7 +5151,7 @@ export class Admin2Dashboard {
             const hours = Math.floor((timeDiff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
             const minutes = Math.floor((timeDiff % (1000 * 60 * 60)) / (1000 * 60));
             const seconds = Math.floor((timeDiff % (1000 * 60)) / 1000);
-
+            
             // Format countdown text
             let countdownText = '';
             if (days > 0) {
@@ -5135,12 +5164,7 @@ export class Admin2Dashboard {
                 countdownText += `${minutes}m `;
             }
             countdownText += `${seconds}s`;
-
-            // Show full date on hover
-            const fullDateStr = resetDate.toLocaleString();
-            countdownElement.title = `Next reset at: ${fullDateStr}`;
             
-            // Update the element with the countdown
             countdownElement.textContent = countdownText;
         } catch (error) {
             console.error('Error updating countdown display:', error);
@@ -5441,16 +5465,18 @@ export class Admin2Dashboard {
     // Calculate the next reset time based on the period
     calculateNextResetTime(resetPeriod) {
         const now = new Date();
-        let nextReset = new Date(now);
         
-        // If resetPeriod is a number, it's in minutes - add it to the current time
+        // If resetPeriod is a number, it's in minutes
         if (typeof resetPeriod === 'number') {
-            console.log(`Adding ${resetPeriod} minutes to current time for next reset`);
-            return new Date(now.getTime() + (resetPeriod * 60 * 1000)).toISOString();
+            // Calculate next reset time from now
+            const nextReset = new Date(now.getTime() + (resetPeriod * 60 * 1000));
+            console.log(`Calculated next reset time: ${nextReset.toISOString()} (${resetPeriod} minutes from now)`);
+            return nextReset.toISOString();
         }
         
-        // Reset time to midnight
-        nextReset.setHours(0, 0, 0, 0);
+        // For string-based periods (daily, weekly, monthly)
+        let nextReset = new Date(now);
+        nextReset.setHours(0, 0, 0, 0); // Reset to midnight
         
         switch (resetPeriod) {
             case 'daily':
@@ -5459,7 +5485,8 @@ export class Admin2Dashboard {
                 break;
             case 'weekly':
                 // Next Sunday at midnight
-                nextReset.setDate(nextReset.getDate() + (7 - nextReset.getDay()));
+                const daysUntilSunday = (7 - nextReset.getDay()) % 7;
+                nextReset.setDate(nextReset.getDate() + (daysUntilSunday || 7));
                 break;
             case 'monthly':
                 // First day of next month
@@ -5471,6 +5498,7 @@ export class Admin2Dashboard {
                 nextReset.setDate(nextReset.getDate() + 1);
         }
         
+        console.log(`Calculated next reset time: ${nextReset.toISOString()} (${resetPeriod})`);
         return nextReset.toISOString();
     }
 
