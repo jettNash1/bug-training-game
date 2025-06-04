@@ -1882,18 +1882,17 @@ export class APIService {
             // Keep track of which quiz names were reset
             const processedQuizzes = new Set();
             
-            // Get current time
             const now = new Date();
             
             // Process each scheduled reset
             for (const schedule of schedules) {
                 try {
-                    // Convert reset time string to Date object
-                    const resetTime = new Date(schedule.resetDateTime);
+                    // Convert reset time to local time using the stored offset
+                    const resetTime = new Date(new Date(schedule.resetDateTime).getTime() + ((schedule.timezoneOffset || 0) * 60000));
                     
                     console.log(`Schedule for ${schedule.username}'s ${schedule.quizName} quiz - Reset time: ${resetTime.toLocaleString()}, Current time: ${now.toLocaleString()}`);
                     
-                    // If the reset time has passed
+                    // If the reset time has passed (compare in local time)
                     if (resetTime <= now) {
                         console.log(`Processing scheduled reset for ${schedule.username}'s ${schedule.quizName} quiz`);
                         
@@ -1918,8 +1917,21 @@ export class APIService {
                     } else {
                         console.log(`Schedule for ${schedule.username}'s ${schedule.quizName} quiz is not due yet. Next reset at ${resetTime.toLocaleString()}`);
                     }
-                } catch (scheduleError) {
-                    console.error(`Error processing schedule for ${schedule.username}'s ${schedule.quizName} quiz:`, scheduleError);
+                } catch (processError) {
+                    console.error('Error processing schedule:', processError);
+                }
+            }
+            
+            // Clean up any processed schedules from local storage if we're using it as fallback
+            if (processedIds.length > 0 && response.fallback) {
+                try {
+                    const schedulesJson = localStorage.getItem('scheduledResets');
+                    if (schedulesJson) {
+                        const remainingSchedules = JSON.parse(schedulesJson).filter(s => !processedIds.includes(s.id));
+                        localStorage.setItem('scheduledResets', JSON.stringify(remainingSchedules));
+                    }
+                } catch (cleanupError) {
+                    console.warn('Error cleaning up localStorage:', cleanupError);
                 }
             }
             
@@ -1931,11 +1943,7 @@ export class APIService {
             };
         } catch (error) {
             console.error('Error checking scheduled resets:', error);
-            return {
-                success: false,
-                message: 'Failed to check scheduled resets',
-                error: error.message
-            };
+            throw error;
         }
     }
 
