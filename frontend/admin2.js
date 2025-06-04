@@ -3486,11 +3486,14 @@ export class Admin2Dashboard {
                 scheduledItem.className = 'scheduled-item';
                 scheduledItem.dataset.id = schedule.id;
                 
+                // Convert UTC time to local time using the stored offset
+                const localResetTime = new Date(new Date(schedule.resetDateTime).getTime() + ((schedule.timezoneOffset || 0) * 60000));
+                
                 scheduledItem.innerHTML = `
                     <div class="scheduled-info">
                         <div class="scheduled-user">${schedule.username}</div>
                         <div class="scheduled-quiz">${this.formatQuizName(schedule.quizName)}</div>
-                        <div class="scheduled-time">Reset scheduled for: ${this.formatScheduleDateTime(schedule.resetDateTime)}</div>
+                        <div class="scheduled-time">Reset scheduled for: ${this.formatScheduleDateTime(localResetTime)}</div>
                     </div>
                     <div class="scheduled-actions">
                         <button class="cancel-schedule-btn" data-id="${schedule.id}" aria-label="Cancel schedule">
@@ -3503,19 +3506,15 @@ export class Admin2Dashboard {
             });
             
             // Add event listeners to cancel buttons
-            scheduledItemsList.querySelectorAll('.cancel-schedule-btn').forEach(button => {
-                button.addEventListener('click', (e) => {
-                    const scheduleId = e.currentTarget.dataset.id;
-                    this.cancelSchedule(scheduleId);
+            const cancelButtons = scheduledItemsList.querySelectorAll('.cancel-schedule-btn');
+            cancelButtons.forEach(button => {
+                button.addEventListener('click', () => {
+                    this.cancelSchedule(button.dataset.id);
                 });
             });
         } catch (error) {
             console.error('Error displaying scheduled resets:', error);
-            scheduledItemsList.innerHTML = `
-                <div class="error-message">
-                    <p>Failed to display scheduled resets. Please try refreshing the page.</p>
-                </div>
-            `;
+            scheduledItemsList.innerHTML = '<p class="error-message">Failed to load scheduled resets.</p>';
         }
     }
     
@@ -3580,8 +3579,11 @@ export class Admin2Dashboard {
     // Format schedule date/time for display
     formatScheduleDateTime(dateTimeString) {
         try {
-            const date = new Date(dateTimeString);
-            return date.toLocaleString('en-GB', {
+            // Parse the original input time
+            const utcDate = new Date(dateTimeString);
+            
+            // Create a formatter that explicitly uses the local timezone
+            const formatter = new Intl.DateTimeFormat('en-GB', {
                 weekday: 'short',
                 day: '2-digit',
                 month: 'short',
@@ -3589,8 +3591,10 @@ export class Admin2Dashboard {
                 hour: '2-digit',
                 minute: '2-digit',
                 hour12: false,
-                timeZoneName: 'short'
+                timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone
             });
+            
+            return formatter.format(utcDate);
         } catch (error) {
             console.error('Error formatting date:', error);
             return dateTimeString;

@@ -1678,6 +1678,7 @@ export class APIService {
                     username: schedule.username || '',
                     quizName: schedule.quizName || '',
                     resetDateTime: schedule.resetDateTime || new Date().toISOString(),
+                    timezoneOffset: schedule.timezoneOffset || 0,
                     createdAt: schedule.createdAt || new Date().toISOString()
                 })) : [];
                 
@@ -1692,36 +1693,23 @@ export class APIService {
         } catch (error) {
             console.error('Error fetching scheduled resets:', error);
             
-            // Use localStorage as fallback with validation
-            console.warn('Using localStorage fallback for scheduled resets');
+            // Try to get from localStorage as fallback
             try {
                 const schedulesJson = localStorage.getItem('scheduledResets');
-                const schedules = schedulesJson ? JSON.parse(schedulesJson) : [];
-                
-                // Validate and clean up localStorage data
-                const validSchedules = schedules.filter(schedule => {
-                    return schedule && 
-                           typeof schedule.id === 'string' &&
-                           typeof schedule.username === 'string' &&
-                           typeof schedule.quizName === 'string' &&
-                           typeof schedule.resetDateTime === 'string' &&
-                           typeof schedule.createdAt === 'string';
-                });
-                
-                return {
-                    success: true,
-                    fallback: true,
-                    message: 'Using localStorage fallback for scheduled resets',
-                    data: validSchedules
-                };
+                if (schedulesJson) {
+                    const schedules = JSON.parse(schedulesJson);
+                    console.log('Using localStorage fallback for schedules:', schedules);
+                    return {
+                        success: true,
+                        fallback: true,
+                        data: schedules
+                    };
+                }
             } catch (localError) {
-                console.error('Error processing localStorage fallback:', localError);
-                return {
-                    success: false,
-                    message: 'Failed to fetch scheduled resets',
-                    error: error.message
-                };
+                console.warn('Error reading from localStorage:', localError);
             }
+            
+            throw error;
         }
     }
     
