@@ -56,7 +56,7 @@ export class QuizList {
                 throw new Error('Failed to get user data');
             }
 
-            const { userType, allowedQuizzes = [], hiddenQuizzes = [] } = userData.data;
+            const { userType, allowedQuizzes = [], hiddenQuizzes = [], quizProgress = {} } = userData.data;
             const isInterviewAccount = userType === 'interview_candidate';
 
             // Debug logging
@@ -65,7 +65,8 @@ export class QuizList {
                 isInterviewAccount,
                 allowedQuizzes,
                 hiddenQuizzes,
-                totalQuizTypes: this.quizTypes.length
+                totalQuizTypes: this.quizTypes.length,
+                quizProgress
             });
 
             // Create categories HTML
@@ -85,19 +86,50 @@ export class QuizList {
                 }
 
                 // Create quiz items HTML for this category
-                const quizItemsHTML = visibleQuizzes.map(quizName => `
-                    <a href="pages/${quizName}-quiz.html" class="quiz-item" data-quiz="${quizName}" data-progress="0">
-                        <div class="quiz-completion" role="status" id="${quizName}-progress"></div>
-                        <div class="quiz-icon" aria-hidden="true">
-                            <img src="./assets/badges/${quizName}.svg" alt="${this.formatQuizName(quizName)} icon" 
-                                 onerror="this.src='./assets/badges/default.svg'">
-                        </div>
-                        <div class="quiz-info">
-                            <div class="quiz-title">${this.formatQuizName(quizName)}</div>
-                            <div class="quiz-description">${this.getQuizDescription(quizName)}</div>
-                        </div>
-                    </a>
-                `).join('');
+                const quizItemsHTML = visibleQuizzes.map(quizName => {
+                    const quizLower = quizName.toLowerCase();
+                    const progress = quizProgress[quizLower] || {};
+                    const questionsAnswered = progress.questionsAnswered || 0;
+                    const score = progress.score || 0;
+                    
+                    // Determine quiz status and styling
+                    let statusClass = 'not-started';
+                    let progressText = '';
+                    
+                    if (questionsAnswered === 15) {
+                        if (score >= 80) {
+                            statusClass = 'completed-perfect';
+                            progressText = '15/15';
+                        } else {
+                            statusClass = 'completed-partial';
+                            progressText = '15/15';
+                        }
+                    } else if (questionsAnswered > 0) {
+                        statusClass = 'in-progress';
+                        progressText = `${questionsAnswered}/15`;
+                    }
+
+                    return `
+                        <a href="pages/${quizName}-quiz.html" class="quiz-item ${statusClass}" data-quiz="${quizName}" data-progress="${questionsAnswered}">
+                            <div class="quiz-completion" role="status" id="${quizName}-progress">${progressText}</div>
+                            <div class="quiz-icon" aria-hidden="true">
+                                <img src="./assets/badges/${quizName}.svg" alt="${this.formatQuizName(quizName)} icon" 
+                                     onerror="this.src='./assets/badges/default.svg'">
+                            </div>
+                            <div class="quiz-info">
+                                <div class="quiz-title">${this.formatQuizName(quizName)}</div>
+                                <div class="quiz-description">${this.getQuizDescription(quizName)}</div>
+                            </div>
+                        </a>
+                    `;
+                }).join('');
+
+                // Calculate category progress
+                const categoryProgress = visibleQuizzes.reduce((acc, quizName) => {
+                    const quizLower = quizName.toLowerCase();
+                    const progress = quizProgress[quizLower] || {};
+                    return acc + (progress.questionsAnswered === 15 ? 1 : 0);
+                }, 0);
 
                 return `
                     <div class="category-card" role="listitem">
@@ -108,9 +140,9 @@ export class QuizList {
                             ${quizItemsHTML}
                         </div>
                         <div class="category-progress" role="status">
-                            <div class="progress-text">Progress: 0/${visibleQuizzes.length} Complete</div>
+                            <div class="progress-text">Progress: ${categoryProgress}/${visibleQuizzes.length} Complete</div>
                             <div class="progress-bar">
-                                <div class="progress-fill" style="width: 0%" aria-hidden="true"></div>
+                                <div class="progress-fill" style="width: ${(categoryProgress / visibleQuizzes.length) * 100}%" aria-hidden="true"></div>
                             </div>
                         </div>
                     </div>
