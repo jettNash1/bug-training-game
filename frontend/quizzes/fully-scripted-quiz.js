@@ -230,7 +230,7 @@ export class FullyScriptedQuiz extends BaseQuiz {
         timerContainer.classList.remove('timer-warning');
         
         // Set starting time
-        const timeLimit = this.questionTimeLimitInSeconds;
+        const timeLimit = this.timePerQuestion;
         timerDisplay.textContent = timeLimit;
         
         // Record start time

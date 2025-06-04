@@ -62,7 +62,6 @@ export class FunctionalInterviewQuiz extends BaseQuiz {
         // Timer-related properties
         this.questionTimer = null;
         this.questionStartTime = null;
-        this.questionTimeLimitInSeconds = 60; // 60 seconds per question
         
         this.isLoading = false;
         
@@ -221,7 +220,7 @@ export class FunctionalInterviewQuiz extends BaseQuiz {
         const timerDisplay = document.getElementById('timer-display');
         
         if (!timerContainer || !timerDisplay) {
-            console.error('[Functional Interview Quiz] Timer elements not found');
+            console.error('[FunctionalInterviewQuiz] Timer elements not found');
             return;
         }
         
@@ -230,7 +229,7 @@ export class FunctionalInterviewQuiz extends BaseQuiz {
         timerContainer.classList.remove('timer-warning');
         
         // Set starting time
-        const timeLimit = this.questionTimeLimitInSeconds;
+        const timeLimit = this.timePerQuestion; // Use BaseQuiz value
         timerDisplay.textContent = timeLimit;
         
         // Record start time

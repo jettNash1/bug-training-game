@@ -62,7 +62,6 @@ export class ExploratoryQuiz extends BaseQuiz {
         // Timer-related properties
         this.questionTimer = null;
         this.questionStartTime = null;
-        this.questionTimeLimitInSeconds = 60; // 60 seconds per question
         
         this.isLoading = false;
         
@@ -227,30 +226,20 @@ export class ExploratoryQuiz extends BaseQuiz {
         
         // Show the timer
         timerContainer.classList.remove('hidden');
-        timerContainer.classList.remove('timer-warning');
+        timerContainer.classList.remove('visually-hidden');
         
-        // Set starting time
-        const timeLimit = this.questionTimeLimitInSeconds;
-        timerDisplay.textContent = timeLimit;
+        // Use the timer value from BaseQuiz
+        const timeLimit = this.timePerQuestion;
+        let timeLeft = timeLimit;
+        timerDisplay.textContent = `${timeLeft}s`;
         
-        // Record start time
         this.questionStartTime = Date.now();
-        
-        // Start timer interval
         this.questionTimer = setInterval(() => {
-            const elapsedSeconds = Math.floor((Date.now() - this.questionStartTime) / 1000);
-            const remainingSeconds = Math.max(0, timeLimit - elapsedSeconds);
-            
-            timerDisplay.textContent = remainingSeconds;
-            
-            // Add warning class when less than 10 seconds remain
-            if (remainingSeconds <= 10 && !timerContainer.classList.contains('timer-warning')) {
-                timerContainer.classList.add('timer-warning');
-            }
-            
-            // If time is up, auto-submit answer or select random option
-            if (remainingSeconds <= 0) {
+            timeLeft--;
+            timerDisplay.textContent = `${timeLeft}s`;
+            if (timeLeft <= 0) {
                 clearInterval(this.questionTimer);
+                this.questionTimer = null;
                 this.handleTimedOut();
             }
         }, 1000);

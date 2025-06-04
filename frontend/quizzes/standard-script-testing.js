@@ -62,7 +62,7 @@ export class StandardScriptTestingQuiz extends BaseQuiz {
         // Timer-related properties
         this.questionTimer = null;
         this.questionStartTime = null;
-        this.questionTimeLimitInSeconds = 60; // 60 seconds per question
+        this.timePerQuestion = 60; // 60 seconds per question
         
         this.isLoading = false;
         
@@ -230,7 +230,7 @@ export class StandardScriptTestingQuiz extends BaseQuiz {
         timerContainer.classList.remove('timer-warning');
         
         // Set starting time
-        const timeLimit = this.questionTimeLimitInSeconds;
+        const timeLimit = this.timePerQuestion;
         timerDisplay.textContent = timeLimit;
         
         // Record start time
