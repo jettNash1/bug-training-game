@@ -481,24 +481,27 @@ export class Admin2Dashboard {
     }
     
     updateStatistics() {
-        // Create statistics data
+        // Calculate Active Today
+        const today = new Date();
         const totalUsers = this.users.length;
-        const activeToday = this.users.filter(user => {
-            const lastActive = this.getLastActiveDate(user);
-            const today = new Date();
-            const lastActiveDate = new Date(lastActive);
-            return lastActiveDate.toDateString() === today.toDateString();
-        }).length;
-
-        // Calculate average completion
+        let activeToday = 0;
         let totalCompletion = 0;
+
         this.users.forEach(user => {
-            const userProgress = this.calculateQuestionsAnsweredPercent(user);
-            totalCompletion += userProgress;
+            // Active Today: lastLogin is today
+            if (user.lastLogin) {
+                const lastLoginDate = new Date(user.lastLogin);
+                if (lastLoginDate.toDateString() === today.toDateString()) {
+                    activeToday++;
+                }
+            }
+            // Use the same per-user overall progress as on the user card
+            totalCompletion += this.calculateQuestionsAnsweredPercent(user);
         });
+
+        // Mean average overall progress
         const averageCompletion = totalUsers > 0 ? totalCompletion / totalUsers : 0;
 
-        // Return statistics
         return {
             totalUsers,
             activeToday,
