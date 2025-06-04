@@ -3355,8 +3355,12 @@ export class Admin2Dashboard {
                 return;
             }
             
-            // Create datetime string
-            const resetDateTime = `${resetDate}T${resetTime}:00`;
+            // Create datetime string with proper time zone handling
+            const localDateTime = new Date(`${resetDate}T${resetTime}`);
+            // Convert to ISO string but keep the intended local time
+            const resetDateTime = new Date(localDateTime.getTime() - (localDateTime.getTimezoneOffset() * 60000)).toISOString();
+            
+            console.log(`Scheduling reset - Local time: ${localDateTime}, UTC time: ${resetDateTime}`);
             
             // Show loading state
             const submitBtn = document.querySelector('.submit-btn');
