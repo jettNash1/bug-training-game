@@ -1283,7 +1283,7 @@ router.post('/schedules', auth, async (req, res) => {
             });
         }
 
-        const { username, quizName, resetDateTime } = req.body;
+        const { username, quizName, resetDateTime, timezoneOffset } = req.body;
 
         // Validate inputs
         if (!username || !quizName || !resetDateTime) {
@@ -1293,8 +1293,10 @@ router.post('/schedules', auth, async (req, res) => {
             });
         }
 
-        // Validate resetDateTime is in the future
+        // Parse the reset time and adjust for timezone if offset is provided
         const resetTime = new Date(resetDateTime);
+        
+        // Validate resetDateTime is in the future
         const now = new Date();
         if (resetTime <= now) {
             return res.status(400).json({

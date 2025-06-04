@@ -1732,14 +1732,13 @@ export class APIService {
                 throw new Error('Missing required fields: username, quizName, and resetDateTime are required');
             }
 
-            // Validate resetDateTime is in the future
-            const resetTime = new Date(resetDateTime);
-            const now = new Date();
-            if (resetTime <= now) {
-                throw new Error('Reset time must be in the future');
-            }
+            // Create a Date object in the local timezone
+            const localDate = new Date(resetDateTime);
+            
+            // Convert to ISO string with timezone offset
+            const resetTimeWithOffset = new Date(localDate.getTime() - (localDate.getTimezoneOffset() * 60000)).toISOString();
 
-            console.log(`Creating scheduled reset for ${username}'s ${quizName} at ${resetDateTime}`);
+            console.log(`Creating scheduled reset for ${username}'s ${quizName} at ${resetDateTime} (with offset: ${resetTimeWithOffset})`);
             
             const response = await this.fetchWithAdminAuth(`${this.baseUrl}/admin/schedules`, {
                 method: 'POST',
@@ -1749,13 +1748,13 @@ export class APIService {
                 body: JSON.stringify({
                     username,
                     quizName,
-                    resetDateTime
+                    resetDateTime: resetTimeWithOffset,
+                    timezoneOffset: new Date().getTimezoneOffset()
                 })
             });
             
             if (response.success) {
-                const schedule = response.data;
-                console.log('Successfully created scheduled reset through API:', schedule);
+                console.log('Successfully created scheduled reset through API:', response);
                 
                 // Also save to localStorage as a backup/fallback
                 try {
@@ -1771,7 +1770,7 @@ export class APIService {
                     
                     if (!exists) {
                         const newSchedule = {
-                            id: schedule._id || schedule.id || Date.now().toString(),
+                            id: response.data._id || response.data.id || Date.now().toString(),
                             username,
                             quizName,
                             resetDateTime,
@@ -1791,39 +1790,7 @@ export class APIService {
             }
         } catch (error) {
             console.error('Error creating scheduled reset:', error);
-            
-            // Use localStorage as fallback with validation
-            console.warn('Using localStorage fallback for creating scheduled reset');
-            try {
-                const schedulesJson = localStorage.getItem('scheduledResets');
-                const schedules = schedulesJson ? JSON.parse(schedulesJson) : [];
-                
-                const newSchedule = {
-                    id: Date.now().toString(),
-                    username,
-                    quizName,
-                    resetDateTime,
-                    createdAt: new Date().toISOString()
-                };
-                
-                // Validate the new schedule before adding
-                if (newSchedule.username && newSchedule.quizName && newSchedule.resetDateTime) {
-                    schedules.push(newSchedule);
-                    localStorage.setItem('scheduledResets', JSON.stringify(schedules));
-                    
-                    return {
-                        success: true,
-                        fallback: true,
-                        message: 'Scheduled reset created in localStorage (API not available)',
-                        data: newSchedule
-                    };
-                } else {
-                    throw new Error('Invalid schedule data');
-                }
-            } catch (localError) {
-                console.error('Error creating scheduled reset in localStorage:', localError);
-                throw error;
-            }
+            throw error;
         }
     }
     

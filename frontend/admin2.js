@@ -3579,16 +3579,22 @@ export class Admin2Dashboard {
     
     // Format schedule date/time for display
     formatScheduleDateTime(dateTimeString) {
-        const options = {
-            weekday: 'short',
-            year: 'numeric',
-            month: 'short',
-            day: 'numeric',
-            hour: '2-digit',
-            minute: '2-digit'
-        };
-        
-        return new Date(dateTimeString).toLocaleString(undefined, options);
+        try {
+            const date = new Date(dateTimeString);
+            return date.toLocaleString('en-GB', {
+                weekday: 'short',
+                day: '2-digit',
+                month: 'short',
+                year: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit',
+                hour12: false,
+                timeZoneName: 'short'
+            });
+        } catch (error) {
+            console.error('Error formatting date:', error);
+            return dateTimeString;
+        }
     }
     
     // Refresh schedule section data
