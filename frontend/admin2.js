@@ -2832,8 +2832,7 @@ export class Admin2Dashboard {
             
             // Get quiz results from API
             try {
-                // Import ApiService from relative path
-                const apiService = this.apiService; // Use the inherited apiService
+                const apiService = this.apiService;
                 const response = await apiService.getQuizQuestions(username, quizType);
                 console.log('Quiz questions API response:', response);
                 
@@ -2847,21 +2846,16 @@ export class Admin2Dashboard {
                         // Get the correct answer
                         let correctAnswer = '';
                         if (item.correctAnswer && item.correctAnswer.text) {
-                            // If the API provides the correct answer directly, use it
                             correctAnswer = item.correctAnswer.text;
                         } else if (!isPassed && item.selectedAnswer?.outcome) {
-                            // Otherwise try to extract from outcome text
                             const outcomeText = item.selectedAnswer.outcome;
                             const match = outcomeText.match(/The correct answer was: "([^"]+)"/);
                             if (match && match[1]) {
                                 correctAnswer = match[1];
                             } else {
-                                // If we can't extract from outcome, use the tool field
-                                // The tool field often contains the name of the correct answer for incorrect responses
                                 correctAnswer = item.selectedAnswer?.tool || 'Correct answer not available';
                             }
                         } else if (isPassed) {
-                            // For correct answers, the selected answer is the correct answer
                             correctAnswer = item.selectedAnswer?.text || '';
                         }
                         
@@ -2884,19 +2878,19 @@ export class Admin2Dashboard {
                     console.log('Quiz status:', quizStatus);
                     
                     // Create overlay container
-            const overlay = document.createElement('div');
-            overlay.className = 'user-details-overlay';
-                    overlay.style.zIndex = '1002'; // Ensure it's above other overlays
-            overlay.setAttribute('role', 'dialog');
-            overlay.setAttribute('aria-modal', 'true');
+                    const overlay = document.createElement('div');
+                    overlay.className = 'user-details-overlay';
+                    overlay.style.zIndex = '1002';
+                    overlay.setAttribute('role', 'dialog');
+                    overlay.setAttribute('aria-modal', 'true');
                     overlay.setAttribute('aria-labelledby', 'questions-details-title');
-            
-            // Create content container
-            const content = document.createElement('div');
-            content.className = 'user-details-content';
-            
+                    
+                    // Create content container
+                    const content = document.createElement('div');
+                    content.className = 'user-details-content';
+                    
                     // Determine if we should show the questions table or the "no questions" message
-                    const hasCompletedQuestions = questionHistory.length > 0 || questionsAnswered > 0;
+                    const hasCompletedQuestions = questionHistory.length > 0;
                     
                     content.innerHTML = `
                         <style>
@@ -2983,17 +2977,47 @@ export class Admin2Dashboard {
                                 background-color: rgba(158, 158, 158, 0.2);
                                 color: #616161;
                             }
+                            .details-header {
+                                display: flex;
+                                justify-content: space-between;
+                                align-items: center;
+                                margin-bottom: 20px;
+                            }
+                            .close-btn {
+                                background: none;
+                                border: none;
+                                font-size: 24px;
+                                cursor: pointer;
+                                padding: 5px;
+                                color: #666;
+                            }
+                            .close-btn:hover {
+                                color: #333;
+                            }
+                            .quiz-summary {
+                                margin-bottom: 20px;
+                                padding: 15px;
+                                background-color: #f8f9fa;
+                                border-radius: 4px;
+                            }
+                            .quiz-summary p {
+                                margin: 5px 0;
+                            }
                         </style>
                         <div class="details-header">
-                            <h3 id="questions-details-title">${this.formatQuizName(quizType)} - ${username}'s Answers</h3>
+                            <h3 id="questions-details-title">Quiz Questions for ${username} - ${quizType}</h3>
                             <button class="close-btn" aria-label="Close questions view" tabindex="0">×</button>
-                    </div>
+                        </div>
+                        <div class="quiz-summary">
+                            <p><strong>Status:</strong> ${quizStatus}</p>
+                            <p><strong>Questions Answered:</strong> ${questionsAnswered}</p>
+                            <p><strong>Score:</strong> ${quizScore}%</p>
+                        </div>
                         <div class="questions-content">
                             ${!hasCompletedQuestions ? 
                                 `<div class="not-attempted">
                                     <p>This user has not attempted any questions in this quiz yet.</p>
                                 </div>` : 
-                                questionHistory.length > 0 ?
                                 `<table class="questions-table">
                                     <thead>
                                         <tr>
@@ -3012,7 +3036,7 @@ export class Admin2Dashboard {
                                                     <td>
                                                         <span class="status-badge ${isPassed ? 'pass' : question.isTimedOut ? 'timeout' : 'fail'}">
                                                             ${isPassed ? 'CORRECT' : question.isTimedOut ? 'TIMED OUT' : 'INCORRECT'}
-                                    </span>
+                                                        </span>
                                                     </td>
                                                     <td>
                                                         <strong>${question.question || 'Question text not available'}</strong>
@@ -3021,69 +3045,72 @@ export class Admin2Dashboard {
                                                     <td class="answer-content">
                                                         <div>
                                                             <strong>Selected:</strong> ${question.selectedAnswer || 'No answer selected'}
-                                </div>
+                                                        </div>
                                                         <div>
                                                             <strong>Correct:</strong> ${question.correctAnswer || 'Correct answer not available'}
-                            </div>
+                                                        </div>
                                                     </td>
                                                 </tr>
                                             `;
                                         }).join('')}
                                     </tbody>
-                                </table>` :
-                                `<div class="not-attempted">
-                                    <p>This user has completed ${questionsAnswered} questions, but detailed history is not available.</p>
-                                </div>`
+                                </table>`
                             }
                         </div>
                     `;
                     
-            overlay.appendChild(content);
-            document.body.appendChild(overlay);
-            
-                    // Close button event listener
-                    const closeBtn = content.querySelector('.close-btn');
+                    overlay.appendChild(content);
+                    document.body.appendChild(overlay);
+                    
+                    // Add event listener for closing the overlay
+                    const closeBtn = overlay.querySelector('.close-btn');
                     if (closeBtn) {
-            closeBtn.addEventListener('click', () => {
-                overlay.remove();
-            });
-            
-                        // Add keyboard support for close button
-                        closeBtn.addEventListener('keydown', (e) => {
-                            if (e.key === 'Enter' || e.key === ' ') {
-                                e.preventDefault();
-                    overlay.remove();
-                }
-            });
+                        closeBtn.addEventListener('click', () => {
+                            overlay.remove();
+                        });
                     }
-            
-                    // Close on escape key
+                    
+                    // Add keyboard event listener for closing with Escape key
                     const handleEscapeKey = (e) => {
-                if (e.key === 'Escape') {
-                    overlay.remove();
+                        if (e.key === 'Escape') {
+                            overlay.remove();
                             document.removeEventListener('keydown', handleEscapeKey);
                         }
                     };
                     document.addEventListener('keydown', handleEscapeKey);
                     
-                    // Close on click outside
-                    overlay.addEventListener('click', (e) => {
-                        if (e.target === overlay) {
-                            overlay.remove();
+                    // Focus trap for accessibility
+                    const focusableElements = overlay.querySelectorAll('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])');
+                    const firstFocusableElement = focusableElements[0];
+                    const lastFocusableElement = focusableElements[focusableElements.length - 1];
+                    
+                    if (firstFocusableElement) {
+                        firstFocusableElement.focus();
+                    }
+                    
+                    overlay.addEventListener('keydown', (e) => {
+                        if (e.key === 'Tab') {
+                            if (e.shiftKey) {
+                                if (document.activeElement === firstFocusableElement) {
+                                    e.preventDefault();
+                                    lastFocusableElement.focus();
+                                }
+                            } else {
+                                if (document.activeElement === lastFocusableElement) {
+                                    e.preventDefault();
+                                    firstFocusableElement.focus();
+                                }
+                            }
                         }
                     });
-                    
-                } else {
-                    throw new Error('Quiz data not available');
                 }
-            } catch (apiError) {
-                console.error('API error:', apiError);
-                this.showError(`Failed to fetch quiz questions: ${apiError.message}`);
+            } catch (error) {
+                console.error('Error fetching quiz questions:', error);
+                this.showError('Failed to load quiz questions. Please try again.');
             }
-            
         } catch (error) {
             console.error('Error showing quiz questions:', error);
-            this.showError(`Failed to show quiz questions: ${error.message}`);
+            this.showError('Failed to show quiz questions. Please try again.');
         }
     }
 
