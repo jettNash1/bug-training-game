@@ -19,6 +19,10 @@ const autoResetSchema = new mongoose.Schema({
         type: Date,
         default: null
     },
+    nextResetTime: {
+        type: Date,
+        default: null
+    },
     lastUpdated: {
         type: Date,
         default: Date.now
