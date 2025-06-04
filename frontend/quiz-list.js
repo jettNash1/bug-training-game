@@ -1,19 +1,46 @@
 import { APIService } from './api-service.js';
 
-export const QUIZ_TYPES = [
-    'communication', 'initiative', 'time-management', 'tester-mindset',
-    'risk-analysis', 'risk-management', 'non-functional', 'test-support',
-    'issue-verification', 'build-verification', 'issue-tracking-tools',
-    'raising-tickets', 'reports', 'risk-analysis', 'risk-management', 'cms-testing', 'email-testing', 'content-copy',
-    'locale-testing', 'script-metrics-troubleshooting', 'standard-script-testing',
-    'test-types-tricks', 'automation-interview', 'fully-scripted', 'exploratory',
-    'sanity-smoke', 'functional-interview'
-];
+export const QUIZ_CATEGORIES = {
+    'Core QA Skills': [
+        'tester-mindset',
+        'communication',
+        'initiative',
+        'standard-script-testing',
+        'fully-scripted',
+        'exploratory'
+    ],
+    'Technical Testing': [
+        'script-metrics-troubleshooting',
+        'locale-testing',
+        'build-verification',
+        'test-types-tricks',
+        'test-support',
+        'sanity-smoke'
+    ],
+    'Project Management': [
+        'time-management',
+        'risk-analysis',
+        'risk-management',
+        'non-functional',
+        'issue-verification',
+        'issue-tracking-tools'
+    ],
+    'Content Testing': [
+        'cms-testing',
+        'email-testing',
+        'content-copy',
+        'reports'
+    ],
+    'Interview Preparation': [
+        'automation-interview',
+        'functional-interview'
+    ]
+};
 
 export class QuizList {
     constructor() {
         this.apiService = new APIService();
-        this.quizTypes = QUIZ_TYPES;
+        this.quizTypes = Object.values(QUIZ_CATEGORIES).flat();
         this.init();
     }
 
@@ -41,51 +68,51 @@ export class QuizList {
                 totalQuizTypes: this.quizTypes.length
             });
 
-            // Filter quizzes based on user type and visibility
-            const visibleQuizzes = this.quizTypes.filter(quiz => {
-                const quizLower = quiz.toLowerCase();
-                if (isInterviewAccount) {
-                    // For interview accounts, only show quizzes that are explicitly allowed
-                    const isVisible = allowedQuizzes.includes(quizLower);
-                    console.log(`Quiz visibility check for ${quiz}:`, {
-                        isInterviewAccount: true,
-                        quizLower,
-                        isAllowed: isVisible,
-                        allowedQuizzes
-                    });
-                    return isVisible;
-                } else {
-                    // For regular accounts, show all quizzes that aren't explicitly hidden
-                    const isVisible = !hiddenQuizzes.includes(quizLower);
-                    console.log(`Quiz visibility check for ${quiz}:`, {
-                        isInterviewAccount: false,
-                        quizLower,
-                        isHidden: !isVisible,
-                        hiddenQuizzes
-                    });
-                    return isVisible;
+            // Create categories HTML
+            const categoriesHTML = Object.entries(QUIZ_CATEGORIES).map(([category, quizzes]) => {
+                // Filter visible quizzes for this category
+                const visibleQuizzes = quizzes.filter(quiz => {
+                    const quizLower = quiz.toLowerCase();
+                    if (isInterviewAccount) {
+                        return allowedQuizzes.includes(quizLower);
+                    } else {
+                        return !hiddenQuizzes.includes(quizLower);
+                    }
+                });
+
+                if (visibleQuizzes.length === 0) {
+                    return ''; // Skip empty categories
                 }
-            });
 
-            console.log('Visible quizzes:', {
-                count: visibleQuizzes.length,
-                quizzes: visibleQuizzes
-            });
-
-            // Create quiz list HTML
-            const quizListHTML = visibleQuizzes.map(quizName => {
-                const formattedName = this.formatQuizName(quizName);
-                return `
-                    <div class="quiz-card" data-quiz="${quizName}">
-                        <div class="quiz-icon">
-                            <img src="/images/icons/${quizName}.svg" alt="${formattedName} icon" 
+                // Create quiz items HTML for this category
+                const quizItemsHTML = visibleQuizzes.map(quizName => `
+                    <a href="pages/${quizName}-quiz.html" class="quiz-item" data-quiz="${quizName}" data-progress="0">
+                        <div class="quiz-completion" role="status" id="${quizName}-progress"></div>
+                        <div class="quiz-icon" aria-hidden="true">
+                            <img src="/images/icons/${quizName}.svg" alt="${this.formatQuizName(quizName)} icon" 
                                  onerror="this.src='/images/icons/default.svg'">
                         </div>
-                        <h3>${formattedName}</h3>
-                        <p class="quiz-description">${this.getQuizDescription(quizName)}</p>
-                        <button class="start-quiz-btn" onclick="window.location.href='/pages/quiz.html?quiz=${quizName}'">
-                            Start Quiz
-                        </button>
+                        <div class="quiz-info">
+                            <div class="quiz-title">${this.formatQuizName(quizName)}</div>
+                            <div class="quiz-description">${this.getQuizDescription(quizName)}</div>
+                        </div>
+                    </a>
+                `).join('');
+
+                return `
+                    <div class="category-card" role="listitem">
+                        <div class="category-header">
+                            ${category}
+                        </div>
+                        <div class="quiz-list" role="list">
+                            ${quizItemsHTML}
+                        </div>
+                        <div class="category-progress" role="status">
+                            <div class="progress-text">Progress: 0/${visibleQuizzes.length} Complete</div>
+                            <div class="progress-bar">
+                                <div class="progress-fill" style="width: 0%" aria-hidden="true"></div>
+                            </div>
+                        </div>
                     </div>
                 `;
             }).join('');
@@ -93,8 +120,8 @@ export class QuizList {
             // Update the container
             const container = document.getElementById('quizList');
             if (container) {
-                if (visibleQuizzes.length > 0) {
-                    container.innerHTML = quizListHTML;
+                if (categoriesHTML) {
+                    container.innerHTML = categoriesHTML;
                 } else {
                     container.innerHTML = '<p class="no-quizzes">No quizzes available for your account.</p>';
                 }

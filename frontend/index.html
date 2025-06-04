@@ -11,12 +11,14 @@
     <script type="module" src="./api-service.js"></script>
     <script type="module" src="./QuizUser.js"></script>
     <script type="module" src="./quiz-helper.js"></script>
+    <script type="module" src="./quiz-list.js"></script>
     <script type="module" src="./login.js"></script>
     <script type="module" src="./auth.js"></script>
     <script type="module" src="./scripts/index.js"></script>
     <script type="module">
         import { QuizUser } from './QuizUser.js';
         import { APIService } from './api-service.js';
+        import { QuizList } from './quiz-list.js';
         
         document.addEventListener('DOMContentLoaded', async () => {
             const currentUsername = localStorage.getItem('username');
@@ -34,6 +36,32 @@
                 if (usernameElement) {
                     usernameElement.textContent = currentUsername;
                 }
+
+                // Initialize quiz list
+                const quizList = new QuizList();
+                await quizList.init();
+
+                // Set up auto-refresh when page becomes visible
+                let wasInactive = false;
+                document.addEventListener('visibilitychange', () => {
+                    if (document.visibilityState === 'hidden') {
+                        wasInactive = true;
+                    } else if (document.visibilityState === 'visible' && wasInactive) {
+                        wasInactive = false;
+                        quizList.displayQuizzes();
+                    }
+                });
+
+                window.addEventListener('focus', () => {
+                    if (wasInactive) {
+                        wasInactive = false;
+                        quizList.displayQuizzes();
+                    }
+                });
+
+                window.addEventListener('blur', () => {
+                    wasInactive = true;
+                });
             } catch (error) {
                 console.error('Failed to initialize user data:', error);
             }
@@ -58,319 +86,14 @@
     <main class="main-container" role="main">
         <p>Select a category and quiz to begin your learning journey</p>
 
-        <div class="categories-grid" role="list">
-            <!-- Core QA Skills -->
-            <div class="category-card" role="listitem">
-                <div class="category-header">
-                    Core QA Skills
-                </div>
-                <div class="quiz-list" role="list">
-                    <a href="pages/tester-mindset-quiz.html" class="quiz-item" data-quiz="tester-mindset" data-progress="0">
-                        <div class="quiz-completion" role="status" id="tester-mindset-progress"></div>
-                        <div class="quiz-icon" aria-hidden="true">🧠</div>
-                        <div class="quiz-info">
-                            <div class="quiz-title">Tester Mindset</div>
-                            <div class="quiz-description">Develop critical thinking skills</div>
-                        </div>
-                    </a>
-                    <a href="pages/communication-quiz.html" class="quiz-item" data-quiz="communication" data-progress="0">
-                        <div class="quiz-completion" role="status" id="communication-progress"></div>
-                        <div class="quiz-icon" aria-hidden="true">💬</div>
-                        <div class="quiz-info">
-                            <div class="quiz-title">Communication Skills</div>
-                            <div class="quiz-description">Master effective communication in testing</div>
-                        </div>
-                    </a>
-                    <a href="pages/initiative-quiz.html" class="quiz-item" data-quiz="initiative" data-progress="0">
-                        <div class="quiz-completion" role="status" id="initiative-progress"></div>
-                        <div class="quiz-icon" aria-hidden="true">🚀</div>
-                        <div class="quiz-info">
-                            <div class="quiz-title">Initiative</div>
-                            <div class="quiz-description">Learn to take initiative in testing scenarios</div>
-                        </div>
-                    </a>
-                    <a href="pages/standard-script-testing.html" class="quiz-item" data-quiz="standard-script-testing" data-progress="0">
-                        <div class="quiz-completion" role="status" id="standard-script-testing-progress"></div>
-                        <div class="quiz-icon" aria-hidden="true">🚀</div>
-                        <div class="quiz-info">
-                            <div class="quiz-title">Standard Script Testing</div>
-                            <div class="quiz-description">Develop your script testing skills</div>
-                        </div>
-                    </a>
-                    <a href="pages/fully-scripted-quiz.html" class="quiz-item" data-quiz="fully-scripted" data-progress="0">
-                        <div class="quiz-completion" role="status" id="fully-scripted-progress"></div>
-                        <div class="quiz-icon" aria-hidden="true">🚀</div>
-                        <div class="quiz-info">
-                            <div class="quiz-title">Fully Scripted Testing</div>
-                            <div class="quiz-description">Develop your fully scripted testing skills</div>
-                        </div>
-                    </a>
-                    <a href="pages/exploratory-quiz.html" class="quiz-item" data-quiz="exploratory" data-progress="0">
-                        <div class="quiz-completion" role="status" id="exploratory-progress"></div>
-                        <div class="quiz-icon" aria-hidden="true">🚀</div>
-                        <div class="quiz-info">
-                            <div class="quiz-title">Exploratory Testing</div>
-                            <div class="quiz-description">Develop your exploratory testing skills</div>
-                        </div>
-                    </a>
-                </div>
-                <div class="category-progress" role="status">
-                    <div class="progress-text">Progress: 0/7 Complete </div>
-                    <div class="progress-bar">
-                        <div class="progress-fill" style="width: 0%" aria-hidden="true"></div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Technical Testing -->
-            <div class="category-card" role="listitem">
-                <div class="category-header">
-                    Technical Testing
-                </div>
-                <div class="quiz-list" role="list">
-                    <a href="pages/script-metrics-troubleshooting-quiz.html" class="quiz-item" data-quiz="script-metrics-troubleshooting" data-progress="0">
-                        <div class="quiz-completion" role="status" id="script-metrics-troubleshooting-progress"></div>
-                        <div class="quiz-icon" aria-hidden="true">📊</div>
-                        <div class="quiz-info">
-                            <div class="quiz-title">Script Metrics & Troubleshooting</div>
-                            <div class="quiz-description">Master script analysis and debugging</div>
-                        </div>
-                    </a>
-                    <a href="pages/locale-testing-quiz.html" class="quiz-item" data-quiz="locale-testing" data-progress="0">
-                        <div class="quiz-completion" role="status" id="locale-testing-progress"></div>
-                        <div class="quiz-icon" aria-hidden="true">🌍</div>
-                        <div class="quiz-info">
-                            <div class="quiz-title">Locale Testing</div>
-                            <div class="quiz-description">Test internationalization and localization</div>
-                        </div>
-                    </a>
-                    <a href="pages/build-verification-quiz.html" class="quiz-item" data-quiz="build-verification" data-progress="0">
-                        <div class="quiz-completion" role="status" id="build-verification-progress"></div>
-                        <div class="quiz-icon" aria-hidden="true">🔨</div>
-                        <div class="quiz-info">
-                            <div class="quiz-title">Build Verification</div>
-                            <div class="quiz-description">Validate and verify builds</div>
-                        </div>
-                    </a>
-                    <a href="pages/test-types-tricks-quiz.html" class="quiz-item" data-quiz="test-types-tricks" data-progress="0">
-                        <div class="quiz-completion" role="status" id="test-types-tricks-progress"></div>
-                        <div class="quiz-icon" aria-hidden="true">🧠</div>
-                        <div class="quiz-info">
-                            <div class="quiz-title">Test Types & Tricks</div>
-                            <div class="quiz-description">Learn test types and tricks</div>
-                        </div>
-                    </a>
-                    <a href="pages/test-support.html" class="quiz-item" data-quiz="test-support" data-progress="0">
-                        <div class="quiz-completion" role="status" id="test-support-progress"></div>
-                        <div class="quiz-icon" aria-hidden="true">🧠</div>
-                        <div class="quiz-info">
-                            <div class="quiz-title">Test Support</div>
-                            <div class="quiz-description">Learn test support</div>
-                        </div>
-                    </a>
-                    <a href="pages/sanity-smoke-testing.html" class="quiz-item" data-quiz="sanity-smoke" data-progress="0">
-                        <div class="quiz-completion" role="status" id="sanity-smoke-progress"></div>
-                        <div class="quiz-icon" aria-hidden="true">🧠</div>
-                        <div class="quiz-info">
-                            <div class="quiz-title">Sanity & Smoke Testing</div>
-                            <div class="quiz-description">Learn sanity and smoke testing</div>
-                        </div>
-                    </a>
-                </div>
-                <div class="category-progress" role="status">
-                    <div class="progress-text">Progress: 0/6 Complete</div>
-                    <div class="progress-bar">
-                        <div class="progress-fill" style="width: 0%" aria-hidden="true"></div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Project Management -->
-            <div class="category-card" role="listitem">
-                <div class="category-header">
-                    Project Management
-                </div>
-                <div class="quiz-list" role="list">
-                    <a href="pages/time-management-quiz.html" class="quiz-item" data-quiz="time-management" data-progress="0">
-                        <div class="quiz-completion" role="status" id="time-management-progress"></div>
-                        <div class="quiz-icon" aria-hidden="true">⏰</div>
-                        <div class="quiz-info">
-                            <div class="quiz-title">Time Management</div>
-                            <div class="quiz-description">Optimize your testing workflow</div>
-                        </div>
-                    </a>
-                    <a href="pages/risk-analysis.html" class="quiz-item" data-quiz="risk-analysis" data-progress="0">
-                        <div class="quiz-completion" role="status" id="risk-analysis-progress"></div>
-                        <div class="quiz-icon" aria-hidden="true">📊</div>
-                        <div class="quiz-info">
-                            <div class="quiz-title">Risk Analysis</div>
-                            <div class="quiz-description">Learn to identify and assess risks</div>
-                        </div>
-                    </a>
-                    <a href="pages/risk-management.html" class="quiz-item" data-quiz="risk-management" data-progress="0">
-                        <div class="quiz-completion" role="status" id="risk-management-progress"></div>
-                        <div class="quiz-icon" aria-hidden="true">🎯</div>
-                        <div class="quiz-info">
-                            <div class="quiz-title">Risk Management</div>
-                            <div class="quiz-description">Strategies for managing test risks</div>
-                        </div>
-                    </a>
-                </div>
-                <div class="category-progress" role="status">
-                    <div class="progress-text">Progress: 0/3 Complete</div>
-                    <div class="progress-bar">
-                        <div class="progress-fill" style="width: 0%" aria-hidden="true"></div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Bug Management -->
-            <div class="category-card" role="listitem">
-                <div class="category-header">
-                    Bug Management
-                </div>
-                <div class="quiz-list" role="list">
-                    <a href="pages/issue-tracking-tools-quiz.html" class="quiz-item" data-quiz="issue-tracking-tools" data-progress="0">
-                        <div class="quiz-completion" role="status" id="issue-tracking-tools-progress"></div>
-                        <div class="quiz-icon" aria-hidden="true">🔍</div>
-                        <div class="quiz-info">
-                            <div class="quiz-title">Issue Tracking Tools</div>
-                            <div class="quiz-description">Master defect tracking systems</div>
-                        </div>
-                    </a>
-                    <a href="pages/raising-tickets.html" class="quiz-item" data-quiz="raising-tickets" data-progress="0">
-                        <div class="quiz-completion" role="status" id="raising-tickets-progress"></div>
-                        <div class="quiz-icon" aria-hidden="true">🎫</div>
-                        <div class="quiz-info">
-                            <div class="quiz-title">Raising Tickets</div>
-                            <div class="quiz-description">Write effective bug reports</div>
-                        </div>
-                    </a>
-                    <a href="pages/issue-verification.html" class="quiz-item" data-quiz="issue-verification" data-progress="0">
-                        <div class="quiz-completion" role="status" id="issue-verification-progress"></div>
-                        <div class="quiz-icon" aria-hidden="true">✅</div>
-                        <div class="quiz-info">
-                            <div class="quiz-title">Issue Verification</div>
-                            <div class="quiz-description">Validate and verify bug fixes</div>
-                        </div>
-                    </a>
-                    <a href="pages/reports-quiz.html" class="quiz-item" data-quiz="reports" data-progress="0">
-                        <div class="quiz-completion" role="status" id="reports-progress"></div>
-                        <div class="quiz-icon" aria-hidden="true">📋</div>
-                        <div class="quiz-info">
-                            <div class="quiz-title">Reports</div>
-                            <div class="quiz-description">Create comprehensive test reports</div>
-                        </div>
-                    </a>
-                </div>
-                <div class="category-progress" role="status">
-                    <div class="progress-text">Progress: 0/4 Complete</div>
-                    <div class="progress-bar">
-                        <div class="progress-fill" style="width: 0%" aria-hidden="true"></div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Specialized Testing -->
-            <div class="category-card" role="listitem">
-                <div class="category-header">
-                    Specialized Testing
-                </div>
-                <div class="quiz-list" role="list">
-                    <a href="pages/CMS-Testing-quiz.html" class="quiz-item" data-quiz="cms-testing" data-progress="0">
-                        <div class="quiz-completion" role="status" id="cms-testing-progress"></div>
-                        <div class="quiz-icon" aria-hidden="true">📝</div>
-                        <div class="quiz-info">
-                            <div class="quiz-title">CMS Testing</div>
-                            <div class="quiz-description">Test CMS functionality</div>
-                        </div>
-                    </a>
-                    <a href="pages/email-testing-quiz.html" class="quiz-item" data-quiz="email-testing" data-progress="0">
-                        <div class="quiz-completion" role="status" id="email-testing-progress"></div>
-                        <div class="quiz-icon" aria-hidden="true">📧</div>
-                        <div class="quiz-info">
-                            <div class="quiz-title">Email Testing</div>
-                            <div class="quiz-description">Test email functionality</div>
-                        </div>
-                    </a>
-                    <a href="pages/non-functional-quiz.html" class="quiz-item" data-quiz="non-functional" data-progress="0">
-                        <div class="quiz-completion" role="status" id="non-functional-progress"></div>
-                        <div class="quiz-icon" aria-hidden="true">⚡</div>
-                        <div class="quiz-info">
-                            <div class="quiz-title">Non-functional Testing</div>
-                            <div class="quiz-description">Performance, security, and usability testing</div>
-                        </div>
-                    </a>
-                    <a href="pages/content-copy-quiz.html" class="quiz-item" data-quiz="content-copy" data-progress="0">
-                        <div class="quiz-completion" role="status" id="content-copy-progress"></div>
-                        <div class="quiz-icon" aria-hidden="true">📄</div>
-                        <div class="quiz-info">
-                            <div class="quiz-title">Content Copy</div>
-                            <div class="quiz-description">Test content for accuracy and consistency</div>
-                        </div>
-                    </a>
-                </div>
-                <div class="category-progress" role="status">
-                    <div class="progress-text">Progress: 0/4 Complete</div>
-                    <div class="progress-bar">
-                        <div class="progress-fill" style="width: 0%" aria-hidden="true"></div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Accessibility Training -->
-            <div class="category-card" role="listitem">
-                <div class="category-header">
-                    Accessibility Training
-                </div>
-                <div class="quiz-list" role="list">
-                    <div class="quiz-item locked-quiz" aria-label="WCAG Guidelines quiz - Coming soon">
-                        <div class="quiz-icon" aria-hidden="true">♿</div>
-                        <div class="quiz-info">
-                            <div class="quiz-title">WCAG Guidelines</div>
-                            <div class="quiz-description">Coming soon!</div>
-                        </div>
-                    </div>
-                </div>
-                <div class="category-progress" role="status">
-                    <div class="progress-text">Progress: 0/0 Complete</div>
-                    <div class="progress-bar">
-                        <div class="progress-fill" style="width: 0%" aria-hidden="true"></div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Automation Training -->
-            <div class="category-card" role="listitem">
-                <div class="category-header">
-                    Interview Preparation
-                </div>
-                <div class="quiz-list" role="list">
-                    <a href="pages/automationInterview-quiz.html" class="quiz-item" data-quiz="automation-interview" data-progress="0">
-                        <div class="quiz-completion" role="status" id="automation-interview-progress"></div>
-                        <div class="quiz-icon" aria-hidden="true">🤖</div>
-                        <div class="quiz-info">
-                            <div class="quiz-title">Automation Interview</div>
-                            <div class="quiz-description">Quiz for users to prepare for automation roles</div>
-                        </div>
-                    </a>
-                    <a href="pages/functional-interview-quiz.html" class="quiz-item" data-quiz="functional-interview" data-progress="0">
-                        <div class="quiz-completion" role="status" id="functional-interview-progress"></div>
-                        <div class="quiz-icon" aria-hidden="true">🤖</div>
-                        <div class="quiz-info">
-                            <div class="quiz-title">Functional Interview</div>
-                            <div class="quiz-description">Quiz for users to prepare for functional roles</div>
-                        </div>
-                    </a>
-                </div>  
-                <div class="category-progress" role="status">
-                    <div class="progress-text">Progress: 0/2 Complete</div>
-                    <div class="progress-bar">
-                        <div class="progress-fill" style="width: 0%" aria-hidden="true"></div>
-                    </div>
-                </div>
-            </div>
+        <div id="quizList" class="categories-grid" role="list">
+            <!-- Quiz list will be dynamically populated here -->
+            <div class="loading">Loading quizzes...</div>
         </div>
     </main>
+
+    <footer class="app-footer" role="contentinfo">
+        <p>&copy; 2024 Zoonou. All rights reserved.</p>
+    </footer>
 </body>
 </html>
