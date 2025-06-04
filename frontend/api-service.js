@@ -1914,36 +1914,35 @@ export class APIService {
                         } else {
                             console.error(`Failed to reset quiz progress for ${schedule.username}'s ${schedule.quizName} quiz:`, resetResponse);
                         }
-                    } else {
-                        console.log(`Schedule for ${schedule.username}'s ${schedule.quizName} quiz is not due yet. Next reset at ${resetTime.toLocaleString()}`);
                     }
-                } catch (processError) {
-                    console.error('Error processing schedule:', processError);
+                } catch (error) {
+                    console.error(`Error processing schedule for ${schedule.username}'s ${schedule.quizName} quiz:`, error);
                 }
             }
             
-            // Clean up any processed schedules from local storage if we're using it as fallback
-            if (processedIds.length > 0 && response.fallback) {
-                try {
-                    const schedulesJson = localStorage.getItem('scheduledResets');
-                    if (schedulesJson) {
-                        const remainingSchedules = JSON.parse(schedulesJson).filter(s => !processedIds.includes(s.id));
-                        localStorage.setItem('scheduledResets', JSON.stringify(remainingSchedules));
+            // If any schedules were processed, emit a custom event
+            if (processedIds.length > 0) {
+                console.log(`Processed ${processedIds.length} scheduled resets`);
+                // Dispatch a custom event that the dashboard can listen for
+                window.dispatchEvent(new CustomEvent('scheduledResetsProcessed', {
+                    detail: {
+                        processedIds,
+                        processedQuizzes: Array.from(processedQuizzes)
                     }
-                } catch (cleanupError) {
-                    console.warn('Error cleaning up localStorage:', cleanupError);
-                }
+                }));
             }
             
             return {
                 success: true,
                 processed: processedIds.length,
                 total: schedules.length,
+                processedIds,
                 processedQuizzes: Array.from(processedQuizzes)
             };
+            
         } catch (error) {
             console.error('Error checking scheduled resets:', error);
-            throw error;
+            return { success: false, message: error.message };
         }
     }
 

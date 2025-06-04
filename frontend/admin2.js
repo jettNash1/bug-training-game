@@ -39,6 +39,22 @@ export class Admin2Dashboard {
         } else {
             console.log('On admin-login page, skipping dashboard initialization');
         }
+
+        this.autoResetSettings = null;
+        this.isAdmin = false;
+        this.currentUser = null;
+        this.isInitialized = false;
+        this.isPolling = false;
+        this.pollingInterval = null;
+        
+        // Listen for scheduled resets processed event
+        window.addEventListener('scheduledResetsProcessed', async (event) => {
+            console.log('Scheduled resets processed event received:', event.detail);
+            // Refresh the schedules display
+            await this.refreshScheduleData();
+            // Show a success message
+            this.showSuccess(`Successfully processed ${event.detail.processedIds.length} scheduled resets`);
+        });
     }
 
     async handleAdminLogin(formData) {
