@@ -528,7 +528,9 @@ export class Admin2Dashboard {
             activeUsersElement.textContent = stats.activeToday || 0;
         }
         if (averageCompletionElement) {
-            averageCompletionElement.textContent = `${(stats.averageCompletion || 0).toFixed(1)}%`;
+            const displayValue = `${(stats.averageCompletion || 0).toFixed(1)}%`;
+            console.log(`[UI] Setting hero Overall Progress to: ${displayValue}`);
+            averageCompletionElement.textContent = displayValue;
             // Also update the label if present
             const statCard = averageCompletionElement.closest('.stat-card');
             if (statCard) {
