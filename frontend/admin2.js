@@ -3357,10 +3357,19 @@ export class Admin2Dashboard {
             
             // Create datetime string with proper time zone handling
             const localDateTime = new Date(`${resetDate}T${resetTime}`);
-            // Convert to ISO string but keep the intended local time
-            const resetDateTime = new Date(localDateTime.getTime() - (localDateTime.getTimezoneOffset() * 60000)).toISOString();
             
-            console.log(`Scheduling reset - Local time: ${localDateTime}, UTC time: ${resetDateTime}`);
+            // Log the times for debugging
+            console.log('Time debug:', {
+                inputDate: resetDate,
+                inputTime: resetTime,
+                localDateTime: localDateTime.toISOString(),
+                timezoneOffset: localDateTime.getTimezoneOffset()
+            });
+            
+            // Convert local time to UTC by ADDING the offset (since getTimezoneOffset returns minutes WEST of UTC)
+            const resetDateTime = new Date(localDateTime.getTime() + (localDateTime.getTimezoneOffset() * 60000)).toISOString();
+            
+            console.log(`Scheduling reset - Local time: ${localDateTime.toLocaleString()}, UTC time: ${resetDateTime}`);
             
             // Show loading state
             const submitBtn = document.querySelector('.submit-btn');
@@ -3374,7 +3383,7 @@ export class Admin2Dashboard {
                 // Reset form
                 document.getElementById('scheduleForm').reset();
                 
-                // Show success message
+                // Show success message with local time
                 this.showSuccess(`Reset scheduled for ${this.formatQuizName(quizName)} on ${this.formatScheduleDateTime(resetDateTime)}`);
                 
                 // Refresh the schedules list
