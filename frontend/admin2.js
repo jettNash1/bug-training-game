@@ -811,10 +811,6 @@ export class Admin2Dashboard {
         }
         
         console.log("Users list update complete.");
-        
-        // Update statistics based on filtered users
-        const stats = this.updateStatistics();
-        this.updateStatisticsDisplay(stats);
     }
     
     // Display timer settings in the settings section
