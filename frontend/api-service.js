@@ -1,5 +1,5 @@
 import { config } from './config.js';
-import { getAuthToken, setAuthToken, clearTokens } from './auth.js';
+import { getAuthToken, setAuthToken, clearTokens, setRefreshToken } from './auth.js';
 import { QUIZ_CATEGORIES } from './quiz-list.js';
 
 export class APIService {
@@ -173,8 +173,10 @@ export class APIService {
             const response = await fetch(`${this.baseUrl}/users/login`, {
                 method: 'POST',
                 headers: {
-                    'Content-Type': 'application/json'
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json'
                 },
+                mode: 'cors',
                 credentials: 'include',
                 body: JSON.stringify({ username, password })
             });
@@ -196,6 +198,14 @@ export class APIService {
 
             if (!response.ok) {
                 throw new Error(data.message || 'Login failed');
+            }
+
+            // Store the tokens if login was successful
+            if (data.token) {
+                setAuthToken(data.token);
+            }
+            if (data.refreshToken) {
+                setRefreshToken(data.refreshToken);
             }
 
             return data;
