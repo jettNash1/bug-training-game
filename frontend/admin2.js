@@ -3035,7 +3035,7 @@ export class Admin2Dashboard {
                             <p><strong>Status:</strong> ${quizStatus}</p>
                             <p><strong>Questions Answered:</strong> ${questionsAnswered}</p>
                             <p><strong>Score:</strong> ${quizScore}%</p>
-                    </div>
+                        </div>
                         <div class="questions-content">
                             ${!hasCompletedQuestions ? 
                                 `<div class="not-attempted">
@@ -3593,11 +3593,11 @@ export class Admin2Dashboard {
             
             // Create a formatter that explicitly uses the local timezone
             const formatter = new Intl.DateTimeFormat('en-GB', {
-            weekday: 'short',
+                weekday: 'short',
                 day: '2-digit',
-            month: 'short',
+                month: 'short',
                 year: 'numeric',
-            hour: '2-digit',
+                hour: '2-digit',
                 minute: '2-digit',
                 hour12: false,
                 timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone

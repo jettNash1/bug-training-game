@@ -91,8 +91,11 @@ const corsOptions = {
     if (!origin) return callback(null, true);
     
     const allowedDomains = [
-      // Production domain
+      // Render domains
+      'https://bug-training-game.onrender.com',
+      // AWS domains
       'http://learning-hub.s3-website.eu-west-2.amazonaws.com',
+      'https://learning-hub.s3-website.eu-west-2.amazonaws.com',
       // Development domains
       'http://localhost:3000',
       'http://127.0.0.1:3000',
@@ -106,10 +109,11 @@ const corsOptions = {
     }
 
     // Check if the origin is allowed
-    if (allowedDomains.includes(origin)) {
+    if (allowedDomains.includes(origin) || 
+        origin.endsWith('.amazonaws.com') || 
+        origin.endsWith('.cloudfront.net')) {
       callback(null, true);
     } else {
-      console.log('CORS blocked origin:', origin);
       callback(new Error('Not allowed by CORS'));
     }
   },
@@ -128,7 +132,6 @@ app.options('*', cors(corsOptions));
 // Additional security headers
 app.use((req, res, next) => {
     res.header('Access-Control-Allow-Credentials', 'true');
-    res.header('Access-Control-Allow-Origin', 'http://learning-hub.s3-website.eu-west-2.amazonaws.com');
     res.header('X-Content-Type-Options', 'nosniff');
     res.header('X-Frame-Options', 'DENY');
     res.header('X-XSS-Protection', '1; mode=block');
