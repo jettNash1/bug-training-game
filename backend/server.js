@@ -88,8 +88,8 @@ const getAllowedOrigins = () => {
 const corsOptions = {
   origin: process.env.NODE_ENV === 'production'
     ? [
-        process.env.ALLOWED_ORIGINS || 'https://bug-training-game.onrender.com',
-        process.env.AWS_FRONTEND_URL || 'https://your-cloudfront-distribution.cloudfront.net',
+        'https://bug-training-game.onrender.com',
+        'http://learning-hub.s3-website.eu-west-2.amazonaws.com',
         /\.amazonaws\.com$/,
         /\.cloudfront\.net$/
       ]

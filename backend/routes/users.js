@@ -118,7 +118,7 @@ router.post('/login', async (req, res) => {
         // Set response headers
         res.set({
             'Content-Type': 'application/json',
-            'Access-Control-Allow-Origin': process.env.ALLOWED_ORIGINS || 'https://bug-training-game.onrender.com',
+            'Access-Control-Allow-Origin': req.get('origin'),
             'Access-Control-Allow-Credentials': 'true'
         });
 
