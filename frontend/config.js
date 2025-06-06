@@ -8,15 +8,9 @@ const isProd = window.location.hostname.includes('render.com') ||
 
 // Get the API endpoint based on environment
 const getApiEndpoint = () => {
-    if (window.location.hostname.includes('render.com') || window.location.hostname === 'bug-training-game.onrender.com') {
-        return `https://${window.location.hostname.replace('bug-training-game', 'bug-training-game-api')}`;
-    }
-    
-    if (window.location.hostname.includes('amazonaws.com') || 
-        window.location.hostname.includes('s3-website') ||
-        window.location.hostname.includes('learning-hub')) {
-        // Use the current origin for AWS hosted site
-        return window.location.origin;
+    // Always use the Render API endpoint in production
+    if (isProd) {
+        return 'https://bug-training-game-api.onrender.com';
     }
     
     // Local development

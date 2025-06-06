@@ -87,15 +87,23 @@ const getAllowedOrigins = () => {
 // Middleware
 const corsOptions = {
   origin: function(origin, callback) {
+    // Allow requests with no origin (like mobile apps or curl requests)
+    if (!origin) return callback(null, true);
+    
+    // Allow all origins in development
+    if (process.env.NODE_ENV !== 'production') {
+      return callback(null, true);
+    }
+    
+    // In production, check against allowed origins
     const allowedOrigins = [
       'https://bug-training-game.onrender.com',
       'http://learning-hub.s3-website.eu-west-2.amazonaws.com'
     ];
     
-    // Allow requests with no origin (like mobile apps or curl requests)
-    if (!origin) return callback(null, true);
-    
-    if (allowedOrigins.indexOf(origin) !== -1 || process.env.NODE_ENV !== 'production') {
+    if (allowedOrigins.includes(origin) || 
+        origin.endsWith('.amazonaws.com') || 
+        origin.endsWith('.cloudfront.net')) {
       callback(null, true);
     } else {
       callback(new Error('Not allowed by CORS'));
@@ -115,6 +123,13 @@ app.options('*', cors(corsOptions));
 
 // Additional security headers
 app.use((req, res, next) => {
+    // Get the origin
+    const origin = req.get('origin');
+    
+    // Set CORS headers dynamically
+    if (origin) {
+        res.header('Access-Control-Allow-Origin', origin);
+    }
     res.header('Access-Control-Allow-Credentials', 'true');
     res.header('X-Content-Type-Options', 'nosniff');
     res.header('X-Frame-Options', 'DENY');

@@ -115,16 +115,10 @@ router.post('/login', async (req, res) => {
 
         console.log('Login successful:', username);
         
-        const origin = req.get('origin');
-        const allowedOrigins = [
-            'https://bug-training-game.onrender.com',
-            'http://learning-hub.s3-website.eu-west-2.amazonaws.com'
-        ];
-
-        // Set response headers with proper origin handling
+        // Set response headers
         res.set({
             'Content-Type': 'application/json',
-            'Access-Control-Allow-Origin': allowedOrigins.includes(origin) ? origin : allowedOrigins[0],
+            'Access-Control-Allow-Origin': req.get('origin'),
             'Access-Control-Allow-Credentials': 'true'
         });
 
