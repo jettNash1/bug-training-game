@@ -122,24 +122,6 @@ app.use(cors(corsOptions));
 // Handle preflight requests
 app.options('*', cors(corsOptions));
 
-// Additional security headers
-app.use((req, res, next) => {
-    // Get the origin
-    const origin = req.get('origin');
-    
-    // Set CORS headers dynamically
-    if (origin) {
-        res.header('Access-Control-Allow-Origin', origin);
-    }
-    res.header('Access-Control-Allow-Credentials', 'true');
-    res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
-    res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, Accept');
-    res.header('X-Content-Type-Options', 'nosniff');
-    res.header('X-Frame-Options', 'DENY');
-    res.header('X-XSS-Protection', '1; mode=block');
-    next();
-});
-
 // Parse JSON bodies (Remove once ready)
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
@@ -295,16 +277,6 @@ app.use('/api/users', userRoutes);
 
 const adminRoutes = require('./routes/admin');
 app.use('/api/admin', adminRoutes);
-
-// Add headers for development
-if (process.env.NODE_ENV !== 'production') {
-    app.use((req, res, next) => {
-        res.header('Access-Control-Allow-Origin', 'http://localhost:3000');
-        res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
-        res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
-        next();
-    });
-}
 
 // Error handling middleware
 app.use((err, req, res, next) => {
