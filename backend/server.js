@@ -31,30 +31,63 @@ const helmet = require('helmet');
 const app = express();
 const port = process.env.PORT || 10000;
 
-// CORS configuration - must be before any other middleware
+// CORS configuration
+const allowedOrigins = [
+  'https://bug-training-game.onrender.com',
+  'http://learning-hub.s3-website.eu-west-2.amazonaws.com',
+  'https://bug-training-game-api.onrender.com'
+];
+
+if (process.env.NODE_ENV !== 'production') {
+  allowedOrigins.push('http://localhost:3000', 'http://localhost:10000');
+}
+
 const corsOptions = {
-  origin: true, // Allow all origins temporarily for debugging
+  origin: function(origin, callback) {
+    console.log('Request origin:', origin);
+    
+    // Allow requests with no origin (like mobile apps or curl requests)
+    if (!origin) {
+      console.log('No origin specified, allowing request');
+      return callback(null, true);
+    }
+
+    if (process.env.NODE_ENV !== 'production') {
+      console.log('Development mode - allowing all origins');
+      return callback(null, true);
+    }
+
+    // Check if the origin is in our allowed list
+    if (allowedOrigins.includes(origin) || 
+        origin.includes('learning-hub.s3-website') || 
+        origin.includes('amazonaws.com')) {
+      console.log('Origin allowed:', origin);
+      callback(null, origin);
+    } else {
+      console.log('Origin not allowed:', origin);
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
   credentials: true,
-  optionsSuccessStatus: 200,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'Origin'],
-  exposedHeaders: ['Authorization']
+  exposedHeaders: ['Authorization'],
+  optionsSuccessStatus: 200
 };
 
-// Apply CORS middleware first
+// Apply CORS middleware before any other middleware
 app.use(cors(corsOptions));
 
 // Handle preflight requests
 app.options('*', cors(corsOptions));
 
-// Debug logging for every request
+// Debug logging middleware
 app.use((req, res, next) => {
-  console.log('[Request Debug]', {
+  console.log('Request details:', {
     method: req.method,
     path: req.path,
     origin: req.get('origin'),
-    headers: req.headers,
-    body: req.method === 'POST' ? req.body : undefined
+    headers: req.headers
   });
   next();
 });
