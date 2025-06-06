@@ -4,7 +4,7 @@ import { QUIZ_CATEGORIES } from './quiz-list.js';
 
 export class APIService {
     constructor() {
-        this.baseUrl = 'https://bug-training-game-api.onrender.com/api';
+        this.baseUrl = this.getApiBaseUrl();
         this.scheduledResetInterval = null;
         this.startScheduledResetCheck();
     }
@@ -56,7 +56,8 @@ export class APIService {
         else if (window.location.hostname.includes('amazonaws.com') || 
                  window.location.hostname.includes('s3-website') ||
                  window.location.hostname.includes('learning-hub')) {
-            return 'http://13.42.151.152/api';
+            // Use the current origin for AWS hosted site
+            return `${window.location.origin}/api`;
         }
         
         // Local development
