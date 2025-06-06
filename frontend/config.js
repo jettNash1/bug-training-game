@@ -6,8 +6,8 @@ const isProd = window.location.hostname.includes('amazonaws.com') ||
 // Get the API endpoint based on environment
 const getApiEndpoint = () => {
     if (isProd) {
-        // Production - AWS API
-        return 'http://api.learning-hub.eu-west-2.amazonaws.com';
+        // Production - AWS EC2
+        return 'http://13.42.151.152';
     } else if (window.location.hostname.includes('render.com')) {
         // Development - Render
         return 'https://bug-training-game-api.onrender.com';
