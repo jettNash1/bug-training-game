@@ -48,12 +48,13 @@ const corsOptions = {
       return callback(null, true);
     }
     
-    if (allowedOrigins.indexOf(origin) === -1) {
-      console.log('Origin not allowed:', origin);
-      return callback(new Error('Not allowed by CORS'));
+    if (allowedOrigins.includes(origin)) {
+      console.log('Origin allowed:', origin);
+      return callback(null, true);
     }
-    console.log('Origin allowed:', origin);
-    return callback(null, origin);
+
+    console.log('Origin not allowed:', origin);
+    return callback(new Error('Not allowed by CORS'));
   },
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'Origin'],
@@ -70,18 +71,24 @@ app.options('*', cors(corsOptions));
 
 // Debug logging middleware
 app.use((req, res, next) => {
+  // Log the request details
   console.log('Request details:', {
     method: req.method,
     path: req.path,
     origin: req.get('origin'),
-    headers: req.headers,
-    corsHeaders: {
-      allowOrigin: res.getHeader('Access-Control-Allow-Origin'),
-      allowMethods: res.getHeader('Access-Control-Allow-Methods'),
-      allowCredentials: res.getHeader('Access-Control-Allow-Credentials'),
-      allowHeaders: res.getHeader('Access-Control-Allow-Headers')
-    }
+    headers: req.headers
   });
+
+  // Log the CORS headers being set
+  res.once('finish', () => {
+    console.log('Response headers:', {
+      'access-control-allow-origin': res.getHeader('Access-Control-Allow-Origin'),
+      'access-control-allow-credentials': res.getHeader('Access-Control-Allow-Credentials'),
+      'access-control-allow-methods': res.getHeader('Access-Control-Allow-Methods'),
+      'vary': res.getHeader('Vary')
+    });
+  });
+
   next();
 });
 
