@@ -91,9 +91,11 @@ const corsOptions = {
     if (!origin) return callback(null, true);
     
     const allowedDomains = [
-      // Production domain
+      // Production domain (AWS)
       'http://learning-hub.s3-website.eu-west-2.amazonaws.com',
-      // Development domains
+      // Development domain (Render)
+      'https://bug-training-game.onrender.com',
+      // Local development
       'http://localhost:3000',
       'http://127.0.0.1:3000',
       'http://localhost:5500',
@@ -127,8 +129,11 @@ app.options('*', cors(corsOptions));
 
 // Additional security headers
 app.use((req, res, next) => {
+    const origin = req.get('origin');
+    if (allowedDomains.includes(origin)) {
+        res.header('Access-Control-Allow-Origin', origin);
+    }
     res.header('Access-Control-Allow-Credentials', 'true');
-    res.header('Access-Control-Allow-Origin', 'http://learning-hub.s3-website.eu-west-2.amazonaws.com');
     res.header('X-Content-Type-Options', 'nosniff');
     res.header('X-Frame-Options', 'DENY');
     res.header('X-XSS-Protection', '1; mode=block');
