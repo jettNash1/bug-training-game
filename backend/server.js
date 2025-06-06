@@ -34,24 +34,38 @@ const port = process.env.PORT || 10000;
 // CORS configuration
 const corsOptions = {
   origin: function(origin, callback) {
+    console.log('Incoming request origin:', origin);
+    
     // Allow requests with no origin (like mobile apps or curl requests)
-    if (!origin) return callback(null, true);
+    if (!origin) {
+      console.log('Allowing request with no origin');
+      return callback(null, true);
+    }
     
     // Allow all origins in development
     if (process.env.NODE_ENV !== 'production') {
+      console.log('Allowing all origins in development mode');
       return callback(null, true);
     }
     
     // In production, check against allowed origins
     const allowedOrigins = [
       'https://bug-training-game.onrender.com',
-      'http://learning-hub.s3-website.eu-west-2.amazonaws.com'
+      'http://learning-hub.s3-website.eu-west-2.amazonaws.com',
+      'https://bug-training-game-api.onrender.com'
     ];
     
-    if (allowedOrigins.includes(origin) || 
-        origin.endsWith('.amazonaws.com') || 
-        origin.endsWith('.cloudfront.net')) {
-      callback(null, true);
+    // Check if the origin is allowed
+    const isAllowed = allowedOrigins.includes(origin) || 
+                     origin.endsWith('.amazonaws.com') || 
+                     origin.endsWith('.cloudfront.net') ||
+                     origin.endsWith('.onrender.com');
+    
+    console.log(`Origin ${origin} is ${isAllowed ? 'allowed' : 'not allowed'}`);
+    
+    if (isAllowed) {
+      // Return the actual origin to ensure the browser gets the correct value
+      callback(null, origin);
     } else {
       console.log(`Blocked by CORS: ${origin}`);
       callback(new Error('Not allowed by CORS'));
@@ -60,7 +74,7 @@ const corsOptions = {
   credentials: true,
   optionsSuccessStatus: 200,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'Origin'],
   exposedHeaders: ['Authorization']
 };
 
