@@ -168,23 +168,30 @@ export class APIService {
     // Regular user authentication methods
     async login(username, password) {
         try {
-            console.log('Attempting login:', { username, url: `${this.baseUrl}/users/login` });
+            // Get the current API base URL
+            const apiBaseUrl = this.baseUrl;
+            console.log('Attempting login:', { 
+                username, 
+                url: `${apiBaseUrl}/users/login`,
+                apiBaseUrl
+            });
             
-            const response = await fetch(`${this.baseUrl}/users/login`, {
+            if (!apiBaseUrl) {
+                console.error('API base URL is not defined');
+                throw new Error('API configuration error. Please check your network connection and try again.');
+            }
+            
+            const response = await fetch(`${apiBaseUrl}/users/login`, {
                 method: 'POST',
                 headers: {
-                    'Content-Type': 'application/json',
-                    'Accept': 'application/json'
+                    'Content-Type': 'application/json'
                 },
-                mode: 'cors',
                 credentials: 'include',
-                cache: 'no-cache',
-                signal: AbortSignal.timeout(10000), // 10 second timeout
-                body: JSON.stringify({ username, password })
+                body: JSON.stringify({ username, password }),
+                signal: AbortSignal.timeout(10000) // 10 second timeout
             });
 
             console.log('Login response status:', response.status);
-            console.log('Login response headers:', Object.fromEntries(response.headers.entries()));
             
             // Try to read the response text first
             const text = await response.text();
@@ -206,9 +213,13 @@ export class APIService {
             // Store the tokens if login was successful
             if (data.token) {
                 setAuthToken(data.token);
+                console.log('Auth token stored successfully');
+            } else {
+                console.warn('No auth token received from server');
             }
             if (data.refreshToken) {
                 setRefreshToken(data.refreshToken);
+                console.log('Refresh token stored successfully');
             }
 
             return data;
