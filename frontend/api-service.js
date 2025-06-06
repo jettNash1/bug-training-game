@@ -184,14 +184,22 @@ export class APIService {
             const response = await fetch(`${apiBaseUrl}/users/login`, {
                 method: 'POST',
                 headers: {
-                    'Content-Type': 'application/json'
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json',
+                    'Origin': window.location.origin
                 },
                 credentials: 'include',
+                mode: 'cors',
                 body: JSON.stringify({ username, password }),
                 signal: AbortSignal.timeout(10000) // 10 second timeout
             });
 
             console.log('Login response status:', response.status);
+            console.log('Login response headers:', {
+                'access-control-allow-origin': response.headers.get('access-control-allow-origin'),
+                'access-control-allow-credentials': response.headers.get('access-control-allow-credentials'),
+                'content-type': response.headers.get('content-type')
+            });
             
             // Try to read the response text first
             const text = await response.text();
@@ -212,14 +220,18 @@ export class APIService {
 
             // Store the tokens if login was successful
             if (data.token) {
-                setAuthToken(data.token);
+                localStorage.setItem('token', data.token);
                 console.log('Auth token stored successfully');
             } else {
                 console.warn('No auth token received from server');
             }
             if (data.refreshToken) {
-                setRefreshToken(data.refreshToken);
+                localStorage.setItem('refreshToken', data.refreshToken);
                 console.log('Refresh token stored successfully');
+            }
+            if (data.username) {
+                localStorage.setItem('username', data.username);
+                console.log('Username stored successfully');
             }
 
             return data;

@@ -115,6 +115,16 @@ router.post('/login', async (req, res) => {
         const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, { expiresIn: '1h' });
         const refreshToken = jwt.sign({ id: user._id }, process.env.JWT_REFRESH_SECRET, { expiresIn: '7d' });
 
+        // Get the request origin
+        const origin = req.get('origin');
+        console.log('Request origin:', origin);
+
+        // Set CORS headers explicitly
+        res.header('Access-Control-Allow-Origin', origin || '*');
+        res.header('Access-Control-Allow-Credentials', 'true');
+        res.header('Access-Control-Allow-Methods', 'GET,HEAD,PUT,PATCH,POST,DELETE');
+        res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
+        
         // Log response headers that will be sent
         const responseHeaders = {
             'access-control-allow-origin': res.getHeader('Access-Control-Allow-Origin'),

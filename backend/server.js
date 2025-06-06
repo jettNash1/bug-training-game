@@ -34,29 +34,41 @@ const port = process.env.PORT || 10000;
 // Define allowed origins
 const allowedOrigins = [
   'http://learning-hub.s3-website.eu-west-2.amazonaws.com',
+  'https://learning-hub.s3-website.eu-west-2.amazonaws.com',
   'https://bug-training-game.onrender.com',
   'http://localhost:3000',
-  'http://localhost:5000'
+  'http://localhost:5000',
+  'http://localhost:8080',
+  'http://127.0.0.1:5000',
+  'http://127.0.0.1:3000',
+  'http://127.0.0.1:8080'
 ];
 
 // CORS configuration
 const corsOptions = {
   origin: function(origin, callback) {
-    // Allow requests with no origin (like mobile apps or curl requests)
+    // Allow requests with no origin (like mobile apps, curl requests, or same-origin)
     if (!origin) {
-      console.log('Request has no origin');
+      console.log('Request has no origin - allowing');
       return callback(null, true);
     }
     
+    // Check if the origin is allowed
     if (allowedOrigins.includes(origin)) {
-      console.log('Origin allowed:', origin);
+      console.log('Origin explicitly allowed:', origin);
+      return callback(null, true);
+    }
+
+    // For development: allow all origins if NODE_ENV is development
+    if (process.env.NODE_ENV === 'development') {
+      console.log('Development mode - allowing origin:', origin);
       return callback(null, true);
     }
 
     console.log('Origin not allowed:', origin);
     return callback(new Error('Not allowed by CORS'));
   },
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
   allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'Origin'],
   credentials: true,
   optionsSuccessStatus: 200,
@@ -76,16 +88,25 @@ app.use((req, res, next) => {
     method: req.method,
     path: req.path,
     origin: req.get('origin'),
-    headers: req.headers
+    headers: {
+      ...req.headers,
+      authorization: req.headers.authorization ? 'present' : 'missing'
+    }
   });
 
-  // Log the CORS headers being set
+  // Add response header logging
   res.once('finish', () => {
-    console.log('Response headers:', {
-      'access-control-allow-origin': res.getHeader('Access-Control-Allow-Origin'),
-      'access-control-allow-credentials': res.getHeader('Access-Control-Allow-Credentials'),
-      'access-control-allow-methods': res.getHeader('Access-Control-Allow-Methods'),
-      'vary': res.getHeader('Vary')
+    console.log('Response details:', {
+      path: req.path,
+      statusCode: res.statusCode,
+      statusMessage: res.statusMessage,
+      headers: {
+        'access-control-allow-origin': res.getHeader('Access-Control-Allow-Origin'),
+        'access-control-allow-credentials': res.getHeader('Access-Control-Allow-Credentials'),
+        'access-control-allow-methods': res.getHeader('Access-Control-Allow-Methods'),
+        'access-control-allow-headers': res.getHeader('Access-Control-Allow-Headers'),
+        'vary': res.getHeader('Vary')
+      }
     });
   });
 
