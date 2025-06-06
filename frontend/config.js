@@ -15,8 +15,8 @@ const getApiEndpoint = () => {
     if (window.location.hostname.includes('amazonaws.com') || 
         window.location.hostname.includes('s3-website') ||
         window.location.hostname.includes('learning-hub')) {
-        // Direct S3 website hosting - use the EC2 instance IP or domain
-        return 'http://13.42.151.152';
+        // Direct S3 website hosting - use the EC2 instance IP or domain with HTTPS
+        return 'https://13.42.151.152';
     }
     
     // Local development
