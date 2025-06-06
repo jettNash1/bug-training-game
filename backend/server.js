@@ -40,24 +40,33 @@ const allowedOrigins = [
 ];
 
 // CORS configuration
-app.use(cors({
+const corsOptions = {
   origin: function(origin, callback) {
     // Allow requests with no origin (like mobile apps or curl requests)
-    if (!origin) return callback(null, true);
+    if (!origin) {
+      console.log('Request has no origin');
+      return callback(null, true);
+    }
     
     if (allowedOrigins.indexOf(origin) === -1) {
       console.log('Origin not allowed:', origin);
-      return callback(null, false);
+      return callback(new Error('Not allowed by CORS'));
     }
     console.log('Origin allowed:', origin);
-    return callback(null, true);
+    return callback(null, origin);
   },
-  methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'Origin'],
   credentials: true,
   optionsSuccessStatus: 200,
   exposedHeaders: ['Authorization']
-}));
+};
+
+// Apply CORS configuration
+app.use(cors(corsOptions));
+
+// Handle preflight requests explicitly
+app.options('*', cors(corsOptions));
 
 // Debug logging middleware
 app.use((req, res, next) => {
@@ -65,7 +74,13 @@ app.use((req, res, next) => {
     method: req.method,
     path: req.path,
     origin: req.get('origin'),
-    headers: req.headers
+    headers: req.headers,
+    corsHeaders: {
+      allowOrigin: res.getHeader('Access-Control-Allow-Origin'),
+      allowMethods: res.getHeader('Access-Control-Allow-Methods'),
+      allowCredentials: res.getHeader('Access-Control-Allow-Credentials'),
+      allowHeaders: res.getHeader('Access-Control-Allow-Headers')
+    }
   });
   next();
 });
