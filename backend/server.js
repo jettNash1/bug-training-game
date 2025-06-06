@@ -31,46 +31,7 @@ const helmet = require('helmet');
 const app = express();
 const port = process.env.PORT || 10000;
 
-// CORS configuration (move to very top)
-const corsOptions = {
-  origin: function(origin, callback) {
-    if (!origin) return callback(null, true);
-    if (process.env.NODE_ENV !== 'production') {
-      return callback(null, true);
-    }
-    const allowedOrigins = [
-      'https://bug-training-game.onrender.com',
-      'http://learning-hub.s3-website.eu-west-2.amazonaws.com'
-    ];
-    if (allowedOrigins.includes(origin) || 
-        origin.endsWith('.amazonaws.com') || 
-        origin.endsWith('.cloudfront.net')) {
-      callback(null, true);
-    } else {
-      callback(new Error('Not allowed by CORS'));
-    }
-  },
-  credentials: true,
-  optionsSuccessStatus: 200,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept'],
-  exposedHeaders: ['Authorization']
-};
-app.use(cors(corsOptions));
-app.options('*', cors(corsOptions));
-
-// Debug logging for every request
-app.use((req, res, next) => {
-  console.log('[CORS DEBUG]', {
-    method: req.method,
-    path: req.path,
-    origin: req.get('origin'),
-    headers: req.headers
-  });
-  next();
-});
-
-// Middleware
+// CORS configuration
 const corsOptions = {
   origin: function(origin, callback) {
     // Allow requests with no origin (like mobile apps or curl requests)
@@ -92,6 +53,7 @@ const corsOptions = {
         origin.endsWith('.cloudfront.net')) {
       callback(null, true);
     } else {
+      console.log(`Blocked by CORS: ${origin}`);
       callback(new Error('Not allowed by CORS'));
     }
   },
@@ -107,6 +69,17 @@ app.use(cors(corsOptions));
 
 // Handle preflight requests
 app.options('*', cors(corsOptions));
+
+// Debug logging for every request
+app.use((req, res, next) => {
+  console.log('[CORS DEBUG]', {
+    method: req.method,
+    path: req.path,
+    origin: req.get('origin'),
+    headers: req.headers
+  });
+  next();
+});
 
 // Parse JSON bodies (Remove once ready)
 app.use(express.json());
