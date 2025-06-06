@@ -70,7 +70,9 @@ router.post('/login', async (req, res) => {
     console.log('Login attempt:', { 
         body: req.body,
         contentType: req.headers['content-type'],
-        origin: req.get('origin')
+        origin: req.get('origin'),
+        headers: req.headers,
+        method: req.method
     });
 
     try {
@@ -113,7 +115,17 @@ router.post('/login', async (req, res) => {
         const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, { expiresIn: '1h' });
         const refreshToken = jwt.sign({ id: user._id }, process.env.JWT_REFRESH_SECRET, { expiresIn: '7d' });
 
-        console.log('Login successful:', username);
+        // Log response headers that will be sent
+        const responseHeaders = {
+            'access-control-allow-origin': res.getHeader('Access-Control-Allow-Origin'),
+            'access-control-allow-credentials': res.getHeader('Access-Control-Allow-Credentials'),
+            'access-control-allow-methods': res.getHeader('Access-Control-Allow-Methods'),
+            'access-control-allow-headers': res.getHeader('Access-Control-Allow-Headers')
+        };
+        console.log('Login successful. Sending response with headers:', {
+            username,
+            headers: responseHeaders
+        });
         
         return res.json({ 
             success: true,

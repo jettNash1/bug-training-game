@@ -31,36 +31,42 @@ const helmet = require('helmet');
 const app = express();
 const port = process.env.PORT || 10000;
 
-// Most permissive CORS configuration that supports credentials
+// Define allowed origins
+const allowedOrigins = [
+  'http://learning-hub.s3-website.eu-west-2.amazonaws.com',
+  'https://bug-training-game.onrender.com',
+  'http://localhost:3000',
+  'http://localhost:5000'
+];
+
+// CORS configuration
 app.use(cors({
-  origin: true,                   // Allow all origins with proper credentials support
+  origin: function(origin, callback) {
+    // Allow requests with no origin (like mobile apps or curl requests)
+    if (!origin) return callback(null, true);
+    
+    if (allowedOrigins.indexOf(origin) === -1) {
+      console.log('Origin not allowed:', origin);
+      return callback(null, false);
+    }
+    console.log('Origin allowed:', origin);
+    return callback(null, true);
+  },
   methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
   allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'Origin'],
-  credentials: true,              // Allow credentials
-  optionsSuccessStatus: 200,      // Some legacy browsers need this
-  exposedHeaders: ['Authorization'] // Expose Authorization header
+  credentials: true,
+  optionsSuccessStatus: 200,
+  exposedHeaders: ['Authorization']
 }));
-
-// Handle OPTIONS preflight for all routes
-app.options('*', cors());
 
 // Debug logging middleware
 app.use((req, res, next) => {
-  // Log the incoming request
   console.log('Request details:', {
     method: req.method,
     path: req.path,
     origin: req.get('origin'),
     headers: req.headers
   });
-
-  // Add the origin of the request to the response headers
-  const origin = req.get('origin');
-  if (origin) {
-    res.header('Access-Control-Allow-Origin', origin);
-    res.header('Access-Control-Allow-Credentials', 'true');
-  }
-
   next();
 });
 
