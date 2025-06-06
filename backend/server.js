@@ -31,46 +31,9 @@ const helmet = require('helmet');
 const app = express();
 const port = process.env.PORT || 10000;
 
-// CORS configuration
+// CORS configuration - must be before any other middleware
 const corsOptions = {
-  origin: function(origin, callback) {
-    console.log('Incoming request origin:', origin);
-    
-    // Allow requests with no origin (like mobile apps or curl requests)
-    if (!origin) {
-      console.log('Allowing request with no origin');
-      return callback(null, true);
-    }
-    
-    // Allow all origins in development
-    if (process.env.NODE_ENV !== 'production') {
-      console.log('Allowing all origins in development mode');
-      return callback(null, true);
-    }
-    
-    // In production, check against allowed origins
-    const allowedOrigins = [
-      'https://bug-training-game.onrender.com',
-      'http://learning-hub.s3-website.eu-west-2.amazonaws.com',
-      'https://bug-training-game-api.onrender.com'
-    ];
-    
-    // Check if the origin is allowed
-    const isAllowed = allowedOrigins.includes(origin) || 
-                     origin.endsWith('.amazonaws.com') || 
-                     origin.endsWith('.cloudfront.net') ||
-                     origin.endsWith('.onrender.com');
-    
-    console.log(`Origin ${origin} is ${isAllowed ? 'allowed' : 'not allowed'}`);
-    
-    if (isAllowed) {
-      // Return the actual origin to ensure the browser gets the correct value
-      callback(null, origin);
-    } else {
-      console.log(`Blocked by CORS: ${origin}`);
-      callback(new Error('Not allowed by CORS'));
-    }
-  },
+  origin: true, // Allow all origins temporarily for debugging
   credentials: true,
   optionsSuccessStatus: 200,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
@@ -78,7 +41,7 @@ const corsOptions = {
   exposedHeaders: ['Authorization']
 };
 
-// Apply CORS middleware
+// Apply CORS middleware first
 app.use(cors(corsOptions));
 
 // Handle preflight requests
@@ -86,11 +49,12 @@ app.options('*', cors(corsOptions));
 
 // Debug logging for every request
 app.use((req, res, next) => {
-  console.log('[CORS DEBUG]', {
+  console.log('[Request Debug]', {
     method: req.method,
     path: req.path,
     origin: req.get('origin'),
-    headers: req.headers
+    headers: req.headers,
+    body: req.method === 'POST' ? req.body : undefined
   });
   next();
 });
