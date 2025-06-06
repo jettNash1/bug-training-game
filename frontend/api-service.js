@@ -178,10 +178,12 @@ export class APIService {
                 },
                 mode: 'cors',
                 credentials: 'include',
+                cache: 'no-cache',
                 body: JSON.stringify({ username, password })
             });
 
             console.log('Login response status:', response.status);
+            console.log('Login response headers:', Object.fromEntries(response.headers.entries()));
             
             // Try to read the response text first
             const text = await response.text();
