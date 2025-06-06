@@ -1624,7 +1624,7 @@ export class BaseQuiz {
         for (let key in window) {
             if (key.toLowerCase().includes('quiz') && typeof window[key] === 'object') {
                 delete window[key];
-            }
+        }
         }
         
         // Clear any localStorage entries with conflicting quiz names

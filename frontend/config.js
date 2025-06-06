@@ -1,22 +1,13 @@
 // Environment detection
-const isProd = window.location.hostname.includes('render.com') || 
-               window.location.hostname === 'bug-training-game.onrender.com' ||
-               window.location.hostname.includes('amazonaws.com') ||
-               window.location.hostname.includes('cloudfront.net') ||
+const isProd = window.location.hostname.includes('amazonaws.com') ||
                window.location.hostname.includes('s3-website') ||
                window.location.hostname.includes('learning-hub');
 
 // Get the API endpoint based on environment
 const getApiEndpoint = () => {
-    if (window.location.hostname.includes('render.com') || window.location.hostname === 'bug-training-game.onrender.com') {
-        return `https://${window.location.hostname.replace('bug-training-game', 'bug-training-game-api')}`;
-    }
-    
-    if (window.location.hostname.includes('amazonaws.com') || 
-        window.location.hostname.includes('s3-website') ||
-        window.location.hostname.includes('learning-hub')) {
-        // Direct S3 website hosting - use the EC2 instance IP or domain with HTTPS
-        return 'https://13.42.151.152';
+    if (isProd) {
+        // Production environment - always use EC2 instance
+        return 'http://13.42.151.152';
     }
     
     // Local development
