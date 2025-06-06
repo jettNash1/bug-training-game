@@ -30,59 +30,45 @@ const helmet = require('helmet');
 
 const app = express();
 const port = process.env.PORT || 10000;
-/*
-const port = process.env.PORT || 3000;
 
-// Security middleware
-app.use(helmet({
-    contentSecurityPolicy: {
-        directives: {
-            defaultSrc: ["'self'"],
-            scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'"],
-            styleSrc: ["'self'", "'unsafe-inline'"],
-            imgSrc: ["'self'", "data:", "https:"],
-            connectSrc: ["'self'", "https:", "wss:"],
-            fontSrc: ["'self'", "https:", "data:"],
-            objectSrc: ["'none'"],
-            mediaSrc: ["'self'"],
-            frameSrc: ["'none'"]
-        }
+// CORS configuration (move to very top)
+const corsOptions = {
+  origin: function(origin, callback) {
+    if (!origin) return callback(null, true);
+    if (process.env.NODE_ENV !== 'production') {
+      return callback(null, true);
     }
-}));
-
-// Parse JSON payloads
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
-
-// CORS configuration
-const getAllowedOrigins = () => {
-    const origins = [];
-    
-    // Add configured origins
-    if (process.env.ALLOWED_ORIGINS) {
-        origins.push(...process.env.ALLOWED_ORIGINS.split(','));
-    }
-    
-    // Add default origins based on environment
-    if (process.env.NODE_ENV === 'production') {
-        origins.push(
-            'https://bug-training-game.onrender.com',
-            process.env.AWS_FRONTEND_URL || 'https://your-cloudfront-distribution.cloudfront.net'
-        );
-        
-        // Add AWS domain patterns
-        origins.push(/\.amazonaws\.com$/, /\.cloudfront\.net$/);
+    const allowedOrigins = [
+      'https://bug-training-game.onrender.com',
+      'http://learning-hub.s3-website.eu-west-2.amazonaws.com'
+    ];
+    if (allowedOrigins.includes(origin) || 
+        origin.endsWith('.amazonaws.com') || 
+        origin.endsWith('.cloudfront.net')) {
+      callback(null, true);
     } else {
-        origins.push(
-            'http://localhost:3000',
-            'http://127.0.0.1:3000',
-            'http://localhost:5500',
-            'http://127.0.0.1:5500'
-        );
+      callback(new Error('Not allowed by CORS'));
     }
-    
-    return origins;
-};*/
+  },
+  credentials: true,
+  optionsSuccessStatus: 200,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept'],
+  exposedHeaders: ['Authorization']
+};
+app.use(cors(corsOptions));
+app.options('*', cors(corsOptions));
+
+// Debug logging for every request
+app.use((req, res, next) => {
+  console.log('[CORS DEBUG]', {
+    method: req.method,
+    path: req.path,
+    origin: req.get('origin'),
+    headers: req.headers
+  });
+  next();
+});
 
 // Middleware
 const corsOptions = {
