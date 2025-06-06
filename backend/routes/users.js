@@ -4,6 +4,7 @@ const User = require('../models/user.model');
 const Setting = require('../models/setting.model');
 const jwt = require('jsonwebtoken');
 const auth = require('../middleware/auth');
+const bcrypt = require('bcryptjs');
 
 // Register new user
 router.post('/register', async (req, res) => {
@@ -86,8 +87,11 @@ router.post('/login', async (req, res) => {
             });
         }
 
-        // Find user
-        const user = await User.findOne({ username });
+        // Find user and select only needed fields
+        const user = await User.findOne(
+            { username }, 
+            'username password' // Only select fields we need
+        ).lean(); // Use lean() for faster query
         
         if (!user) {
             console.log('User not found:', username);
@@ -97,8 +101,8 @@ router.post('/login', async (req, res) => {
             });
         }
 
-        // Check password
-        const isMatch = await user.comparePassword(password);
+        // Check password using bcrypt directly since we're using lean()
+        const isMatch = await bcrypt.compare(password, user.password);
         if (!isMatch) {
             console.log('Invalid password for user:', username);
             return res.status(401).json({ 
@@ -106,10 +110,6 @@ router.post('/login', async (req, res) => {
                 message: 'Invalid credentials' 
             });
         }
-
-        // Update last login
-        user.lastLogin = new Date();
-        await user.save();
 
         // Create tokens
         const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, { expiresIn: '1h' });
@@ -126,6 +126,12 @@ router.post('/login', async (req, res) => {
             username,
             headers: responseHeaders
         });
+        
+        // Update lastLogin in the background without waiting
+        User.updateOne(
+            { _id: user._id },
+            { $set: { lastLogin: new Date() } }
+        ).catch(err => console.error('Failed to update lastLogin:', err));
         
         return res.json({ 
             success: true,
