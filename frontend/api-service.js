@@ -4,7 +4,10 @@ import { QUIZ_CATEGORIES } from './quiz-list.js';
 
 export class APIService {
     constructor() {
-        this.baseUrl = 'https://bug-training-game-api.onrender.com/api';
+        // Set the base URL with fallback logic
+        this.baseUrl = this.getApiBaseUrl();
+        console.log('APIService initialized with baseUrl:', this.baseUrl);
+        
         this.scheduledResetInterval = null;
         this.startScheduledResetCheck();
     }
@@ -56,7 +59,7 @@ export class APIService {
         else if (window.location.hostname.includes('amazonaws.com') || 
                  window.location.hostname.includes('s3-website') ||
                  window.location.hostname.includes('learning-hub')) {
-            return 'http://13.42.151.152/api';
+            return 'http://api.learning-hub.eu-west-2.amazonaws.com/api';
         }
         
         // Local development
