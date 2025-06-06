@@ -170,26 +170,6 @@ export class APIService {
         try {
             console.log('Attempting login:', { username, url: `${this.baseUrl}/users/login` });
             
-            // Check if the server is reachable before attempting the login
-            try {
-                const pingResponse = await fetch(`${this.baseUrl}/health`, { 
-                    method: 'GET',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    credentials: 'include',
-                    mode: 'cors',
-                    signal: AbortSignal.timeout(5000) // 5 second timeout
-                });
-                
-                if (!pingResponse.ok) {
-                    console.warn('API health check failed before login attempt');
-                }
-            } catch (pingError) {
-                console.warn('Could not connect to API server:', pingError);
-                // Continue with login attempt anyway
-            }
-            
             const response = await fetch(`${this.baseUrl}/users/login`, {
                 method: 'POST',
                 headers: {
