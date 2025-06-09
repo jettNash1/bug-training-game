@@ -104,7 +104,7 @@ router.get('/guide-settings/:quizName', async (req, res) => {
 });
 
 // Get all guide settings at once for frontend
-router.get('/guide-settings', async (req, res) => {
+router.get('/guide-settings', auth, async (req, res) => {
     try {
         console.log(`[API] Fetching all guide settings`);
         

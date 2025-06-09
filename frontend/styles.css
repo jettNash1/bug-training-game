@@ -110,7 +110,10 @@ body {
     text-decoration: none;
     color: inherit;
     cursor: pointer;
-    border: 2px solid transparent;
+}
+
+.quiz-item * {
+    pointer-events: none;
 }
 
 .quiz-item:hover {
@@ -120,22 +123,22 @@ body {
 
 .quiz-item.not-started {
     background-color: #FFF8E7 !important;
-    border-color: #EEE8D7 !important;
+    border: 2px solid #EEE8D7 !important;
 }
 
 .quiz-item.in-progress {
     background-color: #FFFFCC !important;
-    border-color: #EEEEAA !important;
+    border: 2px solid #EEEEAA !important;
 }
 
 .quiz-item.completed-partial {
     background-color: #F0D080 !important;
-    border-color: #E0B060 !important;
+    border: 2px solid #E0B060 !important;
 }
 
 .quiz-item.completed-perfect {
-    background-color: #90EE90 !important;
-    border-color: #70CF70 !important;
+    background-color: #E0FFE0 !important;
+    border: 2px solid #C0EEC0 !important;
 }
 
 .quiz-info {
@@ -190,9 +193,11 @@ body {
     font-weight: 500;
     text-align: center;
     transition: background-color 0.2s ease;
-    margin-top: 8px;
+    margin-top: 0;
     position: relative;
-    z-index: 2;
+    z-index: 10;
+    pointer-events: auto !important;
+    cursor: pointer !important;
 }
 
 .quiz-guide-button:hover {
@@ -201,25 +206,20 @@ body {
     color: white !important;
 }
 
+.quiz-guide-button:focus {
+    outline: 2px solid #4e73df;
+    outline-offset: 2px;
+}
+
 .guide-button-container {
     display: flex;
     justify-content: center;
     width: 100%;
-    margin-top: 8px;
+    margin-top: 12px;
     padding-top: 8px;
     border-top: 1px solid #eee;
     position: relative;
-    z-index: 2;
-    pointer-events: auto;
-}
-
-/* Ensure the quiz item's click handler doesn't interfere with the guide button */
-.quiz-item * {
-    pointer-events: none;
-}
-
-.guide-button-container,
-.quiz-guide-button {
+    z-index: 10;
     pointer-events: auto !important;
 }
 

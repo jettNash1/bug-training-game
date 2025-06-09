@@ -279,9 +279,8 @@ class IndexPage {
             this.updateQuizProgress();
             this.updateCategoryProgress();
             
-            // Add badges UI elements
+            // Add badges UI element (only call one method)
             this.addBadgesNavLink();
-            this.addBadgesButtonAlternative();
             
             // Load guide settings and add buttons after quiz items are created
             await this.loadGuideSettingsAndAddButtons();
@@ -863,10 +862,24 @@ class IndexPage {
                         }
                     });
                 } else {
-                    console.warn('[Index] Invalid guide settings response:', response);
+                    console.log('[Index] No guide settings found or invalid response');
+                    // Remove any existing guide buttons
+                    visibleQuizItems.forEach(item => {
+                        const existingButton = item.querySelector('.quiz-guide-button');
+                        if (existingButton) {
+                            existingButton.remove();
+                        }
+                    });
                 }
             } catch (error) {
                 console.error('[Index] Error fetching guide settings:', error);
+                // Remove any existing guide buttons on error
+                visibleQuizItems.forEach(item => {
+                    const existingButton = item.querySelector('.quiz-guide-button');
+                    if (existingButton) {
+                        existingButton.remove();
+                    }
+                });
             }
             
             console.log('[Index] Finished setting up guide buttons');
@@ -894,19 +907,18 @@ class IndexPage {
         guideButton.setAttribute('aria-label', `Open guide for ${quizId}`);
         guideButton.setAttribute('tabindex', '0');
         
-        // Prevent the guide button click from triggering the quiz card click
+        // Create a container for the guide button
+        const buttonContainer = document.createElement('div');
+        buttonContainer.className = 'guide-button-container';
+        buttonContainer.appendChild(guideButton);
+        
+        // Add click handlers with proper event stopping
         guideButton.addEventListener('click', (e) => {
             e.preventDefault();
             e.stopPropagation();
             window.open(guideUrl, '_blank');
         });
         
-        // Create a container for the guide button
-        const buttonContainer = document.createElement('div');
-        buttonContainer.className = 'guide-button-container';
-        buttonContainer.appendChild(guideButton);
-        
-        // Prevent container clicks from propagating
         buttonContainer.addEventListener('click', (e) => {
             e.stopPropagation();
         });
