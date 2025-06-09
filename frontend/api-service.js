@@ -170,10 +170,13 @@ export class APIService {
         try {
             // Get the current API base URL
             const apiBaseUrl = this.baseUrl;
+            const origin = window.location.origin;
+            
             console.log('Attempting login:', { 
                 username, 
                 url: `${apiBaseUrl}/users/login`,
-                apiBaseUrl
+                apiBaseUrl,
+                origin
             });
             
             if (!apiBaseUrl) {
@@ -186,7 +189,7 @@ export class APIService {
                 headers: {
                     'Content-Type': 'application/json',
                     'Accept': 'application/json',
-                    'Origin': window.location.origin
+                    'Origin': origin
                 },
                 credentials: 'include',
                 mode: 'cors',
@@ -194,11 +197,14 @@ export class APIService {
                 signal: AbortSignal.timeout(10000) // 10 second timeout
             });
 
-            console.log('Login response status:', response.status);
-            console.log('Login response headers:', {
-                'access-control-allow-origin': response.headers.get('access-control-allow-origin'),
-                'access-control-allow-credentials': response.headers.get('access-control-allow-credentials'),
-                'content-type': response.headers.get('content-type')
+            console.log('Login response:', {
+                status: response.status,
+                statusText: response.statusText,
+                headers: {
+                    'access-control-allow-origin': response.headers.get('access-control-allow-origin'),
+                    'access-control-allow-credentials': response.headers.get('access-control-allow-credentials'),
+                    'content-type': response.headers.get('content-type')
+                }
             });
             
             // Try to read the response text first
@@ -240,6 +246,12 @@ export class APIService {
             if (error.name === 'TypeError' && error.message === 'Failed to fetch') {
                 console.error('Login network error - server may be unreachable:', error);
                 throw new Error('Server connection failed. Please check your network connection and try again.');
+            }
+            
+            // Check if this is a CORS error
+            if (error.name === 'TypeError' && error.message.includes('CORS')) {
+                console.error('CORS error during login:', error);
+                throw new Error('Cross-origin request blocked. Please contact support if this issue persists.');
             }
             
             console.error('Login error:', error);

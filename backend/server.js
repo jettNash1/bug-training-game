@@ -36,6 +36,7 @@ const allowedOrigins = [
   'http://learning-hub.s3-website.eu-west-2.amazonaws.com',
   'https://learning-hub.s3-website.eu-west-2.amazonaws.com',
   'https://bug-training-game.onrender.com',
+  'http://bug-training-game.onrender.com',
   'http://localhost:3000',
   'http://localhost:5000',
   'http://localhost:8080',
@@ -47,21 +48,39 @@ const allowedOrigins = [
 // CORS configuration
 const corsOptions = {
   origin: function(origin, callback) {
+    console.log('Incoming request origin:', origin);
+    
     // Allow requests with no origin (like mobile apps, curl requests, or same-origin)
     if (!origin) {
       console.log('Request has no origin - allowing');
       return callback(null, true);
     }
     
+    // For development: allow all origins if NODE_ENV is development
+    if (process.env.NODE_ENV === 'development') {
+      console.log('Development mode - allowing origin:', origin);
+      return callback(null, true);
+    }
+
     // Check if the origin is allowed
     if (allowedOrigins.includes(origin)) {
       console.log('Origin explicitly allowed:', origin);
       return callback(null, true);
     }
 
-    // For development: allow all origins if NODE_ENV is development
-    if (process.env.NODE_ENV === 'development') {
-      console.log('Development mode - allowing origin:', origin);
+    // If the origin is not in our list but matches our domain pattern, allow it
+    const originUrl = new URL(origin);
+    const isAllowedDomain = allowedOrigins.some(allowed => {
+      try {
+        const allowedUrl = new URL(allowed);
+        return originUrl.hostname === allowedUrl.hostname;
+      } catch (e) {
+        return false;
+      }
+    });
+
+    if (isAllowedDomain) {
+      console.log('Origin domain matched allowed pattern:', origin);
       return callback(null, true);
     }
 
