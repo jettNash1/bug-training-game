@@ -763,13 +763,18 @@ class IndexPage {
                     guideButton.rel = 'noopener noreferrer';
                     guideButton.style.opacity = '1';
                     guideButton.style.cursor = 'pointer';
+                    guideButton.onclick = null; // Remove the return false handler
                     console.log(`[Index] Enabled guide button for ${quizId} with URL: ${guideSetting.url}`);
                 } else {
                     guideButton.setAttribute('disabled', 'true');
-                    guideButton.removeAttribute('href');
+                    guideButton.href = '#';
                     guideButton.title = 'Guide not available';
                     guideButton.style.opacity = '0.5';
                     guideButton.style.cursor = 'not-allowed';
+                    guideButton.onclick = (e) => {
+                        e.preventDefault();
+                        return false;
+                    };
                     console.log(`[Index] Disabled guide button for ${quizId} (no valid guide setting)`);
                 }
             });
