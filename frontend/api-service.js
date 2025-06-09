@@ -175,13 +175,16 @@ export class APIService {
 
             const data = await response.json();
             
-            if (!response.ok) {
+            if (!response.ok || !data.success) {
                 throw new Error(data.message || 'Login failed');
             }
 
             if (data.token) {
                 localStorage.setItem('token', data.token);
                 localStorage.setItem('username', data.username);
+                if (data.refreshToken) {
+                    localStorage.setItem('refreshToken', data.refreshToken);
+                }
             }
 
             return data;

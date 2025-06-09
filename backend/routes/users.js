@@ -66,30 +66,74 @@ router.post('/register', async (req, res) => {
     }
 });
 
-// Login user - minimal implementation
+// Login user
 router.post('/login', async (req, res) => {
     try {
+        console.log('Login attempt:', { 
+            hasUsername: !!req.body.username,
+            origin: req.get('origin'),
+            contentType: req.get('content-type'),
+            method: req.method
+        });
+
         const { username, password } = req.body;
         
+        if (!username || !password) {
+            console.log('Missing credentials:', { hasUsername: !!username, hasPassword: !!password });
+            return res.status(400).json({ 
+                success: false,
+                message: 'Username and password are required' 
+            });
+        }
+
         // Find user
         const user = await User.findOne({ username });
         if (!user) {
-            return res.status(401).json({ message: 'Invalid credentials' });
+            console.log('User not found:', username);
+            return res.status(401).json({ 
+                success: false,
+                message: 'Invalid credentials' 
+            });
         }
 
         // Check password
         const isMatch = await bcrypt.compare(password, user.password);
         if (!isMatch) {
-            return res.status(401).json({ message: 'Invalid credentials' });
+            console.log('Invalid password for user:', username);
+            return res.status(401).json({ 
+                success: false,
+                message: 'Invalid credentials' 
+            });
         }
 
-        // Create token
+        // Create tokens
         const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, { expiresIn: '24h' });
+        const refreshToken = jwt.sign({ id: user._id }, process.env.JWT_REFRESH_SECRET, { expiresIn: '7d' });
 
-        // Return success
-        res.json({ token, username });
+        // Log successful login
+        console.log('Login successful:', {
+            username,
+            hasToken: !!token,
+            hasRefreshToken: !!refreshToken
+        });
+
+        // Return success with CORS headers
+        res.set({
+            'Access-Control-Allow-Origin': req.get('origin') || '*',
+            'Access-Control-Allow-Credentials': 'true'
+        }).json({ 
+            success: true,
+            token,
+            refreshToken,
+            username: user.username
+        });
     } catch (error) {
-        res.status(500).json({ message: 'Server error' });
+        console.error('Login error:', error);
+        res.status(500).json({ 
+            success: false,
+            message: 'Server error during login',
+            error: process.env.NODE_ENV === 'production' ? undefined : error.message
+        });
     }
 });
 

@@ -57,21 +57,41 @@ if (process.env.ALLOWED_ORIGINS) {
 // CORS configuration must be first
 const corsOptions = {
   origin: function(origin, callback) {
-    console.log('CORS Origin Check:', { origin, allowedOrigins });
+    console.log('CORS Origin Check:', { 
+      origin, 
+      allowedOrigins,
+      hasAllowedOrigins: process.env.ALLOWED_ORIGINS,
+      nodeEnv: process.env.NODE_ENV 
+    });
     
     // Allow requests with no origin (like mobile apps or Postman)
     if (!origin) {
+      console.log('Allowing request with no origin');
       return callback(null, true);
     }
 
     // Always allow the S3 website
     if (origin === 'http://learning-hub.s3-website.eu-west-2.amazonaws.com') {
-      return callback(null, origin);
+      console.log('Allowing S3 website');
+      return callback(null, true);
+    }
+
+    // In development, allow all localhost origins
+    if (process.env.NODE_ENV !== 'production' && (origin.startsWith('http://localhost:') || origin.startsWith('http://127.0.0.1:'))) {
+      console.log('Allowing localhost origin in development');
+      return callback(null, true);
+    }
+
+    // Allow Render domains in production
+    if (process.env.NODE_ENV === 'production' && origin.includes('.onrender.com')) {
+      console.log('Allowing Render domain:', origin);
+      return callback(null, true);
     }
 
     // Allow other known origins
     if (allowedOrigins.includes(origin)) {
-      return callback(null, origin);
+      console.log('Allowing known origin:', origin);
+      return callback(null, true);
     }
 
     // Log and reject unknown origins
@@ -80,8 +100,9 @@ const corsOptions = {
   },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'Accept', 'Origin'],
-  exposedHeaders: ['Authorization']
+  allowedHeaders: ['Content-Type', 'Authorization', 'Accept', 'Origin', 'X-Requested-With'],
+  exposedHeaders: ['Authorization'],
+  maxAge: 86400 // 24 hours
 };
 
 // Apply CORS configuration before any other middleware
