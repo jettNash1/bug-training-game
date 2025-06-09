@@ -905,13 +905,20 @@ class IndexPage {
         
         // Prevent the guide button click from triggering the quiz card click
         guideButton.addEventListener('click', (e) => {
+            e.preventDefault();
             e.stopPropagation();
+            window.open(guideUrl, '_blank');
         });
         
         // Create a container for the guide button
         const buttonContainer = document.createElement('div');
         buttonContainer.className = 'guide-button-container';
         buttonContainer.appendChild(guideButton);
+        
+        // Prevent container clicks from propagating
+        buttonContainer.addEventListener('click', (e) => {
+            e.stopPropagation();
+        });
         
         // Remove any existing guide button container
         const existingContainer = quizItem.querySelector('.guide-button-container');

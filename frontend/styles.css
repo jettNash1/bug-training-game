@@ -122,6 +122,8 @@ body {
     flex-direction: column;
     flex: 1;
     gap: 12px;
+    position: relative;
+    z-index: 1;
 }
 
 .quiz-info > div:first-child {
@@ -168,7 +170,7 @@ body {
     text-align: center;
     transition: background-color 0.2s;
     margin-top: auto;
-    z-index: 2;
+    z-index: 3;
     position: relative;
 }
 
@@ -187,6 +189,17 @@ body {
     border-top: 1px solid #eee;
     position: relative;
     z-index: 2;
+    pointer-events: auto;
+}
+
+/* Ensure the quiz item's click handler doesn't interfere with the guide button */
+.quiz-item * {
+    pointer-events: none;
+}
+
+.guide-button-container,
+.quiz-guide-button {
+    pointer-events: auto !important;
 }
 
 .quiz-completion {
