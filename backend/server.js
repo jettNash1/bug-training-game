@@ -54,82 +54,62 @@ if (process.env.ALLOWED_ORIGINS) {
   allowedOrigins.push(...envOrigins);
 }
 
-// CORS configuration
+// CORS configuration must be first
 const corsOptions = {
   origin: function(origin, callback) {
-    // Log the incoming origin for debugging
-    console.log('Incoming request origin:', origin);
+    console.log('CORS Origin Check:', { origin, allowedOrigins });
     
     // Allow requests with no origin (like mobile apps or Postman)
     if (!origin) {
-      console.log('No origin - allowing request');
       return callback(null, true);
     }
 
-    // Always allow the S3 website (both http and https)
+    // Always allow the S3 website
     if (origin === 'http://learning-hub.s3-website.eu-west-2.amazonaws.com') {
-      console.log('Allowing S3 website origin:', origin);
       return callback(null, origin);
     }
 
     // Allow other known origins
     if (allowedOrigins.includes(origin)) {
-      console.log('Allowing known origin:', origin);
       return callback(null, origin);
     }
 
-    // Log rejected origins
-    console.log('Rejecting unknown origin:', origin);
+    // Log and reject unknown origins
+    console.error('Origin not allowed:', origin);
     callback(new Error('Not allowed by CORS'));
   },
   credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'Accept', 'Origin'],
-  exposedHeaders: ['Authorization'],
-  maxAge: 86400 // Cache preflight requests for 24 hours
+  exposedHeaders: ['Authorization']
 };
 
-// Apply CORS configuration
+// Apply CORS configuration before any other middleware
 app.use(cors(corsOptions));
 
 // Handle preflight requests explicitly
 app.options('*', cors(corsOptions));
 
-// Debug logging middleware
+// Other middleware after CORS
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+app.use(helmet());
+
+// Debug logging middleware after CORS
 app.use((req, res, next) => {
-  // Log the request details
   console.log('Request details:', {
     method: req.method,
     path: req.path,
     origin: req.get('origin'),
-    headers: {
-      ...req.headers,
-      authorization: req.headers.authorization ? 'present' : 'missing'
+    corsHeaders: {
+      allowOrigin: res.getHeader('Access-Control-Allow-Origin'),
+      allowCredentials: res.getHeader('Access-Control-Allow-Credentials'),
+      allowMethods: res.getHeader('Access-Control-Allow-Methods'),
+      allowHeaders: res.getHeader('Access-Control-Allow-Headers')
     }
   });
-
-  // Add response header logging
-  res.once('finish', () => {
-    console.log('Response details:', {
-      path: req.path,
-      statusCode: res.statusCode,
-      statusMessage: res.statusMessage,
-      headers: {
-        'access-control-allow-origin': res.getHeader('Access-Control-Allow-Origin'),
-        'access-control-allow-credentials': res.getHeader('Access-Control-Allow-Credentials'),
-        'access-control-allow-methods': res.getHeader('Access-Control-Allow-Methods'),
-        'access-control-allow-headers': res.getHeader('Access-Control-Allow-Headers'),
-        'vary': res.getHeader('Vary')
-      }
-    });
-  });
-
   next();
 });
-
-// Parse JSON bodies (Remove once ready)
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
 
 // Debug middleware to log requests
 app.use((req, res, next) => {
