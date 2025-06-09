@@ -146,14 +146,25 @@ function clearAllQuizProgress() {
 
 class IndexPage {
     constructor() {
+        // Initialize services
+        this.apiService = new APIService();
+        this.quizProgressService = new QuizProgressService();
+        
+        // Initialize state
+        this.quizList = null;
+        this.quizItems = null;
+        this.userProgress = null;
+        this.categoryProgress = {};
+        
+        // Bind methods
+        this.initialize = this.initialize.bind(this);
+        this.loadUserProgress = this.loadUserProgress.bind(this);
+        this.updateQuizProgress = this.updateQuizProgress.bind(this);
+        this.updateCategoryProgress = this.updateCategoryProgress.bind(this);
+        this.loadGuideSettingsAndAddButtons = this.loadGuideSettingsAndAddButtons.bind(this);
+        
         try {
             console.log('[Index] Initializing IndexPage');
-            this.apiService = new APIService();
-            this.quizProgressService = new QuizProgressService();
-            
-            // Store in window for global access
-            window.quizProgressService = this.quizProgressService;
-            
             this.user = new QuizUser(localStorage.getItem('username'));
             this.quizItems = document.querySelectorAll('.quiz-item:not(.locked-quiz)');
             
@@ -246,34 +257,42 @@ class IndexPage {
 
     async initialize() {
         try {
-            // Log debug info about quiz IDs for troubleshooting
-            console.log('[Index] Initializing with quiz items:', this.quizItems.length);
+            console.log('[Index] Starting initialization');
             
-            // Check for and clean up contaminated quiz data
-            await this.checkAndCleanContaminatedData();
+            // Show loading overlay
+            this.showLoadingOverlay();
             
-            // Load user progress first
+            // Initialize API service
+            this.apiService = new APIService();
+            
+            // Initialize quiz list
+            this.quizList = new QuizList();
+            await this.quizList.init();
+            
+            // Get quiz items after they are created
+            this.quizItems = document.querySelectorAll('.quiz-item');
+            console.log(`[Index] Found ${this.quizItems.length} quiz items`);
+            
+            // Load user progress and update UI
             await this.loadUserProgress();
-            
-            // Update UI with loaded progress
             this.updateQuizProgress();
             this.updateCategoryProgress();
+            
+            // Add badges UI elements
             this.addBadgesNavLink();
+            this.addBadgesButtonAlternative();
             
-            // Debug quiz name normalization
-            this.logQuizNameNormalization();
+            // Load guide settings and add buttons after quiz items are created
+            await this.loadGuideSettingsAndAddButtons();
             
-            // Load guide settings in a non-blocking way
-            this.loadGuideSettingsAndAddButtons().catch(err => {
-                console.error('[Index] Error loading guide settings:', err);
-            });
+            // Hide loading overlay
+            this.hideLoadingOverlay();
+            
+            console.log('[Index] Initialization complete');
         } catch (error) {
-            console.error('[Index] Failed to initialize:', error);
+            console.error('[Index] Error during initialization:', error);
+            this.hideLoadingOverlay();
         }
-        
-        // Always hide the loading overlay after initializing core functionality
-        // even if guide buttons are still loading
-        this.hideLoadingOverlay();
     }
 
     async checkAndCleanContaminatedData() {
@@ -794,45 +813,6 @@ class IndexPage {
                         outline: 2px solid #4e73df;
                         outline-offset: 2px;
                     }
-                    .quiz-item {
-                        position: relative;
-                        display: flex;
-                        flex-direction: column;
-                        padding: 16px;
-                        min-height: 180px; /* Increased to accommodate the button */
-                        background: #fff;
-                        border-radius: 8px;
-                        justify-content: space-between;
-                    }
-                    .quiz-item .quiz-info {
-                        display: flex;
-                        flex-direction: column;
-                        flex: 1;
-                    }
-                    .quiz-item .quiz-info > div:first-child {
-                        display: flex;
-                        align-items: center;
-                        gap: 8px;
-                    }
-                    .quiz-item .quiz-icon {
-                        font-size: 20px;
-                        flex-shrink: 0;
-                        display: flex;
-                        align-items: center;
-                    }
-                    .quiz-item .quiz-title {
-                        font-size: 16px;
-                        font-weight: 600;
-                        color: #2c3e50;
-                        margin: 0;
-                        line-height: 1.4;
-                    }
-                    .quiz-item .quiz-description {
-                        color: #666;
-                        font-size: 14px;
-                        line-height: 1.4;
-                        margin: 8px 0 12px 28px;
-                    }
                     .guide-button-container {
                         display: flex;
                         justify-content: center;
@@ -840,70 +820,36 @@ class IndexPage {
                         margin-top: 16px;
                         padding-top: 8px;
                     }
-                    .quiz-completion {
-                        position: absolute;
-                        top: 12px;
-                        right: 12px;
-                        font-size: 12px;
-                        font-weight: 500;
-                        padding: 3px 8px;
-                        border-radius: 4px;
-                        background: rgba(0,0,0,0.08);
-                    }
-                    .category-card {
-                        background: white;
-                        border-radius: 8px;
-                        padding: 16px;
-                        margin-bottom: 24px;
-                    }
-                    .category-header {
-                        font-size: 18px;
-                        font-weight: 600;
-                        color: #1a202c;
-                        margin-bottom: 16px;
-                        padding: 12px 16px;
-                        background: #2c3e50;
-                        color: white;
-                        border-radius: 6px;
-                    }
-                    .quiz-list {
-                        display: grid;
-                        grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-                        gap: 16px;
-                        padding: 0 8px;
-                    }
-                    /* Media query for smaller screens */
-                    @media (max-width: 768px) {
-                        .quiz-item {
-                            min-height: 200px;
-                        }
-                        .guide-button-container {
-                            margin-top: 12px;
-                        }
-                    }
                 `;
                 document.head.appendChild(styles);
             }
             
             // Fetch all guide settings in a single call
             try {
-                const response = await this.apiService.getGuideSettings();
+                const response = await this.apiService.fetchGuideSettings();
                 if (response && response.success && response.data) {
                     console.log('[Index] Fetched all guide settings:', response.data);
                     
                     // Process each visible quiz item
                     visibleQuizItems.forEach(item => {
                         const quizId = item.dataset.quiz;
-                        if (!quizId) return;
+                        if (!quizId) {
+                            console.warn('[Index] Quiz item missing data-quiz attribute:', item);
+                            return;
+                        }
+                        
+                        // Normalize the quiz ID using simple lowercase and trim
+                        const normalizedQuizId = quizId.toLowerCase().trim();
+                        console.log(`[Index] Normalized quiz ID: ${quizId} -> ${normalizedQuizId}`);
                         
                         // Check if guide is enabled for this quiz
-                        const guideSettings = response.data[quizId];
+                        const guideSettings = response.data[normalizedQuizId];
                         if (guideSettings && guideSettings.enabled && guideSettings.url) {
-                            console.log(`[Index] Guide button enabled for quiz ${quizId} with URL: ${guideSettings.url}`);
-                            this.addGuideButtonToQuizItem(item, quizId, guideSettings.url);
+                            console.log(`[Index] Guide button enabled for quiz ${normalizedQuizId} with URL: ${guideSettings.url}`);
+                            this.addGuideButtonToQuizItem(item, normalizedQuizId, guideSettings.url);
                         } else {
-                            console.log(`[Index] Guide button not enabled for quiz ${quizId}`);
-                            const existingButton = item.querySelector(`.quiz-guide-button[data-quiz-id="${quizId}"]`);
+                            console.log(`[Index] Guide button not enabled for quiz ${normalizedQuizId}`);
+                            const existingButton = item.querySelector(`.quiz-guide-button[data-quiz-id="${normalizedQuizId}"]`);
                             if (existingButton) {
                                 existingButton.remove();
                             }

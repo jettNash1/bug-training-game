@@ -100,223 +100,153 @@ body {
 .quiz-item {
     position: relative;
     display: flex;
-    align-items: flex-start;
-    padding: 1.5rem;
-    border-radius: 12px;
-    color: var(--text-primary);
-    text-decoration: none;
+    flex-direction: column;
+    padding: 16px;
+    min-height: 180px;
+    background: #fff;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
     transition: all 0.2s ease;
-    gap: 1.25rem;
-    cursor: pointer;
-    margin: 0.75rem 0;
-    background-color: #FFFFFF; /* Default white for not started */
-    border: 1px solid #E6E6E6;
-}
-
-.quiz-item.completed-perfect {
-    background-color: #C8E6C9 !important; /* Pastel green */
-    border: 1px solid #A5D6A7 !important;
-}
-
-.quiz-item.completed-partial {
-    background-color: #FFE0B2 !important; /* Pastel orange */
-    border: 1px solid #FFCC80 !important;
-}
-
-.quiz-item.in-progress {
-    background-color: #FFF9C4 !important; /* Pastel yellow */
-    border: 1px solid #FFF59D !important;
 }
 
 .quiz-item:hover {
+    box-shadow: 0 4px 8px rgba(0,0,0,0.15);
     transform: translateY(-2px);
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
-}
-
-.quiz-icon {
-    font-size: 1.5rem;
-    min-width: 2rem;
-    text-align: center;
 }
 
 .quiz-info {
-    flex-grow: 1;
     display: flex;
     flex-direction: column;
+    flex: 1;
+    gap: 12px;
+}
+
+.quiz-info > div:first-child {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.quiz-icon {
+    width: 32px;
+    height: 32px;
+    flex-shrink: 0;
+}
+
+.quiz-icon img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
 }
 
 .quiz-title {
+    font-size: 18px;
     font-weight: 600;
-    margin-bottom: 0.25rem;
+    color: #2c3e50;
+    margin: 0;
+    line-height: 1.4;
 }
 
 .quiz-description {
-    font-size: 0.9rem;
-    color: var(--text-muted);
+    color: #666;
+    font-size: 14px;
+    line-height: 1.5;
+    flex-grow: 1;
 }
 
-/* Quiz completion badge */
-.quiz-completion {
-    position: absolute;
-    top: 0.5rem;
-    right: 0.5rem;
-    padding: 0.25rem 0.75rem;
-    border-radius: 12px;
-    font-size: 0.8rem;
-    font-weight: 600;
-    color: var(--text-primary);
-}
-
-.quiz-item.completed-perfect .quiz-completion {
-    background-color: #C8E6C9;
-    color: #2E7D32;
-    display: block !important;
-}
-
-.quiz-item.completed-partial .quiz-completion {
-    background-color: #FFE0B2;
-    color: #E65100;
-    display: block !important;
-}
-
-.quiz-item.in-progress .quiz-completion {
-    background-color: #FFF9C4;
-    color: #827717;
-    display: block !important;
-}
-
-.quiz-item:not(.completed-perfect):not(.completed-partial):not(.in-progress) .quiz-completion {
-    display: none !important;
-}
-
-/* Quiz states - with pastel colors */
-.quiz-item {
-    position: relative;
-    display: flex;
-    align-items: flex-start;
-    padding: 1.5rem;
-    border-radius: 12px;
-    color: var(--text-primary);
+.quiz-start-button {
+    display: inline-block;
+    background-color: #4e73df;
+    color: white;
     text-decoration: none;
-    transition: all 0.2s ease;
-    gap: 1.25rem;
-    cursor: pointer;
-    margin: 0.75rem 0;
-    background-color: #FFFFFF; /* Default white for not started */
-    border: 1px solid #E6E6E6;
+    padding: 8px 16px;
+    border-radius: 4px;
+    font-weight: 500;
+    text-align: center;
+    transition: background-color 0.2s;
 }
 
-.quiz-item.completed-perfect {
-    background-color: #C8E6C9 !important; /* Pastel green */
-    border: 1px solid #A5D6A7 !important;
+.quiz-start-button:hover {
+    background-color: #3867d6;
+    text-decoration: none;
+    color: white;
 }
 
-.quiz-item.completed-partial {
-    background-color: #FFE0B2 !important; /* Pastel orange */
-    border: 1px solid #FFCC80 !important;
-}
-
-.quiz-item.in-progress {
-    background-color: #FFF9C4 !important; /* Pastel yellow */
-    border: 1px solid #FFF59D !important;
-}
-
-/* Quiz completion badge */
 .quiz-completion {
     position: absolute;
-    top: 0.5rem;
-    right: 0.5rem;
-    padding: 0.25rem 0.75rem;
-    border-radius: 12px;
-    font-size: 0.8rem;
-    font-weight: 600;
-    color: var(--text-primary);
+    top: 12px;
+    right: 12px;
+    font-size: 12px;
+    font-weight: 500;
+    padding: 3px 8px;
+    border-radius: 4px;
+    background: rgba(0,0,0,0.08);
 }
 
-.quiz-item.completed-perfect .quiz-completion {
-    background-color: #C8E6C9;
-    color: #2E7D32;
-    display: block !important;
-}
-
-.quiz-item.completed-partial .quiz-completion {
-    background-color: #FFE0B2;
-    color: #E65100;
-    display: block !important;
-}
-
-.quiz-item.in-progress .quiz-completion {
-    background-color: #FFF9C4;
-    color: #827717;
-    display: block !important;
-}
-
-.quiz-item:not(.completed-perfect):not(.completed-partial):not(.in-progress) .quiz-completion {
-    display: none !important;
-}
-
-/* Add hover effects that maintain the pastel theme */
-.quiz-item.completed-perfect:hover {
-    background-color: #B2DFB5 !important; /* Slightly darker pastel green */
-    border: 1px solid #93C995 !important;
-}
-
-.quiz-item.completed-partial:hover {
-    background-color: #FFD699 !important; /* Slightly darker pastel orange */
-    border: 1px solid #FFC266 !important;
-}
-
-.quiz-item.in-progress:hover {
-    background-color: #FFF176 !important; /* Slightly darker pastel yellow */
-    border: 1px solid #FFEE58 !important;
-}
-
-.quiz-item:not(.completed-perfect):not(.completed-partial):not(.in-progress):hover {
-    background-color: #F5F5F5 !important; /* Light gray hover for not started */
-    border: 1px solid #E0E0E0 !important;
-}
-
-/* Remove any remaining bright color overrides */
-.quiz-item[data-progress="100"],
-.quiz-item[data-progress="0"],
-.quiz-item.completed,
-.quiz-item.failed {
-    background-color: initial !important;
-    border-color: initial !important;
-}
-
-/* Ensure our specific classes take precedence but maintain pastel theme */
-.quiz-item.completed-perfect {
-    background-color: #C8E6C9 !important; /* Pastel green */
-    border: 1px solid #A5D6A7 !important;
-}
-
-.quiz-item.completed-partial {
-    background-color: #FFE0B2 !important; /* Pastel orange */
-    border: 1px solid #FFCC80 !important;
+/* Quiz Status Classes */
+.quiz-item.not-started {
+    border: 1px solid #e0e0e0;
 }
 
 .quiz-item.in-progress {
-    background-color: #FFF9C4 !important; /* Pastel yellow */
-    border: 1px solid #FFF59D !important;
+    border: 1px solid #3498db;
 }
 
-/* Remove old conflicting styles */
-.quiz-item[data-progress="100"]:not(.completed-perfect),
-.quiz-item[data-progress="0"],
-.quiz-item[data-progress="100"],
-.quiz-item[data-progress="0"] .quiz-completion,
-.quiz-item[data-progress="100"] .quiz-completion {
-    background: initial;
-    border-color: initial;
+.quiz-item.completed-partial {
+    border: 1px solid #f1c40f;
 }
 
-/* Ensure quizzes with progress show their completion badges */
-.quiz-item:not([data-progress="0"]) .quiz-completion,
-.quiz-item.in-progress .quiz-completion,
-.quiz-item.completed-perfect .quiz-completion,
-.quiz-item.completed-partial .quiz-completion {
-    display: block !important;
+.quiz-item.completed-perfect {
+    border: 1px solid #2ecc71;
+}
+
+/* Guide Button Styles */
+.guide-button-container {
+    margin-top: 12px;
+    padding-top: 8px;
+    border-top: 1px solid #eee;
+    text-align: center;
+}
+
+.quiz-guide-button {
+    display: inline-block;
+    background-color: #4e73df;
+    color: white;
+    text-decoration: none;
+    padding: 8px 16px;
+    border-radius: 4px;
+    font-size: 14px;
+    font-weight: 500;
+    transition: background-color 0.2s;
+}
+
+.quiz-guide-button:hover {
+    background-color: #3867d6;
+    text-decoration: none;
+    color: white;
+}
+
+/* Responsive Styles */
+@media (max-width: 768px) {
+    .quiz-item {
+        min-height: 200px;
+    }
+    
+    .quiz-info {
+        gap: 8px;
+    }
+    
+    .quiz-title {
+        font-size: 16px;
+    }
+    
+    .quiz-description {
+        font-size: 13px;
+    }
+    
+    .guide-button-container {
+        margin-top: 8px;
+    }
 }
 
 .category-progress {

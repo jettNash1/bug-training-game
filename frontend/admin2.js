@@ -3845,8 +3845,8 @@ export class Admin2Dashboard {
             if (response.success) {
                 this.guideSettings = response.data || {};
                 console.log('Guide settings loaded successfully. Number of guides:', Object.keys(this.guideSettings).length);
-                    
-                    // Debug: log all guide settings for verification
+                
+                // Debug: log all guide settings for verification
                 for (const [quizName, setting] of Object.entries(this.guideSettings)) {
                     console.log(`Guide setting for ${quizName}:`, setting);
                 }
@@ -3860,8 +3860,7 @@ export class Admin2Dashboard {
                 }
                 
                 // If we're displaying guide settings, refresh the display
-                if (document.getElementById('guide-settings-container') && 
-                    document.getElementById('guide-settings-container').querySelector('#guide-settings-list')) {
+                if (document.getElementById('guide-settings-container')) {
                     console.log('Refreshing guide settings display after load');
                     this.refreshGuideSettingsList();
                 }
@@ -4286,53 +4285,35 @@ export class Admin2Dashboard {
 
     async saveGuideSettings(quiz, url, enabled) {
         try {
-            // Remove the initial loading message to avoid duplicate notifications
-            // this.showInfo(`Saving guide settings for ${this.formatQuizName(quiz)}...`);
-            
-            console.log(`Saving guide setting for ${quiz}: url=${url}, enabled=${enabled}`);
+            // Normalize quiz name
+            const normalizedQuiz = this.quizProgressService.normalizeQuizName(quiz);
+            console.log(`Saving guide setting for ${normalizedQuiz} (normalized from ${quiz}): url=${url}, enabled=${enabled}`);
 
-            // First update in-memory state for immediate UI feedback
-                if (!this.guideSettings) {
-                    this.guideSettings = {};
-                }
-                
-                    this.guideSettings[quiz] = { url, enabled };
-                
-            // Update localStorage immediately for redundancy
-                try {
-                localStorage.setItem('guideSettings', JSON.stringify(this.guideSettings));
-                console.log(`Updated guide settings in localStorage (${Object.keys(this.guideSettings).length} guides)`);
-            } catch (e) {
-                console.warn(`Failed to save guide settings to localStorage: ${e.message}`);
-            }
-            
-            // Make the API call - don't refresh list yet to avoid double event handlers
-            const response = await this.apiService.saveGuideSetting(quiz, url, enabled);
+            // Make the API call first
+            const response = await this.apiService.saveGuideSetting(normalizedQuiz, url, enabled);
 
             if (response.success) {
                 console.log('Guide setting saved successfully:', response);
                 
-                // Reload all guide settings to ensure consistency, but don't trigger displayGuideSettings
-                // which would set up event listeners again
+                // Update in-memory state
+                if (!this.guideSettings) {
+                    this.guideSettings = {};
+                }
+                this.guideSettings[normalizedQuiz] = { url, enabled };
+                
+                // Update localStorage
                 try {
-                    const refreshResponse = await this.apiService.getGuideSettings();
-                    if (refreshResponse.success) {
-                        this.guideSettings = refreshResponse.data || {};
-                        console.log('Guide settings reloaded with', Object.keys(this.guideSettings).length, 'guides');
-                    }
-                } catch (refreshError) {
-                    console.warn('Error refreshing guide settings:', refreshError);
+                    localStorage.setItem('guideSettings', JSON.stringify(this.guideSettings));
+                    console.log(`Updated guide settings in localStorage (${Object.keys(this.guideSettings).length} guides)`);
+                } catch (e) {
+                    console.warn(`Failed to save guide settings to localStorage: ${e.message}`);
                 }
                 
-                // Now refresh the list display without setting up new event handlers
-                this.refreshGuideSettingsList(false); // Pass false to indicate not to set up new event handlers
+                // Refresh the UI
+                this.refreshGuideSettingsList(true);
                 
                 // Show success message
-                if (response.source === 'localStorage') {
-                    this.showInfo(`Guide settings saved locally only (server unavailable).`, 'warning');
-                } else {
-                    this.showInfo(`Guide settings for ${this.formatQuizName(quiz)} saved successfully!`);
-                }
+                this.showInfo(`Guide settings for ${this.formatQuizName(quiz)} saved successfully!`);
                 
                 return true;
             } else {
@@ -4340,14 +4321,7 @@ export class Admin2Dashboard {
             }
         } catch (error) {
             console.error('Error saving guide settings:', error);
-            
-            // Special handling for validation errors
-            if (error.message && error.message.includes('URL format')) {
-                this.showInfo(`Error: ${error.message}`, 'error');
-            } else {
-                this.showInfo('Failed to save guide settings', 'error');
-            }
-            
+            this.showInfo('Failed to save guide settings', 'error');
             throw error;
         }
     }

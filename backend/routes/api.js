@@ -1,3 +1,9 @@
+// Helper function for consistent quiz name normalization
+function normalizeQuizName(quizName) {
+    if (!quizName) return '';
+    return quizName.toLowerCase().trim();
+}
+
 // Guide settings endpoint for frontend quiz access
 router.get('/guide-settings/:quizName', async (req, res) => {
     try {
@@ -19,7 +25,7 @@ router.get('/guide-settings/:quizName', async (req, res) => {
         }
         
         // Get the specific quiz settings
-        const normalizedQuizName = quizName.toLowerCase().trim();
+        const normalizedQuizName = normalizeQuizName(quizName);
         const quizSettings = settings.value[normalizedQuizName] || { url: null, enabled: false };
         console.log(`[API] Found guide settings for ${normalizedQuizName}:`, quizSettings);
         

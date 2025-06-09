@@ -595,94 +595,10 @@ export class APIService {
         }
     }
 
-    // Add a consistent method for normalizing quiz names
+    // Helper method for consistent quiz name normalization
     normalizeQuizName(quizName) {
         if (!quizName) return '';
-
-        // First standardize to lowercase and trim
-        const lowerName = typeof quizName === 'string' ? quizName.toLowerCase().trim() : '';
-        
-        // For quiz names with exact matches, just return the exact normalized name
-        // Use this list of known quiz names (from the list provided) for guaranteed unique matching
-        const knownQuizNames = [
-            'communication', 
-            'initiative', 
-            'time-management', 
-            'tester-mindset',
-            'risk-analysis', 
-            'risk-management', 
-            'non-functional', 
-            'test-support',
-            'issue-verification', 
-            'build-verification', 
-            'issue-tracking-tools',
-            'raising-tickets', 
-            'reports', 
-            'cms-testing', 
-            'email-testing', 
-            'content-copy',
-            'locale-testing', 
-            'script-metrics-troubleshooting', 
-            'standard-script-testing',
-            'test-types-tricks', 
-            'automation-interview', 
-            'fully-scripted', 
-            'exploratory',
-            'sanity-smoke', 
-            'functional-interview'
-        ];
-        
-        // If it's an exact match with our known list, return it directly
-        if (knownQuizNames.includes(lowerName)) {
-            return lowerName;
-        }
-        
-        // If it's just a simple variant with different casing, normalize and return if it matches known quiz
-        const normalized = lowerName
-            .replace(/([A-Z])/g, '-$1')  // Convert camelCase to kebab-case
-            .replace(/_/g, '-')          // Convert snake_case to kebab-case
-            .replace(/\s+/g, '-')        // Convert spaces to hyphens
-            .replace(/-+/g, '-')         // Remove duplicate hyphens
-            .replace(/^-|-$/g, '')       // Remove leading/trailing hyphens
-            .toLowerCase();              // Ensure lowercase
-        
-        if (knownQuizNames.includes(normalized)) {
-            return normalized;
-        }
-        
-        // For quiz names that might need more complex matching, use exact property matching
-        // IMPORTANT: Each condition must result in a UNIQUE quiz name
-        
-        // Specific case matching for quiz names that might have variations
-        if (lowerName.includes('tester') && lowerName.includes('mindset')) {
-            return 'tester-mindset';
-        }
-        
-        if (lowerName.includes('script') && lowerName.includes('metric') && lowerName.includes('troubleshoot')) {
-            return 'script-metrics-troubleshooting';
-        }
-        
-        if ((lowerName === 'communication' || lowerName === 'communications') && 
-            !lowerName.includes('initiative')) {
-            return 'communication';
-        }
-        
-        if (lowerName === 'initiative' && !lowerName.includes('communic')) {
-            return 'initiative';
-        }
-        
-        if (lowerName.includes('cms-testing') || 
-            (lowerName.includes('cms') && lowerName.includes('test') && 
-             !lowerName.includes('initiative') && !lowerName.includes('communic'))) {
-            return 'cms-testing';
-        }
-        
-        if (lowerName.includes('email') && lowerName.includes('test')) {
-            return 'email-testing';
-        }
-        
-        // If we don't have specific handling, use the normalized version we calculated earlier
-        return normalized;
+        return quizName.toLowerCase().trim();
     }
 
     // Generate common variations of quiz names to try with API/localStorage
@@ -2142,50 +2058,46 @@ export class APIService {
     }
 
     // Guide settings methods for quiz UI
-    async fetchGuideSettings(quizName) {
-        console.log(`[API] Fetching guide settings for quiz: ${quizName}`);
+    async fetchGuideSettings(quizName = null) {
+        console.log(`[API] Fetching guide settings${quizName ? ` for quiz: ${quizName}` : ' for all quizzes'}`);
         
-        if (!quizName) {
-            console.error('[API] No quiz name provided for guide settings fetch');
-            return {
-                success: false,
-                data: {
-                    url: null,
-                    enabled: false
-                }
-            };
-        }
-        
-        // Normalize quiz name
-        const normalizedQuizName = quizName.toLowerCase().trim();
-        
-        // Check if guide settings exist in localStorage first for any quiz
         try {
-            const settingsJson = localStorage.getItem('guideSettings');
-            if (settingsJson) {
-                const settings = JSON.parse(settingsJson);
-                if (settings && settings[normalizedQuizName] && settings[normalizedQuizName].url) {
-                    console.log(`[API] Found guide settings in localStorage for ${normalizedQuizName}:`, settings[normalizedQuizName]);
-                    return {
-                        success: true,
-                        data: {
-                            url: settings[normalizedQuizName].url,
-                            enabled: settings[normalizedQuizName].enabled === true
-                        },
-                        source: 'localStorage'
-                    };
+            // First try localStorage for faster response
+            try {
+                const settingsJson = localStorage.getItem('guideSettings');
+                if (settingsJson) {
+                    const settings = JSON.parse(settingsJson);
+                    if (quizName) {
+                        const normalizedQuizName = this.normalizeQuizName(quizName);
+                        if (settings && settings[normalizedQuizName]) {
+                            console.log(`[API] Found guide settings in localStorage for ${normalizedQuizName}:`, settings[normalizedQuizName]);
+                            return {
+                                success: true,
+                                data: settings[normalizedQuizName],
+                                source: 'localStorage'
+                            };
+                        }
+                    } else {
+                        // Return all settings
+                        console.log(`[API] Found all guide settings in localStorage`);
+                        return {
+                            success: true,
+                            data: settings,
+                            source: 'localStorage'
+                        };
+                    }
                 }
+            } catch (e) {
+                console.warn(`[API] Error checking localStorage for guide settings:`, e);
             }
-        } catch (e) {
-            console.warn(`[API] Error checking localStorage for ${normalizedQuizName} guide:`, e);
-        }
-        
-        try {
+            
             // Construct the URL carefully with proper encoding
-            const url = `${this.baseUrl}/guide-settings/${encodeURIComponent(normalizedQuizName)}`;
+            const url = quizName 
+                ? `${this.baseUrl}/guide-settings/${encodeURIComponent(this.normalizeQuizName(quizName))}`
+                : `${this.baseUrl}/guide-settings`;
             console.log(`[API] Guide settings URL: ${url}`);
             
-            // Just do a simple fetch without timeout - let the browser handle it
+            // Make the API request
             const response = await fetch(url, {
                 method: 'GET',
                 headers: {
@@ -2196,142 +2108,72 @@ export class APIService {
             
             if (!response.ok) {
                 console.warn(`[API] Error response from guide settings API: ${response.status}`);
-                
-                // Try localStorage again as fallback for any quiz
-                try {
-                    const settingsJson = localStorage.getItem('guideSettings');
-                    if (settingsJson) {
-                        const settings = JSON.parse(settingsJson);
-                        if (settings && settings[normalizedQuizName]) {
-                            console.log(`[API] Using localStorage fallback for ${normalizedQuizName} after API error`);
-                            return {
-                                success: true,
-                                data: {
-                                    url: settings[normalizedQuizName].url || null,
-                                    enabled: settings[normalizedQuizName].enabled === true
-                                },
-                                source: 'localStorage-fallback'
-                            };
-                        }
-                    }
-                } catch (e) {
-                    console.warn(`[API] Error checking localStorage fallback for ${normalizedQuizName}:`, e);
-                }
-                
-                return {
-                    success: false,
-                    data: {
-                        url: null,
-                        enabled: false
-                    }
-                };
+                throw new Error(`API request failed with status ${response.status}`);
             }
             
             // Parse the response
-            const text = await response.text();
-            console.log(`[API] Guide settings raw response:`, text);
+            const data = await response.json();
+            console.log(`[API] Guide settings response:`, data);
             
-            try {
-                const jsonData = JSON.parse(text);
-                console.log(`[API] Guide settings parsed response:`, jsonData);
-                
-                if (jsonData.success && jsonData.data) {
-                    return jsonData;
-                } else {
-                    console.warn(`[API] Invalid guide settings response:`, jsonData);
-                    
-                    // Try localStorage once more as final fallback
-                    try {
-                        const settingsJson = localStorage.getItem('guideSettings');
-                        if (settingsJson) {
-                            const settings = JSON.parse(settingsJson);
-                            if (settings && settings[normalizedQuizName]) {
-                                console.log(`[API] Using localStorage fallback for ${normalizedQuizName} after invalid response`);
-                                return {
-                                    success: true,
-                                    data: {
-                                        url: settings[normalizedQuizName].url || null,
-                                        enabled: settings[normalizedQuizName].enabled === true
-                                    },
-                                    source: 'localStorage-fallback'
-                                };
-                            }
-                        }
-                    } catch (e) {
-                        console.warn(`[API] Error checking localStorage fallback for ${normalizedQuizName}:`, e);
-                    }
-                    
-                    return {
-                        success: false,
-                        data: {
-                            url: null,
-                            enabled: false
-                        }
-                    };
-                }
-            } catch (parseError) {
-                console.error(`[API] Error parsing guide settings JSON:`, parseError);
-                
-                // Final localStorage fallback attempt
+            if (data.success && data.data) {
+                // Save to localStorage for future use
                 try {
-                    const settingsJson = localStorage.getItem('guideSettings');
-                    if (settingsJson) {
-                        const settings = JSON.parse(settingsJson);
-                        if (settings && settings[normalizedQuizName]) {
-                            console.log(`[API] Using localStorage fallback for ${normalizedQuizName} after parse error`);
-                            return {
-                                success: true,
-                                data: {
-                                    url: settings[normalizedQuizName].url || null,
-                                    enabled: settings[normalizedQuizName].enabled === true
-                                },
-                                source: 'localStorage-fallback'
-                            };
-                        }
+                    if (!quizName) {
+                        localStorage.setItem('guideSettings', JSON.stringify(data.data));
+                        console.log('[API] Saved all guide settings to localStorage');
+                    } else {
+                        const existingSettingsJson = localStorage.getItem('guideSettings');
+                        const existingSettings = existingSettingsJson ? JSON.parse(existingSettingsJson) : {};
+                        const normalizedQuizName = this.normalizeQuizName(quizName);
+                        existingSettings[normalizedQuizName] = data.data;
+                        localStorage.setItem('guideSettings', JSON.stringify(existingSettings));
+                        console.log(`[API] Saved guide settings for ${normalizedQuizName} to localStorage`);
                     }
                 } catch (e) {
-                    console.warn(`[API] Error checking localStorage after parse error:`, e);
+                    console.warn('[API] Error saving guide settings to localStorage:', e);
                 }
                 
-                return {
-                    success: false,
-                    data: {
-                        url: null,
-                        enabled: false
-                    }
-                };
+                return data;
+            } else {
+                console.warn(`[API] Invalid guide settings response:`, data);
+                throw new Error('Invalid response format from API');
             }
         } catch (error) {
-            console.error(`[API] Error fetching guide settings for ${normalizedQuizName}:`, error);
+            console.error(`[API] Error fetching guide settings:`, error);
             
-            // Try localStorage as fallback for any quiz
+            // Try localStorage as fallback one last time
             try {
                 const settingsJson = localStorage.getItem('guideSettings');
                 if (settingsJson) {
                     const settings = JSON.parse(settingsJson);
-                    if (settings && settings[normalizedQuizName]) {
-                        console.log(`[API] Using localStorage fallback for ${normalizedQuizName} after fetch error`);
+                    if (quizName) {
+                        const normalizedQuizName = this.normalizeQuizName(quizName);
+                        if (settings && settings[normalizedQuizName]) {
+                            console.log(`[API] Using localStorage fallback for ${normalizedQuizName} after error`);
+                            return {
+                                success: true,
+                                data: settings[normalizedQuizName],
+                                source: 'localStorage-fallback'
+                            };
+                        }
+                    } else {
+                        console.log(`[API] Using localStorage fallback for all guide settings after error`);
                         return {
                             success: true,
-                            data: {
-                                url: settings[normalizedQuizName].url || null,
-                                enabled: settings[normalizedQuizName].enabled === true
-                            },
+                            data: settings,
                             source: 'localStorage-fallback'
                         };
                     }
                 }
-            } catch (localError) {
-                console.warn(`[API] Error checking localStorage for ${normalizedQuizName} after fetch error:`, localError);
+            } catch (e) {
+                console.warn(`[API] Error checking localStorage fallback:`, e);
             }
             
-            // Return default values with no fallback
+            // Return empty data if all else fails
             return {
                 success: false,
-                data: {
-                    url: null,
-                    enabled: false
-                }
+                message: error.message,
+                data: quizName ? { url: null, enabled: false } : {}
             };
         }
     }
