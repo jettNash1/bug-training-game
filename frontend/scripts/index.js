@@ -753,19 +753,12 @@ class IndexPage {
                 if (hasValidUrl) {
                     guideButton.removeAttribute('disabled');
                     guideButton.title = 'Click to view guide';
-                    
-                    // Add click handler
-                    const handleClick = (e) => {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        window.open(guideSetting.url, '_blank');
-                    };
-                    
-                    // Remove old handler if exists
-                    guideButton.removeEventListener('click', handleClick);
-                    guideButton.addEventListener('click', handleClick);
+                    guideButton.href = guideSetting.url;
+                    guideButton.target = '_blank';
+                    guideButton.rel = 'noopener noreferrer';
                 } else {
                     guideButton.setAttribute('disabled', 'true');
+                    guideButton.removeAttribute('href');
                     guideButton.title = 'Guide not available';
                 }
             });
