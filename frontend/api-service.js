@@ -168,53 +168,24 @@ export class APIService {
     // Regular user authentication methods
     async login(username, password) {
         try {
-            const apiBaseUrl = this.baseUrl;
-            console.log('Attempting login:', { 
-                username, 
-                url: `${apiBaseUrl}/users/login`
-            });
-            
-            if (!apiBaseUrl) {
-                throw new Error('API configuration error');
-            }
-
-            const response = await fetch(`${apiBaseUrl}/users/login`, {
+            const response = await fetch(`${this.apiBaseUrl}/users/login`, {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
+                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ username, password })
             });
 
-            // Read response as text first
-            const text = await response.text();
-            console.log('Login response text:', text);
-
-            // Parse as JSON
-            let data;
-            try {
-                data = JSON.parse(text);
-            } catch (e) {
-                console.error('Failed to parse response as JSON:', e);
-                throw new Error('Invalid response from server');
-            }
-
+            const data = await response.json();
+            
             if (!response.ok) {
-                throw new Error(data.message || 'Login failed');
+                throw new Error(data.message);
             }
 
-            // Store the token
-            if (data.token) {
-                localStorage.setItem('token', data.token);
-                localStorage.setItem('username', username);
-                console.log('Auth token stored successfully');
-            } else {
-                console.warn('No auth token received from server');
-            }
-
+            // Store token and username
+            localStorage.setItem('token', data.token);
+            localStorage.setItem('username', data.username);
+            
             return data;
         } catch (error) {
-            console.error('Login error:', error);
             throw error;
         }
     }

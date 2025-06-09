@@ -66,58 +66,30 @@ router.post('/register', async (req, res) => {
     }
 });
 
-// Login user
+// Login user - minimal implementation
 router.post('/login', async (req, res) => {
+    const { username, password } = req.body;
+
     try {
-        const { username, password } = req.body;
-
-        // Basic validation
-        if (!username || !password) {
-            return res.status(400).json({
-                success: false,
-                message: 'Username and password are required'
-            });
-        }
-
-        // Find user with minimal fields
-        const user = await User.findOne({ username }).select('username password').lean();
-        
+        // Find user
+        const user = await User.findOne({ username });
         if (!user) {
-            return res.status(401).json({
-                success: false,
-                message: 'Invalid credentials'
-            });
+            return res.status(401).json({ message: 'Invalid credentials' });
         }
 
         // Check password
         const isMatch = await bcrypt.compare(password, user.password);
         if (!isMatch) {
-            return res.status(401).json({
-                success: false,
-                message: 'Invalid credentials'
-            });
+            return res.status(401).json({ message: 'Invalid credentials' });
         }
 
-        // Generate token
-        const token = jwt.sign(
-            { id: user._id },
-            process.env.JWT_SECRET,
-            { expiresIn: '24h' }
-        );
+        // Create token
+        const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, { expiresIn: '24h' });
 
-        // Send response
-        return res.json({
-            success: true,
-            message: 'Login successful',
-            token,
-            username: user.username
-        });
+        // Return success
+        res.json({ token, username });
     } catch (error) {
-        console.error('Login error:', error);
-        return res.status(500).json({
-            success: false,
-            message: 'Server error during login'
-        });
+        res.status(500).json({ message: 'Server error' });
     }
 });
 
