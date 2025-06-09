@@ -2040,104 +2040,41 @@ export class APIService {
     async fetchGuideSettings(quizName) {
         console.log(`[API] Fetching guide settings${quizName ? ` for quiz: ${quizName}` : ''}`);
         
-        // Construct the URL carefully with proper encoding
-        const url = quizName 
-            ? `${this.baseUrl}/guide-settings/${encodeURIComponent(this.normalizeQuizName(quizName))}`
-            : `${this.baseUrl}/guide-settings`;
-        console.log(`[API] Guide settings URL: ${url}`);
-        
         try {
-            // Make the API request with regular auth since this is a public endpoint
-            const response = await this.fetchWithAuth(url);
+            // Make the API request
+            const response = await this.fetchWithAuth(`${this.baseUrl}/guide-settings`, {
+                method: 'GET',
+                headers: {
+                    'Accept': 'application/json'
+                }
+            });
+            
+            console.log('[API] Guide settings response:', response);
             
             if (response.success && response.data) {
-                // Save to localStorage for future use
+                // Save to localStorage for backup
                 try {
-                    if (!quizName) {
-                        localStorage.setItem('guideSettings', JSON.stringify(response.data));
-                        console.log('[API] Saved all guide settings to localStorage');
-                    } else {
-                        const existingSettingsJson = localStorage.getItem('guideSettings');
-                        const existingSettings = existingSettingsJson ? JSON.parse(existingSettingsJson) : {};
-                        const normalizedQuizName = this.normalizeQuizName(quizName);
-                        existingSettings[normalizedQuizName] = response.data;
-                        localStorage.setItem('guideSettings', JSON.stringify(existingSettings));
-                        console.log(`[API] Saved guide settings for ${normalizedQuizName} to localStorage`);
-                    }
+                    localStorage.setItem('guideSettings', JSON.stringify(response.data));
+                    console.log('[API] Saved guide settings to localStorage');
                 } catch (e) {
                     console.warn('[API] Error saving guide settings to localStorage:', e);
                 }
                 
                 return response;
-            } else {
-                console.warn(`[API] Invalid guide settings response:`, response);
-                
-                // Try localStorage as fallback
-                try {
-                    const settingsJson = localStorage.getItem('guideSettings');
-                    if (settingsJson) {
-                        const settings = JSON.parse(settingsJson);
-                        if (quizName) {
-                            const normalizedQuizName = this.normalizeQuizName(quizName);
-                            if (settings && settings[normalizedQuizName]) {
-                                console.log(`[API] Using localStorage fallback for ${normalizedQuizName} after invalid response`);
-                                return {
-                                    success: true,
-                                    data: settings[normalizedQuizName],
-                                    source: 'localStorage-fallback'
-                                };
-                            }
-                        } else {
-                            console.log(`[API] Using localStorage fallback for all guide settings after invalid response`);
-                            return {
-                                success: true,
-                                data: settings,
-                                source: 'localStorage-fallback'
-                            };
-                        }
-                    }
-                } catch (e) {
-                    console.warn(`[API] Error checking localStorage fallback:`, e);
-                }
-                
-                throw new Error('Invalid response format from API');
             }
+            
+            console.warn('[API] Invalid guide settings response:', response);
+            return {
+                success: false,
+                message: 'Invalid response from API',
+                data: {}
+            };
         } catch (error) {
-            console.error(`[API] Error fetching guide settings:`, error);
-            
-            // Try localStorage as fallback
-            try {
-                const settingsJson = localStorage.getItem('guideSettings');
-                if (settingsJson) {
-                    const settings = JSON.parse(settingsJson);
-                    if (quizName) {
-                        const normalizedQuizName = this.normalizeQuizName(quizName);
-                        if (settings && settings[normalizedQuizName]) {
-                            console.log(`[API] Using localStorage fallback for ${normalizedQuizName} after error`);
-                            return {
-                                success: true,
-                                data: settings[normalizedQuizName],
-                                source: 'localStorage-fallback'
-                            };
-                        }
-                    } else {
-                        console.log(`[API] Using localStorage fallback for all guide settings after error`);
-                        return {
-                            success: true,
-                            data: settings,
-                            source: 'localStorage-fallback'
-                        };
-                    }
-                }
-            } catch (e) {
-                console.warn(`[API] Error checking localStorage fallback:`, e);
-            }
-            
-            // Return empty data if all else fails
+            console.error('[API] Error fetching guide settings:', error);
             return {
                 success: false,
                 message: error.message,
-                data: quizName ? { url: null, enabled: false } : {}
+                data: {}
             };
         }
     }

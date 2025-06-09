@@ -125,7 +125,7 @@ export class QuizList {
                                     <div class="quiz-description">${this.getQuizDescription(quizName)}</div>
                                 </div>
                             </a>
-                            <div class="guide-button-container" style="display: none;">
+                            <div class="guide-button-container">
                                 <a class="quiz-guide-button" 
                                    data-quiz="${quizLower}" 
                                    href="#" 

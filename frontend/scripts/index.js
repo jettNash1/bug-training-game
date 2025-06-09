@@ -748,7 +748,7 @@ class IndexPage {
                 console.log(`[Index] Available guide for ${quiz}:`, settings);
             });
             
-            // Get all guide buttons
+            // Get all quiz items
             const allQuizItems = this.quizItems;
             console.log('[Index] Found quiz items:', allQuizItems.length);
             
