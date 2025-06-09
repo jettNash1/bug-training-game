@@ -39,29 +39,20 @@ export class APIService {
     
     // Helper method to get the API base URL with fallback logic
     getApiBaseUrl() {
-        try {
-            // First try to use the config
-            if (config && config.apiUrl) {
-                return config.apiUrl;
-            }
-        } catch (error) {
-            console.warn('Error accessing config.apiUrl:', error);
+        // For S3 website, always use the Render API
+        if (window.location.hostname.includes('s3-website') ||
+            window.location.hostname.includes('amazonaws.com')) {
+            return 'https://bug-training-game-api.onrender.com/api';
         }
         
-        // Fallback logic if config is not available
+        // For Render website
         if (window.location.hostname.includes('render.com') || 
             window.location.hostname === 'bug-training-game.onrender.com') {
             return 'https://bug-training-game-api.onrender.com/api';
-        } 
-        else if (window.location.hostname.includes('amazonaws.com') || 
-                 window.location.hostname.includes('s3-website') ||
-                 window.location.hostname.includes('learning-hub')) {
-            // Use the current origin for AWS hosted site
-            return `${window.location.origin}/api`;
         }
         
         // Local development
-        return '/api';
+        return 'http://localhost:10000/api';
     }
 
     // Helper method to get admin auth header
