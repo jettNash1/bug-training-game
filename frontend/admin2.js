@@ -1605,7 +1605,9 @@ export class Admin2Dashboard {
             'performance-testing',
             'automation-testing',
             'game-testing',
-            'localization-testing'
+            'localization-testing',
+            'reports',
+            'raising-tickets'
         ];
     }
 

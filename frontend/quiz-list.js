@@ -23,7 +23,8 @@ export const QUIZ_CATEGORIES = {
         'risk-management',
         'non-functional',
         'issue-verification',
-        'issue-tracking-tools'
+        'issue-tracking-tools',
+        'raising-tickets'
     ],
     'Content Testing': [
         'cms-testing',
@@ -186,7 +187,8 @@ export class QuizList {
             'issue-verification': 'Verify issues in testing scenarios',
             'build-verification': 'Verify builds in testing scenarios',
             'issue-tracking-tools': 'Use issue tracking tools effectively',
-            'reports': 'Create and analyze reports',
+            'reports': 'Create and analyze test reports effectively',
+            'raising-tickets': 'Learn best practices for raising and managing tickets',
             'cms-testing': 'Test CMS systems',
             'email-testing': 'Test email functionality',
             'content-copy': 'Test content copying',

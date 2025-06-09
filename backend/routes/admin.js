@@ -1406,7 +1406,7 @@ router.get('/quiz-types', auth, async (req, res) => {
 
         // Filter and process quiz files
         const quizTypes = files
-            .filter(file => file.endsWith('-quiz.js') || file === 'standard-script-testing.js' || file === 'automation-interview.js')
+            .filter(file => file.endsWith('-quiz.js') || file === 'standard-script-testing.js' || file === 'automation-interview.js' || file === 'reports.js' || file === 'raising-tickets.js')
             .map(file => {
                 // Remove the -quiz.js suffix and convert to lowercase
                 let quizName = file.replace('-quiz.js', '').replace('.js', '');
@@ -1417,6 +1417,14 @@ router.get('/quiz-types', auth, async (req, res) => {
                 return quizName.toLowerCase();
             })
             .sort(); // Sort alphabetically
+
+        // Add additional quiz types that might not be in files
+        const additionalQuizTypes = ['reports', 'raising-tickets'];
+        additionalQuizTypes.forEach(type => {
+            if (!quizTypes.includes(type)) {
+                quizTypes.push(type);
+            }
+        });
 
         console.log('Found quiz types:', quizTypes);
         
