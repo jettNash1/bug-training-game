@@ -92,8 +92,7 @@ const corsOptions = {
     'Accept',
     'Accept-Language',
     'Accept-Encoding',
-    'Origin',
-    'authority'
+    'Origin'
   ],
   exposedHeaders: ['Authorization'],
   maxAge: 86400 // 24 hours
@@ -115,7 +114,7 @@ app.use((req, res, next) => {
       'Access-Control-Allow-Origin': origin,
       'Access-Control-Allow-Credentials': 'true',
       'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS, PATCH',
-      'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-Requested-With, Accept, Accept-Language, Accept-Encoding, Origin, authority',
+      'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-Requested-With, Accept, Accept-Language, Accept-Encoding, Origin',
       'Access-Control-Expose-Headers': 'Authorization'
     });
   }

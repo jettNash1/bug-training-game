@@ -173,8 +173,7 @@ export class APIService {
                     'Accept': '*/*',
                     'Accept-Language': 'en-GB,en-US;q=0.9,en;q=0.8',
                     'Accept-Encoding': 'gzip, deflate, br, zstd',
-                    'Origin': 'http://learning-hub.s3-website.eu-west-2.amazonaws.com',
-                    'authority': 'bug-training-game-api.onrender.com'
+                    'Origin': 'http://learning-hub.s3-website.eu-west-2.amazonaws.com'
                 },
                 credentials: 'include',
                 mode: 'cors',
