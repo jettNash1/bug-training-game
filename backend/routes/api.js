@@ -120,15 +120,26 @@ router.get('/guide-settings', auth, async (req, res) => {
             });
         }
         
-        console.log(`[API] Found guide settings for ${Object.keys(settings.value).length} quizzes:`, settings.value);
+        // Filter out any invalid or disabled guide settings
+        const validSettings = {};
+        Object.entries(settings.value).forEach(([quiz, setting]) => {
+            if (setting && setting.url && setting.enabled) {
+                validSettings[quiz] = {
+                    url: setting.url.trim(),
+                    enabled: Boolean(setting.enabled)
+                };
+            }
+        });
         
-        // Return all guide settings
+        console.log(`[API] Found ${Object.keys(validSettings).length} valid guide settings:`, validSettings);
+        
+        // Return all valid guide settings
         res.json({
             success: true,
-            data: settings.value
+            data: validSettings
         });
     } catch (error) {
-        console.error(`[API] Error fetching all guide settings`, error);
+        console.error('Error fetching guide settings:', error);
         res.status(500).json({
             success: false,
             message: 'Failed to fetch guide settings'

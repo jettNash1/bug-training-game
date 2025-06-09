@@ -2049,25 +2049,42 @@ export class APIService {
                 }
             });
             
-            console.log('[API] Guide settings response:', response);
+            console.log('[API] Raw guide settings response:', response);
             
-            if (response.success && response.data) {
-                // Save to localStorage for backup
-                try {
-                    localStorage.setItem('guideSettings', JSON.stringify(response.data));
-                    console.log('[API] Saved guide settings to localStorage');
-                } catch (e) {
-                    console.warn('[API] Error saving guide settings to localStorage:', e);
-                }
-                
-                return response;
+            if (!response || !response.success) {
+                console.warn('[API] Failed to fetch guide settings:', response);
+                return {
+                    success: false,
+                    message: 'Failed to fetch guide settings',
+                    data: {}
+                };
             }
             
-            console.warn('[API] Invalid guide settings response:', response);
+            // Normalize the response data to ensure proper quiz name matching
+            const normalizedData = {};
+            Object.entries(response.data || {}).forEach(([quiz, settings]) => {
+                const normalizedQuiz = this.normalizeQuizName(quiz);
+                if (settings && settings.url && settings.enabled) {
+                    normalizedData[normalizedQuiz] = {
+                        url: settings.url.trim(),
+                        enabled: Boolean(settings.enabled)
+                    };
+                }
+            });
+            
+            console.log('[API] Normalized guide settings:', normalizedData);
+            
+            // Save to localStorage for backup
+            try {
+                localStorage.setItem('guideSettings', JSON.stringify(normalizedData));
+                console.log('[API] Saved normalized guide settings to localStorage');
+            } catch (e) {
+                console.warn('[API] Error saving guide settings to localStorage:', e);
+            }
+            
             return {
-                success: false,
-                message: 'Invalid response from API',
-                data: {}
+                success: true,
+                data: normalizedData
             };
         } catch (error) {
             console.error('[API] Error fetching guide settings:', error);
