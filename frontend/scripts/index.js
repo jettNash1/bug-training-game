@@ -737,6 +737,11 @@ class IndexPage {
             const response = await this.apiService.fetchGuideSettings();
             console.log('[Index] Guide settings response:', response);
             
+            if (!response || !response.success) {
+                console.warn('[Index] Failed to load guide settings:', response);
+                return;
+            }
+            
             // Get all guide buttons
             this.quizItems.forEach(item => {
                 const quizId = item.dataset.quiz;
@@ -746,20 +751,26 @@ class IndexPage {
                 if (!guideButton) return;
                 
                 // Get guide settings for this quiz
-                const guideSetting = response?.data?.[quizId.toLowerCase()] || {};
-                const hasValidUrl = guideSetting.url && guideSetting.enabled;
+                const guideSetting = response.data[quizId.toLowerCase()];
+                console.log(`[Index] Guide setting for ${quizId}:`, guideSetting);
                 
                 // Update button state
-                if (hasValidUrl) {
+                if (guideSetting && guideSetting.url && guideSetting.enabled) {
                     guideButton.removeAttribute('disabled');
                     guideButton.title = 'Click to view guide';
                     guideButton.href = guideSetting.url;
                     guideButton.target = '_blank';
                     guideButton.rel = 'noopener noreferrer';
+                    guideButton.style.opacity = '1';
+                    guideButton.style.cursor = 'pointer';
+                    console.log(`[Index] Enabled guide button for ${quizId} with URL: ${guideSetting.url}`);
                 } else {
                     guideButton.setAttribute('disabled', 'true');
                     guideButton.removeAttribute('href');
                     guideButton.title = 'Guide not available';
+                    guideButton.style.opacity = '0.5';
+                    guideButton.style.cursor = 'not-allowed';
+                    console.log(`[Index] Disabled guide button for ${quizId} (no valid guide setting)`);
                 }
             });
             
