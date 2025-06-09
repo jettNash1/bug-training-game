@@ -737,37 +737,52 @@ class IndexPage {
             const response = await this.apiService.fetchGuideSettings();
             console.log('[Index] Guide settings response:', response);
             
-            if (!response || !response.success || !response.data) {
-                console.log('[Index] No guide settings found');
-                return;
-            }
+            const guideSettings = (response && response.success && response.data) ? response.data : {};
             
             // Add guide button to each quiz item
             this.quizItems.forEach(item => {
                 const quizId = item.dataset.quiz;
                 if (!quizId) return;
                 
-                const guideSetting = response.data[quizId.toLowerCase()];
-                if (guideSetting && guideSetting.enabled && guideSetting.url) {
-                    // Create guide button container
-                    const buttonContainer = document.createElement('div');
-                    buttonContainer.className = 'guide-button-container';
-                    
-                    // Create guide button
-                    const guideButton = document.createElement('a');
+                // Get guide settings for this quiz
+                const guideSetting = guideSettings[quizId.toLowerCase()];
+                const hasValidUrl = guideSetting && guideSetting.enabled && guideSetting.url;
+                
+                // Create guide button container
+                const buttonContainer = document.createElement('div');
+                buttonContainer.className = 'guide-button-container';
+                
+                // Create guide button
+                const guideButton = document.createElement('a');
+                guideButton.className = 'quiz-guide-button';
+                guideButton.textContent = 'Guide';
+                
+                if (hasValidUrl) {
+                    // Enable the button with the URL
                     guideButton.href = guideSetting.url;
                     guideButton.target = '_blank';
-                    guideButton.className = 'quiz-guide-button';
-                    guideButton.textContent = 'Guide';
-                    
-                    // Add button to container
-                    buttonContainer.appendChild(guideButton);
-                    
-                    // Add container to quiz info section
-                    const quizInfo = item.querySelector('.quiz-info');
-                    if (quizInfo) {
-                        quizInfo.appendChild(buttonContainer);
+                    guideButton.style.opacity = '1';
+                    guideButton.style.cursor = 'pointer';
+                } else {
+                    // Disable the button when no URL is set
+                    guideButton.style.opacity = '0.5';
+                    guideButton.style.cursor = 'not-allowed';
+                    guideButton.style.pointerEvents = 'none';
+                    guideButton.title = 'Guide not available';
+                }
+                
+                // Add button to container
+                buttonContainer.appendChild(guideButton);
+                
+                // Add container to quiz info section
+                const quizInfo = item.querySelector('.quiz-info');
+                if (quizInfo) {
+                    // Remove any existing guide button first
+                    const existingButton = quizInfo.querySelector('.guide-button-container');
+                    if (existingButton) {
+                        existingButton.remove();
                     }
+                    quizInfo.appendChild(buttonContainer);
                 }
             });
         } catch (error) {
