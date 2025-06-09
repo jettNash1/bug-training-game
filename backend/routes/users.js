@@ -72,48 +72,45 @@ router.post('/login', async (req, res) => {
         const { username, password } = req.body;
         
         if (!username || !password) {
-            console.log('Missing credentials:', { username: !!username, password: !!password });
             return res.status(400).json({ 
                 success: false,
                 message: 'Username and password are required' 
             });
         }
 
-        // Find user and select only needed fields
+        // Find user with minimal fields
         const user = await User.findOne(
             { username }, 
-            'username password' // Only select fields we need
-        ).lean(); // Use lean() for faster query
+            'username password'
+        ).lean();
         
         if (!user) {
-            console.log('User not found:', username);
             return res.status(401).json({ 
                 success: false,
                 message: 'Invalid credentials' 
             });
         }
 
-        // Check password using bcrypt directly since we're using lean()
+        // Verify password
         const isMatch = await bcrypt.compare(password, user.password);
         if (!isMatch) {
-            console.log('Invalid password for user:', username);
             return res.status(401).json({ 
                 success: false,
                 message: 'Invalid credentials' 
             });
         }
 
-        // Create tokens
+        // Generate tokens
         const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, { expiresIn: '1h' });
         const refreshToken = jwt.sign({ id: user._id }, process.env.JWT_REFRESH_SECRET, { expiresIn: '7d' });
 
-        // Update lastLogin in the background without waiting
+        // Update lastLogin asynchronously
         User.updateOne(
             { _id: user._id },
             { $set: { lastLogin: new Date() } }
         ).catch(err => console.error('Failed to update lastLogin:', err));
-        
-        console.log('Login successful for user:', username);
+
+        // Send response
         return res.json({ 
             success: true,
             message: 'Login successful',
@@ -125,8 +122,7 @@ router.post('/login', async (req, res) => {
         console.error('Login error:', error);
         return res.status(500).json({ 
             success: false,
-            message: 'Server error during login',
-            error: process.env.NODE_ENV === 'production' ? null : error.message
+            message: 'Server error during login'
         });
     }
 });

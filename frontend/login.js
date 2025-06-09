@@ -73,15 +73,15 @@ document.addEventListener('DOMContentLoaded', () => {
     const loginButton = document.getElementById('loginButton');
     if (loginButton) {
         loginButton.addEventListener('click', async () => {
-            const username = document.getElementById('loginUsername').value;
+            const username = document.getElementById('loginUsername').value.trim();
             const password = document.getElementById('loginPassword').value;
 
+            // Basic validation
             if (!username || !password) {
                 showError('Please enter both username and password');
                 return;
             }
 
-            // Add length validation
             if (username.length < MIN_USERNAME_LENGTH) {
                 showError(`Username must be at least ${MIN_USERNAME_LENGTH} characters long`);
                 return;
@@ -94,37 +94,21 @@ document.addEventListener('DOMContentLoaded', () => {
 
             try {
                 const response = await api.login(username, password);
-                console.log('Login response:', response);
                 
                 if (response.success && response.token) {
-                    console.log('Login successful, storing tokens...');
-                    // Store tokens first
+                    // Store tokens
                     setAuthToken(response.token);
                     setRefreshToken(response.refreshToken);
                     localStorage.setItem('username', username);
                     
-                    // Small delay to ensure tokens are stored
-                    await new Promise(resolve => setTimeout(resolve, 100));
-                    
-                    // Sync all quiz progress for legacy users (badges)
-                    try {
-                        const { QuizUser } = await import('./QuizUser.js');
-                        const user = new QuizUser(username);
-                        await user.syncAllQuizProgressOnLogin();
-                    } catch (syncError) {
-                        console.warn('Progress sync on login failed:', syncError);
-                    }
-                    
-                    // Then redirect
-                    console.log('Tokens stored, redirecting to index...');
+                    // Redirect to home page
                     window.location.replace('/');
                 } else {
-                    console.log('Login failed:', response);
-                    showError(response.message || 'Login failed. Please check your credentials.');
+                    showError(response.message || 'Login failed');
                 }
             } catch (error) {
-                console.error('Login failed:', error);
-                showError('Login failed. Please check your credentials and try again.');
+                console.error('Login error:', error);
+                showError(error.message || 'Login failed. Please try again.');
             }
         });
     }
