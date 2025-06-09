@@ -602,34 +602,8 @@ export class APIService {
         // Normalize to lowercase and trim
         const lowerName = typeof quizName === 'string' ? quizName.toLowerCase().trim() : '';
         
-        // List of known quiz names for exact matching
-        const knownQuizNames = [
-            'communication', 
-            'initiative', 
-            'time-management', 
-            'tester-mindset',
-            'risk-analysis', 
-            'risk-management', 
-            'non-functional', 
-            'test-support',
-            'issue-verification', 
-            'build-verification', 
-            'issue-tracking-tools',
-            'raising-tickets', 
-            'reports', 
-            'cms-testing', 
-            'email-testing', 
-            'content-copy',
-            'locale-testing', 
-            'script-metrics-troubleshooting', 
-            'standard-script-testing',
-            'test-types-tricks', 
-            'automation-interview', 
-            'fully-scripted', 
-            'exploratory',
-            'sanity-smoke', 
-            'functional-interview'
-        ];
+        // Get the list of known quiz names from QUIZ_CATEGORIES
+        const knownQuizNames = Object.values(QUIZ_CATEGORIES).flat().map(name => name.toLowerCase());
         
         // If it's an exact match with our known list, return it directly
         if (knownQuizNames.includes(lowerName)) {

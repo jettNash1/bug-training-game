@@ -344,40 +344,6 @@ class IndexPage {
             } catch (error) {
                 console.warn('[Index] Error loading quiz results:', error);
             }
-
-            // --- MIGRATION: Move any legacy tester-mindset keys to kebab-case ---
-            const legacyKeys = Object.keys(quizProgress).filter(k => k.toLowerCase().replace(/[_\s]/g, '-').includes('tester') && k !== 'tester-mindset');
-            legacyKeys.forEach(legacyKey => {
-                if (!quizProgress['tester-mindset']) {
-                    quizProgress['tester-mindset'] = quizProgress[legacyKey];
-                }
-                delete quizProgress[legacyKey];
-            });
-            quizResults = quizResults.map(result => {
-                if (typeof result.quizName === 'string' && result.quizName.toLowerCase().replace(/[_\s]/g, '-').includes('tester') && result.quizName !== 'tester-mindset') {
-                    return { ...result, quizName: 'tester-mindset' };
-                }
-                return result;
-            });
-            // --- END MIGRATION ---
-
-            // --- Robust progress sync for legacy users ---
-            for (const result of quizResults) {
-                const quizName = this.quizProgressService.normalizeQuizName(result.quizName);
-                const progress = quizProgress[quizName];
-                // If no progress or not completed, reconstruct and save
-                if (!progress || progress.status !== 'completed') {
-                    await this.quizProgressService.saveQuizProgress(quizName, {
-                        experience: result.experience,
-                        questionsAnswered: result.questionsAnswered,
-                        status: 'completed',
-                        scorePercentage: result.score,
-                        questionHistory: result.questionHistory || [],
-                        lastUpdated: result.completedAt || new Date().toISOString()
-                    });
-                }
-            }
-            // --- End robust sync ---
             
             console.log('[Index] Final quiz progress after all checks:', quizProgress);
             
@@ -406,15 +372,16 @@ class IndexPage {
                         status: 'not-started',
                         scorePercentage: 0
                     };
+                    
                     // Apply result data if available
                     if (result) {
                         combinedData.score = result.score || 0;
                         combinedData.scorePercentage = result.scorePercentage || result.score || 0;
                         combinedData.experience = result.experience || 0;
                     }
+                    
                     // Apply progress data if available (overrides result data)
                     if (progress) {
-                        // Questionsanswered should already be fixed by the QuizProgressService
                         combinedData.questionsAnswered = progress.questionsAnswered || 0;
                         combinedData.status = progress.status || 'not-started';
                         combinedData.tools = progress.tools || [];
@@ -829,15 +796,49 @@ class IndexPage {
     async refreshAllQuizProgress() {
         console.log('[Index] Refreshing all quiz progress');
         
-        // Don't show loading overlay for refresh
-        await this.loadUserProgress();
-        this.updateQuizProgress();
-        this.updateCategoryProgress();
-        
-        // Re-add guide buttons after refresh
-        await this.loadGuideSettingsAndAddButtons();
-        
-        console.log('[Index] Quiz progress refresh complete');
+        try {
+            // Store existing guide buttons before refresh
+            const existingGuideButtons = {};
+            this.quizItems.forEach(item => {
+                const quizId = item.dataset.quiz;
+                const guideButton = item.querySelector('.quiz-guide-button');
+                if (guideButton) {
+                    existingGuideButtons[quizId] = {
+                        href: guideButton.href,
+                        text: guideButton.textContent
+                    };
+                }
+            });
+            
+            // Update quiz progress
+            await this.loadUserProgress();
+            this.updateQuizProgress();
+            this.updateCategoryProgress();
+            
+            // Restore guide buttons
+            Object.entries(existingGuideButtons).forEach(([quizId, buttonData]) => {
+                const quizItem = Array.from(this.quizItems).find(item => item.dataset.quiz === quizId);
+                if (quizItem) {
+                    const guideButton = document.createElement('a');
+                    guideButton.className = 'quiz-guide-button';
+                    guideButton.href = buttonData.href;
+                    guideButton.textContent = buttonData.text;
+                    guideButton.target = '_blank';
+                    guideButton.setAttribute('data-quiz-id', quizId);
+                    guideButton.setAttribute('aria-label', `Open guide for ${quizId}`);
+                    
+                    // Add to quiz info section
+                    const quizInfo = quizItem.querySelector('.quiz-info');
+                    if (quizInfo) {
+                        quizInfo.appendChild(guideButton);
+                    }
+                }
+            });
+            
+            console.log('[Index] Quiz progress refresh complete');
+        } catch (error) {
+            console.error('[Index] Error during quiz progress refresh:', error);
+        }
     }
 }
 

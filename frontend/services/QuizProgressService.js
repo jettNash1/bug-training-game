@@ -46,50 +46,63 @@ export class QuizProgressService {
     }
     
     /**
-     * Normalize a quiz name to a consistent format
+     * Normalize quiz name to ensure consistent storage and retrieval
      * @param {string} quizName - The quiz name to normalize
      * @returns {string} - The normalized quiz name
      */
     normalizeQuizName(quizName) {
         if (!quizName) return '';
         
-        // Normalize to lowercase and trim
-        const lowerName = typeof quizName === 'string' ? quizName.toLowerCase().trim() : '';
+        // Convert to lowercase and trim
+        let normalized = quizName.toLowerCase().trim();
         
-        // If it's an exact match with our known list, return it directly (fastest path)
-        if (KNOWN_QUIZ_NAMES.includes(lowerName)) {
-            return lowerName;
+        // Replace spaces and underscores with hyphens
+        normalized = normalized.replace(/[\s_]+/g, '-');
+        
+        // Remove any non-alphanumeric characters (except hyphens)
+        normalized = normalized.replace(/[^a-z0-9-]/g, '');
+        
+        // Remove multiple consecutive hyphens
+        normalized = normalized.replace(/-+/g, '-');
+        
+        // Remove leading/trailing hyphens
+        normalized = normalized.replace(/^-+|-+$/g, '');
+        
+        // Special case for known quiz names
+        const knownQuizNames = [
+            'tester-mindset',
+            'communication',
+            'initiative',
+            'standard-script-testing',
+            'fully-scripted',
+            'exploratory',
+            'script-metrics-troubleshooting',
+            'locale-testing',
+            'build-verification',
+            'test-types-tricks',
+            'test-support',
+            'sanity-smoke',
+            'time-management',
+            'risk-analysis',
+            'risk-management',
+            'issue-tracking-tools',
+            'raising-tickets',
+            'issue-verification',
+            'reports',
+            'cms-testing',
+            'email-testing',
+            'non-functional',
+            'content-copy',
+            'automation-interview',
+            'functional-interview'
+        ];
+        
+        // If the normalized name matches a known quiz name (case-insensitive), use the known name
+        const knownQuiz = knownQuizNames.find(name => name === normalized);
+        if (knownQuiz) {
+            return knownQuiz;
         }
         
-        // Otherwise normalize to kebab-case for consistency
-        const normalized = lowerName
-            .replace(/([A-Z])/g, '-$1')  // Convert camelCase to kebab-case
-            .replace(/_/g, '-')          // Convert snake_case to kebab-case
-            .replace(/\s+/g, '-')        // Convert spaces to hyphens
-            .replace(/-+/g, '-')         // Remove duplicate hyphens
-            .replace(/^-|-$/g, '')       // Remove leading/trailing hyphens
-            .toLowerCase();              // Ensure lowercase
-        
-        // Check if normalized version is in known list
-        if (KNOWN_QUIZ_NAMES.includes(normalized)) {
-            return normalized;
-        }
-        
-        // Special case handling for specific quizzes for backward compatibility
-        if (normalized.includes('tester') && normalized.includes('mindset')) {
-            return 'tester-mindset';
-        }
-        
-        if (normalized.includes('script') && normalized.includes('metric')) {
-            return 'script-metrics-troubleshooting';
-        }
-        
-        if (normalized.includes('cms') && normalized.includes('test')) {
-            return 'cms-testing';
-        }
-        
-        // For all other cases, return the normalized form but log a warning
-        console.warn(`[QuizProgress] Unrecognized quiz name: ${quizName}, normalized to: ${normalized}`);
         return normalized;
     }
     
