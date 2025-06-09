@@ -96,12 +96,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 const response = await api.login(username, password);
                 
                 if (response.success && response.token) {
-                    // Store tokens
+                    // Store token and redirect
                     setAuthToken(response.token);
-                    setRefreshToken(response.refreshToken);
-                    localStorage.setItem('username', username);
-                    
-                    // Redirect to home page
                     window.location.replace('/');
                 } else {
                     showError(response.message || 'Login failed');

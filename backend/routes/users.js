@@ -70,57 +70,51 @@ router.post('/register', async (req, res) => {
 router.post('/login', async (req, res) => {
     try {
         const { username, password } = req.body;
-        
+
+        // Basic validation
         if (!username || !password) {
-            return res.status(400).json({ 
+            return res.status(400).json({
                 success: false,
-                message: 'Username and password are required' 
+                message: 'Username and password are required'
             });
         }
 
         // Find user with minimal fields
-        const user = await User.findOne(
-            { username }, 
-            'username password'
-        ).lean();
+        const user = await User.findOne({ username }).select('username password').lean();
         
         if (!user) {
-            return res.status(401).json({ 
+            return res.status(401).json({
                 success: false,
-                message: 'Invalid credentials' 
+                message: 'Invalid credentials'
             });
         }
 
-        // Verify password
+        // Check password
         const isMatch = await bcrypt.compare(password, user.password);
         if (!isMatch) {
-            return res.status(401).json({ 
+            return res.status(401).json({
                 success: false,
-                message: 'Invalid credentials' 
+                message: 'Invalid credentials'
             });
         }
 
-        // Generate tokens
-        const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, { expiresIn: '1h' });
-        const refreshToken = jwt.sign({ id: user._id }, process.env.JWT_REFRESH_SECRET, { expiresIn: '7d' });
-
-        // Update lastLogin asynchronously
-        User.updateOne(
-            { _id: user._id },
-            { $set: { lastLogin: new Date() } }
-        ).catch(err => console.error('Failed to update lastLogin:', err));
+        // Generate token
+        const token = jwt.sign(
+            { id: user._id },
+            process.env.JWT_SECRET,
+            { expiresIn: '24h' }
+        );
 
         // Send response
-        return res.json({ 
+        return res.json({
             success: true,
             message: 'Login successful',
             token,
-            refreshToken,
             username: user.username
         });
     } catch (error) {
         console.error('Login error:', error);
-        return res.status(500).json({ 
+        return res.status(500).json({
             success: false,
             message: 'Server error during login'
         });

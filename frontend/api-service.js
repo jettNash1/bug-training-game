@@ -171,50 +171,45 @@ export class APIService {
             const apiBaseUrl = this.baseUrl;
             console.log('Attempting login:', { 
                 username, 
-                url: `${apiBaseUrl}/users/login`,
-                origin: window.location.origin
+                url: `${apiBaseUrl}/users/login`
             });
             
             if (!apiBaseUrl) {
                 throw new Error('API configuration error');
             }
-            
+
             const response = await fetch(`${apiBaseUrl}/users/login`, {
                 method: 'POST',
                 headers: {
-                    'Content-Type': 'application/json',
-                    'Accept': 'application/json'
+                    'Content-Type': 'application/json'
                 },
-                credentials: 'include',
-                mode: 'cors',
                 body: JSON.stringify({ username, password })
             });
 
-            console.log('Login response:', {
-                status: response.status,
-                statusText: response.statusText,
-                headers: {
-                    'access-control-allow-origin': response.headers.get('access-control-allow-origin'),
-                    'access-control-allow-credentials': response.headers.get('access-control-allow-credentials')
-                }
-            });
-            
-            if (!response.ok) {
-                const errorData = await response.json().catch(() => ({ message: 'Login failed' }));
-                throw new Error(errorData.message || 'Login failed');
+            // Read response as text first
+            const text = await response.text();
+            console.log('Login response text:', text);
+
+            // Parse as JSON
+            let data;
+            try {
+                data = JSON.parse(text);
+            } catch (e) {
+                console.error('Failed to parse response as JSON:', e);
+                throw new Error('Invalid response from server');
             }
 
-            const data = await response.json();
+            if (!response.ok) {
+                throw new Error(data.message || 'Login failed');
+            }
 
-            // Store the tokens
+            // Store the token
             if (data.token) {
                 localStorage.setItem('token', data.token);
-            }
-            if (data.refreshToken) {
-                localStorage.setItem('refreshToken', data.refreshToken);
-            }
-            if (data.username) {
-                localStorage.setItem('username', data.username);
+                localStorage.setItem('username', username);
+                console.log('Auth token stored successfully');
+            } else {
+                console.warn('No auth token received from server');
             }
 
             return data;
