@@ -749,17 +749,24 @@ class IndexPage {
                 
                 const guideSetting = response.data[quizId.toLowerCase()];
                 if (guideSetting && guideSetting.enabled && guideSetting.url) {
-                    // Create and add guide button
+                    // Create guide button container
+                    const buttonContainer = document.createElement('div');
+                    buttonContainer.className = 'guide-button-container';
+                    
+                    // Create guide button
                     const guideButton = document.createElement('a');
                     guideButton.href = guideSetting.url;
                     guideButton.target = '_blank';
                     guideButton.className = 'quiz-guide-button';
                     guideButton.textContent = 'Guide';
                     
-                    // Add to quiz info section
+                    // Add button to container
+                    buttonContainer.appendChild(guideButton);
+                    
+                    // Add container to quiz info section
                     const quizInfo = item.querySelector('.quiz-info');
                     if (quizInfo) {
-                        quizInfo.appendChild(guideButton);
+                        quizInfo.appendChild(buttonContainer);
                     }
                 }
             });
