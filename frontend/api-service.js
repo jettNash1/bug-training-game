@@ -159,66 +159,24 @@ export class APIService {
     // Regular user authentication methods
     async login(username, password) {
         try {
-            const apiBaseUrl = 'https://bug-training-game-api.onrender.com/api';
-            console.log('Attempting login:', { 
-                username, 
-                url: `${apiBaseUrl}/users/login`,
-                apiBaseUrl
-            });
-
-            const response = await fetch(`${apiBaseUrl}/users/login`, {
+            const response = await fetch('https://bug-training-game-api.onrender.com/api/users/login', {
                 method: 'POST',
                 headers: {
-                    'Content-Type': 'application/json',
-                    'Accept': '*/*',
-                    'Accept-Language': 'en-GB,en-US;q=0.9,en;q=0.8',
-                    'Accept-Encoding': 'gzip, deflate, br, zstd',
-                    'Origin': 'http://learning-hub.s3-website.eu-west-2.amazonaws.com'
+                    'Content-Type': 'application/json'
                 },
-                credentials: 'include',
-                mode: 'cors',
-                body: JSON.stringify({ username, password }),
-                signal: AbortSignal.timeout(10000) // 10 second timeout
+                body: JSON.stringify({ username, password })
             });
 
-            console.log('Login response status:', response.status);
+            const data = await response.json();
             
-            // Try to read the response text first
-            const text = await response.text();
-            console.log('Login response text:', text);
-
-            // Then parse it as JSON if possible
-            let data;
-            try {
-                data = JSON.parse(text);
-            } catch (e) {
-                console.error('Failed to parse response as JSON:', e);
-                throw new Error('Invalid response from server');
-            }
-
-            if (!response.ok) {
-                throw new Error(data.message || 'Login failed');
-            }
-
-            // Store the token in localStorage
             if (data.token) {
                 localStorage.setItem('token', data.token);
                 localStorage.setItem('username', data.username);
-                console.log('Login token stored successfully');
-            } else {
-                console.warn('No token received from server');
             }
 
             return data;
         } catch (error) {
-            // Check if this is a network error
-            if (error.name === 'TypeError' && error.message === 'Failed to fetch') {
-                console.error('Login network error - server may be unreachable:', error);
-                throw new Error('Server connection failed. Please check your network connection and try again.');
-            }
- 
-            console.error('Login error:', error);
-            throw error;
+            throw new Error('Login failed');
         }
     }
 

@@ -56,46 +56,11 @@ if (process.env.ALLOWED_ORIGINS) {
 
 // CORS configuration
 const corsOptions = {
-  origin: function(origin, callback) {
-    console.log('CORS Origin Check:', {
-      incomingOrigin: origin,
-      allowedOrigins: allowedOrigins
-    });
-    
-    // Allow requests with no origin (like mobile apps or curl requests)
-    if (!origin) {
-      console.log('No origin - allowing');
-      return callback(null, true);
-    }
-
-    // Always allow the S3 website
-    if (origin.includes('s3-website.eu-west-2.amazonaws.com')) {
-      console.log('S3 website origin allowed:', origin);
-      return callback(null, origin);
-    }
-
-    // Check if origin is allowed
-    if (allowedOrigins.includes(origin)) {
-      console.log('Origin allowed:', origin);
-      return callback(null, origin);
-    }
-
-    console.log('Origin not allowed:', origin);
-    return callback(new Error('Not allowed by CORS'));
-  },
+  origin: true, // Allow all origins
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
-  allowedHeaders: [
-    'Content-Type',
-    'Authorization',
-    'X-Requested-With',
-    'Accept',
-    'Accept-Language',
-    'Accept-Encoding',
-    'Origin'
-  ],
-  exposedHeaders: ['Authorization'],
-  maxAge: 86400 // 24 hours
+  allowedHeaders: ['Content-Type', 'Authorization'],
+  exposedHeaders: ['Authorization']
 };
 
 // Apply CORS configuration
@@ -103,23 +68,6 @@ app.use(cors(corsOptions));
 
 // Handle preflight requests explicitly
 app.options('*', cors(corsOptions));
-
-// Add CORS headers manually as a fallback
-app.use((req, res, next) => {
-  const origin = req.get('origin');
-  
-  // Always allow the S3 website
-  if (origin && origin.includes('s3-website.eu-west-2.amazonaws.com')) {
-    res.set({
-      'Access-Control-Allow-Origin': origin,
-      'Access-Control-Allow-Credentials': 'true',
-      'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS, PATCH',
-      'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-Requested-With, Accept, Accept-Language, Accept-Encoding, Origin',
-      'Access-Control-Expose-Headers': 'Authorization'
-    });
-  }
-  next();
-});
 
 // Debug logging middleware
 app.use((req, res, next) => {
