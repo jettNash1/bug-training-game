@@ -771,9 +771,9 @@ class IndexPage {
                     return;
                 }
                 
-                // Use the quiz ID directly from the data attribute since it's already normalized in quiz-list.js
-                console.log(`[Index] Looking up guide setting for ${quizId}`);
+                // Get guide settings using the quiz ID directly
                 const guideSetting = response.data[quizId];
+                console.log(`[Index] Looking up guide setting for ${quizId}:`, guideSetting);
                 
                 if (guideSetting && guideSetting.enabled && guideSetting.url) {
                     console.log(`[Index] Found enabled guide for ${quizId}:`, guideSetting);

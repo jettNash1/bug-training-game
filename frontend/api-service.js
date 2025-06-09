@@ -2060,31 +2060,21 @@ export class APIService {
                 };
             }
             
-            // Normalize the response data to ensure proper quiz name matching
-            const normalizedData = {};
-            Object.entries(response.data || {}).forEach(([quiz, settings]) => {
-                const normalizedQuiz = this.normalizeQuizName(quiz);
-                if (settings && settings.url && settings.enabled) {
-                    normalizedData[normalizedQuiz] = {
-                        url: settings.url.trim(),
-                        enabled: Boolean(settings.enabled)
-                    };
-                }
-            });
-            
-            console.log('[API] Normalized guide settings:', normalizedData);
+            // Return the guide settings directly without normalization
+            // The quiz IDs in the response should match the data-quiz attributes
+            console.log('[API] Guide settings:', response.data);
             
             // Save to localStorage for backup
             try {
-                localStorage.setItem('guideSettings', JSON.stringify(normalizedData));
-                console.log('[API] Saved normalized guide settings to localStorage');
+                localStorage.setItem('guideSettings', JSON.stringify(response.data || {}));
+                console.log('[API] Saved guide settings to localStorage');
             } catch (e) {
                 console.warn('[API] Error saving guide settings to localStorage:', e);
             }
             
             return {
                 success: true,
-                data: normalizedData
+                data: response.data || {}
             };
         } catch (error) {
             console.error('[API] Error fetching guide settings:', error);
