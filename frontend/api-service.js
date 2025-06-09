@@ -39,19 +39,24 @@ export class APIService {
     
     // Helper method to get the API base URL with fallback logic
     getApiBaseUrl() {
+        const currentOrigin = window.location.origin;
+        console.log('Current origin:', currentOrigin);
+        
         // For S3 website, always use the Render API
-        if (window.location.hostname.includes('s3-website') ||
-            window.location.hostname.includes('amazonaws.com')) {
+        if (currentOrigin === 'http://learning-hub.s3-website.eu-west-2.amazonaws.com') {
+            console.log('Using Render API from S3 website');
             return 'https://bug-training-game-api.onrender.com/api';
         }
         
         // For Render website
         if (window.location.hostname.includes('render.com') || 
             window.location.hostname === 'bug-training-game.onrender.com') {
+            console.log('Using Render API from Render website');
             return 'https://bug-training-game-api.onrender.com/api';
         }
         
         // Local development
+        console.log('Using local API');
         return 'http://localhost:10000/api';
     }
 
@@ -159,12 +164,12 @@ export class APIService {
     // Regular user authentication methods
     async login(username, password) {
         try {
-            const response = await fetch('https://bug-training-game-api.onrender.com/api/users/login', {
+            const response = await fetch(`${this.baseUrl}/users/login`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
                 },
-                mode: 'cors',
+                credentials: 'include',
                 body: JSON.stringify({ username, password })
             });
 

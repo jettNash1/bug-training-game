@@ -66,8 +66,8 @@ const corsOptions = {
       return callback(null, true);
     }
 
-    // Always allow the S3 website
-    if (origin.includes('s3-website.eu-west-2.amazonaws.com')) {
+    // Always allow the S3 website (both http and https)
+    if (origin === 'http://learning-hub.s3-website.eu-west-2.amazonaws.com') {
       console.log('Allowing S3 website origin:', origin);
       return callback(null, origin);
     }
@@ -84,8 +84,9 @@ const corsOptions = {
   },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
-  allowedHeaders: ['Content-Type', 'Authorization'],
-  exposedHeaders: ['Authorization']
+  allowedHeaders: ['Content-Type', 'Authorization', 'Accept', 'Origin'],
+  exposedHeaders: ['Authorization'],
+  maxAge: 86400 // Cache preflight requests for 24 hours
 };
 
 // Apply CORS configuration
