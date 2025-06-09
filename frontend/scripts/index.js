@@ -476,55 +476,46 @@ class IndexPage {
             if (!quizScore) {
                 // No score data - white background
                 console.log(`[Index] No score found for quiz: ${normalizedQuizId}`);
-                item.setAttribute('style', 'background-color: #FFFFFF !important; border: none !important;');
+                // Preserve guide buttons by only updating background and border
+                const existingStyle = item.getAttribute('style') || '';
+                const newStyle = existingStyle
+                    .split(';')
+                    .filter(s => !s.includes('background-color') && !s.includes('border'))
+                    .join(';');
+                item.setAttribute('style', `${newStyle}; background-color: #FFFFFF !important; border: none !important;`);
                 progressElement.setAttribute('style', 'display: none !important;');
                 return;
             }
             
-            console.log(`[Index] Quiz ${quizId}: status=${quizScore.status}, questions=${quizScore.questionsAnswered}, scorePercentage=${quizScore.scorePercentage}, experience=${quizScore.experience}`);
+            // Update progress display
+            const questionsAnswered = quizScore.questionsAnswered || 0;
+            const score = quizScore.score || 0;
             
-            // Get the score percentage from the API response data
-            // Make sure we're using the actual scorePercentage value, not defaulting to 0
-            const scorePercentage = quizScore.scorePercentage !== undefined ? quizScore.scorePercentage : 0;
-
-            if (quizScore.locked) {
-                // Locked state - gray background with striped pattern
-                item.classList.add('locked-quiz');
-                progressElement.setAttribute('style', 'display: none !important;');
-            } else if (quizScore.status === 'failed') {
-                // Failed state - Light pink/salmon with thicker, darker border
-                item.setAttribute('style', 'background-color: #FFCCCB !important; border: 2px solid #FFB6B6 !important; color: #000000 !important; border-radius: 12px !important;');
-                progressElement.setAttribute('style', 'background-color: #FFCCCB !important; color: #000000 !important; display: block !important;');
-                progressElement.textContent = `${scorePercentage}%`;
-            } else if (quizScore.questionsAnswered === 15) {
-                // Completed quiz - color based on score percentage
-                if (scorePercentage >= 70) {
-                    // >=70% - Light Green with thicker, darker border
-                    item.setAttribute('style', 'background-color: #90EE90 !important; border: 2px solid #70CF70 !important; color: #000000 !important; border-radius: 12px !important;');
-                    progressElement.setAttribute('style', 'background-color: #90EE90 !important; color: #000000 !important; display: block !important;');
-                } else if (scorePercentage >= 50) {
-                    // 50-69% - Yellow with thicker, darker border
-                    item.setAttribute('style', 'background-color: #F0D080 !important; border: 2px solid #E0B060 !important; color: #000000 !important; border-radius: 12px !important;');
-                    progressElement.setAttribute('style', 'background-color: #F0D080 !important; color: #000000 !important; display: block !important;');
+            // Determine quiz status and styling
+            let statusClass = 'not-started';
+            let progressText = '';
+            
+            if (questionsAnswered === 15) {
+                if (score >= 80) {
+                    statusClass = 'completed-perfect';
+                    progressText = '15/15';
                 } else {
-                    // <50% - Red with thicker, darker border
-                    item.setAttribute('style', 'background-color: #FFCCCB !important; border: 2px solid #FFB6B6 !important; color: #000000 !important; border-radius: 12px !important;');
-                    progressElement.setAttribute('style', 'background-color: #FFCCCB !important; color: #000000 !important; display: block !important;');
+                    statusClass = 'completed-partial';
+                    progressText = '15/15';
                 }
-                progressElement.textContent = `${scorePercentage}%`;
-            } else if (quizScore.questionsAnswered > 0) {
-                // In progress - Light Yellow with thicker, darker border
-                item.setAttribute('style', 'background-color: #FFFFCC !important; border: 2px solid #EEEEAA !important; color: #000000 !important; border-radius: 12px !important;');
-                progressElement.setAttribute('style', 'background-color: #FFFFCC !important; color: #000000 !important; display: block !important;');
-                progressElement.textContent = `${quizScore.questionsAnswered}/15`;
-            } else {
-                // Not started - White/cream with thicker, darker border
-                item.setAttribute('style', 'background-color: #FFF8E7 !important; border: 2px solid #EEE8D7 !important; color: #000000 !important; border-radius: 12px !important;');
-                progressElement.setAttribute('style', 'display: none !important;');
-                progressElement.textContent = '';
+            } else if (questionsAnswered > 0) {
+                statusClass = 'in-progress';
+                progressText = `${questionsAnswered}/15`;
             }
+            
+            // Update the quiz item's status class
+            item.classList.remove('not-started', 'in-progress', 'completed-partial', 'completed-perfect');
+            item.classList.add(statusClass);
+            
+            // Update progress text
+            progressElement.textContent = progressText;
+            progressElement.style.display = progressText ? '' : 'none';
         });
-        console.log('[Index] Quiz progress display updated');
     }
 
     updateCategoryProgress() {
@@ -967,6 +958,9 @@ class IndexPage {
         await this.loadUserProgress();
         this.updateQuizProgress();
         this.updateCategoryProgress();
+        
+        // Re-add guide buttons after refresh
+        await this.loadGuideSettingsAndAddButtons();
         
         console.log('[Index] Quiz progress refresh complete');
     }
