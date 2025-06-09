@@ -2093,12 +2093,12 @@ export class APIService {
             
             // Construct the URL carefully with proper encoding
             const url = quizName 
-                ? `${this.baseUrl}/admin/guide-settings/${encodeURIComponent(this.normalizeQuizName(quizName))}`
-                : `${this.baseUrl}/admin/guide-settings`;
+                ? `${this.baseUrl}/guide-settings/${encodeURIComponent(this.normalizeQuizName(quizName))}`
+                : `${this.baseUrl}/guide-settings`;
             console.log(`[API] Guide settings URL: ${url}`);
             
-            // Make the API request with admin auth
-            const response = await this.fetchWithAdminAuth(url);
+            // Make the API request with regular auth since this is a public endpoint
+            const response = await this.fetchWithAuth(url);
             
             if (response.success && response.data) {
                 // Save to localStorage for future use
