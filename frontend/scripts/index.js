@@ -771,31 +771,17 @@ class IndexPage {
                     return;
                 }
                 
-                // Get guide settings for this quiz using proper normalization
-                const normalizedQuizId = this.apiService.normalizeQuizName(quizId);
-                console.log(`[Index] Looking up guide setting for ${quizId} (normalized: ${normalizedQuizId})`);
+                // Use the quiz ID directly from the data attribute since it's already normalized in quiz-list.js
+                console.log(`[Index] Looking up guide setting for ${quizId}`);
+                const guideSetting = response.data[quizId];
                 
-                // Try both the normalized and original quiz ID
-                const guideSetting = response.data[normalizedQuizId] || response.data[quizId];
-                console.log(`[Index] Guide setting for ${quizId} (${normalizedQuizId}):`, guideSetting);
-                
-                // Only show and enable button if guide exists and is enabled
-                if (guideSetting && guideSetting.url && guideSetting.enabled) {
-                    console.log(`[Index] Enabling guide button for ${quizId} with URL:`, guideSetting.url);
-                    buttonContainer.style.display = 'flex';
-                    guideButton.removeAttribute('disabled');
-                    guideButton.title = 'Click to view guide';
+                if (guideSetting && guideSetting.enabled && guideSetting.url) {
+                    console.log(`[Index] Found enabled guide for ${quizId}:`, guideSetting);
                     guideButton.href = guideSetting.url;
-                    guideButton.target = '_blank';
-                    guideButton.rel = 'noopener noreferrer';
-                    guideButton.style.opacity = '1';
-                    guideButton.style.cursor = 'pointer';
-                    guideButton.onclick = null; // Remove any previous click handlers
-                    console.log(`[Index] Enabled guide button for ${quizId}`);
+                    guideButton.style.display = 'block';
                 } else {
-                    // Hide the entire button container if no guide exists
-                    console.log(`[Index] No valid guide setting for ${quizId}, hiding button`);
-                    buttonContainer.style.display = 'none';
+                    console.log(`[Index] No enabled guide found for ${quizId}`);
+                    guideButton.style.display = 'none';
                 }
             });
             
