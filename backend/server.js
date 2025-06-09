@@ -31,12 +31,14 @@ const helmet = require('helmet');
 const app = express();
 const port = process.env.PORT || 10000;
 
-// Define allowed origins
+// Define allowed origins with wildcards for subdomains
 const allowedOrigins = [
   'http://learning-hub.s3-website.eu-west-2.amazonaws.com',
   'https://learning-hub.s3-website.eu-west-2.amazonaws.com',
   'https://bug-training-game.onrender.com',
   'http://bug-training-game.onrender.com',
+  'https://bug-training-game-api.onrender.com',
+  'http://bug-training-game-api.onrender.com',
   'http://localhost:3000',
   'http://localhost:5000',
   'http://localhost:8080',
@@ -45,24 +47,38 @@ const allowedOrigins = [
   'http://127.0.0.1:8080'
 ];
 
+// Add origins from environment variable if present
+if (process.env.ALLOWED_ORIGINS) {
+  const envOrigins = process.env.ALLOWED_ORIGINS.split(',').map(origin => origin.trim());
+  console.log('Adding origins from environment:', envOrigins);
+  allowedOrigins.push(...envOrigins);
+}
+
 // CORS configuration
 const corsOptions = {
   origin: function(origin, callback) {
+    console.log('Incoming request origin:', origin);
+    
     // Allow requests with no origin (like mobile apps, curl requests, or same-origin)
     if (!origin) {
       console.log('Request has no origin - allowing');
       return callback(null, true);
     }
     
-    // For development: allow all origins if NODE_ENV is development
-    if (process.env.NODE_ENV === 'development') {
-      console.log('Development mode - allowing origin:', origin);
+    // For development or if origin matches our allowed list
+    if (process.env.NODE_ENV === 'development' || allowedOrigins.includes(origin)) {
+      console.log('Origin allowed:', origin);
       return callback(null, true);
     }
 
-    // Check if the origin is allowed
-    if (allowedOrigins.includes(origin)) {
-      console.log('Origin explicitly allowed:', origin);
+    // If the origin contains our known domains, allow it
+    const isKnownDomain = origin.includes('learning-hub.s3-website') || 
+                         origin.includes('bug-training-game') ||
+                         origin.includes('localhost') ||
+                         origin.includes('127.0.0.1');
+                         
+    if (isKnownDomain) {
+      console.log('Known domain detected:', origin);
       return callback(null, true);
     }
 
@@ -72,7 +88,8 @@ const corsOptions = {
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
   allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'Origin'],
-  exposedHeaders: ['Authorization']
+  exposedHeaders: ['Authorization'],
+  maxAge: 86400 // 24 hours
 };
 
 // Apply CORS configuration
