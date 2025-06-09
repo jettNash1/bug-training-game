@@ -747,15 +747,19 @@ class IndexPage {
                 const quizId = item.dataset.quiz;
                 if (!quizId) return;
                 
-                const guideButton = item.querySelector('.quiz-guide-button');
+                const buttonContainer = item.querySelector('.guide-button-container');
+                if (!buttonContainer) return;
+                
+                const guideButton = buttonContainer.querySelector('.quiz-guide-button');
                 if (!guideButton) return;
                 
                 // Get guide settings for this quiz
                 const guideSetting = response.data[quizId.toLowerCase()];
                 console.log(`[Index] Guide setting for ${quizId}:`, guideSetting);
                 
-                // Update button state
+                // Only show and enable button if guide exists and is enabled
                 if (guideSetting && guideSetting.url && guideSetting.enabled) {
+                    buttonContainer.style.display = 'flex';
                     guideButton.removeAttribute('disabled');
                     guideButton.title = 'Click to view guide';
                     guideButton.href = guideSetting.url;
@@ -763,19 +767,12 @@ class IndexPage {
                     guideButton.rel = 'noopener noreferrer';
                     guideButton.style.opacity = '1';
                     guideButton.style.cursor = 'pointer';
-                    guideButton.onclick = null; // Remove the return false handler
+                    guideButton.onclick = null; // Remove any previous click handlers
                     console.log(`[Index] Enabled guide button for ${quizId} with URL: ${guideSetting.url}`);
                 } else {
-                    guideButton.setAttribute('disabled', 'true');
-                    guideButton.href = '#';
-                    guideButton.title = 'Guide not available';
-                    guideButton.style.opacity = '0.5';
-                    guideButton.style.cursor = 'not-allowed';
-                    guideButton.onclick = (e) => {
-                        e.preventDefault();
-                        return false;
-                    };
-                    console.log(`[Index] Disabled guide button for ${quizId} (no valid guide setting)`);
+                    // Hide the entire button container if no guide exists
+                    buttonContainer.style.display = 'none';
+                    console.log(`[Index] Hiding guide button for ${quizId} (no valid guide setting)`);
                 }
             });
             

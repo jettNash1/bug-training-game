@@ -125,16 +125,13 @@ export class QuizList {
                                     <div class="quiz-description">${this.getQuizDescription(quizName)}</div>
                                 </div>
                             </a>
-                            <div class="guide-button-container">
+                            <div class="guide-button-container" style="display: none;">
                                 <a class="quiz-guide-button" 
                                    data-quiz="${quizLower}" 
                                    href="#" 
                                    tabindex="0" 
                                    aria-label="View guide for ${this.formatQuizName(quizName)}" 
-                                   role="button"
-                                   disabled="true"
-                                   style="opacity: 0.5; cursor: not-allowed;"
-                                   onclick="return false;">
+                                   role="button">
                                     View Guide
                                 </a>
                             </div>
