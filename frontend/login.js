@@ -69,30 +69,42 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
 
-    // Handle login
-    const loginButton = document.getElementById('loginButton');
-    if (loginButton) {
-        loginButton.addEventListener('click', async () => {
-            const username = document.getElementById('loginUsername').value.trim();
-            const password = document.getElementById('loginPassword').value;
-
-            // Basic validation
-            if (!username || !password) {
-                showError('Please enter both username and password');
-                return;
+    // Handle login form submission
+    const loginForm = document.getElementById('loginForm');
+    if (loginForm) {
+        loginForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            // Clear any existing error messages
+            const existingError = document.querySelector('.error-notification');
+            if (existingError) {
+                existingError.remove();
             }
 
-            if (username.length < MIN_USERNAME_LENGTH) {
-                showError(`Username must be at least ${MIN_USERNAME_LENGTH} characters long`);
-                return;
-            }
-
-            if (password.length < MIN_PASSWORD_LENGTH) {
-                showError(`Password must be at least ${MIN_PASSWORD_LENGTH} characters long`);
-                return;
-            }
+            // Show loading state
+            const submitButton = e.target.querySelector('button[type="submit"]');
+            const originalButtonText = submitButton.textContent;
+            submitButton.disabled = true;
+            submitButton.textContent = 'Logging in...';
 
             try {
+                const formData = new FormData(e.target);
+                const username = formData.get('username');
+                const password = formData.get('password');
+
+                // Basic validation
+                if (!username || !password) {
+                    throw new Error('Please enter both username and password');
+                }
+
+                if (username.length < MIN_USERNAME_LENGTH) {
+                    throw new Error(`Username must be at least ${MIN_USERNAME_LENGTH} characters long`);
+                }
+
+                if (password.length < MIN_PASSWORD_LENGTH) {
+                    throw new Error(`Password must be at least ${MIN_PASSWORD_LENGTH} characters long`);
+                }
+
                 const response = await api.login(username, password);
                 
                 if (response.success && response.token) {
@@ -100,11 +112,18 @@ document.addEventListener('DOMContentLoaded', () => {
                     setAuthToken(response.token);
                     window.location.replace('/');
                 } else {
-                    showError(response.message || 'Login failed');
+                    throw new Error(response.message || 'Login failed');
                 }
             } catch (error) {
                 console.error('Login error:', error);
                 showError(error.message || 'Login failed. Please try again.');
+                
+                // Reset password field
+                document.getElementById('loginPassword').value = '';
+            } finally {
+                // Reset button state
+                submitButton.disabled = false;
+                submitButton.textContent = originalButtonText;
             }
         });
     }
