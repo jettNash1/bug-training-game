@@ -59,34 +59,17 @@ const corsOptions = {
   origin: function(origin, callback) {
     console.log('CORS Origin Check:', {
       incomingOrigin: origin,
-      hasOrigin: !!origin
+      allowedOrigins: allowedOrigins
     });
     
-    // Allow requests with no origin (like mobile apps, curl requests, or same-origin)
+    // Allow requests with no origin (like mobile apps or curl requests)
     if (!origin) {
-      console.log('Request has no origin - allowing');
+      console.log('No origin - allowing');
       return callback(null, true);
     }
 
-    // Always allow the S3 website
-    if (origin.includes('s3-website.eu-west-2.amazonaws.com')) {
-      console.log('S3 website origin allowed:', origin);
-      return callback(null, origin);
-    }
-
-    // For all other origins, try pattern matching
-    const isBugTrainingGame = origin.includes('bug-training-game');
-    const isLocalhost = origin.includes('localhost') || origin.includes('127.0.0.1');
-    const isAllowedOrigin = allowedOrigins.includes(origin);
-
-    console.log('Origin check:', {
-      origin,
-      isBugTrainingGame,
-      isLocalhost,
-      isAllowedOrigin
-    });
-
-    if (isAllowedOrigin || isBugTrainingGame || isLocalhost) {
+    // Check if origin is allowed
+    if (allowedOrigins.includes(origin)) {
       console.log('Origin allowed:', origin);
       return callback(null, origin);
     }
@@ -98,9 +81,7 @@ const corsOptions = {
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
   allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'Origin'],
   exposedHeaders: ['Authorization'],
-  maxAge: 86400, // 24 hours
-  preflightContinue: false,
-  optionsSuccessStatus: 204
+  maxAge: 86400 // 24 hours
 };
 
 // Apply CORS configuration
