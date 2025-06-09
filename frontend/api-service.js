@@ -159,49 +159,26 @@ export class APIService {
     // Regular user authentication methods
     async login(username, password) {
         try {
-            // Get the current API base URL
             const apiBaseUrl = 'https://bug-training-game-api.onrender.com/api';
             console.log('Attempting login:', { 
                 username, 
                 url: `${apiBaseUrl}/users/login`,
                 apiBaseUrl
             });
-            
-            if (!apiBaseUrl) {
-                console.error('API base URL is not defined');
-                throw new Error('API configuration error. Please check your network connection and try again.');
-            }
-            
-            // Check if the server is reachable before attempting the login
-            try {
-                const pingResponse = await fetch(`${apiBaseUrl}/health`, { 
-                    method: 'GET',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    credentials: 'include',
-                    // Add timeout to prevent hanging requests
-                    signal: AbortSignal.timeout(5000) // 5 second timeout
-                });
-                
-                if (!pingResponse.ok) {
-                    console.warn('API health check failed before login attempt');
-                }
-            } catch (pingError) {
-                console.warn('Could not connect to API server:', pingError);
-                // Continue with login attempt anyway
-            }
-            
+
             const response = await fetch(`${apiBaseUrl}/users/login`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
-                    'Accept': 'application/json',
-                    'Origin': 'http://learning-hub.s3-website.eu-west-2.amazonaws.com'
+                    'Accept': '*/*',
+                    'Accept-Language': 'en-GB,en-US;q=0.9,en;q=0.8',
+                    'Accept-Encoding': 'gzip, deflate, br, zstd',
+                    'Origin': 'http://learning-hub.s3-website.eu-west-2.amazonaws.com',
+                    'authority': 'bug-training-game-api.onrender.com'
                 },
                 credentials: 'include',
+                mode: 'cors',
                 body: JSON.stringify({ username, password }),
-                // Add timeout to prevent hanging requests
                 signal: AbortSignal.timeout(10000) // 10 second timeout
             });
 

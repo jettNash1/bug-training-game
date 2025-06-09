@@ -68,6 +68,12 @@ const corsOptions = {
       return callback(null, true);
     }
 
+    // Always allow the S3 website
+    if (origin.includes('s3-website.eu-west-2.amazonaws.com')) {
+      console.log('S3 website origin allowed:', origin);
+      return callback(null, origin);
+    }
+
     // Check if origin is allowed
     if (allowedOrigins.includes(origin)) {
       console.log('Origin allowed:', origin);
@@ -79,7 +85,16 @@ const corsOptions = {
   },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'Origin'],
+  allowedHeaders: [
+    'Content-Type',
+    'Authorization',
+    'X-Requested-With',
+    'Accept',
+    'Accept-Language',
+    'Accept-Encoding',
+    'Origin',
+    'authority'
+  ],
   exposedHeaders: ['Authorization'],
   maxAge: 86400 // 24 hours
 };
@@ -96,11 +111,13 @@ app.use((req, res, next) => {
   
   // Always allow the S3 website
   if (origin && origin.includes('s3-website.eu-west-2.amazonaws.com')) {
-    res.setHeader('Access-Control-Allow-Origin', origin);
-    res.setHeader('Access-Control-Allow-Credentials', 'true');
-    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS, PATCH');
-    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, Accept, Origin');
-    res.setHeader('Access-Control-Expose-Headers', 'Authorization');
+    res.set({
+      'Access-Control-Allow-Origin': origin,
+      'Access-Control-Allow-Credentials': 'true',
+      'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS, PATCH',
+      'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-Requested-With, Accept, Accept-Language, Accept-Encoding, Origin, authority',
+      'Access-Control-Expose-Headers': 'Authorization'
+    });
   }
   next();
 });
