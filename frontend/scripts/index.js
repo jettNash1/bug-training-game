@@ -792,7 +792,7 @@ class IndexPage {
                 styles.textContent = `
                     .quiz-guide-button {
                         background-color: #4e73df;
-                        color: white;
+                        color: white !important;
                         border: none;
                         border-radius: 4px;
                         padding: 8px 16px;
@@ -803,12 +803,14 @@ class IndexPage {
                         text-decoration: none;
                         transition: all 0.2s ease;
                         text-align: center;
-                        margin-top: 8px;
+                        margin-top: auto;
+                        z-index: 2;
+                        position: relative;
                     }
                     .quiz-guide-button:hover {
                         background-color: #3867d6;
                         text-decoration: none;
-                        color: white;
+                        color: white !important;
                     }
                     .quiz-guide-button:focus {
                         outline: 2px solid #4e73df;
@@ -821,6 +823,15 @@ class IndexPage {
                         margin-top: 8px;
                         padding-top: 8px;
                         border-top: 1px solid #eee;
+                        position: relative;
+                        z-index: 2;
+                    }
+                    .quiz-item {
+                        position: relative;
+                    }
+                    .quiz-item .quiz-info {
+                        position: relative;
+                        z-index: 1;
                     }
                 `;
                 document.head.appendChild(styles);
@@ -889,6 +900,11 @@ class IndexPage {
         guideButton.setAttribute('aria-label', `Open guide for ${quizId}`);
         guideButton.setAttribute('tabindex', '0');
         
+        // Prevent the guide button click from triggering the quiz card click
+        guideButton.addEventListener('click', (e) => {
+            e.stopPropagation();
+        });
+        
         // Create a container for the guide button
         const buttonContainer = document.createElement('div');
         buttonContainer.className = 'guide-button-container';
@@ -900,7 +916,7 @@ class IndexPage {
             existingContainer.remove();
         }
         
-        // Add the button container at the end of the quiz item
+        // Add the button container at the end of the quiz info
         const quizInfo = quizItem.querySelector('.quiz-info');
         if (quizInfo) {
             quizInfo.appendChild(buttonContainer);

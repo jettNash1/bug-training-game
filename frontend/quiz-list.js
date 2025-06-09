@@ -111,7 +111,7 @@ export class QuizList {
                     }
 
                     return `
-                        <div class="quiz-item ${statusClass}" data-quiz="${quizLower}">
+                        <a href="pages/${quizLower}-quiz.html" class="quiz-item ${statusClass}" data-quiz="${quizLower}" aria-label="Start ${this.formatQuizName(quizName)} quiz">
                             <div class="quiz-completion" role="status" id="${quizLower}-progress">${progressText}</div>
                             <div class="quiz-info">
                                 <div>
@@ -122,11 +122,8 @@ export class QuizList {
                                     <h3 class="quiz-title">${this.formatQuizName(quizName)}</h3>
                                 </div>
                                 <div class="quiz-description">${this.getQuizDescription(quizName)}</div>
-                                <a href="pages/${quizLower}-quiz.html" class="quiz-start-button" aria-label="Start ${this.formatQuizName(quizName)} quiz">
-                                    Start Quiz
-                                </a>
                             </div>
-                        </div>
+                        </a>
                     `;
                 }).join('');
 
