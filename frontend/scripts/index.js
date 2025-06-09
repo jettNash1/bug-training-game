@@ -803,6 +803,7 @@ class IndexPage {
                         text-decoration: none;
                         transition: all 0.2s ease;
                         text-align: center;
+                        margin-top: 8px;
                     }
                     .quiz-guide-button:hover {
                         background-color: #3867d6;
@@ -817,8 +818,9 @@ class IndexPage {
                         display: flex;
                         justify-content: center;
                         width: 100%;
-                        margin-top: 16px;
+                        margin-top: 8px;
                         padding-top: 8px;
+                        border-top: 1px solid #eee;
                     }
                 `;
                 document.head.appendChild(styles);
@@ -899,7 +901,12 @@ class IndexPage {
         }
         
         // Add the button container at the end of the quiz item
-        quizItem.appendChild(buttonContainer);
+        const quizInfo = quizItem.querySelector('.quiz-info');
+        if (quizInfo) {
+            quizInfo.appendChild(buttonContainer);
+        } else {
+            quizItem.appendChild(buttonContainer);
+        }
     }
 
     // Debug helper method to check quiz name normalization

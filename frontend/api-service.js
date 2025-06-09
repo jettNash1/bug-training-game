@@ -2093,39 +2093,24 @@ export class APIService {
             
             // Construct the URL carefully with proper encoding
             const url = quizName 
-                ? `${this.baseUrl}/guide-settings/${encodeURIComponent(this.normalizeQuizName(quizName))}`
-                : `${this.baseUrl}/guide-settings`;
+                ? `${this.baseUrl}/admin/guide-settings/${encodeURIComponent(this.normalizeQuizName(quizName))}`
+                : `${this.baseUrl}/admin/guide-settings`;
             console.log(`[API] Guide settings URL: ${url}`);
             
-            // Make the API request
-            const response = await fetch(url, {
-                method: 'GET',
-                headers: {
-                    'Accept': 'application/json'
-                },
-                credentials: 'include'
-            });
+            // Make the API request with admin auth
+            const response = await this.fetchWithAdminAuth(url);
             
-            if (!response.ok) {
-                console.warn(`[API] Error response from guide settings API: ${response.status}`);
-                throw new Error(`API request failed with status ${response.status}`);
-            }
-            
-            // Parse the response
-            const data = await response.json();
-            console.log(`[API] Guide settings response:`, data);
-            
-            if (data.success && data.data) {
+            if (response.success && response.data) {
                 // Save to localStorage for future use
                 try {
                     if (!quizName) {
-                        localStorage.setItem('guideSettings', JSON.stringify(data.data));
+                        localStorage.setItem('guideSettings', JSON.stringify(response.data));
                         console.log('[API] Saved all guide settings to localStorage');
                     } else {
                         const existingSettingsJson = localStorage.getItem('guideSettings');
                         const existingSettings = existingSettingsJson ? JSON.parse(existingSettingsJson) : {};
                         const normalizedQuizName = this.normalizeQuizName(quizName);
-                        existingSettings[normalizedQuizName] = data.data;
+                        existingSettings[normalizedQuizName] = response.data;
                         localStorage.setItem('guideSettings', JSON.stringify(existingSettings));
                         console.log(`[API] Saved guide settings for ${normalizedQuizName} to localStorage`);
                     }
@@ -2133,9 +2118,9 @@ export class APIService {
                     console.warn('[API] Error saving guide settings to localStorage:', e);
                 }
                 
-                return data;
+                return response;
             } else {
-                console.warn(`[API] Invalid guide settings response:`, data);
+                console.warn(`[API] Invalid guide settings response:`, response);
                 throw new Error('Invalid response format from API');
             }
         } catch (error) {
