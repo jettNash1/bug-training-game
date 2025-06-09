@@ -58,6 +58,63 @@ An interactive learning platform where users progress through various QA testing
 - MongoDB database
 - Render account for deployment
 
+### Deployment Options 🚀
+
+#### Current Implementation (Render)
+- Frontend hosted on AWS S3
+- Backend API hosted on Render
+- MongoDB Atlas for database
+- Currently addressing CORS configuration issues with user authentication
+
+#### Planned AWS Lambda Implementation (In Progress)
+- Frontend remains on AWS S3
+- Backend to be migrated to AWS Lambda + API Gateway
+- MongoDB Atlas connection remains unchanged
+- Current blocker: Requires additional AWS IAM permissions:
+  - CloudFormation permissions for SAM deployment
+  - Lambda function creation/management
+  - API Gateway management
+  - IAM role creation
+  - S3 bucket management for deployments
+
+Required AWS permissions for Lambda deployment:
+```json
+{
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Effect": "Allow",
+            "Action": [
+                "cloudformation:CreateChangeSet",
+                "cloudformation:CreateStack",
+                "cloudformation:DeleteStack",
+                "cloudformation:DescribeChangeSet",
+                "cloudformation:DescribeStacks",
+                "cloudformation:ExecuteChangeSet",
+                "cloudformation:GetTemplateSummary",
+                "cloudformation:ListStacks",
+                "cloudformation:UpdateStack",
+                "s3:CreateBucket",
+                "s3:PutObject",
+                "iam:CreateRole",
+                "iam:GetRole",
+                "iam:DeleteRole",
+                "iam:PutRolePolicy",
+                "iam:DeleteRolePolicy",
+                "lambda:CreateFunction",
+                "lambda:GetFunction",
+                "lambda:DeleteFunction",
+                "lambda:UpdateFunctionCode",
+                "lambda:UpdateFunctionConfiguration",
+                "lambda:AddPermission",
+                "lambda:RemovePermission"
+            ],
+            "Resource": "*"
+        }
+    ]
+}
+```
+
 ### Adding New Quizzes
 
 The platform is designed to be easily extensible with new quizzes. Follow these steps to add a new quiz:

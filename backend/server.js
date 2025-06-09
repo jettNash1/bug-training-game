@@ -48,8 +48,6 @@ const allowedOrigins = [
 // CORS configuration
 const corsOptions = {
   origin: function(origin, callback) {
-    console.log('Incoming request origin:', origin);
-    
     // Allow requests with no origin (like mobile apps, curl requests, or same-origin)
     if (!origin) {
       console.log('Request has no origin - allowing');
@@ -68,29 +66,12 @@ const corsOptions = {
       return callback(null, true);
     }
 
-    // If the origin is not in our list but matches our domain pattern, allow it
-    const originUrl = new URL(origin);
-    const isAllowedDomain = allowedOrigins.some(allowed => {
-      try {
-        const allowedUrl = new URL(allowed);
-        return originUrl.hostname === allowedUrl.hostname;
-      } catch (e) {
-        return false;
-      }
-    });
-
-    if (isAllowedDomain) {
-      console.log('Origin domain matched allowed pattern:', origin);
-      return callback(null, true);
-    }
-
     console.log('Origin not allowed:', origin);
     return callback(new Error('Not allowed by CORS'));
   },
+  credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
   allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'Origin'],
-  credentials: true,
-  optionsSuccessStatus: 200,
   exposedHeaders: ['Authorization']
 };
 

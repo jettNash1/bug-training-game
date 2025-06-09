@@ -68,14 +68,6 @@ router.post('/register', async (req, res) => {
 
 // Login user
 router.post('/login', async (req, res) => {
-    console.log('Login attempt:', { 
-        body: req.body,
-        contentType: req.headers['content-type'],
-        origin: req.get('origin'),
-        headers: req.headers,
-        method: req.method
-    });
-
     try {
         const { username, password } = req.body;
         
@@ -115,34 +107,13 @@ router.post('/login', async (req, res) => {
         const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, { expiresIn: '1h' });
         const refreshToken = jwt.sign({ id: user._id }, process.env.JWT_REFRESH_SECRET, { expiresIn: '7d' });
 
-        // Get the request origin
-        const origin = req.get('origin');
-        console.log('Request origin:', origin);
-
-        // Set CORS headers explicitly
-        res.header('Access-Control-Allow-Origin', origin || '*');
-        res.header('Access-Control-Allow-Credentials', 'true');
-        res.header('Access-Control-Allow-Methods', 'GET,HEAD,PUT,PATCH,POST,DELETE');
-        res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
-        
-        // Log response headers that will be sent
-        const responseHeaders = {
-            'access-control-allow-origin': res.getHeader('Access-Control-Allow-Origin'),
-            'access-control-allow-credentials': res.getHeader('Access-Control-Allow-Credentials'),
-            'access-control-allow-methods': res.getHeader('Access-Control-Allow-Methods'),
-            'access-control-allow-headers': res.getHeader('Access-Control-Allow-Headers')
-        };
-        console.log('Login successful. Sending response with headers:', {
-            username,
-            headers: responseHeaders
-        });
-        
         // Update lastLogin in the background without waiting
         User.updateOne(
             { _id: user._id },
             { $set: { lastLogin: new Date() } }
         ).catch(err => console.error('Failed to update lastLogin:', err));
         
+        console.log('Login successful for user:', username);
         return res.json({ 
             success: true,
             message: 'Login successful',

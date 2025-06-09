@@ -170,13 +170,10 @@ export class APIService {
         try {
             // Get the current API base URL
             const apiBaseUrl = this.baseUrl;
-            const origin = window.location.origin;
-            
             console.log('Attempting login:', { 
                 username, 
                 url: `${apiBaseUrl}/users/login`,
-                apiBaseUrl,
-                origin
+                apiBaseUrl
             });
             
             if (!apiBaseUrl) {
@@ -184,28 +181,38 @@ export class APIService {
                 throw new Error('API configuration error. Please check your network connection and try again.');
             }
             
+            // Check if the server is reachable before attempting the login
+            try {
+                const pingResponse = await fetch(`${apiBaseUrl}/health`, { 
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    credentials: 'include',
+                    // Add timeout to prevent hanging requests
+                    signal: AbortSignal.timeout(5000) // 5 second timeout
+                });
+                
+                if (!pingResponse.ok) {
+                    console.warn('API health check failed before login attempt');
+                }
+            } catch (pingError) {
+                console.warn('Could not connect to API server:', pingError);
+                // Continue with login attempt anyway
+            }
+            
             const response = await fetch(`${apiBaseUrl}/users/login`, {
                 method: 'POST',
                 headers: {
-                    'Content-Type': 'application/json',
-                    'Accept': 'application/json',
-                    'Origin': origin
+                    'Content-Type': 'application/json'
                 },
                 credentials: 'include',
-                mode: 'cors',
                 body: JSON.stringify({ username, password }),
+                // Add timeout to prevent hanging requests
                 signal: AbortSignal.timeout(10000) // 10 second timeout
             });
 
-            console.log('Login response:', {
-                status: response.status,
-                statusText: response.statusText,
-                headers: {
-                    'access-control-allow-origin': response.headers.get('access-control-allow-origin'),
-                    'access-control-allow-credentials': response.headers.get('access-control-allow-credentials'),
-                    'content-type': response.headers.get('content-type')
-                }
-            });
+            console.log('Login response status:', response.status);
             
             // Try to read the response text first
             const text = await response.text();
@@ -246,12 +253,6 @@ export class APIService {
             if (error.name === 'TypeError' && error.message === 'Failed to fetch') {
                 console.error('Login network error - server may be unreachable:', error);
                 throw new Error('Server connection failed. Please check your network connection and try again.');
-            }
-            
-            // Check if this is a CORS error
-            if (error.name === 'TypeError' && error.message.includes('CORS')) {
-                console.error('CORS error during login:', error);
-                throw new Error('Cross-origin request blocked. Please contact support if this issue persists.');
             }
             
             console.error('Login error:', error);
