@@ -111,24 +111,26 @@ export class QuizList {
                     }
 
                     return `
-                        <a href="pages/${quizLower}-quiz.html" class="quiz-item ${statusClass}" data-quiz="${quizLower}" aria-label="Start ${this.formatQuizName(quizName)} quiz">
-                            <div class="quiz-completion" role="status" id="${quizLower}-progress">${progressText}</div>
-                            <div class="quiz-info">
-                                <div>
-                                    <div class="quiz-icon" aria-hidden="true">
-                                        <img src="./assets/badges/${quizLower}.svg" alt="${this.formatQuizName(quizName)} icon" 
-                                             onerror="this.src='./assets/badges/default.svg'">
+                        <div class="quiz-item-wrapper ${statusClass}">
+                            <a href="pages/${quizLower}-quiz.html" class="quiz-item" data-quiz="${quizLower}" aria-label="Start ${this.formatQuizName(quizName)} quiz">
+                                <div class="quiz-completion" role="status" id="${quizLower}-progress">${progressText}</div>
+                                <div class="quiz-info">
+                                    <div>
+                                        <div class="quiz-icon" aria-hidden="true">
+                                            <img src="./assets/badges/${quizLower}.svg" alt="${this.formatQuizName(quizName)} icon" 
+                                                 onerror="this.src='./assets/badges/default.svg'">
+                                        </div>
+                                        <h3 class="quiz-title">${this.formatQuizName(quizName)}</h3>
                                     </div>
-                                    <h3 class="quiz-title">${this.formatQuizName(quizName)}</h3>
+                                    <div class="quiz-description">${this.getQuizDescription(quizName)}</div>
                                 </div>
-                                <div class="quiz-description">${this.getQuizDescription(quizName)}</div>
-                                <div class="guide-button-container">
-                                    <button class="quiz-guide-button" data-quiz="${quizLower}" tabindex="0" aria-label="View guide for ${this.formatQuizName(quizName)}">
-                                        View Guide
-                                    </button>
-                                </div>
+                            </a>
+                            <div class="guide-button-container">
+                                <a class="quiz-guide-button" data-quiz="${quizLower}" tabindex="0" aria-label="View guide for ${this.formatQuizName(quizName)}" role="button">
+                                    View Guide
+                                </a>
                             </div>
-                        </a>
+                        </div>
                     `;
                 }).join('');
 
