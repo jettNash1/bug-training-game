@@ -110,16 +110,17 @@ router.get('/guide-settings', auth, async (req, res) => {
         
         // Get guide settings from database
         const settings = await Setting.findOne({ key: 'guideSettings' });
+        console.log('[API] Raw settings from database:', settings);
         
         if (!settings || !settings.value) {
-            console.log(`[API] No guide settings found in database`);
+            console.log('[API] No guide settings found in database');
             return res.json({
                 success: true,
                 data: {}
             });
         }
         
-        console.log(`[API] Found guide settings for ${Object.keys(settings.value).length} quizzes`);
+        console.log(`[API] Found guide settings for ${Object.keys(settings.value).length} quizzes:`, settings.value);
         
         // Return all guide settings
         res.json({

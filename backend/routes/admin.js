@@ -881,566 +881,64 @@ router.put('/users/:username/reset-password', auth, async (req, res) => {
     }
 });
 
-// Get quiz scenarios
-router.get('/quizzes/:quizName/scenarios', auth, async (req, res) => {
-    try {
-        // Verify admin status
-        if (!req.user.isAdmin) {
-            return res.status(403).json({
-                success: false,
-                message: 'Admin access required'
-            });
-        }
-
-        const { quizName } = req.params;
-        
-        if (!quizName) {
-            return res.status(400).json({
-                success: false,
-                message: 'Quiz name is required'
-            });
-        }
-
-        console.log(`Fetching scenarios for quiz: ${quizName}`);
-
-        try {
-            // Normalize the quiz name to match file naming conventions
-            let normalizedQuizName = quizName.toLowerCase();
-            
-            // Determine the file path
-            let filePath;
-            
-            // Special case for CMS-Testing-quiz.js which has a different filename
-            if (normalizedQuizName === 'cms-testing') {
-                filePath = path.resolve(__dirname, '../../frontend/quizzes/CMS-Testing-quiz.js');
-            } else if (normalizedQuizName === 'automation-interview') {
-                filePath = path.resolve(__dirname, '../../frontend/quizzes/automation-interview.js');
-            } else if (normalizedQuizName === 'standard-script-testing') {
-                filePath = path.resolve(__dirname, '../../frontend/quizzes/standard-script-testing.js');
-            } else {
-                filePath = path.resolve(__dirname, `../../frontend/quizzes/${normalizedQuizName}-quiz.js`);
-            }
-            
-            console.log(`Attempting to read quiz file from: ${filePath}`);
-            
-            // Check if file exists
-            try {
-                await fs.access(filePath);
-            } catch (error) {
-                // If file not found, try alternative formats before failing
-                console.error(`File not found at: ${filePath}`);
-                try {
-                    const alternativePath = path.resolve(__dirname, `../../frontend/quizzes/${normalizedQuizName}.js`);
-                    console.log(`Trying alternative path: ${alternativePath}`);
-                    await fs.access(alternativePath);
-                    // If we reach here, the file exists at the alternative path
-                    filePath = alternativePath;
-                } catch (alternativeError) {
-                    console.error(`Alternative file not found: ${alternativeError.message}`);
-                    return res.status(404).json({
-                        success: false,
-                        message: `Quiz file not found for: ${normalizedQuizName}`
-                    });
-                }
-            }
-            
-            // Read the file content
-            const fileContent = await fs.readFile(filePath, 'utf8');
-            
-            // Extract scenarios using regex
-            const extractScenarios = (prefix) => {
-                try {
-                    // Try different regex patterns to match the scenarios
-                    const patterns = [
-                        // Standard pattern with this.prefix = [...]
-                        new RegExp(`${prefix}\\s*=\\s*\\[(.*?)\\];`, 's'),
-                        // Alternative pattern with this.prefix = [ ... ]
-                        new RegExp(`${prefix}\\s*=\\s*\\[(.*?)\\]`, 's'),
-                        // Pattern for static class properties
-                        new RegExp(`static\\s+${prefix.replace('this.', '')}\\s*=\\s*\\[(.*?)\\];`, 's')
-                    ];
-                    
-                    for (const regex of patterns) {
-                        const match = fileContent.match(regex);
-                        if (match && match[1]) {
-                            console.log(`Found match for ${prefix} using pattern: ${regex}`);
-                            
-                            try {
-                                // Try to parse as JSON
-                                return JSON.parse(`[${match[1]}]`);
-                            } catch (e) {
-                                console.warn(`Could not parse ${prefix} from source as JSON: ${e.message}`);
-                                
-                                // If JSON parsing fails, try to extract the basic structure
-                                try {
-                                    // Extract scenario objects using a more lenient approach
-                                    const scenarioText = match[1];
-                                    const scenarios = [];
-                                    
-                                    // Use regex to find individual scenario objects
-                                    const scenarioRegex = /\{\s*id:\s*(\d+),\s*level:\s*['"]([^'"]+)['"]/g;
-                                    let scenarioMatch;
-                                    
-                                    while ((scenarioMatch = scenarioRegex.exec(scenarioText)) !== null) {
-                                        const id = parseInt(scenarioMatch[1]);
-                                        const level = scenarioMatch[2];
-                                        
-                                        // Find the title and description
-                                        const titleMatch = /title:\s*['"]((\\['"]|[^'"])+)['"]/g.exec(scenarioText.substring(scenarioMatch.index));
-                                        const descriptionMatch = /description:\s*['"]((\\['"]|[^'"])+)['"]/g.exec(scenarioText.substring(scenarioMatch.index));
-                                        
-                                        const title = titleMatch ? titleMatch[1].replace(/\\/g, '') : 'Unknown Title';
-                                        const description = descriptionMatch ? descriptionMatch[1].replace(/\\/g, '') : 'Unknown Description';
-                                        
-                                        // Extract options array
-                                        let optionsText = '';
-                                        const optionsStartIndex = scenarioText.indexOf('options:', scenarioMatch.index);
-                                        if (optionsStartIndex !== -1) {
-                                            // Find the opening bracket of the options array
-                                            const optionsArrayStart = scenarioText.indexOf('[', optionsStartIndex);
-                                            if (optionsArrayStart !== -1) {
-                                                // Find the closing bracket of the options array by counting brackets
-                                                let bracketCount = 1;
-                                                let optionsArrayEnd = optionsArrayStart + 1;
-                                                
-                                                while (bracketCount > 0 && optionsArrayEnd < scenarioText.length) {
-                                                    if (scenarioText[optionsArrayEnd] === '[') bracketCount++;
-                                                    if (scenarioText[optionsArrayEnd] === ']') bracketCount--;
-                                                    optionsArrayEnd++;
-                                                }
-                                                
-                                                if (bracketCount === 0) {
-                                                    optionsText = scenarioText.substring(optionsArrayStart + 1, optionsArrayEnd - 1);
-                                                }
-                                            }
-                                        }
-                                        
-                                        // Extract individual options
-                                        const options = [];
-                                        const optionRegex = /\{\s*text:\s*['"]((\\['"]|[^'"])+)['"]/g;
-                                        let optionMatch;
-                                        let optionIndex = 0;
-                                        
-                                        while ((optionMatch = optionRegex.exec(optionsText)) !== null) {
-                                            const optionText = optionMatch[1].replace(/\\/g, '');
-                                            
-                                            // Find outcome
-                                            const outcomeMatch = /outcome:\s*['"]((\\['"]|[^'"])+)['"]/g.exec(optionsText.substring(optionMatch.index));
-                                            const outcome = outcomeMatch ? outcomeMatch[1].replace(/\\/g, '') : '';
-                                            
-                                            // Find experience
-                                            const experienceMatch = /experience:\s*(-?\d+)/g.exec(optionsText.substring(optionMatch.index));
-                                            const experience = experienceMatch ? parseInt(experienceMatch[1]) : 0;
-                                            
-                                            // Find tool if available
-                                            const toolMatch = /tool:\s*['"]((\\['"]|[^'"])+)['"]/g.exec(optionsText.substring(optionMatch.index));
-                                            const tool = toolMatch ? toolMatch[1].replace(/\\/g, '') : '';
-                                            
-                                            options.push({
-                                                text: optionText,
-                                                outcome: outcome,
-                                                experience: experience,
-                                                tool: tool,
-                                                isCorrect: experience > 0
-                                            });
-                                            
-                                            optionIndex++;
-                                        }
-                                        
-                                        // If we couldn't extract options, provide a placeholder
-                                        if (options.length === 0) {
-                                            options.push({
-                                                text: 'Option details not available in simplified view',
-                                                outcome: 'View the quiz file directly to see all options and outcomes',
-                                                experience: 0,
-                                                isCorrect: false
-                                            });
-                                        }
-                                        
-                                        // Create a scenario object with the extracted data
-                                        scenarios.push({
-                                            id,
-                                            level,
-                                            title,
-                                            description,
-                                            options: options,
-                                            note: options.length > 0 && options[0].text !== 'Option details not available in simplified view' ? 
-                                                  undefined : 
-                                                  'This is a simplified view. Some JavaScript features in the quiz file prevented full parsing.'
-                                        });
-                                    }
-                                    
-                                    if (scenarios.length > 0) {
-                                        console.log(`Extracted ${scenarios.length} scenarios using simplified approach for ${prefix}`);
-                                        return scenarios;
-                                    }
-                                } catch (extractError) {
-                                    console.warn(`Failed to extract scenarios using simplified approach: ${extractError.message}`);
-                                }
-                            }
-                        }
-                    }
-                    
-                    console.warn(`No regex match found for ${prefix}`);
-                    return [];
-                } catch (e) {
-                    console.warn(`Error extracting ${prefix}: ${e.message}`);
-                    return [];
-                }
-            };
-            
-            const scenarios = {
-                basic: extractScenarios('this.basicScenarios') || [],
-                intermediate: extractScenarios('this.intermediateScenarios') || [],
-                advanced: extractScenarios('this.advancedScenarios') || []
-            };
-            
-            // If we didn't find any scenarios with the standard prefixes, try alternatives
-            if (!scenarios.basic.length && !scenarios.intermediate.length && !scenarios.advanced.length) {
-                console.log('Trying alternative scenario prefixes...');
-                scenarios.basic = extractScenarios('basicScenarios') || [];
-                scenarios.intermediate = extractScenarios('intermediateScenarios') || [];
-                scenarios.advanced = extractScenarios('advancedScenarios') || [];
-            }
-            
-            if (scenarios.basic.length || scenarios.intermediate.length || scenarios.advanced.length) {
-                console.log(`Successfully extracted scenarios from source code for ${quizName}`);
-                return res.json({
-                    success: true,
-                    data: scenarios
-                });
-            }
-            
-            throw new Error(`Could not extract scenarios from source code for ${quizName}. The quiz file may contain complex JavaScript objects that cannot be parsed as JSON.`);
-        } catch (error) {
-            console.error(`Error loading quiz file for ${quizName}:`, error);
-            return res.status(500).json({
-                success: false,
-                message: `Could not load scenarios for ${quizName}: ${error.message}`
-            });
-        }
-    } catch (error) {
-        console.error(`Error in quiz scenarios endpoint:`, error);
-        return res.status(500).json({
-            success: false,
-            message: `Server error: ${error.message}`
-        });
+// Helper function for consistent quiz name normalization
+function normalizeQuizName(quizName) {
+    if (!quizName) return '';
+    
+    // Normalize to lowercase and trim
+    const lowerName = typeof quizName === 'string' ? quizName.toLowerCase().trim() : '';
+    
+    // List of known quiz names for exact matching
+    const knownQuizNames = [
+        'communication', 
+        'initiative', 
+        'time-management', 
+        'tester-mindset',
+        'risk-analysis', 
+        'risk-management', 
+        'non-functional', 
+        'test-support',
+        'issue-verification', 
+        'build-verification', 
+        'issue-tracking-tools',
+        'raising-tickets', 
+        'reports', 
+        'cms-testing', 
+        'email-testing', 
+        'content-copy',
+        'locale-testing', 
+        'script-metrics-troubleshooting', 
+        'standard-script-testing',
+        'test-types-tricks', 
+        'automation-interview', 
+        'fully-scripted', 
+        'exploratory',
+        'sanity-smoke', 
+        'functional-interview'
+    ];
+    
+    // If it's an exact match with our known list, return it directly
+    if (knownQuizNames.includes(lowerName)) {
+        return lowerName;
     }
-});
-
-// Quiz timer settings routes
-router.get('/settings/quiz-timer', auth, async (req, res) => {
-    try {
-        // Try to find settings with either key due to legacy naming
-        let settings = await Setting.findOne({ key: 'quizTimerSettings' });
-        
-        // If not found with new key, try with old key and migrate
-        if (!settings) {
-            const oldSettings = await Setting.findOne({ key: 'quizTimer' });
-            
-            if (oldSettings) {
-                console.log('Found timer settings with legacy key, migrating...');
-                
-                // Migrate old format to new format
-                const defaultSeconds = oldSettings.value.secondsPerQuestion || 60;
-                const quizTimers = oldSettings.value.quizTimers || {};
-                
-                // Create new settings with consistent naming
-                settings = new Setting({
-                    key: 'quizTimerSettings',
-                value: {
-                        defaultSeconds: defaultSeconds,
-                        quizTimers: quizTimers
-                    }
-                });
-                
-                await settings.save();
-                
-                // Optionally remove old settings to prevent confusion
-                // await Setting.deleteOne({ key: 'quizTimer' });
-                
-                console.log('Timer settings migrated to new format');
-            } else {
-                // If no settings exist under either key, create default settings with new format
-                settings = new Setting({
-                    key: 'quizTimerSettings',
-                    value: {
-                        defaultSeconds: 60,
-                    quizTimers: {}
-                }
-            });
-                await settings.save();
-            }
-        }
-        
-        res.json({
-            success: true,
-            data: settings.value
-        });
-    } catch (error) {
-        console.error('Error fetching quiz timer settings:', error);
-        res.status(500).json({
-            success: false,
-            message: 'Failed to fetch quiz timer settings'
-        });
+    
+    // Normalize to kebab-case
+    const normalized = lowerName
+        .replace(/([A-Z])/g, '-$1')  // Convert camelCase to kebab-case
+        .replace(/_/g, '-')          // Convert snake_case to kebab-case
+        .replace(/\s+/g, '-')        // Convert spaces to hyphens
+        .replace(/-+/g, '-')         // Remove duplicate hyphens
+        .replace(/^-|-$/g, '')       // Remove leading/trailing hyphens
+        .toLowerCase();              // Ensure lowercase
+    
+    // Check if normalized version is in known list
+    if (knownQuizNames.includes(normalized)) {
+        return normalized;
     }
-});
-
-router.post('/settings/quiz-timer', auth, async (req, res) => {
-    try {
-        // Support both property names for backward compatibility
-        const defaultSeconds = req.body.defaultSeconds !== undefined ? 
-            req.body.defaultSeconds : req.body.secondsPerQuestion;
-            
-        const quizTimers = req.body.quizTimers || {};
-        
-        // Validate defaultSeconds
-        const seconds = Number(defaultSeconds);
-        if (isNaN(seconds) || seconds < 0 || seconds > 300) {
-            return res.status(400).json({
-                success: false,
-                message: 'Timer value must be between 0 and 300 seconds'
-            });
-        }
-        
-        // Validate quizTimers if provided
-        if (quizTimers) {
-            for (const [quizName, value] of Object.entries(quizTimers)) {
-                const quizSeconds = Number(value);
-                if (isNaN(quizSeconds) || quizSeconds < 0 || quizSeconds > 300) {
-                    return res.status(400).json({
-                        success: false,
-                        message: `Invalid timer value for quiz ${quizName}. Must be between 0 and 300 seconds.`
-                    });
-                }
-            }
-        }
-        
-        // Update or create settings with consistent naming
-        const settings = await Setting.findOneAndUpdate(
-            { key: 'quizTimerSettings' },
-            {
-                key: 'quizTimerSettings',
-                value: {
-                    defaultSeconds: seconds,
-                    quizTimers: quizTimers || {}
-                },
-                updatedAt: new Date()
-            },
-            { upsert: true, new: true }
-        );
-        
-        res.json({
-            success: true,
-            message: 'Quiz timer settings updated successfully',
-            data: settings.value
-        });
-    } catch (error) {
-        console.error('Error updating quiz timer settings:', error);
-        res.status(500).json({
-            success: false,
-            message: 'Failed to update quiz timer settings'
-        });
-    }
-});
-
-// Get all scheduled resets
-router.get('/schedules', auth, async (req, res) => {
-    try {
-        // Verify admin status
-        if (!req.user.isAdmin) {
-            return res.status(403).json({
-                success: false,
-                message: 'Admin access required'
-            });
-        }
-
-        // Get all scheduled resets from the database
-        const schedules = await ScheduledReset.find().sort({ resetDateTime: 1 });
-        
-        res.json({
-            success: true,
-            data: schedules
-        });
-    } catch (error) {
-        console.error('Error fetching scheduled resets:', error);
-        res.status(500).json({
-            success: false,
-            message: 'Failed to fetch scheduled resets',
-            error: error.message
-        });
-    }
-});
-
-// Create a new scheduled reset
-router.post('/schedules', auth, async (req, res) => {
-    try {
-        // Verify admin status
-        if (!req.user.isAdmin) {
-            return res.status(403).json({
-                success: false,
-                message: 'Admin access required'
-            });
-        }
-
-        const { username, quizName, resetDateTime, timezoneOffset } = req.body;
-
-        // Validate inputs
-        if (!username || !quizName || !resetDateTime) {
-            return res.status(400).json({
-                success: false,
-                message: 'Missing required fields'
-            });
-        }
-
-        // Parse the reset time - it's already in UTC from the frontend
-        const resetTime = new Date(resetDateTime);
-        
-        // For validation, convert UTC time back to local time using the provided offset
-        const localResetTime = new Date(resetTime.getTime() + (timezoneOffset * 60000));
-        const now = new Date();
-        
-        console.log(`Creating schedule:
-            UTC time: ${resetTime.toISOString()}
-            Local time: ${localResetTime.toLocaleString()}
-            Timezone offset: ${timezoneOffset} minutes`);
-        
-        // Validate resetDateTime is in the future (compare in local time)
-        if (localResetTime <= now) {
-            return res.status(400).json({
-                success: false,
-                message: 'Reset time must be in the future'
-            });
-        }
-
-        // Check if user exists
-        const user = await User.findOne({ username });
-        if (!user) {
-            return res.status(404).json({
-                success: false,
-                message: 'User not found'
-            });
-        }
-
-        // Create new scheduled reset
-        const schedule = new ScheduledReset({
-            username,
-            quizName,
-            resetDateTime: resetTime, // Store the UTC time
-            timezoneOffset, // Store the timezone offset for future reference
-            createdAt: new Date()
-        });
-
-        await schedule.save();
-
-        res.json({
-            success: true,
-            message: 'Scheduled reset created successfully',
-            data: {
-                ...schedule.toObject(),
-                localResetTime: localResetTime.toISOString() // Include local time in response
-            }
-        });
-    } catch (error) {
-        console.error('Error creating scheduled reset:', error);
-        res.status(500).json({
-            success: false,
-            message: 'Failed to create scheduled reset',
-            error: error.message
-        });
-    }
-});
-
-// Delete a scheduled reset
-router.delete('/schedules/:id', auth, async (req, res) => {
-    try {
-        // Verify admin status
-        if (!req.user.isAdmin) {
-            return res.status(403).json({
-                success: false,
-                message: 'Admin access required'
-            });
-        }
-
-        const { id } = req.params;
-
-        // Find and delete the scheduled reset
-        const schedule = await ScheduledReset.findByIdAndDelete(id);
-        
-        if (!schedule) {
-            return res.status(404).json({
-                success: false,
-                message: 'Scheduled reset not found'
-            });
-        }
-
-        res.json({
-            success: true,
-            message: 'Scheduled reset deleted successfully',
-            data: schedule
-        });
-    } catch (error) {
-        console.error('Error deleting scheduled reset:', error);
-        res.status(500).json({
-            success: false,
-            message: 'Failed to delete scheduled reset',
-            error: error.message
-        });
-    }
-});
-
-// Get quiz types
-router.get('/quiz-types', auth, async (req, res) => {
-    try {
-        // Verify admin status
-        if (!req.user.isAdmin) {
-            return res.status(403).json({
-                success: false,
-                message: 'Admin access required'
-            });
-        }
-
-        // Read the quizzes directory
-        const quizzesDir = path.resolve(__dirname, '../../frontend/quizzes');
-        const files = await fs.readdir(quizzesDir);
-
-        // Filter and process quiz files
-        const quizTypes = files
-            .filter(file => file.endsWith('-quiz.js') || file === 'standard-script-testing.js' || file === 'automation-interview.js' || file === 'reports.js' || file === 'raising-tickets.js')
-            .map(file => {
-                // Remove the -quiz.js suffix and convert to lowercase
-                let quizName = file.replace('-quiz.js', '').replace('.js', '');
-                // Handle special cases
-                if (quizName === 'CMS-Testing') {
-                    quizName = 'cms-testing';
-                }
-                return quizName.toLowerCase();
-            })
-            .sort(); // Sort alphabetically
-
-        // Add additional quiz types that might not be in files
-        const additionalQuizTypes = ['reports', 'raising-tickets'];
-        additionalQuizTypes.forEach(type => {
-            if (!quizTypes.includes(type)) {
-                quizTypes.push(type);
-            }
-        });
-
-        console.log('Found quiz types:', quizTypes);
-        
-        res.json({
-            success: true,
-            data: quizTypes
-        });
-    } catch (error) {
-        console.error('Error getting quiz types:', error);
-        res.status(500).json({
-            success: false,
-            message: 'Failed to get quiz types',
-            error: error.message
-        });
-    }
-});
+    
+    // Return the normalized version for consistency
+    return normalized;
+}
 
 // Guide settings routes
 router.get('/guide-settings', auth, async (req, res) => {
@@ -1478,8 +976,13 @@ router.post('/guide-settings/:quizName', auth, async (req, res) => {
         const { quizName } = req.params;
         const { url, enabled } = req.body;
         
+        // Normalize the quiz name
+        const normalizedQuizName = normalizeQuizName(quizName);
+        console.log(`[Admin] Saving guide settings for quiz "${normalizedQuizName}" (from "${quizName}"):`, { url, enabled });
+        
         // Validate URL if provided
         if (url && !url.match(/^https?:\/\/.+/)) {
+            console.warn(`[Admin] Invalid URL format for quiz "${normalizedQuizName}": ${url}`);
             return res.status(400).json({
                 success: false,
                 message: 'Invalid URL format. Must start with http:// or https://'
@@ -1488,20 +991,26 @@ router.post('/guide-settings/:quizName', auth, async (req, res) => {
         
         // Get current settings or create new ones
         let settings = await Setting.findOne({ key: 'guideSettings' });
+        console.log('[Admin] Current guide settings:', settings?.value);
+        
         if (!settings) {
             settings = new Setting({
                 key: 'guideSettings',
                 value: {}
             });
+            console.log('[Admin] Created new guide settings document');
         }
         
         // Update settings for the specific quiz
         settings.value = {
             ...settings.value,
-            [quizName]: { url, enabled }
+            [normalizedQuizName]: { url, enabled }
         };
         
+        console.log(`[Admin] Updated guide settings for quiz "${normalizedQuizName}":`, settings.value[normalizedQuizName]);
+        
         await settings.save();
+        console.log('[Admin] Guide settings saved to database');
         
         res.json({
             success: true,
@@ -1509,7 +1018,7 @@ router.post('/guide-settings/:quizName', auth, async (req, res) => {
             data: settings.value
         });
     } catch (error) {
-        console.error('Error updating guide settings:', error);
+        console.error('[Admin] Error updating guide settings:', error);
         res.status(500).json({
             success: false,
             message: 'Failed to update guide settings'

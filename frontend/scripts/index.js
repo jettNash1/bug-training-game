@@ -148,9 +148,9 @@ function clearAllQuizProgress() {
 class IndexPage {
     constructor() {
         // Initialize services
-        this.apiService = new APIService();
-        this.quizProgressService = new QuizProgressService();
-        
+            this.apiService = new APIService();
+            this.quizProgressService = new QuizProgressService();
+            
         // Initialize state
         this.quizList = null;
         this.quizItems = null;
@@ -735,30 +735,53 @@ class IndexPage {
         try {
             // Get guide settings from API
             const response = await this.apiService.fetchGuideSettings();
-            console.log('[Index] Guide settings response:', response);
+            console.log('[Index] Guide settings full response:', response);
+            console.log('[Index] Guide settings data:', response?.data);
             
             if (!response || !response.success) {
                 console.warn('[Index] Failed to load guide settings:', response);
                 return;
             }
             
+            // Debug log all available guide settings
+            Object.entries(response.data || {}).forEach(([quiz, settings]) => {
+                console.log(`[Index] Available guide for ${quiz}:`, settings);
+            });
+            
             // Get all guide buttons
-            this.quizItems.forEach(item => {
+            const allQuizItems = this.quizItems;
+            console.log('[Index] Found quiz items:', allQuizItems.length);
+            
+            allQuizItems.forEach(item => {
                 const quizId = item.dataset.quiz;
-                if (!quizId) return;
+                if (!quizId) {
+                    console.log('[Index] Quiz item missing data-quiz attribute:', item);
+                    return;
+                }
                 
                 const buttonContainer = item.querySelector('.guide-button-container');
-                if (!buttonContainer) return;
+                if (!buttonContainer) {
+                    console.log('[Index] Guide button container not found for quiz:', quizId);
+                    return;
+                }
                 
                 const guideButton = buttonContainer.querySelector('.quiz-guide-button');
-                if (!guideButton) return;
+                if (!guideButton) {
+                    console.log('[Index] Guide button not found in container for quiz:', quizId);
+                    return;
+                }
                 
-                // Get guide settings for this quiz
-                const guideSetting = response.data[quizId.toLowerCase()];
-                console.log(`[Index] Guide setting for ${quizId}:`, guideSetting);
+                // Get guide settings for this quiz using proper normalization
+                const normalizedQuizId = this.apiService.normalizeQuizName(quizId);
+                console.log(`[Index] Looking up guide setting for ${quizId} (normalized: ${normalizedQuizId})`);
+                
+                // Try both the normalized and original quiz ID
+                const guideSetting = response.data[normalizedQuizId] || response.data[quizId];
+                console.log(`[Index] Guide setting for ${quizId} (${normalizedQuizId}):`, guideSetting);
                 
                 // Only show and enable button if guide exists and is enabled
                 if (guideSetting && guideSetting.url && guideSetting.enabled) {
+                    console.log(`[Index] Enabling guide button for ${quizId} with URL:`, guideSetting.url);
                     buttonContainer.style.display = 'flex';
                     guideButton.removeAttribute('disabled');
                     guideButton.title = 'Click to view guide';
@@ -768,15 +791,15 @@ class IndexPage {
                     guideButton.style.opacity = '1';
                     guideButton.style.cursor = 'pointer';
                     guideButton.onclick = null; // Remove any previous click handlers
-                    console.log(`[Index] Enabled guide button for ${quizId} with URL: ${guideSetting.url}`);
+                    console.log(`[Index] Enabled guide button for ${quizId}`);
                 } else {
                     // Hide the entire button container if no guide exists
+                    console.log(`[Index] No valid guide setting for ${quizId}, hiding button`);
                     buttonContainer.style.display = 'none';
-                    console.log(`[Index] Hiding guide button for ${quizId} (no valid guide setting)`);
                 }
             });
             
-            console.log('[Index] Guide buttons updated');
+            console.log('[Index] Guide buttons update complete');
         } catch (error) {
             console.error('[Index] Error loading guide settings:', error);
         }
@@ -812,10 +835,10 @@ class IndexPage {
         
         try {
             // Update quiz progress
-            await this.loadUserProgress();
-            this.updateQuizProgress();
-            this.updateCategoryProgress();
-            
+        await this.loadUserProgress();
+        this.updateQuizProgress();
+        this.updateCategoryProgress();
+        
             // Remove any existing guide buttons first
             this.quizItems.forEach(item => {
                 const guideButton = item.querySelector('.quiz-guide-button');

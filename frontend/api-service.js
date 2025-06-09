@@ -1884,23 +1884,7 @@ export class APIService {
         try {
             console.log('[API] Fetching all guide settings');
             
-            // Try localStorage first
-            try {
-                const settingsJson = localStorage.getItem('guideSettings');
-                if (settingsJson) {
-                    const settings = JSON.parse(settingsJson);
-                    console.log(`[API] Using localStorage for guide settings`);
-                    return {
-                        success: true,
-                        data: settings,
-                        source: 'localStorage'
-                    };
-                }
-            } catch (e) {
-                console.warn(`[API] Error checking localStorage for guide settings:`, e);
-            }
-            
-            // Then try API
+            // Try API first
             try {
                 const response = await this.fetchWithAuth(`${this.baseUrl}/guide-settings`, {
                     method: 'GET',
@@ -1924,6 +1908,22 @@ export class APIService {
                 }
             } catch (apiError) {
                 console.warn(`[API] Error fetching guide settings from API:`, apiError);
+            }
+            
+            // Try localStorage as fallback
+            try {
+                const settingsJson = localStorage.getItem('guideSettings');
+                if (settingsJson) {
+                    const settings = JSON.parse(settingsJson);
+                    console.log(`[API] Using localStorage fallback for guide settings`);
+                    return {
+                        success: true,
+                        data: settings,
+                        source: 'localStorage-fallback'
+                    };
+                }
+            } catch (e) {
+                console.warn(`[API] Error checking localStorage for guide settings:`, e);
             }
             
             // Return empty settings if all else fails
@@ -1978,8 +1978,8 @@ export class APIService {
                 throw new Error('Authentication failed. Please log in again.');
             }
 
-            // Sanitize inputs
-            const sanitizedQuiz = quizName.trim().toLowerCase();
+            // Normalize quiz name using the proper method
+            const normalizedQuiz = this.normalizeQuizName(quizName);
             const sanitizedUrl = url.trim();
             
             // Validate URL if provided
@@ -1987,10 +1987,10 @@ export class APIService {
                 throw new Error('Invalid URL format. Must start with http:// or https://');
             }
             
-            console.log(`[API] Saving guide setting for ${sanitizedQuiz}: url=${sanitizedUrl}, enabled=${Boolean(enabled)}`);
+            console.log(`[API] Saving guide setting for ${normalizedQuiz} (from ${quizName}): url=${sanitizedUrl}, enabled=${Boolean(enabled)}`);
             
             // API call
-            const response = await this.fetchWithAdminAuth(`${this.baseUrl}/admin/guide-settings/${sanitizedQuiz}`, {
+            const response = await this.fetchWithAdminAuth(`${this.baseUrl}/admin/guide-settings/${normalizedQuiz}`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
@@ -2008,104 +2008,45 @@ export class APIService {
                 throw new Error(errorMsg);
             }
             
-            console.log(`[API] Successfully saved guide setting for ${sanitizedQuiz}`);
+            console.log(`[API] Successfully saved guide setting for ${normalizedQuiz}`);
             
-                // Update localStorage with the new settings
-                try {
-                    const existingSettingsJson = localStorage.getItem('guideSettings');
-                    const existingSettings = existingSettingsJson ? JSON.parse(existingSettingsJson) : {};
-                    
-                    const updatedSettings = {
-                        ...existingSettings,
-                        [sanitizedQuiz]: { url: sanitizedUrl, enabled: Boolean(enabled) }
-                    };
-                    
-                    localStorage.setItem('guideSettings', JSON.stringify(updatedSettings));
-                console.log('[API] Updated guide settings in localStorage');
-                } catch (storageError) {
-                console.warn('[API] Failed to update localStorage:', storageError);
-                }
+            // Update localStorage with the new settings
+            try {
+                const existingSettingsJson = localStorage.getItem('guideSettings');
+                const existingSettings = existingSettingsJson ? JSON.parse(existingSettingsJson) : {};
                 
-                return {
-                    success: true,
-                    data: response.data || { [sanitizedQuiz]: { url: sanitizedUrl, enabled: Boolean(enabled) } }
+                const updatedSettings = {
+                    ...existingSettings,
+                    [normalizedQuiz]: { url: sanitizedUrl, enabled: Boolean(enabled) }
                 };
-        } catch (error) {
-            console.error('[API] Error saving guide setting:', error);
-            
-            // If we get an HTML response, use localStorage as fallback
-            if (error.message && (
-                error.message.includes('HTML response') || 
-                error.message.includes('Server returned HTML')
-            )) {
-                try {
-                    // Update localStorage directly
-                    const existingSettingsJson = localStorage.getItem('guideSettings');
-                    const existingSettings = existingSettingsJson ? JSON.parse(existingSettingsJson) : {};
-                    
-                    const updatedSettings = {
-                        ...existingSettings,
-                        [quizName]: { url, enabled: Boolean(enabled) }
-                    };
-                    
-                    localStorage.setItem('guideSettings', JSON.stringify(updatedSettings));
-                    
-                    console.warn('[API] API returned HTML, using localStorage fallback for guide settings');
-                    return {
-                        success: true,
-                        data: { [quizName]: { url, enabled: Boolean(enabled) } },
-                        source: 'localStorage',
-                        warning: 'API unavailable, using localStorage fallback'
-                    };
-                } catch (localError) {
-                    console.error('[API] Failed to use localStorage fallback:', localError);
-                }
+                
+                localStorage.setItem('guideSettings', JSON.stringify(updatedSettings));
+                console.log('[API] Updated guide settings in localStorage');
+            } catch (storageError) {
+                console.warn('[API] Failed to update localStorage:', storageError);
             }
             
+            return {
+                success: true,
+                data: response.data || { [normalizedQuiz]: { url: sanitizedUrl, enabled: Boolean(enabled) } }
+            };
+        } catch (error) {
+            console.error('[API] Error saving guide setting:', error);
             throw error;
         }
     }
 
     // Guide settings methods for quiz UI
-    async fetchGuideSettings(quizName = null) {
-        console.log(`[API] Fetching guide settings${quizName ? ` for quiz: ${quizName}` : ' for all quizzes'}`);
+    async fetchGuideSettings(quizName) {
+        console.log(`[API] Fetching guide settings${quizName ? ` for quiz: ${quizName}` : ''}`);
+        
+        // Construct the URL carefully with proper encoding
+        const url = quizName 
+            ? `${this.baseUrl}/guide-settings/${encodeURIComponent(this.normalizeQuizName(quizName))}`
+            : `${this.baseUrl}/guide-settings`;
+        console.log(`[API] Guide settings URL: ${url}`);
         
         try {
-            // First try localStorage for faster response
-            try {
-                const settingsJson = localStorage.getItem('guideSettings');
-                if (settingsJson) {
-                    const settings = JSON.parse(settingsJson);
-                    if (quizName) {
-                        const normalizedQuizName = this.normalizeQuizName(quizName);
-                        if (settings && settings[normalizedQuizName]) {
-                            console.log(`[API] Found guide settings in localStorage for ${normalizedQuizName}:`, settings[normalizedQuizName]);
-                            return {
-                                success: true,
-                                data: settings[normalizedQuizName],
-                                source: 'localStorage'
-                            };
-                        }
-                    } else {
-                        // Return all settings
-                        console.log(`[API] Found all guide settings in localStorage`);
-                        return {
-                            success: true,
-                            data: settings,
-                            source: 'localStorage'
-                        };
-                    }
-                }
-            } catch (e) {
-                console.warn(`[API] Error checking localStorage for guide settings:`, e);
-            }
-            
-            // Construct the URL carefully with proper encoding
-            const url = quizName 
-                ? `${this.baseUrl}/guide-settings/${encodeURIComponent(this.normalizeQuizName(quizName))}`
-                : `${this.baseUrl}/guide-settings`;
-            console.log(`[API] Guide settings URL: ${url}`);
-            
             // Make the API request with regular auth since this is a public endpoint
             const response = await this.fetchWithAuth(url);
             
@@ -2130,12 +2071,41 @@ export class APIService {
                 return response;
             } else {
                 console.warn(`[API] Invalid guide settings response:`, response);
+                
+                // Try localStorage as fallback
+                try {
+                    const settingsJson = localStorage.getItem('guideSettings');
+                    if (settingsJson) {
+                        const settings = JSON.parse(settingsJson);
+                        if (quizName) {
+                            const normalizedQuizName = this.normalizeQuizName(quizName);
+                            if (settings && settings[normalizedQuizName]) {
+                                console.log(`[API] Using localStorage fallback for ${normalizedQuizName} after invalid response`);
+                                return {
+                                    success: true,
+                                    data: settings[normalizedQuizName],
+                                    source: 'localStorage-fallback'
+                                };
+                            }
+                        } else {
+                            console.log(`[API] Using localStorage fallback for all guide settings after invalid response`);
+                            return {
+                                success: true,
+                                data: settings,
+                                source: 'localStorage-fallback'
+                            };
+                        }
+                    }
+                } catch (e) {
+                    console.warn(`[API] Error checking localStorage fallback:`, e);
+                }
+                
                 throw new Error('Invalid response format from API');
             }
         } catch (error) {
             console.error(`[API] Error fetching guide settings:`, error);
             
-            // Try localStorage as fallback one last time
+            // Try localStorage as fallback
             try {
                 const settingsJson = localStorage.getItem('guideSettings');
                 if (settingsJson) {
