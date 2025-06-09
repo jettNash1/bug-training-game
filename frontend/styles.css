@@ -194,6 +194,7 @@ body {
     text-align: center;
     margin-top: 12px;
     width: fit-content;
+    pointer-events: auto !important;
 }
 
 .quiz-guide-button:hover {
