@@ -737,54 +737,40 @@ class IndexPage {
             const response = await this.apiService.fetchGuideSettings();
             console.log('[Index] Guide settings response:', response);
             
-            const guideSettings = (response && response.success && response.data) ? response.data : {};
-            
-            // Add guide button to each quiz item
+            // Get all guide buttons
             this.quizItems.forEach(item => {
                 const quizId = item.dataset.quiz;
                 if (!quizId) return;
                 
+                const guideButton = item.querySelector('.quiz-guide-button');
+                if (!guideButton) return;
+                
                 // Get guide settings for this quiz
-                const guideSetting = guideSettings[quizId.toLowerCase()];
-                const hasValidUrl = guideSetting && guideSetting.enabled && guideSetting.url;
+                const guideSetting = response?.data?.[quizId.toLowerCase()] || {};
+                const hasValidUrl = guideSetting.url && guideSetting.enabled;
                 
-                // Create guide button container
-                const buttonContainer = document.createElement('div');
-                buttonContainer.className = 'guide-button-container';
-                
-                // Create guide button
-                const guideButton = document.createElement('a');
-                guideButton.className = 'quiz-guide-button';
-                guideButton.textContent = 'Guide';
-                
+                // Update button state
                 if (hasValidUrl) {
-                    // Enable the button with the URL
-                    guideButton.href = guideSetting.url;
-                    guideButton.target = '_blank';
-                    guideButton.style.opacity = '1';
-                    guideButton.style.cursor = 'pointer';
+                    guideButton.removeAttribute('disabled');
+                    guideButton.title = 'Click to view guide';
+                    
+                    // Add click handler
+                    const handleClick = (e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        window.open(guideSetting.url, '_blank');
+                    };
+                    
+                    // Remove old handler if exists
+                    guideButton.removeEventListener('click', handleClick);
+                    guideButton.addEventListener('click', handleClick);
                 } else {
-                    // Disable the button when no URL is set
-                    guideButton.style.opacity = '0.5';
-                    guideButton.style.cursor = 'not-allowed';
-                    guideButton.style.pointerEvents = 'none';
+                    guideButton.setAttribute('disabled', 'true');
                     guideButton.title = 'Guide not available';
                 }
-                
-                // Add button to container
-                buttonContainer.appendChild(guideButton);
-                
-                // Add container to quiz info section
-                const quizInfo = item.querySelector('.quiz-info');
-                if (quizInfo) {
-                    // Remove any existing guide button first
-                    const existingButton = quizInfo.querySelector('.guide-button-container');
-                    if (existingButton) {
-                        existingButton.remove();
-                    }
-                    quizInfo.appendChild(buttonContainer);
-                }
             });
+            
+            console.log('[Index] Guide buttons updated');
         } catch (error) {
             console.error('[Index] Error loading guide settings:', error);
         }

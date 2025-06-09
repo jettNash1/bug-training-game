@@ -122,6 +122,11 @@ export class QuizList {
                                     <h3 class="quiz-title">${this.formatQuizName(quizName)}</h3>
                                 </div>
                                 <div class="quiz-description">${this.getQuizDescription(quizName)}</div>
+                                <div class="guide-button-container">
+                                    <button class="quiz-guide-button" data-quiz="${quizLower}" tabindex="0" aria-label="View guide for ${this.formatQuizName(quizName)}">
+                                        View Guide
+                                    </button>
+                                </div>
                             </div>
                         </a>
                     `;
