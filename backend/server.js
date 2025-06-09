@@ -57,7 +57,10 @@ if (process.env.ALLOWED_ORIGINS) {
 // CORS configuration
 const corsOptions = {
   origin: function(origin, callback) {
-    console.log('Incoming request origin:', origin);
+    console.log('CORS Origin Check:', {
+      incomingOrigin: origin,
+      hasOrigin: !!origin
+    });
     
     // Allow requests with no origin (like mobile apps, curl requests, or same-origin)
     if (!origin) {
@@ -65,14 +68,25 @@ const corsOptions = {
       return callback(null, true);
     }
 
-    // For S3 website or other allowed origins
-    if (allowedOrigins.includes(origin) || 
-        origin.includes('s3-website.eu-west-2.amazonaws.com') ||
-        origin.includes('bug-training-game') ||
-        origin.includes('localhost') ||
-        origin.includes('127.0.0.1')) {
-      
-      // Set the Access-Control-Allow-Origin header to the actual origin
+    // Always allow the S3 website
+    if (origin.includes('s3-website.eu-west-2.amazonaws.com')) {
+      console.log('S3 website origin allowed:', origin);
+      return callback(null, origin);
+    }
+
+    // For all other origins, try pattern matching
+    const isBugTrainingGame = origin.includes('bug-training-game');
+    const isLocalhost = origin.includes('localhost') || origin.includes('127.0.0.1');
+    const isAllowedOrigin = allowedOrigins.includes(origin);
+
+    console.log('Origin check:', {
+      origin,
+      isBugTrainingGame,
+      isLocalhost,
+      isAllowedOrigin
+    });
+
+    if (isAllowedOrigin || isBugTrainingGame || isLocalhost) {
       console.log('Origin allowed:', origin);
       return callback(null, origin);
     }
@@ -94,6 +108,21 @@ app.use(cors(corsOptions));
 
 // Handle preflight requests explicitly
 app.options('*', cors(corsOptions));
+
+// Add CORS headers manually as a fallback
+app.use((req, res, next) => {
+  const origin = req.get('origin');
+  
+  // Always allow the S3 website
+  if (origin && origin.includes('s3-website.eu-west-2.amazonaws.com')) {
+    res.setHeader('Access-Control-Allow-Origin', origin);
+    res.setHeader('Access-Control-Allow-Credentials', 'true');
+    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS, PATCH');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, Accept, Origin');
+    res.setHeader('Access-Control-Expose-Headers', 'Authorization');
+  }
+  next();
+});
 
 // Debug logging middleware
 app.use((req, res, next) => {
