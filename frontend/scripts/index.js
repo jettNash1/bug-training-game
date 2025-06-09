@@ -797,45 +797,23 @@ class IndexPage {
         console.log('[Index] Refreshing all quiz progress');
         
         try {
-            // Store existing guide buttons before refresh
-            const existingGuideButtons = {};
-            this.quizItems.forEach(item => {
-                const quizId = item.dataset.quiz;
-                const guideButton = item.querySelector('.quiz-guide-button');
-                if (guideButton) {
-                    existingGuideButtons[quizId] = {
-                        href: guideButton.href,
-                        text: guideButton.textContent
-                    };
-                }
-            });
-            
             // Update quiz progress
             await this.loadUserProgress();
             this.updateQuizProgress();
             this.updateCategoryProgress();
             
-            // Restore guide buttons
-            Object.entries(existingGuideButtons).forEach(([quizId, buttonData]) => {
-                const quizItem = Array.from(this.quizItems).find(item => item.dataset.quiz === quizId);
-                if (quizItem) {
-                    const guideButton = document.createElement('a');
-                    guideButton.className = 'quiz-guide-button';
-                    guideButton.href = buttonData.href;
-                    guideButton.textContent = buttonData.text;
-                    guideButton.target = '_blank';
-                    guideButton.setAttribute('data-quiz-id', quizId);
-                    guideButton.setAttribute('aria-label', `Open guide for ${quizId}`);
-                    
-                    // Add to quiz info section
-                    const quizInfo = quizItem.querySelector('.quiz-info');
-                    if (quizInfo) {
-                        quizInfo.appendChild(guideButton);
-                    }
+            // Remove any existing guide buttons first
+            this.quizItems.forEach(item => {
+                const guideButton = item.querySelector('.quiz-guide-button');
+                if (guideButton) {
+                    guideButton.remove();
                 }
             });
             
-            console.log('[Index] Quiz progress refresh complete');
+            // Load fresh guide settings from API and add buttons
+            await this.loadGuideSettingsAndAddButtons();
+            
+            console.log('[Index] Quiz progress and guide buttons refresh complete');
         } catch (error) {
             console.error('[Index] Error during quiz progress refresh:', error);
         }
