@@ -171,7 +171,8 @@ export class APIService {
             const apiBaseUrl = this.baseUrl;
             console.log('Attempting login:', { 
                 username, 
-                url: `${apiBaseUrl}/users/login`
+                url: `${apiBaseUrl}/users/login`,
+                origin: window.location.origin
             });
             
             if (!apiBaseUrl) {
@@ -182,15 +183,21 @@ export class APIService {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
-                    'Accept': 'application/json',
-                    'Origin': window.location.origin
+                    'Accept': 'application/json'
                 },
                 credentials: 'include',
                 mode: 'cors',
                 body: JSON.stringify({ username, password })
             });
 
-            console.log('Login response status:', response.status);
+            console.log('Login response:', {
+                status: response.status,
+                statusText: response.statusText,
+                headers: {
+                    'access-control-allow-origin': response.headers.get('access-control-allow-origin'),
+                    'access-control-allow-credentials': response.headers.get('access-control-allow-credentials')
+                }
+            });
             
             if (!response.ok) {
                 const errorData = await response.json().catch(() => ({ message: 'Login failed' }));
@@ -198,7 +205,6 @@ export class APIService {
             }
 
             const data = await response.json();
-            console.log('Login response:', data);
 
             // Store the tokens
             if (data.token) {

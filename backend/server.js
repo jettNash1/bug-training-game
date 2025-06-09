@@ -65,27 +65,16 @@ const corsOptions = {
       return callback(null, true);
     }
 
-    // Always allow S3 website origins
-    if (origin.includes('s3-website.eu-west-2.amazonaws.com')) {
-      console.log('S3 website origin detected - allowing:', origin);
-      return callback(null, true);
-    }
-    
-    // For development or if origin matches our allowed list
-    if (process.env.NODE_ENV === 'development' || allowedOrigins.includes(origin)) {
+    // For S3 website or other allowed origins
+    if (allowedOrigins.includes(origin) || 
+        origin.includes('s3-website.eu-west-2.amazonaws.com') ||
+        origin.includes('bug-training-game') ||
+        origin.includes('localhost') ||
+        origin.includes('127.0.0.1')) {
+      
+      // Set the Access-Control-Allow-Origin header to the actual origin
       console.log('Origin allowed:', origin);
-      return callback(null, true);
-    }
-
-    // If the origin contains our known domains, allow it
-    const isKnownDomain = origin.includes('learning-hub') || 
-                         origin.includes('bug-training-game') ||
-                         origin.includes('localhost') ||
-                         origin.includes('127.0.0.1');
-                         
-    if (isKnownDomain) {
-      console.log('Known domain detected:', origin);
-      return callback(null, true);
+      return callback(null, origin);
     }
 
     console.log('Origin not allowed:', origin);
@@ -95,7 +84,9 @@ const corsOptions = {
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
   allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'Origin'],
   exposedHeaders: ['Authorization'],
-  maxAge: 86400 // 24 hours
+  maxAge: 86400, // 24 hours
+  preflightContinue: false,
+  optionsSuccessStatus: 204
 };
 
 // Apply CORS configuration
