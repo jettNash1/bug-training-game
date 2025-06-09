@@ -64,6 +64,12 @@ const corsOptions = {
       console.log('Request has no origin - allowing');
       return callback(null, true);
     }
+
+    // Always allow S3 website origins
+    if (origin.includes('s3-website.eu-west-2.amazonaws.com')) {
+      console.log('S3 website origin detected - allowing:', origin);
+      return callback(null, true);
+    }
     
     // For development or if origin matches our allowed list
     if (process.env.NODE_ENV === 'development' || allowedOrigins.includes(origin)) {
@@ -72,7 +78,7 @@ const corsOptions = {
     }
 
     // If the origin contains our known domains, allow it
-    const isKnownDomain = origin.includes('learning-hub.s3-website') || 
+    const isKnownDomain = origin.includes('learning-hub') || 
                          origin.includes('bug-training-game') ||
                          origin.includes('localhost') ||
                          origin.includes('127.0.0.1');

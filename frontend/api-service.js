@@ -181,20 +181,24 @@ export class APIService {
             const response = await fetch(`${apiBaseUrl}/users/login`, {
                 method: 'POST',
                 headers: {
-                    'Content-Type': 'application/json'
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json',
+                    'Origin': window.location.origin
                 },
                 credentials: 'include',
+                mode: 'cors',
                 body: JSON.stringify({ username, password })
             });
 
             console.log('Login response status:', response.status);
             
+            if (!response.ok) {
+                const errorData = await response.json().catch(() => ({ message: 'Login failed' }));
+                throw new Error(errorData.message || 'Login failed');
+            }
+
             const data = await response.json();
             console.log('Login response:', data);
-
-            if (!response.ok) {
-                throw new Error(data.message || 'Login failed');
-            }
 
             // Store the tokens
             if (data.token) {

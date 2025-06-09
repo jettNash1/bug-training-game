@@ -42,3 +42,14 @@ coverage/
 local.* 
 qa-learning-hub-enhancements.docx
 ~WRL1511.tmp
+
+# AWS specific files
+aws/
+lambda/
+*.swp
+awscliv2.zip
+bucket-policy.json
+distribution-config.json
+ecosystem.config.js
+.aws/
+.bucket-policy.jsonnano.swp
