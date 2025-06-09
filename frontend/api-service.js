@@ -598,7 +598,60 @@ export class APIService {
     // Helper method for consistent quiz name normalization
     normalizeQuizName(quizName) {
         if (!quizName) return '';
-        return quizName.toLowerCase().trim();
+        
+        // Normalize to lowercase and trim
+        const lowerName = typeof quizName === 'string' ? quizName.toLowerCase().trim() : '';
+        
+        // List of known quiz names for exact matching
+        const knownQuizNames = [
+            'communication', 
+            'initiative', 
+            'time-management', 
+            'tester-mindset',
+            'risk-analysis', 
+            'risk-management', 
+            'non-functional', 
+            'test-support',
+            'issue-verification', 
+            'build-verification', 
+            'issue-tracking-tools',
+            'raising-tickets', 
+            'reports', 
+            'cms-testing', 
+            'email-testing', 
+            'content-copy',
+            'locale-testing', 
+            'script-metrics-troubleshooting', 
+            'standard-script-testing',
+            'test-types-tricks', 
+            'automation-interview', 
+            'fully-scripted', 
+            'exploratory',
+            'sanity-smoke', 
+            'functional-interview'
+        ];
+        
+        // If it's an exact match with our known list, return it directly
+        if (knownQuizNames.includes(lowerName)) {
+            return lowerName;
+        }
+        
+        // Normalize to kebab-case
+        const normalized = lowerName
+            .replace(/([A-Z])/g, '-$1')  // Convert camelCase to kebab-case
+            .replace(/_/g, '-')          // Convert snake_case to kebab-case
+            .replace(/\s+/g, '-')        // Convert spaces to hyphens
+            .replace(/-+/g, '-')         // Remove duplicate hyphens
+            .replace(/^-|-$/g, '')       // Remove leading/trailing hyphens
+            .toLowerCase();              // Ensure lowercase
+        
+        // Check if normalized version is in known list
+        if (knownQuizNames.includes(normalized)) {
+            return normalized;
+        }
+        
+        // Return the normalized version for consistency
+        return normalized;
     }
 
     // Generate common variations of quiz names to try with API/localStorage

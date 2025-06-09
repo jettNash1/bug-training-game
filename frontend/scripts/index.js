@@ -1,6 +1,7 @@
 import { APIService } from '../api-service.js';
 import { QuizUser } from '../QuizUser.js';
 import { QuizProgressService } from '../services/QuizProgressService.js';
+import { QuizList } from '../quiz-list.js';
 
 function normalizeQuizName(quizName) {
     // Use the QuizProgressService's normalizeQuizName to ensure consistency
@@ -840,6 +841,8 @@ class IndexPage {
             // Fetch all guide settings in a single call
             try {
                 const response = await this.apiService.fetchGuideSettings();
+                console.log('[Index] Guide settings response:', response);
+                
                 if (response && response.success && response.data) {
                     console.log('[Index] Fetched all guide settings:', response.data);
                     
@@ -853,15 +856,15 @@ class IndexPage {
                         
                         // Normalize the quiz ID using simple lowercase and trim
                         const normalizedQuizId = quizId.toLowerCase().trim();
-                        console.log(`[Index] Normalized quiz ID: ${quizId} -> ${normalizedQuizId}`);
+                        console.log(`[Index] Processing guide settings for quiz: ${quizId} -> ${normalizedQuizId}`);
                         
                         // Check if guide is enabled for this quiz
                         const guideSettings = response.data[normalizedQuizId];
                         if (guideSettings && guideSettings.enabled && guideSettings.url) {
-                            console.log(`[Index] Guide button enabled for quiz ${normalizedQuizId} with URL: ${guideSettings.url}`);
+                            console.log(`[Index] Adding guide button for quiz ${normalizedQuizId} with URL: ${guideSettings.url}`);
                             this.addGuideButtonToQuizItem(item, normalizedQuizId, guideSettings.url);
                         } else {
-                            console.log(`[Index] Guide button not enabled for quiz ${normalizedQuizId}`);
+                            console.log(`[Index] No guide button needed for quiz ${normalizedQuizId}:`, guideSettings);
                             const existingButton = item.querySelector(`.quiz-guide-button[data-quiz-id="${normalizedQuizId}"]`);
                             if (existingButton) {
                                 existingButton.remove();
@@ -869,10 +872,10 @@ class IndexPage {
                         }
                     });
                 } else {
-                    console.warn('[Index] Failed to fetch guide settings:', response);
+                    console.warn('[Index] Invalid guide settings response:', response);
                 }
             } catch (error) {
-                console.error('[Index] Error fetching all guide settings:', error);
+                console.error('[Index] Error fetching guide settings:', error);
             }
             
             console.log('[Index] Finished setting up guide buttons');
