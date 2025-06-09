@@ -68,50 +68,71 @@ router.post('/register', async (req, res) => {
 
 // Login user - minimal implementation
 router.post('/login', async (req, res) => {
-    console.log('Login attempt:', {
-        headers: {
-            ...req.headers,
-            authorization: req.headers.authorization ? '[PRESENT]' : '[MISSING]'
-        },
-        origin: req.get('origin'),
-        method: req.method
-    });
-
-    const { username, password } = req.body;
-
     try {
+        console.log('Login attempt:', {
+            headers: {
+                ...req.headers,
+                authorization: req.headers.authorization ? '[PRESENT]' : '[MISSING]'
+            },
+            origin: req.get('origin'),
+            method: req.method
+        });
+
+        const { username, password } = req.body;
+
+        // Validate input
+        if (!username || !password) {
+            return res.status(400).json({
+                success: false,
+                message: 'Username and password are required'
+            });
+        }
+
         // Find user
         const user = await User.findOne({ username });
         if (!user) {
-            return res.status(401).json({ success: false, message: 'Invalid credentials' });
+            return res.status(401).json({
+                success: false,
+                message: 'Invalid credentials'
+            });
         }
 
         // Check password
         const isMatch = await bcrypt.compare(password, user.password);
         if (!isMatch) {
-            return res.status(401).json({ success: false, message: 'Invalid credentials' });
+            return res.status(401).json({
+                success: false,
+                message: 'Invalid credentials'
+            });
         }
 
         // Create token
         const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, { expiresIn: '24h' });
 
         // Set CORS headers explicitly
-        res.set({
-            'Access-Control-Allow-Origin': req.get('origin'),
-            'Access-Control-Allow-Credentials': 'true'
-        });
+        const origin = req.get('origin');
+        if (origin) {
+            res.set({
+                'Access-Control-Allow-Origin': origin,
+                'Access-Control-Allow-Credentials': 'true',
+                'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
+                'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-Requested-With, Accept, Origin',
+                'Access-Control-Expose-Headers': 'Authorization'
+            });
+        }
 
-        // Return success
-        res.json({ 
+        // Return success with detailed response
+        res.json({
             success: true,
-            token, 
-            username,
-            message: 'Login successful'
+            token,
+            username: user.username,
+            message: 'Login successful',
+            userId: user._id
         });
     } catch (error) {
         console.error('Login error:', error);
-        res.status(500).json({ 
-            success: false, 
+        res.status(500).json({
+            success: false,
             message: 'Server error during login',
             error: process.env.NODE_ENV === 'production' ? null : error.message
         });

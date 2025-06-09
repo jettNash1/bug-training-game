@@ -159,30 +159,89 @@ export class APIService {
     // Regular user authentication methods
     async login(username, password) {
         try {
-            const apiUrl = 'https://bug-training-game-api.onrender.com/api/users/login';
+            // Get the current API base URL
+            const apiBaseUrl = 'https://bug-training-game-api.onrender.com/api';
+            console.log('Attempting login:', { 
+                username, 
+                url: `${apiBaseUrl}/users/login`,
+                apiBaseUrl
+            });
             
-            const response = await fetch(apiUrl, {
+            if (!apiBaseUrl) {
+                console.error('API base URL is not defined');
+                throw new Error('API configuration error. Please check your network connection and try again.');
+            }
+            
+            // Check if the server is reachable before attempting the login
+            try {
+                const pingResponse = await fetch(`${apiBaseUrl}/health`, { 
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    credentials: 'include',
+                    // Add timeout to prevent hanging requests
+                    signal: AbortSignal.timeout(5000) // 5 second timeout
+                });
+                
+                if (!pingResponse.ok) {
+                    console.warn('API health check failed before login attempt');
+                }
+            } catch (pingError) {
+                console.warn('Could not connect to API server:', pingError);
+                // Continue with login attempt anyway
+            }
+            
+            const response = await fetch(`${apiBaseUrl}/users/login`, {
                 method: 'POST',
-                headers: { 
+                headers: {
                     'Content-Type': 'application/json',
-                    'Accept': 'application/json'
+                    'Accept': 'application/json',
+                    'Origin': 'http://learning-hub.s3-website.eu-west-2.amazonaws.com'
                 },
                 credentials: 'include',
-                body: JSON.stringify({ username, password })
+                body: JSON.stringify({ username, password }),
+                // Add timeout to prevent hanging requests
+                signal: AbortSignal.timeout(10000) // 10 second timeout
             });
 
-            const data = await response.json();
+            console.log('Login response status:', response.status);
             
-            if (!response.ok) {
-                throw new Error(data.message);
+            // Try to read the response text first
+            const text = await response.text();
+            console.log('Login response text:', text);
+
+            // Then parse it as JSON if possible
+            let data;
+            try {
+                data = JSON.parse(text);
+            } catch (e) {
+                console.error('Failed to parse response as JSON:', e);
+                throw new Error('Invalid response from server');
             }
 
-            // Store token and username
-            localStorage.setItem('token', data.token);
-            localStorage.setItem('username', data.username);
-            
+            if (!response.ok) {
+                throw new Error(data.message || 'Login failed');
+            }
+
+            // Store the token in localStorage
+            if (data.token) {
+                localStorage.setItem('token', data.token);
+                localStorage.setItem('username', data.username);
+                console.log('Login token stored successfully');
+            } else {
+                console.warn('No token received from server');
+            }
+
             return data;
         } catch (error) {
+            // Check if this is a network error
+            if (error.name === 'TypeError' && error.message === 'Failed to fetch') {
+                console.error('Login network error - server may be unreachable:', error);
+                throw new Error('Server connection failed. Please check your network connection and try again.');
+            }
+ 
+            console.error('Login error:', error);
             throw error;
         }
     }
