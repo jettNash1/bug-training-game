@@ -56,7 +56,32 @@ if (process.env.ALLOWED_ORIGINS) {
 
 // CORS configuration
 const corsOptions = {
-  origin: true, // Allow all origins
+  origin: function(origin, callback) {
+    // Log the incoming origin for debugging
+    console.log('Incoming request origin:', origin);
+    
+    // Allow requests with no origin (like mobile apps or Postman)
+    if (!origin) {
+      console.log('No origin - allowing request');
+      return callback(null, true);
+    }
+
+    // Always allow the S3 website
+    if (origin.includes('s3-website.eu-west-2.amazonaws.com')) {
+      console.log('Allowing S3 website origin:', origin);
+      return callback(null, origin);
+    }
+
+    // Allow other known origins
+    if (allowedOrigins.includes(origin)) {
+      console.log('Allowing known origin:', origin);
+      return callback(null, origin);
+    }
+
+    // Log rejected origins
+    console.log('Rejecting unknown origin:', origin);
+    callback(new Error('Not allowed by CORS'));
+  },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
   allowedHeaders: ['Content-Type', 'Authorization'],

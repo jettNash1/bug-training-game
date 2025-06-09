@@ -164,11 +164,16 @@ export class APIService {
                 headers: {
                     'Content-Type': 'application/json'
                 },
+                mode: 'cors',
                 body: JSON.stringify({ username, password })
             });
 
             const data = await response.json();
             
+            if (!response.ok) {
+                throw new Error(data.message || 'Login failed');
+            }
+
             if (data.token) {
                 localStorage.setItem('token', data.token);
                 localStorage.setItem('username', data.username);
@@ -176,7 +181,8 @@ export class APIService {
 
             return data;
         } catch (error) {
-            throw new Error('Login failed');
+            console.error('Login error:', error);
+            throw error;
         }
     }
 
