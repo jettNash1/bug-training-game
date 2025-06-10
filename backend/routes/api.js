@@ -123,11 +123,26 @@ router.get('/guide-settings', auth, async (req, res) => {
         // Filter out any invalid or disabled guide settings
         const validSettings = {};
         Object.entries(settings.value).forEach(([quiz, setting]) => {
-            if (setting && setting.url && setting.enabled) {
+            // Log each setting for debugging
+            console.log(`[API] Processing guide setting for ${quiz}:`, {
+                setting,
+                hasUrl: !!(setting && setting.url),
+                urlValid: !!(setting && setting.url && setting.url.match(/^https?:\/\/.+/)),
+                enabled: !!(setting && setting.enabled)
+            });
+            
+            // Only include settings that have a valid URL and are enabled
+            if (setting && 
+                setting.url && 
+                setting.url.trim() && 
+                setting.url.match(/^https?:\/\/.+/) && 
+                setting.enabled === true) {
                 validSettings[quiz] = {
                     url: setting.url.trim(),
-                    enabled: Boolean(setting.enabled)
+                    enabled: true
                 };
+            } else {
+                console.log(`[API] Excluding invalid guide setting for ${quiz}`);
             }
         });
         

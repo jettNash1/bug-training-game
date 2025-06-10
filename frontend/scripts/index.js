@@ -752,12 +752,17 @@ class IndexPage {
             const allQuizItems = this.quizItems;
             console.log('[Index] Found quiz items:', allQuizItems.length);
             
+            // Track which quiz IDs we're looking for guides for
+            const quizIdsToFind = new Set();
+            
             allQuizItems.forEach(item => {
                 const quizId = item.dataset.quiz;
                 if (!quizId) {
                     console.log('[Index] Quiz item missing data-quiz attribute:', item);
                     return;
                 }
+                
+                quizIdsToFind.add(quizId);
                 
                 const buttonContainer = item.querySelector('.guide-button-container');
                 if (!buttonContainer) {
@@ -776,13 +781,24 @@ class IndexPage {
                 console.log(`[Index] Looking up guide setting for ${quizId}:`, guideSetting);
                 
                 if (guideSetting && guideSetting.enabled && guideSetting.url) {
-                    console.log(`[Index] Found enabled guide for ${quizId}:`, guideSetting);
+                    console.log(`[Index] Found enabled guide for ${quizId}:`, {
+                        url: guideSetting.url,
+                        enabled: guideSetting.enabled,
+                        buttonElement: guideButton
+                    });
                     guideButton.href = guideSetting.url;
                     guideButton.style.display = 'block';
                 } else {
-                    console.log(`[Index] No enabled guide found for ${quizId}`);
+                    console.log(`[Index] No enabled guide found for ${quizId}. Guide setting:`, guideSetting);
                     guideButton.style.display = 'none';
                 }
+            });
+            
+            // Log summary of what we found vs what we were looking for
+            console.log('[Index] Guide button summary:', {
+                quizIdsWeWereLookingFor: Array.from(quizIdsToFind),
+                guideSettingsReceived: Object.keys(response.data || {}),
+                matchedGuides: Array.from(quizIdsToFind).filter(id => response.data[id]?.enabled && response.data[id]?.url)
             });
             
             console.log('[Index] Guide buttons update complete');

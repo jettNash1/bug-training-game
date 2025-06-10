@@ -2041,47 +2041,97 @@ export class APIService {
         console.log(`[API] Fetching guide settings${quizName ? ` for quiz: ${quizName}` : ''}`);
         
         try {
-            // Make the API request
-            const response = await this.fetchWithAuth(`${this.baseUrl}/guide-settings`, {
-                method: 'GET',
-                headers: {
-                    'Accept': 'application/json'
+            // Create a shorter timeout for guide settings
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 second timeout
+            
+            try {
+                // Make the API request with the shorter timeout
+                const response = await this.fetchWithAuth(`${this.baseUrl}/guide-settings`, {
+                    method: 'GET',
+                    headers: {
+                        'Accept': 'application/json'
+                    },
+                    signal: controller.signal
+                });
+                
+                // Clear timeout since request completed
+                clearTimeout(timeoutId);
+                
+                console.log('[API] Raw guide settings response:', response);
+                
+                if (response && response.success) {
+                    // Log detailed guide settings information
+                    console.log('[API] Guide settings response details:', {
+                        success: response.success,
+                        hasData: !!response.data,
+                        dataType: typeof response.data,
+                        numSettings: Object.keys(response.data || {}).length,
+                        settings: response.data
+                    });
+                    
+                    // Validate each guide setting
+                    if (response.data && typeof response.data === 'object') {
+                        Object.entries(response.data).forEach(([quiz, setting]) => {
+                            console.log(`[API] Guide setting for ${quiz}:`, {
+                                hasUrl: !!setting?.url,
+                                url: setting?.url,
+                                enabled: setting?.enabled,
+                                isValid: !!(setting?.url && setting?.enabled)
+                            });
+                        });
+                    }
+                    
+                    // Save to localStorage for backup
+                    try {
+                        localStorage.setItem('guideSettings', JSON.stringify(response.data || {}));
+                        console.log('[API] Saved guide settings to localStorage');
+                    } catch (e) {
+                        console.warn('[API] Error saving guide settings to localStorage:', e);
+                    }
+                    
+                    return {
+                        success: true,
+                        data: response.data || {}
+                    };
                 }
-            });
-            
-            console.log('[API] Raw guide settings response:', response);
-            
-            if (!response || !response.success) {
-                console.warn('[API] Failed to fetch guide settings:', response);
+                
+                throw new Error(response?.message || 'Failed to fetch guide settings');
+            } catch (apiError) {
+                // Clear timeout in case of error
+                clearTimeout(timeoutId);
+                
+                console.warn('[API] Failed to fetch guide settings from API:', apiError);
+                
+                // Try localStorage fallback
+                try {
+                    const settingsJson = localStorage.getItem('guideSettings');
+                    if (settingsJson) {
+                        const settings = JSON.parse(settingsJson);
+                        console.log('[API] Using localStorage fallback for guide settings');
+                        return {
+                            success: true,
+                            data: settings,
+                            source: 'localStorage'
+                        };
+                    }
+                } catch (e) {
+                    console.warn('[API] Error reading from localStorage:', e);
+                }
+                
+                // Return empty settings if all fallbacks fail
                 return {
-                    success: false,
-                    message: 'Failed to fetch guide settings',
-                    data: {}
+                    success: true,
+                    data: {},
+                    source: 'default'
                 };
             }
-            
-            // Return the guide settings directly without normalization
-            // The quiz IDs in the response should match the data-quiz attributes
-            console.log('[API] Guide settings:', response.data);
-            
-            // Save to localStorage for backup
-            try {
-                localStorage.setItem('guideSettings', JSON.stringify(response.data || {}));
-                console.log('[API] Saved guide settings to localStorage');
-            } catch (e) {
-                console.warn('[API] Error saving guide settings to localStorage:', e);
-            }
-            
-            return {
-                success: true,
-                data: response.data || {}
-            };
         } catch (error) {
             console.error('[API] Error fetching guide settings:', error);
             return {
-                success: false,
-                message: error.message,
-                data: {}
+                success: true,
+                data: {},
+                source: 'error-fallback'
             };
         }
     }
