@@ -762,7 +762,10 @@ class IndexPage {
                     return;
                 }
                 
-                quizIdsToFind.add(quizId);
+                // Normalize the quiz ID to match how admin panel saves guide settings
+                const normalizedQuizId = this.apiService.normalizeQuizName(quizId);
+                
+                quizIdsToFind.add(normalizedQuizId);
                 
                 const buttonContainer = item.querySelector('.guide-button-container');
                 if (!buttonContainer) {
@@ -776,20 +779,24 @@ class IndexPage {
                     return;
                 }
                 
-                // Get guide settings using the quiz ID directly
-                const guideSetting = response.data[quizId];
-                console.log(`[Index] Looking up guide setting for ${quizId}:`, guideSetting);
+                // Get guide settings using the normalized quiz ID (to match admin panel behavior)
+                const guideSetting = response.data[normalizedQuizId];
+                console.log(`[Index] Looking up guide setting for ${quizId} → ${normalizedQuizId}:`, guideSetting);
                 
                 if (guideSetting && guideSetting.enabled && guideSetting.url) {
-                    console.log(`[Index] Found enabled guide for ${quizId}:`, {
+                    console.log(`[Index] Found enabled guide for ${quizId} (${normalizedQuizId}):`, {
                         url: guideSetting.url,
                         enabled: guideSetting.enabled,
                         buttonElement: guideButton
                     });
                     guideButton.href = guideSetting.url;
                     guideButton.style.display = 'block';
+                    
+                    // Add target="_blank" to open guides in new tab
+                    guideButton.target = '_blank';
+                    guideButton.rel = 'noopener noreferrer';
                 } else {
-                    console.log(`[Index] No enabled guide found for ${quizId}. Guide setting:`, guideSetting);
+                    console.log(`[Index] No enabled guide found for ${quizId} (${normalizedQuizId}). Guide setting:`, guideSetting);
                     guideButton.style.display = 'none';
                 }
             });
@@ -816,7 +823,7 @@ class IndexPage {
             const quizId = item.dataset.quiz;
             if (!quizId) return;
             
-            const normalized = this.quizProgressService.normalizeQuizName(quizId);
+            const normalized = this.apiService.normalizeQuizName(quizId);
             console.log(`Quiz ID: "${quizId}" → Normalized: "${normalized}"`);
         });
         
@@ -824,9 +831,50 @@ class IndexPage {
             console.log('----- Quiz Scores in Memory -----');
             this.quizScores.forEach(score => {
                 const quizName = score.quizName;
-                const normalized = this.quizProgressService.normalizeQuizName(quizName);
+                const normalized = this.apiService.normalizeQuizName(quizName);
                 console.log(`Score name: "${quizName}" → Normalized: "${normalized}" (Questions: ${score.questionsAnswered})`);
             });
+        }
+        
+        console.groupEnd();
+    }
+
+    // Debug helper to test guide button functionality
+    async testGuideButtonFunctionality() {
+        console.group('Guide Button Functionality Test');
+        
+        try {
+            // Get guide settings
+            const response = await this.apiService.fetchGuideSettings();
+            console.log('Guide settings response:', response);
+            
+            if (response.success && response.data) {
+                console.log('Available guide settings:');
+                Object.entries(response.data).forEach(([quiz, setting]) => {
+                    console.log(`  ${quiz}: enabled=${setting.enabled}, url=${setting.url}`);
+                });
+                
+                // Test each quiz item
+                this.quizItems.forEach(item => {
+                    const quizId = item.dataset.quiz;
+                    if (!quizId) return;
+                    
+                    const normalizedQuizId = this.apiService.normalizeQuizName(quizId);
+                    const guideSetting = response.data[normalizedQuizId];
+                    const guideButton = item.querySelector('.quiz-guide-button');
+                    
+                    console.log(`Quiz: ${quizId} → ${normalizedQuizId}`);
+                    console.log(`  Guide setting:`, guideSetting);
+                    console.log(`  Button element:`, guideButton);
+                    console.log(`  Button href:`, guideButton?.href);
+                    console.log(`  Button display:`, guideButton?.style.display);
+                    console.log('---');
+                });
+            } else {
+                console.error('Failed to get guide settings:', response);
+            }
+        } catch (error) {
+            console.error('Error testing guide button functionality:', error);
         }
         
         console.groupEnd();
@@ -837,15 +885,19 @@ class IndexPage {
         
         try {
             // Update quiz progress
-        await this.loadUserProgress();
-        this.updateQuizProgress();
-        this.updateCategoryProgress();
-        
-            // Remove any existing guide buttons first
+            await this.loadUserProgress();
+            this.updateQuizProgress();
+            this.updateCategoryProgress();
+            
+            // Clear any existing guide button states
             this.quizItems.forEach(item => {
                 const guideButton = item.querySelector('.quiz-guide-button');
                 if (guideButton) {
-                    guideButton.remove();
+                    // Reset guide button to default state
+                    guideButton.href = '#';
+                    guideButton.style.display = 'none';
+                    guideButton.removeAttribute('target');
+                    guideButton.removeAttribute('rel');
                 }
             });
             
@@ -892,3 +944,30 @@ window.handleLogout = () => {
 
 // Expose the function to the global scope for emergency use
 window.clearAllQuizProgress = clearAllQuizProgress; 
+
+// Expose debug functions for testing guide button functionality
+window.testGuideButtons = () => {
+    if (indexPage) {
+        return indexPage.testGuideButtonFunctionality();
+    } else {
+        console.error('IndexPage not initialized');
+    }
+};
+
+window.logQuizNormalization = () => {
+    if (indexPage) {
+        indexPage.logQuizNameNormalization();
+    } else {
+        console.error('IndexPage not initialized');
+    }
+};
+
+// Expose method to manually reload guide settings for testing
+window.reloadGuideSettings = () => {
+    if (indexPage) {
+        console.log('Manually reloading guide settings...');
+        return indexPage.loadGuideSettingsAndAddButtons();
+    } else {
+        console.error('IndexPage not initialized');
+    }
+}; 
