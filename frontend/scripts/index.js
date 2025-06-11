@@ -797,12 +797,35 @@ class IndexPage {
                         enabled: guideSetting.enabled,
                         buttonElement: guideButton
                     });
+                    
+                    // Debug: Log before setting href
+                    console.log(`[Index] Before setting href for ${quizId}: current href = "${guideButton.href}"`);
+                    console.log(`[Index] Guide button element details:`, {
+                        tagName: guideButton.tagName,
+                        className: guideButton.className,
+                        dataQuiz: guideButton.dataset.quiz,
+                        textContent: guideButton.textContent
+                    });
+                    
                     guideButton.href = guideSetting.url;
                     guideButton.style.display = 'block';
+                    
+                    // Debug: Log after setting href
+                    console.log(`[Index] After setting href for ${quizId}: new href = "${guideButton.href}"`);
                     
                     // Add target="_blank" to open guides in new tab
                     guideButton.target = '_blank';
                     guideButton.rel = 'noopener noreferrer';
+                    
+                    // Final verification with a slight delay to ensure DOM changes persist
+                    setTimeout(() => {
+                        console.log(`[Index] Delayed verification for ${quizId}:`, {
+                            href: guideButton.href,
+                            display: guideButton.style.display,
+                            target: guideButton.target,
+                            actualElement: guideButton
+                        });
+                    }, 100);
                 } else {
                     console.log(`[Index] No enabled guide found for ${quizId} (${normalizedQuizId}). Guide setting:`, guideSetting);
                     guideButton.style.display = 'none';
